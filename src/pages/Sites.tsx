@@ -7,12 +7,21 @@ import { Input } from "@/components/ui/input";
 import { PropertySidebar } from "@/components/PropertySidebar";
 import { SidebarProvider, SidebarInset, SidebarTrigger } from "@/components/ui/sidebar";
 import { mockSites, getBuildingBlocks, getSpacesBySite, Site } from "@/data/mockSpacesData";
+import { SiteForm } from "@/components/SiteForm";
+import { AlertDialog, AlertDialogContent, AlertDialogHeader, AlertDialogFooter, AlertDialogTitle, AlertDialogDescription, AlertDialogCancel, AlertDialogAction } from "@/components/ui/alert-dialog";
+import { useToast } from "@/hooks/use-toast";
 
 export default function Sites() {
+  const { toast } = useToast();
   const [searchTerm, setSearchTerm] = useState("");
   const [selectedKind, setSelectedKind] = useState<string>("all");
+  const [sites, setSites] = useState<Site[]>(mockSites);
+  const [selectedSite, setSelectedSite] = useState<Site | undefined>(undefined);
+  const [formMode, setFormMode] = useState<"create" | "edit" | "view">("create");
+  const [showForm, setShowForm] = useState(false);
+  const [deleteId, setDeleteId] = useState<string | null>(null);
 
-  const filteredSites = mockSites.filter(site => {
+  const filteredSites = sites.filter(site => {
     const matchesSearch = site.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
                          site.code.toLowerCase().includes(searchTerm.toLowerCase());
     const matchesKind = selectedKind === "all" || site.kind === selectedKind;
@@ -48,6 +57,55 @@ export default function Sites() {
     return status === 'active' ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800';
   };
 
+  // Handlers
+  const handleCreate = () => {
+    setSelectedSite(undefined);
+    setFormMode("create");
+    setShowForm(true);
+  };
+
+  const handleView = (site: Site) => {
+    setSelectedSite(site);
+    setFormMode("view");
+    setShowForm(true);
+  };
+
+  const handleEdit = (site: Site) => {
+    setSelectedSite(site);
+    setFormMode("edit");
+    setShowForm(true);
+  };
+
+  const handleSave = (siteData: Partial<Site>) => {
+    if (formMode === "create") {
+      const newSite: Site = {
+        ...siteData,
+        id: crypto.randomUUID(),
+        created_at: new Date().toISOString(),
+        updated_at: new Date().toISOString(),
+      } as Site;
+      setSites([...sites, newSite]);
+    } else if (formMode === "edit" && selectedSite) {
+      setSites(sites.map(s => s.id === selectedSite.id ? { ...selectedSite, ...siteData, updated_at: new Date().toISOString() } : s));
+    }
+    setShowForm(false);
+  };
+
+  const handleDelete = (id: string) => {
+    setDeleteId(id);
+  };
+
+  const confirmDelete = () => {
+    if (deleteId) {
+      setSites(sites.filter(s => s.id !== deleteId));
+      setDeleteId(null);
+      toast({
+        title: "Site Deleted",
+        description: "The site has been removed successfully.",
+      });
+    }
+  };
+
   return (
     <SidebarProvider>
       <div className="flex min-h-screen w-full">
@@ -69,7 +127,7 @@ export default function Sites() {
                   <h2 className="text-2xl font-bold text-sidebar-primary">All Sites</h2>
                   <p className="text-muted-foreground">Manage your properties and locations</p>
                 </div>
-                <Button className="gap-2">
+                <Button className="gap-2" onClick={handleCreate}>
                   <Plus className="h-4 w-4" />
                   Add New Site
                 </Button>
@@ -158,13 +216,18 @@ export default function Sites() {
 
                         {/* Actions */}
                         <div className="flex items-center justify-end gap-2 pt-2">
-                          <Button size="sm" variant="outline">
+                          <Button size="sm" variant="outline" onClick={() => handleView(site)}>
                             <Eye className="h-3 w-3" />
                           </Button>
-                          <Button size="sm" variant="outline">
+                          <Button size="sm" variant="outline" onClick={() => handleEdit(site)}>
                             <Edit className="h-3 w-3" />
                           </Button>
-                          <Button size="sm" variant="outline" className="text-destructive hover:text-destructive">
+                          <Button 
+                            size="sm" 
+                            variant="outline" 
+                            className="text-destructive hover:text-destructive"
+                            onClick={() => handleDelete(site.id)}
+                          >
                             <Trash2 className="h-3 w-3" />
                           </Button>
                         </div>
@@ -185,6 +248,31 @@ export default function Sites() {
           </main>
         </SidebarInset>
       </div>
+
+      {/* Site Form Modal */}
+      <SiteForm
+        site={selectedSite}
+        isOpen={showForm}
+        onClose={() => setShowForm(false)}
+        onSave={handleSave}
+        mode={formMode}
+      />
+
+      {/* Delete Confirmation */}
+      <AlertDialog open={!!deleteId} onOpenChange={() => setDeleteId(null)}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Delete Site</AlertDialogTitle>
+            <AlertDialogDescription>
+              Are you sure you want to delete this site? This action cannot be undone.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancel</AlertDialogCancel>
+            <AlertDialogAction onClick={confirmDelete}>Delete</AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </SidebarProvider>
   );
 }
