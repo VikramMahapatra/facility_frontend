@@ -1,5 +1,6 @@
-// Mock data for spaces & sites management
-
+// ==========================
+// Interfaces
+// ==========================
 export interface Organization {
   id: string;
   name: string;
@@ -29,17 +30,22 @@ export interface Site {
     country: string;
     pincode: string;
   };
-  geo: {
-    lat: number;
-    lng: number;
-  };
+  geo: { lat: number; lng: number };
   opened_on: string;
   status: 'active' | 'inactive';
   created_at: string;
   updated_at: string;
 }
 
-export type SpaceKind = 'room' | 'apartment' | 'shop' | 'office' | 'warehouse' | 'meeting_room' | 'hall' | 'common_area' | 'parking';
+export interface Building {
+  id: string;
+  site_id: string;
+  name: string;
+  floors: number;
+  attributes: Record<string, any>;
+}
+
+export type SpaceKind = 'apartment' | 'row_house' | 'common_area';
 
 export interface Space {
   id: string;
@@ -73,15 +79,17 @@ export interface SpaceGroupMember {
   space_id: string;
 }
 
-// Mock organization
+// ==========================
+// Organization
+// ==========================
 export const mockOrganization: Organization = {
-  id: 'org-1',
-  name: 'FacilityOS Properties',
-  legal_name: 'FacilityOS Properties Private Limited',
-  gst_vat_id: '29ABCDE1234F1Z5',
-  billing_email: 'billing@facilityos.com',
-  contact_phone: '+91 9876543210',
-  plan: 'enterprise',
+  id: '00000000-0000-0000-0000-000000000001',
+  name: 'Gera',
+  legal_name: 'Gera Developments Pvt Ltd',
+  gst_vat_id: 'GSTIN-GERA-1234',
+  billing_email: 'billing@gera.com',
+  contact_phone: '+91-2022221111',
+  plan: 'pro',
   locale: 'en-IN',
   timezone: 'Asia/Kolkata',
   status: 'active',
@@ -89,312 +97,100 @@ export const mockOrganization: Organization = {
   updated_at: '2024-09-16T00:00:00Z'
 };
 
-// Mock sites
+// ==========================
+// Sites
+// ==========================
 export const mockSites: Site[] = [
-  {
-    id: 'site-1',
-    org_id: 'org-1',
-    name: 'Grand Plaza Complex',
-    code: 'GPC_MUM_BKC',
-    kind: 'mixed',
-    address: {
-      line1: 'Plot 123, Bandra Kurla Complex',
-      line2: 'Near Trident Hotel',
-      city: 'Mumbai',
-      state: 'Maharashtra',
-      country: 'India',
-      pincode: '400051'
-    },
-    geo: { lat: 19.0596, lng: 72.8656 },
-    opened_on: '2020-03-15',
-    status: 'active',
-    created_at: '2024-01-01T00:00:00Z',
-    updated_at: '2024-09-16T00:00:00Z'
-  },
-  {
-    id: 'site-2',
-    org_id: 'org-1',
-    name: 'Tech Park Bangalore',
-    code: 'TPB_BLR_EGL',
-    kind: 'commercial',
-    address: {
-      line1: 'Electronic City Phase 1',
-      line2: 'Hosur Road',
-      city: 'Bangalore',
-      state: 'Karnataka',
-      country: 'India',
-      pincode: '560100'
-    },
-    geo: { lat: 12.8456, lng: 77.6603 },
-    opened_on: '2019-08-20',
-    status: 'active',
-    created_at: '2024-01-01T00:00:00Z',
-    updated_at: '2024-09-16T00:00:00Z'
-  },
-  {
-    id: 'site-3',
-    org_id: 'org-1',
-    name: 'Luxury Hotel Goa',
-    code: 'LHG_GOA_CAN',
-    kind: 'hotel',
-    address: {
-      line1: 'Candolim Beach Road',
-      line2: 'Near Fort Aguada',
-      city: 'Candolim',
-      state: 'Goa',
-      country: 'India',
-      pincode: '403515'
-    },
-    geo: { lat: 15.5197, lng: 73.7629 },
-    opened_on: '2018-12-01',
-    status: 'active',
-    created_at: '2024-01-01T00:00:00Z',
-    updated_at: '2024-09-16T00:00:00Z'
-  }
+  { id: '10000000-0000-0000-0000-000000000001', org_id: mockOrganization.id, name: 'Gera World of Joy', code: 'RES_PUNE_WOJ', kind: 'residential', address: { line1: 'Kharadi', city: 'Pune', state: 'MH', country: 'India', pincode: '411014' }, geo: { lat: 18.5601, lng: 73.9496 }, opened_on: '2020-01-01', status: 'active', created_at: '2024-01-01T00:00:00Z', updated_at: '2024-09-16T00:00:00Z' },
+  { id: '10000000-0000-0000-0000-000000000002', org_id: mockOrganization.id, name: 'Gera Planet of Joy', code: 'RES_PUNE_POJ', kind: 'residential', address: { line1: 'Hinjewadi', city: 'Pune', state: 'MH', country: 'India', pincode: '411057' }, geo: { lat: 18.5911, lng: 73.7381 }, opened_on: '2019-01-01', status: 'active', created_at: '2024-01-01T00:00:00Z', updated_at: '2024-09-16T00:00:00Z' },
+  { id: '10000000-0000-0000-0000-000000000003', org_id: mockOrganization.id, name: 'Gera Island of Joy', code: 'RES_PUNE_IOJ', kind: 'residential', address: { line1: 'Wagholi', city: 'Pune', state: 'MH', country: 'India', pincode: '412207' }, geo: { lat: 18.5802, lng: 73.9822 }, opened_on: '2021-06-01', status: 'active', created_at: '2024-01-01T00:00:00Z', updated_at: '2024-09-16T00:00:00Z' },
+  { id: '10000000-0000-0000-0000-000000000004', org_id: mockOrganization.id, name: 'Gera Song of Joy', code: 'RES_PUNE_SOJ', kind: 'residential', address: { line1: 'Baner', city: 'Pune', state: 'MH', country: 'India', pincode: '411045' }, geo: { lat: 18.5643, lng: 73.7768 }, opened_on: '2018-05-01', status: 'active', created_at: '2024-01-01T00:00:00Z', updated_at: '2024-09-16T00:00:00Z' }
 ];
 
-// Mock spaces
+// ==========================
+// Buildings
+// ==========================
+export const mockBuildings: Building[] = [
+  // WOJ
+  { id: '20000000-0000-0000-0000-000000000001', site_id: mockSites[0].id, name: 'Tower A', floors: 22, attributes: { lifts: 4, fire_safety: true } },
+  { id: '20000000-0000-0000-0000-000000000002', site_id: mockSites[0].id, name: 'Tower B', floors: 18, attributes: { lifts: 3, fire_safety: true } },
+  { id: '20000000-0000-0000-0000-000000000003', site_id: mockSites[0].id, name: 'Clubhouse', floors: 2, attributes: { amenity_type: 'clubhouse' } },
+
+  // POJ
+  { id: '20000000-0000-0000-0000-000000000004', site_id: mockSites[1].id, name: 'Tower C', floors: 20, attributes: { lifts: 4, fire_safety: true } },
+  { id: '20000000-0000-0000-0000-000000000005', site_id: mockSites[1].id, name: 'Tower D', floors: 16, attributes: { lifts: 3, fire_safety: true } },
+
+  // IOJ
+  { id: '20000000-0000-0000-0000-000000000006', site_id: mockSites[2].id, name: 'Row Houses Block', floors: 3, attributes: { fire_safety: true } },
+  { id: '20000000-0000-0000-0000-000000000007', site_id: mockSites[2].id, name: 'Tower E', floors: 15, attributes: { lifts: 2, fire_safety: true } },
+
+  // SOJ
+  { id: '20000000-0000-0000-0000-000000000008', site_id: mockSites[3].id, name: 'Tower F', floors: 18, attributes: { lifts: 3, fire_safety: true } },
+  { id: '20000000-0000-0000-0000-000000000009', site_id: mockSites[3].id, name: 'Clubhouse', floors: 2, attributes: { amenity_type: 'clubhouse' } }
+];
+
+// ==========================
+// Spaces
+// ==========================
 export const mockSpaces: Space[] = [
-  // Grand Plaza Complex - Mixed spaces
-  {
-    id: 'space-1',
-    org_id: 'org-1',
-    site_id: 'site-1',
-    code: 'A-101',
-    name: 'Corner Apartment 101',
-    kind: 'apartment',
-    floor: 'Ground',
-    building_block: 'Tower A',
-    area_sqft: 1200,
-    beds: 2,
-    baths: 2,
-    attributes: { view: 'garden', parking: true, furnished: 'semi' },
-    status: 'occupied',
-    created_at: '2024-01-01T00:00:00Z',
-    updated_at: '2024-09-16T00:00:00Z'
-  },
-  {
-    id: 'space-2',
-    org_id: 'org-1',
-    site_id: 'site-1',
-    code: 'S-G01',
-    name: 'Retail Shop Ground 01',
-    kind: 'shop',
-    floor: 'Ground',
-    building_block: 'Retail Block',
-    area_sqft: 800,
-    attributes: { frontage: 'street', category: 'retail', ac: true },
-    status: 'available',
-    created_at: '2024-01-01T00:00:00Z',
-    updated_at: '2024-09-16T00:00:00Z'
-  },
-  {
-    id: 'space-3',
-    org_id: 'org-1',
-    site_id: 'site-1',
-    code: 'P-001',
-    name: 'Parking Bay 001',
-    kind: 'parking',
-    floor: 'Basement',
-    building_block: 'Parking Block',
-    area_sqft: 180,
-    attributes: { covered: true, size: 'standard', ev_charging: false },
-    status: 'occupied',
-    created_at: '2024-01-01T00:00:00Z',
-    updated_at: '2024-09-16T00:00:00Z'
-  },
-  // Tech Park Bangalore - Office spaces
-  {
-    id: 'space-4',
-    org_id: 'org-1',
-    site_id: 'site-2',
-    code: 'OFF-201',
-    name: 'Corner Office 201',
-    kind: 'office',
-    floor: '2nd',
-    building_block: 'Block B',
-    area_sqft: 1500,
-    attributes: { workstations: 12, cabin: true, conference_room: true, view: 'city' },
-    status: 'occupied',
-    created_at: '2024-01-01T00:00:00Z',
-    updated_at: '2024-09-16T00:00:00Z'
-  },
-  {
-    id: 'space-5',
-    org_id: 'org-1',
-    site_id: 'site-2',
-    code: 'MR-301',
-    name: 'Meeting Room Bangalore',
-    kind: 'meeting_room',
-    floor: '3rd',
-    building_block: 'Block A',
-    area_sqft: 400,
-    attributes: { capacity: 10, projector: true, whiteboard: true, videoconf: true },
-    status: 'available',
-    created_at: '2024-01-01T00:00:00Z',
-    updated_at: '2024-09-16T00:00:00Z'
-  },
-  // Luxury Hotel Goa - Hotel rooms
-  {
-    id: 'space-6',
-    org_id: 'org-1',
-    site_id: 'site-3',
-    code: 'DLX-101',
-    name: 'Deluxe Ocean View 101',
-    kind: 'room',
-    floor: '1st',
-    building_block: 'Main Block',
-    area_sqft: 450,
-    beds: 1,
-    baths: 1,
-    attributes: { view: 'ocean', balcony: true, king_bed: true, star_rating: 5 },
-    status: 'occupied',
-    created_at: '2024-01-01T00:00:00Z',
-    updated_at: '2024-09-16T00:00:00Z'
-  },
-  {
-    id: 'space-7',
-    org_id: 'org-1',
-    site_id: 'site-3',
-    code: 'STE-201',
-    name: 'Presidential Suite 201',
-    kind: 'room',
-    floor: '2nd',
-    building_block: 'Main Block',
-    area_sqft: 800,
-    beds: 1,
-    baths: 2,
-    attributes: { view: 'ocean', suite: true, jacuzzi: true, star_rating: 5 },
-    status: 'available',
-    created_at: '2024-01-01T00:00:00Z',
-    updated_at: '2024-09-16T00:00:00Z'
-  },
-  {
-    id: 'space-8',
-    org_id: 'org-1',
-    site_id: 'site-3',
-    code: 'HALL-001',
-    name: 'Grand Ballroom',
-    kind: 'hall',
-    floor: 'Ground',
-    building_block: 'Events Block',
-    area_sqft: 2500,
-    attributes: { capacity: 200, stage: true, sound_system: true, catering: true },
-    status: 'available',
-    created_at: '2024-01-01T00:00:00Z',
-    updated_at: '2024-09-16T00:00:00Z'
-  }
+  // WOJ
+  { id: '30000000-0000-0000-0000-000000000001', org_id: mockOrganization.id, site_id: mockSites[0].id, code: 'A-1203', name: '3BHK Apartment', kind: 'apartment', floor: '12', building_block: mockBuildings[0].id, area_sqft: 1450, beds: 3, baths: 3, attributes: { furn: 'semi', view: 'garden' }, status: 'occupied', created_at: '2024-01-01T00:00:00Z', updated_at: '2024-09-16T00:00:00Z' },
+  { id: '30000000-0000-0000-0000-000000000002', org_id: mockOrganization.id, site_id: mockSites[0].id, code: 'B-905', name: '2BHK Apartment', kind: 'apartment', floor: '9', building_block: mockBuildings[1].id, area_sqft: 980, beds: 2, baths: 2, attributes: { furn: 'unfurnished', view: 'city' }, status: 'available', created_at: '2024-01-01T00:00:00Z', updated_at: '2024-09-16T00:00:00Z' },
+  { id: '30000000-0000-0000-0000-000000000003', org_id: mockOrganization.id, site_id: mockSites[0].id, code: 'Club-1', name: 'Club House', kind: 'common_area', floor: 'G', building_block: mockBuildings[2].id, area_sqft: 5000, attributes: { sports: ['swimming', 'tennis'] }, status: 'available', created_at: '2024-01-01T00:00:00Z', updated_at: '2024-09-16T00:00:00Z' },
+
+  // POJ
+  { id: '30000000-0000-0000-0000-000000000004', org_id: mockOrganization.id, site_id: mockSites[1].id, code: 'C-707', name: '2.5BHK Apartment', kind: 'apartment', floor: '7', building_block: mockBuildings[3].id, area_sqft: 1150, beds: 2, baths: 2, attributes: { study_room: true, balcony: 'large' }, status: 'occupied', created_at: '2024-01-01T00:00:00Z', updated_at: '2024-09-16T00:00:00Z' },
+  { id: '30000000-0000-0000-0000-000000000005', org_id: mockOrganization.id, site_id: mockSites[1].id, code: 'D-1501', name: 'Duplex', kind: 'apartment', floor: '15', building_block: mockBuildings[4].id, area_sqft: 1800, beds: 3, baths: 3, attributes: { duplex: true, terrace: 'private' }, status: 'occupied', created_at: '2024-01-01T00:00:00Z', updated_at: '2024-09-16T00:00:00Z' },
+
+  // IOJ
+  { id: '30000000-0000-0000-0000-000000000006', org_id: mockOrganization.id, site_id: mockSites[2].id, code: 'RH-01', name: 'Row House', kind: 'row_house', floor: 'G', building_block: mockBuildings[5].id, area_sqft: 2200, beds: 4, baths: 4, attributes: { private_garden: true }, status: 'occupied', created_at: '2024-01-01T00:00:00Z', updated_at: '2024-09-16T00:00:00Z' },
+  { id: '30000000-0000-0000-0000-000000000007', org_id: mockOrganization.id, site_id: mockSites[2].id, code: 'E-803', name: '2BHK Apartment', kind: 'apartment', floor: '8', building_block: mockBuildings[6].id, area_sqft: 950, beds: 2, baths: 2, attributes: { furn: 'semi' }, status: 'available', created_at: '2024-01-01T00:00:00Z', updated_at: '2024-09-16T00:00:00Z' },
+
+  // SOJ
+  { id: '30000000-0000-0000-0000-000000000008', org_id: mockOrganization.id, site_id: mockSites[3].id, code: 'F-1101', name: '3BHK Apartment', kind: 'apartment', floor: '11', building_block: mockBuildings[7].id, area_sqft: 1400, beds: 3, baths: 3, attributes: { furn: 'furnished' }, status: 'occupied', created_at: '2024-01-01T00:00:00Z', updated_at: '2024-09-16T00:00:00Z' },
+  { id: '30000000-0000-0000-0000-000000000009', org_id: mockOrganization.id, site_id: mockSites[3].id, code: 'Club-2', name: 'Club House', kind: 'common_area', floor: 'G', building_block: mockBuildings[8].id, area_sqft: 4000, attributes: { gym: true, indoor_games: true }, status: 'available', created_at: '2024-01-01T00:00:00Z', updated_at: '2024-09-16T00:00:00Z' }
 ];
 
-// Mock space groups
+// ==========================
+// Space Groups
+// ==========================
 export const mockSpaceGroups: SpaceGroup[] = [
-  {
-    id: 'group-1',
-    org_id: 'org-1',
-    site_id: 'site-1',
-    name: '2BHK Apartments',
-    kind: 'apartment',
-    specs: { 
-      base_rate: 45000, 
-      security_deposit: 90000, 
-      maintenance: 5000,
-      amenities: ['parking', 'gym', 'swimming_pool'],
-      typical_beds: 2,
-      typical_baths: 2
-    }
-  },
-  {
-    id: 'group-2',
-    org_id: 'org-1',
-    site_id: 'site-1',
-    name: 'Retail Shops',
-    kind: 'shop',
-    specs: { 
-      base_rate: 150, 
-      cam_charges: 25,
-      maintenance: 15,
-      amenities: ['parking', 'security', 'power_backup'],
-      category: 'retail'
-    }
-  },
-  {
-    id: 'group-3',
-    org_id: 'org-1',
-    site_id: 'site-2',
-    name: 'IT Offices',
-    kind: 'office',
-    specs: { 
-      base_rate: 80, 
-      cam_charges: 20,
-      maintenance: 10,
-      amenities: ['parking', 'cafeteria', '24x7_security', 'power_backup'],
-      fit_out: 'warm_shell'
-    }
-  },
-  {
-    id: 'group-4',
-    org_id: 'org-1',
-    site_id: 'site-3',
-    name: 'Deluxe Rooms',
-    kind: 'room',
-    specs: { 
-      base_rate: 8500, 
-      occupancy: 2,
-      amenities: ['ocean_view', 'balcony', 'minibar', 'wifi'],
-      star_rating: 5,
-      room_type: 'deluxe'
-    }
-  },
-  {
-    id: 'group-5',
-    org_id: 'org-1',
-    site_id: 'site-3',
-    name: 'Presidential Suites',
-    kind: 'room',
-    specs: { 
-      base_rate: 25000, 
-      occupancy: 4,
-      amenities: ['ocean_view', 'jacuzzi', 'butler_service', 'private_dining'],
-      star_rating: 5,
-      room_type: 'suite'
-    }
-  }
+  { id: '40000000-0000-0000-0000-000000000001', org_id: mockOrganization.id, site_id: mockSites[0].id, name: '2BHK', kind: 'apartment', specs: { base_rate: 7500000, amenities: ['parking', 'club_access'] } },
+  { id: '40000000-0000-0000-0000-000000000002', org_id: mockOrganization.id, site_id: mockSites[0].id, name: '3BHK', kind: 'apartment', specs: { base_rate: 9500000, amenities: ['pool', 'club_access'] } },
+  { id: '40000000-0000-0000-0000-000000000003', org_id: mockOrganization.id, site_id: mockSites[1].id, name: 'Duplex', kind: 'apartment', specs: { base_rate: 12000000, amenities: ['terrace', 'private_lift'] } },
+  { id: '40000000-0000-0000-0000-000000000004', org_id: mockOrganization.id, site_id: mockSites[2].id, name: 'Row House', kind: 'row_house', specs: { base_rate: 18000000, amenities: ['private_garden', 'garage'] } }
 ];
 
-// Mock space group members
+// ==========================
+// Space Group Members
+// ==========================
 export const mockSpaceGroupMembers: SpaceGroupMember[] = [
-  { group_id: 'group-1', space_id: 'space-1' },
-  { group_id: 'group-2', space_id: 'space-2' },
-  { group_id: 'group-3', space_id: 'space-4' },
-  { group_id: 'group-4', space_id: 'space-6' },
-  { group_id: 'group-5', space_id: 'space-7' }
+  { group_id: '40000000-0000-0000-0000-000000000002', space_id: '30000000-0000-0000-0000-000000000001' },
+  { group_id: '40000000-0000-0000-0000-000000000001', space_id: '30000000-0000-0000-0000-000000000002' },
+  { group_id: '40000000-0000-0000-0000-000000000003', space_id: '30000000-0000-0000-0000-000000000005' },
+  { group_id: '40000000-0000-0000-0000-000000000004', space_id: '30000000-0000-0000-0000-000000000006' }
 ];
 
 // Utility functions
-export const getSpacesByKind = (kind: SpaceKind) => 
-  mockSpaces.filter(space => space.kind === kind);
-
-export const getSpacesBySite = (siteId: string) => 
-  mockSpaces.filter(space => space.site_id === siteId);
-
-export const getSpaceGroupsBySite = (siteId: string) => 
-  mockSpaceGroups.filter(group => group.site_id === siteId);
-
-export const getSpaceGroupMembers = (groupId: string) => 
+export const getSpacesByKind = (kind: SpaceKind) => mockSpaces.filter(space => space.kind === kind);
+export const getSpacesBySite = (siteId: string) => mockSpaces.filter(space => space.site_id === siteId);
+export const getBuildingsBySite = (siteId: string) => mockBuildings.filter(building => building.site_id === siteId);
+export const getSpaceGroupsBySite = (siteId: string) => mockSpaceGroups.filter(group => group.site_id === siteId);
+export const getSpaceGroupMembers = (groupId: string) =>
   mockSpaceGroupMembers
     .filter(member => member.group_id === groupId)
     .map(member => mockSpaces.find(space => space.id === member.space_id))
     .filter(Boolean);
 
 export const getBuildingBlocks = (siteId: string) => {
+  const buildings = getBuildingsBySite(siteId);
   const spaces = getSpacesBySite(siteId);
-  const blocks = [...new Set(spaces.map(space => space.building_block))];
-  
-  return blocks.map(block => ({
-    name: block,
-    floors: [...new Set(spaces.filter(s => s.building_block === block).map(s => s.floor))],
-    totalSpaces: spaces.filter(s => s.building_block === block).length,
-    occupiedSpaces: spaces.filter(s => s.building_block === block && s.status === 'occupied').length
+  return buildings.map(building => ({
+    id: building.id,
+    name: building.name,
+    floors: building.floors,
+    totalSpaces: spaces.filter(s => s.building_block === building.id).length,
+    occupiedSpaces: spaces.filter(s => s.building_block === building.id && s.status === 'occupied').length
   }));
 };
 
@@ -403,7 +199,7 @@ export const getOccupancyStats = () => {
   const occupiedSpaces = mockSpaces.filter(s => s.status === 'occupied').length;
   const availableSpaces = mockSpaces.filter(s => s.status === 'available').length;
   const outOfServiceSpaces = mockSpaces.filter(s => s.status === 'out_of_service').length;
-  
+
   return {
     totalSpaces,
     occupiedSpaces,

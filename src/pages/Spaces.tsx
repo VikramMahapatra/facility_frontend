@@ -7,26 +7,106 @@ import { Input } from "@/components/ui/input";
 import { PropertySidebar } from "@/components/PropertySidebar";
 import { SidebarProvider, SidebarInset, SidebarTrigger } from "@/components/ui/sidebar";
 import { mockSpaces, mockSites, SpaceKind } from "@/data/mockSpacesData";
+import { SpaceForm } from "@/components/SpaceForm";
+import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
+import { useToast } from "@/hooks/use-toast";
+
+interface Space {
+  id: string;
+  org_id: string;
+  site_id: string;
+  code: string;
+  name?: string;
+  kind: SpaceKind;
+  floor?: string;
+  building_block?: string;
+  area_sqft?: number;
+  beds?: number;
+  baths?: number;
+  attributes: Record<string, any>;
+  status: 'available' | 'occupied' | 'out_of_service';
+  created_at: string;
+  updated_at: string;
+}
 
 export default function Spaces() {
+  const { toast } = useToast();
   const [searchTerm, setSearchTerm] = useState("");
   const [selectedKind, setSelectedKind] = useState<string>("all");
   const [selectedStatus, setSelectedStatus] = useState<string>("all");
   const [selectedSite, setSelectedSite] = useState<string>("all");
+  const [spaces, setSpaces] = useState<Space[]>(mockSpaces as Space[]);
+  const [selectedSpace, setSelectedSpace] = useState<Space | undefined>();
+  const [formMode, setFormMode] = useState<'create' | 'edit' | 'view'>('create');
+  const [isFormOpen, setIsFormOpen] = useState(false);
+  const [deleteSpaceId, setDeleteSpaceId] = useState<string | null>(null);
 
-  const filteredSpaces = mockSpaces.filter(space => {
-    const matchesSearch = space.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                         space.code.toLowerCase().includes(searchTerm.toLowerCase());
+  const filteredSpaces = spaces.filter(space => {
+    const matchesSearch = (space.name || space.code).toLowerCase().includes(searchTerm.toLowerCase()) ||
+      space.code.toLowerCase().includes(searchTerm.toLowerCase());
     const matchesKind = selectedKind === "all" || space.kind === selectedKind;
     const matchesStatus = selectedStatus === "all" || space.status === selectedStatus;
     const matchesSite = selectedSite === "all" || space.site_id === selectedSite;
     return matchesSearch && matchesKind && matchesStatus && matchesSite;
   });
 
+  const handleCreate = () => {
+    setSelectedSpace(undefined);
+    setFormMode('create');
+    setIsFormOpen(true);
+  };
+
+  const handleView = (space: Space) => {
+    setSelectedSpace(space);
+    setFormMode('view');
+    setIsFormOpen(true);
+  };
+
+  const handleEdit = (space: Space) => {
+    setSelectedSpace(space);
+    setFormMode('edit');
+    setIsFormOpen(true);
+  };
+
+  const handleDelete = (spaceId: string) => {
+    setDeleteSpaceId(spaceId);
+  };
+
+  const confirmDelete = () => {
+    if (deleteSpaceId) {
+      setSpaces(spaces.filter(space => space.id !== deleteSpaceId));
+      toast({
+        title: "Space Deleted",
+        description: "Space has been deleted successfully.",
+      });
+      setDeleteSpaceId(null);
+    }
+  };
+
+  const handleSave = (spaceData: Partial<Space>) => {
+    if (formMode === 'create') {
+      const newSpace: Space = {
+        id: `space-${Date.now()}`,
+        org_id: "org-1",
+        created_at: new Date().toISOString(),
+        updated_at: new Date().toISOString(),
+        ...spaceData as Omit<Space, 'id' | 'org_id' | 'created_at' | 'updated_at'>
+      };
+      setSpaces([...spaces, newSpace]);
+    } else if (formMode === 'edit' && selectedSpace) {
+      setSpaces(spaces.map(space =>
+        space.id === selectedSpace.id
+          ? { ...space, ...spaceData }
+          : space
+      ));
+    }
+    setIsFormOpen(false);
+  };
+
   const getKindIcon = (kind: SpaceKind) => {
     const icons = {
       room: "🏨",
-      apartment: "🏠", 
+      apartment: "🏠",
       shop: "🏪",
       office: "🏢",
       warehouse: "🏭",
@@ -67,7 +147,7 @@ export default function Spaces() {
     return site ? site.name : 'Unknown Site';
   };
 
-  const spaceKinds: SpaceKind[] = ['room', 'apartment', 'shop', 'office', 'warehouse', 'meeting_room', 'hall', 'common_area', 'parking'];
+  const spaceKinds: SpaceKind[] = ['apartment', 'row_house', 'common_area'];
 
   return (
     <SidebarProvider>
@@ -90,7 +170,7 @@ export default function Spaces() {
                   <h2 className="text-2xl font-bold text-sidebar-primary">All Spaces</h2>
                   <p className="text-muted-foreground">Manage all spaces across your properties</p>
                 </div>
-                <Button className="gap-2">
+                <Button onClick={handleCreate} className="gap-2">
                   <Plus className="h-4 w-4" />
                   Add New Space
                 </Button>
@@ -107,7 +187,7 @@ export default function Spaces() {
                     className="w-64"
                   />
                 </div>
-                
+
                 <select
                   value={selectedSite}
                   onChange={(e) => setSelectedSite(e.target.value)}
@@ -243,13 +323,18 @@ export default function Spaces() {
 
                       {/* Actions */}
                       <div className="flex items-center justify-end gap-2 pt-2">
-                        <Button size="sm" variant="outline">
+                        <Button size="sm" variant="outline" onClick={() => handleView(space)}>
                           <Eye className="h-3 w-3" />
                         </Button>
-                        <Button size="sm" variant="outline">
+                        <Button size="sm" variant="outline" onClick={() => handleEdit(space)}>
                           <Edit className="h-3 w-3" />
                         </Button>
-                        <Button size="sm" variant="outline" className="text-destructive hover:text-destructive">
+                        <Button
+                          size="sm"
+                          variant="outline"
+                          className="text-destructive hover:text-destructive"
+                          onClick={() => handleDelete(space.id)}
+                        >
                           <Trash2 className="h-3 w-3" />
                         </Button>
                       </div>
@@ -269,6 +354,31 @@ export default function Spaces() {
           </main>
         </SidebarInset>
       </div>
+
+      <SpaceForm
+        space={selectedSpace}
+        isOpen={isFormOpen}
+        onClose={() => setIsFormOpen(false)}
+        onSave={handleSave}
+        mode={formMode}
+      />
+
+      <AlertDialog open={!!deleteSpaceId} onOpenChange={() => setDeleteSpaceId(null)}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Delete Space</AlertDialogTitle>
+            <AlertDialogDescription>
+              Are you sure you want to delete this space? This action cannot be undone.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancel</AlertDialogCancel>
+            <AlertDialogAction onClick={confirmDelete} className="bg-destructive text-destructive-foreground">
+              Delete
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </SidebarProvider>
   );
 }

@@ -20,20 +20,14 @@ export default function SpacesByKind() {
   const getSpaceKindFromParam = (param: string): SpaceKind | null => {
     const mapping: Record<string, SpaceKind> = {
       'apartments': 'apartment',
-      'shops': 'shop',
-      'offices': 'office',
-      'rooms': 'room',
-      'meeting-rooms': 'meeting_room',
-      'parking': 'parking',
-      'warehouses': 'warehouse',
-      'halls': 'hall',
+      'row-houses': 'row_house',
       'common-areas': 'common_area'
     };
     return mapping[param || ''] || null;
   };
 
   const spaceKind = getSpaceKindFromParam(kind || '');
-  
+
   if (!spaceKind) {
     return <div>Invalid space kind</div>;
   }
@@ -41,7 +35,7 @@ export default function SpacesByKind() {
   const filteredSpaces = mockSpaces.filter(space => {
     const matchesKind = space.kind === spaceKind;
     const matchesSearch = space.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                         space.code.toLowerCase().includes(searchTerm.toLowerCase());
+      space.code.toLowerCase().includes(searchTerm.toLowerCase());
     const matchesStatus = selectedStatus === "all" || space.status === selectedStatus;
     const matchesSite = selectedSite === "all" || space.site_id === selectedSite;
     return matchesKind && matchesSearch && matchesStatus && matchesSite;
@@ -50,7 +44,7 @@ export default function SpacesByKind() {
   const getKindIcon = (kind: SpaceKind) => {
     const icons = {
       room: "🏨",
-      apartment: "🏠", 
+      apartment: "🏠",
       shop: "🏪",
       office: "🏢",
       warehouse: "🏭",
@@ -65,7 +59,7 @@ export default function SpacesByKind() {
   const getKindTitle = (kind: SpaceKind) => {
     const titles = {
       room: "Hotel Rooms",
-      apartment: "Apartments", 
+      apartment: "Apartments",
       shop: "Shops",
       office: "Offices",
       warehouse: "Warehouses",
@@ -98,9 +92,9 @@ export default function SpacesByKind() {
         <SidebarInset className="flex-1">
           <header className="flex h-16 shrink-0 items-center gap-2 border-b border-sidebar-border px-4">
             <SidebarTrigger className="-ml-1" />
-            <Button 
-              variant="ghost" 
-              size="sm" 
+            <Button
+              variant="ghost"
+              size="sm"
               onClick={() => navigate('/spaces')}
               className="mr-2"
             >
@@ -137,7 +131,7 @@ export default function SpacesByKind() {
                     className="w-64"
                   />
                 </div>
-                
+
                 <select
                   value={selectedSite}
                   onChange={(e) => setSelectedSite(e.target.value)}

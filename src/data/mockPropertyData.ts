@@ -15,21 +15,21 @@ export const occupancyData = {
   ]
 };
 
-// export const leasingData = {
-//   activeLeases: 187,
-//   renewalsDue30Days: 12,
-//   renewalsDue60Days: 8,
-//   renewalsDue90Days: 15,
-//   rentCollectionRate: 94.2,
-//   camCollectionRate: 89.7,
-//   revenueShare: 156750,
-//   monthlyTrend: [
-//     { month: "Jan", leases: 182, renewals: 8, collection: 92.1 },
-//     { month: "Feb", leases: 184, renewals: 12, collection: 93.5 },
-//     { month: "Mar", leases: 186, renewals: 9, collection: 94.8 },
-//     { month: "Apr", leases: 187, renewals: 11, collection: 94.2 },
-//   ]
-// };
+export const leasingData = {
+  activeLeases: 187,
+  renewalsDue30Days: 12,
+  renewalsDue60Days: 8,
+  renewalsDue90Days: 15,
+  rentCollectionRate: 94.2,
+  camCollectionRate: 89.7,
+  revenueShare: 156750,
+  monthlyTrend: [
+    { month: "Jan", leases: 182, renewals: 8, collection: 92.1 },
+    { month: "Feb", leases: 184, renewals: 12, collection: 93.5 },
+    { month: "Mar", leases: 186, renewals: 9, collection: 94.8 },
+    { month: "Apr", leases: 187, renewals: 11, collection: 94.2 },
+  ]
+};
 
 export const financialData = {
   pendingInvoices: 45,
