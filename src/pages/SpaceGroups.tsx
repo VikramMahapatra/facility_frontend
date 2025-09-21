@@ -7,13 +7,29 @@ import { Input } from "@/components/ui/input";
 import { PropertySidebar } from "@/components/PropertySidebar";
 import { SidebarProvider, SidebarInset, SidebarTrigger } from "@/components/ui/sidebar";
 import { mockSpaceGroups, mockSites, getSpaceGroupMembers, SpaceKind } from "@/data/mockSpacesData";
+import { SpaceGroupForm } from "@/components/SpaceGroupForm";
+import { useToast } from "@/hooks/use-toast";
+
+export interface SpaceGroup {
+  id: string;
+  name: string;
+  site_id: string;
+  kind: SpaceKind;
+  specs: any;
+}
 
 export default function SpaceGroups() {
+  const { toast } = useToast();
+  const [groups, setGroups] = useState<SpaceGroup[]>(mockSpaceGroups);
   const [searchTerm, setSearchTerm] = useState("");
   const [selectedKind, setSelectedKind] = useState<string>("all");
   const [selectedSite, setSelectedSite] = useState<string>("all");
 
-  const filteredGroups = mockSpaceGroups.filter(group => {
+  const [showForm, setShowForm] = useState(false);
+  const [formMode, setFormMode] = useState<"create" | "edit" | "view">("create");
+  const [selectedGroup, setSelectedGroup] = useState<SpaceGroup | undefined>();
+
+  const filteredGroups = groups.filter(group => {
     const matchesSearch = group.name.toLowerCase().includes(searchTerm.toLowerCase());
     const matchesKind = selectedKind === "all" || group.kind === selectedKind;
     const matchesSite = selectedSite === "all" || group.site_id === selectedSite;
@@ -23,7 +39,7 @@ export default function SpaceGroups() {
   const getKindIcon = (kind: SpaceKind) => {
     const icons = {
       room: "🏨",
-      apartment: "🏠",
+      apartment: "🏠", 
       shop: "🏪",
       office: "🏢",
       warehouse: "🏭",
@@ -63,6 +79,49 @@ export default function SpaceGroups() {
     }).format(amount);
   };
 
+  // Handlers
+  const handleCreate = () => {
+    setSelectedGroup(undefined);
+    setFormMode("create");
+    setShowForm(true);
+  };
+
+  const handleView = (group: SpaceGroup) => {
+    setSelectedGroup(group);
+    setFormMode("view");
+    setShowForm(true);
+  };
+
+  const handleEdit = (group: SpaceGroup) => {
+    setSelectedGroup(group);
+    setFormMode("edit");
+    setShowForm(true);
+  };
+
+  const handleDelete = (id: string) => {
+    setGroups(groups.filter(g => g.id !== id));
+    toast({
+      title: "Group Deleted",
+      description: "Space group removed successfully."
+    });
+  };
+
+  const handleSave = (data: Partial<SpaceGroup>) => {
+    if (formMode === "create") {
+      const newGroup: SpaceGroup = {
+        id: `sg-${Date.now()}`,
+        name: data.name!,
+        site_id: data.site_id!,
+        kind: data.kind!,
+        specs: data.specs || {}
+      };
+      setGroups([...groups, newGroup]);
+    } else if (formMode === "edit" && selectedGroup) {
+      setGroups(groups.map(g => g.id === selectedGroup.id ? { ...g, ...data } : g));
+    }
+    setShowForm(false);
+  };
+
   const spaceKinds: SpaceKind[] = ['apartment', 'row_house', 'common_area'];
 
   return (
@@ -86,7 +145,7 @@ export default function SpaceGroups() {
                   <h2 className="text-2xl font-bold text-sidebar-primary">Space Groups</h2>
                   <p className="text-muted-foreground">Manage space categories and pricing groups</p>
                 </div>
-                <Button className="gap-2">
+                <Button className="gap-2" onClick={handleCreate}>
                   <Plus className="h-4 w-4" />
                   Create New Group
                 </Button>
@@ -100,7 +159,7 @@ export default function SpaceGroups() {
                   onChange={(e) => setSearchTerm(e.target.value)}
                   className="max-w-sm"
                 />
-
+                
                 <select
                   value={selectedSite}
                   onChange={(e) => setSelectedSite(e.target.value)}
@@ -129,7 +188,7 @@ export default function SpaceGroups() {
                 {filteredGroups.map((group) => {
                   const members = getSpaceGroupMembers(group.id);
                   const memberCount = members.filter(m => m).length;
-
+                  
                   return (
                     <Card key={group.id} className="hover:shadow-lg transition-shadow">
                       <CardHeader className="pb-3">
@@ -159,84 +218,20 @@ export default function SpaceGroups() {
                           <div className="flex items-center gap-2">
                             <DollarSign className="h-4 w-4 text-muted-foreground" />
                             <span className="text-sm font-medium">
-                              Base Rate: {formatCurrency(group.specs.base_rate)}
-                              {group.kind === 'apartment' ? '/month' : group.kind === 'row_house' ? '/month' : '/month'}
+                              Base Rate: {formatCurrency(group.specs.base_rate)}/month
                             </span>
-                          </div>
-                        )}
-
-                        {/* Additional Charges */}
-                        <div className="space-y-1 text-sm">
-                          {group.specs.cam_charges && (
-                            <div className="flex justify-between">
-                              <span className="text-muted-foreground">CAM Charges:</span>
-                              <span>{formatCurrency(group.specs.cam_charges)}/sq ft</span>
-                            </div>
-                          )}
-                          {group.specs.maintenance && (
-                            <div className="flex justify-between">
-                              <span className="text-muted-foreground">Maintenance:</span>
-                              <span>{formatCurrency(group.specs.maintenance)}{group.kind === 'apartment' ? '/month' : '/sq ft'}</span>
-                            </div>
-                          )}
-                          {group.specs.security_deposit && (
-                            <div className="flex justify-between">
-                              <span className="text-muted-foreground">Security Deposit:</span>
-                              <span>{formatCurrency(group.specs.security_deposit)}</span>
-                            </div>
-                          )}
-                        </div>
-
-                        {/* Specific Attributes */}
-                        <div className="space-y-2">
-                          {group.specs.occupancy && (
-                            <div className="text-sm">
-                              <span className="text-muted-foreground">Max Occupancy: </span>
-                              <span className="font-medium">{group.specs.occupancy} guests</span>
-                            </div>
-                          )}
-                          {group.specs.typical_beds && (
-                            <div className="text-sm">
-                              <span className="text-muted-foreground">Configuration: </span>
-                              <span className="font-medium">{group.specs.typical_beds}BR/{group.specs.typical_baths}BA</span>
-                            </div>
-                          )}
-                          {group.specs.star_rating && (
-                            <div className="text-sm">
-                              <span className="text-muted-foreground">Rating: </span>
-                              <span className="font-medium">{'⭐'.repeat(group.specs.star_rating)}</span>
-                            </div>
-                          )}
-                        </div>
-
-                        {/* Amenities */}
-                        {group.specs.amenities && group.specs.amenities.length > 0 && (
-                          <div className="space-y-2">
-                            <p className="text-sm font-medium text-muted-foreground">Amenities:</p>
-                            <div className="flex flex-wrap gap-1">
-                              {group.specs.amenities.slice(0, 4).map((amenity: string, index: number) => (
-                                <Badge key={index} variant="outline" className="text-xs">
-                                  {amenity.replace('_', ' ')}
-                                </Badge>
-                              ))}
-                              {group.specs.amenities.length > 4 && (
-                                <Badge variant="outline" className="text-xs">
-                                  +{group.specs.amenities.length - 4} more
-                                </Badge>
-                              )}
-                            </div>
                           </div>
                         )}
 
                         {/* Actions */}
                         <div className="flex items-center justify-end gap-2 pt-2">
-                          <Button size="sm" variant="outline">
+                          <Button size="sm" variant="outline" onClick={() => handleView(group)}>
                             <Eye className="h-3 w-3" />
                           </Button>
-                          <Button size="sm" variant="outline">
+                          <Button size="sm" variant="outline" onClick={() => handleEdit(group)}>
                             <Edit className="h-3 w-3" />
                           </Button>
-                          <Button size="sm" variant="outline" className="text-destructive hover:text-destructive">
+                          <Button size="sm" variant="outline" className="text-destructive hover:text-destructive" onClick={() => handleDelete(group.id)}>
                             <Trash2 className="h-3 w-3" />
                           </Button>
                         </div>
@@ -257,6 +252,14 @@ export default function SpaceGroups() {
           </main>
         </SidebarInset>
       </div>
+
+      <SpaceGroupForm
+        group={selectedGroup}
+        isOpen={showForm}
+        mode={formMode}
+        onClose={() => setShowForm(false)}
+        onSave={handleSave}
+      />
     </SidebarProvider>
   );
 }
