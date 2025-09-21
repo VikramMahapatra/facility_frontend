@@ -17,7 +17,7 @@ export default function WorkOrders() {
     <SidebarProvider>
       <div className="min-h-screen flex w-full bg-background">
         <PropertySidebar />
-        
+
         <div className="flex-1 flex flex-col">
           <header className="bg-card border-b border-border">
             <div className="flex items-center justify-between px-6 py-4">
@@ -160,11 +160,11 @@ export default function WorkOrders() {
                             <Badge variant="outline">{workOrder.type}</Badge>
                           </TableCell>
                           <TableCell>
-                            <Badge 
+                            <Badge
                               variant={
                                 workOrder.priority === 'critical' ? 'destructive' :
-                                workOrder.priority === 'high' ? 'destructive' :
-                                workOrder.priority === 'medium' ? 'default' : 'secondary'
+                                  workOrder.priority === 'high' ? 'destructive' :
+                                    workOrder.priority === 'medium' ? 'default' : 'secondary'
                               }
                             >
                               {workOrder.priority}
@@ -183,10 +183,10 @@ export default function WorkOrders() {
                             </div>
                           </TableCell>
                           <TableCell>
-                            <Badge 
+                            <Badge
                               variant={
                                 workOrder.status === 'completed' ? 'default' :
-                                workOrder.status === 'in_progress' ? 'secondary' : 'outline'
+                                  workOrder.status === 'in_progress' ? 'secondary' : 'outline'
                               }
                             >
                               {workOrder.status.replace('_', ' ')}

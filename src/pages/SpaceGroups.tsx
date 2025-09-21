@@ -23,7 +23,7 @@ export default function SpaceGroups() {
   const getKindIcon = (kind: SpaceKind) => {
     const icons = {
       room: "🏨",
-      apartment: "🏠", 
+      apartment: "🏠",
       shop: "🏪",
       office: "🏢",
       warehouse: "🏭",
@@ -100,7 +100,7 @@ export default function SpaceGroups() {
                   onChange={(e) => setSearchTerm(e.target.value)}
                   className="max-w-sm"
                 />
-                
+
                 <select
                   value={selectedSite}
                   onChange={(e) => setSelectedSite(e.target.value)}
@@ -129,7 +129,7 @@ export default function SpaceGroups() {
                 {filteredGroups.map((group) => {
                   const members = getSpaceGroupMembers(group.id);
                   const memberCount = members.filter(m => m).length;
-                  
+
                   return (
                     <Card key={group.id} className="hover:shadow-lg transition-shadow">
                       <CardHeader className="pb-3">

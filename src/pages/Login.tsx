@@ -4,50 +4,61 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import Navigation from "@/components/Navigation";
 import { useNavigate } from "react-router-dom";
 import { Chrome } from "lucide-react";
+import { useGoogleLogin } from "@react-oauth/google";
+import { authApiService } from "@/services/authapi";
 
 const Login = () => {
   const navigate = useNavigate();
   const [isLoading, setIsLoading] = useState(false);
 
+  localStorage.removeItem('access_token');
+
+  const googleLogin = useGoogleLogin({
+    onSuccess: async (tokenResponse) => {
+      const authResponse = await authApiService.authenticateGoogle(tokenResponse.access_token);
+
+      setTimeout(() => {
+        if (authResponse.needs_registration) {
+          // New user - go to signup
+          navigate('/signup', {
+            state: {
+              googleData: {
+                email: authResponse.email,
+                name: authResponse.name,
+                picture: authResponse.picture
+              }
+            }
+          });
+        } else {
+          // Existing user - go to dashboard
+          localStorage.setItem('user', JSON.stringify({
+            id: authResponse.user.id,
+            email: authResponse.user.email,
+            name: authResponse.user.name,
+            accountType: authResponse.user.accountType,
+            organizationName: authResponse.user.organizationName,
+            isAuthenticated: true
+          }));
+          navigate('/dashboard');
+        }
+        setIsLoading(false);
+      }, 1000);
+    },
+    onError: () => {
+      console.error("Google login failed");
+    },
+  });
+
+
   const handleGoogleLogin = async () => {
     setIsLoading(true);
-    
-    // Mock Google OAuth flow
-    setTimeout(() => {
-      // Simulate checking if user exists
-      const userExists = Math.random() > 0.5; // 50% chance for demo
-      
-      if (userExists) {
-        // Existing user - go to dashboard
-        localStorage.setItem('user', JSON.stringify({
-          id: '1',
-          email: 'john.doe@company.com',
-          name: 'John Doe',
-          accountType: 'Organization',
-          organizationName: 'Acme Corporation',
-          isAuthenticated: true
-        }));
-        navigate('/dashboard');
-      } else {
-        // New user - go to signup
-        navigate('/signup', { 
-          state: { 
-            googleData: {
-              email: 'newuser@company.com',
-              name: 'New User',
-              picture: 'https://via.placeholder.com/100'
-            }
-          }
-        });
-      }
-      setIsLoading(false);
-    }, 2000);
+    googleLogin();
   };
 
   return (
     <div className="min-h-screen bg-background">
       <Navigation />
-      
+
       <div className="flex items-center justify-center min-h-[calc(100vh-4rem)] py-12 px-6">
         <div className="w-full max-w-md">
           <div className="text-center mb-8">
@@ -73,7 +84,7 @@ const Login = () => {
                 <Chrome className="w-5 h-5 mr-2" />
                 {isLoading ? "Signing in..." : "Continue with Google"}
               </Button>
-              
+
               <div className="text-center text-sm text-muted-foreground">
                 By signing in, you agree to our Terms of Service and Privacy Policy
               </div>

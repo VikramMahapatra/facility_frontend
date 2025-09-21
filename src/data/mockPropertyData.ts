@@ -112,7 +112,7 @@ export const dashboardStats = [
   {
     title: "Occupancy Rate",
     value: "75.4%",
-    icon: "Users", 
+    icon: "Users",
     change: "+3.2%",
     trend: "up",
     description: "Current occupancy"
@@ -121,7 +121,7 @@ export const dashboardStats = [
     title: "Monthly Revenue",
     value: "$566.4K",
     icon: "BarChart3",
-    change: "+8.1%", 
+    change: "+8.1%",
     trend: "up",
     description: "This month's income"
   },
@@ -130,7 +130,7 @@ export const dashboardStats = [
     value: "28",
     icon: "Wrench",
     change: "-15%",
-    trend: "down", 
+    trend: "down",
     description: "Open tickets"
   },
   {

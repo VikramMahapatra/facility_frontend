@@ -24,7 +24,7 @@ export default function Buildings() {
 
   const filteredBuildings = allBuildings.filter(building => {
     const matchesSearch = building.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                         building.siteName.toLowerCase().includes(searchTerm.toLowerCase());
+      building.siteName.toLowerCase().includes(searchTerm.toLowerCase());
     const matchesSite = selectedSite === "all" || building.siteId === selectedSite;
     return matchesSearch && matchesSite;
   });
@@ -32,7 +32,7 @@ export default function Buildings() {
   const getSiteKindColor = (kind: string) => {
     const colors = {
       residential: "bg-blue-100 text-blue-800",
-      commercial: "bg-green-100 text-green-800", 
+      commercial: "bg-green-100 text-green-800",
       hotel: "bg-purple-100 text-purple-800",
       mall: "bg-orange-100 text-orange-800",
       mixed: "bg-indigo-100 text-indigo-800",
@@ -87,7 +87,7 @@ export default function Buildings() {
                   onChange={(e) => setSearchTerm(e.target.value)}
                   className="max-w-sm"
                 />
-                
+
                 <select
                   value={selectedSite}
                   onChange={(e) => setSelectedSite(e.target.value)}
@@ -138,7 +138,7 @@ export default function Buildings() {
               <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
                 {filteredBuildings.map((building, index) => {
                   const occupancyRate = parseFloat(getOccupancyRate(building));
-                  
+
                   return (
                     <Card key={`${building.siteId}-${building.name}-${index}`} className="hover:shadow-lg transition-shadow">
                       <CardHeader className="pb-3">
@@ -205,10 +205,9 @@ export default function Buildings() {
                           </div>
                           <div className="w-full bg-gray-200 rounded-full h-2">
                             <div
-                              className={`h-2 rounded-full ${
-                                occupancyRate >= 90 ? 'bg-green-500' :
-                                occupancyRate >= 70 ? 'bg-yellow-500' : 'bg-red-500'
-                              }`}
+                              className={`h-2 rounded-full ${occupancyRate >= 90 ? 'bg-green-500' :
+                                  occupancyRate >= 70 ? 'bg-yellow-500' : 'bg-red-500'
+                                }`}
                               style={{ width: `${occupancyRate}%` }}
                             />
                           </div>

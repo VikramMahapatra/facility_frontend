@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -43,9 +43,25 @@ export function OrganizationForm({ organization, isOpen, onClose, onSave, mode }
     status: organization?.status || "active" as const,
   });
 
+  useEffect(() => {
+    if (organization) {
+      setFormData({
+        name: organization?.name,
+        legal_name: organization?.legal_name || "",
+        gst_vat_id: organization?.gst_vat_id || "",
+        billing_email: organization?.billing_email || "",
+        contact_phone: organization?.contact_phone || "",
+        plan: organization?.plan || "basic" as const,
+        locale: organization?.locale || "en-IN",
+        timezone: organization?.timezone || "Asia/Kolkata",
+        status: organization?.status || "active" as const,
+      })
+    }
+  }, [organization, isOpen])
+
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    
+
     if (!formData.name || !formData.legal_name || !formData.billing_email) {
       toast({
         title: "Validation Error",
@@ -56,10 +72,6 @@ export function OrganizationForm({ organization, isOpen, onClose, onSave, mode }
     }
 
     onSave(formData);
-    toast({
-      title: mode === 'create' ? "Organization Created" : "Organization Updated",
-      description: `Organization ${formData.name} has been ${mode === 'create' ? 'created' : 'updated'} successfully.`,
-    });
   };
 
   const isReadOnly = mode === 'view';

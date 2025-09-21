@@ -1,28 +1,42 @@
+import React, { useState, useEffect } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { 
-  Building2, Users, BarChart3, Wrench, CreditCard, Zap, 
+import {
+  Building2, Users, BarChart3, Wrench, CreditCard, Zap,
   TrendingUp, TrendingDown, AlertTriangle, Clock, DollarSign,
   Car, UserCheck, Calendar
 } from "lucide-react";
-import { dashboardStats, leasingData, maintenanceData, accessData, energyData } from "@/data/mockPropertyData";
+import { dashboardStats, maintenanceData, accessData, energyData } from "@/data/mockPropertyData";
+import { dashboardApiService } from '@/services/dashboardapi';
 
 const iconMap = {
   Building2,
-  Users, 
+  Users,
   BarChart3,
   Wrench,
   CreditCard,
   Zap
 };
 
+// Define main leasing data interface
+interface LeasingOverview {
+  activeLeases: number;
+  renewalsDue30Days: number;
+  renewalsDue60Days: number;
+  renewalsDue90Days: number;
+  rentCollectionRate: number;
+}
+
 export function StatsGrid() {
+
+
+
   return (
     <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-6 gap-6 mb-8">
       {dashboardStats.map((stat, index) => {
         const IconComponent = iconMap[stat.icon as keyof typeof iconMap];
         const isPositive = stat.trend === 'up';
-        
+
         return (
           <Card key={index} className="border-l-4 border-l-primary">
             <CardContent className="p-6">
@@ -30,9 +44,8 @@ export function StatsGrid() {
                 <div className="w-12 h-12 bg-primary/10 rounded-lg flex items-center justify-center text-primary">
                   <IconComponent className="w-6 h-6" />
                 </div>
-                <div className={`flex items-center text-sm font-medium ${
-                  isPositive ? 'text-accent' : 'text-destructive'
-                }`}>
+                <div className={`flex items-center text-sm font-medium ${isPositive ? 'text-accent' : 'text-destructive'
+                  }`}>
                   {isPositive ? (
                     <TrendingUp className="w-4 h-4 mr-1" />
                   ) : (
@@ -55,6 +68,17 @@ export function StatsGrid() {
 }
 
 export function LeasingOverview() {
+  const [leasingData, setLeasingData] = useState<LeasingOverview | null>(null)
+
+  useEffect(() => {
+    loadLeasingData();
+  }, [])
+
+  const loadLeasingData = async () => {
+    const leasingData = await dashboardApiService.getLeasingOverviewData();
+    setLeasingData(leasingData);
+  }
+
   return (
     <Card>
       <CardHeader>
@@ -66,26 +90,26 @@ export function LeasingOverview() {
       <CardContent className="space-y-4">
         <div className="flex items-center justify-between">
           <span className="text-sm text-muted-foreground">Active Leases</span>
-          <span className="text-xl font-semibold">{leasingData.activeLeases}</span>
+          <span className="text-xl font-semibold">{leasingData?.activeLeases}</span>
         </div>
-        
+
         <div className="space-y-2">
           <div className="flex items-center justify-between text-sm">
             <span className="text-muted-foreground">Renewals (30 days)</span>
             <Badge variant="outline" className="text-destructive border-destructive">
-              {leasingData.renewalsDue30Days}
+              {leasingData?.renewalsDue30Days}
             </Badge>
           </div>
           <div className="flex items-center justify-between text-sm">
             <span className="text-muted-foreground">Renewals (60 days)</span>
             <Badge variant="outline" className="text-orange-500 border-orange-500">
-              {leasingData.renewalsDue60Days}
+              {leasingData?.renewalsDue60Days}
             </Badge>
           </div>
           <div className="flex items-center justify-between text-sm">
             <span className="text-muted-foreground">Renewals (90 days)</span>
             <Badge variant="outline" className="text-primary border-primary">
-              {leasingData.renewalsDue90Days}
+              {leasingData?.renewalsDue90Days}
             </Badge>
           </div>
         </div>
@@ -93,7 +117,7 @@ export function LeasingOverview() {
         <div className="pt-2 border-t border-border">
           <div className="flex items-center justify-between text-sm">
             <span className="text-muted-foreground">Collection Rate</span>
-            <span className="text-accent font-semibold">{leasingData.rentCollectionRate}%</span>
+            <span className="text-accent font-semibold">{leasingData?.rentCollectionRate}%</span>
           </div>
         </div>
       </CardContent>
@@ -121,7 +145,7 @@ export function MaintenanceOverview() {
             <div className="text-xs text-muted-foreground">Closed</div>
           </div>
         </div>
-        
+
         <div className="space-y-2">
           <div className="flex items-center justify-between text-sm">
             <span className="flex items-center text-muted-foreground">
@@ -164,7 +188,7 @@ export function AccessOverview() {
           <span className="text-sm text-muted-foreground">Today's Visitors</span>
           <span className="text-xl font-semibold text-accent">{accessData.todayVisitors}</span>
         </div>
-        
+
         <div className="space-y-2">
           <div className="flex items-center justify-between text-sm">
             <span className="flex items-center text-muted-foreground">
@@ -174,8 +198,8 @@ export function AccessOverview() {
             <span className="font-semibold">{accessData.parkingOccupancy}%</span>
           </div>
           <div className="w-full bg-muted rounded-full h-2">
-            <div 
-              className="bg-primary rounded-full h-2 transition-all duration-300" 
+            <div
+              className="bg-primary rounded-full h-2 transition-all duration-300"
               style={{ width: `${accessData.parkingOccupancy}%` }}
             />
           </div>
@@ -220,7 +244,7 @@ export function FinancialSummary() {
             <div className="text-xs text-muted-foreground">Overdue</div>
           </div>
         </div>
-        
+
         <div className="space-y-2">
           <div className="flex items-center justify-between text-sm">
             <span className="text-muted-foreground">Pending Invoices</span>
@@ -254,7 +278,7 @@ export function EnergyOverview() {
           <span className="text-sm text-muted-foreground">Total Consumption</span>
           <span className="text-xl font-semibold">{energyData.totalConsumption.toLocaleString()} kWh</span>
         </div>
-        
+
         <div className="space-y-2">
           {energyData.alerts.map((alert, index) => (
             <div key={index} className="flex items-start space-x-2 p-2 bg-orange-50 border border-orange-200 rounded-lg">

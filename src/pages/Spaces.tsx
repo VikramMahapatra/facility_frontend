@@ -43,7 +43,7 @@ export default function Spaces() {
 
   const filteredSpaces = spaces.filter(space => {
     const matchesSearch = (space.name || space.code).toLowerCase().includes(searchTerm.toLowerCase()) ||
-                         space.code.toLowerCase().includes(searchTerm.toLowerCase());
+      space.code.toLowerCase().includes(searchTerm.toLowerCase());
     const matchesKind = selectedKind === "all" || space.kind === selectedKind;
     const matchesStatus = selectedStatus === "all" || space.status === selectedStatus;
     const matchesSite = selectedSite === "all" || space.site_id === selectedSite;
@@ -94,8 +94,8 @@ export default function Spaces() {
       };
       setSpaces([...spaces, newSpace]);
     } else if (formMode === 'edit' && selectedSpace) {
-      setSpaces(spaces.map(space => 
-        space.id === selectedSpace.id 
+      setSpaces(spaces.map(space =>
+        space.id === selectedSpace.id
           ? { ...space, ...spaceData }
           : space
       ));
@@ -106,7 +106,7 @@ export default function Spaces() {
   const getKindIcon = (kind: SpaceKind) => {
     const icons = {
       room: "🏨",
-      apartment: "🏠", 
+      apartment: "🏠",
       shop: "🏪",
       office: "🏢",
       warehouse: "🏭",
@@ -187,7 +187,7 @@ export default function Spaces() {
                     className="w-64"
                   />
                 </div>
-                
+
                 <select
                   value={selectedSite}
                   onChange={(e) => setSelectedSite(e.target.value)}
@@ -329,9 +329,9 @@ export default function Spaces() {
                         <Button size="sm" variant="outline" onClick={() => handleEdit(space)}>
                           <Edit className="h-3 w-3" />
                         </Button>
-                        <Button 
-                          size="sm" 
-                          variant="outline" 
+                        <Button
+                          size="sm"
+                          variant="outline"
                           className="text-destructive hover:text-destructive"
                           onClick={() => handleDelete(space.id)}
                         >
