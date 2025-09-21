@@ -8,19 +8,21 @@ import Navigation from "@/components/Navigation";
 import { useNavigate, useLocation } from "react-router-dom";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Building2, Users, Truck } from "lucide-react";
+import { authApiService } from "@/services/authapi";
 
 const SignUp = () => {
   const navigate = useNavigate();
   const location = useLocation();
   const googleData = location.state?.googleData;
-  
+
   const [formData, setFormData] = useState({
     name: googleData?.name || "",
     email: googleData?.email || "",
+    pictureUrl: googleData?.picture || "",
     accountType: "",
     organizationName: "",
   });
-  
+
   const [isLoading, setIsLoading] = useState(false);
 
   const accountTypes = [
@@ -47,20 +49,22 @@ const SignUp = () => {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!formData.accountType) return;
-    
+
     setIsLoading(true);
-    
-    // Mock registration process
+
+    // registration process
+    const userResponse = await authApiService.setupUser(formData);
+
     setTimeout(() => {
       localStorage.setItem('user', JSON.stringify({
-        id: Date.now().toString(),
-        email: formData.email,
-        name: formData.name,
-        accountType: formData.accountType,
-        organizationName: formData.organizationName,
+        id: userResponse.user.id,
+        email: userResponse.user.email,
+        name: userResponse.user.name,
+        accountType: userResponse.user.accountType,
+        organizationName: userResponse.user.organizationName,
         isAuthenticated: true
       }));
-      
+
       // Redirect based on account type
       if (formData.accountType === 'Organization') {
         navigate('/dashboard');
@@ -80,7 +84,7 @@ const SignUp = () => {
   return (
     <div className="min-h-screen bg-background">
       <Navigation />
-      
+
       <div className="flex items-center justify-center min-h-[calc(100vh-4rem)] py-12 px-6">
         <div className="w-full max-w-lg">
           <div className="text-center mb-8">

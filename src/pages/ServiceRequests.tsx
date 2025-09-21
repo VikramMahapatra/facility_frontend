@@ -15,7 +15,7 @@ export default function ServiceRequests() {
     <SidebarProvider>
       <div className="min-h-screen flex w-full bg-background">
         <PropertySidebar />
-        
+
         <div className="flex-1 flex flex-col">
           <header className="bg-card border-b border-border">
             <div className="flex items-center justify-between px-6 py-4">
@@ -151,10 +151,10 @@ export default function ServiceRequests() {
                             <div className="max-w-xs truncate">{request.description}</div>
                           </TableCell>
                           <TableCell>
-                            <Badge 
+                            <Badge
                               variant={
                                 request.priority === 'high' ? 'destructive' :
-                                request.priority === 'medium' ? 'default' : 'secondary'
+                                  request.priority === 'medium' ? 'default' : 'secondary'
                               }
                             >
                               {request.priority}
@@ -164,10 +164,10 @@ export default function ServiceRequests() {
                             {new Date(request.created_at).toLocaleDateString()}
                           </TableCell>
                           <TableCell>
-                            <Badge 
+                            <Badge
                               variant={
                                 request.status === 'resolved' ? 'default' :
-                                request.status === 'in_progress' ? 'secondary' : 'outline'
+                                  request.status === 'in_progress' ? 'secondary' : 'outline'
                               }
                             >
                               {request.status.replace('_', ' ')}

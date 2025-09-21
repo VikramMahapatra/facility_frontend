@@ -70,13 +70,13 @@ const navigationItems = [
       { title: "Housekeeping", url: "/housekeeping", icon: Shield },
     ]
   },
-    {
-      title: "Procurement",
-      items: [
-        { title: "Vendors", url: "/vendors", icon: Building2 },
-        { title: "Contracts", url: "/contracts", icon: FileText },
-      ]
-    },
+  {
+    title: "Procurement",
+    items: [
+      { title: "Vendors", url: "/vendors", icon: Building2 },
+      { title: "Contracts", url: "/contracts", icon: FileText },
+    ]
+  },
   {
     title: "Parking & Access",
     items: [
@@ -130,12 +130,12 @@ export function PropertySidebar() {
 
   const isActive = (path: string) => currentPath === path;
   const getNavClass = (isActiveRoute: boolean) =>
-    isActiveRoute 
-      ? "bg-sidebar-accent text-sidebar-primary font-medium" 
+    isActiveRoute
+      ? "bg-sidebar-accent text-sidebar-primary font-medium"
       : "hover:bg-sidebar-accent/50 text-sidebar-foreground";
 
   const toggleGroup = (groupTitle: string) => {
-    setExpandedGroups(prev => 
+    setExpandedGroups(prev =>
       prev.includes(groupTitle)
         ? prev.filter(g => g !== groupTitle)
         : [...prev, groupTitle]
@@ -167,7 +167,7 @@ export function PropertySidebar() {
         {navigationItems.map((section) => (
           <SidebarGroup key={section.title} className="mb-2">
             {!isCollapsed && (
-              <SidebarGroupLabel 
+              <SidebarGroupLabel
                 className="text-sidebar-foreground/70 hover:text-sidebar-primary cursor-pointer flex items-center justify-between px-2 py-1"
                 onClick={() => toggleGroup(section.title)}
               >
@@ -177,15 +177,15 @@ export function PropertySidebar() {
                 </span>
               </SidebarGroupLabel>
             )}
-            
+
             {(isCollapsed || expandedGroups.includes(section.title)) && (
               <SidebarGroupContent>
                 <SidebarMenu>
                   {section.items.map((item) => (
                     <SidebarMenuItem key={item.title}>
                       <SidebarMenuButton asChild className="mb-1">
-                        <NavLink 
-                          to={item.url} 
+                        <NavLink
+                          to={item.url}
                           className={getNavClass(isActive(item.url))}
                           title={isCollapsed ? item.title : undefined}
                         >

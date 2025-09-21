@@ -17,10 +17,10 @@ export default function Invoices() {
 
   const filteredInvoices = mockInvoices.filter(invoice => {
     const matchesSearch = invoice.invoiceNo.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                         invoice.customerName.toLowerCase().includes(searchTerm.toLowerCase());
+      invoice.customerName.toLowerCase().includes(searchTerm.toLowerCase());
     const matchesStatus = statusFilter === "all" || invoice.status === statusFilter;
     const matchesCustomerType = customerTypeFilter === "all" || invoice.customerKind === customerTypeFilter;
-    
+
     return matchesSearch && matchesStatus && matchesCustomerType;
   });
 
@@ -32,7 +32,7 @@ export default function Invoices() {
       draft: "outline",
       void: "destructive"
     } as const;
-    
+
     return <Badge variant={variants[status as keyof typeof variants] || "outline"}>{status}</Badge>;
   };
 
@@ -42,7 +42,7 @@ export default function Invoices() {
       partner: "secondary",
       guest: "outline"
     } as const;
-    
+
     return <Badge variant={variants[type as keyof typeof variants] || "outline"}>{type}</Badge>;
   };
 
@@ -56,7 +56,7 @@ export default function Invoices() {
     <SidebarProvider>
       <div className="min-h-screen flex w-full bg-background">
         <PropertySidebar />
-        
+
         <div className="flex-1 flex flex-col">
           <header className="bg-card border-b border-border">
             <div className="flex items-center justify-between px-6 py-4">
@@ -83,193 +83,193 @@ export default function Invoices() {
           <main className="flex-1 p-6 overflow-auto">
             <div className="container mx-auto py-6 space-y-6">
 
-      {/* Summary Cards */}
-      <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
-        <Card>
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Total Invoices</CardTitle>
-            <FileText className="h-4 w-4 text-muted-foreground" />
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold">{totalInvoices}</div>
-            <p className="text-xs text-muted-foreground">All time</p>
-          </CardContent>
-        </Card>
-        
-        <Card>
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Total Amount</CardTitle>
-            <TrendingUp className="h-4 w-4 text-muted-foreground" />
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold">₹{totalAmount.toLocaleString()}</div>
-            <p className="text-xs text-muted-foreground">Invoiced amount</p>
-          </CardContent>
-        </Card>
-        
-        <Card>
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Collected</CardTitle>
-            <CreditCard className="h-4 w-4 text-muted-foreground" />
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold text-green-600">₹{paidAmount.toLocaleString()}</div>
-            <p className="text-xs text-muted-foreground">Paid invoices</p>
-          </CardContent>
-        </Card>
-        
-        <Card>
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Outstanding</CardTitle>
-            <AlertTriangle className="h-4 w-4 text-muted-foreground" />
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold text-orange-600">₹{outstandingAmount.toLocaleString()}</div>
-            <p className="text-xs text-muted-foreground">Pending payment</p>
-          </CardContent>
-        </Card>
-      </div>
+              {/* Summary Cards */}
+              <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+                <Card>
+                  <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                    <CardTitle className="text-sm font-medium">Total Invoices</CardTitle>
+                    <FileText className="h-4 w-4 text-muted-foreground" />
+                  </CardHeader>
+                  <CardContent>
+                    <div className="text-2xl font-bold">{totalInvoices}</div>
+                    <p className="text-xs text-muted-foreground">All time</p>
+                  </CardContent>
+                </Card>
 
-      {/* Filters */}
-      <Card>
-        <CardHeader>
-          <CardTitle>Filter & Search</CardTitle>
-        </CardHeader>
-        <CardContent>
-          <div className="flex flex-wrap gap-4">
-            <div className="flex-1 min-w-[200px]">
-              <div className="relative">
-                <Search className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
-                <Input
-                  placeholder="Search by invoice number or customer..."
-                  value={searchTerm}
-                  onChange={(e) => setSearchTerm(e.target.value)}
-                  className="pl-10"
-                />
+                <Card>
+                  <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                    <CardTitle className="text-sm font-medium">Total Amount</CardTitle>
+                    <TrendingUp className="h-4 w-4 text-muted-foreground" />
+                  </CardHeader>
+                  <CardContent>
+                    <div className="text-2xl font-bold">₹{totalAmount.toLocaleString()}</div>
+                    <p className="text-xs text-muted-foreground">Invoiced amount</p>
+                  </CardContent>
+                </Card>
+
+                <Card>
+                  <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                    <CardTitle className="text-sm font-medium">Collected</CardTitle>
+                    <CreditCard className="h-4 w-4 text-muted-foreground" />
+                  </CardHeader>
+                  <CardContent>
+                    <div className="text-2xl font-bold text-green-600">₹{paidAmount.toLocaleString()}</div>
+                    <p className="text-xs text-muted-foreground">Paid invoices</p>
+                  </CardContent>
+                </Card>
+
+                <Card>
+                  <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                    <CardTitle className="text-sm font-medium">Outstanding</CardTitle>
+                    <AlertTriangle className="h-4 w-4 text-muted-foreground" />
+                  </CardHeader>
+                  <CardContent>
+                    <div className="text-2xl font-bold text-orange-600">₹{outstandingAmount.toLocaleString()}</div>
+                    <p className="text-xs text-muted-foreground">Pending payment</p>
+                  </CardContent>
+                </Card>
               </div>
-            </div>
-            
-            <Select value={statusFilter} onValueChange={setStatusFilter}>
-              <SelectTrigger className="w-[180px]">
-                <SelectValue placeholder="Filter by status" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="all">All Status</SelectItem>
-                <SelectItem value="draft">Draft</SelectItem>
-                <SelectItem value="issued">Issued</SelectItem>
-                <SelectItem value="paid">Paid</SelectItem>
-                <SelectItem value="partial">Partial</SelectItem>
-                <SelectItem value="void">Void</SelectItem>
-              </SelectContent>
-            </Select>
-            
-            <Select value={customerTypeFilter} onValueChange={setCustomerTypeFilter}>
-              <SelectTrigger className="w-[180px]">
-                <SelectValue placeholder="Customer type" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="all">All Types</SelectItem>
-                <SelectItem value="resident">Residents</SelectItem>
-                <SelectItem value="partner">Partners</SelectItem>
-                <SelectItem value="guest">Guests</SelectItem>
-              </SelectContent>
-            </Select>
-          </div>
-        </CardContent>
-      </Card>
 
-      {/* Invoices Table */}
-      <Card>
-        <CardHeader>
-          <CardTitle>Invoices</CardTitle>
-          <CardDescription>
-            {filteredInvoices.length} invoice(s) found
-          </CardDescription>
-        </CardHeader>
-        <CardContent>
-          <Table>
-            <TableHeader>
-              <TableRow>
-                <TableHead>Invoice No.</TableHead>
-                <TableHead>Customer</TableHead>
-                <TableHead>Type</TableHead>
-                <TableHead>Date</TableHead>
-                <TableHead>Due Date</TableHead>
-                <TableHead>Amount</TableHead>
-                <TableHead>Status</TableHead>
-                <TableHead>Actions</TableHead>
-              </TableRow>
-            </TableHeader>
-            <TableBody>
-              {filteredInvoices.map((invoice) => (
-                <TableRow key={invoice.id}>
-                  <TableCell className="font-medium">{invoice.invoiceNo}</TableCell>
-                  <TableCell>{invoice.customerName}</TableCell>
-                  <TableCell>{getCustomerTypeBadge(invoice.customerKind)}</TableCell>
-                  <TableCell>{new Date(invoice.date).toLocaleDateString()}</TableCell>
-                  <TableCell>{new Date(invoice.dueDate).toLocaleDateString()}</TableCell>
-                  <TableCell>₹{invoice.totals.grand.toLocaleString()}</TableCell>
-                  <TableCell>{getStatusBadge(invoice.status)}</TableCell>
-                  <TableCell>
-                    <div className="flex gap-1">
-                      <Button variant="ghost" size="sm">
-                        <Eye className="h-4 w-4" />
-                      </Button>
-                      <Button variant="ghost" size="sm">
-                        <Edit className="h-4 w-4" />
-                      </Button>
-                      {invoice.status === 'draft' && (
-                        <Button variant="ghost" size="sm">
-                          <Send className="h-4 w-4" />
-                        </Button>
-                      )}
-                      <Button variant="ghost" size="sm">
-                        <Download className="h-4 w-4" />
-                      </Button>
+              {/* Filters */}
+              <Card>
+                <CardHeader>
+                  <CardTitle>Filter & Search</CardTitle>
+                </CardHeader>
+                <CardContent>
+                  <div className="flex flex-wrap gap-4">
+                    <div className="flex-1 min-w-[200px]">
+                      <div className="relative">
+                        <Search className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
+                        <Input
+                          placeholder="Search by invoice number or customer..."
+                          value={searchTerm}
+                          onChange={(e) => setSearchTerm(e.target.value)}
+                          className="pl-10"
+                        />
+                      </div>
                     </div>
-                  </TableCell>
-                </TableRow>
-              ))}
-            </TableBody>
-          </Table>
-        </CardContent>
-      </Card>
 
-      {/* Recent Payments */}
-      <Card>
-        <CardHeader>
-          <CardTitle>Recent Payments</CardTitle>
-          <CardDescription>Latest payment transactions</CardDescription>
-        </CardHeader>
-        <CardContent>
-          <Table>
-            <TableHeader>
-              <TableRow>
-                <TableHead>Invoice No.</TableHead>
-                <TableHead>Customer</TableHead>
-                <TableHead>Method</TableHead>
-                <TableHead>Reference</TableHead>
-                <TableHead>Amount</TableHead>
-                <TableHead>Date</TableHead>
-              </TableRow>
-            </TableHeader>
-            <TableBody>
-              {mockPayments.slice(0, 5).map((payment) => (
-                <TableRow key={payment.id}>
-                  <TableCell className="font-medium">{payment.invoiceNo}</TableCell>
-                  <TableCell>{payment.customerName}</TableCell>
-                  <TableCell>
-                    <Badge variant="outline">{payment.method.toUpperCase()}</Badge>
-                  </TableCell>
-                  <TableCell className="font-mono text-sm">{payment.refNo}</TableCell>
-                  <TableCell>₹{payment.amount.toLocaleString()}</TableCell>
-                  <TableCell>{new Date(payment.paidAt).toLocaleDateString()}</TableCell>
-                </TableRow>
-              ))}
-            </TableBody>
-          </Table>
-        </CardContent>
-      </Card>
+                    <Select value={statusFilter} onValueChange={setStatusFilter}>
+                      <SelectTrigger className="w-[180px]">
+                        <SelectValue placeholder="Filter by status" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="all">All Status</SelectItem>
+                        <SelectItem value="draft">Draft</SelectItem>
+                        <SelectItem value="issued">Issued</SelectItem>
+                        <SelectItem value="paid">Paid</SelectItem>
+                        <SelectItem value="partial">Partial</SelectItem>
+                        <SelectItem value="void">Void</SelectItem>
+                      </SelectContent>
+                    </Select>
+
+                    <Select value={customerTypeFilter} onValueChange={setCustomerTypeFilter}>
+                      <SelectTrigger className="w-[180px]">
+                        <SelectValue placeholder="Customer type" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="all">All Types</SelectItem>
+                        <SelectItem value="resident">Residents</SelectItem>
+                        <SelectItem value="partner">Partners</SelectItem>
+                        <SelectItem value="guest">Guests</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
+                </CardContent>
+              </Card>
+
+              {/* Invoices Table */}
+              <Card>
+                <CardHeader>
+                  <CardTitle>Invoices</CardTitle>
+                  <CardDescription>
+                    {filteredInvoices.length} invoice(s) found
+                  </CardDescription>
+                </CardHeader>
+                <CardContent>
+                  <Table>
+                    <TableHeader>
+                      <TableRow>
+                        <TableHead>Invoice No.</TableHead>
+                        <TableHead>Customer</TableHead>
+                        <TableHead>Type</TableHead>
+                        <TableHead>Date</TableHead>
+                        <TableHead>Due Date</TableHead>
+                        <TableHead>Amount</TableHead>
+                        <TableHead>Status</TableHead>
+                        <TableHead>Actions</TableHead>
+                      </TableRow>
+                    </TableHeader>
+                    <TableBody>
+                      {filteredInvoices.map((invoice) => (
+                        <TableRow key={invoice.id}>
+                          <TableCell className="font-medium">{invoice.invoiceNo}</TableCell>
+                          <TableCell>{invoice.customerName}</TableCell>
+                          <TableCell>{getCustomerTypeBadge(invoice.customerKind)}</TableCell>
+                          <TableCell>{new Date(invoice.date).toLocaleDateString()}</TableCell>
+                          <TableCell>{new Date(invoice.dueDate).toLocaleDateString()}</TableCell>
+                          <TableCell>₹{invoice.totals.grand.toLocaleString()}</TableCell>
+                          <TableCell>{getStatusBadge(invoice.status)}</TableCell>
+                          <TableCell>
+                            <div className="flex gap-1">
+                              <Button variant="ghost" size="sm">
+                                <Eye className="h-4 w-4" />
+                              </Button>
+                              <Button variant="ghost" size="sm">
+                                <Edit className="h-4 w-4" />
+                              </Button>
+                              {invoice.status === 'draft' && (
+                                <Button variant="ghost" size="sm">
+                                  <Send className="h-4 w-4" />
+                                </Button>
+                              )}
+                              <Button variant="ghost" size="sm">
+                                <Download className="h-4 w-4" />
+                              </Button>
+                            </div>
+                          </TableCell>
+                        </TableRow>
+                      ))}
+                    </TableBody>
+                  </Table>
+                </CardContent>
+              </Card>
+
+              {/* Recent Payments */}
+              <Card>
+                <CardHeader>
+                  <CardTitle>Recent Payments</CardTitle>
+                  <CardDescription>Latest payment transactions</CardDescription>
+                </CardHeader>
+                <CardContent>
+                  <Table>
+                    <TableHeader>
+                      <TableRow>
+                        <TableHead>Invoice No.</TableHead>
+                        <TableHead>Customer</TableHead>
+                        <TableHead>Method</TableHead>
+                        <TableHead>Reference</TableHead>
+                        <TableHead>Amount</TableHead>
+                        <TableHead>Date</TableHead>
+                      </TableRow>
+                    </TableHeader>
+                    <TableBody>
+                      {mockPayments.slice(0, 5).map((payment) => (
+                        <TableRow key={payment.id}>
+                          <TableCell className="font-medium">{payment.invoiceNo}</TableCell>
+                          <TableCell>{payment.customerName}</TableCell>
+                          <TableCell>
+                            <Badge variant="outline">{payment.method.toUpperCase()}</Badge>
+                          </TableCell>
+                          <TableCell className="font-mono text-sm">{payment.refNo}</TableCell>
+                          <TableCell>₹{payment.amount.toLocaleString()}</TableCell>
+                          <TableCell>{new Date(payment.paidAt).toLocaleDateString()}</TableCell>
+                        </TableRow>
+                      ))}
+                    </TableBody>
+                  </Table>
+                </CardContent>
+              </Card>
             </div>
           </main>
         </div>

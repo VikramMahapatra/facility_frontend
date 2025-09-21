@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { Building2, Plus, Eye, Edit, Trash2, Mail, Phone, MapPin, Calendar } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -9,6 +9,7 @@ import { SidebarProvider, SidebarInset, SidebarTrigger } from "@/components/ui/s
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from "@/components/ui/alert-dialog";
 import { OrganizationForm } from "@/components/OrganizationForm";
 import { useToast } from "@/hooks/use-toast";
+import { organisationApiService } from "@/services/organisationapi";
 
 // Mock organization data
 const mockOrganizations = [
@@ -47,14 +48,23 @@ export default function Organizations() {
   const { toast } = useToast();
   const [searchTerm, setSearchTerm] = useState("");
   const [selectedPlan, setSelectedPlan] = useState<string>("all");
-  const [organizations, setOrganizations] = useState<Organization[]>(mockOrganizations);
+  const [organizations, setOrganizations] = useState<Organization[]>([]);
   const [selectedOrg, setSelectedOrg] = useState<Organization | undefined>();
   const [formMode, setFormMode] = useState<'create' | 'edit' | 'view'>('create');
   const [showForm, setShowForm] = useState(false);
 
+  useEffect(() => {
+    loadOrganisation();
+  }, []);
+
+  const loadOrganisation = async () => {
+    const organisationObj = await organisationApiService.getOrg()
+    setOrganizations([organisationObj]);
+  }
+
   const filteredOrganizations = organizations.filter(org => {
     const matchesSearch = org.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                         org.legal_name.toLowerCase().includes(searchTerm.toLowerCase());
+      org.legal_name.toLowerCase().includes(searchTerm.toLowerCase());
     const matchesPlan = selectedPlan === "all" || org.plan === selectedPlan;
     return matchesSearch && matchesPlan;
   });
@@ -71,7 +81,7 @@ export default function Organizations() {
   const getStatusColor = (status: string) => {
     const colors = {
       active: "bg-green-100 text-green-800",
-      inactive: "bg-yellow-100 text-yellow-800", 
+      inactive: "bg-yellow-100 text-yellow-800",
       suspended: "bg-red-100 text-red-800"
     };
     return colors[status as keyof typeof colors] || "bg-gray-100 text-gray-800";
@@ -86,6 +96,7 @@ export default function Organizations() {
   const handleEdit = (org: Organization) => {
     setSelectedOrg(org);
     setFormMode('edit');
+    console.log("selected org", org);
     setShowForm(true);
   };
 
@@ -95,29 +106,45 @@ export default function Organizations() {
     setShowForm(true);
   };
 
-  const handleSave = (orgData: Partial<Organization>) => {
-    if (formMode === 'create') {
-      const newOrg: Organization = {
-        id: `org-${Date.now()}`,
-        name: orgData.name!,
-        legal_name: orgData.legal_name!,
-        gst_vat_id: orgData.gst_vat_id,
-        billing_email: orgData.billing_email!,
-        contact_phone: orgData.contact_phone,
-        plan: orgData.plan!,
-        locale: orgData.locale!,
-        timezone: orgData.timezone!,
-        status: orgData.status!,
-        created_at: new Date().toISOString(),
-        updated_at: new Date().toISOString()
-      };
-      setOrganizations([...organizations, newOrg]);
-    } else if (formMode === 'edit' && selectedOrg) {
-      setOrganizations(organizations.map(org =>
-        org.id === selectedOrg.id ? { ...org, ...orgData, updated_at: new Date().toISOString() } : org
-      ));
+  const handleSave = async (orgData: Partial<Organization>) => {
+    try {
+      if (formMode === 'create') {
+        const newOrg: Organization = {
+          id: `org-${Date.now()}`,
+          name: orgData.name!,
+          legal_name: orgData.legal_name!,
+          gst_vat_id: orgData.gst_vat_id,
+          billing_email: orgData.billing_email!,
+          contact_phone: orgData.contact_phone,
+          plan: orgData.plan!,
+          locale: orgData.locale!,
+          timezone: orgData.timezone!,
+          status: orgData.status!,
+          created_at: new Date().toISOString(),
+          updated_at: new Date().toISOString()
+        };
+        setOrganizations([...organizations, newOrg]);
+      } else if (formMode === 'edit' && selectedOrg) {
+        const updatedOrg = {
+          ...selectedOrg,
+          ...orgData,
+          updated_at: new Date().toISOString()
+        }
+        await organisationApiService.update(updatedOrg);
+        setOrganizations(organizations.map(org =>
+          org.id === selectedOrg.id ? updatedOrg : org
+        ));
+      }
+      setShowForm(false);
+
+      toast({
+        title: formMode === 'create' ? "Organization Created" : "Organization Updated",
+        description: `Organization ${orgData.name} has been ${formMode === 'create' ? 'created' : 'updated'} successfully.`,
+      });
     }
-    setShowForm(false);
+    catch (error) {
+      console.error('Error saving org:', error);
+    }
   };
 
   const handleDelete = (orgId: string) => {
@@ -163,7 +190,7 @@ export default function Organizations() {
                   onChange={(e) => setSearchTerm(e.target.value)}
                   className="max-w-sm"
                 />
-                
+
                 <select
                   value={selectedPlan}
                   onChange={(e) => setSelectedPlan(e.target.value)}
@@ -272,14 +299,6 @@ export default function Organizations() {
                   </div>
                 )}
               </div>
-
-              {filteredOrganizations.length === 0 && (
-                <div className="text-center py-12">
-                  <Building2 className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
-                  <h3 className="text-lg font-semibold text-sidebar-primary mb-2">No organizations found</h3>
-                  <p className="text-muted-foreground">Try adjusting your search criteria or add a new organization.</p>
-                </div>
-              )}
             </div>
           </main>
         </SidebarInset>

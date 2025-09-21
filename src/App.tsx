@@ -39,57 +39,60 @@ import ChatBot from "./pages/ChatBot";
 import ParkingZones from "./pages/ParkingZones";
 import AccessLogs from "./pages/AccessLogs";
 import Visitors from "./pages/Visitors";
+import { GoogleOAuthProvider } from "@react-oauth/google";
 
 const queryClient = new QueryClient();
 
 const App = () => (
-  <QueryClientProvider client={queryClient}>
-    <TooltipProvider>
-      <Toaster />
-      <Sonner />
-      <BrowserRouter>
-        <Routes>
-          <Route path="/" element={<Home />} />
-          <Route path="/features" element={<Features />} />
-          <Route path="/pricing" element={<Pricing />} />
-          <Route path="/login" element={<Login />} />
-          <Route path="/signup" element={<SignUp />} />
-          <Route path="/dashboard" element={<Dashboard />} />
-          <Route path="/analytics" element={<Analytics />} />
-          <Route path="/organizations" element={<Organizations />} />
-          <Route path="/sites" element={<Sites />} />
-          <Route path="/buildings" element={<Buildings />} />
-          <Route path="/spaces" element={<Spaces />} />
-          <Route path="/spaces/:kind" element={<SpacesByKind />} />
-          <Route path="/space-groups" element={<SpaceGroups />} />
-          <Route path="/space-assignments" element={<SpaceAssignments />} />
-          <Route path="/leases" element={<Leases />} />
-          <Route path="/tenants" element={<Tenants />} />
-          <Route path="/lease-charges" element={<LeaseCharges />} />
-          <Route path="/invoices" element={<Invoices />} />
-          <Route path="/revenue-reports" element={<RevenueReports />} />
-          <Route path="/tax-management" element={<TaxManagement />} />
-          <Route path="/assets" element={<Assets />} />
-        <Route path="/work-orders" element={<WorkOrders />} />
-        <Route path="/service-requests" element={<ServiceRequests />} />
-        <Route path="/preventive-maintenance" element={<PreventiveMaintenance />} />
-        <Route path="/vendors" element={<Vendors />} />
-        <Route path="/contracts" element={<Contracts />} />
-        <Route path="/meters" element={<MetersReadings />} />
-        <Route path="/consumption" element={<ConsumptionReports />} />
-        <Route path="/bookings" element={<Bookings />} />
-        <Route path="/rates" element={<RatePlans />} />
-        <Route path="/housekeeping" element={<Housekeeping />} />
-        <Route path="/chatbot" element={<ChatBot />} />
-        <Route path="/parking-zones" element={<ParkingZones />} />
-        <Route path="/access-logs" element={<AccessLogs />} />
-        <Route path="/visitors" element={<Visitors />} />
-          {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
-          <Route path="*" element={<NotFound />} />
-        </Routes>
-      </BrowserRouter>
-    </TooltipProvider>
-  </QueryClientProvider>
+  <GoogleOAuthProvider clientId={import.meta.env.VITE_GOOGLE_CLIENT_ID}>
+    <QueryClientProvider client={queryClient}>
+      <TooltipProvider>
+        <Toaster />
+        <Sonner />
+        <BrowserRouter>
+          <Routes>
+            <Route path="/" element={<Home />} />
+            <Route path="/features" element={<Features />} />
+            <Route path="/pricing" element={<Pricing />} />
+            <Route path="/login" element={<Login />} />
+            <Route path="/signup" element={<SignUp />} />
+            <Route path="/dashboard" element={<Dashboard />} />
+            <Route path="/analytics" element={<Analytics />} />
+            <Route path="/organizations" element={<Organizations />} />
+            <Route path="/sites" element={<Sites />} />
+            <Route path="/buildings" element={<Buildings />} />
+            <Route path="/spaces" element={<Spaces />} />
+            <Route path="/spaces/:kind" element={<SpacesByKind />} />
+            <Route path="/space-groups" element={<SpaceGroups />} />
+            <Route path="/space-assignments" element={<SpaceAssignments />} />
+            <Route path="/leases" element={<Leases />} />
+            <Route path="/tenants" element={<Tenants />} />
+            <Route path="/lease-charges" element={<LeaseCharges />} />
+            <Route path="/invoices" element={<Invoices />} />
+            <Route path="/revenue-reports" element={<RevenueReports />} />
+            <Route path="/tax-management" element={<TaxManagement />} />
+            <Route path="/assets" element={<Assets />} />
+            <Route path="/work-orders" element={<WorkOrders />} />
+            <Route path="/service-requests" element={<ServiceRequests />} />
+            <Route path="/preventive-maintenance" element={<PreventiveMaintenance />} />
+            <Route path="/vendors" element={<Vendors />} />
+            <Route path="/contracts" element={<Contracts />} />
+            <Route path="/meters" element={<MetersReadings />} />
+            <Route path="/consumption" element={<ConsumptionReports />} />
+            <Route path="/bookings" element={<Bookings />} />
+            <Route path="/rates" element={<RatePlans />} />
+            <Route path="/housekeeping" element={<Housekeeping />} />
+            <Route path="/chatbot" element={<ChatBot />} />
+            <Route path="/parking-zones" element={<ParkingZones />} />
+            <Route path="/access-logs" element={<AccessLogs />} />
+            <Route path="/visitors" element={<Visitors />} />
+            {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
+            <Route path="*" element={<NotFound />} />
+          </Routes>
+        </BrowserRouter>
+      </TooltipProvider>
+    </QueryClientProvider>
+  </GoogleOAuthProvider>
 );
 
 export default App;

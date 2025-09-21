@@ -16,7 +16,7 @@ export default function RevenueReports() {
     <SidebarProvider>
       <div className="min-h-screen flex w-full bg-background">
         <PropertySidebar />
-        
+
         <div className="flex-1 flex flex-col">
           <header className="bg-card border-b border-border">
             <div className="flex items-center justify-between px-6 py-4">
@@ -139,26 +139,26 @@ export default function RevenueReports() {
                         <YAxis />
                         <Tooltip />
                         <Legend />
-                        <Area 
-                          type="monotone" 
-                          dataKey="rent" 
-                          stackId="1" 
-                          stroke="#8884d8" 
-                          fill="#8884d8" 
+                        <Area
+                          type="monotone"
+                          dataKey="rent"
+                          stackId="1"
+                          stroke="#8884d8"
+                          fill="#8884d8"
                         />
-                        <Area 
-                          type="monotone" 
-                          dataKey="cam" 
-                          stackId="1" 
-                          stroke="#82ca9d" 
-                          fill="#82ca9d" 
+                        <Area
+                          type="monotone"
+                          dataKey="cam"
+                          stackId="1"
+                          stroke="#82ca9d"
+                          fill="#82ca9d"
                         />
-                        <Area 
-                          type="monotone" 
-                          dataKey="utilities" 
-                          stackId="1" 
-                          stroke="#ffc658" 
-                          fill="#ffc658" 
+                        <Area
+                          type="monotone"
+                          dataKey="utilities"
+                          stackId="1"
+                          stroke="#ffc658"
+                          fill="#ffc658"
                         />
                       </AreaChart>
                     </ResponsiveContainer>

@@ -23,7 +23,7 @@ export default function Sites() {
 
   const filteredSites = sites.filter(site => {
     const matchesSearch = site.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                         site.code.toLowerCase().includes(searchTerm.toLowerCase());
+      site.code.toLowerCase().includes(searchTerm.toLowerCase());
     const matchesKind = selectedKind === "all" || site.kind === selectedKind;
     return matchesSearch && matchesKind;
   });
@@ -44,7 +44,7 @@ export default function Sites() {
   const getKindColor = (kind: string) => {
     const colors = {
       residential: "bg-blue-500",
-      commercial: "bg-green-500", 
+      commercial: "bg-green-500",
       hotel: "bg-purple-500",
       mall: "bg-orange-500",
       mixed: "bg-indigo-500",

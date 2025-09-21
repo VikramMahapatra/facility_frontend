@@ -15,7 +15,7 @@ export default function PreventiveMaintenance() {
     <SidebarProvider>
       <div className="min-h-screen flex w-full bg-background">
         <PropertySidebar />
-        
+
         <div className="flex-1 flex flex-col">
           <header className="bg-card border-b border-border">
             <div className="flex items-center justify-between px-6 py-4">
