@@ -1,0 +1,206 @@
+import { useState, useEffect } from "react";
+import { NavLink, useLocation } from "react-router-dom";
+import {
+  Building2, Users, FileText, BarChart3, Wrench, Car, Zap, UserCheck,
+  Hotel, ShoppingCart, Settings, Bell, Shield, Home, Calendar, CreditCard,
+  Briefcase, Package, MapPin, AlertTriangle, TrendingUp, Archive, Key, Receipt, Bot
+} from "lucide-react";
+import {
+  Sidebar,
+  SidebarContent,
+  SidebarGroup,
+  SidebarGroupContent,
+  SidebarGroupLabel,
+  SidebarMenu,
+  SidebarMenuButton,
+  SidebarMenuItem,
+  SidebarTrigger,
+  useSidebar,
+} from "@/components/ui/sidebar";
+
+const navigationItems = [
+  {
+    title: "Overview",
+    items: [
+      { title: "Dashboard", url: "/dashboard", icon: Home },
+      { title: "Analytics", url: "/analytics", icon: TrendingUp },
+    ]
+  },
+  {
+    title: "Spaces & Sites",
+    items: [
+      { title: "Organizations", url: "/organizations", icon: Building2 },
+      { title: "Sites (Properties)", url: "/sites", icon: MapPin },
+      { title: "Buildings (Wings/Towers)", url: "/buildings", icon: Building2 },
+      { title: "Space Groups (Templates)", url: "/space-groups", icon: Archive },
+      { title: "Spaces", url: "/spaces", icon: Home },
+      { title: "Group Assignments", url: "/space-assignments", icon: Users },
+    ]
+  },
+  {
+    title: "Leasing & Tenants",
+    items: [
+      { title: "Leases", url: "/leases", icon: FileText },
+      { title: "Tenants", url: "/tenants", icon: Users },
+      { title: "Lease Charges", url: "/lease-charges", icon: Receipt },
+    ]
+  },
+  {
+    title: "Financials",
+    items: [
+      { title: "Invoices & Payments", url: "/invoices", icon: BarChart3 },
+      { title: "Revenue Reports", url: "/revenue-reports", icon: TrendingUp },
+      { title: "Tax Management", url: "/tax-management", icon: Briefcase },
+    ]
+  },
+  {
+    title: "Maintenance & Assets",
+    items: [
+      { title: "Assets", url: "/assets", icon: Package },
+      { title: "Work Orders", url: "/work-orders", icon: Wrench },
+      { title: "Service Requests", url: "/service-requests", icon: AlertTriangle },
+      { title: "Preventive Maintenance", url: "/preventive-maintenance", icon: Calendar },
+    ]
+  },
+  {
+    title: "Hospitality",
+    items: [
+      { title: "Bookings", url: "/bookings", icon: Hotel },
+      { title: "Rate Plans", url: "/rates", icon: CreditCard },
+      { title: "Housekeeping", url: "/housekeeping", icon: Shield },
+    ]
+  },
+    {
+      title: "Procurement",
+      items: [
+        { title: "Vendors", url: "/vendors", icon: Building2 },
+        { title: "Contracts", url: "/contracts", icon: FileText },
+      ]
+    },
+  {
+    title: "Parking & Access",
+    items: [
+      { title: "Parking Zones", url: "/parking-zones", icon: Car },
+      { title: "Access Logs", url: "/access-logs", icon: Key },
+      { title: "Visitor Management", url: "/visitors", icon: UserCheck },
+    ]
+  },
+  {
+    title: "Energy & IoT",
+    items: [
+      { title: "Meters & Readings", url: "/meters", icon: Zap },
+      { title: "Consumption Reports", url: "/consumption", icon: BarChart3 },
+    ]
+  },
+  {
+    title: "AI & Automation",
+    items: [
+      { title: "AI ChatBot", url: "/chatbot", icon: Bot },
+    ]
+  },
+  {
+    title: "System",
+    items: [
+      { title: "Notifications", url: "/notifications", icon: Bell },
+      { title: "Settings", url: "/settings", icon: Settings },
+    ]
+  }
+];
+
+export function PropertySidebar() {
+  const { state } = useSidebar();
+  const location = useLocation();
+  const currentPath = location.pathname;
+  const [expandedGroups, setExpandedGroups] = useState<string[]>(["Overview"]);
+  // Ensure the group containing the current route is always expanded
+  useEffect(() => {
+    const activeGroups: string[] = [];
+    navigationItems.forEach((section) => {
+      if (section.items.some((item) => currentPath.startsWith(item.url))) {
+        activeGroups.push(section.title);
+      }
+    });
+    setExpandedGroups((prev) => {
+      // Merge previous expanded groups with activeGroups, avoiding duplicates
+      const merged = Array.from(new Set([...prev, ...activeGroups]));
+      return merged;
+    });
+  }, [currentPath]);
+  const isCollapsed = state === "collapsed";
+
+  const isActive = (path: string) => currentPath === path;
+  const getNavClass = (isActiveRoute: boolean) =>
+    isActiveRoute 
+      ? "bg-sidebar-accent text-sidebar-primary font-medium" 
+      : "hover:bg-sidebar-accent/50 text-sidebar-foreground";
+
+  const toggleGroup = (groupTitle: string) => {
+    setExpandedGroups(prev => 
+      prev.includes(groupTitle)
+        ? prev.filter(g => g !== groupTitle)
+        : [...prev, groupTitle]
+    );
+  };
+
+  return (
+    <Sidebar className={isCollapsed ? "w-16" : "w-64"} collapsible="icon">
+      <div className="p-4 border-b border-sidebar-border">
+        {!isCollapsed && (
+          <div className="flex items-center space-x-3">
+            <div className="w-8 h-8 bg-gradient-primary rounded-lg flex items-center justify-center">
+              <Building2 className="w-4 h-4 text-white" />
+            </div>
+            <div>
+              <h2 className="font-semibold text-sidebar-primary">FacilityOS</h2>
+              <p className="text-xs text-sidebar-foreground">Property Management</p>
+            </div>
+          </div>
+        )}
+        {isCollapsed && (
+          <div className="w-8 h-8 bg-gradient-primary rounded-lg flex items-center justify-center mx-auto">
+            <Building2 className="w-4 h-4 text-white" />
+          </div>
+        )}
+      </div>
+
+      <SidebarContent className="p-2">
+        {navigationItems.map((section) => (
+          <SidebarGroup key={section.title} className="mb-2">
+            {!isCollapsed && (
+              <SidebarGroupLabel 
+                className="text-sidebar-foreground/70 hover:text-sidebar-primary cursor-pointer flex items-center justify-between px-2 py-1"
+                onClick={() => toggleGroup(section.title)}
+              >
+                <span className="text-xs font-medium">{section.title}</span>
+                <span className="text-xs">
+                  {expandedGroups.includes(section.title) ? "−" : "+"}
+                </span>
+              </SidebarGroupLabel>
+            )}
+            
+            {(isCollapsed || expandedGroups.includes(section.title)) && (
+              <SidebarGroupContent>
+                <SidebarMenu>
+                  {section.items.map((item) => (
+                    <SidebarMenuItem key={item.title}>
+                      <SidebarMenuButton asChild className="mb-1">
+                        <NavLink 
+                          to={item.url} 
+                          className={getNavClass(isActive(item.url))}
+                          title={isCollapsed ? item.title : undefined}
+                        >
+                          <item.icon className="h-4 w-4" />
+                          {!isCollapsed && <span className="ml-2 text-sm">{item.title}</span>}
+                        </NavLink>
+                      </SidebarMenuButton>
+                    </SidebarMenuItem>
+                  ))}
+                </SidebarMenu>
+              </SidebarGroupContent>
+            )}
+          </SidebarGroup>
+        ))}
+      </SidebarContent>
+    </Sidebar>
+  );
+}
