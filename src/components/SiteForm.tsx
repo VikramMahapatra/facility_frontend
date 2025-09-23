@@ -1,11 +1,34 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
 import { useToast } from "@/hooks/use-toast";
-import { Site } from "@/data/mockSpacesData";
+
+export interface Site {
+  id: string;
+  org_id: string;
+  name: string;
+  code: string;
+  kind: 'residential' | 'commercial' | 'hotel' | 'mall' | 'mixed' | 'campus';
+  address: {
+    line1: string;
+    line2?: string;
+    city: string;
+    state: string;
+    country?: string;
+    pincode: string;
+  };
+  geo: { lat: number; lng: number };
+  opened_on: string;
+  status: 'active' | 'inactive';
+  total_spaces?: string;
+  buildings?: string;
+  occupied_percent?: string;
+  created_at: string;
+  updated_at: string;
+}
 
 interface SiteFormProps {
   site?: Site;
@@ -20,18 +43,50 @@ const siteKinds = ["residential", "commercial", "hotel", "mall", "mixed", "campu
 export function SiteForm({ site, isOpen, onClose, onSave, mode }: SiteFormProps) {
   const { toast } = useToast();
   const [formData, setFormData] = useState({
-    code: site?.code || "",
-    name: site?.name || "",
-    kind: site?.kind || "residential",
-    status: site?.status || "active",
-    opened_on: site?.opened_on || new Date().toISOString(),
+    code: "",
+    name: "",
+    kind: "residential" as Site["kind"],
+    status: "active" as Site["status"],
+    opened_on: new Date().toISOString().split("T")[0],
     address: {
-      line1: site?.address.line1 || "",
-      city: site?.address.city || "",
-      state: site?.address.state || "",
-      pincode: site?.address.pincode || "",
+      line1: "",
+      city: "",
+      state: "",
+      pincode: "",
     },
   });
+
+  useEffect(() => {
+    if (site) {
+      setFormData({
+        code: site?.code,
+        name: site?.name,
+        kind: site?.kind,
+        status: site?.status,
+        opened_on: site?.opened_on || new Date().toISOString().split("T")[0],
+        address: {
+          line1: site?.address.line1 || "",
+          city: site?.address.city || "",
+          state: site?.address.state || "",
+          pincode: site?.address.pincode || "",
+        },
+      })
+    } else {
+      setFormData({
+        code: "",
+        name: "",
+        kind: "residential" as Site["kind"],
+        status: "active" as Site["status"],
+        opened_on: new Date().toISOString().split("T")[0],
+        address: {
+          line1: "",
+          city: "",
+          state: "",
+          pincode: "",
+        },
+      });
+    }
+  }, [site, isOpen])
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
@@ -49,11 +104,6 @@ export function SiteForm({ site, isOpen, onClose, onSave, mode }: SiteFormProps)
       ...site,
       ...formData,
       updated_at: new Date().toISOString(),
-    });
-
-    toast({
-      title: mode === "create" ? "Site Created" : "Site Updated",
-      description: `Site ${formData.code} has been ${mode === "create" ? "created" : "updated"} successfully.`,
     });
   };
 
@@ -97,7 +147,7 @@ export function SiteForm({ site, isOpen, onClose, onSave, mode }: SiteFormProps)
               <Label htmlFor="kind">Type</Label>
               <Select
                 value={formData.kind}
-                onValueChange={(value) => setFormData({ ...formData, kind: value })}
+                onValueChange={(value) => setFormData({ ...formData, kind: value as Site["kind"] })}
                 disabled={isReadOnly}
               >
                 <SelectTrigger>
@@ -116,7 +166,7 @@ export function SiteForm({ site, isOpen, onClose, onSave, mode }: SiteFormProps)
               <Label htmlFor="status">Status</Label>
               <Select
                 value={formData.status}
-                onValueChange={(value) => setFormData({ ...formData, status: value })}
+                onValueChange={(value) => setFormData({ ...formData, status: value as Site["status"] })}
                 disabled={isReadOnly}
               >
                 <SelectTrigger>
