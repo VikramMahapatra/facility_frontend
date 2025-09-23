@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Package, Plus, Eye, Edit, Trash2, Users, DollarSign } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -6,40 +6,45 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { PropertySidebar } from "@/components/PropertySidebar";
 import { SidebarProvider, SidebarInset, SidebarTrigger } from "@/components/ui/sidebar";
-import { mockSpaceGroups, mockSites, getSpaceGroupMembers, SpaceKind } from "@/data/mockSpacesData";
+import { mockSpaceGroups, mockSites, getSpaceGroupMembers } from "@/data/mockSpacesData";
 import { SpaceGroupForm } from "@/components/SpaceGroupForm";
 import { useToast } from "@/hooks/use-toast";
+import { Pagination } from "@/components/Pagination";
+import { spaceGroupsApiService } from "@/services/spaces_sites/spacegroupsapi";
+import { siteApiService } from "@/services/spaces_sites/sitesapi";
+
+export type SpaceKind = 'apartment' | 'row_house' | 'common_area';
 
 export interface SpaceGroup {
   id: string;
   name: string;
   site_id: string;
   kind: SpaceKind;
-  specs: any;
+  specs: {
+    base_rate: 0;
+    amenities: [];
+  };
+  members?: number
 }
 
 export default function SpaceGroups() {
   const { toast } = useToast();
-  const [groups, setGroups] = useState<SpaceGroup[]>(mockSpaceGroups);
+  const [groups, setGroups] = useState<SpaceGroup[]>([]);
   const [searchTerm, setSearchTerm] = useState("");
   const [selectedKind, setSelectedKind] = useState<string>("all");
   const [selectedSite, setSelectedSite] = useState<string>("all");
-
   const [showForm, setShowForm] = useState(false);
   const [formMode, setFormMode] = useState<"create" | "edit" | "view">("create");
   const [selectedGroup, setSelectedGroup] = useState<SpaceGroup | undefined>();
-
-  const filteredGroups = groups.filter(group => {
-    const matchesSearch = group.name.toLowerCase().includes(searchTerm.toLowerCase());
-    const matchesKind = selectedKind === "all" || group.kind === selectedKind;
-    const matchesSite = selectedSite === "all" || group.site_id === selectedSite;
-    return matchesSearch && matchesKind && matchesSite;
-  });
+  const [siteList, setSiteList] = useState([]);
+  const [page, setPage] = useState(1); // current page
+  const [pageSize] = useState(6); // items per page
+  const [totalItems, setTotalItems] = useState(0);
 
   const getKindIcon = (kind: SpaceKind) => {
     const icons = {
       room: "🏨",
-      apartment: "🏠", 
+      apartment: "🏠",
       shop: "🏪",
       office: "🏢",
       warehouse: "🏭",
@@ -50,6 +55,30 @@ export default function SpaceGroups() {
     };
     return icons[kind] || "📍";
   };
+
+  useEffect(() => {
+    loadSpaceGroups();
+  }, [page, searchTerm, selectedKind]);
+
+  useEffect(() => {
+    loadSiteLookup();
+  }, []);
+
+  const loadSpaceGroups = async () => {
+    const skip = (page - 1) * pageSize;
+    const limit = pageSize;
+
+    // build query params
+    const params = new URLSearchParams();
+    if (searchTerm) params.append("search", searchTerm);
+    if (selectedSite) params.append("site_id", selectedSite);
+    if (selectedKind) params.append("kind", selectedKind);
+    params.append("skip", skip.toString());
+    params.append("limit", limit.toString());
+    const response = await spaceGroupsApiService.getSpaceGroups(`/space-groups?${params.toString()}`);
+    setGroups(response.spaceGroups);
+    setTotalItems(response.total);
+  }
 
   const getKindColor = (kind: SpaceKind) => {
     const colors = {
@@ -66,8 +95,13 @@ export default function SpaceGroups() {
     return colors[kind] || "bg-gray-100 text-gray-800";
   };
 
+  const loadSiteLookup = async () => {
+    const lookup = await siteApiService.getSiteLookup();
+    setSiteList(lookup);
+  }
+
   const getSiteName = (siteId: string) => {
-    const site = mockSites.find(s => s.id === siteId);
+    const site = siteList.find(s => s.id === siteId);
     return site ? site.name : 'Unknown Site';
   };
 
@@ -98,28 +132,47 @@ export default function SpaceGroups() {
     setShowForm(true);
   };
 
-  const handleDelete = (id: string) => {
-    setGroups(groups.filter(g => g.id !== id));
-    toast({
-      title: "Group Deleted",
-      description: "Space group removed successfully."
-    });
+  const handleDelete = async (id: string) => {
+    if (id) {
+      try {
+        await spaceGroupsApiService.deleteSpaceGroup(id);
+        loadSpaceGroups();
+        toast({
+          title: "Group Deleted",
+          description: "Space group removed successfully."
+        });
+      } catch (error) {
+        toast({
+          title: "Techical Error!",
+          variant: "destructive",
+        });
+      }
+    }
+
   };
 
-  const handleSave = (data: Partial<SpaceGroup>) => {
-    if (formMode === "create") {
-      const newGroup: SpaceGroup = {
-        id: `sg-${Date.now()}`,
-        name: data.name!,
-        site_id: data.site_id!,
-        kind: data.kind!,
-        specs: data.specs || {}
-      };
-      setGroups([...groups, newGroup]);
-    } else if (formMode === "edit" && selectedGroup) {
-      setGroups(groups.map(g => g.id === selectedGroup.id ? { ...g, ...data } : g));
+  const handleSave = async (data: Partial<SpaceGroup>) => {
+    try {
+      if (formMode === "create") {
+        await spaceGroupsApiService.addSpaceGroup(data);
+      } else if (formMode === "edit" && selectedGroup) {
+        const updatedGroup = { ...selectedGroup, ...data };
+        await spaceGroupsApiService.updateSpaceGroup(updatedGroup);
+      }
+      loadSpaceGroups();
+      setShowForm(false);
+      toast({
+        title: formMode === "create" ? "Group Created" : "Group Updated",
+        description: `Group ${data.name} has been ${formMode === "create" ? "created" : "updated"} successfully.`,
+      });
+
+    } catch (error) {
+      toast({
+        title: "Techical Error!",
+        variant: "destructive",
+      });
     }
-    setShowForm(false);
+
   };
 
   const spaceKinds: SpaceKind[] = ['apartment', 'row_house', 'common_area'];
@@ -159,14 +212,14 @@ export default function SpaceGroups() {
                   onChange={(e) => setSearchTerm(e.target.value)}
                   className="max-w-sm"
                 />
-                
+
                 <select
                   value={selectedSite}
                   onChange={(e) => setSelectedSite(e.target.value)}
                   className="rounded-md border border-input bg-background px-3 py-2 text-sm"
                 >
                   <option value="all">All Sites</option>
-                  {mockSites.map(site => (
+                  {siteList.map(site => (
                     <option key={site.id} value={site.id}>{site.name}</option>
                   ))}
                 </select>
@@ -185,10 +238,7 @@ export default function SpaceGroups() {
 
               {/* Groups Grid */}
               <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
-                {filteredGroups.map((group) => {
-                  const members = getSpaceGroupMembers(group.id);
-                  const memberCount = members.filter(m => m).length;
-                  
+                {groups.map((group) => {
                   return (
                     <Card key={group.id} className="hover:shadow-lg transition-shadow">
                       <CardHeader className="pb-3">
@@ -210,7 +260,7 @@ export default function SpaceGroups() {
                         {/* Member Count */}
                         <div className="flex items-center gap-2">
                           <Users className="h-4 w-4 text-muted-foreground" />
-                          <span className="text-sm font-medium">{memberCount} spaces in this group</span>
+                          <span className="text-sm font-medium">{group.members} spaces in this group</span>
                         </div>
 
                         {/* Base Rate */}
@@ -240,8 +290,13 @@ export default function SpaceGroups() {
                   );
                 })}
               </div>
-
-              {filteredGroups.length === 0 && (
+              <Pagination
+                page={page}
+                pageSize={pageSize}
+                totalItems={totalItems}
+                onPageChange={(newPage) => setPage(newPage)}
+              />
+              {groups.length === 0 && (
                 <div className="text-center py-12">
                   <Package className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
                   <h3 className="text-lg font-semibold text-sidebar-primary mb-2">No space groups found</h3>

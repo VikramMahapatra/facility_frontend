@@ -123,7 +123,10 @@ export default function Sites() {
         description: `Site ${siteData.code} has been ${formMode === "create" ? "created" : "updated"} successfully.`,
       });
     } catch (error) {
-      console.log(error)
+      toast({
+        title: "Techical Error!",
+        variant: "destructive",
+      });
     }
   };
 

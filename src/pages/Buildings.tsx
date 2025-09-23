@@ -35,13 +35,17 @@ export default function Buildings() {
   const [showForm, setShowForm] = useState(false);
   const [buildings, setBuildings] = useState<Building[]>([])
   const [page, setPage] = useState(1); // current page
-  const [pageSize] = useState(3); // items per page
+  const [pageSize] = useState(6); // items per page
   const [totalItems, setTotalItems] = useState(0);
   const [siteList, setSiteList] = useState([]);
 
   useEffect(() => {
     loadBuildings();
-  }, [page, searchTerm, selectedSite]);
+  }, [page]);
+
+  useEffect(() => {
+    setPage(1);
+  }, [searchTerm, selectedSite]);
 
   useEffect(() => {
     loadSiteLookup();
@@ -111,14 +115,17 @@ export default function Buildings() {
   const handleDelete = async (buildingId: string) => {
     if (buildingId) {
       try {
-        await buildingApiService.deleteSite(buildingId);
+        await buildingApiService.deleteBuilding(buildingId);
         loadBuildings();
         toast({
           title: "Building Deleted",
           description: "The building has been removed successfully.",
         });
       } catch (error) {
-        console.log(error)
+        toast({
+          title: "Techical Error!",
+          variant: "destructive",
+        });
       }
     }
 

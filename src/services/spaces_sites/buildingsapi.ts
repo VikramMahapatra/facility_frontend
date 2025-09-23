@@ -6,21 +6,21 @@ class BuildingApiService {
         return await apiService.request(url);
     }
 
-    async addBuilding(siteData: any) {
+    async addBuilding(buildingData: any) {
         return await apiService.request('/buildings', {
             method: 'POST',
-            body: JSON.stringify(siteData),
+            body: JSON.stringify(buildingData),
         });
     }
 
-    async updateBuilding(siteData: any) {
+    async updateBuilding(buildingData: any) {
         return await apiService.request('/buildings', {
             method: 'PUT',
-            body: JSON.stringify(siteData),
+            body: JSON.stringify(buildingData),
         });
     }
 
-    async deleteSite(id: any) {
+    async deleteBuilding(id: any) {
         return await apiService.request(`/sites/${id}`, {
             method: 'DELETE',
         });
