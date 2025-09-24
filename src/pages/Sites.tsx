@@ -49,10 +49,17 @@ export default function Sites() {
   const [pageSize] = useState(3); // items per page
   const [totalItems, setTotalItems] = useState(0);
 
-
   useEffect(() => {
     loadSites();
-  }, [page, searchTerm, selectedKind]);
+  }, [page]);
+
+  useEffect(() => {
+    if (page === 1) {
+      loadSites();  // already page 1 → reload
+    } else {
+      setPage(1);    // triggers the page effect
+    }
+  }, [searchTerm, selectedKind]);
 
   const loadSites = async () => {
     const skip = (page - 1) * pageSize;

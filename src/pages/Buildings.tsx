@@ -44,7 +44,11 @@ export default function Buildings() {
   }, [page]);
 
   useEffect(() => {
-    setPage(1);
+    if (page === 1) {
+      loadBuildings();  // already page 1 → reload
+    } else {
+      setPage(1);    // triggers the page effect
+    }
   }, [searchTerm, selectedSite]);
 
   useEffect(() => {
@@ -70,28 +74,6 @@ export default function Buildings() {
     const lookup = await siteApiService.getSiteLookup();
     setSiteList(lookup);
   }
-
-
-  // Mock state for buildings
-  // const [buildings, setBuildings] = useState(() =>
-  //   mockSites.flatMap(site => {
-  //     const blocks = getBuildingBlocks(site.id);
-  //     return blocks.map(building => ({
-  //       ...building,
-  //       siteId: site.id,
-  //       siteName: site.name,
-  //       siteKind: site.kind,
-  //     }));
-  //   })
-  // );
-
-  // const filteredBuildings = buildings.filter(building => {
-  //   const matchesSearch =
-  //     building.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-  //     building.siteName.toLowerCase().includes(searchTerm.toLowerCase());
-  //   const matchesSite = selectedSite === "all" || building.siteId === selectedSite;
-  //   return matchesSearch && matchesSite;
-  // });
 
   // --- CRUD Handlers ---
   const handleCreate = () => {

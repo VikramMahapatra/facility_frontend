@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -7,6 +7,8 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
 import { mockSites, SpaceKind } from "@/data/mockSpacesData";
 import { useToast } from "@/hooks/use-toast";
+import { siteApiService } from "@/services/spaces_sites/sitesapi";
+import { buildingApiService } from "@/services/spaces_sites/buildingsapi";
 
 interface Space {
   id: string;
@@ -16,11 +18,17 @@ interface Space {
   name?: string;
   kind: SpaceKind;
   floor?: string;
+  building_block_id?: string;
   building_block?: string;
   area_sqft?: number;
   beds?: number;
   baths?: number;
-  attributes: Record<string, any>;
+  attributes?: {
+    view?: string;
+    smoking?: boolean;
+    furnished?: string;
+    star_rating?: string;
+  };
   status: 'available' | 'occupied' | 'out_of_service';
   created_at: string;
   updated_at: string;
@@ -35,30 +43,55 @@ interface SpaceFormProps {
 }
 
 const spaceKinds: SpaceKind[] = ['apartment', 'row_house', 'common_area'];
+const emptyFormData = {
+  code: "",
+  name: "",
+  kind: "room" as SpaceKind,
+  site_id: "",
+  floor: "",
+  building_block_id: "",
+  area_sqft: 0,
+  beds: 0,
+  baths: 0,
+  status: "available" as const,
+  attributes: {
+    view: "",
+    smoking: false,
+    furnished: "",
+    star_rating: "",
+  }
+}
 
 export function SpaceForm({ space, isOpen, onClose, onSave, mode }: SpaceFormProps) {
   const { toast } = useToast();
-  const [formData, setFormData] = useState({
-    code: space?.code || "",
-    name: space?.name || "",
-    kind: space?.kind || "room" as SpaceKind,
-    site_id: space?.site_id || "",
-    floor: space?.floor || "",
-    building_block: space?.building_block || "",
-    area_sqft: space?.area_sqft || 0,
-    beds: space?.beds || 0,
-    baths: space?.baths || 0,
-    status: space?.status || "available" as const,
-    view: space?.attributes?.view || "",
-    smoking: space?.attributes?.smoking || false,
-    furnished: space?.attributes?.furnished || "",
-    star_rating: space?.attributes?.star_rating || 0,
-  });
+  const [formData, setFormData] = useState<Partial<Space>>(emptyFormData);
+  const [siteList, setSiteList] = useState([]);
+  const [buildingList, setBuildingList] = useState([]);
+
+  useEffect(() => {
+    if (space) {
+      setFormData(space);
+    } else {
+      setFormData(emptyFormData);
+    }
+    loadSiteLookup();
+    loadBuildingLookup();
+  }, [space]);
+
+  const loadSiteLookup = async () => {
+    const lookup = await siteApiService.getSiteLookup();
+    setSiteList(lookup);
+  }
+
+  const loadBuildingLookup = async () => {
+    const lookup = await buildingApiService.getBuildingLookup(formData.site_id);
+    setBuildingList(lookup);
+  }
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    
-    if (!formData.code || !formData.site_id) {
+
+    if (!formData.code || !formData.site_id || !formData.building_block_id) {
       toast({
         title: "Validation Error",
         description: "Code and Site are required fields",
@@ -74,25 +107,26 @@ export function SpaceForm({ space, isOpen, onClose, onSave, mode }: SpaceFormPro
       kind: formData.kind,
       site_id: formData.site_id,
       floor: formData.floor,
-      building_block: formData.building_block,
+      building_block_id: formData.building_block_id,
       area_sqft: formData.area_sqft,
       beds: formData.beds,
       baths: formData.baths,
       status: formData.status,
       attributes: {
-        view: formData.view,
-        smoking: formData.smoking,
-        furnished: formData.furnished,
-        star_rating: formData.star_rating,
+        view: formData.attributes.view,
+        smoking: formData.attributes.smoking,
+        furnished: formData.attributes.furnished,
+        star_rating: formData.attributes.star_rating,
       },
       updated_at: new Date().toISOString(),
     };
 
     onSave(spaceData);
-    toast({
-      title: mode === 'create' ? "Space Created" : "Space Updated",
-      description: `Space ${formData.code} has been ${mode === 'create' ? 'created' : 'updated'} successfully.`,
-    });
+
+  };
+
+  const handleAttributesFieldChange = (field: string, value: any) => {
+    setFormData((prev) => ({ ...prev, attributes: { ...prev.attributes, [field]: value, } }));
   };
 
   const isReadOnly = mode === 'view';
@@ -144,7 +178,7 @@ export function SpaceForm({ space, isOpen, onClose, onSave, mode }: SpaceFormPro
                   <SelectValue placeholder="Select site" />
                 </SelectTrigger>
                 <SelectContent>
-                  {mockSites.map((site) => (
+                  {siteList.map((site) => (
                     <SelectItem key={site.id} value={site.id}>
                       {site.name}
                     </SelectItem>
@@ -186,13 +220,22 @@ export function SpaceForm({ space, isOpen, onClose, onSave, mode }: SpaceFormPro
             </div>
             <div>
               <Label htmlFor="building_block">Building Block</Label>
-              <Input
-                id="building_block"
-                value={formData.building_block}
-                onChange={(e) => setFormData({ ...formData, building_block: e.target.value })}
-                placeholder="e.g., Tower A, Block 1"
+              <Select
+                value={formData.building_block_id}
+                onValueChange={(value) => setFormData({ ...formData, building_block_id: value })}
                 disabled={isReadOnly}
-              />
+              >
+                <SelectTrigger>
+                  <SelectValue placeholder="Select building block" />
+                </SelectTrigger>
+                <SelectContent>
+                  {buildingList.map((building_block) => (
+                    <SelectItem key={building_block.id} value={building_block.id}>
+                      {building_block.name}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
             </div>
             <div>
               <Label htmlFor="area_sqft">Area (sq ft)</Label>
@@ -253,8 +296,8 @@ export function SpaceForm({ space, isOpen, onClose, onSave, mode }: SpaceFormPro
               <Label htmlFor="view">View</Label>
               <Input
                 id="view"
-                value={formData.view}
-                onChange={(e) => setFormData({ ...formData, view: e.target.value })}
+                value={formData.attributes.view}
+                onChange={(e) => handleAttributesFieldChange('view', e.target.value)}
                 placeholder="e.g., Sea, Garden, City"
                 disabled={isReadOnly}
               />
@@ -265,8 +308,8 @@ export function SpaceForm({ space, isOpen, onClose, onSave, mode }: SpaceFormPro
             <div>
               <Label htmlFor="furnished">Furnished</Label>
               <Select
-                value={formData.furnished}
-                onValueChange={(value) => setFormData({ ...formData, furnished: value })}
+                value={formData.attributes.furnished}
+                onValueChange={(value) => handleAttributesFieldChange('furnished', value)}
                 disabled={isReadOnly}
               >
                 <SelectTrigger>
@@ -282,8 +325,8 @@ export function SpaceForm({ space, isOpen, onClose, onSave, mode }: SpaceFormPro
             <div>
               <Label htmlFor="star_rating">Star Rating</Label>
               <Select
-                value={formData.star_rating.toString()}
-                onValueChange={(value) => setFormData({ ...formData, star_rating: Number(value) })}
+                value={formData.attributes.star_rating}
+                onValueChange={(value) => handleAttributesFieldChange('star_rating', value)}
                 disabled={isReadOnly}
               >
                 <SelectTrigger>

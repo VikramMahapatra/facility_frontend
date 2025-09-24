@@ -58,7 +58,15 @@ export default function SpaceGroups() {
 
   useEffect(() => {
     loadSpaceGroups();
-  }, [page, searchTerm, selectedKind]);
+  }, [page]);
+
+  useEffect(() => {
+    if (page === 1) {
+      loadSpaceGroups();  // already page 1 → reload
+    } else {
+      setPage(1);    // triggers the page effect
+    }
+  }, [searchTerm, selectedSite]);
 
   useEffect(() => {
     loadSiteLookup();
