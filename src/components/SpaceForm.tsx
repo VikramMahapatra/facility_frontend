@@ -8,7 +8,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "
 import { useToast } from "@/hooks/use-toast";
 import { siteApiService } from "@/services/spaces_sites/sitesapi";
 import { buildingApiService } from "@/services/spaces_sites/buildingsapi";
-import { SpaceKind, spaceKinds } from "@/data/interfaces";
+import { SpaceKind, spaceKinds } from "@/interfaces/spaces_interfaces";
 
 interface Space {
   id: string;

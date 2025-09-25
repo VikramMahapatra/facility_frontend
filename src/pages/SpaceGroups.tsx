@@ -11,7 +11,7 @@ import { useToast } from "@/hooks/use-toast";
 import { Pagination } from "@/components/Pagination";
 import { spaceGroupsApiService } from "@/services/spaces_sites/spacegroupsapi";
 import { siteApiService } from "@/services/spaces_sites/sitesapi";
-import { SpaceKind, spaceKinds } from "@/data/interfaces";
+import { SpaceKind, spaceKinds } from "@/interfaces/spaces_interfaces";
 
 export interface SpaceGroup {
   id: string;

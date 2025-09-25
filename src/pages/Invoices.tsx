@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -6,23 +6,95 @@ import { Badge } from "@/components/ui/badge";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Plus, Search, Filter, Download, Eye, Edit, Send, Trash2, CreditCard, FileText, TrendingUp, AlertTriangle } from "lucide-react";
-import { mockInvoices, mockPayments, type Invoice, type Payment } from "@/data/mockFinancialsData";
 import { SidebarProvider, SidebarTrigger } from "@/components/ui/sidebar";
 import { PropertySidebar } from "@/components/PropertySidebar";
+import { invoiceApiService } from "@/services/financials/invoicesapi";
+import { Invoice, Payment } from "@/interfaces/invoices_interfaces";
+import { Pagination } from "@/components/Pagination";
+
+interface InvoiceOverview {
+  totalInvoices: number;
+  totalAmount: number;
+  paidAmount: number;
+  outstandingAmount: number;
+}
+
 
 export default function Invoices() {
   const [searchTerm, setSearchTerm] = useState("");
   const [statusFilter, setStatusFilter] = useState("all");
   const [customerTypeFilter, setCustomerTypeFilter] = useState("all");
-
-  const filteredInvoices = mockInvoices.filter(invoice => {
-    const matchesSearch = invoice.invoiceNo.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      invoice.customerName.toLowerCase().includes(searchTerm.toLowerCase());
-    const matchesStatus = statusFilter === "all" || invoice.status === statusFilter;
-    const matchesCustomerType = customerTypeFilter === "all" || invoice.customerKind === customerTypeFilter;
-
-    return matchesSearch && matchesStatus && matchesCustomerType;
+  const [invoices, setInvoices] = useState<Invoice[]>([]);
+  const [payments, setPayments] = useState<Payment[]>([]);
+  const [invoiceOverview, setInvoiceOverview] = useState<InvoiceOverview>({
+    totalInvoices: 0,
+    totalAmount: 0,
+    paidAmount: 0,
+    outstandingAmount: 0
   });
+  const [page, setPage] = useState(1); // current page
+  const [pageSize] = useState(5); // items per page
+  const [totalItems, setTotalItems] = useState(0);
+
+  const [paymentPage, setPaymentPage] = useState(1); // current page
+  const [paymentPageSize] = useState(5); // items per page
+  const [totalPaymentItems, setTotalPaymentItems] = useState(0);
+
+  useEffect(() => {
+    loadInvoices();
+  }, [page]);
+
+  useEffect(() => {
+    loadPayments();
+  }, [paymentPage]);
+
+  useEffect(() => {
+    updateInvoicesPage();
+  }, [searchTerm, statusFilter, customerTypeFilter]);
+
+  const updateInvoicesPage = () => {
+    if (page === 1) {
+      loadInvoices();  // already page 1 → reload
+    } else {
+      setPage(1);    // triggers the page effect
+    }
+    loadInvoicesOverView();
+  }
+
+  const loadInvoicesOverView = async () => {
+    const response = await invoiceApiService.getInvoiceOverview();
+    setInvoiceOverview(response);
+  }
+
+  const loadInvoices = async () => {
+    const skip = (page - 1) * pageSize;
+    const limit = pageSize;
+
+    // build query params
+    const params = new URLSearchParams();
+    if (searchTerm) params.append("search", searchTerm);
+    if (statusFilter) params.append("status", statusFilter);
+    if (customerTypeFilter) params.append("kind", customerTypeFilter);
+    params.append("skip", skip.toString());
+    params.append("limit", limit.toString());
+    const response = await invoiceApiService.getInvoices(`/invoices/all?${params.toString()}`);
+    setInvoices(response.invoices);
+    setTotalItems(response.total);
+  }
+
+  const loadPayments = async () => {
+    const skip = (paymentPage - 1) * paymentPageSize;
+    const limit = paymentPageSize;
+
+    // build query params
+    const params = new URLSearchParams();
+    params.append("skip", skip.toString());
+    params.append("limit", limit.toString());
+    const response = await invoiceApiService.getInvoices(`/invoices/payments?${params.toString()}`);
+    setPayments(response.payments);
+    setTotalItems(response.total);
+  }
+
 
   const getStatusBadge = (status: string) => {
     const variants = {
@@ -45,12 +117,6 @@ export default function Invoices() {
 
     return <Badge variant={variants[type as keyof typeof variants] || "outline"}>{type}</Badge>;
   };
-
-  // Calculate summary statistics
-  const totalInvoices = mockInvoices.length;
-  const totalAmount = mockInvoices.reduce((sum, inv) => sum + inv.totals.grand, 0);
-  const paidAmount = mockInvoices.filter(inv => inv.status === 'paid').reduce((sum, inv) => sum + inv.totals.grand, 0);
-  const outstandingAmount = mockInvoices.filter(inv => inv.status === 'issued' || inv.status === 'partial').reduce((sum, inv) => sum + inv.totals.grand, 0);
 
   return (
     <SidebarProvider>
@@ -91,7 +157,7 @@ export default function Invoices() {
                     <FileText className="h-4 w-4 text-muted-foreground" />
                   </CardHeader>
                   <CardContent>
-                    <div className="text-2xl font-bold">{totalInvoices}</div>
+                    <div className="text-2xl font-bold">{invoiceOverview.totalInvoices}</div>
                     <p className="text-xs text-muted-foreground">All time</p>
                   </CardContent>
                 </Card>
@@ -102,7 +168,7 @@ export default function Invoices() {
                     <TrendingUp className="h-4 w-4 text-muted-foreground" />
                   </CardHeader>
                   <CardContent>
-                    <div className="text-2xl font-bold">₹{totalAmount.toLocaleString()}</div>
+                    <div className="text-2xl font-bold">₹{invoiceOverview.totalAmount.toLocaleString()}</div>
                     <p className="text-xs text-muted-foreground">Invoiced amount</p>
                   </CardContent>
                 </Card>
@@ -113,7 +179,7 @@ export default function Invoices() {
                     <CreditCard className="h-4 w-4 text-muted-foreground" />
                   </CardHeader>
                   <CardContent>
-                    <div className="text-2xl font-bold text-green-600">₹{paidAmount.toLocaleString()}</div>
+                    <div className="text-2xl font-bold text-green-600">₹{invoiceOverview.paidAmount.toLocaleString()}</div>
                     <p className="text-xs text-muted-foreground">Paid invoices</p>
                   </CardContent>
                 </Card>
@@ -124,7 +190,7 @@ export default function Invoices() {
                     <AlertTriangle className="h-4 w-4 text-muted-foreground" />
                   </CardHeader>
                   <CardContent>
-                    <div className="text-2xl font-bold text-orange-600">₹{outstandingAmount.toLocaleString()}</div>
+                    <div className="text-2xl font-bold text-orange-600">₹{invoiceOverview.outstandingAmount.toLocaleString()}</div>
                     <p className="text-xs text-muted-foreground">Pending payment</p>
                   </CardContent>
                 </Card>
@@ -183,7 +249,7 @@ export default function Invoices() {
                 <CardHeader>
                   <CardTitle>Invoices</CardTitle>
                   <CardDescription>
-                    {filteredInvoices.length} invoice(s) found
+                    {totalItems} invoice(s) found
                   </CardDescription>
                 </CardHeader>
                 <CardContent>
@@ -201,13 +267,13 @@ export default function Invoices() {
                       </TableRow>
                     </TableHeader>
                     <TableBody>
-                      {filteredInvoices.map((invoice) => (
+                      {invoices.map((invoice) => (
                         <TableRow key={invoice.id}>
-                          <TableCell className="font-medium">{invoice.invoiceNo}</TableCell>
-                          <TableCell>{invoice.customerName}</TableCell>
-                          <TableCell>{getCustomerTypeBadge(invoice.customerKind)}</TableCell>
+                          <TableCell className="font-medium">{invoice.invoice_no}</TableCell>
+                          <TableCell>{invoice.customer_name}</TableCell>
+                          <TableCell>{getCustomerTypeBadge(invoice.customer_kind)}</TableCell>
                           <TableCell>{new Date(invoice.date).toLocaleDateString()}</TableCell>
-                          <TableCell>{new Date(invoice.dueDate).toLocaleDateString()}</TableCell>
+                          <TableCell>{new Date(invoice.due_date).toLocaleDateString()}</TableCell>
                           <TableCell>₹{invoice.totals.grand.toLocaleString()}</TableCell>
                           <TableCell>{getStatusBadge(invoice.status)}</TableCell>
                           <TableCell>
@@ -232,6 +298,12 @@ export default function Invoices() {
                       ))}
                     </TableBody>
                   </Table>
+                  <Pagination
+                    page={page}
+                    pageSize={pageSize}
+                    totalItems={totalItems}
+                    onPageChange={(newPage) => setPage(newPage)}
+                  />
                 </CardContent>
               </Card>
 
@@ -254,20 +326,26 @@ export default function Invoices() {
                       </TableRow>
                     </TableHeader>
                     <TableBody>
-                      {mockPayments.slice(0, 5).map((payment) => (
+                      {payments.slice(0, 5).map((payment) => (
                         <TableRow key={payment.id}>
-                          <TableCell className="font-medium">{payment.invoiceNo}</TableCell>
-                          <TableCell>{payment.customerName}</TableCell>
+                          <TableCell className="font-medium">{payment.invoice_no}</TableCell>
+                          <TableCell>{payment.customer_name}</TableCell>
                           <TableCell>
                             <Badge variant="outline">{payment.method.toUpperCase()}</Badge>
                           </TableCell>
-                          <TableCell className="font-mono text-sm">{payment.refNo}</TableCell>
+                          <TableCell className="font-mono text-sm">{payment.ref_no}</TableCell>
                           <TableCell>₹{payment.amount.toLocaleString()}</TableCell>
-                          <TableCell>{new Date(payment.paidAt).toLocaleDateString()}</TableCell>
+                          <TableCell>{new Date(payment.paid_at).toLocaleDateString()}</TableCell>
                         </TableRow>
                       ))}
                     </TableBody>
                   </Table>
+                  <Pagination
+                    page={paymentPage}
+                    pageSize={paymentPageSize}
+                    totalItems={totalPaymentItems}
+                    onPageChange={(newPage) => setPaymentPage(newPage)}
+                  />
                 </CardContent>
               </Card>
             </div>

@@ -135,3 +135,5 @@ export const amenitiesByKind: AmenitiesByKind = {
         'lighting', // optional
     ],
 };
+
+
