@@ -6,13 +6,13 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { PropertySidebar } from "@/components/PropertySidebar";
 import { SidebarProvider, SidebarInset, SidebarTrigger } from "@/components/ui/sidebar";
-import { SpaceKind } from "@/data/mockSpacesData";
 import { SpaceForm } from "@/components/SpaceForm";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
 import { useToast } from "@/hooks/use-toast";
 import { Pagination } from "@/components/Pagination";
 import { siteApiService } from "@/services/spaces_sites/sitesapi";
 import { spacesApiService } from "@/services/spaces_sites/spacesapi";
+import { SpaceKind, spaceKinds } from "@/data/interfaces";
 
 export interface Space {
   id: string;
@@ -213,8 +213,6 @@ export default function Spaces() {
     const site = siteList.find(s => s.id === siteId);
     return site ? site.name : 'Unknown Site';
   };
-
-  const spaceKinds: SpaceKind[] = ['apartment', 'row_house', 'common_area'];
 
   return (
     <SidebarProvider>
