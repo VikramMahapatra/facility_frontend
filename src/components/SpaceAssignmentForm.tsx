@@ -31,7 +31,8 @@ interface SpaceAssignmentFormProps {
 const emptyFormData = {
   site_id: "",
   group_id: "",
-  space_id: ""
+  space_id: "",
+  assigned_by: ""
 }
 
 export function SpaceAssignmentForm({ assignment, isOpen, onClose, onSave, mode }: SpaceAssignmentFormProps) {
@@ -61,8 +62,8 @@ export function SpaceAssignmentForm({ assignment, isOpen, onClose, onSave, mode 
       setSelectedSite("all");
     }
     loadSiteLookup();
-    loadSpaceLookup();
-    loadSpaceGroupLookup();
+    // loadSpaceLookup();
+    // loadSpaceGroupLookup();
   }, [assignment]);
 
   useEffect(() => {

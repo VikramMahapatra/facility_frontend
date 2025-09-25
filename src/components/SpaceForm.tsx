@@ -5,10 +5,10 @@ import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
-import { mockSites, SpaceKind } from "@/data/mockSpacesData";
 import { useToast } from "@/hooks/use-toast";
 import { siteApiService } from "@/services/spaces_sites/sitesapi";
 import { buildingApiService } from "@/services/spaces_sites/buildingsapi";
+import { SpaceKind, spaceKinds } from "@/data/interfaces";
 
 interface Space {
   id: string;
@@ -42,7 +42,6 @@ interface SpaceFormProps {
   mode: 'create' | 'edit' | 'view';
 }
 
-const spaceKinds: SpaceKind[] = ['apartment', 'row_house', 'common_area'];
 const emptyFormData = {
   code: "",
   name: "",

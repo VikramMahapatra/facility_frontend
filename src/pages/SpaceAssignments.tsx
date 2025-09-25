@@ -48,7 +48,7 @@ export default function SpaceAssignments() {
     assignmentRate: 0
   });
   const [page, setPage] = useState(1); // current page
-  const [pageSize] = useState(6); // items per page
+  const [pageSize] = useState(3); // items per page
   const [totalItems, setTotalItems] = useState(0);
 
   useEffect(() => {
@@ -321,7 +321,7 @@ export default function SpaceAssignments() {
                             <span className="text-muted-foreground">Base Rate: </span>
                             <span className="font-medium">
                               ₹{group.specs.base_rate}
-                              {space.kind === 'apartment' ? '/month' : space.kind === 'row_house' ? '/month' : '/month'}
+                              {space.kind === 'apartment' ? '/month' : '/month'}
                             </span>
                           </div>
                         )}

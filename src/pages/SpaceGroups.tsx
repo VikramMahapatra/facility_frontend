@@ -6,14 +6,12 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { PropertySidebar } from "@/components/PropertySidebar";
 import { SidebarProvider, SidebarInset, SidebarTrigger } from "@/components/ui/sidebar";
-import { mockSpaceGroups, mockSites, getSpaceGroupMembers } from "@/data/mockSpacesData";
 import { SpaceGroupForm } from "@/components/SpaceGroupForm";
 import { useToast } from "@/hooks/use-toast";
 import { Pagination } from "@/components/Pagination";
 import { spaceGroupsApiService } from "@/services/spaces_sites/spacegroupsapi";
 import { siteApiService } from "@/services/spaces_sites/sitesapi";
-
-export type SpaceKind = 'apartment' | 'row_house' | 'common_area';
+import { SpaceKind, spaceKinds } from "@/data/interfaces";
 
 export interface SpaceGroup {
   id: string;
@@ -84,6 +82,7 @@ export default function SpaceGroups() {
     params.append("skip", skip.toString());
     params.append("limit", limit.toString());
     const response = await spaceGroupsApiService.getSpaceGroups(`/space-groups?${params.toString()}`);
+    console.log("group list:", response.spaceGroups)
     setGroups(response.spaceGroups);
     setTotalItems(response.total);
   }
@@ -183,7 +182,6 @@ export default function SpaceGroups() {
 
   };
 
-  const spaceKinds: SpaceKind[] = ['apartment', 'row_house', 'common_area'];
 
   return (
     <SidebarProvider>
