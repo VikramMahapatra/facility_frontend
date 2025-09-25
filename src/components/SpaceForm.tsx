@@ -78,6 +78,10 @@ export function SpaceForm({ space, isOpen, onClose, onSave, mode }: SpaceFormPro
     loadBuildingLookup();
   }, [space]);
 
+  useEffect(() => {
+    loadBuildingLookup();
+  }, [formData.site_id]);
+
   const loadSiteLookup = async () => {
     const lookup = await siteApiService.getSiteLookup();
     setSiteList(lookup);

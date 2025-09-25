@@ -30,6 +30,14 @@ class SpacesApiService {
         });
     }
 
+    async getSpaceLookup(site_id?: any) {
+        let url = '/spaces/lookup';
+        if (site_id) {
+            url += `?site_id=${site_id}`;
+        }
+        return await apiService.request(url);
+    }
+
 }
 
 export const spacesApiService = new SpacesApiService();

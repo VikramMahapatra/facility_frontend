@@ -14,7 +14,7 @@ import { Pagination } from "@/components/Pagination";
 import { siteApiService } from "@/services/spaces_sites/sitesapi";
 import { spacesApiService } from "@/services/spaces_sites/spacesapi";
 
-interface Space {
+export interface Space {
   id: string;
   org_id: string;
   site_id: string;

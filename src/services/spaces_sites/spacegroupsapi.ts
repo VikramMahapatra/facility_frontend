@@ -26,6 +26,18 @@ class SpaceGroupsApiService {
         });
     }
 
+    async getSpaceGroupLookup(site_id?: any, space_id?: any) {
+        let url = '/space-groups/lookup';
+        const params: string[] = [];
+
+        if (site_id) params.push(`site_id=${site_id}`);
+        if (space_id) params.push(`space_id=${space_id}`);
+
+        if (params.length) {
+            url += `?${params.join('&')}`;
+        }
+        return await apiService.request(url);
+    }
 }
 
 export const spaceGroupsApiService = new SpaceGroupsApiService();
