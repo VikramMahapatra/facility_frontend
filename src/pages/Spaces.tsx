@@ -12,7 +12,7 @@ import { useToast } from "@/hooks/use-toast";
 import { Pagination } from "@/components/Pagination";
 import { siteApiService } from "@/services/spaces_sites/sitesapi";
 import { spacesApiService } from "@/services/spaces_sites/spacesapi";
-import { SpaceKind, spaceKinds } from "@/data/interfaces";
+import { SpaceKind, spaceKinds } from "@/interfaces/spaces_interfaces";
 
 export interface Space {
   id: string;

@@ -5,7 +5,7 @@ import { useState, useEffect } from "react";
 import { SpaceGroup } from "@/pages/SpaceGroups";
 import { useToast } from "@/hooks/use-toast";
 import { siteApiService } from "@/services/spaces_sites/sitesapi";
-import { amenitiesByKind, SpaceAmenities, SpaceKind, spaceKinds } from "@/data/interfaces";
+import { amenitiesByKind, SpaceAmenities, SpaceKind, spaceKinds } from "@/interfaces/spaces_interfaces";
 
 interface Props {
   group?: SpaceGroup;

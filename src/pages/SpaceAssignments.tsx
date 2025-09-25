@@ -13,6 +13,7 @@ import { useToast } from "@/hooks/use-toast";
 import { spaceAssignmentApiService } from "@/services/spaces_sites/spaceassignmentsapi";
 import { siteApiService } from "@/services/spaces_sites/sitesapi";
 import { SpaceGroup } from "./SpaceGroups";
+import { Pagination } from "@/components/Pagination";
 
 interface SpaceAssignment {
   id: string;
@@ -370,7 +371,12 @@ export default function SpaceAssignments() {
                   );
                 })}
               </div>
-
+              <Pagination
+                page={page}
+                pageSize={pageSize}
+                totalItems={totalItems}
+                onPageChange={(newPage) => setPage(newPage)}
+              />
               {assignments.length === 0 && (
                 <div className="text-center py-12">
                   <Link2 className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
