@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Link2, Plus, Eye, Edit, Trash2, Building2, MapPin, Users } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -8,52 +8,102 @@ import { PropertySidebar } from "@/components/PropertySidebar";
 import { SidebarProvider, SidebarInset, SidebarTrigger } from "@/components/ui/sidebar";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from "@/components/ui/alert-dialog";
 import { SpaceAssignmentForm } from "@/components/SpaceAssignmentForm";
-import { mockSpaces, mockSpaceGroups, mockSites, mockSpaceGroupMembers } from "@/data/mockSpacesData";
+import { Space } from "@/pages/Spaces";
 import { useToast } from "@/hooks/use-toast";
+import { spaceAssignmentApiService } from "@/services/spaces_sites/spaceassignmentsapi";
+import { siteApiService } from "@/services/spaces_sites/sitesapi";
+import { SpaceGroup } from "./SpaceGroups";
 
 interface SpaceAssignment {
   id: string;
   group_id: string;
   space_id: string;
+  site_id: string;
+  site_name: string;
+  space: Space;
+  group: SpaceGroup;
   assigned_date: string;
   assigned_by?: string;
 }
-
-// Extend mockSpaceGroupMembers to include assignment metadata
-const mockAssignments: SpaceAssignment[] = mockSpaceGroupMembers.map((member, index) => ({
-  id: `assignment-${index + 1}`,
-  group_id: member.group_id,
-  space_id: member.space_id,
-  assigned_date: new Date(Date.now() - Math.random() * 10000000000).toISOString(),
-  assigned_by: "Admin"
-}));
+interface MemberOverview {
+  totalAssignments: number;
+  groupUsed: number;
+  spaceAssigned: number;
+  assignmentRate?: number;
+}
 
 export default function SpaceAssignments() {
   const { toast } = useToast();
   const [searchTerm, setSearchTerm] = useState("");
   const [selectedSite, setSelectedSite] = useState<string>("all");
-  const [assignments, setAssignments] = useState<SpaceAssignment[]>(mockAssignments);
+  const [assignments, setAssignments] = useState<SpaceAssignment[]>([]);
   const [selectedAssignment, setSelectedAssignment] = useState<SpaceAssignment | undefined>();
   const [formMode, setFormMode] = useState<'create' | 'edit' | 'view'>('create');
   const [showForm, setShowForm] = useState(false);
+  const [siteList, setSiteList] = useState([]);
+  const [memberOverview, setMemberOverview] = useState<MemberOverview>({
+    totalAssignments: 0,
+    groupUsed: 0,
+    spaceAssigned: 0,
+    assignmentRate: 0
+  });
+  const [page, setPage] = useState(1); // current page
+  const [pageSize] = useState(6); // items per page
+  const [totalItems, setTotalItems] = useState(0);
+
+  useEffect(() => {
+    loadSpaceAssignments();
+  }, [page]);
+
+  useEffect(() => {
+    updateSpaceAssignmentPage();
+  }, [searchTerm, selectedSite]);
+
+  useEffect(() => {
+    loadSiteLookup();
+  }, []);
+
+  const updateSpaceAssignmentPage = () => {
+    if (page === 1) {
+      loadSpaceAssignments();  // already page 1 → reload
+    } else {
+      setPage(1);    // triggers the page effect
+    }
+    loadSpaceAsignmentOverView();
+  }
+
+  const loadSpaceAsignmentOverView = async () => {
+    const params = new URLSearchParams();
+    if (searchTerm) params.append("search", searchTerm);
+    if (selectedSite) params.append("site_id", selectedSite);
+    const response = await spaceAssignmentApiService.getAssignmentOverview(`/space-group-members/overview?${params.toString()}`);
+    setMemberOverview(response);
+  }
+
+  const loadSiteLookup = async () => {
+    const lookup = await siteApiService.getSiteLookup();
+    setSiteList(lookup);
+  }
+
+  const loadSpaceAssignments = async () => {
+    const skip = (page - 1) * pageSize;
+    const limit = pageSize;
+
+    // build query params
+    const params = new URLSearchParams();
+    if (searchTerm) params.append("search", searchTerm);
+    if (selectedSite) params.append("site_id", selectedSite);
+    params.append("skip", skip.toString());
+    params.append("limit", limit.toString());
+    const response = await spaceAssignmentApiService.getAssignments(`/space-group-members/all?${params.toString()}`);
+    setAssignments(response.assignments);
+    setTotalItems(response.total);
+  }
 
   // Get assignment details
   const getAssignmentDetails = (assignment: SpaceAssignment) => {
-    const space = mockSpaces.find(s => s.id === assignment.space_id);
-    const group = mockSpaceGroups.find(g => g.id === assignment.group_id);
-    const site = space ? mockSites.find(s => s.id === space.site_id) : undefined;
-    
-    return { space, group, site };
+    return { space: assignment.space, group: assignment.group };
   };
-
-  const filteredAssignments = assignments.filter(assignment => {
-    const { space, group, site } = getAssignmentDetails(assignment);
-    const matchesSearch = space?.code.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                         space?.name?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                         group?.name.toLowerCase().includes(searchTerm.toLowerCase());
-    const matchesSite = selectedSite === "all" || site?.id === selectedSite;
-    return matchesSearch && matchesSite;
-  });
 
   const getKindColor = (kind: string) => {
     const colors = {
@@ -88,22 +138,31 @@ export default function SpaceAssignments() {
     setShowForm(true);
   };
 
-  const handleSave = (assignmentData: Partial<SpaceAssignment>) => {
-    if (formMode === 'create') {
-      const newAssignment: SpaceAssignment = {
-        id: `assignment-${Date.now()}`,
-        group_id: assignmentData.group_id!,
-        space_id: assignmentData.space_id!,
-        assigned_date: new Date().toISOString(),
-        assigned_by: assignmentData.assigned_by || "Admin"
-      };
-      setAssignments([...assignments, newAssignment]);
-    } else if (formMode === 'edit' && selectedAssignment) {
-      setAssignments(assignments.map(assignment =>
-        assignment.id === selectedAssignment.id ? { ...assignment, ...assignmentData } : assignment
-      ));
+  const handleSave = async (assignmentData: Partial<SpaceAssignment>) => {
+    try {
+      const request = {
+        space_id: assignmentData.space_id,
+        group_id: assignmentData.group_id,
+        assigned_by: assignmentData.assigned_by
+      }
+      if (formMode === 'create') {
+        await spaceAssignmentApiService.addAssignment(request);
+      } else if (formMode === 'edit' && selectedAssignment) {
+        await spaceAssignmentApiService.updateAssignment(request);
+      }
+      setShowForm(false);
+      updateSpaceAssignmentPage();
+      toast({
+        title: formMode === 'create' ? "Assignment Created" : "Assignment Updated",
+        description: `Space has been ${formMode === 'create' ? 'assigned' : 'updated'} successfully.`,
+      });
+    } catch (error) {
+      toast({
+        title: "Techical Error!",
+        variant: "destructive",
+      });
     }
-    setShowForm(false);
+
   };
 
   const handleDelete = (assignmentId: string) => {
@@ -153,14 +212,14 @@ export default function SpaceAssignments() {
                   onChange={(e) => setSearchTerm(e.target.value)}
                   className="max-w-sm"
                 />
-                
+
                 <select
                   value={selectedSite}
                   onChange={(e) => setSelectedSite(e.target.value)}
                   className="rounded-md border border-input bg-background px-3 py-2 text-sm"
                 >
                   <option value="all">All Sites</option>
-                  {mockSites.map(site => (
+                  {siteList.map(site => (
                     <option key={site.id} value={site.id}>{site.name}</option>
                   ))}
                 </select>
@@ -189,7 +248,7 @@ export default function SpaceAssignments() {
                 <Card>
                   <CardContent className="p-4">
                     <div className="text-2xl font-bold text-purple-600">
-                      {((uniqueSpaces / mockSpaces.length) * 100).toFixed(1)}%
+                      0%
                     </div>
                     <p className="text-sm text-muted-foreground">Assignment Rate</p>
                   </CardContent>
@@ -198,10 +257,10 @@ export default function SpaceAssignments() {
 
               {/* Assignments Grid */}
               <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
-                {filteredAssignments.map((assignment) => {
-                  const { space, group, site } = getAssignmentDetails(assignment);
-                  
-                  if (!space || !group || !site) return null;
+                {assignments.map((assignment) => {
+                  const { space, group } = getAssignmentDetails(assignment);
+
+                  if (!space || !group) return null;
 
                   return (
                     <Card key={assignment.id} className="hover:shadow-lg transition-shadow">
@@ -227,10 +286,10 @@ export default function SpaceAssignments() {
                             <Users className="h-4 w-4 text-muted-foreground" />
                             <span className="font-medium text-sm">{group.name}</span>
                           </div>
-                          
+
                           <div className="flex items-center gap-2">
                             <Building2 className="h-4 w-4 text-muted-foreground" />
-                            <span className="text-sm text-muted-foreground">{site.name}</span>
+                            <span className="text-sm text-muted-foreground">{assignment.site_name}</span>
                           </div>
 
                           <div className="flex items-center gap-2">
@@ -261,7 +320,7 @@ export default function SpaceAssignments() {
                           <div className="text-sm">
                             <span className="text-muted-foreground">Base Rate: </span>
                             <span className="font-medium">
-                              ₹{group.specs.base_rate.toLocaleString()}
+                              ₹{group.specs.base_rate}
                               {space.kind === 'apartment' ? '/month' : space.kind === 'row_house' ? '/month' : '/month'}
                             </span>
                           </div>
@@ -312,7 +371,7 @@ export default function SpaceAssignments() {
                 })}
               </div>
 
-              {filteredAssignments.length === 0 && (
+              {assignments.length === 0 && (
                 <div className="text-center py-12">
                   <Link2 className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
                   <h3 className="text-lg font-semibold text-sidebar-primary mb-2">No assignments found</h3>

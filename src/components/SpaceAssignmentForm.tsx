@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
@@ -6,11 +6,16 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "
 import { mockSpaces, mockSpaceGroups, mockSites } from "@/data/mockSpacesData";
 import { useToast } from "@/hooks/use-toast";
 import { Input } from "@/components/ui/input";
+import { siteApiService } from "@/services/spaces_sites/sitesapi";
+import { spacesApiService } from "@/services/spaces_sites/spacesapi";
+import { spaceGroupsApiService } from "@/services/spaces_sites/spacegroupsapi";
+import { spaceAssignmentApiService } from "@/services/spaces_sites/spaceassignmentsapi";
 
 interface SpaceAssignment {
   id: string;
-  group_id: string;
-  space_id: string;
+  site_id: string;
+  group_id?: string;
+  space_id?: string;
   assigned_date: string;
   assigned_by?: string;
 }
@@ -23,40 +28,82 @@ interface SpaceAssignmentFormProps {
   mode: 'create' | 'edit' | 'view';
 }
 
+const emptyFormData = {
+  site_id: "",
+  group_id: "",
+  space_id: ""
+}
+
 export function SpaceAssignmentForm({ assignment, isOpen, onClose, onSave, mode }: SpaceAssignmentFormProps) {
   const { toast } = useToast();
-  const [formData, setFormData] = useState({
-    group_id: assignment?.group_id || "",
-    space_id: assignment?.space_id || "",
-    assigned_by: assignment?.assigned_by || "Admin"
-  });
+  const [formData, setFormData] = useState<Partial<SpaceAssignment>>(emptyFormData);
   const [selectedSite, setSelectedSite] = useState<string>("all");
-
-  const selectedSpace = mockSpaces.find(s => s.id === formData.space_id);
-  const selectedGroup = mockSpaceGroups.find(g => g.id === formData.group_id);
-  
-  // Filter spaces by selected site
-  const availableSpaces = mockSpaces.filter(space => {
-    if (selectedSite !== "all") {
-      return space.site_id === selectedSite;
+  const [siteList, setSiteList] = useState([]);
+  const [spaceList, setSpaceList] = useState([]);
+  const [spaceGroupList, setSpaceGroupList] = useState([]);
+  const [assignmentPreview, setAssignmentPreview] = useState({
+    site_name: "",
+    space_name: "",
+    space_code: "",
+    kind: "",
+    group_name: "",
+    specs: {
+      base_rate: ""
     }
-    return true;
   });
 
-  // Filter groups by selected site and matching kind
-  const availableGroups = mockSpaceGroups.filter(group => {
-    if (selectedSite !== "all" && group.site_id !== selectedSite) {
-      return false;
+  useEffect(() => {
+    if (assignment) {
+      setFormData(assignment);
+      setSelectedSite(assignment.site_id);
+    } else {
+      setFormData(emptyFormData);
+      setSelectedSite("all");
     }
-    if (selectedSpace && group.kind !== selectedSpace.kind) {
-      return false;
-    }
-    return true;
-  });
+    loadSiteLookup();
+    loadSpaceLookup();
+    loadSpaceGroupLookup();
+  }, [assignment]);
+
+  useEffect(() => {
+    loadSpaceLookup();
+    loadSpaceGroupLookup();
+  }, [selectedSite]);
+
+  useEffect(() => {
+    loadSpaceGroupLookup();
+  }, [formData.space_id]);
+
+  useEffect(() => {
+    loadAssignmentPreview();
+  }, [formData.group_id]);
+
+
+  const loadSiteLookup = async () => {
+    const lookup = await siteApiService.getSiteLookup();
+    setSiteList(lookup);
+  }
+
+  const loadSpaceLookup = async () => {
+    const lookup = await spacesApiService.getSpaceLookup(selectedSite);
+    setSpaceList(lookup);
+  }
+
+  const loadSpaceGroupLookup = async () => {
+    const lookup = await spaceGroupsApiService.getSpaceGroupLookup(selectedSite, formData.space_id);
+    setSpaceGroupList(lookup);
+  }
+
+  const loadAssignmentPreview = async () => {
+    const preview = await spaceAssignmentApiService.getAssignmentPreview(formData.group_id, formData.space_id);
+    setAssignmentPreview(preview);
+  }
+  // const selectedSpace = mockSpaces.find(s => s.id === formData.space_id);
+  // const selectedGroup = mockSpaceGroups.find(g => g.id === formData.group_id);
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    
+
     if (!formData.group_id || !formData.space_id) {
       toast({
         title: "Validation Error",
@@ -68,7 +115,7 @@ export function SpaceAssignmentForm({ assignment, isOpen, onClose, onSave, mode 
 
     const space = mockSpaces.find(s => s.id === formData.space_id);
     const group = mockSpaceGroups.find(g => g.id === formData.group_id);
-    
+
     if (space && group && space.kind !== group.kind) {
       toast({
         title: "Type Mismatch",
@@ -79,22 +126,10 @@ export function SpaceAssignmentForm({ assignment, isOpen, onClose, onSave, mode 
     }
 
     onSave(formData);
-    toast({
-      title: mode === 'create' ? "Assignment Created" : "Assignment Updated",
-      description: `Space has been ${mode === 'create' ? 'assigned' : 'updated'} successfully.`,
-    });
+
   };
 
   const isReadOnly = mode === 'view';
-
-  const getSiteName = (siteId: string) => {
-    const site = mockSites.find(s => s.id === siteId);
-    return site ? site.name : 'Unknown Site';
-  };
-
-  const getSpaceDisplay = (space: any) => {
-    return `${space.code} - ${space.name || 'Unnamed'} (${space.kind.replace('_', ' ')})`;
-  };
 
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
@@ -125,7 +160,7 @@ export function SpaceAssignmentForm({ assignment, isOpen, onClose, onSave, mode 
               </SelectTrigger>
               <SelectContent>
                 <SelectItem value="all">All Sites</SelectItem>
-                {mockSites.map((site) => (
+                {siteList.map((site) => (
                   <SelectItem key={site.id} value={site.id}>
                     {site.name}
                   </SelectItem>
@@ -148,9 +183,9 @@ export function SpaceAssignmentForm({ assignment, isOpen, onClose, onSave, mode 
                 <SelectValue placeholder="Select space" />
               </SelectTrigger>
               <SelectContent>
-                {availableSpaces.map((space) => (
+                {spaceList.map((space) => (
                   <SelectItem key={space.id} value={space.id}>
-                    {getSpaceDisplay(space)} - {getSiteName(space.site_id)}
+                    {space.name}
                   </SelectItem>
                 ))}
               </SelectContent>
@@ -169,14 +204,12 @@ export function SpaceAssignmentForm({ assignment, isOpen, onClose, onSave, mode 
                 <SelectValue placeholder={formData.space_id ? "Select group" : "Select space first"} />
               </SelectTrigger>
               <SelectContent>
-                {availableGroups.map((group) => (
-                  <SelectItem key={group.id} value={group.id}>
-                    {group.name} ({group.kind.replace('_', ' ')}) - {getSiteName(group.site_id)}
-                  </SelectItem>
+                {spaceGroupList.map((group) => (
+                  <SelectItem key={group.id} value={group.id}>{group.name}</SelectItem>
                 ))}
               </SelectContent>
             </Select>
-            {formData.space_id && availableGroups.length === 0 && (
+            {formData.space_id && spaceGroupList.length === 0 && (
               <p className="text-sm text-muted-foreground mt-1">
                 No matching groups found for this space type
               </p>
@@ -195,15 +228,15 @@ export function SpaceAssignmentForm({ assignment, isOpen, onClose, onSave, mode 
           </div>
 
           {/* Preview Information */}
-          {selectedSpace && selectedGroup && (
+          {formData.group_id && assignmentPreview && (
             <div className="bg-muted p-4 rounded-lg space-y-2">
               <h4 className="font-medium text-sm">Assignment Preview:</h4>
               <div className="text-sm text-muted-foreground space-y-1">
-                <div><strong>Space:</strong> {getSpaceDisplay(selectedSpace)}</div>
-                <div><strong>Group:</strong> {selectedGroup.name}</div>
-                <div><strong>Site:</strong> {getSiteName(selectedSpace.site_id)}</div>
-                {selectedGroup.specs.base_rate && (
-                  <div><strong>Base Rate:</strong> ₹{selectedGroup.specs.base_rate.toLocaleString()}</div>
+                <div><strong>Space:</strong> {`${assignmentPreview.space_code} - ${assignmentPreview.space_name} (${assignmentPreview.kind})`}</div>
+                <div><strong>Group:</strong> {assignmentPreview.group_name}</div>
+                <div><strong>Site:</strong> {assignmentPreview.site_name}</div>
+                {assignmentPreview.specs.base_rate && (
+                  <div><strong>Base Rate:</strong> ₹{assignmentPreview.specs.base_rate.toLocaleString()}</div>
                 )}
               </div>
             </div>

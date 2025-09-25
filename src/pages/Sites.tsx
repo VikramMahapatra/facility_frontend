@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Building2, MapPin, Calendar, Eye, Edit, Trash2, Plus } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -6,40 +6,75 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { PropertySidebar } from "@/components/PropertySidebar";
 import { SidebarProvider, SidebarInset, SidebarTrigger } from "@/components/ui/sidebar";
-import { mockSites, getBuildingBlocks, getSpacesBySite, Site } from "@/data/mockSpacesData";
+import { mockSites, getBuildingBlocks, getSpacesBySite } from "@/data/mockSpacesData";
 import { SiteForm } from "@/components/SiteForm";
 import { AlertDialog, AlertDialogContent, AlertDialogHeader, AlertDialogFooter, AlertDialogTitle, AlertDialogDescription, AlertDialogCancel, AlertDialogAction } from "@/components/ui/alert-dialog";
 import { useToast } from "@/hooks/use-toast";
+import { siteApiService } from "@/services/spaces_sites/sitesapi";
+import { Pagination } from "@/components/Pagination";
+export interface Site {
+  id: string;
+  org_id: string;
+  name: string;
+  code: string;
+  kind: 'residential' | 'commercial' | 'hotel' | 'mall' | 'mixed' | 'campus';
+  address: {
+    line1: string;
+    line2?: string;
+    city: string;
+    state: string;
+    country: string;
+    pincode: string;
+  };
+  geo: { lat: number; lng: number };
+  opened_on: string;
+  status: 'active' | 'inactive';
+  total_spaces?: string;
+  buildings?: string;
+  occupied_percent?: string;
+  created_at: string;
+  updated_at: string;
+}
 
 export default function Sites() {
   const { toast } = useToast();
   const [searchTerm, setSearchTerm] = useState("");
   const [selectedKind, setSelectedKind] = useState<string>("all");
-  const [sites, setSites] = useState<Site[]>(mockSites);
+  const [sites, setSites] = useState<Site[]>([]);
   const [selectedSite, setSelectedSite] = useState<Site | undefined>(undefined);
   const [formMode, setFormMode] = useState<"create" | "edit" | "view">("create");
   const [showForm, setShowForm] = useState(false);
   const [deleteId, setDeleteId] = useState<string | null>(null);
+  const [page, setPage] = useState(1); // current page
+  const [pageSize] = useState(3); // items per page
+  const [totalItems, setTotalItems] = useState(0);
 
-  const filteredSites = sites.filter(site => {
-    const matchesSearch = site.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      site.code.toLowerCase().includes(searchTerm.toLowerCase());
-    const matchesKind = selectedKind === "all" || site.kind === selectedKind;
-    return matchesSearch && matchesKind;
-  });
+  useEffect(() => {
+    loadSites();
+  }, [page]);
 
-  const getSiteStats = (site: Site) => {
-    const spaces = getSpacesBySite(site.id);
-    const buildings = getBuildingBlocks(site.id);
-    const occupiedSpaces = spaces.filter(s => s.status === 'occupied').length;
-    const occupancyRate = spaces.length > 0 ? (occupiedSpaces / spaces.length) * 100 : 0;
+  useEffect(() => {
+    if (page === 1) {
+      loadSites();  // already page 1 → reload
+    } else {
+      setPage(1);    // triggers the page effect
+    }
+  }, [searchTerm, selectedKind]);
 
-    return {
-      totalSpaces: spaces.length,
-      totalBuildings: buildings.length,
-      occupancyRate: occupancyRate.toFixed(1)
-    };
-  };
+  const loadSites = async () => {
+    const skip = (page - 1) * pageSize;
+    const limit = pageSize;
+
+    // build query params
+    const params = new URLSearchParams();
+    if (searchTerm) params.append("search", searchTerm);
+    if (selectedKind) params.append("kind", selectedKind);
+    params.append("skip", skip.toString());
+    params.append("limit", limit.toString());
+    const response = await siteApiService.getSites(`/sites?${params.toString()}`);
+    setSites(response.sites);
+    setTotalItems(response.total);
+  }
 
   const getKindColor = (kind: string) => {
     const colors = {
@@ -59,7 +94,7 @@ export default function Sites() {
 
   // Handlers
   const handleCreate = () => {
-    setSelectedSite(undefined);
+    setSelectedSite(null);
     setFormMode("create");
     setShowForm(true);
   };
@@ -76,33 +111,50 @@ export default function Sites() {
     setShowForm(true);
   };
 
-  const handleSave = (siteData: Partial<Site>) => {
-    if (formMode === "create") {
-      const newSite: Site = {
-        ...siteData,
-        id: crypto.randomUUID(),
-        created_at: new Date().toISOString(),
-        updated_at: new Date().toISOString(),
-      } as Site;
-      setSites([...sites, newSite]);
-    } else if (formMode === "edit" && selectedSite) {
-      setSites(sites.map(s => s.id === selectedSite.id ? { ...selectedSite, ...siteData, updated_at: new Date().toISOString() } : s));
+  const handleSave = async (siteData: Partial<Site>) => {
+    try {
+      if (formMode === "create") {
+        const newSite = await siteApiService.addSite(siteData);
+      } else if (formMode === "edit" && selectedSite) {
+        const updatedSite = {
+          ...selectedSite,
+          ...siteData,
+          updated_at: new Date().toISOString(),
+        }
+        await siteApiService.update(updatedSite);
+      }
+      setShowForm(false);
+      loadSites();
+      toast({
+        title: formMode === "create" ? "Site Created" : "Site Updated",
+        description: `Site ${siteData.code} has been ${formMode === "create" ? "created" : "updated"} successfully.`,
+      });
+    } catch (error) {
+      toast({
+        title: "Techical Error!",
+        variant: "destructive",
+      });
     }
-    setShowForm(false);
   };
 
   const handleDelete = (id: string) => {
     setDeleteId(id);
   };
 
-  const confirmDelete = () => {
+  const confirmDelete = async () => {
     if (deleteId) {
-      setSites(sites.filter(s => s.id !== deleteId));
-      setDeleteId(null);
-      toast({
-        title: "Site Deleted",
-        description: "The site has been removed successfully.",
-      });
+      try {
+        await siteApiService.deleteSite(deleteId);
+        loadSites();
+        setDeleteId(null);
+        toast({
+          title: "Site Deleted",
+          description: "The site has been removed successfully.",
+        });
+      } catch (error) {
+        console.log(error)
+      }
+
     }
   };
 
@@ -158,8 +210,7 @@ export default function Sites() {
 
               {/* Sites Grid */}
               <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
-                {filteredSites.map((site) => {
-                  const stats = getSiteStats(site);
+                {sites.map((site) => {
                   return (
                     <Card key={site.id} className="hover:shadow-lg transition-shadow">
                       <CardHeader className="pb-3">
@@ -190,15 +241,15 @@ export default function Sites() {
                         {/* Stats */}
                         <div className="grid grid-cols-3 gap-4 text-sm">
                           <div className="text-center">
-                            <p className="font-semibold text-sidebar-primary">{stats.totalSpaces}</p>
+                            <p className="font-semibold text-sidebar-primary">{site.total_spaces}</p>
                             <p className="text-muted-foreground">Spaces</p>
                           </div>
                           <div className="text-center">
-                            <p className="font-semibold text-sidebar-primary">{stats.totalBuildings}</p>
+                            <p className="font-semibold text-sidebar-primary">{site.buildings}</p>
                             <p className="text-muted-foreground">Buildings</p>
                           </div>
                           <div className="text-center">
-                            <p className="font-semibold text-sidebar-primary">{stats.occupancyRate}%</p>
+                            <p className="font-semibold text-sidebar-primary">{site.occupied_percent}%</p>
                             <p className="text-muted-foreground">Occupied</p>
                           </div>
                         </div>
@@ -222,9 +273,9 @@ export default function Sites() {
                           <Button size="sm" variant="outline" onClick={() => handleEdit(site)}>
                             <Edit className="h-3 w-3" />
                           </Button>
-                          <Button 
-                            size="sm" 
-                            variant="outline" 
+                          <Button
+                            size="sm"
+                            variant="outline"
                             className="text-destructive hover:text-destructive"
                             onClick={() => handleDelete(site.id)}
                           >
@@ -236,8 +287,14 @@ export default function Sites() {
                   );
                 })}
               </div>
+              <Pagination
+                page={page}
+                pageSize={pageSize}
+                totalItems={totalItems}
+                onPageChange={(newPage) => setPage(newPage)}
+              />
 
-              {filteredSites.length === 0 && (
+              {sites.length === 0 && (
                 <div className="text-center py-12">
                   <Building2 className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
                   <h3 className="text-lg font-semibold text-sidebar-primary mb-2">No sites found</h3>

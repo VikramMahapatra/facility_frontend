@@ -46,7 +46,7 @@ class ApiService {
         };
 
         try {
-            console.log('request config: ', config)
+            console.log('request config: ', config, url);
             const response = await fetch(url, config);
             const data = await response.json().catch(() => ({}));
             console.log('response data: ', data);

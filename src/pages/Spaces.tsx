@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Home, Search, Filter, Plus, Eye, Edit, Trash2, MapPin } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -6,12 +6,15 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { PropertySidebar } from "@/components/PropertySidebar";
 import { SidebarProvider, SidebarInset, SidebarTrigger } from "@/components/ui/sidebar";
-import { mockSpaces, mockSites, SpaceKind } from "@/data/mockSpacesData";
+import { SpaceKind } from "@/data/mockSpacesData";
 import { SpaceForm } from "@/components/SpaceForm";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
 import { useToast } from "@/hooks/use-toast";
+import { Pagination } from "@/components/Pagination";
+import { siteApiService } from "@/services/spaces_sites/sitesapi";
+import { spacesApiService } from "@/services/spaces_sites/spacesapi";
 
-interface Space {
+export interface Space {
   id: string;
   org_id: string;
   site_id: string;
@@ -19,6 +22,7 @@ interface Space {
   name?: string;
   kind: SpaceKind;
   floor?: string;
+  building_block_id?: string;
   building_block?: string;
   area_sqft?: number;
   beds?: number;
@@ -29,26 +33,87 @@ interface Space {
   updated_at: string;
 }
 
+interface SpaceOverview {
+  totalSpaces: number;
+  availableSpaces: number;
+  occupiedSpaces: number;
+  outOfServices: number;
+}
+
 export default function Spaces() {
   const { toast } = useToast();
   const [searchTerm, setSearchTerm] = useState("");
   const [selectedKind, setSelectedKind] = useState<string>("all");
   const [selectedStatus, setSelectedStatus] = useState<string>("all");
   const [selectedSite, setSelectedSite] = useState<string>("all");
-  const [spaces, setSpaces] = useState<Space[]>(mockSpaces as Space[]);
+  const [spaces, setSpaces] = useState<Space[]>([]);
   const [selectedSpace, setSelectedSpace] = useState<Space | undefined>();
   const [formMode, setFormMode] = useState<'create' | 'edit' | 'view'>('create');
   const [isFormOpen, setIsFormOpen] = useState(false);
   const [deleteSpaceId, setDeleteSpaceId] = useState<string | null>(null);
-
-  const filteredSpaces = spaces.filter(space => {
-    const matchesSearch = (space.name || space.code).toLowerCase().includes(searchTerm.toLowerCase()) ||
-      space.code.toLowerCase().includes(searchTerm.toLowerCase());
-    const matchesKind = selectedKind === "all" || space.kind === selectedKind;
-    const matchesStatus = selectedStatus === "all" || space.status === selectedStatus;
-    const matchesSite = selectedSite === "all" || space.site_id === selectedSite;
-    return matchesSearch && matchesKind && matchesStatus && matchesSite;
+  const [siteList, setSiteList] = useState([]);
+  const [spaceOverview, setSpaceOverview] = useState<SpaceOverview>({
+    totalSpaces: 0,
+    availableSpaces: 0,
+    occupiedSpaces: 0,
+    outOfServices: 0
   });
+
+  const [page, setPage] = useState(1); // current page
+  const [pageSize] = useState(6); // items per page
+  const [totalItems, setTotalItems] = useState(0);
+
+  useEffect(() => {
+    loadSpaces();
+  }, [page]);
+
+  useEffect(() => {
+    updateSpacePage();
+  }, [searchTerm, selectedSite, selectedKind, selectedStatus]);
+
+  useEffect(() => {
+    loadSiteLookup();
+  }, []);
+
+  const updateSpacePage = () => {
+    if (page === 1) {
+      loadSpaces();  // already page 1 → reload
+    } else {
+      setPage(1);    // triggers the page effect
+    }
+    loadSpaceOverView();
+  }
+  const loadSpaceOverView = async () => {
+    const params = new URLSearchParams();
+    if (searchTerm) params.append("search", searchTerm);
+    if (selectedSite) params.append("site_id", selectedSite);
+    if (selectedKind) params.append("kind", selectedKind);
+    if (selectedStatus) params.append("status", selectedStatus);
+    const response = await spacesApiService.getSpaceOverview(`/spaces/overview?${params.toString()}`);
+    setSpaceOverview(response);
+  }
+
+  const loadSpaces = async () => {
+    const skip = (page - 1) * pageSize;
+    const limit = pageSize;
+
+    // build query params
+    const params = new URLSearchParams();
+    if (searchTerm) params.append("search", searchTerm);
+    if (selectedSite) params.append("site_id", selectedSite);
+    if (selectedKind) params.append("kind", selectedKind);
+    if (selectedStatus) params.append("status", selectedStatus);
+    params.append("skip", skip.toString());
+    params.append("limit", limit.toString());
+    const response = await spacesApiService.getSpaces(`/spaces?${params.toString()}`);
+    setSpaces(response.spaces);
+    setTotalItems(response.total);
+  }
+
+  const loadSiteLookup = async () => {
+    const lookup = await siteApiService.getSiteLookup();
+    setSiteList(lookup);
+  }
 
   const handleCreate = () => {
     setSelectedSpace(undefined);
@@ -83,24 +148,26 @@ export default function Spaces() {
     }
   };
 
-  const handleSave = (spaceData: Partial<Space>) => {
-    if (formMode === 'create') {
-      const newSpace: Space = {
-        id: `space-${Date.now()}`,
-        org_id: "org-1",
-        created_at: new Date().toISOString(),
-        updated_at: new Date().toISOString(),
-        ...spaceData as Omit<Space, 'id' | 'org_id' | 'created_at' | 'updated_at'>
-      };
-      setSpaces([...spaces, newSpace]);
-    } else if (formMode === 'edit' && selectedSpace) {
-      setSpaces(spaces.map(space =>
-        space.id === selectedSpace.id
-          ? { ...space, ...spaceData }
-          : space
-      ));
+  const handleSave = async (spaceData: Partial<Space>) => {
+    try {
+      if (formMode === 'create') {
+        await spacesApiService.addSpace(spaceData);
+      } else if (formMode === 'edit' && selectedSpace) {
+        const updatedSpace = { ...selectedSpace, ...spaceData };
+        await spacesApiService.updateSpace(updatedSpace);
+      }
+      setIsFormOpen(false);
+      toast({
+        title: formMode === 'create' ? "Space Created" : "Space Updated",
+        description: `Space ${spaceData.code} has been ${formMode === 'create' ? 'created' : 'updated'} successfully.`,
+      });
+      updateSpacePage();
+    } catch (error) {
+      toast({
+        title: "Techical Error!",
+        variant: "destructive",
+      });
     }
-    setIsFormOpen(false);
   };
 
   const getKindIcon = (kind: SpaceKind) => {
@@ -143,7 +210,7 @@ export default function Spaces() {
   };
 
   const getSiteName = (siteId: string) => {
-    const site = mockSites.find(s => s.id === siteId);
+    const site = siteList.find(s => s.id === siteId);
     return site ? site.name : 'Unknown Site';
   };
 
@@ -194,7 +261,7 @@ export default function Spaces() {
                   className="rounded-md border border-input bg-background px-3 py-2 text-sm"
                 >
                   <option value="all">All Sites</option>
-                  {mockSites.map(site => (
+                  {siteList.map(site => (
                     <option key={site.id} value={site.id}>{site.name}</option>
                   ))}
                 </select>
@@ -226,14 +293,14 @@ export default function Spaces() {
               <div className="grid gap-4 md:grid-cols-4">
                 <Card>
                   <CardContent className="p-4">
-                    <div className="text-2xl font-bold text-sidebar-primary">{filteredSpaces.length}</div>
+                    <div className="text-2xl font-bold text-sidebar-primary">{spaceOverview.totalSpaces}</div>
                     <p className="text-sm text-muted-foreground">Total Spaces</p>
                   </CardContent>
                 </Card>
                 <Card>
                   <CardContent className="p-4">
                     <div className="text-2xl font-bold text-green-600">
-                      {filteredSpaces.filter(s => s.status === 'available').length}
+                      {spaceOverview.availableSpaces}
                     </div>
                     <p className="text-sm text-muted-foreground">Available</p>
                   </CardContent>
@@ -241,7 +308,7 @@ export default function Spaces() {
                 <Card>
                   <CardContent className="p-4">
                     <div className="text-2xl font-bold text-blue-600">
-                      {filteredSpaces.filter(s => s.status === 'occupied').length}
+                      {spaceOverview.occupiedSpaces}
                     </div>
                     <p className="text-sm text-muted-foreground">Occupied</p>
                   </CardContent>
@@ -249,7 +316,7 @@ export default function Spaces() {
                 <Card>
                   <CardContent className="p-4">
                     <div className="text-2xl font-bold text-red-600">
-                      {filteredSpaces.filter(s => s.status === 'out_of_service').length}
+                      {spaceOverview.outOfServices}
                     </div>
                     <p className="text-sm text-muted-foreground">Out of Service</p>
                   </CardContent>
@@ -258,7 +325,7 @@ export default function Spaces() {
 
               {/* Spaces Grid */}
               <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
-                {filteredSpaces.map((space) => (
+                {spaces.map((space) => (
                   <Card key={space.id} className="hover:shadow-lg transition-shadow">
                     <CardHeader className="pb-3">
                       <div className="flex items-start justify-between">
@@ -342,8 +409,13 @@ export default function Spaces() {
                   </Card>
                 ))}
               </div>
-
-              {filteredSpaces.length === 0 && (
+              <Pagination
+                page={page}
+                pageSize={pageSize}
+                totalItems={totalItems}
+                onPageChange={(newPage) => setPage(newPage)}
+              />
+              {spaces.length === 0 && (
                 <div className="text-center py-12">
                   <Home className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
                   <h3 className="text-lg font-semibold text-sidebar-primary mb-2">No spaces found</h3>

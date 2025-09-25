@@ -1,5 +1,8 @@
 // ==========================
 // Interfaces
+
+import { Site } from "@/pages/Sites";
+
 // ==========================
 export interface Organization {
   id: string;
@@ -16,26 +19,7 @@ export interface Organization {
   updated_at: string;
 }
 
-export interface Site {
-  id: string;
-  org_id: string;
-  name: string;
-  code: string;
-  kind: 'residential' | 'commercial' | 'hotel' | 'mall' | 'mixed' | 'campus';
-  address: {
-    line1: string;
-    line2?: string;
-    city: string;
-    state: string;
-    country: string;
-    pincode: string;
-  };
-  geo: { lat: number; lng: number };
-  opened_on: string;
-  status: 'active' | 'inactive';
-  created_at: string;
-  updated_at: string;
-}
+
 
 export interface Building {
   id: string;
