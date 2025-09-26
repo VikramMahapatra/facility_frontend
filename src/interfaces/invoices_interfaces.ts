@@ -11,12 +11,14 @@ export interface Invoice {
     status: 'draft' | 'issued' | 'paid' | 'partial' | 'void';
     currency: string;
     totals: {
-        subtotal: number;
+        sub: number;
         tax: number;
         grand: number;
     };
     meta?: any;
     lines?: InvoiceLine[];
+    created_at?: string;
+    updated_at?: string;
 }
 
 export interface InvoiceLine {
