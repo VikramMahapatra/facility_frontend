@@ -11,6 +11,8 @@ import { PropertySidebar } from "@/components/PropertySidebar";
 import { invoiceApiService } from "@/services/financials/invoicesapi";
 import { Invoice, Payment } from "@/interfaces/invoices_interfaces";
 import { Pagination } from "@/components/Pagination";
+import { useToast } from "@/hooks/use-toast";
+import { InvoiceForm } from "@/components/InvoiceForm";
 
 interface InvoiceOverview {
   totalInvoices: number;
@@ -21,11 +23,16 @@ interface InvoiceOverview {
 
 
 export default function Invoices() {
+  const { toast } = useToast();
   const [searchTerm, setSearchTerm] = useState("");
   const [statusFilter, setStatusFilter] = useState("all");
   const [customerTypeFilter, setCustomerTypeFilter] = useState("all");
   const [invoices, setInvoices] = useState<Invoice[]>([]);
   const [payments, setPayments] = useState<Payment[]>([]);
+  const [selectedInvoice, setSelectedInvoice] = useState<Invoice | undefined>();
+  const [formMode, setFormMode] = useState<'create' | 'edit' | 'view'>('create');
+  const [isFormOpen, setIsFormOpen] = useState(false);
+  const [deleteInvoiceId, setDeleteInvoiceId] = useState<string | null>(null);
   const [invoiceOverview, setInvoiceOverview] = useState<InvoiceOverview>({
     totalInvoices: 0,
     totalAmount: 0,
@@ -118,6 +125,62 @@ export default function Invoices() {
     return <Badge variant={variants[type as keyof typeof variants] || "outline"}>{type}</Badge>;
   };
 
+  const handleCreate = () => {
+    setSelectedInvoice(undefined);
+    setFormMode('create');
+    setIsFormOpen(true);
+  };
+
+  const handleView = (invoice: Invoice) => {
+    setSelectedInvoice(invoice);
+    setFormMode('view');
+    setIsFormOpen(true);
+  };
+
+  const handleEdit = (invoice: Invoice) => {
+    setSelectedInvoice(invoice);
+
+    setFormMode('edit');
+    setIsFormOpen(true);
+  };
+
+  const handleDelete = (invoiceId: string) => {
+    setDeleteInvoiceId(invoiceId);
+  };
+
+  const confirmDelete = () => {
+    if (deleteInvoiceId) {
+      setInvoices(invoices.filter(invoice => invoice.id !== deleteInvoiceId));
+      toast({
+        title: "Space Deleted",
+        description: "Space has been deleted successfully.",
+      });
+      setDeleteInvoiceId(null);
+    }
+  };
+
+  const handleSave = async (invoiceData: Partial<Invoice>) => {
+    try {
+      if (formMode === 'create') {
+        await invoiceApiService.addInvoice(invoiceData);
+      } else if (formMode === 'edit' && selectedInvoice) {
+        const updatedInvoice = { ...selectedInvoice, ...invoiceData };
+        await invoiceApiService.updateInvoice(updatedInvoice);
+      }
+      setIsFormOpen(false);
+      toast({
+        title: formMode === 'create' ? "Invoice Created" : "Invoice Updated",
+        description: `Invoice ${invoiceData.invoice_no} has been ${formMode === 'create' ? 'created' : 'updated'} successfully.`,
+      });
+      updateInvoicesPage();
+    } catch (error) {
+      toast({
+        title: "Techical Error!",
+        variant: "destructive",
+      });
+    }
+  };
+
   return (
     <SidebarProvider>
       <div className="min-h-screen flex w-full bg-background">
@@ -138,7 +201,7 @@ export default function Invoices() {
                   <Download className="h-4 w-4 mr-2" />
                   Export
                 </Button>
-                <Button size="sm">
+                <Button onClick={handleCreate} size="sm">
                   <Plus className="h-4 w-4 mr-2" />
                   Create Invoice
                 </Button>
@@ -278,10 +341,10 @@ export default function Invoices() {
                           <TableCell>{getStatusBadge(invoice.status)}</TableCell>
                           <TableCell>
                             <div className="flex gap-1">
-                              <Button variant="ghost" size="sm">
+                              <Button variant="ghost" size="sm" onClick={() => handleView(invoice)}>
                                 <Eye className="h-4 w-4" />
                               </Button>
-                              <Button variant="ghost" size="sm">
+                              <Button variant="ghost" size="sm" onClick={() => handleEdit(invoice)}>
                                 <Edit className="h-4 w-4" />
                               </Button>
                               {invoice.status === 'draft' && (
@@ -352,6 +415,13 @@ export default function Invoices() {
           </main>
         </div>
       </div>
+      <InvoiceForm
+        invoice={selectedInvoice}
+        isOpen={isFormOpen}
+        onClose={() => setIsFormOpen(false)}
+        onSave={handleSave}
+        mode={formMode}
+      />
     </SidebarProvider>
   );
 }

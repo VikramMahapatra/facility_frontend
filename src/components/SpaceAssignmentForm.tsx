@@ -62,8 +62,6 @@ export function SpaceAssignmentForm({ assignment, isOpen, onClose, onSave, mode 
       setSelectedSite("all");
     }
     loadSiteLookup();
-    // loadSpaceLookup();
-    // loadSpaceGroupLookup();
   }, [assignment]);
 
   useEffect(() => {
@@ -99,8 +97,6 @@ export function SpaceAssignmentForm({ assignment, isOpen, onClose, onSave, mode 
     const preview = await spaceAssignmentApiService.getAssignmentPreview(formData.group_id, formData.space_id);
     setAssignmentPreview(preview);
   }
-  // const selectedSpace = mockSpaces.find(s => s.id === formData.space_id);
-  // const selectedGroup = mockSpaceGroups.find(g => g.id === formData.group_id);
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
