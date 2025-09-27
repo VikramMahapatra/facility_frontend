@@ -1,12 +1,14 @@
-// services/leases/leasesapi.ts
+// services/Leasing_Tenants/leasesapi.ts
 import { apiService } from '../api';
 
 class LeasesApiService {
   async getLeases(url: string) {
+    // url is like: `/leases?skip=...&limit=...&search=...`
     return await apiService.request(url);
   }
 
   async getLeaseOverview(url: string) {
+    // url is like: `/leases/overview?site_id=...&status=...`
     return await apiService.request(url);
   }
 
@@ -24,19 +26,10 @@ class LeasesApiService {
     });
   }
 
-  async deleteLease(id: any) {
+  async deleteLease(id: string) {
     return await apiService.request(`/leases/${id}`, {
       method: 'DELETE',
     });
-  }
-
-  // Lookup helper: optionally filter lookup by space id (used to pre-fill rent, deposit etc.)
-  async getLeaseLookup(space_id?: any) {
-    let url = '/leases/lookup';
-    if (space_id) {
-      url += `?space_id=${space_id}`;
-    }
-    return await apiService.request(url);
   }
 }
 
