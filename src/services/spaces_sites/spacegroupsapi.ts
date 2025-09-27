@@ -2,8 +2,8 @@ import { apiService } from '../api';
 
 class SpaceGroupsApiService {
 
-    async getSpaceGroups(url) {
-        return await apiService.request(url);
+    async getSpaceGroups(params) {
+        return await apiService.request(`/space-groups?${params.toString()}`);
     }
 
     async addSpaceGroup(spaceGroupData: any) {

@@ -77,7 +77,7 @@ export default function SpaceAssignments() {
     const params = new URLSearchParams();
     if (searchTerm) params.append("search", searchTerm);
     if (selectedSite) params.append("site_id", selectedSite);
-    const response = await spaceAssignmentApiService.getAssignmentOverview(`/space-group-members/overview?${params.toString()}`);
+    const response = await spaceAssignmentApiService.getAssignmentOverview(params);
     setMemberOverview(response);
   }
 
@@ -96,7 +96,7 @@ export default function SpaceAssignments() {
     if (selectedSite) params.append("site_id", selectedSite);
     params.append("skip", skip.toString());
     params.append("limit", limit.toString());
-    const response = await spaceAssignmentApiService.getAssignments(`/space-group-members/all?${params.toString()}`);
+    const response = await spaceAssignmentApiService.getAssignments(params);
     setAssignments(response.assignments);
     setTotalItems(response.total);
   }
@@ -174,9 +174,6 @@ export default function SpaceAssignments() {
     });
   };
 
-  // Get unique groups for stats
-  const uniqueGroups = new Set(assignments.map(a => a.group_id)).size;
-  const uniqueSpaces = new Set(assignments.map(a => a.space_id)).size;
 
   return (
     <SidebarProvider>
@@ -236,20 +233,20 @@ export default function SpaceAssignments() {
                 </Card>
                 <Card>
                   <CardContent className="p-4">
-                    <div className="text-2xl font-bold text-blue-600">{uniqueGroups}</div>
+                    <div className="text-2xl font-bold text-blue-600">{memberOverview.groupUsed}</div>
                     <p className="text-sm text-muted-foreground">Groups Used</p>
                   </CardContent>
                 </Card>
                 <Card>
                   <CardContent className="p-4">
-                    <div className="text-2xl font-bold text-green-600">{uniqueSpaces}</div>
+                    <div className="text-2xl font-bold text-green-600">{memberOverview.spaceAssigned}</div>
                     <p className="text-sm text-muted-foreground">Spaces Assigned</p>
                   </CardContent>
                 </Card>
                 <Card>
                   <CardContent className="p-4">
                     <div className="text-2xl font-bold text-purple-600">
-                      0%
+                      {memberOverview.assignmentRate}%
                     </div>
                     <p className="text-sm text-muted-foreground">Assignment Rate</p>
                   </CardContent>

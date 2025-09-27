@@ -2,12 +2,12 @@ import { apiService } from '../api';
 
 class SpaceAssignmentApiService {
 
-    async getAssignments(url) {
-        return await apiService.request(url);
+    async getAssignments(params) {
+        return await apiService.request(`/space-group-members/all?${params.toString()}`);
     }
 
-    async getAssignmentOverview(url) {
-        return await apiService.request(url);
+    async getAssignmentOverview(params) {
+        return await apiService.request(`/space-group-members/overview?${params.toString()}`);
     }
 
     async getAssignmentPreview(group_id?: string, space_id?: string) {

@@ -2,8 +2,12 @@ import { apiService } from '../api';
 
 class InvoiceApiService {
 
-    async getInvoices(url) {
-        return await apiService.request(url);
+    async getInvoices(params) {
+        return await apiService.request(`/invoices/all?${params.toString()}`);
+    }
+
+    async getPayments(params) {
+        return await apiService.request(`/invoices/payments?${params.toString()}`);
     }
 
     async getInvoiceOverview() {
