@@ -2,8 +2,8 @@ import { apiService } from '../api';
 
 class SiteApiService {
 
-    async getSites(url) {
-        return await apiService.request(url);
+    async getSites(params) {
+        return await apiService.request(`/sites?${params.toString()}`);
     }
 
     async getSiteLookup() {

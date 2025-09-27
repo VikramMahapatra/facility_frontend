@@ -9,17 +9,12 @@ import { Plus, Search, Filter, Download, Eye, Edit, Send, Trash2, CreditCard, Fi
 import { SidebarProvider, SidebarTrigger } from "@/components/ui/sidebar";
 import { PropertySidebar } from "@/components/PropertySidebar";
 import { invoiceApiService } from "@/services/financials/invoicesapi";
-import { Invoice, Payment } from "@/interfaces/invoices_interfaces";
+import { Invoice, Payment, InvoiceOverview } from "@/interfaces/invoices_interfaces";
 import { Pagination } from "@/components/Pagination";
 import { useToast } from "@/hooks/use-toast";
 import { InvoiceForm } from "@/components/InvoiceForm";
 
-interface InvoiceOverview {
-  totalInvoices: number;
-  totalAmount: number;
-  paidAmount: number;
-  outstandingAmount: number;
-}
+
 
 
 export default function Invoices() {
@@ -84,7 +79,7 @@ export default function Invoices() {
     if (customerTypeFilter) params.append("kind", customerTypeFilter);
     params.append("skip", skip.toString());
     params.append("limit", limit.toString());
-    const response = await invoiceApiService.getInvoices(`/invoices/all?${params.toString()}`);
+    const response = await invoiceApiService.getInvoices(params);
     setInvoices(response.invoices);
     setTotalItems(response.total);
   }
@@ -97,9 +92,9 @@ export default function Invoices() {
     const params = new URLSearchParams();
     params.append("skip", skip.toString());
     params.append("limit", limit.toString());
-    const response = await invoiceApiService.getInvoices(`/invoices/payments?${params.toString()}`);
+    const response = await invoiceApiService.getPayments(params);
     setPayments(response.payments);
-    setTotalItems(response.total);
+    setTotalPaymentItems(response.total);
   }
 
 

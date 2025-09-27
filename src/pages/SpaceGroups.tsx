@@ -81,7 +81,7 @@ export default function SpaceGroups() {
     if (selectedKind) params.append("kind", selectedKind);
     params.append("skip", skip.toString());
     params.append("limit", limit.toString());
-    const response = await spaceGroupsApiService.getSpaceGroups(`/space-groups?${params.toString()}`);
+    const response = await spaceGroupsApiService.getSpaceGroups(params);
     console.log("group list:", response.spaceGroups)
     setGroups(response.spaceGroups);
     setTotalItems(response.total);

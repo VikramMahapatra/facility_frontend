@@ -65,7 +65,7 @@ export default function Buildings() {
     if (selectedSite) params.append("site_id", selectedSite);
     params.append("skip", skip.toString());
     params.append("limit", limit.toString());
-    const response = await buildingApiService.getBuildings(`/buildings?${params.toString()}`);
+    const response = await buildingApiService.getBuildings(params);
     setBuildings(response.buildings);
     setTotalItems(response.total);
   }

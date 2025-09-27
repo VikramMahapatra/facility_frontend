@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -6,20 +6,92 @@ import { Badge } from "@/components/ui/badge";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Plus, Search, Edit, Trash2, FileText, Calculator, TrendingUp, AlertCircle, Download, Eye } from "lucide-react";
-import { mockTaxCodes, type TaxCode } from "@/data/mockFinancialsData";
+import { mockTaxCodes } from "@/data/mockFinancialsData";
 import { SidebarProvider, SidebarTrigger } from "@/components/ui/sidebar";
 import { PropertySidebar } from "@/components/PropertySidebar";
+import { TaxCode, TaxOverview } from "@/interfaces/tax_interfaces";
+import { taxCodeApiService } from "@/services/financials/taxcodesapi";
+import { Pagination } from "@/components/Pagination";
 
 export default function TaxManagement() {
   const [searchTerm, setSearchTerm] = useState("");
   const [jurisdictionFilter, setJurisdictionFilter] = useState("all");
-
-  const filteredTaxCodes = mockTaxCodes.filter(taxCode => {
-    const matchesSearch = taxCode.code.toLowerCase().includes(searchTerm.toLowerCase());
-    const matchesJurisdiction = jurisdictionFilter === "all" || taxCode.jurisdiction === jurisdictionFilter;
-
-    return matchesSearch && matchesJurisdiction;
+  const [taxCodes, setTaxCodes] = useState<TaxCode[]>([]);
+  const [taxReturns, setTaxReturns] = useState<any[]>([]);
+  const [selectedTaxCode, setSelectedTaxCode] = useState<TaxCode | undefined>();
+  const [formMode, setFormMode] = useState<'create' | 'edit' | 'view'>('create');
+  const [isFormOpen, setIsFormOpen] = useState(false);
+  const [deleteTaxCodeId, setDeleteTaxCodeId] = useState<string | null>(null);
+  const [taxOverview, setTaxOverview] = useState<TaxOverview>({
+    activeTaxCodes: 0,
+    totalTaxCollected: 0,
+    avgTaxRate: 0,
+    pendingReturns: 0,
+    lastMonthActiveTaxCodes: 0
   });
+  const [page, setPage] = useState(1); // current page
+  const [pageSize] = useState(5); // items per page
+  const [totalItems, setTotalItems] = useState(0);
+
+  const [returnsPage, setReturnsPage] = useState(1); // current page
+  const [returnsPageSize] = useState(5); // items per page
+  const [totalReturnsItems, setTotalReturnsItems] = useState(0);
+
+  useEffect(() => {
+    loadTaxCodes();
+  }, [page]);
+
+  useEffect(() => {
+    loadTaxReturns();
+  }, [returnsPage]);
+
+  useEffect(() => {
+    updateTaxPage();
+  }, [searchTerm, jurisdictionFilter]);
+
+  const updateTaxPage = () => {
+    if (page === 1) {
+      loadTaxCodes();  // already page 1 → reload
+    } else {
+      setPage(1);    // triggers the page effect
+    }
+    loadTaxOverView();
+  }
+
+  const loadTaxOverView = async () => {
+    const response = await taxCodeApiService.getTaxOverview();
+    setTaxOverview(response);
+  }
+
+  const loadTaxCodes = async () => {
+    const skip = (page - 1) * pageSize;
+    const limit = pageSize;
+
+    // build query params
+    const params = new URLSearchParams();
+    if (searchTerm) params.append("search", searchTerm);
+    if (jurisdictionFilter) params.append("jurisdiction", jurisdictionFilter);
+    params.append("skip", skip.toString());
+    params.append("limit", limit.toString());
+    const response = await taxCodeApiService.getTaxCodes(params);
+    setTaxCodes(response.tax_codes);
+    setTotalItems(response.total);
+  }
+
+  const loadTaxReturns = async () => {
+    const skip = (returnsPage - 1) * returnsPageSize;
+    const limit = returnsPageSize;
+
+    // build query params
+    const params = new URLSearchParams();
+    params.append("skip", skip.toString());
+    params.append("limit", limit.toString());
+    const response = await taxCodeApiService.getTaxReturns(params);
+    setTaxReturns(response.tax_returns);
+    setTotalReturnsItems(response.total);
+  }
+
+
 
   // Mock tax report data
   const taxReportData = [
@@ -52,8 +124,8 @@ export default function TaxManagement() {
     }
   ];
 
-  const totalTaxCollected = taxReportData.reduce((sum, report) => sum + report.totalTax, 0);
-  const avgTaxRate = ((totalTaxCollected / taxReportData.reduce((sum, report) => sum + report.totalSales, 0)) * 100).toFixed(2);
+  // const totalTaxCollected = taxReportData.reduce((sum, report) => sum + report.totalTax, 0);
+  // const avgTaxRate = ((totalTaxCollected / taxReportData.reduce((sum, report) => sum + report.totalSales, 0)) * 100).toFixed(2);
 
   return (
     <SidebarProvider>
@@ -88,8 +160,8 @@ export default function TaxManagement() {
                     <FileText className="h-4 w-4 text-muted-foreground" />
                   </CardHeader>
                   <CardContent>
-                    <div className="text-2xl font-bold">{filteredTaxCodes.length}</div>
-                    <p className="text-xs text-muted-foreground">+2 from last month</p>
+                    <div className="text-2xl font-bold">{taxOverview.activeTaxCodes}</div>
+                    <p className="text-xs text-muted-foreground">+{taxOverview.lastMonthActiveTaxCodes} from last month</p>
                   </CardContent>
                 </Card>
 
@@ -99,7 +171,7 @@ export default function TaxManagement() {
                     <Calculator className="h-4 w-4 text-muted-foreground" />
                   </CardHeader>
                   <CardContent>
-                    <div className="text-2xl font-bold">₹{totalTaxCollected.toLocaleString()}</div>
+                    <div className="text-2xl font-bold">₹{taxOverview.totalTaxCollected}</div>
                     <p className="text-xs text-muted-foreground">Last 3 months</p>
                   </CardContent>
                 </Card>
@@ -110,7 +182,7 @@ export default function TaxManagement() {
                     <TrendingUp className="h-4 w-4 text-muted-foreground" />
                   </CardHeader>
                   <CardContent>
-                    <div className="text-2xl font-bold">{avgTaxRate}%</div>
+                    <div className="text-2xl font-bold">{taxOverview.avgTaxRate}%</div>
                     <p className="text-xs text-muted-foreground">Effective rate</p>
                   </CardContent>
                 </Card>
@@ -121,7 +193,7 @@ export default function TaxManagement() {
                     <AlertCircle className="h-4 w-4 text-muted-foreground" />
                   </CardHeader>
                   <CardContent>
-                    <div className="text-2xl font-bold text-orange-600">1</div>
+                    <div className="text-2xl font-bold text-orange-600">{taxOverview.pendingReturns}</div>
                     <p className="text-xs text-muted-foreground">Due for filing</p>
                   </CardContent>
                 </Card>
@@ -172,7 +244,7 @@ export default function TaxManagement() {
                       </TableRow>
                     </TableHeader>
                     <TableBody>
-                      {filteredTaxCodes.map((taxCode) => (
+                      {taxCodes.map((taxCode) => (
                         <TableRow key={taxCode.id}>
                           <TableCell className="font-medium">{taxCode.code}</TableCell>
                           <TableCell>{taxCode.rate}%</TableCell>
@@ -221,14 +293,14 @@ export default function TaxManagement() {
                       </TableRow>
                     </TableHeader>
                     <TableBody>
-                      {taxReportData.map((report) => (
+                      {taxReturns.map((report) => (
                         <TableRow key={report.month}>
-                          <TableCell className="font-medium">{report.month}</TableCell>
-                          <TableCell>₹{report.totalSales.toLocaleString()}</TableCell>
+                          <TableCell className="font-medium">{report.period}</TableCell>
+                          <TableCell>₹{report.total_sales.toLocaleString()}</TableCell>
                           <TableCell>₹{report.gst18.toLocaleString()}</TableCell>
                           <TableCell>₹{report.gst12.toLocaleString()}</TableCell>
                           <TableCell>₹{report.gst5.toLocaleString()}</TableCell>
-                          <TableCell className="font-medium">₹{report.totalTax.toLocaleString()}</TableCell>
+                          <TableCell className="font-medium">₹{report.total_tax.toLocaleString()}</TableCell>
                           <TableCell>
                             <Badge variant={report.filed ? "default" : "destructive"}>
                               {report.filed ? "Filed" : "Pending"}
@@ -250,6 +322,12 @@ export default function TaxManagement() {
                       ))}
                     </TableBody>
                   </Table>
+                  <Pagination
+                    page={page}
+                    pageSize={pageSize}
+                    totalItems={totalItems}
+                    onPageChange={(newPage) => setPage(newPage)}
+                  />
                 </CardContent>
               </Card>
 
@@ -290,6 +368,12 @@ export default function TaxManagement() {
                   </div>
                 </CardContent>
               </Card>
+              <Pagination
+                page={returnsPage}
+                pageSize={returnsPageSize}
+                totalItems={totalReturnsItems}
+                onPageChange={(newPage) => setReturnsPage(newPage)}
+              />
             </div>
           </main>
         </div>

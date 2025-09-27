@@ -44,14 +44,6 @@ export interface Payment {
     meta?: any;
 }
 
-export interface TaxCode {
-    id: string;
-    orgId: string;
-    code: string;
-    rate: number;
-    jurisdiction: string;
-    accounts?: any;
-}
 
 export interface RevenueReport {
     month: string;
@@ -62,4 +54,11 @@ export interface RevenueReport {
     total: number;
     collected: number;
     outstanding: number;
+}
+
+export interface InvoiceOverview {
+    totalInvoices: number;
+    totalAmount: number;
+    paidAmount: number;
+    outstandingAmount: number;
 }

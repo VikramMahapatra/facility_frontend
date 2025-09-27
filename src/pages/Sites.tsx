@@ -71,7 +71,7 @@ export default function Sites() {
     if (selectedKind) params.append("kind", selectedKind);
     params.append("skip", skip.toString());
     params.append("limit", limit.toString());
-    const response = await siteApiService.getSites(`/sites?${params.toString()}`);
+    const response = await siteApiService.getSites(params);
     setSites(response.sites);
     setTotalItems(response.total);
   }
