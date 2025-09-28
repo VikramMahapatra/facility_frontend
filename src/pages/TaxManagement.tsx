@@ -12,8 +12,11 @@ import { PropertySidebar } from "@/components/PropertySidebar";
 import { TaxCode, TaxOverview } from "@/interfaces/tax_interfaces";
 import { taxCodeApiService } from "@/services/financials/taxcodesapi";
 import { Pagination } from "@/components/Pagination";
+import { TaxCodeForm } from "@/components/TaxCodeForm";
+import { useToast } from "@/hooks/use-toast";
 
 export default function TaxManagement() {
+  const { toast } = useToast();
   const [searchTerm, setSearchTerm] = useState("");
   const [jurisdictionFilter, setJurisdictionFilter] = useState("all");
   const [taxCodes, setTaxCodes] = useState<TaxCode[]>([]);
@@ -91,6 +94,51 @@ export default function TaxManagement() {
     setTotalReturnsItems(response.total);
   }
 
+  const handleCreate = () => {
+    setSelectedTaxCode(undefined);
+    setFormMode('create');
+    setIsFormOpen(true);
+  };
+
+  const handleView = (taxCode: TaxCode) => {
+    setSelectedTaxCode(taxCode);
+    setFormMode('view');
+    setIsFormOpen(true);
+  };
+
+  const handleEdit = (taxCode: TaxCode) => {
+    setSelectedTaxCode(taxCode);
+    setFormMode('edit');
+    setIsFormOpen(true);
+  };
+
+  const handleDelete = (taxCodeId: string) => {
+    setDeleteTaxCodeId(taxCodeId);
+  };
+
+  const handleSave = async (taxCodeData: Partial<TaxCode>) => {
+    try {
+      if (formMode === 'create') {
+        await taxCodeApiService.addTaxCode(taxCodeData);
+      } else if (formMode === 'edit' && selectedTaxCode) {
+        const updatedSpace = { ...selectedTaxCode, ...taxCodeData };
+        await taxCodeApiService.updateTaxCode(updatedSpace);
+      }
+      setIsFormOpen(false);
+      toast({
+        title: formMode === 'create' ? "Space Created" : "Space Updated",
+        description: `Tax code ${taxCodeData.code} has been ${formMode === 'create' ? 'created' : 'updated'} successfully.`,
+      });
+      updateTaxPage();
+    } catch (error) {
+      toast({
+        title: "Techical Error!",
+        variant: "destructive",
+      });
+    }
+  };
+
+
 
 
   // Mock tax report data
@@ -142,7 +190,7 @@ export default function TaxManagement() {
                   <p className="text-sm text-muted-foreground">Manage tax codes, rates and compliance</p>
                 </div>
               </div>
-              <Button>
+              <Button onClick={handleCreate}>
                 <Plus className="w-4 h-4 mr-2" />
                 Add Tax Code
               </Button>
@@ -254,13 +302,13 @@ export default function TaxManagement() {
                           </TableCell>
                           <TableCell className="text-right">
                             <div className="flex items-center justify-end gap-2">
-                              <Button variant="ghost" size="sm">
+                              <Button variant="ghost" size="sm" onClick={() => handleView(taxCode)}>
                                 <Eye className="h-4 w-4" />
                               </Button>
-                              <Button variant="ghost" size="sm">
+                              <Button variant="ghost" size="sm" onClick={() => handleEdit(taxCode)}>
                                 <Edit className="h-4 w-4" />
                               </Button>
-                              <Button variant="ghost" size="sm" className="text-destructive">
+                              <Button variant="ghost" size="sm" className="text-destructive" onClick={() => handleDelete(taxCode.id)}>
                                 <Trash2 className="h-4 w-4" />
                               </Button>
                             </div>
@@ -378,6 +426,13 @@ export default function TaxManagement() {
           </main>
         </div>
       </div>
+      <TaxCodeForm
+        taxCode={selectedTaxCode}
+        isOpen={isFormOpen}
+        onClose={() => setIsFormOpen(false)}
+        onSave={handleSave}
+        mode={formMode}
+      />
     </SidebarProvider>
   );
 }
