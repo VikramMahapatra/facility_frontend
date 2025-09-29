@@ -1,6 +1,6 @@
 // app/(your-path)/Leases.tsx
 import { useState, useEffect } from "react";
-import { Home, Search, Plus, Eye, Edit, Trash2, MapPin } from "lucide-react";
+import { Home, Search, Plus, Eye, Edit, Trash2 } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -8,32 +8,35 @@ import { Input } from "@/components/ui/input";
 import { PropertySidebar } from "@/components/PropertySidebar";
 import { SidebarProvider, SidebarInset, SidebarTrigger } from "@/components/ui/sidebar";
 import { LeaseForm } from "@/components/LeasesForm";
-import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
+import {
+  AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent,
+  AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle
+} from "@/components/ui/alert-dialog";
 import { useToast } from "@/hooks/use-toast";
 import { Pagination } from "@/components/Pagination";
 import { siteApiService } from "@/services/spaces_sites/sitesapi";
 import { leasesApiService } from "@/services/Leasing_Tenants/leasesapi";
 
-// ---- Lease interface (changed vs Space) ----
 export interface Lease {
   id: string;
   org_id: string;
   site_id?: string;
   space_id?: string;
+
+  kind?: "commercial" | "residential";
   partner_id?: string;
-  user_id?: string;
-  tenant_name?: string;
-  lease_type?: "commercial" | "residential";
+  tenant_id?: string;
+
   start_date?: string;
   end_date?: string;
   rent_amount?: number;
-  deposit?: number;
+  deposit_amount?: number;
   cam_rate?: number;
   utilities?: Record<string, any>;
-  status?: 'active' | 'expired' | 'terminated' | 'draft';
+  status?: "active" | "expired" | "terminated" | "draft";
   created_at?: string;
   updated_at?: string;
-  // optional convenience fields from backend
+
   space_code?: string;
   site_name?: string;
 }
@@ -48,24 +51,23 @@ interface LeaseOverview {
 export default function Leases() {
   const { toast } = useToast();
 
-  // Filters (compare: spaces had kind/status/site; leases have lease_type/status/site)
   const [searchTerm, setSearchTerm] = useState("");
-  const [selectedLeaseType, setSelectedLeaseType] = useState<string>("all"); // commercial/residential/all
-  const [selectedStatus, setSelectedStatus] = useState<string>("all"); // active/expired/terminated/draft
+  const [selectedKind, setSelectedKind] = useState<string>("all");
+  const [selectedStatus, setSelectedStatus] = useState<string>("all");
   const [selectedSite, setSelectedSite] = useState<string>("all");
 
   const [leases, setLeases] = useState<Lease[]>([]);
   const [selectedLease, setSelectedLease] = useState<Lease | undefined>();
-  const [formMode, setFormMode] = useState<'create' | 'edit' | 'view'>('create');
+  const [formMode, setFormMode] = useState<"create" | "edit" | "view">("create");
   const [isFormOpen, setIsFormOpen] = useState(false);
   const [deleteLeaseId, setDeleteLeaseId] = useState<string | null>(null);
-  const [siteList, setSiteList] = useState([]);
+  const [siteList, setSiteList] = useState<any[]>([]);
 
   const [leaseOverview, setLeaseOverview] = useState<LeaseOverview>({
     activeLeases: 0,
     monthlyRentValue: 0,
     expiringSoon: 0,
-    avgLeaseTermMonths: 0
+    avgLeaseTermMonths: 0,
   });
 
   const [page, setPage] = useState(1);
@@ -78,10 +80,13 @@ export default function Leases() {
 
   useEffect(() => {
     updateLeasePage();
-  }, [searchTerm, selectedSite, selectedLeaseType, selectedStatus]);
+  }, [searchTerm, selectedSite, selectedKind, selectedStatus]);
 
   useEffect(() => {
-    loadSiteLookup();
+    (async () => {
+      const lookup = await siteApiService.getSiteLookup();
+      setSiteList(lookup);
+    })();
   }, []);
 
   const updateLeasePage = () => {
@@ -91,110 +96,96 @@ export default function Leases() {
       setPage(1);
     }
     loadLeaseOverview();
-  }
+  };
 
   const loadLeaseOverview = async () => {
     const params = new URLSearchParams();
     if (searchTerm) params.append("search", searchTerm);
     if (selectedSite) params.append("site_id", selectedSite);
-    if (selectedLeaseType) params.append("lease_type", selectedLeaseType);
+    if (selectedKind) params.append("kind", selectedKind);
     if (selectedStatus) params.append("status", selectedStatus);
 
     const response = await leasesApiService.getLeaseOverview(`/leases/overview?${params.toString()}`);
-    // Expect response shaped like LeaseOverview
     setLeaseOverview(response);
-  }
+  };
 
   const loadLeases = async () => {
     const skip = (page - 1) * pageSize;
     const limit = pageSize;
+
     const params = new URLSearchParams();
     if (searchTerm) params.append("search", searchTerm);
     if (selectedSite) params.append("site_id", selectedSite);
-    if (selectedLeaseType) params.append("lease_type", selectedLeaseType);
+    if (selectedKind) params.append("kind", selectedKind);
     if (selectedStatus) params.append("status", selectedStatus);
-    params.append("skip", skip.toString());
-    params.append("limit", limit.toString());
+    params.append("skip", String(skip));
+    params.append("limit", String(limit));
 
     const response = await leasesApiService.getLeases(`/leases?${params.toString()}`);
     setLeases(response.leases);
     setTotalItems(response.total);
-  }
+  };
 
-  const loadSiteLookup = async () => {
-    const lookup = await siteApiService.getSiteLookup();
-    setSiteList(lookup);
-  }
-
-  // CRUD handlers
   const handleCreate = () => {
     setSelectedLease(undefined);
-    setFormMode('create');
+    setFormMode("create");
     setIsFormOpen(true);
   };
 
   const handleView = (lease: Lease) => {
     setSelectedLease(lease);
-    setFormMode('view');
+    setFormMode("view");
     setIsFormOpen(true);
   };
 
   const handleEdit = (lease: Lease) => {
     setSelectedLease(lease);
-    setFormMode('edit');
+    setFormMode("edit");
     setIsFormOpen(true);
   };
 
-  const handleDelete = (leaseId: string) => {
-    setDeleteLeaseId(leaseId);
-  };
+  const handleDelete = (leaseId: string) => setDeleteLeaseId(leaseId);
 
   const confirmDelete = async () => {
-    if (deleteLeaseId) {
-      // call backend delete
-      await leasesApiService.deleteLease(deleteLeaseId);
-      setLeases(leases.filter(l => l.id !== deleteLeaseId));
-      toast({
-        title: "Lease Deleted",
-        description: "Lease has been deleted successfully.",
-      });
-      setDeleteLeaseId(null);
-      updateLeasePage();
-    }
+    if (!deleteLeaseId) return;
+    await leasesApiService.deleteLease(deleteLeaseId);
+    setLeases((prev) => prev.filter((l) => l.id !== deleteLeaseId));
+    toast({ title: "Lease Deleted", description: "Lease has been deleted successfully." });
+    setDeleteLeaseId(null);
+    updateLeasePage();
   };
 
   const handleSave = async (leaseData: Partial<Lease>) => {
     try {
-      if (formMode === 'create') {
+      if (formMode === "create") {
         await leasesApiService.addLease(leaseData);
-        toast({ title: "Lease Created", description: `${leaseData.tenant_name || 'Lease'} created.` });
-      } else if (formMode === 'edit' && selectedLease) {
+        toast({ title: "Lease Created", description: "Lease created." });
+      } else if (formMode === "edit" && selectedLease) {
         const updated = { ...selectedLease, ...leaseData };
         await leasesApiService.updateLease(updated);
-        toast({ title: "Lease Updated", description: `${updated.tenant_name || 'Lease'} updated.` });
+        toast({ title: "Lease Updated", description: "Lease updated." });
       }
       setIsFormOpen(false);
       updateLeasePage();
-    } catch (err) {
+    } catch {
       toast({ title: "Technical Error!", variant: "destructive" });
     }
   };
 
-  // small helpers for UI
   const getStatusColor = (status?: string) => {
-    const colors: Record<string,string> = {
+    const colors: Record<string, string> = {
       active: "bg-green-100 text-green-800",
       expired: "bg-gray-100 text-gray-800",
       terminated: "bg-red-100 text-red-800",
-      draft: "bg-yellow-100 text-yellow-800"
+      draft: "bg-yellow-100 text-yellow-800",
     };
-    return colors[status || ''] || "bg-gray-100 text-gray-800";
+    return colors[status || ""] || "bg-gray-100 text-gray-800";
   };
 
   const formatCurrency = (val?: number) => {
     if (val == null) return "-";
-    return new Intl.NumberFormat('en-IN', { style: 'currency', currency: 'INR', maximumFractionDigits:0 }).format(val);
-  }
+    return new Intl.NumberFormat("en-IN", { style: "currency", currency: "INR", maximumFractionDigits: 0 }).format(val);
+  };
 
   return (
     <SidebarProvider>
@@ -211,7 +202,6 @@ export default function Leases() {
 
           <main className="flex-1 p-6">
             <div className="space-y-6">
-              {/* header + Add */}
               <div className="flex items-center justify-between">
                 <div>
                   <h2 className="text-2xl font-bold text-sidebar-primary">All Leases</h2>
@@ -226,21 +216,42 @@ export default function Leases() {
               <div className="flex flex-wrap items-center gap-4">
                 <div className="flex items-center gap-2">
                   <Search className="h-4 w-4 text-muted-foreground" />
-                  <Input placeholder="Search leases..." value={searchTerm} onChange={(e) => setSearchTerm(e.target.value)} className="w-64" />
+                  <Input
+                    placeholder="Search leases..."
+                    value={searchTerm}
+                    onChange={(e) => setSearchTerm(e.target.value)}
+                    className="w-64"
+                  />
                 </div>
 
-                <select value={selectedSite} onChange={(e) => setSelectedSite(e.target.value)} className="rounded-md border border-input bg-background px-3 py-2 text-sm">
+                <select
+                  value={selectedSite}
+                  onChange={(e) => setSelectedSite(e.target.value)}
+                  className="rounded-md border border-input bg-background px-3 py-2 text-sm"
+                >
                   <option value="all">All Sites</option>
-                  {siteList.map((s:any) => <option key={s.id} value={s.id}>{s.name}</option>)}
+                  {siteList.map((s: any) => (
+                    <option key={s.id} value={s.id}>
+                      {s.name}
+                    </option>
+                  ))}
                 </select>
 
-                <select value={selectedLeaseType} onChange={(e) => setSelectedLeaseType(e.target.value)} className="rounded-md border border-input bg-background px-3 py-2 text-sm">
+                <select
+                  value={selectedKind}
+                  onChange={(e) => setSelectedKind(e.target.value)}
+                  className="rounded-md border border-input bg-background px-3 py-2 text-sm"
+                >
                   <option value="all">All Types</option>
                   <option value="commercial">Commercial</option>
                   <option value="residential">Residential</option>
                 </select>
 
-                <select value={selectedStatus} onChange={(e) => setSelectedStatus(e.target.value)} className="rounded-md border border-input bg-background px-3 py-2 text-sm">
+                <select
+                  value={selectedStatus}
+                  onChange={(e) => setSelectedStatus(e.target.value)}
+                  className="rounded-md border border-input bg-background px-3 py-2 text-sm"
+                >
                   <option value="all">All Status</option>
                   <option value="active">Active</option>
                   <option value="expired">Expired</option>
@@ -249,23 +260,53 @@ export default function Leases() {
                 </select>
               </div>
 
-              {/* Quick Stats (overview cards) */}
+              {/* Overview */}
               <div className="grid gap-4 md:grid-cols-4">
-                <Card><CardContent className="p-4"><div className="text-2xl font-bold text-sidebar-primary">{leaseOverview.activeLeases}</div><p className="text-sm text-muted-foreground">Active Leases</p></CardContent></Card>
-                <Card><CardContent className="p-4"><div className="text-2xl font-bold text-green-600">{formatCurrency(leaseOverview.monthlyRentValue)}</div><p className="text-sm text-muted-foreground">Monthly Rent Value</p></CardContent></Card>
-                <Card><CardContent className="p-4"><div className="text-2xl font-bold text-orange-600">{leaseOverview.expiringSoon}</div><p className="text-sm text-muted-foreground">Expiring Soon</p></CardContent></Card>
-                <Card><CardContent className="p-4"><div className="text-2xl font-bold text-blue-600">{(leaseOverview.avgLeaseTermMonths / 12).toFixed(1)} years</div><p className="text-sm text-muted-foreground">Avg Lease Term</p></CardContent></Card>
+                <Card>
+                  <CardContent className="p-4">
+                    <div className="text-2xl font-bold text-sidebar-primary">{leaseOverview.activeLeases}</div>
+                    <p className="text-sm text-muted-foreground">Active Leases</p>
+                  </CardContent>
+                </Card>
+                <Card>
+                  <CardContent className="p-4">
+                    <div className="text-2xl font-bold text-green-600">{formatCurrency(leaseOverview.monthlyRentValue)}</div>
+                    <p className="text-sm text-muted-foreground">Monthly Rent Value</p>
+                  </CardContent>
+                </Card>
+                <Card>
+                  <CardContent className="p-4">
+                    <div className="text-2xl font-bold text-orange-600">{leaseOverview.expiringSoon}</div>
+                    <p className="text-sm text-muted-foreground">Expiring Soon</p>
+                  </CardContent>
+                </Card>
+                <Card>
+                  <CardContent className="p-4">
+                    <div className="text-2xl font-bold text-blue-600">
+                      {leaseOverview.avgLeaseTermMonths < 12
+                        ? `${leaseOverview.avgLeaseTermMonths.toFixed(0)} months`
+                        : `${(leaseOverview.avgLeaseTermMonths / 12).toFixed(1)} years`}
+                    </div>
+                    <p className="text-sm text-muted-foreground">Avg Lease Term</p>
+                  </CardContent>
+                </Card>
               </div>
 
-              {/* Leases grid */}
+              {/* Grid */}
               <div className="grid gap-4">
                 {leases.map((lease) => (
                   <Card key={lease.id} className="hover:shadow-lg transition-shadow">
                     <CardHeader className="pb-3">
                       <div className="flex items-start justify-between">
                         <div className="space-y-1">
-                          <CardTitle className="text-lg">{lease.tenant_name || lease.partner_id || lease.user_id || 'Lease'}</CardTitle>
-                          <p className="text-sm text-muted-foreground">{lease.space_code} • {lease.site_name}</p>
+                          <CardTitle className="text-lg">
+                            {lease.kind === "commercial"
+                              ? (lease.partner_id || "Commercial Lease")
+                              : (lease.tenant_id || "Residential Lease")}
+                          </CardTitle>
+                          <p className="text-sm text-muted-foreground">
+                            {lease.space_code} • {lease.site_name}
+                          </p>
                         </div>
                         <Badge className={getStatusColor(lease.status)}>{lease.status}</Badge>
                       </div>
@@ -276,23 +317,24 @@ export default function Leases() {
                         <div>
                           <div className="font-medium text-muted-foreground">Rent Amount</div>
                           <div className="text-lg font-bold">{formatCurrency(lease.rent_amount)}</div>
-                          <div className="text-xs text-muted-foreground">per monthly</div>
+                          <div className="text-xs text-muted-foreground">per month</div>
                         </div>
                         <div>
                           <div className="font-medium text-muted-foreground">Lease Term</div>
-                          <div className="text-sm">{lease.start_date} - {lease.end_date}</div>
-                          {/* months calculation optionally */}
+                          <div className="text-sm">
+                            {lease.start_date} - {lease.end_date}
+                          </div>
                         </div>
                       </div>
 
                       <div className="grid grid-cols-2 gap-4 text-sm">
                         <div>
                           <div className="font-medium text-muted-foreground">Deposit</div>
-                          <div>{formatCurrency(lease.deposit)}</div>
+                          <div>{formatCurrency(lease.deposit_amount as any)}</div>
                         </div>
                         <div>
                           <div className="font-medium text-muted-foreground">CAM Rate</div>
-                          <div>{lease.cam_rate ? `₹${lease.cam_rate}/sq ft` : '-'}</div>
+                          <div>{lease.cam_rate ? `₹${lease.cam_rate}/sq ft` : "-"}</div>
                         </div>
                       </div>
 
@@ -300,24 +342,37 @@ export default function Leases() {
                         <div>
                           <div className="font-medium text-muted-foreground">Utilities</div>
                           <div className="text-sm">
-                            {Object.entries(lease.utilities).map(([k,v]) => (
-                              <span key={k} className="mr-4">{k}: {v}</span>
+                            {Object.entries(lease.utilities).map(([k, v]) => (
+                              <span key={k} className="mr-4">
+                                {k}: {String(v)}
+                              </span>
                             ))}
                           </div>
                         </div>
                       )}
 
                       <div className="flex items-center justify-end gap-2 pt-2">
-                        <Button size="sm" variant="outline" onClick={() => handleView(lease)}><Eye className="h-3 w-3" /></Button>
-                        <Button size="sm" variant="outline" onClick={() => handleEdit(lease)}><Edit className="h-3 w-3" /></Button>
-                        <Button size="sm" variant="outline" className="text-destructive hover:text-destructive" onClick={() => handleDelete(lease.id)}><Trash2 className="h-3 w-3" /></Button>
+                        <Button size="sm" variant="outline" onClick={() => handleView(lease)}>
+                          <Eye className="h-3 w-3" />
+                        </Button>
+                        <Button size="sm" variant="outline" onClick={() => handleEdit(lease)}>
+                          <Edit className="h-3 w-3" />
+                        </Button>
+                        <Button
+                          size="sm"
+                          variant="outline"
+                          className="text-destructive hover:text-destructive"
+                          onClick={() => handleDelete(lease.id)}
+                        >
+                          <Trash2 className="h-3 w-3" />
+                        </Button>
                       </div>
                     </CardContent>
                   </Card>
                 ))}
               </div>
 
-              <Pagination page={page} pageSize={pageSize} totalItems={totalItems} onPageChange={(newPage)=>setPage(newPage)} />
+              <Pagination page={page} pageSize={pageSize} totalItems={totalItems} onPageChange={(newPage) => setPage(newPage)} />
 
               {leases.length === 0 && (
                 <div className="text-center py-12">
@@ -331,9 +386,15 @@ export default function Leases() {
         </SidebarInset>
       </div>
 
-      <LeaseForm lease={selectedLease} isOpen={isFormOpen} onClose={()=>setIsFormOpen(false)} onSave={handleSave} mode={formMode} />
+      <LeaseForm
+        lease={selectedLease}
+        isOpen={isFormOpen}
+        onClose={() => setIsFormOpen(false)}
+        onSave={handleSave}
+        mode={formMode}
+      />
 
-      <AlertDialog open={!!deleteLeaseId} onOpenChange={()=>setDeleteLeaseId(null)}>
+      <AlertDialog open={!!deleteLeaseId} onOpenChange={() => setDeleteLeaseId(null)}>
         <AlertDialogContent>
           <AlertDialogHeader>
             <AlertDialogTitle>Delete Lease</AlertDialogTitle>
@@ -341,7 +402,9 @@ export default function Leases() {
           </AlertDialogHeader>
           <AlertDialogFooter>
             <AlertDialogCancel>Cancel</AlertDialogCancel>
-            <AlertDialogAction onClick={confirmDelete} className="bg-destructive text-destructive-foreground">Delete</AlertDialogAction>
+            <AlertDialogAction onClick={confirmDelete} className="bg-destructive text-destructive-foreground">
+              Delete
+            </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>

@@ -3,12 +3,12 @@ import { apiService } from '../api';
 
 class LeasesApiService {
   async getLeases(url: string) {
-    // url is like: `/leases?skip=...&limit=...&search=...`
+    // url like `/leases?skip=...&limit=...&kind=...&status=...&site_id=...`
     return await apiService.request(url);
   }
 
   async getLeaseOverview(url: string) {
-    // url is like: `/leases/overview?site_id=...&status=...`
+    // url like `/leases/overview?kind=...&status=...&site_id=...`
     return await apiService.request(url);
   }
 
