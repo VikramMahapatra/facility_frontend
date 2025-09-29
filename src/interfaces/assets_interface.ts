@@ -17,18 +17,18 @@ export interface AssetCategory {
 
 export interface Asset {
     id: string;
-    orgId: string;
-    siteId: string;
-    spaceId?: string;
-    categoryId: string;
-    categoryName: string;
+    org_id: string;
+    site_id: string;
+    space_id?: string;
+    category_id: string;
+    category_name: string;
     tag: string;
     name: string;
-    serialNo: string;
+    serial_no: string;
     model: string;
     manufacturer: string;
-    purchaseDate: string;
-    warrantyExpiry: string;
+    purchase_date: string;
+    warranty_expiry: string;
     cost: number;
     attributes?: any;
     status: 'active' | 'retired' | 'in_repair';
