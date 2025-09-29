@@ -2,12 +2,12 @@ import { apiService } from '../api';
 
 class SpacesApiService {
 
-    async getSpaces(url) {
-        return await apiService.request(url);
+    async getSpaces(params) {
+        return await apiService.request(`/spaces?${params.toString()}`);
     }
 
-    async getSpaceOverview(url) {
-        return await apiService.request(url);
+    async getSpaceOverview(params) {
+        return await apiService.request(`/spaces/overview?${params.toString()}`);
     }
 
     async addSpace(spaceData: any) {

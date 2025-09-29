@@ -89,7 +89,7 @@ export default function Spaces() {
     if (selectedSite) params.append("site_id", selectedSite);
     if (selectedKind) params.append("kind", selectedKind);
     if (selectedStatus) params.append("status", selectedStatus);
-    const response = await spacesApiService.getSpaceOverview(`/spaces/overview?${params.toString()}`);
+    const response = await spacesApiService.getSpaceOverview(params);
     setSpaceOverview(response);
   }
 
@@ -105,7 +105,7 @@ export default function Spaces() {
     if (selectedStatus) params.append("status", selectedStatus);
     params.append("skip", skip.toString());
     params.append("limit", limit.toString());
-    const response = await spacesApiService.getSpaces(`/spaces?${params.toString()}`);
+    const response = await spacesApiService.getSpaces(params);
     setSpaces(response.spaces);
     setTotalItems(response.total);
   }
