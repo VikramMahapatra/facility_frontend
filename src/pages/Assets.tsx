@@ -281,7 +281,7 @@ export default function Assets() {
                     </TableHeader>
                     <TableBody>
                       {assets.map((asset) => {
-                        const isWarrantyExpired = asset.warrantyExpiry && new Date(asset.warrantyExpiry) < new Date();
+                        const isWarrantyExpired = asset.warranty_expiry && new Date(asset.warranty_expiry) < new Date();
 
                         return (
                           <TableRow key={asset.id}>
@@ -292,14 +292,14 @@ export default function Assets() {
                                 {asset.model && <div className="text-sm text-muted-foreground">{asset.model}</div>}
                               </div>
                             </TableCell>
-                            <TableCell>{asset.categoryName || 'Unknown'}</TableCell>
-                            <TableCell>{asset.siteId}</TableCell>
+                            <TableCell>{asset.category_name || 'Unknown'}</TableCell>
+                            <TableCell>{asset.site_id}</TableCell>
                             <TableCell>{getStatusBadge(asset.status)}</TableCell>
                             <TableCell>₹{asset.cost?.toLocaleString() || 'N/A'}</TableCell>
                             <TableCell>
-                              {asset.warrantyExpiry ? (
+                              {asset.warranty_expiry ? (
                                 <div className={`text-sm ${isWarrantyExpired ? 'text-red-600' : ''}`}>
-                                  {new Date(asset.warrantyExpiry).toLocaleDateString()}
+                                  {new Date(asset.warranty_expiry).toLocaleDateString()}
                                   {isWarrantyExpired && <div className="text-xs">Expired</div>}
                                 </div>
                               ) : (
