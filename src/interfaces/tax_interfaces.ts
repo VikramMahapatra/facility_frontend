@@ -4,6 +4,7 @@ export interface TaxCode {
     code: string;
     rate: number;
     jurisdiction: string;
+    status: string;
     accounts?: any;
 }
 

@@ -137,14 +137,25 @@ export default function Spaces() {
     setDeleteSpaceId(spaceId);
   };
 
-  const confirmDelete = () => {
+  const confirmDelete = async () => {
     if (deleteSpaceId) {
-      setSpaces(spaces.filter(space => space.id !== deleteSpaceId));
-      toast({
-        title: "Space Deleted",
-        description: "Space has been deleted successfully.",
-      });
-      setDeleteSpaceId(null);
+      try {
+        await spacesApiService.deleteSpace(deleteSpaceId);
+        updateSpacePage();
+        setDeleteSpaceId(null);
+        toast({
+          title: "Space Deleted",
+          description: "Space has been deleted successfully.",
+        });
+        setDeleteSpaceId(null);
+
+      } catch (error) {
+        toast({
+          title: "Techical Error!",
+          variant: "destructive",
+        });
+      }
+
     }
   };
 

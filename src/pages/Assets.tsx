@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -6,23 +6,137 @@ import { Badge } from "@/components/ui/badge";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Plus, Search, Filter, Eye, Edit, Trash2, Package, Wrench, AlertTriangle, CheckCircle, Calendar, DollarSign } from "lucide-react";
-import { mockAssets, mockAssetCategories, type Asset } from "@/data/mockMaintenanceData";
+import { AlertDialog, AlertDialogContent, AlertDialogHeader, AlertDialogFooter, AlertDialogTitle, AlertDialogDescription, AlertDialogCancel, AlertDialogAction } from "@/components/ui/alert-dialog";
 import { SidebarProvider, SidebarTrigger } from "@/components/ui/sidebar";
 import { PropertySidebar } from "@/components/PropertySidebar";
+import { Asset, AssetOverview } from "@/interfaces/assets_interface";
+import { assetApiService } from "@/services/maintenance_assets/assetsapi";
+import { useToast } from "@/hooks/use-toast";
+import { Pagination } from "@/components/Pagination";
+import { mockAssetCategories } from "@/data/mockMaintenanceData";
 
 export default function Assets() {
+  const { toast } = useToast();
   const [searchTerm, setSearchTerm] = useState("");
   const [categoryFilter, setCategoryFilter] = useState("all");
   const [statusFilter, setStatusFilter] = useState("all");
-
-  const filteredAssets = mockAssets.filter(asset => {
-    const matchesSearch = asset.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      asset.tag.toLowerCase().includes(searchTerm.toLowerCase());
-    const matchesCategory = categoryFilter === "all" || asset.categoryId === categoryFilter;
-    const matchesStatus = statusFilter === "all" || asset.status === statusFilter;
-
-    return matchesSearch && matchesCategory && matchesStatus;
+  const [formMode, setFormMode] = useState<'create' | 'edit' | 'view'>('create');
+  const [isFormOpen, setIsFormOpen] = useState(false);
+  const [assets, setAssets] = useState<Asset[]>([]);
+  const [selectedAsset, setSelectedAsset] = useState<Asset | undefined>();
+  const [deleteAssetId, setDeleteAssetId] = useState<string | null>(null);
+  const [assetOverview, setAssetOverview] = useState<AssetOverview>({
+    totalAssets: 0,
+    activeAssets: 0,
+    totalValue: 0,
+    assetsNeedingMaintenance: 0,
+    lastMonthAssetPercentage: 0
   });
+  const [page, setPage] = useState(1); // current page
+  const [pageSize] = useState(5); // items per page
+  const [totalItems, setTotalItems] = useState(0);
+
+  useEffect(() => {
+    loadAssets();
+  }, [page]);
+
+  useEffect(() => {
+    updateAssetPage();
+  }, [searchTerm, categoryFilter, statusFilter]);
+
+  const updateAssetPage = () => {
+    if (page === 1) {
+      loadAssets();  // already page 1 → reload
+    } else {
+      setPage(1);    // triggers the page effect
+    }
+    loadAssetOverView();
+  }
+
+  const loadAssetOverView = async () => {
+    const response = await assetApiService.getAssetOverview();
+    setAssetOverview(response);
+  }
+
+  const loadAssets = async () => {
+    const skip = (page - 1) * pageSize;
+    const limit = pageSize;
+
+    // build query params
+    const params = new URLSearchParams();
+    if (searchTerm) params.append("search", searchTerm);
+    if (categoryFilter) params.append("category", categoryFilter);
+    if (statusFilter) params.append("status", statusFilter);
+    params.append("skip", skip.toString());
+    params.append("limit", limit.toString());
+    const response = await assetApiService.getAssets(params);
+    setAssets(response.assets);
+    setTotalItems(response.total);
+  }
+
+  const handleCreate = () => {
+    setSelectedAsset(undefined);
+    setFormMode('create');
+    setIsFormOpen(true);
+  };
+
+  const handleView = (asset: Asset) => {
+    setSelectedAsset(asset);
+    setFormMode('view');
+    setIsFormOpen(true);
+  };
+
+  const handleEdit = (asset: Asset) => {
+    setSelectedAsset(asset);
+    setFormMode('edit');
+    setIsFormOpen(true);
+  };
+
+  const handleDelete = (assetId: string) => {
+    setDeleteAssetId(assetId);
+  };
+
+  const confirmDelete = async () => {
+    if (deleteAssetId) {
+      try {
+        await assetApiService.deleteAsset(deleteAssetId);
+        updateAssetPage();
+        setDeleteAssetId(null);
+        toast({
+          title: "Tax Code Deleted",
+          description: "The tax code has been removed successfully.",
+        });
+      } catch (error) {
+        toast({
+          title: "Techical Error!",
+          variant: "destructive",
+        });
+      }
+
+    }
+  };
+
+  const handleSave = async (assetData: Partial<Asset>) => {
+    try {
+      if (formMode === 'create') {
+        await assetApiService.addAsset(assetData);
+      } else if (formMode === 'edit' && selectedAsset) {
+        const updatedAsset = { ...selectedAsset, ...assetData };
+        await assetApiService.updateAsset(updatedAsset);
+      }
+      setIsFormOpen(false);
+      toast({
+        title: formMode === 'create' ? "Asset Created" : "Space Updated",
+        description: `Asset name ${assetData.name} has been ${formMode === 'create' ? 'created' : 'updated'} successfully.`,
+      });
+      updateAssetPage();
+    } catch (error) {
+      toast({
+        title: "Techical Error!",
+        variant: "destructive",
+      });
+    }
+  };
 
   const getStatusBadge = (status: string) => {
     const variants = {
@@ -33,14 +147,6 @@ export default function Assets() {
 
     return <Badge variant={variants[status as keyof typeof variants] || "outline"}>{status.replace('_', ' ')}</Badge>;
   };
-
-  // Calculate summary statistics
-  const totalAssets = mockAssets.length;
-  const activeAssets = mockAssets.filter(a => a.status === 'active').length;
-  const totalValue = mockAssets.reduce((sum, asset) => sum + (asset.cost || 0), 0);
-  const assetsNeedingMaintenance = mockAssets.filter(a =>
-    a.warrantyExpiry && new Date(a.warrantyExpiry) < new Date()
-  ).length;
 
   return (
     <SidebarProvider>
@@ -75,8 +181,8 @@ export default function Assets() {
                     <Package className="h-4 w-4 text-muted-foreground" />
                   </CardHeader>
                   <CardContent>
-                    <div className="text-2xl font-bold">{totalAssets}</div>
-                    <p className="text-xs text-muted-foreground">+12% from last month</p>
+                    <div className="text-2xl font-bold">{assetOverview.totalAssets}</div>
+                    <p className="text-xs text-muted-foreground">+{assetOverview.lastMonthAssetPercentage}% from last month</p>
                   </CardContent>
                 </Card>
 
@@ -86,8 +192,8 @@ export default function Assets() {
                     <CheckCircle className="h-4 w-4 text-muted-foreground" />
                   </CardHeader>
                   <CardContent>
-                    <div className="text-2xl font-bold text-green-600">{activeAssets}</div>
-                    <p className="text-xs text-muted-foreground">{((activeAssets / totalAssets) * 100).toFixed(1)}% of total</p>
+                    <div className="text-2xl font-bold text-green-600">{assetOverview.activeAssets}</div>
+                    <p className="text-xs text-muted-foreground">{((assetOverview.activeAssets / assetOverview.totalAssets) * 100).toFixed(1)}% of total</p>
                   </CardContent>
                 </Card>
 
@@ -97,7 +203,7 @@ export default function Assets() {
                     <DollarSign className="h-4 w-4 text-muted-foreground" />
                   </CardHeader>
                   <CardContent>
-                    <div className="text-2xl font-bold">₹{totalValue.toLocaleString()}</div>
+                    <div className="text-2xl font-bold">₹{assetOverview.totalValue.toLocaleString()}</div>
                     <p className="text-xs text-muted-foreground">Asset book value</p>
                   </CardContent>
                 </Card>
@@ -108,7 +214,7 @@ export default function Assets() {
                     <AlertTriangle className="h-4 w-4 text-muted-foreground" />
                   </CardHeader>
                   <CardContent>
-                    <div className="text-2xl font-bold text-orange-600">{assetsNeedingMaintenance}</div>
+                    <div className="text-2xl font-bold text-orange-600">{assetOverview.assetsNeedingMaintenance}</div>
                     <p className="text-xs text-muted-foreground">Warranty expired</p>
                   </CardContent>
                 </Card>
@@ -174,8 +280,7 @@ export default function Assets() {
                       </TableRow>
                     </TableHeader>
                     <TableBody>
-                      {filteredAssets.map((asset) => {
-                        const category = mockAssetCategories.find(c => c.id === asset.categoryId);
+                      {assets.map((asset) => {
                         const isWarrantyExpired = asset.warrantyExpiry && new Date(asset.warrantyExpiry) < new Date();
 
                         return (
@@ -187,7 +292,7 @@ export default function Assets() {
                                 {asset.model && <div className="text-sm text-muted-foreground">{asset.model}</div>}
                               </div>
                             </TableCell>
-                            <TableCell>{category?.name || 'Unknown'}</TableCell>
+                            <TableCell>{asset.categoryName || 'Unknown'}</TableCell>
                             <TableCell>{asset.siteId}</TableCell>
                             <TableCell>{getStatusBadge(asset.status)}</TableCell>
                             <TableCell>₹{asset.cost?.toLocaleString() || 'N/A'}</TableCell>
@@ -222,12 +327,34 @@ export default function Assets() {
                       })}
                     </TableBody>
                   </Table>
+                  <Pagination
+                    page={page}
+                    pageSize={pageSize}
+                    totalItems={totalItems}
+                    onPageChange={(newPage) => setPage(newPage)}
+                  />
                 </CardContent>
               </Card>
             </div>
           </main>
         </div>
       </div>
+      <AlertDialog open={!!deleteAssetId} onOpenChange={() => setDeleteAssetId(null)}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Delete Space</AlertDialogTitle>
+            <AlertDialogDescription>
+              Are you sure you want to delete this asset? This action cannot be undone.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancel</AlertDialogCancel>
+            <AlertDialogAction onClick={confirmDelete} className="bg-destructive text-destructive-foreground">
+              Delete
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </SidebarProvider>
   );
 }

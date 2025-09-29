@@ -6,14 +6,18 @@ import { Badge } from "@/components/ui/badge";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Plus, Search, Edit, Trash2, FileText, Calculator, TrendingUp, AlertCircle, Download, Eye } from "lucide-react";
+import { AlertDialog, AlertDialogContent, AlertDialogHeader, AlertDialogFooter, AlertDialogTitle, AlertDialogDescription, AlertDialogCancel, AlertDialogAction } from "@/components/ui/alert-dialog";
 import { mockTaxCodes } from "@/data/mockFinancialsData";
 import { SidebarProvider, SidebarTrigger } from "@/components/ui/sidebar";
 import { PropertySidebar } from "@/components/PropertySidebar";
 import { TaxCode, TaxOverview } from "@/interfaces/tax_interfaces";
 import { taxCodeApiService } from "@/services/financials/taxcodesapi";
 import { Pagination } from "@/components/Pagination";
+import { TaxCodeForm } from "@/components/TaxCodeForm";
+import { useToast } from "@/hooks/use-toast";
 
 export default function TaxManagement() {
+  const { toast } = useToast();
   const [searchTerm, setSearchTerm] = useState("");
   const [jurisdictionFilter, setJurisdictionFilter] = useState("all");
   const [taxCodes, setTaxCodes] = useState<TaxCode[]>([]);
@@ -91,41 +95,69 @@ export default function TaxManagement() {
     setTotalReturnsItems(response.total);
   }
 
+  const handleCreate = () => {
+    setSelectedTaxCode(undefined);
+    setFormMode('create');
+    setIsFormOpen(true);
+  };
 
+  const handleView = (taxCode: TaxCode) => {
+    setSelectedTaxCode(taxCode);
+    setFormMode('view');
+    setIsFormOpen(true);
+  };
 
-  // Mock tax report data
-  const taxReportData = [
-    {
-      month: "2024-03",
-      totalSales: 850000,
-      gst18: 153000,
-      gst12: 14400,
-      gst5: 4250,
-      totalTax: 171650,
-      filed: true
-    },
-    {
-      month: "2024-02",
-      totalSales: 720000,
-      gst18: 122400,
-      gst12: 10800,
-      gst5: 3600,
-      totalTax: 136800,
-      filed: true
-    },
-    {
-      month: "2024-01",
-      totalSales: 605000,
-      gst18: 97200,
-      gst12: 8640,
-      gst5: 2600,
-      totalTax: 129320,
-      filed: false
+  const handleEdit = (taxCode: TaxCode) => {
+    setSelectedTaxCode(taxCode);
+    setFormMode('edit');
+    setIsFormOpen(true);
+  };
+
+  const handleDelete = (taxCodeId: string) => {
+    setDeleteTaxCodeId(taxCodeId);
+  };
+
+  const confirmDelete = async () => {
+    if (deleteTaxCodeId) {
+      try {
+        await taxCodeApiService.deleteTaxCode(deleteTaxCodeId);
+        updateTaxPage();
+        setDeleteTaxCodeId(null);
+        toast({
+          title: "Tax Code Deleted",
+          description: "The tax code has been removed successfully.",
+        });
+      } catch (error) {
+        toast({
+          title: "Techical Error!",
+          variant: "destructive",
+        });
+      }
+
     }
-  ];
+  };
 
-  // const totalTaxCollected = taxReportData.reduce((sum, report) => sum + report.totalTax, 0);
-  // const avgTaxRate = ((totalTaxCollected / taxReportData.reduce((sum, report) => sum + report.totalSales, 0)) * 100).toFixed(2);
+  const handleSave = async (taxCodeData: Partial<TaxCode>) => {
+    try {
+      if (formMode === 'create') {
+        await taxCodeApiService.addTaxCode(taxCodeData);
+      } else if (formMode === 'edit' && selectedTaxCode) {
+        const updatedSpace = { ...selectedTaxCode, ...taxCodeData };
+        await taxCodeApiService.updateTaxCode(updatedSpace);
+      }
+      setIsFormOpen(false);
+      toast({
+        title: formMode === 'create' ? "Space Created" : "Space Updated",
+        description: `Tax code ${taxCodeData.code} has been ${formMode === 'create' ? 'created' : 'updated'} successfully.`,
+      });
+      updateTaxPage();
+    } catch (error) {
+      toast({
+        title: "Techical Error!",
+        variant: "destructive",
+      });
+    }
+  };
 
   return (
     <SidebarProvider>
@@ -142,7 +174,7 @@ export default function TaxManagement() {
                   <p className="text-sm text-muted-foreground">Manage tax codes, rates and compliance</p>
                 </div>
               </div>
-              <Button>
+              <Button onClick={handleCreate}>
                 <Plus className="w-4 h-4 mr-2" />
                 Add Tax Code
               </Button>
@@ -254,13 +286,13 @@ export default function TaxManagement() {
                           </TableCell>
                           <TableCell className="text-right">
                             <div className="flex items-center justify-end gap-2">
-                              <Button variant="ghost" size="sm">
+                              <Button variant="ghost" size="sm" onClick={() => handleView(taxCode)}>
                                 <Eye className="h-4 w-4" />
                               </Button>
-                              <Button variant="ghost" size="sm">
+                              <Button variant="ghost" size="sm" onClick={() => handleEdit(taxCode)}>
                                 <Edit className="h-4 w-4" />
                               </Button>
-                              <Button variant="ghost" size="sm" className="text-destructive">
+                              <Button variant="ghost" size="sm" className="text-destructive" onClick={() => handleDelete(taxCode.id)}>
                                 <Trash2 className="h-4 w-4" />
                               </Button>
                             </div>
@@ -378,6 +410,28 @@ export default function TaxManagement() {
           </main>
         </div>
       </div>
+      <TaxCodeForm
+        taxCode={selectedTaxCode}
+        isOpen={isFormOpen}
+        onClose={() => setIsFormOpen(false)}
+        onSave={handleSave}
+        mode={formMode}
+      />
+      {/* Delete Confirmation */}
+      <AlertDialog open={!!deleteTaxCodeId} onOpenChange={() => setDeleteTaxCodeId(null)}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Delete Site</AlertDialogTitle>
+            <AlertDialogDescription>
+              Are you sure you want to delete this tax code? This action cannot be undone.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancel</AlertDialogCancel>
+            <AlertDialogAction onClick={confirmDelete}>Delete</AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </SidebarProvider>
   );
 }
