@@ -12,6 +12,7 @@ import { buildingApiService } from "@/services/spaces_sites/buildingsapi";
 import { Pagination } from "@/components/Pagination";
 import { siteApiService } from "@/services/spaces_sites/sitesapi";
 import { useToast } from "@/hooks/use-toast";
+import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
 
 export interface Building {
   id: string;
@@ -38,6 +39,7 @@ export default function Buildings() {
   const [pageSize] = useState(6); // items per page
   const [totalItems, setTotalItems] = useState(0);
   const [siteList, setSiteList] = useState([]);
+  const [deleteBuildingId, setDeleteBuildingId] = useState<string | null>(null);
 
   useEffect(() => {
     loadBuildings();
@@ -95,9 +97,13 @@ export default function Buildings() {
   };
 
   const handleDelete = async (buildingId: string) => {
-    if (buildingId) {
+    setDeleteBuildingId(buildingId);
+  };
+
+  const confirmDelete = async () => {
+    if (deleteBuildingId) {
       try {
-        await buildingApiService.deleteBuilding(buildingId);
+        await buildingApiService.deleteBuilding(deleteBuildingId);
         loadBuildings();
         toast({
           title: "Building Deleted",
@@ -109,8 +115,8 @@ export default function Buildings() {
           variant: "destructive",
         });
       }
-    }
 
+    }
   };
 
   const handleSave = async (building: any) => {
@@ -322,6 +328,23 @@ export default function Buildings() {
         onSave={handleSave}
         mode={formMode}
       />
+
+      <AlertDialog open={!!deleteBuildingId} onOpenChange={() => setDeleteBuildingId(null)}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Delete Space</AlertDialogTitle>
+            <AlertDialogDescription>
+              Are you sure you want to delete this building block? This action cannot be undone.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancel</AlertDialogCancel>
+            <AlertDialogAction onClick={confirmDelete} className="bg-destructive text-destructive-foreground">
+              Delete
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </SidebarProvider>
   );
 }

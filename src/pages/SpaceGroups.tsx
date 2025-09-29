@@ -12,6 +12,8 @@ import { Pagination } from "@/components/Pagination";
 import { spaceGroupsApiService } from "@/services/spaces_sites/spacegroupsapi";
 import { siteApiService } from "@/services/spaces_sites/sitesapi";
 import { SpaceKind, spaceKinds } from "@/interfaces/spaces_interfaces";
+import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
+
 
 export interface SpaceGroup {
   id: string;
@@ -38,6 +40,7 @@ export default function SpaceGroups() {
   const [page, setPage] = useState(1); // current page
   const [pageSize] = useState(6); // items per page
   const [totalItems, setTotalItems] = useState(0);
+  const [deleteSpaceGroupId, setDeleteSpaceGroupId] = useState<string | null>(null);
 
   const getKindIcon = (kind: SpaceKind) => {
     const icons = {
@@ -140,9 +143,13 @@ export default function SpaceGroups() {
   };
 
   const handleDelete = async (id: string) => {
-    if (id) {
+    setDeleteSpaceGroupId(id);
+  };
+
+  const confirmDelete = async () => {
+    if (deleteSpaceGroupId) {
       try {
-        await spaceGroupsApiService.deleteSpaceGroup(id);
+        await spaceGroupsApiService.deleteSpaceGroup(deleteSpaceGroupId);
         loadSpaceGroups();
         toast({
           title: "Group Deleted",
@@ -154,8 +161,8 @@ export default function SpaceGroups() {
           variant: "destructive",
         });
       }
-    }
 
+    }
   };
 
   const handleSave = async (data: Partial<SpaceGroup>) => {
@@ -321,6 +328,22 @@ export default function SpaceGroups() {
         onClose={() => setShowForm(false)}
         onSave={handleSave}
       />
+      <AlertDialog open={!!deleteSpaceGroupId} onOpenChange={() => setDeleteSpaceGroupId(null)}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Delete Space</AlertDialogTitle>
+            <AlertDialogDescription>
+              Are you sure you want to delete this space group? This action cannot be undone.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancel</AlertDialogCancel>
+            <AlertDialogAction onClick={confirmDelete} className="bg-destructive text-destructive-foreground">
+              Delete
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </SidebarProvider>
   );
 }

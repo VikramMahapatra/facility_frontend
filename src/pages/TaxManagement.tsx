@@ -6,6 +6,7 @@ import { Badge } from "@/components/ui/badge";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Plus, Search, Edit, Trash2, FileText, Calculator, TrendingUp, AlertCircle, Download, Eye } from "lucide-react";
+import { AlertDialog, AlertDialogContent, AlertDialogHeader, AlertDialogFooter, AlertDialogTitle, AlertDialogDescription, AlertDialogCancel, AlertDialogAction } from "@/components/ui/alert-dialog";
 import { mockTaxCodes } from "@/data/mockFinancialsData";
 import { SidebarProvider, SidebarTrigger } from "@/components/ui/sidebar";
 import { PropertySidebar } from "@/components/PropertySidebar";
@@ -116,6 +117,26 @@ export default function TaxManagement() {
     setDeleteTaxCodeId(taxCodeId);
   };
 
+  const confirmDelete = async () => {
+    if (deleteTaxCodeId) {
+      try {
+        await taxCodeApiService.deleteTaxCode(deleteTaxCodeId);
+        updateTaxPage();
+        setDeleteTaxCodeId(null);
+        toast({
+          title: "Tax Code Deleted",
+          description: "The tax code has been removed successfully.",
+        });
+      } catch (error) {
+        toast({
+          title: "Techical Error!",
+          variant: "destructive",
+        });
+      }
+
+    }
+  };
+
   const handleSave = async (taxCodeData: Partial<TaxCode>) => {
     try {
       if (formMode === 'create') {
@@ -137,43 +158,6 @@ export default function TaxManagement() {
       });
     }
   };
-
-
-
-
-  // Mock tax report data
-  const taxReportData = [
-    {
-      month: "2024-03",
-      totalSales: 850000,
-      gst18: 153000,
-      gst12: 14400,
-      gst5: 4250,
-      totalTax: 171650,
-      filed: true
-    },
-    {
-      month: "2024-02",
-      totalSales: 720000,
-      gst18: 122400,
-      gst12: 10800,
-      gst5: 3600,
-      totalTax: 136800,
-      filed: true
-    },
-    {
-      month: "2024-01",
-      totalSales: 605000,
-      gst18: 97200,
-      gst12: 8640,
-      gst5: 2600,
-      totalTax: 129320,
-      filed: false
-    }
-  ];
-
-  // const totalTaxCollected = taxReportData.reduce((sum, report) => sum + report.totalTax, 0);
-  // const avgTaxRate = ((totalTaxCollected / taxReportData.reduce((sum, report) => sum + report.totalSales, 0)) * 100).toFixed(2);
 
   return (
     <SidebarProvider>
@@ -433,6 +417,21 @@ export default function TaxManagement() {
         onSave={handleSave}
         mode={formMode}
       />
+      {/* Delete Confirmation */}
+      <AlertDialog open={!!deleteTaxCodeId} onOpenChange={() => setDeleteTaxCodeId(null)}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Delete Site</AlertDialogTitle>
+            <AlertDialogDescription>
+              Are you sure you want to delete this tax code? This action cannot be undone.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancel</AlertDialogCancel>
+            <AlertDialogAction onClick={confirmDelete}>Delete</AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </SidebarProvider>
   );
 }
