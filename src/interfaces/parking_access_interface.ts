@@ -24,3 +24,22 @@ export interface ParkingZoneOverview {
     totalCapacity: number;
     avgCapacity: number;
 }
+
+export interface AccessEvent {
+    id: string;
+    org_id: string;
+    site_id: string;
+    site_name: string;
+    gate: string;
+    vehicle_no?: string;
+    card_id?: string;
+    ts: string;
+    direction: 'in' | 'out';
+}
+
+export interface AccessEventOverview {
+    todayEvents: number;
+    totalEntries: number;
+    totalExits: number;
+    totalUniqueIDs: number;
+}

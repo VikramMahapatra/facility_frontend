@@ -34,3 +34,4 @@ export interface Asset {
     status: 'active' | 'retired' | 'in_repair';
     createdAt: string;
 }
+

@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Key, Search, Download, Filter, ArrowUpCircle, ArrowDownCircle } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -7,50 +7,87 @@ import { Input } from "@/components/ui/input";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { PropertySidebar } from "@/components/PropertySidebar";
 import { SidebarProvider, SidebarInset, SidebarTrigger } from "@/components/ui/sidebar";
-import { mockAccessEvents, mockSites, AccessEvent } from "@/data/mockParkingData";
+import { AccessEvent, AccessEventOverview } from "@/interfaces/parking_access_interface";
+import { useSkipFirstEffect } from "@/hooks/use-skipfirst-effect";
+import { siteApiService } from "@/services/spaces_sites/sitesapi";
+import { accessEventApiService } from "@/services/parking_access/accesseventsapi";
+import { Pagination } from "@/components/Pagination";
 
 export default function AccessLogs() {
   const [searchTerm, setSearchTerm] = useState("");
   const [selectedSite, setSelectedSite] = useState<string>("all");
   const [selectedDirection, setSelectedDirection] = useState<string>("all");
 
-  const filteredEvents = mockAccessEvents.filter(event => {
-    const matchesSearch = 
-      (event.vehicle_no?.toLowerCase().includes(searchTerm.toLowerCase())) ||
-      (event.card_id?.toLowerCase().includes(searchTerm.toLowerCase())) ||
-      event.gate.toLowerCase().includes(searchTerm.toLowerCase());
-    const matchesSite = selectedSite === "all" || event.site_id === selectedSite;
-    const matchesDirection = selectedDirection === "all" || event.direction === selectedDirection;
-    return matchesSearch && matchesSite && matchesDirection;
+  const [events, setEvents] = useState<AccessEvent[]>([])
+  const [page, setPage] = useState(1); // current page
+  const [pageSize] = useState(6); // items per page
+  const [totalItems, setTotalItems] = useState(0);
+  const [siteList, setSiteList] = useState([]);
+  const [eventOverview, setEventOverview] = useState<AccessEventOverview>({
+    todayEvents: 0,
+    totalEntries: 0,
+    totalExits: 0,
+    totalUniqueIDs: 0,
   });
 
-  const getSiteName = (siteId: string) => {
-    const site = mockSites.find(s => s.id === siteId);
-    return site ? site.name : 'Unknown Site';
-  };
+  useSkipFirstEffect(() => {
+    loadEvents();
+  }, [page]);
+
+  useEffect(() => {
+    if (page === 1) {
+      loadEvents();
+    } else {
+      setPage(1);    // triggers the page effect
+    }
+  }, [searchTerm, selectedSite, selectedDirection]);
+
+  useEffect(() => {
+    loadSiteLookup();
+    loadEventOverView();
+  }, []);
+
+  const loadEvents = async () => {
+    const skip = (page - 1) * pageSize;
+    const limit = pageSize;
+
+    // build query params
+    const params = new URLSearchParams();
+    if (searchTerm) params.append("search", searchTerm);
+    if (selectedSite) params.append("site_id", selectedSite);
+    if (selectedDirection) params.append("direction", selectedDirection);
+    params.append("skip", skip.toString());
+    params.append("limit", limit.toString());
+    const response = await accessEventApiService.getAccessEvents(params);
+    setEvents(response.events);
+    setTotalItems(response.total);
+  }
+
+  const loadEventOverView = async () => {
+    const response = await accessEventApiService.getAccessEventOverview();
+    setEventOverview(response);
+  }
+
+  const loadSiteLookup = async () => {
+    const lookup = await siteApiService.getSiteLookup();
+    setSiteList(lookup);
+  }
 
   const getDirectionIcon = (direction: 'in' | 'out') => {
-    return direction === 'in' ? 
-      <ArrowUpCircle className="h-4 w-4 text-green-600" /> : 
+    return direction === 'in' ?
+      <ArrowUpCircle className="h-4 w-4 text-green-600" /> :
       <ArrowDownCircle className="h-4 w-4 text-orange-600" />;
   };
 
   const getDirectionColor = (direction: 'in' | 'out') => {
-    return direction === 'in' ? 
-      "bg-green-100 text-green-800" : 
+    return direction === 'in' ?
+      "bg-green-100 text-green-800" :
       "bg-orange-100 text-orange-800";
   };
 
   const formatDateTime = (dateString: string) => {
     return new Date(dateString).toLocaleString();
   };
-
-  const todayEvents = mockAccessEvents.filter(event => 
-    new Date(event.ts).toDateString() === new Date().toDateString()
-  );
-
-  const inEvents = mockAccessEvents.filter(event => event.direction === 'in');
-  const outEvents = mockAccessEvents.filter(event => event.direction === 'out');
 
   return (
     <SidebarProvider>
@@ -83,26 +120,26 @@ export default function AccessLogs() {
               <div className="grid gap-4 md:grid-cols-4">
                 <Card>
                   <CardContent className="p-4">
-                    <div className="text-2xl font-bold text-sidebar-primary">{todayEvents.length}</div>
+                    <div className="text-2xl font-bold text-sidebar-primary">{eventOverview.todayEvents}</div>
                     <p className="text-sm text-muted-foreground">Today's Events</p>
                   </CardContent>
                 </Card>
                 <Card>
                   <CardContent className="p-4">
-                    <div className="text-2xl font-bold text-green-600">{inEvents.length}</div>
+                    <div className="text-2xl font-bold text-green-600">{eventOverview.totalEntries}</div>
                     <p className="text-sm text-muted-foreground">Total Entries</p>
                   </CardContent>
                 </Card>
                 <Card>
                   <CardContent className="p-4">
-                    <div className="text-2xl font-bold text-orange-600">{outEvents.length}</div>
+                    <div className="text-2xl font-bold text-orange-600">{eventOverview.totalExits}</div>
                     <p className="text-sm text-muted-foreground">Total Exits</p>
                   </CardContent>
                 </Card>
                 <Card>
                   <CardContent className="p-4">
                     <div className="text-2xl font-bold text-blue-600">
-                      {new Set([...mockAccessEvents.map(e => e.vehicle_no), ...mockAccessEvents.map(e => e.card_id)]).size - 1}
+                      {eventOverview.totalUniqueIDs}
                     </div>
                     <p className="text-sm text-muted-foreground">Unique IDs</p>
                   </CardContent>
@@ -120,14 +157,14 @@ export default function AccessLogs() {
                     className="w-80"
                   />
                 </div>
-                
+
                 <select
                   value={selectedSite}
                   onChange={(e) => setSelectedSite(e.target.value)}
                   className="rounded-md border border-input bg-background px-3 py-2 text-sm"
                 >
                   <option value="all">All Sites</option>
-                  {mockSites.map(site => (
+                  {siteList.map(site => (
                     <option key={site.id} value={site.id}>{site.name}</option>
                   ))}
                 </select>
@@ -146,7 +183,7 @@ export default function AccessLogs() {
               {/* Table */}
               <Card>
                 <CardHeader>
-                  <CardTitle>Access Events ({filteredEvents.length})</CardTitle>
+                  <CardTitle>Access Events ({events?.length})</CardTitle>
                 </CardHeader>
                 <CardContent>
                   <Table>
@@ -161,7 +198,7 @@ export default function AccessLogs() {
                       </TableRow>
                     </TableHeader>
                     <TableBody>
-                      {filteredEvents.map((event) => (
+                      {events.map((event) => (
                         <TableRow key={event.id}>
                           <TableCell className="font-medium">
                             {formatDateTime(event.ts)}
@@ -189,13 +226,18 @@ export default function AccessLogs() {
                               <span className="text-muted-foreground">-</span>
                             )}
                           </TableCell>
-                          <TableCell>{getSiteName(event.site_id)}</TableCell>
+                          <TableCell>{event.site_name}</TableCell>
                         </TableRow>
                       ))}
                     </TableBody>
                   </Table>
-
-                  {filteredEvents.length === 0 && (
+                  <Pagination
+                    page={page}
+                    pageSize={pageSize}
+                    totalItems={totalItems}
+                    onPageChange={(newPage) => setPage(newPage)}
+                  />
+                  {events.length === 0 && (
                     <div className="text-center py-8">
                       <Key className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
                       <h3 className="text-lg font-semibold text-sidebar-primary mb-2">No events found</h3>
