@@ -1,3 +1,4 @@
+// pages/Assets.tsx
 import { useState, useEffect } from "react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -5,7 +6,7 @@ import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Plus, Search, Filter, Eye, Edit, Trash2, Package, Wrench, AlertTriangle, CheckCircle, Calendar, DollarSign } from "lucide-react";
+import { Plus, Search, Eye, Edit, Trash2, Package, Wrench, AlertTriangle, CheckCircle, DollarSign } from "lucide-react";
 import { AlertDialog, AlertDialogContent, AlertDialogHeader, AlertDialogFooter, AlertDialogTitle, AlertDialogDescription, AlertDialogCancel, AlertDialogAction } from "@/components/ui/alert-dialog";
 import { SidebarProvider, SidebarTrigger } from "@/components/ui/sidebar";
 import { PropertySidebar } from "@/components/PropertySidebar";
@@ -13,13 +14,18 @@ import { Asset, AssetOverview } from "@/interfaces/assets_interface";
 import { assetApiService } from "@/services/maintenance_assets/assetsapi";
 import { useToast } from "@/hooks/use-toast";
 import { Pagination } from "@/components/Pagination";
-import { mockAssetCategories } from "@/data/mockMaintenanceData";
+import { AssetForm, AssetFormValues } from "@/components/AssetForm";
 
 export default function Assets() {
   const { toast } = useToast();
   const [searchTerm, setSearchTerm] = useState("");
   const [categoryFilter, setCategoryFilter] = useState("all");
   const [statusFilter, setStatusFilter] = useState("all");
+
+  // NEW: dynamic filter sources
+  const [categoryOptions, setCategoryOptions] = useState<string[]>([]);
+  const [statusOptions, setStatusOptions] = useState<string[]>([]);
+
   const [formMode, setFormMode] = useState<'create' | 'edit' | 'view'>('create');
   const [isFormOpen, setIsFormOpen] = useState(false);
   const [assets, setAssets] = useState<Asset[]>([]);
@@ -32,8 +38,8 @@ export default function Assets() {
     assetsNeedingMaintenance: 0,
     lastMonthAssetPercentage: 0
   });
-  const [page, setPage] = useState(1); // current page
-  const [pageSize] = useState(5); // items per page
+  const [page, setPage] = useState(1);
+  const [pageSize] = useState(5);
   const [totalItems, setTotalItems] = useState(0);
 
   useEffect(() => {
@@ -44,35 +50,52 @@ export default function Assets() {
     updateAssetPage();
   }, [searchTerm, categoryFilter, statusFilter]);
 
+  useEffect(() => {
+    // load cards + filter sources once
+    loadAssetOverView();
+    (async () => {
+      try {
+        const [cats, stats] = await Promise.all([
+          assetApiService.getCategories(),
+          assetApiService.getStatuses(),
+        ]);
+        setCategoryOptions(cats);
+        setStatusOptions(stats);
+      } catch {
+        // non-blocking
+      }
+    })();
+  }, []);
+
   const updateAssetPage = () => {
     if (page === 1) {
-      loadAssets();  // already page 1 → reload
+      loadAssets();
     } else {
-      setPage(1);    // triggers the page effect
+      setPage(1);
     }
     loadAssetOverView();
-  }
+  };
 
   const loadAssetOverView = async () => {
     const response = await assetApiService.getAssetOverview();
     setAssetOverview(response);
-  }
+  };
 
   const loadAssets = async () => {
     const skip = (page - 1) * pageSize;
     const limit = pageSize;
 
-    // build query params
     const params = new URLSearchParams();
     if (searchTerm) params.append("search", searchTerm);
     if (categoryFilter) params.append("category", categoryFilter);
     if (statusFilter) params.append("status", statusFilter);
-    params.append("skip", skip.toString());
-    params.append("limit", limit.toString());
+    params.append("skip", String(skip));
+    params.append("limit", String(limit));
+
     const response = await assetApiService.getAssets(params);
     setAssets(response.assets);
     setTotalItems(response.total);
-  }
+  };
 
   const handleCreate = () => {
     setSelectedAsset(undefined);
@@ -92,49 +115,36 @@ export default function Assets() {
     setIsFormOpen(true);
   };
 
-  const handleDelete = (assetId: string) => {
-    setDeleteAssetId(assetId);
-  };
+  const handleDelete = (assetId: string) => setDeleteAssetId(assetId);
 
   const confirmDelete = async () => {
-    if (deleteAssetId) {
-      try {
-        await assetApiService.deleteAsset(deleteAssetId);
-        updateAssetPage();
-        setDeleteAssetId(null);
-        toast({
-          title: "Tax Code Deleted",
-          description: "The tax code has been removed successfully.",
-        });
-      } catch (error) {
-        toast({
-          title: "Techical Error!",
-          variant: "destructive",
-        });
-      }
-
+    if (!deleteAssetId) return;
+    try {
+      await assetApiService.deleteAsset(deleteAssetId);
+      updateAssetPage();
+      toast({ title: "Asset Deleted", description: "Asset has been removed successfully." });
+    } catch {
+      toast({ title: "Techical Error!", variant: "destructive" });
+    } finally {
+      setDeleteAssetId(null);
     }
   };
 
-  const handleSave = async (assetData: Partial<Asset>) => {
+  const handleSave = async (values: Partial<AssetFormValues>) => {
     try {
       if (formMode === 'create') {
-        await assetApiService.addAsset(assetData);
+        await assetApiService.addAsset(values);
       } else if (formMode === 'edit' && selectedAsset) {
-        const updatedAsset = { ...selectedAsset, ...assetData };
-        await assetApiService.updateAsset(updatedAsset);
+        await assetApiService.updateAsset({ ...selectedAsset, ...values });
       }
       setIsFormOpen(false);
       toast({
-        title: formMode === 'create' ? "Asset Created" : "Space Updated",
-        description: `Asset name ${assetData.name} has been ${formMode === 'create' ? 'created' : 'updated'} successfully.`,
+        title: formMode === 'create' ? "Asset Created" : "Asset Updated",
+        description: `Asset ${values.name || selectedAsset?.name || ''} saved successfully.`,
       });
       updateAssetPage();
-    } catch (error) {
-      toast({
-        title: "Techical Error!",
-        variant: "destructive",
-      });
+    } catch {
+      toast({ title: "Techical Error!", variant: "destructive" });
     }
   };
 
@@ -144,15 +154,13 @@ export default function Assets() {
       retired: "secondary",
       in_repair: "destructive"
     } as const;
-
-    return <Badge variant={variants[status as keyof typeof variants] || "outline"}>{status.replace('_', ' ')}</Badge>;
+    return <Badge variant={variants[status as keyof typeof variants] || "outline"}>{status?.replace('_', ' ')}</Badge>;
   };
 
   return (
     <SidebarProvider>
       <div className="min-h-screen flex w-full bg-background">
         <PropertySidebar />
-
         <div className="flex-1 flex flex-col">
           <header className="bg-card border-b border-border">
             <div className="flex items-center justify-between px-6 py-4">
@@ -163,7 +171,7 @@ export default function Assets() {
                   <p className="text-sm text-muted-foreground">Manage facility assets and equipment</p>
                 </div>
               </div>
-              <Button>
+              <Button onClick={handleCreate}>
                 <Plus className="w-4 h-4 mr-2" />
                 Add Asset
               </Button>
@@ -172,7 +180,6 @@ export default function Assets() {
 
           <main className="flex-1 p-6 overflow-auto">
             <div className="container mx-auto py-6 space-y-6">
-
               {/* Summary Cards */}
               <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
                 <Card>
@@ -182,7 +189,9 @@ export default function Assets() {
                   </CardHeader>
                   <CardContent>
                     <div className="text-2xl font-bold">{assetOverview.totalAssets}</div>
-                    <p className="text-xs text-muted-foreground">+{assetOverview.lastMonthAssetPercentage}% from last month</p>
+                    <p className="text-xs text-muted-foreground">
+                      +{assetOverview.lastMonthAssetPercentage}% from last month
+                    </p>
                   </CardContent>
                 </Card>
 
@@ -193,7 +202,12 @@ export default function Assets() {
                   </CardHeader>
                   <CardContent>
                     <div className="text-2xl font-bold text-green-600">{assetOverview.activeAssets}</div>
-                    <p className="text-xs text-muted-foreground">{((assetOverview.activeAssets / assetOverview.totalAssets) * 100).toFixed(1)}% of total</p>
+                    <p className="text-xs text-muted-foreground">
+                      {assetOverview.totalAssets
+                        ? ((assetOverview.activeAssets / assetOverview.totalAssets) * 100).toFixed(1)
+                        : 0}
+                      % of total
+                    </p>
                   </CardContent>
                 </Card>
 
@@ -220,14 +234,14 @@ export default function Assets() {
                 </Card>
               </div>
 
-              {/* Assets Table */}
+              {/* Inventory */}
               <Card>
                 <CardHeader>
                   <CardTitle>Asset Inventory</CardTitle>
                   <CardDescription>Complete list of facility assets and equipment</CardDescription>
                 </CardHeader>
                 <CardContent className="space-y-4">
-                  {/* Search and Filters */}
+                  {/* Search & Filters */}
                   <div className="flex flex-col sm:flex-row gap-4">
                     <div className="flex-1">
                       <div className="relative">
@@ -243,29 +257,30 @@ export default function Assets() {
 
                     <Select value={categoryFilter} onValueChange={setCategoryFilter}>
                       <SelectTrigger className="w-48">
-                        <SelectValue placeholder="Filter by category" />
+                        <SelectValue placeholder="All Categories" />
                       </SelectTrigger>
                       <SelectContent>
                         <SelectItem value="all">All Categories</SelectItem>
-                        {mockAssetCategories.map((category) => (
-                          <SelectItem key={category.id} value={category.id}>{category.name}</SelectItem>
+                        {categoryOptions.map((c) => (
+                          <SelectItem key={c} value={c}>{c}</SelectItem>
                         ))}
                       </SelectContent>
                     </Select>
 
                     <Select value={statusFilter} onValueChange={setStatusFilter}>
                       <SelectTrigger className="w-40">
-                        <SelectValue placeholder="Filter by status" />
+                        <SelectValue placeholder="All Status" />
                       </SelectTrigger>
                       <SelectContent>
                         <SelectItem value="all">All Status</SelectItem>
-                        <SelectItem value="active">Active</SelectItem>
-                        <SelectItem value="retired">Retired</SelectItem>
-                        <SelectItem value="in_repair">In Repair</SelectItem>
+                        {statusOptions.map((s) => (
+                          <SelectItem key={s} value={s}>{s}</SelectItem>
+                        ))}
                       </SelectContent>
                     </Select>
                   </div>
 
+                  {/* Table */}
                   <Table>
                     <TableHeader>
                       <TableRow>
@@ -281,7 +296,8 @@ export default function Assets() {
                     </TableHeader>
                     <TableBody>
                       {assets.map((asset) => {
-                        const isWarrantyExpired = asset.warranty_expiry && new Date(asset.warranty_expiry) < new Date();
+                        const isWarrantyExpired =
+                          asset.warranty_expiry && new Date(asset.warranty_expiry) < new Date();
 
                         return (
                           <TableRow key={asset.id}>
@@ -292,7 +308,7 @@ export default function Assets() {
                                 {asset.model && <div className="text-sm text-muted-foreground">{asset.model}</div>}
                               </div>
                             </TableCell>
-                            <TableCell>{asset.category_name || 'Unknown'}</TableCell>
+                            <TableCell>{(asset as any).category_name || 'Unknown'}</TableCell>
                             <TableCell>{asset.site_id}</TableCell>
                             <TableCell>{getStatusBadge(asset.status)}</TableCell>
                             <TableCell>₹{asset.cost?.toLocaleString() || 'N/A'}</TableCell>
@@ -308,16 +324,21 @@ export default function Assets() {
                             </TableCell>
                             <TableCell className="text-right">
                               <div className="flex items-center justify-end gap-2">
-                                <Button variant="ghost" size="sm">
+                                <Button variant="ghost" size="sm" onClick={() => handleView(asset)}>
                                   <Eye className="h-4 w-4" />
                                 </Button>
-                                <Button variant="ghost" size="sm">
+                                <Button variant="ghost" size="sm" onClick={() => handleEdit(asset)}>
                                   <Edit className="h-4 w-4" />
                                 </Button>
                                 <Button variant="ghost" size="sm">
                                   <Wrench className="h-4 w-4" />
                                 </Button>
-                                <Button variant="ghost" size="sm" className="text-destructive">
+                                <Button
+                                  variant="ghost"
+                                  size="sm"
+                                  className="text-destructive"
+                                  onClick={() => handleDelete(asset.id)}
+                                >
                                   <Trash2 className="h-4 w-4" />
                                 </Button>
                               </div>
@@ -327,6 +348,7 @@ export default function Assets() {
                       })}
                     </TableBody>
                   </Table>
+
                   <Pagination
                     page={page}
                     pageSize={pageSize}
@@ -339,10 +361,12 @@ export default function Assets() {
           </main>
         </div>
       </div>
+
+      {/* Delete dialog */}
       <AlertDialog open={!!deleteAssetId} onOpenChange={() => setDeleteAssetId(null)}>
         <AlertDialogContent>
           <AlertDialogHeader>
-            <AlertDialogTitle>Delete Space</AlertDialogTitle>
+            <AlertDialogTitle>Delete Asset</AlertDialogTitle>
             <AlertDialogDescription>
               Are you sure you want to delete this asset? This action cannot be undone.
             </AlertDialogDescription>
@@ -355,6 +379,15 @@ export default function Assets() {
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
+
+      {/* Create / Edit / View */}
+      <AssetForm
+        isOpen={isFormOpen}
+        mode={formMode}
+        asset={selectedAsset as unknown as AssetFormValues}
+        onClose={() => setIsFormOpen(false)}
+        onSave={handleSave}
+      />
     </SidebarProvider>
   );
 }
