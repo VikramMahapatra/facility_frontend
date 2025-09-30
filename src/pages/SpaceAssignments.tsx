@@ -14,6 +14,7 @@ import { spaceAssignmentApiService } from "@/services/spaces_sites/spaceassignme
 import { siteApiService } from "@/services/spaces_sites/sitesapi";
 import { SpaceGroup } from "./SpaceGroups";
 import { Pagination } from "@/components/Pagination";
+import { useSkipFirstEffect } from "@/hooks/use-skipfirst-effect";
 
 interface SpaceAssignment {
   id: string;
@@ -52,8 +53,9 @@ export default function SpaceAssignments() {
   const [pageSize] = useState(3); // items per page
   const [totalItems, setTotalItems] = useState(0);
 
-  useEffect(() => {
+  useSkipFirstEffect(() => {
     loadSpaceAssignments();
+    loadSpaceAsignmentOverView();
   }, [page]);
 
   useEffect(() => {
@@ -66,11 +68,11 @@ export default function SpaceAssignments() {
 
   const updateSpaceAssignmentPage = () => {
     if (page === 1) {
-      loadSpaceAssignments();  // already page 1 → reload
+      loadSpaceAssignments();
+      loadSpaceAsignmentOverView();
     } else {
       setPage(1);    // triggers the page effect
     }
-    loadSpaceAsignmentOverView();
   }
 
   const loadSpaceAsignmentOverView = async () => {

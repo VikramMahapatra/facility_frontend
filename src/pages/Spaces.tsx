@@ -13,6 +13,7 @@ import { Pagination } from "@/components/Pagination";
 import { siteApiService } from "@/services/spaces_sites/sitesapi";
 import { spacesApiService } from "@/services/spaces_sites/spacesapi";
 import { SpaceKind, spaceKinds } from "@/interfaces/spaces_interfaces";
+import { useSkipFirstEffect } from "@/hooks/use-skipfirst-effect";
 
 export interface Space {
   id: string;
@@ -63,8 +64,9 @@ export default function Spaces() {
   const [pageSize] = useState(6); // items per page
   const [totalItems, setTotalItems] = useState(0);
 
-  useEffect(() => {
+  useSkipFirstEffect(() => {
     loadSpaces();
+    loadSpaceOverView();
   }, [page]);
 
   useEffect(() => {
@@ -77,11 +79,12 @@ export default function Spaces() {
 
   const updateSpacePage = () => {
     if (page === 1) {
-      loadSpaces();  // already page 1 → reload
+      loadSpaces();
+      loadSpaceOverView();
     } else {
       setPage(1);    // triggers the page effect
     }
-    loadSpaceOverView();
+
   }
   const loadSpaceOverView = async () => {
     const params = new URLSearchParams();

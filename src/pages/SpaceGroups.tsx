@@ -13,6 +13,7 @@ import { spaceGroupsApiService } from "@/services/spaces_sites/spacegroupsapi";
 import { siteApiService } from "@/services/spaces_sites/sitesapi";
 import { SpaceKind, spaceKinds } from "@/interfaces/spaces_interfaces";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
+import { useSkipFirstEffect } from "@/hooks/use-skipfirst-effect";
 
 
 export interface SpaceGroup {
@@ -57,13 +58,13 @@ export default function SpaceGroups() {
     return icons[kind] || "📍";
   };
 
-  useEffect(() => {
+  useSkipFirstEffect(() => {
     loadSpaceGroups();
   }, [page]);
 
   useEffect(() => {
     if (page === 1) {
-      loadSpaceGroups();  // already page 1 → reload
+      loadSpaceGroups();
     } else {
       setPage(1);    // triggers the page effect
     }

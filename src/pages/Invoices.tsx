@@ -13,6 +13,7 @@ import { Invoice, Payment, InvoiceOverview } from "@/interfaces/invoices_interfa
 import { Pagination } from "@/components/Pagination";
 import { useToast } from "@/hooks/use-toast";
 import { InvoiceForm } from "@/components/InvoiceForm";
+import { useSkipFirstEffect } from "@/hooks/use-skipfirst-effect";
 
 
 
@@ -43,6 +44,10 @@ export default function Invoices() {
   const [totalPaymentItems, setTotalPaymentItems] = useState(0);
 
   useEffect(() => {
+    loadInvoicesOverView();
+  }, []);
+
+  useSkipFirstEffect(() => {
     loadInvoices();
   }, [page]);
 
@@ -56,11 +61,10 @@ export default function Invoices() {
 
   const updateInvoicesPage = () => {
     if (page === 1) {
-      loadInvoices();  // already page 1 → reload
+      loadInvoices();
     } else {
-      setPage(1);    // triggers the page effect
+      setPage(1);
     }
-    loadInvoicesOverView();
   }
 
   const loadInvoicesOverView = async () => {

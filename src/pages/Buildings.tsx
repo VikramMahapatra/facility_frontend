@@ -13,6 +13,7 @@ import { Pagination } from "@/components/Pagination";
 import { siteApiService } from "@/services/spaces_sites/sitesapi";
 import { useToast } from "@/hooks/use-toast";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
+import { useSkipFirstEffect } from "@/hooks/use-skipfirst-effect";
 
 export interface Building {
   id: string;
@@ -41,13 +42,13 @@ export default function Buildings() {
   const [siteList, setSiteList] = useState([]);
   const [deleteBuildingId, setDeleteBuildingId] = useState<string | null>(null);
 
-  useEffect(() => {
+  useSkipFirstEffect(() => {
     loadBuildings();
   }, [page]);
 
   useEffect(() => {
     if (page === 1) {
-      loadBuildings();  // already page 1 → reload
+      loadBuildings();
     } else {
       setPage(1);    // triggers the page effect
     }

@@ -12,6 +12,7 @@ import { AlertDialog, AlertDialogContent, AlertDialogHeader, AlertDialogFooter, 
 import { useToast } from "@/hooks/use-toast";
 import { siteApiService } from "@/services/spaces_sites/sitesapi";
 import { Pagination } from "@/components/Pagination";
+import { useSkipFirstEffect } from "@/hooks/use-skipfirst-effect";
 export interface Site {
   id: string;
   org_id: string;
@@ -49,13 +50,13 @@ export default function Sites() {
   const [pageSize] = useState(3); // items per page
   const [totalItems, setTotalItems] = useState(0);
 
-  useEffect(() => {
+  useSkipFirstEffect(() => {
     loadSites();
   }, [page]);
 
   useEffect(() => {
     if (page === 1) {
-      loadSites();  // already page 1 → reload
+      loadSites();
     } else {
       setPage(1);    // triggers the page effect
     }
