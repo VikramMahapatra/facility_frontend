@@ -68,7 +68,7 @@ export default function SpaceGroups() {
     } else {
       setPage(1);    // triggers the page effect
     }
-  }, [searchTerm, selectedSite]);
+  }, [searchTerm, selectedSite, selectedKind]);
 
   useEffect(() => {
     loadSiteLookup();
