@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect, useRef } from "react";
 import { Car, Search, Plus, Eye, Edit, Trash2 } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -7,31 +7,82 @@ import { Input } from "@/components/ui/input";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { PropertySidebar } from "@/components/PropertySidebar";
 import { SidebarProvider, SidebarInset, SidebarTrigger } from "@/components/ui/sidebar";
-import { mockParkingZones, mockSites, ParkingZone } from "@/data/mockParkingData";
 import { ParkingZoneForm } from "@/components/ParkingZoneForm";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
 import { useToast } from "@/hooks/use-toast";
+import { ParkingZone, ParkingZoneOverview } from "@/interfaces/parking_access_interface";
+import { Pagination } from "@/components/Pagination";
+import { siteApiService } from "@/services/spaces_sites/sitesapi";
+import { parkingZoneApiService } from "@/services/parking_access/parkingzonesapi";
+import { useSkipFirstEffect } from "@/hooks/use-skipfirst-effect";
 
 export default function ParkingZones() {
   const { toast } = useToast();
   const [searchTerm, setSearchTerm] = useState("");
   const [selectedSite, setSelectedSite] = useState<string>("all");
-  const [zones, setZones] = useState<ParkingZone[]>(mockParkingZones);
+  const [zones, setZones] = useState<ParkingZone[]>([]);
   const [selectedZone, setSelectedZone] = useState<ParkingZone | undefined>();
   const [formMode, setFormMode] = useState<'create' | 'edit' | 'view'>('create');
   const [isFormOpen, setIsFormOpen] = useState(false);
   const [deleteZoneId, setDeleteZoneId] = useState<string | null>(null);
-
-  const filteredZones = zones.filter(zone => {
-    const matchesSearch = zone.name.toLowerCase().includes(searchTerm.toLowerCase());
-    const matchesSite = selectedSite === "all" || zone.site_id === selectedSite;
-    return matchesSearch && matchesSite;
+  const [siteList, setSiteList] = useState([]);
+  const [parkingZoneOverview, setParkingZoneOverview] = useState<ParkingZoneOverview>({
+    totalZones: 0,
+    totalCapacity: 0,
+    avgCapacity: 0,
   });
+  const [page, setPage] = useState(1); // current page
+  const [pageSize] = useState(5); // items per page
+  const [totalItems, setTotalItems] = useState(0);
 
-  const getSiteName = (siteId: string) => {
-    const site = mockSites.find(s => s.id === siteId);
-    return site ? site.name : 'Unknown Site';
-  };
+  useSkipFirstEffect(() => {
+    loadParkingZone();
+  }, [page]);
+
+  useEffect(() => {
+    updateParkingZonePage();
+  }, [searchTerm, selectedSite]);
+
+  useEffect(() => {
+    loadSiteLookup();
+    loadParkingZoneOverView();
+  }, []);
+
+  const updateParkingZonePage = () => {
+    if (page === 1) {
+      loadParkingZone();
+    } else {
+      setPage(1);    // triggers the page effect
+    }
+  }
+
+  const loadParkingZoneOverView = async () => {
+    const params = new URLSearchParams();
+    if (searchTerm) params.append("search", searchTerm);
+    if (selectedSite) params.append("site_id", selectedSite);
+    const response = await parkingZoneApiService.getParkingZoneOverview();
+    setParkingZoneOverview(response);
+  }
+
+  const loadParkingZone = async () => {
+    const skip = (page - 1) * pageSize;
+    const limit = pageSize;
+
+    // build query params
+    const params = new URLSearchParams();
+    if (searchTerm) params.append("search", searchTerm);
+    if (selectedSite) params.append("site_id", selectedSite);
+    params.append("skip", skip.toString());
+    params.append("limit", limit.toString());
+    const response = await parkingZoneApiService.getParkingZones(params);
+    setZones(response.zones);
+    setTotalItems(response.total);
+  }
+
+  const loadSiteLookup = async () => {
+    const lookup = await siteApiService.getSiteLookup();
+    setSiteList(lookup);
+  }
 
   const handleCreate = () => {
     setSelectedZone(undefined);
@@ -66,22 +117,27 @@ export default function ParkingZones() {
     }
   };
 
-  const handleSave = (zoneData: Partial<ParkingZone>) => {
-    if (formMode === 'create') {
-      const newZone: ParkingZone = {
-        id: `pz-${Date.now()}`,
-        org_id: "org-1",
-        ...zoneData as Omit<ParkingZone, 'id' | 'org_id'>
-      };
-      setZones([...zones, newZone]);
-    } else if (formMode === 'edit' && selectedZone) {
-      setZones(zones.map(zone => 
-        zone.id === selectedZone.id 
-          ? { ...zone, ...zoneData }
-          : zone
-      ));
+  const handleSave = async (zoneData: Partial<ParkingZone>) => {
+    try {
+      if (formMode === 'create') {
+        await parkingZoneApiService.addParkingZone(zoneData);
+      } else if (formMode === 'edit' && selectedZone) {
+        const updatedZone = { ...selectedZone, ...zoneData }
+        await parkingZoneApiService.updateParkingZone(updatedZone);
+      }
+      setIsFormOpen(false);
+      toast({
+        title: formMode === 'create' ? "Zone Created" : "Zone Updated",
+        description: `Parking zone "${zoneData.name}" has been ${formMode === 'create' ? 'created' : 'updated'} successfully.`,
+      });
+      updateParkingZonePage();
+    } catch (error) {
+      toast({
+        title: "Techical Error!",
+        variant: "destructive",
+      });
     }
-    setIsFormOpen(false);
+
   };
 
   return (
@@ -115,14 +171,14 @@ export default function ParkingZones() {
               <div className="grid gap-4 md:grid-cols-3">
                 <Card>
                   <CardContent className="p-4">
-                    <div className="text-2xl font-bold text-sidebar-primary">{zones.length}</div>
+                    <div className="text-2xl font-bold text-sidebar-primary">{parkingZoneOverview.totalZones}</div>
                     <p className="text-sm text-muted-foreground">Total Zones</p>
                   </CardContent>
                 </Card>
                 <Card>
                   <CardContent className="p-4">
                     <div className="text-2xl font-bold text-blue-600">
-                      {zones.reduce((sum, zone) => sum + zone.capacity, 0)}
+                      {parkingZoneOverview.totalCapacity}
                     </div>
                     <p className="text-sm text-muted-foreground">Total Capacity</p>
                   </CardContent>
@@ -130,7 +186,7 @@ export default function ParkingZones() {
                 <Card>
                   <CardContent className="p-4">
                     <div className="text-2xl font-bold text-green-600">
-                      {Math.round(zones.reduce((sum, zone) => sum + zone.capacity, 0) / zones.length || 0)}
+                      {parkingZoneOverview.avgCapacity}
                     </div>
                     <p className="text-sm text-muted-foreground">Avg. Capacity</p>
                   </CardContent>
@@ -148,14 +204,14 @@ export default function ParkingZones() {
                     className="w-64"
                   />
                 </div>
-                
+
                 <select
                   value={selectedSite}
                   onChange={(e) => setSelectedSite(e.target.value)}
                   className="rounded-md border border-input bg-background px-3 py-2 text-sm"
                 >
                   <option value="all">All Sites</option>
-                  {mockSites.map(site => (
+                  {siteList.map(site => (
                     <option key={site.id} value={site.id}>{site.name}</option>
                   ))}
                 </select>
@@ -164,7 +220,7 @@ export default function ParkingZones() {
               {/* Table */}
               <Card>
                 <CardHeader>
-                  <CardTitle>Parking Zones ({filteredZones.length})</CardTitle>
+                  <CardTitle>Parking Zones ({zones?.length || 0})</CardTitle>
                 </CardHeader>
                 <CardContent>
                   <Table>
@@ -177,10 +233,10 @@ export default function ParkingZones() {
                       </TableRow>
                     </TableHeader>
                     <TableBody>
-                      {filteredZones.map((zone) => (
+                      {zones.map((zone) => (
                         <TableRow key={zone.id}>
                           <TableCell className="font-medium">{zone.name}</TableCell>
-                          <TableCell>{getSiteName(zone.site_id)}</TableCell>
+                          <TableCell>{zone.site_name}</TableCell>
                           <TableCell>
                             <Badge variant="outline">{zone.capacity} spots</Badge>
                           </TableCell>
@@ -192,9 +248,9 @@ export default function ParkingZones() {
                               <Button size="sm" variant="outline" onClick={() => handleEdit(zone)}>
                                 <Edit className="h-3 w-3" />
                               </Button>
-                              <Button 
-                                size="sm" 
-                                variant="outline" 
+                              <Button
+                                size="sm"
+                                variant="outline"
                                 className="text-destructive hover:text-destructive"
                                 onClick={() => handleDelete(zone.id)}
                               >
@@ -206,8 +262,13 @@ export default function ParkingZones() {
                       ))}
                     </TableBody>
                   </Table>
-
-                  {filteredZones.length === 0 && (
+                  <Pagination
+                    page={page}
+                    pageSize={pageSize}
+                    totalItems={totalItems}
+                    onPageChange={(newPage) => setPage(newPage)}
+                  />
+                  {zones?.length === 0 && (
                     <div className="text-center py-8">
                       <Car className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
                       <h3 className="text-lg font-semibold text-sidebar-primary mb-2">No zones found</h3>

@@ -15,6 +15,7 @@ import { taxCodeApiService } from "@/services/financials/taxcodesapi";
 import { Pagination } from "@/components/Pagination";
 import { TaxCodeForm } from "@/components/TaxCodeForm";
 import { useToast } from "@/hooks/use-toast";
+import { useSkipFirstEffect } from "@/hooks/use-skipfirst-effect";
 
 export default function TaxManagement() {
   const { toast } = useToast();
@@ -42,6 +43,10 @@ export default function TaxManagement() {
   const [totalReturnsItems, setTotalReturnsItems] = useState(0);
 
   useEffect(() => {
+    loadTaxOverView();
+  }, []);
+
+  useSkipFirstEffect(() => {
     loadTaxCodes();
   }, [page]);
 
@@ -55,11 +60,10 @@ export default function TaxManagement() {
 
   const updateTaxPage = () => {
     if (page === 1) {
-      loadTaxCodes();  // already page 1 → reload
+      loadTaxCodes();
     } else {
-      setPage(1);    // triggers the page effect
+      setPage(1);
     }
-    loadTaxOverView();
   }
 
   const loadTaxOverView = async () => {

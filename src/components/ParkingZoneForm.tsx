@@ -1,11 +1,18 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
-import { mockSites, ParkingZone } from "@/data/mockParkingData";
 import { useToast } from "@/hooks/use-toast";
+import { ParkingZone } from "@/interfaces/parking_access_interface";
+import { siteApiService } from "@/services/spaces_sites/sitesapi";
+
+const emptyFormData = {
+  name: "",
+  site_id: "",
+  capacity: 0,
+}
 
 interface ParkingZoneFormProps {
   zone?: ParkingZone;
@@ -17,15 +24,30 @@ interface ParkingZoneFormProps {
 
 export function ParkingZoneForm({ zone, isOpen, onClose, onSave, mode }: ParkingZoneFormProps) {
   const { toast } = useToast();
+  const [siteList, setSiteList] = useState([]);
   const [formData, setFormData] = useState({
     name: zone?.name || "",
     site_id: zone?.site_id || "",
     capacity: zone?.capacity || 0,
   });
 
+  useEffect(() => {
+    if (zone) {
+      setFormData(zone);
+    } else {
+      setFormData(emptyFormData);
+    }
+    loadSiteLookup();
+  }, [zone]);
+
+  const loadSiteLookup = async () => {
+    const lookup = await siteApiService.getSiteLookup();
+    setSiteList(lookup);
+  }
+
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    
+
     if (!formData.name || !formData.site_id || formData.capacity <= 0) {
       toast({
         title: "Validation Error",
@@ -34,12 +56,7 @@ export function ParkingZoneForm({ zone, isOpen, onClose, onSave, mode }: Parking
       });
       return;
     }
-
     onSave(formData);
-    toast({
-      title: mode === 'create' ? "Zone Created" : "Zone Updated",
-      description: `Parking zone "${formData.name}" has been ${mode === 'create' ? 'created' : 'updated'} successfully.`,
-    });
   };
 
   const isReadOnly = mode === 'view';
@@ -78,7 +95,7 @@ export function ParkingZoneForm({ zone, isOpen, onClose, onSave, mode }: Parking
                 <SelectValue placeholder="Select site" />
               </SelectTrigger>
               <SelectContent>
-                {mockSites.map((site) => (
+                {siteList.map((site) => (
                   <SelectItem key={site.id} value={site.id}>
                     {site.name}
                   </SelectItem>
