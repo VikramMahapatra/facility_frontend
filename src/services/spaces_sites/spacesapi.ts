@@ -38,6 +38,14 @@ class SpacesApiService {
         return await apiService.request(url);
     }
 
+    async getSpaceWithBuildingLookup(site_id?: any) {
+        let url = '/spaces/space-building-lookup';
+        if (site_id) {
+            url += `?site_id=${site_id}`;
+        }
+        return await apiService.request(url);
+    }
+
 }
 
 export const spacesApiService = new SpacesApiService();

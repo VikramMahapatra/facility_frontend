@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -7,20 +7,10 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
 import { mockSites } from "@/data/mockParkingData";
 import { useToast } from "@/hooks/use-toast";
-
-interface Visitor {
-  id: string;
-  org_id: string;
-  site_id: string;
-  name: string;
-  phone: string;
-  visiting: string;
-  purpose: string;
-  entry_time: string;
-  exit_time?: string;
-  status: 'checked_in' | 'checked_out' | 'expected';
-  vehicle_no?: string;
-}
+import { Visitor } from "@/interfaces/parking_access_interface";
+import { siteApiService } from "@/services/spaces_sites/sitesapi";
+import { utcToLocal, localToUTC } from "@/helpers/dateHelpers"
+import { spacesApiService } from "@/services/spaces_sites/spacesapi";
 
 interface VisitorFormProps {
   visitor?: Visitor;
@@ -30,24 +20,43 @@ interface VisitorFormProps {
   mode: 'create' | 'edit' | 'view';
 }
 
+const emptyFormData: Partial<Visitor> = {
+  name: "",
+  phone: "",
+  site_id: "",
+  space_id: "",
+  purpose: "",
+  status: "expected" as const,
+  vehicle_no: "",
+  entry_time: new Date().toISOString().slice(0, 16),
+  exit_time: "",
+  is_expected: true
+};
+
 export function VisitorForm({ visitor, isOpen, onClose, onSave, mode }: VisitorFormProps) {
   const { toast } = useToast();
-  const [formData, setFormData] = useState({
-    name: visitor?.name || "",
-    phone: visitor?.phone || "",
-    site_id: visitor?.site_id || "",
-    visiting: visitor?.visiting || "",
-    purpose: visitor?.purpose || "",
-    status: visitor?.status || "expected" as const,
-    vehicle_no: visitor?.vehicle_no || "",
-    entry_time: visitor?.entry_time || new Date().toISOString().slice(0, 16),
-    exit_time: visitor?.exit_time || "",
-  });
+  const [formData, setFormData] = useState<Partial<Visitor>>(emptyFormData);
+  const [siteList, setSiteList] = useState([]);
+  const [spaceList, setSpaceList] = useState([]);
+
+  useEffect(() => {
+    if (visitor) {
+      setFormData(visitor);
+    } else {
+      setFormData(emptyFormData);
+    }
+    loadSiteLookup();
+    setSpaceList([]);
+  }, [visitor]);
+
+  useEffect(() => {
+    loadSpaceLookup();
+  }, [formData.site_id])
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    
-    if (!formData.name || !formData.phone || !formData.site_id || !formData.visiting) {
+
+    if (!formData.name || !formData.phone || !formData.site_id || !formData.space_id) {
       toast({
         title: "Validation Error",
         description: "Name, phone, site, and visiting location are required fields",
@@ -61,20 +70,28 @@ export function VisitorForm({ visitor, isOpen, onClose, onSave, mode }: VisitorF
       name: formData.name,
       phone: formData.phone,
       site_id: formData.site_id,
+      space_id: formData.space_id,
       visiting: formData.visiting,
       purpose: formData.purpose,
       status: formData.status,
       vehicle_no: formData.vehicle_no || undefined,
-      entry_time: formData.entry_time,
-      exit_time: formData.exit_time || undefined,
+      entry_time: localToUTC(formData.entry_time),
+      exit_time: localToUTC(formData.exit_time) || undefined,
+      is_expected: formData.is_expected
     };
 
     onSave(visitorData);
-    toast({
-      title: mode === 'create' ? "Visitor Added" : "Visitor Updated",
-      description: `Visitor "${formData.name}" has been ${mode === 'create' ? 'added' : 'updated'} successfully.`,
-    });
   };
+
+  const loadSiteLookup = async () => {
+    const lookup = await siteApiService.getSiteLookup();
+    setSiteList(lookup);
+  }
+
+  const loadSpaceLookup = async () => {
+    const lookup = await spacesApiService.getSpaceWithBuildingLookup(formData.site_id);
+    setSpaceList(lookup);
+  }
 
   const isReadOnly = mode === 'view';
 
@@ -124,7 +141,7 @@ export function VisitorForm({ visitor, isOpen, onClose, onSave, mode }: VisitorF
                 <SelectValue placeholder="Select site" />
               </SelectTrigger>
               <SelectContent>
-                {mockSites.map((site) => (
+                {siteList.map((site) => (
                   <SelectItem key={site.id} value={site.id}>
                     {site.name}
                   </SelectItem>
@@ -135,13 +152,23 @@ export function VisitorForm({ visitor, isOpen, onClose, onSave, mode }: VisitorF
 
           <div>
             <Label htmlFor="visiting">Visiting *</Label>
-            <Input
-              id="visiting"
-              value={formData.visiting}
-              onChange={(e) => setFormData({ ...formData, visiting: e.target.value })}
-              placeholder="e.g., Apartment 101, Office 205"
+            <Select
+              name="space_id"
+              value={formData.space_id}
+              onValueChange={(value) => setFormData({ ...formData, space_id: value })}
               disabled={isReadOnly}
-            />
+            >
+              <SelectTrigger>
+                <SelectValue placeholder="Select visiting place" />
+              </SelectTrigger>
+              <SelectContent>
+                {spaceList.map((space) => (
+                  <SelectItem key={space.id} value={space.id}>
+                    {space.name}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
           </div>
 
           <div>
@@ -191,7 +218,7 @@ export function VisitorForm({ visitor, isOpen, onClose, onSave, mode }: VisitorF
               <Input
                 id="entry_time"
                 type="datetime-local"
-                value={formData.entry_time}
+                value={utcToLocal(formData.entry_time)}
                 onChange={(e) => setFormData({ ...formData, entry_time: e.target.value })}
                 disabled={isReadOnly}
               />
@@ -202,7 +229,7 @@ export function VisitorForm({ visitor, isOpen, onClose, onSave, mode }: VisitorF
                 <Input
                   id="exit_time"
                   type="datetime-local"
-                  value={formData.exit_time}
+                  value={utcToLocal(formData.exit_time)}
                   onChange={(e) => setFormData({ ...formData, exit_time: e.target.value })}
                   disabled={isReadOnly}
                 />
