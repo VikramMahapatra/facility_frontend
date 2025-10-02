@@ -121,7 +121,7 @@ export default function Leases() {
     params.append("skip", String(skip));
     params.append("limit", String(limit));
 
-    const response = await leasesApiService.getLeases(`/leases?${params.toString()}`);
+    const response = await leasesApiService.getLeases(`/leases/all?${params.toString()}`);
     setLeases(response.leases);
     setTotalItems(response.total);
   };
