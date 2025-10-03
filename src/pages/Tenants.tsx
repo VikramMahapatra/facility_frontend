@@ -1,86 +1,230 @@
-import { useState } from "react";
-import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { Input } from "@/components/ui/input";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { useState, useEffect } from "react";
+import {
+  Users,
+  Search,
+  Plus,
+  Eye,
+  Edit,
+  Trash2,
+  Calendar,
+  Clock,
+  AlertTriangle,
+  User,
+  MapPin,
+  Play,
+  Mail,
+  Phone,
+} from "lucide-react";
+import {
+  Card,
+  CardContent,
+  CardHeader,
+  CardTitle,
+  CardDescription,
+} from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from "@/components/ui/table";
 import { Separator } from "@/components/ui/separator";
-import { SidebarProvider, SidebarInset, SidebarTrigger } from "@/components/ui/sidebar";
 import { PropertySidebar } from "@/components/PropertySidebar";
-import { mockContacts, mockCommercialPartners, mockLeases, mockLeaseTenants, getContactById } from "@/data/mockLeasingData";
-import { Plus, Search, Filter, Edit, Eye, Trash2, Users, Building2, Mail, Phone, MapPin } from "lucide-react";
+import {
+  SidebarProvider,
+  SidebarTrigger,
+  SidebarInset,
+} from "@/components/ui/sidebar";
+import { TenantForm } from "@/components/TenantForm";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
+import { useToast } from "@/hooks/use-toast";
+import { Pagination } from "@/components/Pagination";
+import { tenantsApiService } from "@/services/Leasing_Tenants/tenantsapi";
+import { useSkipFirstEffect } from "@/hooks/use-skipfirst-effect";
+import { Tenant, TenantOverview } from "@/interfaces/tenants_interface";
 
-const Tenants = () => {
+export default function Tenants() {
+  const { toast } = useToast();
   const [searchTerm, setSearchTerm] = useState("");
-  const [selectedType, setSelectedType] = useState<string>("all");
   const [selectedStatus, setSelectedStatus] = useState<string>("all");
-
-  // Combine contacts and commercial partners
-  const allTenants = [
-    ...mockContacts.map(contact => ({
-      ...contact,
-      tenant_type: 'individual' as const,
-      legal_name: contact.name,
-      status: 'active' as const,
-      contact_info: {
-        name: contact.name,
-        email: contact.email,
-        phone: contact.phone,
-        address: contact.address
-      }
-    })),
-    ...mockCommercialPartners.map(partner => ({
-      ...partner,
-      tenant_type: 'commercial' as const,
-      name: partner.legal_name,
-      email: partner.contact.email,
-      phone: partner.contact.phone,
-      type: partner.type,
-      contact_info: partner.contact
-    }))
-  ];
-
-  const filteredTenants = allTenants.filter(tenant => {
-    const matchesSearch = tenant.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      tenant.email.toLowerCase().includes(searchTerm.toLowerCase());
-    const matchesType = selectedType === "all" || tenant.tenant_type === selectedType;
-    const matchesStatus = selectedStatus === "all" || tenant.status === selectedStatus;
-    
-    return matchesSearch && matchesType && matchesStatus;
+  const [selectedType, setSelectedType] = useState<string>("all");
+  const [selectedSite, setSelectedSite] = useState<string>("all");
+  const [tenants, setTenants] = useState<Tenant[]>([]);
+  const [formMode, setFormMode] = useState<"create" | "edit" | "view">(
+    "create"
+  );
+  const [isFormOpen, setIsFormOpen] = useState(false);
+  const [deleteTenantId, setDeleteTenantId] = useState<string | null>(
+    null
+  );
+  const [selectedTenant, setSelectedTenant] = useState<
+    Tenant | undefined
+  >();
+  const [tenantOverview, setTenantOverview] = useState<TenantOverview>({
+    totalTenants: 0,
+    activeTenants: 0,
+    commercialTenants: 0,
+    individualTenants: 0,
   });
+  const [statusList, setStatusList] = useState([]);
+  const [typeList, setTypeList] = useState([]);
 
-  const getStatusColor = (status: string) => {
-    switch (status) {
-      case "active": return "bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200";
-      case "inactive": return "bg-gray-100 text-gray-800 dark:bg-gray-900 dark:text-gray-200";
-      case "suspended": return "bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-200";
-      default: return "bg-gray-100 text-gray-800 dark:bg-gray-900 dark:text-gray-200";
-    }
-  };
+  const [page, setPage] = useState(1); // current page
+  const [pageSize] = useState(6); // items per page
+  const [totalItems, setTotalItems] = useState(0);
 
-  const getTenantLeases = (tenantId: string, tenantType: 'individual' | 'commercial') => {
-    if (tenantType === 'individual') {
-      return mockLeases.filter(lease => lease.resident_id === tenantId);
+  useSkipFirstEffect(() => {
+    loadTenants();
+    loadTenantOverview();
+  }, [page]);
+
+  useEffect(() => {
+    loadStatusLookup();
+    loadTypeLookup();
+  }, []);
+
+  useEffect(() => {
+    updateTenantPage();
+  }, [searchTerm, selectedSite, selectedStatus, selectedType]);
+
+  const updateTenantPage = () => {
+    if (page === 1) {
+      loadTenants();
+      loadTenantOverview();
     } else {
-      return mockLeases.filter(lease => lease.partner_id === tenantId);
+      setPage(1); // triggers the page effect
     }
   };
 
-  const getTenantTypeColor = (type: string) => {
-    switch (type) {
-      case "individual": return "bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-200";
-      case "commercial": return "bg-purple-100 text-purple-800 dark:bg-purple-900 dark:text-purple-200";
-      case "merchant": return "bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200";
-      case "brand": return "bg-orange-100 text-orange-800 dark:bg-orange-900 dark:text-orange-200";
-      case "kiosk": return "bg-yellow-100 text-yellow-800 dark:bg-yellow-900 dark:text-yellow-200";
-      default: return "bg-gray-100 text-gray-800 dark:bg-gray-900 dark:text-gray-200";
+  const loadTenantOverview = async () => {
+    const params = new URLSearchParams();
+    if (searchTerm) params.append("search", searchTerm);
+    if (selectedSite && selectedSite !== "all")
+      params.append("site_id", selectedSite);
+    if (selectedStatus && selectedStatus !== "all")
+      params.append("status", selectedStatus);
+    if (selectedType && selectedType !== "all")
+      params.append("type", selectedType);
+    const response = await tenantsApiService.getTenantOverview(params);
+    setTenantOverview(response);
+  };
+
+  const loadStatusLookup = async () => {
+    const lookup = await tenantsApiService.getTenantStatusLookup();
+    setStatusList(lookup || []);
+  };
+
+  const loadTypeLookup = async () => {
+    const lookup = await tenantsApiService.getTenantTypeLookup();
+    setTypeList(lookup || []);
+  };
+
+  const loadTenants = async () => {
+    const skip = (page - 1) * pageSize;
+    const limit = pageSize;
+
+    // build query params
+    const params = new URLSearchParams();
+    if (searchTerm) params.append("search", searchTerm);
+    if (selectedSite && selectedSite !== "all")
+      params.append("site_id", selectedSite);
+    if (selectedStatus && selectedStatus !== "all")
+      params.append("status", selectedStatus);
+    if (selectedType && selectedType !== "all")
+      params.append("type", selectedType);
+    params.append("skip", skip.toString());
+    params.append("limit", limit.toString());
+
+    const response = await tenantsApiService.getTenants(params);
+
+    setTenants(response.tenants || []);
+    setTotalItems(response.total || 0);
+  };
+
+  // Form handlers
+  const handleCreate = () => {
+    setSelectedTenant(undefined);
+    setFormMode("create");
+    setIsFormOpen(true);
+  };
+
+  const handleEdit = (tenant: Tenant) => {
+    setSelectedTenant(tenant);
+    setFormMode("edit");
+    setIsFormOpen(true);
+  };
+
+  const handleView = (tenant: Tenant) => {
+    setSelectedTenant(tenant);
+    setFormMode("view");
+    setIsFormOpen(true);
+  };
+
+  const handleDelete = (tenantId: string) => {
+    setDeleteTenantId(tenantId);
+  };
+
+  const confirmDelete = async () => {
+    if (deleteTenantId) {
+      try {
+        await tenantsApiService.deleteTenant(deleteTenantId);
+        updateTenantPage();
+        setDeleteTenantId(null);
+        toast({
+          title: "Tenant Deleted",
+          description: "Tenant has been deleted successfully.",
+        });
+        setDeleteTenantId(null);
+      } catch (error) {
+        toast({
+          title: "Technical Error!",
+          variant: "destructive",
+        });
+      }
     }
   };
 
-  const totalTenants = allTenants.length;
-  const activeTenants = allTenants.filter(t => t.status === 'active').length;
-  const commercialTenants = allTenants.filter(t => t.tenant_type === 'commercial').length;
-  const individualTenants = allTenants.filter(t => t.tenant_type === 'individual').length;
+  const handleSave = async (tenantData: Partial<Tenant>) => {
+    try {
+      if (formMode === "create") {
+        await tenantsApiService.addTenant(tenantData);
+      } else if (formMode === "edit" && selectedTenant) {
+        const updatedTenant = { ...selectedTenant, ...tenantData };
+        await tenantsApiService.updateTenant(
+          selectedTenant.id!,
+          updatedTenant
+        );
+      }
+      setIsFormOpen(false);
+      toast({
+        title:
+          formMode === "create" ? "Tenant Created" : "Tenant Updated",
+        description: `Tenant ${tenantData.name} has been ${
+          formMode === "create" ? "created" : "updated"
+        } successfully.`,
+      });
+      updateTenantPage();
+    } catch (error) {
+      toast({
+        title: "Technical Error!",
+        variant: "destructive",
+      });
+    }
+  };
 
   return (
     <SidebarProvider>
@@ -97,252 +241,262 @@ const Tenants = () => {
           </div>
 
           <div className="flex-1 space-y-6 p-6">
+            {/* Header Actions */}
+            <div className="flex items-center justify-between">
+              <div>
+                <h2 className="text-2xl font-bold text-sidebar-primary">
+                  Tenants
+                </h2>
+                <p className="text-muted-foreground">
+                  Manage tenant information and relationships
+                </p>
+              </div>
+              <Button onClick={handleCreate} className="gap-2">
+                <Plus className="h-4 w-4" />
+                Create Tenant
+              </Button>
+            </div>
+
+            {/* Filters */}
+            <div className="flex flex-col sm:flex-row gap-4">
+              <div className="relative flex-1">
+                <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground w-4 h-4" />
+                <Input
+                  placeholder="Search tenants..."
+                  value={searchTerm}
+                  onChange={(e) => setSearchTerm(e.target.value)}
+                  className="pl-10"
+                />
+              </div>
+              <select
+                value={selectedStatus}
+                onChange={(e) => setSelectedStatus(e.target.value)}
+                className="rounded-md border border-input bg-background px-3 py-2 text-sm w-[160px]"
+              >
+                <option value="all">All Status</option>
+                {statusList.map((status) => (
+                  <option key={status.id} value={status.id}>
+                    {status.name}
+                  </option>
+                ))}
+              </select>
+              <select
+                value={selectedType}
+                onChange={(e) => setSelectedType(e.target.value)}
+                className="rounded-md border border-input bg-background px-3 py-2 text-sm w-[160px]"
+              >
+                <option value="all">All Types</option>
+                <option value="individual">Individual</option>
+                <option value="commercial">Commercial</option>
+              </select>
+            </div>
+
             {/* Stats Cards */}
-            <div className="grid gap-4 md:grid-cols-4">
+            <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
               <Card>
                 <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                  <CardTitle className="text-sm font-medium">Total Tenants</CardTitle>
+                  <CardTitle className="text-sm font-medium">
+                    Total Tenants
+                  </CardTitle>
                   <Users className="h-4 w-4 text-muted-foreground" />
                 </CardHeader>
                 <CardContent>
-                  <div className="text-2xl font-bold">{totalTenants}</div>
-                  <p className="text-xs text-muted-foreground">
-                    All registered tenants
-                  </p>
+                  <div className="text-2xl font-bold">
+                    {tenantOverview.totalTenants}
+                  </div>
                 </CardContent>
               </Card>
-              
               <Card>
                 <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                  <CardTitle className="text-sm font-medium">Active Tenants</CardTitle>
-                  <Building2 className="h-4 w-4 text-muted-foreground" />
+                  <CardTitle className="text-sm font-medium">Active</CardTitle>
+                  <Clock className="h-4 w-4 text-muted-foreground" />
                 </CardHeader>
                 <CardContent>
-                  <div className="text-2xl font-bold text-green-600">{activeTenants}</div>
-                  <p className="text-xs text-muted-foreground">
-                    Currently active
-                  </p>
+                  <div className="text-2xl font-bold">
+                    {tenantOverview.activeTenants}
+                  </div>
                 </CardContent>
               </Card>
-
               <Card>
                 <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                  <CardTitle className="text-sm font-medium">Commercial</CardTitle>
-                  <Building2 className="h-4 w-4 text-muted-foreground" />
+                  <CardTitle className="text-sm font-medium">
+                    Commercial
+                  </CardTitle>
+                  <Play className="h-4 w-4 text-muted-foreground" />
                 </CardHeader>
                 <CardContent>
-                  <div className="text-2xl font-bold">{commercialTenants}</div>
-                  <p className="text-xs text-muted-foreground">
-                    Business tenants
-                  </p>
+                  <div className="text-2xl font-bold">
+                    {tenantOverview.commercialTenants}
+                  </div>
                 </CardContent>
               </Card>
-
               <Card>
                 <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
                   <CardTitle className="text-sm font-medium">Individual</CardTitle>
-                  <Users className="h-4 w-4 text-muted-foreground" />
+                  <AlertTriangle className="h-4 w-4 text-muted-foreground" />
                 </CardHeader>
                 <CardContent>
-                  <div className="text-2xl font-bold">{individualTenants}</div>
-                  <p className="text-xs text-muted-foreground">
-                    Individual tenants
-                  </p>
+                  <div className="text-2xl font-bold">
+                    {tenantOverview.individualTenants}
+                  </div>
                 </CardContent>
               </Card>
             </div>
 
-            {/* Filters and Actions */}
-            <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
-              <div className="flex flex-1 gap-4">
-                <div className="relative flex-1 max-w-sm">
-                  <Search className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
-                  <Input
-                    placeholder="Search tenants..."
-                    value={searchTerm}
-                    onChange={(e) => setSearchTerm(e.target.value)}
-                    className="pl-9"
-                  />
-                </div>
-                
-                <Select value={selectedType} onValueChange={setSelectedType}>
-                  <SelectTrigger className="w-[150px]">
-                    <SelectValue placeholder="All Types" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="all">All Types</SelectItem>
-                    <SelectItem value="individual">Individual</SelectItem>
-                    <SelectItem value="commercial">Commercial</SelectItem>
-                  </SelectContent>
-                </Select>
-
-                <Select value={selectedStatus} onValueChange={setSelectedStatus}>
-                  <SelectTrigger className="w-[130px]">
-                    <SelectValue placeholder="Status" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="all">All Status</SelectItem>
-                    <SelectItem value="active">Active</SelectItem>
-                    <SelectItem value="inactive">Inactive</SelectItem>
-                    <SelectItem value="suspended">Suspended</SelectItem>
-                  </SelectContent>
-                </Select>
-              </div>
-
-              <div className="flex gap-2">
-                <Button variant="outline" size="sm">
-                  <Filter className="mr-2 h-4 w-4" />
-                  More Filters
-                </Button>
-                <Button size="sm">
-                  <Plus className="mr-2 h-4 w-4" />
-                  Add Tenant
-                </Button>
-              </div>
-            </div>
-
-            {/* Tenants Grid */}
-            <div className="grid gap-6">
-              {filteredTenants.length === 0 ? (
-                <Card>
-                  <CardContent className="flex flex-col items-center justify-center py-16">
-                    <Users className="h-12 w-12 text-muted-foreground mb-4" />
-                    <h3 className="text-lg font-semibold mb-2">No tenants found</h3>
-                    <p className="text-muted-foreground text-center mb-4">
-                      No tenants match your current filters. Try adjusting your search criteria.
-                    </p>
-                    <Button>
-                      <Plus className="mr-2 h-4 w-4" />
-                      Add First Tenant
-                    </Button>
-                  </CardContent>
-                </Card>
-              ) : (
-                filteredTenants.map((tenant) => {
-                  const tenantLeases = getTenantLeases(tenant.id, tenant.tenant_type);
-                  
-                  return (
-                    <Card key={tenant.id} className="hover:shadow-md transition-shadow">
-                      <CardHeader>
-                        <div className="flex items-center justify-between">
+            {/* Tenants Table */}
+            <Card>
+              <CardHeader>
+                <CardTitle>Tenants</CardTitle>
+                <CardDescription>
+                  Manage tenant information and relationships
+                </CardDescription>
+              </CardHeader>
+              <CardContent>
+                <Table>
+                  <TableHeader>
+                    <TableRow>
+                      <TableHead>Tenant</TableHead>
+                      <TableHead>Contact</TableHead>
+                      <TableHead>Type</TableHead>
+                      <TableHead>Business Info</TableHead>
+                      <TableHead>Status</TableHead>
+                      <TableHead>Actions</TableHead>
+                    </TableRow>
+                  </TableHeader>
+                  <TableBody>
+                    {tenants.map((tenant) => (
+                      <TableRow key={tenant.id}>
+                        <TableCell>
                           <div>
-                            <CardTitle className="text-lg flex items-center gap-2">
-                              {tenant.name}
-                              <div className="flex gap-2">
-                                <Badge className={getTenantTypeColor(tenant.tenant_type)}>
-                                  {tenant.tenant_type}
-                                </Badge>
-                                {tenant.tenant_type === 'commercial' && 'type' in tenant && (
-                                  <Badge className={getTenantTypeColor(tenant.type)}>
-                                    {tenant.type}
-                                  </Badge>
-                                )}
-                              </div>
-                            </CardTitle>
-                            <CardDescription>
-                              {tenantLeases.length} active lease{tenantLeases.length !== 1 ? 's' : ''}
-                            </CardDescription>
-                          </div>
-                          <div className="flex items-center gap-2">
-                            <Badge className={getStatusColor(tenant.status)}>
-                              {tenant.status}
-                            </Badge>
-                            <div className="flex gap-1">
-                              <Button variant="ghost" size="sm">
-                                <Eye className="h-4 w-4" />
-                              </Button>
-                              <Button variant="ghost" size="sm">
-                                <Edit className="h-4 w-4" />
-                              </Button>
-                              <Button variant="ghost" size="sm">
-                                <Trash2 className="h-4 w-4" />
-                              </Button>
+                            <div className="font-medium">{tenant.name}</div>
+                            <div className="text-sm text-muted-foreground">
+                              #{tenant.id}
                             </div>
                           </div>
-                        </div>
-                      </CardHeader>
-                      <CardContent>
-                        <div className="grid gap-4 md:grid-cols-2">
-                          {/* Contact Information */}
-                          <div className="space-y-3">
-                            <div className="text-sm font-medium">Contact Information</div>
-                            <div className="space-y-2">
-                              <div className="flex items-center gap-2 text-sm">
-                                <Mail className="h-4 w-4 text-muted-foreground" />
-                                <span>{tenant.email}</span>
-                              </div>
-                              <div className="flex items-center gap-2 text-sm">
-                                <Phone className="h-4 w-4 text-muted-foreground" />
-                                <span>{tenant.phone}</span>
-                              </div>
-                              {tenant.contact_info?.address && (
-                                <div className="flex items-start gap-2 text-sm">
-                                  <MapPin className="h-4 w-4 text-muted-foreground mt-0.5" />
-                                  <div>
-                                    <div>{tenant.contact_info.address.line1}</div>
-                                    {tenant.contact_info.address.line2 && (
-                                      <div>{tenant.contact_info.address.line2}</div>
-                                    )}
-                                    <div>
-                                      {tenant.contact_info.address.city}, {tenant.contact_info.address.state} {tenant.contact_info.address.pincode}
-                                    </div>
-                                  </div>
+                        </TableCell>
+                        <TableCell>
+                          <div>
+                            <div className="flex items-center">
+                              <Mail className="w-4 h-4 mr-2" />
+                              {tenant.email}
+                            </div>
+                            <div className="flex items-center text-sm text-muted-foreground">
+                              <Phone className="w-4 h-4 mr-2" />
+                              {tenant.phone}
+                            </div>
+                          </div>
+                        </TableCell>
+                        <TableCell>
+                          <Badge variant="outline">{tenant.tenant_type}</Badge>
+                        </TableCell>
+                        <TableCell>
+                          <div>
+                            {tenant.tenant_type === "commercial" && (
+                              <>
+                                <div className="font-medium">
+                                  {tenant.legal_name || "No Legal Name"}
                                 </div>
-                              )}
-                            </div>
-                          </div>
-
-                          {/* Lease Information */}
-                          <div className="space-y-3">
-                            <div className="text-sm font-medium">Active Leases</div>
-                            {tenantLeases.length > 0 ? (
-                              <div className="space-y-2">
-                                {tenantLeases.slice(0, 2).map((lease) => (
-                                  <div key={lease.id} className="p-2 bg-muted rounded text-sm">
-                                    <div className="font-medium">
-                                      Lease {lease.id.slice(-6)}
-                                    </div>
-                                    <div className="text-muted-foreground">
-                                      ₹{lease.rent_amount.toLocaleString()} • {lease.frequency}
-                                    </div>
-                                    <div className="text-xs text-muted-foreground">
-                                      {new Date(lease.start_date).toLocaleDateString()} - {new Date(lease.end_date).toLocaleDateString()}
-                                    </div>
-                                  </div>
-                                ))}
-                                {tenantLeases.length > 2 && (
-                                  <div className="text-xs text-muted-foreground">
-                                    +{tenantLeases.length - 2} more lease{tenantLeases.length - 2 !== 1 ? 's' : ''}
-                                  </div>
-                                )}
-                              </div>
-                            ) : (
+                                <div className="text-sm text-muted-foreground">
+                                  {tenant.type || "No Type"}
+                                </div>
+                              </>
+                            )}
+                            {tenant.tenant_type === "individual" && (
                               <div className="text-sm text-muted-foreground">
-                                No active leases
+                                Individual Tenant
                               </div>
                             )}
                           </div>
-                        </div>
-
-                        {tenant.tenant_type === 'commercial' && 'contact_info' in tenant && (
-                          <div className="mt-4 p-3 bg-muted rounded-lg">
-                            <div className="text-sm font-medium mb-1">Business Contact</div>
-                            <div className="text-sm text-muted-foreground">
-                              {tenant.contact_info.name} • {tenant.contact_info.email}
-                            </div>
+                        </TableCell>
+                        <TableCell>
+                          <Badge
+                            variant={
+                              tenant.status === "active"
+                                ? "default"
+                                : tenant.status === "inactive"
+                                ? "secondary"
+                                : "destructive"
+                            }
+                          >
+                            {tenant.status.replace("_", " ")}
+                          </Badge>
+                        </TableCell>
+                        <TableCell>
+                          <div className="flex space-x-2">
+                            <Button
+                              variant="ghost"
+                              size="sm"
+                              onClick={() => handleView(tenant)}
+                            >
+                              <Eye className="w-4 h-4" />
+                            </Button>
+                            <Button
+                              variant="ghost"
+                              size="sm"
+                              onClick={() => handleEdit(tenant)}
+                            >
+                              <Edit className="w-4 h-4" />
+                            </Button>
+                            <Button
+                              variant="ghost"
+                              size="sm"
+                              className="text-destructive hover:text-destructive"
+                              onClick={() => handleDelete(tenant.id!)}
+                            >
+                              <Trash2 className="w-4 h-4" />
+                            </Button>
                           </div>
-                        )}
-                      </CardContent>
-                    </Card>
-                  );
-                })
-              )}
-            </div>
+                        </TableCell>
+                      </TableRow>
+                    ))}
+                  </TableBody>
+                </Table>
+              </CardContent>
+            </Card>
+
+            {/* Pagination */}
+            <Pagination
+              page={page}
+              pageSize={pageSize}
+              totalItems={totalItems}
+              onPageChange={setPage}
+            />
           </div>
         </SidebarInset>
       </div>
+
+      {/* Tenant Form Dialog */}
+      <TenantForm
+        isOpen={isFormOpen}
+        onClose={() => setIsFormOpen(false)}
+        mode={formMode}
+        tenant={selectedTenant}
+        onSave={handleSave}
+      />
+
+      <AlertDialog
+        open={!!deleteTenantId}
+        onOpenChange={() => setDeleteTenantId(null)}
+      >
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Delete Tenant</AlertDialogTitle>
+            <AlertDialogDescription>
+              Are you sure you want to delete this tenant? This action
+              cannot be undone.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancel</AlertDialogCancel>
+            <AlertDialogAction
+              onClick={confirmDelete}
+              className="bg-destructive text-destructive-foreground"
+            >
+              Delete
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </SidebarProvider>
   );
-};
-
-export default Tenants;
+}
