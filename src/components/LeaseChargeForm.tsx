@@ -38,8 +38,7 @@ interface LeaseChargeFormProps {
   mode: "create" | "edit" | "view";
 }
 
-// ---- Lookup option ----
-interface LeaseOption { id: string; label: string }
+
 
 // ---- Empty (default) form data, styled like SpaceForm's emptyFormData) ----
 const emptyFormData: Partial<LeaseCharge> = {
@@ -54,7 +53,7 @@ const emptyFormData: Partial<LeaseCharge> = {
 export function LeaseChargeForm({ charge, isOpen, onClose, onSave, mode }: LeaseChargeFormProps) {
   const { toast } = useToast();
   const [formData, setFormData] = useState<Partial<LeaseCharge>>(emptyFormData);
-  const [leaseOptions, setLeaseOptions] = useState<LeaseOption[]>([]);
+  const [leaseList, setLeaseList] = useState([]);
 
   const isReadOnly = mode === "view";
 
@@ -66,25 +65,14 @@ export function LeaseChargeForm({ charge, isOpen, onClose, onSave, mode }: Lease
       setFormData(emptyFormData);
     }
     loadLeaseLookup();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
+    
   }, [charge, isOpen]);
 
   // ---- Lookups ----
   const loadLeaseLookup = async () => {
-    try {
-      const res = await leasesApiService.getLeases(`/leases?skip=0&limit=500`);
-      const opts: LeaseOption[] = (res?.leases || []).map((l: any) => ({
-        id: l.id,
-        label:
-          (l.kind === "commercial" ? (l.partner_name || l.partner_id || "Commercial") : (l.tenant_name || l.tenant_id || "Residential")) +
-          (l.space_code ? ` • ${l.space_code}` : "") +
-          (l.site_name ? ` • ${l.site_name}` : ""),
-      }));
-      setLeaseOptions(opts);
-    } catch (e) {
-      setLeaseOptions([]);
+      const lookup = await leasesApiService.getLeaseLookup();
+      setLeaseList(lookup);
     }
-  };
 
   // ---- Submit ----
   const handleSubmit = (e: React.FormEvent) => {
@@ -138,9 +126,9 @@ export function LeaseChargeForm({ charge, isOpen, onClose, onSave, mode }: Lease
                 <SelectValue placeholder="Select lease" />
               </SelectTrigger>
               <SelectContent>
-                {leaseOptions.map((o) => (
-                  <SelectItem key={o.id} value={o.id}>
-                    {o.label}
+                {leaseList.map((lease) => (
+                  <SelectItem key={lease.id} value={lease.id}>
+                    {lease.name}
                   </SelectItem>
                 ))}
               </SelectContent>
