@@ -1,137 +1,134 @@
-// components/LeaseChargeForm.tsx
 import { useEffect, useState } from "react";
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
+import { Dialog, DialogContent, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
 import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { useToast } from "@/hooks/use-toast";
-import { leaseChargeApiService } from "@/services/Leasing_Tenants/leasechargeapi";
 import { leasesApiService } from "@/services/Leasing_Tenants/leasesapi";
 
-type ChargeCode = "RENT" | "CAM" | "ELEC" | "WATER" | "PARK" | "PENALTY" | "MAINTENANCE";
+// ---- Types (kept minimal and local to the form, mirroring SpaceForm style) ----
+export type ChargeCode =
+  | "RENT"
+  | "CAM"
+  | "ELEC"
+  | "WATER"
+  | "PARK"
+  | "PENALTY"
+  | "MAINTENANCE";
 
-export interface LeaseChargeFormModel {
-  id?: string;
-  lease_id?: string;
-  charge_code?: ChargeCode | string;
-  period_start?: string; // yyyy-mm-dd
-  period_end?: string;   // yyyy-mm-dd
-  amount?: number;
+export interface LeaseCharge {
+  id: string;
+  lease_id: string;
+  charge_code: ChargeCode | string;
+  period_start: string; // yyyy-mm-dd
+  period_end: string;   // yyyy-mm-dd
+  amount: number;
   tax_pct?: number;
+  created_at?: string;
+  updated_at?: string;
 }
 
 interface LeaseChargeFormProps {
-  charge?: LeaseChargeFormModel;
+  charge?: Partial<LeaseCharge>;
   isOpen: boolean;
   onClose: () => void;
-  onSaved: () => void; // tell parent to refresh list
+  // Keep the same signature pattern as SpaceForm
+  onSave: (leasecharge: Partial<LeaseCharge>) => void;
   mode: "create" | "edit" | "view";
 }
 
-const EMPTY: LeaseChargeFormModel = {
+// ---- Lookup option ----
+interface LeaseOption { id: string; label: string }
+
+// ---- Empty (default) form data, styled like SpaceForm's emptyFormData) ----
+const emptyFormData: Partial<LeaseCharge> = {
   lease_id: "",
   charge_code: "RENT",
   period_start: "",
   period_end: "",
-  amount: undefined,
+  amount: undefined as unknown as number,
   tax_pct: 0,
 };
 
-export function LeaseChargeForm({ charge, isOpen, onClose, onSaved, mode }: LeaseChargeFormProps) {
+export function LeaseChargeForm({ charge, isOpen, onClose, onSave, mode }: LeaseChargeFormProps) {
   const { toast } = useToast();
-  const [formData, setFormData] = useState<LeaseChargeFormModel>(EMPTY);
-  const [leaseOptions, setLeaseOptions] = useState<Array<{ id: string; label: string }>>([]);
+  const [formData, setFormData] = useState<Partial<LeaseCharge>>(emptyFormData);
+  const [leaseOptions, setLeaseOptions] = useState<LeaseOption[]>([]);
+
   const isReadOnly = mode === "view";
 
-  // hydrate form when opening
+  // hydrate form data like SpaceForm
   useEffect(() => {
-    setFormData(charge ? { ...EMPTY, ...charge } : EMPTY);
+    if (charge) {
+      setFormData({ ...emptyFormData, ...charge });
+    } else {
+      setFormData(emptyFormData);
+    }
+    loadLeaseLookup();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [charge, isOpen]);
 
-  // load leases for dropdown (simple: first page big limit)
-  useEffect(() => {
-    (async () => {
-      try {
-        const res = await leasesApiService.getLeases(`/leases?skip=0&limit=500`);
-        const opts = (res.leases || []).map((l: any) => ({
-          id: l.id,
-          // choose a friendly label; adjust if you have better fields
-          label:
-            (l.kind === "commercial" ? (l.partner_id || "Commercial") : (l.tenant_id || "Residential")) +
-            (l.space_code ? ` • ${l.space_code}` : "") +
-            (l.site_name ? ` • ${l.site_name}` : ""),
-        }));
-        setLeaseOptions(opts);
-      } catch {
-        setLeaseOptions([]);
-      }
-    })();
-  }, []);
+  // ---- Lookups ----
+  const loadLeaseLookup = async () => {
+    try {
+      const res = await leasesApiService.getLeases(`/leases?skip=0&limit=500`);
+      const opts: LeaseOption[] = (res?.leases || []).map((l: any) => ({
+        id: l.id,
+        label:
+          (l.kind === "commercial" ? (l.partner_name || l.partner_id || "Commercial") : (l.tenant_name || l.tenant_id || "Residential")) +
+          (l.space_code ? ` • ${l.space_code}` : "") +
+          (l.site_name ? ` • ${l.site_name}` : ""),
+      }));
+      setLeaseOptions(opts);
+    } catch (e) {
+      setLeaseOptions([]);
+    }
+  };
 
-  const handleSubmit = async (e: React.FormEvent) => {
+  // ---- Submit ----
+  const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
 
-    // basic validation
-    if (!formData.lease_id) {
-      toast({ title: "Validation Error", description: "Lease is required", variant: "destructive" });
-      return;
-    }
-    if (!formData.charge_code) {
-      toast({ title: "Validation Error", description: "Charge code is required", variant: "destructive" });
-      return;
-    }
-    if (!formData.period_start || !formData.period_end) {
-      toast({ title: "Validation Error", description: "Start & End dates are required", variant: "destructive" });
-      return;
-    }
-    if (formData.amount == null || Number.isNaN(formData.amount)) {
-      toast({ title: "Validation Error", description: "Amount is required", variant: "destructive" });
+    // validation (single toast per SpaceForm pattern)
+    if (!formData.lease_id || !formData.charge_code || !formData.period_start || !formData.period_end || formData.amount == null || Number.isNaN(Number(formData.amount))) {
+      toast({
+        title: "Validation Error",
+        description: "Lease, Charge Code, Dates and Amount are required",
+        variant: "destructive",
+      });
       return;
     }
 
-    try {
-      if (mode === "create") {
-        await leaseChargeApiService.create({
-          lease_id: formData.lease_id,
-          charge_code: formData.charge_code,
-          period_start: formData.period_start,
-          period_end: formData.period_end,
-          amount: Number(formData.amount),
-          tax_pct: Number(formData.tax_pct || 0),
-        });
-        toast({ title: "Charge created" });
-      } else if (mode === "edit" && formData.id) {
-        await leaseChargeApiService.update(formData.id, {
-          lease_id: formData.lease_id,
-          charge_code: formData.charge_code,
-          period_start: formData.period_start,
-          period_end: formData.period_end,
-          amount: Number(formData.amount),
-          tax_pct: Number(formData.tax_pct || 0),
-        });
-        toast({ title: "Charge updated" });
-      }
-      onClose();
-      onSaved(); // tell parent to reload
-    } catch (err: any) {
-      toast({ title: err?.message || "Technical Error!", variant: "destructive" });
-    }
+    const payload: Partial<LeaseCharge> = {
+      ...charge,
+      lease_id: formData.lease_id,
+      charge_code: formData.charge_code,
+      period_start: formData.period_start,
+      period_end: formData.period_end,
+      amount: Number(formData.amount),
+      tax_pct: Number(formData.tax_pct || 0),
+      updated_at: new Date().toISOString(),
+    };
+
+    onSave(payload);
   };
 
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
-      <DialogContent className="max-w-xl max-h-[90vh] overflow-y-auto">
+      <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
         <DialogHeader>
           <DialogTitle>
-            {mode === "create" ? "Create Lease Charge" : mode === "edit" ? "Edit Lease Charge" : "Lease Charge Details"}
+            {mode === "create" && "Create Lease Charge"}
+            {mode === "edit" && "Edit Lease Charge"}
+            {mode === "view" && "Lease Charge Details"}
           </DialogTitle>
         </DialogHeader>
 
         <form onSubmit={handleSubmit} className="space-y-4">
           {/* Lease */}
           <div>
-            <Label>Lease *</Label>
+            <Label htmlFor="lease">Lease *</Label>
             <Select
               value={formData.lease_id || ""}
               onValueChange={(v) => setFormData((p) => ({ ...p, lease_id: v }))}
@@ -152,9 +149,9 @@ export function LeaseChargeForm({ charge, isOpen, onClose, onSaved, mode }: Leas
 
           {/* Charge Code */}
           <div>
-            <Label>Charge Code *</Label>
+            <Label htmlFor="charge_code">Charge Code *</Label>
             <Select
-              value={formData.charge_code || ""}
+              value={(formData.charge_code as string) || ""}
               onValueChange={(v) => setFormData((p) => ({ ...p, charge_code: v as ChargeCode }))}
               disabled={isReadOnly}
             >
@@ -176,8 +173,9 @@ export function LeaseChargeForm({ charge, isOpen, onClose, onSaved, mode }: Leas
           {/* Dates */}
           <div className="grid grid-cols-2 gap-4">
             <div>
-              <Label>Period Start *</Label>
+              <Label htmlFor="period_start">Period Start *</Label>
               <Input
+                id="period_start"
                 type="date"
                 value={formData.period_start || ""}
                 onChange={(e) => setFormData((p) => ({ ...p, period_start: e.target.value }))}
@@ -185,8 +183,9 @@ export function LeaseChargeForm({ charge, isOpen, onClose, onSaved, mode }: Leas
               />
             </div>
             <div>
-              <Label>Period End *</Label>
+              <Label htmlFor="period_end">Period End *</Label>
               <Input
+                id="period_end"
                 type="date"
                 value={formData.period_end || ""}
                 onChange={(e) => setFormData((p) => ({ ...p, period_end: e.target.value }))}
@@ -198,8 +197,9 @@ export function LeaseChargeForm({ charge, isOpen, onClose, onSaved, mode }: Leas
           {/* Amounts */}
           <div className="grid grid-cols-2 gap-4">
             <div>
-              <Label>Amount *</Label>
+              <Label htmlFor="amount">Amount *</Label>
               <Input
+                id="amount"
                 type="number"
                 value={formData.amount ?? ""}
                 onChange={(e) => setFormData((p) => ({ ...p, amount: Number(e.target.value) }))}
@@ -207,8 +207,9 @@ export function LeaseChargeForm({ charge, isOpen, onClose, onSaved, mode }: Leas
               />
             </div>
             <div>
-              <Label>Tax %</Label>
+              <Label htmlFor="tax_pct">Tax %</Label>
               <Input
+                id="tax_pct"
                 type="number"
                 value={formData.tax_pct ?? 0}
                 onChange={(e) => setFormData((p) => ({ ...p, tax_pct: Number(e.target.value) }))}

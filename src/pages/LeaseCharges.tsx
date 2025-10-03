@@ -16,6 +16,7 @@ import {
 import { useToast } from "@/hooks/use-toast";
 import { leaseChargeApiService } from "@/services/Leasing_Tenants/leasechargeapi";
 import { LeaseChargeForm } from "@/components/LeaseChargeForm";
+import { useSkipFirstEffect } from "@/hooks/use-skipfirst-effect";
 
 type ChargeCode = "RENT" | "CAM" | "ELEC" | "WATER" | "PARK" | "PENALTY" | "MAINTENANCE" | string;
 
@@ -42,6 +43,15 @@ const monthsFull = [
 ];
 const monthsShort = ["Jan","Feb","Mar","Apr","May","Jun","Jul","Aug","Sep","Oct","Nov","Dec"];
 
+
+interface LeaseChargeOverview {
+  total_charges: number;
+  tax_amount: number;
+  this_month: number;
+  avg_charge: number;
+}
+
+
 export default function LeaseCharges() {
   const { toast } = useToast();
 
@@ -49,100 +59,94 @@ export default function LeaseCharges() {
   const [searchTerm, setSearchTerm] = useState("");
   const [selectedChargeCode, setSelectedChargeCode] = useState<string>("all");
   const [selectedMonth, setSelectedMonth] = useState<string>("all");
-
-  // data
-  const [items, setItems] = useState<LeaseCharge[]>([]);
-  const [loading, setLoading] = useState(false);
-
-  // dashboard cards (from /lease-charges/dashboard)
-  const [totalChargesCard, setTotalChargesCard] = useState(0);
-  const [taxAmountCard, setTaxAmountCard] = useState(0);
-  const [thisMonthCard, setThisMonthCard] = useState(0);
-  const [avgChargeCard, setAvgChargeCard] = useState(0);
-
-  // delete state
   const [deleteId, setDeleteId] = useState<string | null>(null);
-
+  const [leaseCharges, setLeaseCharges] = useState<LeaseCharge[]>([]);
+  const [chargeCodeList, setChargeCodeList] = useState([]);
+  const [months, setMonths] = useState<{ id: string; name: string }[]>([]);
   // form state
   const [isFormOpen, setIsFormOpen] = useState(false);
   const [formMode, setFormMode] = useState<"create" | "edit" | "view">("create");
   const [selectedCharge, setSelectedCharge] = useState<any | undefined>();
-  const [reloadTick, setReloadTick] = useState(0); // bump to refetch list
 
-  // load dashboard once
-  useEffect(() => {
-    (async () => {
-      try {
-        const d = await leaseChargeApiService.getDashboard();
-        setTotalChargesCard(d.total_charges ?? 0);
-        setTaxAmountCard(d.tax_amount ?? 0);
-        setThisMonthCard(d.this_month ?? 0);
-        setAvgChargeCard(d.avg_charge ?? 0);
-      } catch {
-        // no-op
-      }
-    })();
+ const [leaseChargeOverview, setLeaseChargeOverview] = useState<LeaseChargeOverview>({
+    total_charges: 0,
+    tax_amount: 0,
+    this_month: 0,
+    avg_charge: 0
+  });
+
+  const [page, setPage] = useState(1); // current page
+  const [pageSize] = useState(6); // items per page
+  const [totalItems, setTotalItems] = useState(0);
+
+   useSkipFirstEffect(() => {
+      loadLeaseCharges();
+      loadLeaseChargeOverView();
+    }, [page]);
+  
+    useEffect(() => {
+      updateLeaseChargePage();
+    }, [searchTerm, selectedMonth, selectedChargeCode]);
+  
+    useEffect(() => {
+    loadLeaseChargeLookup();
+  }, []);
+    
+   useEffect(() => {
+    loadLeaseMonthLookup();
   }, []);
 
-  // load list on filters / reloadTick
-  useEffect(() => {
-    (async () => {
-      try {
-        setLoading(true);
 
-        const byType = selectedChargeCode !== "all";
-        const byMonth = selectedMonth !== "all";
-
-        if (byType && byMonth) {
-          const r = await leaseChargeApiService.getByType([selectedChargeCode]);
-          const idx = monthsFull.findIndex((m) => m === selectedMonth); // 0..11
-          const filtered = (r.items || []).filter(
-            (c: LeaseCharge) => new Date(c.period_start).getMonth() === idx
-          );
-          setItems(filtered);
-        } else if (byType) {
-          const r = await leaseChargeApiService.getByType([selectedChargeCode]);
-          setItems(r.items || []);
-        } else if (byMonth) {
-          const i = monthsFull.findIndex((m) => m === selectedMonth);
-          const shortName = monthsShort[i]; // "Jan" etc.
-          const r = await leaseChargeApiService.getByMonth(shortName);
-          setItems(r.items || []);
-        } else {
-          // none -> all
-          const r = await leaseChargeApiService.getByMonth();
-          setItems(r.items || []);
-        }
-      } catch {
-        setItems([]);
-        toast({ title: "Failed to load lease charges", variant: "destructive" });
-      } finally {
-        setLoading(false);
+  
+    const updateLeaseChargePage = () => {
+      if (page === 1) {
+        loadLeaseCharges();
+        loadLeaseChargeOverView();
+      } else {
+        setPage(1);    // triggers the page effect
       }
-    })();
-  }, [selectedChargeCode, selectedMonth, reloadTick, toast]);
+  
+    }
 
-  // search (client side)
-  const filteredCharges = useMemo(() => {
-    const s = searchTerm.trim().toLowerCase();
-    if (!s) return items;
-    return items.filter((charge) => {
-      const idHit = charge.id?.toLowerCase().includes(s);
-      const leaseHit = charge.lease_id?.toLowerCase().includes(s);
-      return idHit || leaseHit;
-    });
-  }, [items, searchTerm]);
+    const loadLeaseChargeLookup = async () => {
+      const lookup = await leaseChargeApiService.getLeaseChargeLookup();
+      setChargeCodeList(lookup);
+    }
 
-  // stats (from current filtered list)
-  const listTotalCharges = filteredCharges.reduce((sum, c) => sum + (c.amount || 0), 0);
-  const listTotalTax = filteredCharges.reduce((sum, c) => sum + ((c.amount || 0) * (c.tax_pct || 0) / 100), 0);
-  const uniqueLeases = new Set(filteredCharges.map((c) => c.lease_id)).size;
-  const thisMonthCharges = filteredCharges.filter((c) => {
-    const d = new Date(c.period_start);
-    const now = new Date();
-    return d.getMonth() === now.getMonth() && d.getFullYear() === now.getFullYear();
-  });
-  const chargesByType = filteredCharges.reduce((acc: Record<string, number>, c) => {
+
+    const loadLeaseMonthLookup = async () => {
+    const lookup = await leaseChargeApiService.getLeaseMonthLookup();
+          setMonths(lookup || []);   // instead of setSelectedMonth
+    };
+
+
+
+    const loadLeaseChargeOverView = async () => {
+      const response = await leaseChargeApiService.getLeaseChargeOverview();
+      setLeaseChargeOverview(response);
+    }
+  
+      const loadLeaseCharges = async () => {
+      const skip = (page - 1) * pageSize;
+      const limit = pageSize;
+
+  
+  
+      // build query params
+      const params = new URLSearchParams();
+      if (searchTerm) params.append("search", searchTerm);
+      if (selectedChargeCode) params.append("charge_code", selectedChargeCode);
+      if (selectedMonth) params.append("month", selectedMonth);
+      
+      params.append("skip", skip.toString());
+      params.append("limit", limit.toString());
+      const response = await leaseChargeApiService.getLeaseCharges(params);
+      setLeaseCharges(response.items);
+      setTotalItems(response.total);
+    }
+
+  
+  const chargesByType = leaseCharges.reduce((acc: Record<string, number>, c) => {
     acc[c.charge_code] = (acc[c.charge_code] || 0) + (c.amount || 0);
     return acc;
   }, {} as Record<string, number>);
@@ -191,17 +195,40 @@ export default function LeaseCharges() {
       amount: charge.amount,
       tax_pct: charge.tax_pct,
     });
+    
     setFormMode("edit");
     setIsFormOpen(true);
   };
+
+   const handleSave = async (data: Partial<LeaseCharge>) => {
+      try {
+        if (formMode === 'create') {
+          await leaseChargeApiService.addLeaseCharge(data);
+        } else if (formMode === 'edit' && selectedCharge) {
+          const updatedLeaseCharge = { ...selectedCharge, ...data };
+          await leaseChargeApiService.updateLeaseCharge(updatedLeaseCharge);
+        }
+        setIsFormOpen(false);
+        toast({
+          title: formMode === 'create' ? "Lease Charge Created" : "Lease Charge Updated",
+          description: `Lease Charge ${data.charge_code} has been ${formMode === 'create' ? 'created' : 'updated'} successfully.`,
+        });
+        updateLeaseChargePage();
+      } catch (error) {
+        toast({
+          title: "Techical Error!",
+          variant: "destructive",
+        });
+      }
+    };
 
   // delete
   const handleDelete = async () => {
     if (!deleteId) return;
     try {
-      await leaseChargeApiService.delete(deleteId);
+      await leaseChargeApiService.deleteLeaseCharge(deleteId);
       toast({ title: "Charge deleted" });
-      setReloadTick((t) => t + 1);
+      updateLeaseChargePage();
     } catch {
       toast({ title: "Delete failed", variant: "destructive" });
     } finally {
@@ -232,7 +259,7 @@ export default function LeaseCharges() {
                   <DollarSign className="h-4 w-4 text-muted-foreground" />
                 </CardHeader>
                 <CardContent>
-                  <div className="text-2xl font-bold">{formatCurrency(totalChargesCard)}</div>
+                  <div className="text-2xl font-bold">{formatCurrency(leaseChargeOverview.total_charges)}</div>
                   <p className="text-xs text-muted-foreground">Across entire org</p>
                 </CardContent>
               </Card>
@@ -243,7 +270,7 @@ export default function LeaseCharges() {
                   <TrendingUp className="h-4 w-4 text-muted-foreground" />
                 </CardHeader>
                 <CardContent>
-                  <div className="text-2xl font-bold">{formatCurrency(taxAmountCard)}</div>
+                  <div className="text-2xl font-bold">{formatCurrency(leaseChargeOverview.tax_amount)}</div>
                   <p className="text-xs text-muted-foreground">Total tax collected</p>
                 </CardContent>
               </Card>
@@ -254,7 +281,7 @@ export default function LeaseCharges() {
                   <Calendar className="h-4 w-4 text-muted-foreground" />
                 </CardHeader>
                 <CardContent>
-                  <div className="text-2xl font-bold">{thisMonthCard}</div>
+                  <div className="text-2xl font-bold">{leaseChargeOverview.this_month}</div>
                   <p className="text-xs text-muted-foreground">Charges generated</p>
                 </CardContent>
               </Card>
@@ -265,7 +292,7 @@ export default function LeaseCharges() {
                   <Receipt className="h-4 w-4 text-muted-foreground" />
                 </CardHeader>
                 <CardContent>
-                  <div className="text-2xl font-bold">{formatCurrency(avgChargeCard)}</div>
+                  <div className="text-2xl font-bold">{formatCurrency(leaseChargeOverview.avg_charge)}</div>
                   <p className="text-xs text-muted-foreground">Average per charge</p>
                 </CardContent>
               </Card>
@@ -291,7 +318,7 @@ export default function LeaseCharges() {
                         <div className="text-right">
                           <div className="font-semibold">{formatCurrency(amount)}</div>
                           <div className="text-xs text-muted-foreground">
-                            {listTotalCharges ? ((amount / listTotalCharges) * 100).toFixed(1) : "0.0"}%
+                            {leaseChargeOverview.total_charges ? ((amount / leaseChargeOverview.total_charges) * 100).toFixed(1) : "0.0"}%
                           </div>
                         </div>
                       </div>
@@ -315,36 +342,38 @@ export default function LeaseCharges() {
                 </div>
 
                 {/* Type */}
+                {/* Charge Code Select */}
                 <Select value={selectedChargeCode} onValueChange={setSelectedChargeCode}>
-                  <SelectTrigger className="w-[150px]">
-                    <SelectValue placeholder="All Types" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="all">All Types</SelectItem>
-                    <SelectItem value="RENT">Rent</SelectItem>
-                    <SelectItem value="CAM">CAM</SelectItem>
-                    <SelectItem value="ELEC">Electricity</SelectItem>
-                    <SelectItem value="WATER">Water</SelectItem>
-                    <SelectItem value="PARK">Parking</SelectItem>
-                    <SelectItem value="PENALTY">Penalty</SelectItem>
-                    <SelectItem value="MAINTENANCE">Maintenance</SelectItem>
-                  </SelectContent>
+                <SelectTrigger className="w-[150px]">
+                <SelectValue placeholder="All Types" />
+                </SelectTrigger>
+                <SelectContent>
+                <SelectItem value="all">All Types</SelectItem>
+                 {chargeCodeList.map((m: { id: string; name: string }) => (
+                <SelectItem key={m.id} value={m.id}>
+                   {m.name}
+                 </SelectItem>
+                 ))}
+                </SelectContent>
                 </Select>
 
+
                 {/* Month (full name; service converts to 1..12) */}
-                <Select value={selectedMonth} onValueChange={setSelectedMonth}>
-                  <SelectTrigger className="w-[150px]">
-                    <SelectValue placeholder="All Months" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="all">All Months</SelectItem>
-                    {monthsFull.map((m) => (
-                      <SelectItem key={m} value={m}>
-                        {m}
-                      </SelectItem>
-                    ))}
+                {/* Month Select */}
+                 <Select value={selectedMonth} onValueChange={setSelectedMonth}>
+                <SelectTrigger className="w-[150px]">
+                 <SelectValue placeholder="All Months" />
+                 </SelectTrigger>
+                 <SelectContent>
+                 <SelectItem value="all">All Months</SelectItem>
+                   {months.map((m: { id: string; name: string }) => (
+                 <SelectItem key={m.id} value={m.id}>
+                   {m.name}
+                  </SelectItem>
+                     ))}
                   </SelectContent>
-                </Select>
+                  </Select>
+
               </div>
 
               <div className="flex gap-2">
@@ -361,9 +390,8 @@ export default function LeaseCharges() {
 
             {/* List */}
             <div className="grid gap-6">
-              {loading ? (
-                <Card><CardContent className="py-16 text-center text-muted-foreground">Loading…</CardContent></Card>
-              ) : filteredCharges.length === 0 ? (
+              {  
+                 leaseCharges.length === 0 ? (
                 <Card>
                   <CardContent className="flex flex-col items-center justify-center py-16">
                     <Receipt className="h-12 w-12 text-muted-foreground mb-4" />
@@ -378,7 +406,7 @@ export default function LeaseCharges() {
                   </CardContent>
                 </Card>
               ) : (
-                filteredCharges.map((charge) => {
+                leaseCharges.map((charge) => {
                   const taxAmount = (charge.amount || 0) * (charge.tax_pct || 0) / 100;
                   const totalAmount = (charge.amount || 0) + taxAmount;
 
@@ -498,7 +526,7 @@ export default function LeaseCharges() {
         charge={selectedCharge}
         isOpen={isFormOpen}
         onClose={() => setIsFormOpen(false)}
-        onSaved={() => setReloadTick((t) => t + 1)}
+        onSave={handleSave}
         mode={formMode}
       />
     </SidebarProvider>
