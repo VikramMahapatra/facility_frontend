@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { UserCheck, Search, Plus, Eye, Edit, Trash2, Clock } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -7,88 +7,83 @@ import { Input } from "@/components/ui/input";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { PropertySidebar } from "@/components/PropertySidebar";
 import { SidebarProvider, SidebarInset, SidebarTrigger } from "@/components/ui/sidebar";
-import { mockSites } from "@/data/mockParkingData";
 import { VisitorForm } from "@/components/VisitorForm";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
 import { useToast } from "@/hooks/use-toast";
-
-interface Visitor {
-  id: string;
-  org_id: string;
-  site_id: string;
-  name: string;
-  phone: string;
-  visiting: string;
-  purpose: string;
-  entry_time: string;
-  exit_time?: string;
-  status: 'checked_in' | 'checked_out' | 'expected';
-  vehicle_no?: string;
-}
-
-const mockVisitors: Visitor[] = [
-  {
-    id: "v-1",
-    org_id: "org-1",
-    site_id: "site-1",
-    name: "John Smith",
-    phone: "+91-9876543210",
-    visiting: "Apartment 101",
-    purpose: "Meeting",
-    entry_time: "2024-09-20T09:30:00Z",
-    status: "checked_in",
-    vehicle_no: "KA05XY1234"
-  },
-  {
-    id: "v-2",
-    org_id: "org-1",
-    site_id: "site-1",
-    name: "Sarah Johnson",
-    phone: "+91-9123456789",
-    visiting: "Office 205",
-    purpose: "Delivery",
-    entry_time: "2024-09-20T10:15:00Z",
-    exit_time: "2024-09-20T11:00:00Z",
-    status: "checked_out"
-  },
-  {
-    id: "v-3",
-    org_id: "org-1",
-    site_id: "site-2",
-    name: "Mike Wilson",
-    phone: "+91-9998887777",
-    visiting: "Shop 12",
-    purpose: "Maintenance",
-    entry_time: "2024-09-20T14:00:00Z",
-    status: "expected"
-  }
-];
+import { useSkipFirstEffect } from "@/hooks/use-skipfirst-effect";
+import { siteApiService } from "@/services/spaces_sites/sitesapi";
+import { visitorApiService } from "@/services/parking_access/visitorsapi";
+import { Visitor, VisitorOverview } from "@/interfaces/parking_access_interface";
+import { Pagination } from "@/components/Pagination";
 
 export default function Visitors() {
   const { toast } = useToast();
   const [searchTerm, setSearchTerm] = useState("");
   const [selectedSite, setSelectedSite] = useState<string>("all");
   const [selectedStatus, setSelectedStatus] = useState<string>("all");
-  const [visitors, setVisitors] = useState<Visitor[]>(mockVisitors);
+  const [visitors, setVisitors] = useState<Visitor[]>([]);
   const [selectedVisitor, setSelectedVisitor] = useState<Visitor | undefined>();
   const [formMode, setFormMode] = useState<'create' | 'edit' | 'view'>('create');
   const [isFormOpen, setIsFormOpen] = useState(false);
   const [deleteVisitorId, setDeleteVisitorId] = useState<string | null>(null);
-
-  const filteredVisitors = visitors.filter(visitor => {
-    const matchesSearch = 
-      visitor.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      visitor.phone.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      visitor.visiting.toLowerCase().includes(searchTerm.toLowerCase());
-    const matchesSite = selectedSite === "all" || visitor.site_id === selectedSite;
-    const matchesStatus = selectedStatus === "all" || visitor.status === selectedStatus;
-    return matchesSearch && matchesSite && matchesStatus;
+  const [siteList, setSiteList] = useState([]);
+  const [page, setPage] = useState(1); // current page
+  const [pageSize] = useState(6); // items per page
+  const [totalItems, setTotalItems] = useState(0);
+  const [visitorOverview, setVisitorOverview] = useState<VisitorOverview>({
+    checkedInToday: 0,
+    expectedToday: 0,
+    totalVisitors: 0,
+    totalVisitorsWithVehicle: 0,
   });
 
-  const getSiteName = (siteId: string) => {
-    const site = mockSites.find(s => s.id === siteId);
-    return site ? site.name : 'Unknown Site';
-  };
+  useEffect(() => {
+    loadSiteLookup();
+    loadVisitorOverView();
+  }, []);
+
+  useSkipFirstEffect(() => {
+    loadVisitors();
+  }, [page]);
+
+  useEffect(() => {
+    updateVisitorPage();
+  }, [searchTerm, selectedSite, selectedStatus]);
+
+  const updateVisitorPage = () => {
+    if (page === 1) {
+      loadVisitors();
+    } else {
+      setPage(1);
+    }
+  }
+
+  const loadSiteLookup = async () => {
+    const lookup = await siteApiService.getSiteLookup();
+    setSiteList(lookup);
+  }
+
+  const loadVisitorOverView = async () => {
+    const response = await visitorApiService.getVisitorOverview();
+    setVisitorOverview(response);
+  }
+
+  const loadVisitors = async () => {
+    const skip = (page - 1) * pageSize;
+    const limit = pageSize;
+
+    // build query params
+    const params = new URLSearchParams();
+    if (searchTerm) params.append("search", searchTerm);
+    if (selectedSite) params.append("site_id", selectedSite);
+    if (selectedStatus) params.append("status", selectedStatus);
+
+    params.append("skip", skip.toString());
+    params.append("limit", limit.toString());
+    const response = await visitorApiService.getVisitors(params);
+    setVisitors(response.visitors);
+    setTotalItems(response.total);
+  }
 
   const getStatusColor = (status: string) => {
     const colors = {
@@ -136,30 +131,30 @@ export default function Visitors() {
     }
   };
 
-  const handleSave = (visitorData: Partial<Visitor>) => {
-    if (formMode === 'create') {
-      const newVisitor: Visitor = {
-        id: `v-${Date.now()}`,
-        org_id: "org-1",
-        ...visitorData as Omit<Visitor, 'id' | 'org_id'>
-      };
-      setVisitors([...visitors, newVisitor]);
-    } else if (formMode === 'edit' && selectedVisitor) {
-      setVisitors(visitors.map(visitor => 
-        visitor.id === selectedVisitor.id 
-          ? { ...visitor, ...visitorData }
-          : visitor
-      ));
+  const handleSave = async (visitorData: Partial<Visitor>) => {
+    try {
+      if (formMode === 'create') {
+        await visitorApiService.addVisitor(visitorData);
+      } else if (formMode === 'edit' && selectedVisitor) {
+        const updatedLog = { ...selectedVisitor, ...visitorData }
+        await visitorApiService.updateVisitor(updatedLog);
+      }
+      setIsFormOpen(false);
+      updateVisitorPage();
+      loadVisitorOverView();
+      toast({
+        title: formMode === 'create' ? "Visitor Added" : "Visitor Updated",
+        description: `Visitor "${visitorData.name}" has been ${formMode === 'create' ? 'added' : 'updated'} successfully.`,
+      });
+
+    } catch (error) {
+      toast({
+        title: "Techical Error!",
+        variant: "destructive",
+      });
     }
-    setIsFormOpen(false);
+
   };
-
-  const checkedInToday = visitors.filter(v => 
-    v.status === 'checked_in' && 
-    new Date(v.entry_time).toDateString() === new Date().toDateString()
-  ).length;
-
-  const expectedToday = visitors.filter(v => v.status === 'expected').length;
 
   return (
     <SidebarProvider>
@@ -192,26 +187,26 @@ export default function Visitors() {
               <div className="grid gap-4 md:grid-cols-4">
                 <Card>
                   <CardContent className="p-4">
-                    <div className="text-2xl font-bold text-green-600">{checkedInToday}</div>
+                    <div className="text-2xl font-bold text-green-600">{visitorOverview.checkedInToday}</div>
                     <p className="text-sm text-muted-foreground">Checked In Today</p>
                   </CardContent>
                 </Card>
                 <Card>
                   <CardContent className="p-4">
-                    <div className="text-2xl font-bold text-blue-600">{expectedToday}</div>
+                    <div className="text-2xl font-bold text-blue-600">{visitorOverview.expectedToday}</div>
                     <p className="text-sm text-muted-foreground">Expected Today</p>
                   </CardContent>
                 </Card>
                 <Card>
                   <CardContent className="p-4">
-                    <div className="text-2xl font-bold text-sidebar-primary">{visitors.length}</div>
+                    <div className="text-2xl font-bold text-sidebar-primary">{visitorOverview.totalVisitors}</div>
                     <p className="text-sm text-muted-foreground">Total Records</p>
                   </CardContent>
                 </Card>
                 <Card>
                   <CardContent className="p-4">
                     <div className="text-2xl font-bold text-orange-600">
-                      {visitors.filter(v => v.vehicle_no).length}
+                      {visitorOverview.totalVisitorsWithVehicle}
                     </div>
                     <p className="text-sm text-muted-foreground">With Vehicles</p>
                   </CardContent>
@@ -229,14 +224,14 @@ export default function Visitors() {
                     className="w-64"
                   />
                 </div>
-                
+
                 <select
                   value={selectedSite}
                   onChange={(e) => setSelectedSite(e.target.value)}
                   className="rounded-md border border-input bg-background px-3 py-2 text-sm"
                 >
                   <option value="all">All Sites</option>
-                  {mockSites.map(site => (
+                  {siteList.map(site => (
                     <option key={site.id} value={site.id}>{site.name}</option>
                   ))}
                 </select>
@@ -256,7 +251,7 @@ export default function Visitors() {
               {/* Table */}
               <Card>
                 <CardHeader>
-                  <CardTitle>Visitors ({filteredVisitors.length})</CardTitle>
+                  <CardTitle>Visitors ({visitors.length})</CardTitle>
                 </CardHeader>
                 <CardContent>
                   <Table>
@@ -272,7 +267,7 @@ export default function Visitors() {
                       </TableRow>
                     </TableHeader>
                     <TableBody>
-                      {filteredVisitors.map((visitor) => (
+                      {visitors.map((visitor) => (
                         <TableRow key={visitor.id}>
                           <TableCell>
                             <div>
@@ -308,9 +303,9 @@ export default function Visitors() {
                               <Button size="sm" variant="outline" onClick={() => handleEdit(visitor)}>
                                 <Edit className="h-3 w-3" />
                               </Button>
-                              <Button 
-                                size="sm" 
-                                variant="outline" 
+                              <Button
+                                size="sm"
+                                variant="outline"
                                 className="text-destructive hover:text-destructive"
                                 onClick={() => handleDelete(visitor.id)}
                               >
@@ -322,8 +317,13 @@ export default function Visitors() {
                       ))}
                     </TableBody>
                   </Table>
-
-                  {filteredVisitors.length === 0 && (
+                  <Pagination
+                    page={page}
+                    pageSize={pageSize}
+                    totalItems={totalItems}
+                    onPageChange={(newPage) => setPage(newPage)}
+                  />
+                  {visitors.length === 0 && (
                     <div className="text-center py-8">
                       <UserCheck className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
                       <h3 className="text-lg font-semibold text-sidebar-primary mb-2">No visitors found</h3>
