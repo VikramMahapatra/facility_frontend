@@ -28,13 +28,16 @@ interface LeaseCharge {
   period_end: string;   // ISO date
   amount: number;
   tax_pct: number;
-  lease_start?: string | null;
-  lease_end?: string | null;
-  rent_amount?: number | null;
-  period_days?: number | null;
-  tax_amount?: number | null;
+  lease_start?: string;
+  lease_end?: string;
+  rent_amount?: number;
+  period_days?: number;
+  tax_amount?: number ;
   metadata?: any;
   created_at?: string;
+  tenant_name: string;
+  site_name: string;
+  space_name: string;
 }
 
 const monthsFull = [
@@ -199,6 +202,19 @@ export default function LeaseCharges() {
     setFormMode("edit");
     setIsFormOpen(true);
   };
+   const handleView = (charge: LeaseCharge) => {
+       setSelectedCharge({
+      id: charge.id,
+      lease_id: charge.lease_id,
+      charge_code: charge.charge_code,
+      period_start: charge.period_start?.slice(0, 10),
+      period_end: charge.period_end?.slice(0, 10),
+      amount: charge.amount,
+      tax_pct: charge.tax_pct,
+    });
+       setFormMode('view');
+       setIsFormOpen(true);
+     };
 
    const handleSave = async (data: Partial<LeaseCharge>) => {
       try {
@@ -422,7 +438,7 @@ export default function LeaseCharges() {
                               {getChargeCodeName(charge.charge_code)}
                             </CardTitle>
                             <CardDescription>
-                              Lease {charge.lease_id?.slice(-6)} •{" "}
+                              Lease {charge.tenant_name} • {""}
                               {new Date(charge.period_start).toLocaleDateString()} -{" "}
                               {new Date(charge.period_end).toLocaleDateString()}
                             </CardDescription>
@@ -435,7 +451,7 @@ export default function LeaseCharges() {
                               )}
                             </div>
                             <div className="flex gap-1">
-                              <Button variant="ghost" size="sm" onClick={() => {/* optional: view modal */}}>
+                              <Button variant="ghost" size="sm" onClick={() => {handleView(charge)}}>
                                 <Eye className="h-4 w-4" />
                               </Button>
                               <Button variant="ghost" size="sm" onClick={() => handleEdit(charge)}>

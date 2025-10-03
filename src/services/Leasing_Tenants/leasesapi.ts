@@ -32,12 +32,26 @@ class LeasesApiService {
     });
   }
   
-  async getLeaseTypeLookup() {
-        return await apiService.request('/lease/lease-type-lookup');
+  async getLeaseLookup(lease_id?: any) {
+      // let url = '/leases/lease-lookup';
+      // if (lease_id) {
+      //     url += `?lease_id=${lease_id}`;
+      // }
+        return await apiService.request('/leases/lease-lookup');
     }
     
+  
+
+
+  async getLeaseKindLookup() {
+        return await apiService.request('/leases/kind-lookup');
+    }
+    
+
+
+
   async getLeaseStatusLookup() {
-        return await apiService.request('/lease/lease-status-lookup');
+        return await apiService.request('/leases/status-lookup');
     }
 
 }
