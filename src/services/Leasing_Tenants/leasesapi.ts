@@ -31,6 +31,15 @@ class LeasesApiService {
       method: 'DELETE',
     });
   }
+  
+  async getLeaseTypeLookup() {
+        return await apiService.request('/lease/lease-type-lookup');
+    }
+    
+  async getLeaseStatusLookup() {
+        return await apiService.request('/lease/lease-status-lookup');
+    }
+
 }
 
 export const leasesApiService = new LeasesApiService();

@@ -17,13 +17,16 @@ import { Pagination } from "@/components/Pagination";
 import { siteApiService } from "@/services/spaces_sites/sitesapi";
 import { leasesApiService } from "@/services/Leasing_Tenants/leasesapi";
 
+
+type Kind = "commercial" | "residential" | undefined;
+
 export interface Lease {
   id: string;
   org_id: string;
   site_id?: string;
   space_id?: string;
 
-  kind?: "commercial" | "residential";
+  kind?: Kind
   partner_id?: string;
   tenant_id?: string;
 
@@ -76,6 +79,7 @@ export default function Leases() {
 
   useEffect(() => {
     loadLeases();
+    loadLeaseOverview();
   }, [page]);
 
   useEffect(() => {
@@ -92,10 +96,11 @@ export default function Leases() {
   const updateLeasePage = () => {
     if (page === 1) {
       loadLeases();
+      loadLeaseOverview();
     } else {
       setPage(1);
     }
-    loadLeaseOverview();
+    
   };
 
   const loadLeaseOverview = async () => {
