@@ -131,6 +131,7 @@ export default function ParkingZones() {
         description: `Parking zone "${zoneData.name}" has been ${formMode === 'create' ? 'created' : 'updated'} successfully.`,
       });
       updateParkingZonePage();
+      loadParkingZoneOverView();
     } catch (error) {
       toast({
         title: "Techical Error!",

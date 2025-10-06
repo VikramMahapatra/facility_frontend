@@ -2,14 +2,13 @@
 import { apiService } from '../api';
 
 class LeasesApiService {
-  async getLeases(url: string) {
-    // url like `/leases?skip=...&limit=...&kind=...&status=...&site_id=...`
-    return await apiService.request(url);
+  async getLeases(params) {
+    return await apiService.request(`/leases/all?${params.toString()}`);
   }
 
-  async getLeaseOverview(url: string) {
+  async getLeaseOverview(params) {
     // url like `/leases/overview?kind=...&status=...&site_id=...`
-    return await apiService.request(url);
+    return await apiService.request(`/leases/overview?${params.toString()}`);
   }
 
   async addLease(leaseData: any) {
@@ -31,28 +30,25 @@ class LeasesApiService {
       method: 'DELETE',
     });
   }
-  
-  async getLeaseLookup(lease_id?: any) {
-      // let url = '/leases/lease-lookup';
-      // if (lease_id) {
-      //     url += `?lease_id=${lease_id}`;
-      // }
-        return await apiService.request('/leases/lease-lookup');
-    }
-    
-  
 
+  async getLeaseLookup(lease_id?: any) {
+    return await apiService.request('/leases/lease-lookup');
+  }
 
   async getLeaseKindLookup() {
-        return await apiService.request('/leases/kind-lookup');
-    }
-    
-
-
+    return await apiService.request('/leases/kind-lookup');
+  }
 
   async getLeaseStatusLookup() {
-        return await apiService.request('/leases/status-lookup');
-    }
+    return await apiService.request('/leases/status-lookup');
+  }
+
+  async getLeasePartnerLookup(kind: string, site_id: string) {
+    const params = new URLSearchParams();
+    if (kind) params.append("kind", kind);
+    if (site_id) params.append("site_id", site_id);
+    return await apiService.request(`/leases/partner-lookup?${params.toString()}`);
+  }
 
 }
 

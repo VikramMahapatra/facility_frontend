@@ -5,19 +5,19 @@ class TenantsApiService {
     return await apiService.request(`/tenants/all?${params.toString()}`);
   }
 
-  async getTenantOverview(params) {
-    return await apiService.request(`/tenants/overview?${params.toString()}`);
+  async getTenantOverview() {
+    return await apiService.request(`/tenants/overview`);
   }
 
   async addTenant(tenantData: any) {
-    return await apiService.request("/tenants/", {
+    return await apiService.request("/tenants", {
       method: "POST",
       body: JSON.stringify(tenantData),
     });
   }
 
-  async updateTenant(id: any, tenantData: any) {
-    return await apiService.request(`/tenants/${id}`, {
+  async updateTenant(tenantData: any) {
+    return await apiService.request(`/tenants`, {
       method: "PUT",
       body: JSON.stringify(tenantData),
     });

@@ -16,40 +16,8 @@ import { useToast } from "@/hooks/use-toast";
 import { Pagination } from "@/components/Pagination";
 import { siteApiService } from "@/services/spaces_sites/sitesapi";
 import { leasesApiService } from "@/services/Leasing_Tenants/leasesapi";
-
-
-type Kind = "commercial" | "residential" | undefined;
-
-export interface Lease {
-  id: string;
-  org_id: string;
-  site_id?: string;
-  space_id?: string;
-
-  kind?: Kind
-  partner_id?: string;
-  tenant_id?: string;
-
-  start_date?: string;
-  end_date?: string;
-  rent_amount?: number;
-  deposit_amount?: number;
-  cam_rate?: number;
-  utilities?: Record<string, any>;
-  status?: "active" | "expired" | "terminated" | "draft";
-  created_at?: string;
-  updated_at?: string;
-
-  space_code?: string;
-  site_name?: string;
-}
-
-interface LeaseOverview {
-  activeLeases: number;
-  monthlyRentValue: number;
-  expiringSoon: number;
-  avgLeaseTermMonths: number;
-}
+import { strict } from "assert";
+import { Lease, LeaseOverview } from "@/interfaces/leasing_tenants_interface";
 
 export default function Leases() {
   const { toast } = useToast();
@@ -100,7 +68,7 @@ export default function Leases() {
     } else {
       setPage(1);
     }
-    
+
   };
 
   const loadLeaseOverview = async () => {
@@ -110,7 +78,7 @@ export default function Leases() {
     if (selectedKind) params.append("kind", selectedKind);
     if (selectedStatus) params.append("status", selectedStatus);
 
-    const response = await leasesApiService.getLeaseOverview(`/leases/overview?${params.toString()}`);
+    const response = await leasesApiService.getLeaseOverview(params);
     setLeaseOverview(response);
   };
 
@@ -126,7 +94,7 @@ export default function Leases() {
     params.append("skip", String(skip));
     params.append("limit", String(limit));
 
-    const response = await leasesApiService.getLeases(`/leases/all?${params.toString()}`);
+    const response = await leasesApiService.getLeases(params);
     setLeases(response.leases);
     setTotalItems(response.total);
   };
@@ -164,11 +132,11 @@ export default function Leases() {
     try {
       if (formMode === "create") {
         await leasesApiService.addLease(leaseData);
-        toast({ title: "Lease Created", description: "Lease created." });
+        toast({ title: "Lease Created" });
       } else if (formMode === "edit" && selectedLease) {
         const updated = { ...selectedLease, ...leaseData };
         await leasesApiService.updateLease(updated);
-        toast({ title: "Lease Updated", description: "Lease updated." });
+        toast({ title: "Lease Updated" });
       }
       setIsFormOpen(false);
       updateLeasePage();
@@ -305,9 +273,7 @@ export default function Leases() {
                       <div className="flex items-start justify-between">
                         <div className="space-y-1">
                           <CardTitle className="text-lg">
-                            {lease.kind === "commercial"
-                              ? (lease.partner_id || "Commercial Lease")
-                              : (lease.tenant_id || "Residential Lease")}
+                            {lease.tenant_name}
                           </CardTitle>
                           <p className="text-sm text-muted-foreground">
                             {lease.space_code} • {lease.site_name}
