@@ -20,7 +20,7 @@ import {
 import { useToast } from "@/hooks/use-toast";
 import { siteApiService } from "@/services/spaces_sites/sitesapi";
 import { tenantsApiService } from "@/services/Leasing_Tenants/tenantsapi";
-import { Tenant } from "@/interfaces/tenants_interface";
+import { Tenant } from "@/interfaces/leasing_tenants_interface";
 
 interface TenantFormProps {
   tenant?: Tenant;
@@ -43,6 +43,7 @@ const emptyFormData = {
     phone: "",
     address: {
       line1: "",
+      line2: "",
       city: "",
       state: "",
       pincode: "",
@@ -94,6 +95,8 @@ export function TenantForm({
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
 
+    console.log("Form Data :", formData);
+
     if (!formData.name || !formData.email || !formData.phone || !formData.site_id) {
       toast({
         title: "Validation Error",
@@ -103,22 +106,47 @@ export function TenantForm({
       return;
     }
 
-    const tenantData = {
-      ...tenant,
-      name: formData.name,
-      email: formData.email,
-      phone: formData.phone,
+    let contactInfo = formData.contact_info;
+    if (contactInfo) {
+      const { name, email, phone, address } = contactInfo;
+
+      contactInfo = {
+        name: name?.trim() || undefined,
+        email: email?.trim() || undefined,
+        phone: phone?.trim() || undefined,
+        address: {
+          line1: address.line1?.trim() || "",
+          line2: address.line2?.trim() || "",
+          city: address.city?.trim() || "",
+          state: address.state?.trim() || "",
+          pincode: address.pincode?.trim() || "",
+        }
+      };
+
+      // if everything empty, drop contact_info
+      if (!contactInfo.name && !contactInfo.email && !contactInfo.phone && !contactInfo.address) {
+        contactInfo = undefined;
+      }
+    }
+
+    const tenantData: Partial<Tenant> = {
+      ...tenant, // for edit mode
+      id: tenant?.id, // ensure id passes during edit
+      name: formData.name?.trim(),
+      email: formData.email?.trim(),
+      phone: formData.phone?.trim(),
       tenant_type: formData.tenant_type,
       status: formData.status,
       site_id: formData.site_id,
-      contact_info: formData.contact_info,
-      type: formData.type,
-      legal_name: formData.legal_name,
+      contact_info: contactInfo,
+      type: formData.type || undefined,
+      legal_name: formData.legal_name?.trim() || undefined,
       updated_at: new Date().toISOString(),
     };
 
     onSave(tenantData);
   };
+
 
   const isReadOnly = mode === "view";
 
@@ -223,7 +251,7 @@ export function TenantForm({
               <Select
                 value={formData.status}
                 onValueChange={(value) =>
-                  setFormData({ ...formData, status: value as "active" | "inactive" | "terminated" })
+                  setFormData({ ...formData, status: value as "active" | "inactive" | "suspended" })
                 }
                 disabled={isReadOnly}
               >
@@ -272,11 +300,9 @@ export function TenantForm({
                   </SelectTrigger>
                   <SelectContent>
                     <SelectItem value="none">No Type</SelectItem>
-                    {typeList.map((type) => (
-                      <SelectItem key={type.id} value={type.id}>
-                        {type.name}
-                      </SelectItem>
-                    ))}
+                    <SelectItem value="merchant">Merchant</SelectItem>
+                    <SelectItem value="brand">Brand</SelectItem>
+                    <SelectItem value="kiosk">Kiosk</SelectItem>
                   </SelectContent>
                 </Select>
               </div>
@@ -345,36 +371,96 @@ export function TenantForm({
                     disabled={isReadOnly}
                   />
                 </div>
+              </div>
+            </div>
+          )}
+          <div>
+            <Label htmlFor="contact_info">Address Information</Label>
+            <div className="space-y-3 p-3 border rounded-md">
+              <div className="grid grid-cols-2 gap-4">
                 <div>
-                  <Label htmlFor="address">Address</Label>
-                  <Textarea
-                    id="address"
-                    value={formData.contact_info?.address ? 
-                      `${formData.contact_info.address.line1}, ${formData.contact_info.address.city}, ${formData.contact_info.address.state} ${formData.contact_info.address.pincode}` : ""
-                    }
-                    onChange={(e) => {
-                      const addressParts = e.target.value.split(',');
+                  <Label>Line 1</Label>
+                  <Input
+                    value={formData.contact_info?.address?.line1 || ""}
+                    onChange={(e) =>
                       setFormData({
                         ...formData,
                         contact_info: {
                           ...formData.contact_info,
                           address: {
-                            line1: addressParts[0] || "",
-                            city: addressParts[1] || "",
-                            state: addressParts[2] || "",
-                            pincode: addressParts[3] || "",
+                            ...formData.contact_info.address,
+                            line1: e.target.value,
                           },
                         },
-                      });
-                    }}
-                    placeholder="e.g., 123 Business Street, Mumbai, Maharashtra 400001"
-                    rows={2}
+                      })
+                    }
+                    disabled={isReadOnly}
+                  />
+                </div>
+
+                <div>
+                  <Label>City</Label>
+                  <Input
+                    value={formData.contact_info?.address?.city || ""}
+                    onChange={(e) =>
+                      setFormData({
+                        ...formData,
+                        contact_info: {
+                          ...formData.contact_info,
+                          address: {
+                            ...formData.contact_info.address,
+                            city: e.target.value,
+                          },
+                        },
+                      })
+                    }
+                    disabled={isReadOnly}
+                  />
+                </div>
+              </div>
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <Label>State</Label>
+                  <Input
+                    value={formData.contact_info?.address?.state || ""}
+                    onChange={(e) =>
+                      setFormData({
+                        ...formData,
+                        contact_info: {
+                          ...formData.contact_info,
+                          address: {
+                            ...formData.contact_info.address,
+                            state: e.target.value,
+                          },
+                        },
+                      })
+                    }
+                    disabled={isReadOnly}
+                  />
+                </div>
+                <div>
+                  <Label>Pincode</Label>
+                  <Input
+                    value={formData.contact_info?.address?.pincode || ""}
+                    onChange={(e) =>
+                      setFormData({
+                        ...formData,
+                        contact_info: {
+                          ...(formData.contact_info),
+                          address: {
+                            ...formData.contact_info.address,
+                            pincode: e.target.value,
+                          },
+                        },
+                      })
+                    }
                     disabled={isReadOnly}
                   />
                 </div>
               </div>
             </div>
-          )}
+          </div>
+
 
           <DialogFooter>
             <Button type="button" variant="outline" onClick={onClose}>

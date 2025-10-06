@@ -13,6 +13,8 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Textarea } from "@/components/ui/textarea";
 import { useForm } from "react-hook-form";
 import { mockMeters, mockMeterReadings, type Meter, type MeterReading } from "@/data/mockEnergyData";
+import { BulkUploadDialog } from "@/components/BulkUploadDialog";
+import { toast } from "@/hooks/use-toast";
 
 const getMeterIcon = (kind: string) => {
   switch (kind) {
@@ -76,6 +78,22 @@ export default function MetersReadings() {
     console.log('Creating reading:', data);
     setIsCreateReadingOpen(false);
     readingForm.reset();
+  };
+
+  const handleBulkMeterImport = (data: any[]) => {
+    console.log('Importing meters:', data);
+    toast({
+      title: "Meters Imported",
+      description: `Successfully imported ${data.length} meters.`,
+    });
+  };
+
+  const handleBulkReadingImport = (data: any[]) => {
+    console.log('Importing readings:', data);
+    toast({
+      title: "Readings Imported",
+      description: `Successfully imported ${data.length} readings.`,
+    });
   };
 
   const stats = [
@@ -158,6 +176,10 @@ export default function MetersReadings() {
                       <Download className="h-4 w-4 mr-2" />
                       Export
                     </Button>
+                    <BulkUploadDialog 
+                      type={activeTab} 
+                      onImport={activeTab === 'meters' ? handleBulkMeterImport : handleBulkReadingImport}
+                    />
                     {activeTab === 'meters' ? (
                       <Dialog open={isCreateMeterOpen} onOpenChange={setIsCreateMeterOpen}>
                         <DialogTrigger asChild>

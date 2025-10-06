@@ -126,6 +126,7 @@ export default function TaxManagement() {
       try {
         await taxCodeApiService.deleteTaxCode(deleteTaxCodeId);
         updateTaxPage();
+        loadTaxOverView();
         setDeleteTaxCodeId(null);
         toast({
           title: "Tax Code Deleted",
@@ -155,6 +156,7 @@ export default function TaxManagement() {
         description: `Tax code ${taxCodeData.code} has been ${formMode === 'create' ? 'created' : 'updated'} successfully.`,
       });
       updateTaxPage();
+      loadTaxOverView();
     } catch (error) {
       toast({
         title: "Techical Error!",
