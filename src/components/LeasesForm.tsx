@@ -20,6 +20,7 @@ import {
 import { useToast } from "@/hooks/use-toast";
 import { siteApiService } from "@/services/spaces_sites/sitesapi";
 import { spacesApiService } from "@/services/spaces_sites/spacesapi";
+import { leasesApiService } from "@/services/Leasing_Tenants/leasesapi";
 
 export interface LeaseFormModel {
   id?: string;
@@ -70,6 +71,7 @@ export function LeaseForm({ lease, isOpen, onClose, onSave, mode }: LeaseFormPro
   const [formData, setFormData] = useState<Partial<LeaseFormModel>>(EMPTY);
   const [siteList, setSiteList] = useState<any[]>([]);
   const [spaceList, setSpaceList] = useState<any[]>([]);
+  const [leasePartnerList, setLeasePartnerList] = useState<any[]>([]);
   const isReadOnly = mode === "view";
 
   // hydrate form on open/change
@@ -77,53 +79,48 @@ export function LeaseForm({ lease, isOpen, onClose, onSave, mode }: LeaseFormPro
     setFormData(
       lease
         ? {
-            ...EMPTY,
-            ...lease,
-            utilities: {
-              electricity: lease?.utilities?.electricity,
-              water: lease?.utilities?.water,
-            },
-          }
+          ...EMPTY,
+          ...lease,
+          utilities: {
+            electricity: lease?.utilities?.electricity,
+            water: lease?.utilities?.water,
+          },
+        }
         : EMPTY
     );
-  }, [lease, isOpen]);
+    loadSites();
+    loadSpaces();
+    loadLeasePartners(lease?.kind, lease?.site_id);
+  }, [lease]);
 
-  // load sites once
   useEffect(() => {
-    (async () => {
-      try {
-        const lookup = await siteApiService.getSiteLookup();
-        setSiteList(lookup || []);
-      } catch {
-        setSiteList([]);
-      }
-    })();
-  }, []);
+    if (!lease) return;
 
-  // load spaces whenever site changes
-  useEffect(() => {
-    (async () => {
-      if (!formData.site_id) {
-        setSpaceList([]);
-        return;
-      }
-      try {
-        const spaces = await spacesApiService.getSpaceLookup(formData.site_id);
-        setSpaceList(spaces || []);
-      } catch {
-        setSpaceList([]);
-      }
-    })();
-  }, [formData.site_id]);
-
-  // when kind changes, clear the unrelated id field to avoid accidental submit
-  useEffect(() => {
-    if (formData.kind === "commercial") {
-      setFormData(prev => ({ ...prev, tenant_id: "" }));
-    } else if (formData.kind === "residential") {
-      setFormData(prev => ({ ...prev, partner_id: "" }));
+    if (lease.kind === "commercial" && lease.partner_id) {
+      setFormData((prev) => ({ ...prev, partner_id: String(lease.partner_id) }));
     }
-  }, [formData.kind]);
+
+    if (lease.kind === "residential" && lease.tenant_id) {
+      setFormData((prev) => ({ ...prev, tenant_id: String(lease.tenant_id) }));
+    }
+  }, [leasePartnerList]); // 🔑 re-run after partner list loads
+
+  const loadSpaces = async () => {
+    if (!formData.site_id) return;
+    const spaces = await spacesApiService.getSpaceLookup(formData.site_id);
+    setSpaceList(spaces);
+  }
+
+  const loadSites = async () => {
+    const sites = await siteApiService.getSiteLookup();
+    setSiteList(sites);
+  }
+
+  const loadLeasePartners = async (kind?: string, site_id?: string) => {
+    if (!kind || !site_id) return;
+    const partners = await leasesApiService.getLeasePartnerLookup(kind, site_id);
+    setLeasePartnerList(partners);
+  }
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
@@ -195,7 +192,11 @@ export function LeaseForm({ lease, isOpen, onClose, onSave, mode }: LeaseFormPro
               <Label>Site *</Label>
               <Select
                 value={formData.site_id}
-                onValueChange={(v) => setFormData({ ...formData, site_id: v })}
+                onValueChange={(v) => {
+                  setFormData({ ...formData, site_id: v })
+                  loadSpaces();
+                  loadLeasePartners(formData.kind, v);
+                }}
                 disabled={isReadOnly}
               >
                 <SelectTrigger>
@@ -215,7 +216,16 @@ export function LeaseForm({ lease, isOpen, onClose, onSave, mode }: LeaseFormPro
               <Label>Lease Type *</Label>
               <Select
                 value={formData.kind}
-                onValueChange={(v) => setFormData({ ...formData, kind: v as any })}
+                onValueChange={(v) => {
+                  const updatedForm = {
+                    ...formData,
+                    kind: v as any,
+                    partner_id: v === "commercial" ? formData.partner_id : undefined,
+                    tenant_id: v === "residential" ? formData.tenant_id : undefined,
+                  };
+                  setFormData(updatedForm);
+                  loadLeasePartners(v, formData.site_id);
+                }}
                 disabled={isReadOnly}
               >
                 <SelectTrigger>
@@ -235,7 +245,7 @@ export function LeaseForm({ lease, isOpen, onClose, onSave, mode }: LeaseFormPro
               <Select
                 value={formData.space_id}
                 onValueChange={(v) => setFormData({ ...formData, space_id: v })}
-                disabled={isReadOnly || !formData.site_id}
+                disabled={isReadOnly}
               >
                 <SelectTrigger>
                   <SelectValue placeholder={formData.site_id ? "Select space" : "Select site first"} />
@@ -243,7 +253,7 @@ export function LeaseForm({ lease, isOpen, onClose, onSave, mode }: LeaseFormPro
                 <SelectContent>
                   {spaceList.map((s: any) => (
                     <SelectItem key={s.id} value={s.id}>
-                      {s.name || s.code}
+                      {s.name}
                     </SelectItem>
                   ))}
                 </SelectContent>
@@ -252,20 +262,33 @@ export function LeaseForm({ lease, isOpen, onClose, onSave, mode }: LeaseFormPro
 
             {/* simple text input for IDs (can replace with modal/lookup later) */}
             <div>
-              <Label>{formData.kind === "commercial" ? "Partner ID *" : "Tenant ID *"}</Label>
-              <Input
-                placeholder={formData.kind === "commercial" ? "Partner ID" : "Tenant ID"}
-                value={(formData.kind === "commercial" ? formData.partner_id : formData.tenant_id) || ""}
-                onChange={(e) =>
+              <Label>{formData.kind === "commercial" ? "Partner *" : "Tenant *"}</Label>
+              <Select
+                value={
+                  formData.kind === "commercial"
+                    ? formData.partner_id ? String(formData.partner_id) : ""
+                    : formData.tenant_id ? String(formData.tenant_id) : ""
+                }
+                onValueChange={(v) =>
                   setFormData({
                     ...formData,
-                    ...(formData.kind === "commercial"
-                      ? { partner_id: e.target.value }
-                      : { tenant_id: e.target.value }),
+                    partner_id: formData.kind === "commercial" ? v : undefined,
+                    tenant_id: formData.kind === "residential" ? v : undefined,
                   })
                 }
                 disabled={isReadOnly}
-              />
+              >
+                <SelectTrigger>
+                  <SelectValue placeholder={formData.kind === "commercial" ? "Select partner" : "Select tenant"} />
+                </SelectTrigger>
+                <SelectContent>
+                  {leasePartnerList.map((s: any) => (
+                    <SelectItem key={s.id} value={String(s.id)}>
+                      {s.name}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
             </div>
           </div>
 

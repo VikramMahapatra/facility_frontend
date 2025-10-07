@@ -73,7 +73,6 @@ export default function Assets() {
     } else {
       setPage(1);
     }
-    loadAssetOverView();
   };
 
   const loadAssetOverView = async () => {
@@ -122,6 +121,7 @@ export default function Assets() {
     try {
       await assetApiService.deleteAsset(deleteAssetId);
       updateAssetPage();
+      loadAssetOverView();
       toast({ title: "Asset Deleted", description: "Asset has been removed successfully." });
     } catch {
       toast({ title: "Techical Error!", variant: "destructive" });
@@ -143,6 +143,7 @@ export default function Assets() {
         description: `Asset ${values.name || selectedAsset?.name || ''} saved successfully.`,
       });
       updateAssetPage();
+      loadAssetOverView();
     } catch {
       toast({ title: "Techical Error!", variant: "destructive" });
     }

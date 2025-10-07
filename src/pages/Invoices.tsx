@@ -172,6 +172,7 @@ export default function Invoices() {
         description: `Invoice ${invoiceData.invoice_no} has been ${formMode === 'create' ? 'created' : 'updated'} successfully.`,
       });
       updateInvoicesPage();
+      loadInvoicesOverView();
     } catch (error) {
       toast({
         title: "Techical Error!",
