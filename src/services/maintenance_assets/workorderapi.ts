@@ -36,7 +36,6 @@ class WorkOrderApiService {
   async getWorkOrderPriorityLookup() {
     return await apiService.request("/workorder/priority-lookup");
   }
-
 }
 
 export const workOrderApiService = new WorkOrderApiService();
@@ -45,4 +44,4 @@ export const workOrderApiService = new WorkOrderApiService();
 //filters.append(func.lower(WorkOrder.status) == params.status.lower())
 
 //if params.priority and params.priority.lower() != "all":
-//filters.append(func.lower(WorkOrder.priority) == params.priority.lower())  in crud backend 
+//filters.append(func.lower(WorkOrder.priority) == params.priority.lower())  in crud backend

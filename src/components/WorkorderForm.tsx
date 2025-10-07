@@ -50,8 +50,8 @@ const emptyFormData = {
   asset_id: null,
   due_at: null,
   sla: {
-    response_time: ""
-  }
+    response_time: "",
+  },
 };
 
 export function WorkOrderForm({
@@ -110,10 +110,10 @@ export function WorkOrderForm({
     }
   };
 
-const loadAssetLookup = async () => {
-  const assets = await assetApiService.getAssetLookup();
-  setAssetList(assets || []);
-}
+  const loadAssetLookup = async () => {
+    const assets = await assetApiService.getAssetLookup();
+    setAssetList(assets || []);
+  };
 
   const loadStatusLookup = async () => {
     const lookup = await workOrderApiService.getWorkOrderStatusLookup();
@@ -125,14 +125,14 @@ const loadAssetLookup = async () => {
     setPriorityList(lookup || []);
   };
 
-const loadServiceRequestLookup = async () => {
-  try {
-    const rows = await serviceRequestApiService.getServiceRequestLookup();
-    setServiceRequestList(Array.isArray(rows) ? rows : []);
-  } catch {
-    setServiceRequestList([]);
-  }
-}
+  const loadServiceRequestLookup = async () => {
+    try {
+      const rows = await serviceRequestApiService.getServiceRequestLookup();
+      setServiceRequestList(Array.isArray(rows) ? rows : []);
+    } catch {
+      setServiceRequestList([]);
+    }
+  };
 
   const handleSLAFieldChange = (field: string, value: any) => {
     setFormData((prev) => ({ ...prev, sla: { ...prev.sla, [field]: value } }));
@@ -162,10 +162,10 @@ const loadServiceRequestLookup = async () => {
         site_id: formData.site_id,
         space_id: formData.space_id || null,
         request_id: formData.request_id || null,
-        asset_id: formData.asset_id || null, 
+        asset_id: formData.asset_id || null,
         due_at: formData.due_at,
         sla: formData.sla?.response_time ? formData.sla : null,
-        org_id: orgData.id, 
+        org_id: orgData.id,
         updated_at: new Date().toISOString(),
       };
 
@@ -201,7 +201,9 @@ const loadServiceRequestLookup = async () => {
               <Input
                 id="title"
                 value={formData.title}
-                onChange={(e) => setFormData({ ...formData, title: e.target.value })}
+                onChange={(e) =>
+                  setFormData({ ...formData, title: e.target.value })
+                }
                 placeholder="e.g., AC Not Cooling Properly"
                 disabled={isReadOnly}
               />
@@ -210,7 +212,9 @@ const loadServiceRequestLookup = async () => {
               <Label htmlFor="status">Status</Label>
               <Select
                 value={formData.status}
-                onValueChange={(value: WorkOrderStatus) => setFormData({ ...formData, status: value })}
+                onValueChange={(value: WorkOrderStatus) =>
+                  setFormData({ ...formData, status: value })
+                }
                 disabled={isReadOnly}
               >
                 <SelectTrigger>
@@ -218,7 +222,9 @@ const loadServiceRequestLookup = async () => {
                 </SelectTrigger>
                 <SelectContent>
                   {statusList.map((status) => (
-                    <SelectItem key={status.id} value={status.id}>{status.name}</SelectItem>
+                    <SelectItem key={status.id} value={status.id}>
+                      {status.name}
+                    </SelectItem>
                   ))}
                 </SelectContent>
               </Select>
@@ -231,7 +237,9 @@ const loadServiceRequestLookup = async () => {
               <Label htmlFor="site">Site *</Label>
               <Select
                 value={formData.site_id}
-                onValueChange={(value) => setFormData({ ...formData, site_id: value, space_id: "" })}
+                onValueChange={(value) =>
+                  setFormData({ ...formData, site_id: value, space_id: "" })
+                }
                 disabled={isReadOnly}
               >
                 <SelectTrigger>
@@ -239,7 +247,9 @@ const loadServiceRequestLookup = async () => {
                 </SelectTrigger>
                 <SelectContent>
                   {siteList.map((site) => (
-                    <SelectItem key={site.id} value={site.id}>{site.name}</SelectItem>
+                    <SelectItem key={site.id} value={site.id}>
+                      {site.name}
+                    </SelectItem>
                   ))}
                 </SelectContent>
               </Select>
@@ -248,7 +258,9 @@ const loadServiceRequestLookup = async () => {
               <Label htmlFor="space">Space</Label>
               <Select
                 value={formData.space_id}
-                onValueChange={(value) => setFormData({ ...formData, space_id: value })}
+                onValueChange={(value) =>
+                  setFormData({ ...formData, space_id: value })
+                }
                 disabled={isReadOnly || !formData.site_id}
               >
                 <SelectTrigger>
@@ -256,7 +268,9 @@ const loadServiceRequestLookup = async () => {
                 </SelectTrigger>
                 <SelectContent>
                   {spaceList.map((space) => (
-                    <SelectItem key={space.id} value={space.id}>{space.name}</SelectItem>
+                    <SelectItem key={space.id} value={space.id}>
+                      {space.name}
+                    </SelectItem>
                   ))}
                 </SelectContent>
               </Select>
@@ -269,10 +283,12 @@ const loadServiceRequestLookup = async () => {
               <Label htmlFor="asset">Asset</Label>
               <Select
                 value={formData.asset_id || "none"}
-                onValueChange={(value) => setFormData({
-                  ...formData,
-                  asset_id: value === "none" ? null : value,
-                })}
+                onValueChange={(value) =>
+                  setFormData({
+                    ...formData,
+                    asset_id: value === "none" ? null : value,
+                  })
+                }
                 disabled={isReadOnly}
               >
                 <SelectTrigger>
@@ -281,7 +297,9 @@ const loadServiceRequestLookup = async () => {
                 <SelectContent>
                   <SelectItem value="none">No Asset</SelectItem>
                   {assetList.map((asset) => (
-                    <SelectItem key={asset.id} value={asset.id}>{asset.name}</SelectItem>
+                    <SelectItem key={asset.id} value={asset.id}>
+                      {asset.name}
+                    </SelectItem>
                   ))}
                 </SelectContent>
               </Select>
@@ -290,10 +308,12 @@ const loadServiceRequestLookup = async () => {
               <Label htmlFor="service_request">Service Request</Label>
               <Select
                 value={formData.request_id || "none"}
-                onValueChange={(value) => setFormData({
-                  ...formData,
-                  request_id: value !== "none" ? value : null,
-                })}
+                onValueChange={(value) =>
+                  setFormData({
+                    ...formData,
+                    request_id: value !== "none" ? value : null,
+                  })
+                }
                 disabled={isReadOnly}
               >
                 <SelectTrigger>
@@ -302,7 +322,9 @@ const loadServiceRequestLookup = async () => {
                 <SelectContent>
                   <SelectItem value="none">No Service Request</SelectItem>
                   {serviceRequestList.map((sr: any) => (
-                    <SelectItem key={sr.id} value={sr.id}>{sr.name}</SelectItem>
+                    <SelectItem key={sr.id} value={sr.id}>
+                      {sr.name}
+                    </SelectItem>
                   ))}
                 </SelectContent>
               </Select>
@@ -315,7 +337,9 @@ const loadServiceRequestLookup = async () => {
               <Label htmlFor="priority">Priority</Label>
               <Select
                 value={formData.priority}
-                onValueChange={(value: WorkOrderPriority) => setFormData({ ...formData, priority: value })}
+                onValueChange={(value: WorkOrderPriority) =>
+                  setFormData({ ...formData, priority: value })
+                }
                 disabled={isReadOnly}
               >
                 <SelectTrigger>
@@ -323,7 +347,9 @@ const loadServiceRequestLookup = async () => {
                 </SelectTrigger>
                 <SelectContent>
                   {priorityList.map((priority) => (
-                    <SelectItem key={priority.id} value={priority.id}>{priority.name}</SelectItem>
+                    <SelectItem key={priority.id} value={priority.id}>
+                      {priority.name}
+                    </SelectItem>
                   ))}
                 </SelectContent>
               </Select>
@@ -332,7 +358,9 @@ const loadServiceRequestLookup = async () => {
               <Label htmlFor="type">Type</Label>
               <Select
                 value={formData.type}
-                onValueChange={(value: WorkOrderType) => setFormData({ ...formData, type: value })}
+                onValueChange={(value: WorkOrderType) =>
+                  setFormData({ ...formData, type: value })
+                }
                 disabled={isReadOnly}
               >
                 <SelectTrigger>
@@ -350,7 +378,9 @@ const loadServiceRequestLookup = async () => {
               <Label htmlFor="sla">Response Time</Label>
               <Select
                 value={formData.sla?.response_time || ""}
-                onValueChange={(value) => handleSLAFieldChange("response_time", value)}
+                onValueChange={(value) =>
+                  handleSLAFieldChange("response_time", value)
+                }
                 disabled={isReadOnly}
               >
                 <SelectTrigger>
@@ -372,7 +402,9 @@ const loadServiceRequestLookup = async () => {
             <Textarea
               id="description"
               value={formData.description || ""}
-              onChange={(e) => setFormData({ ...formData, description: e.target.value })}
+              onChange={(e) =>
+                setFormData({ ...formData, description: e.target.value })
+              }
               placeholder="Detailed description of the work order..."
               rows={3}
               disabled={isReadOnly}
@@ -387,10 +419,14 @@ const loadServiceRequestLookup = async () => {
                 id="due_at"
                 type="datetime-local"
                 value={formData.due_at ? formData.due_at.slice(0, 16) : ""}
-                onChange={(e) => setFormData({
-                  ...formData,
-                  due_at: e.target.value ? new Date(e.target.value).toISOString() : null,
-                })}
+                onChange={(e) =>
+                  setFormData({
+                    ...formData,
+                    due_at: e.target.value
+                      ? new Date(e.target.value).toISOString()
+                      : null,
+                  })
+                }
                 disabled={isReadOnly}
                 className="w-48"
               />

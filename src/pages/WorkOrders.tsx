@@ -87,8 +87,8 @@ export default function WorkOrders() {
   const [priorityList, setPriorityList] = useState([]);
   const [spaceList, setSpaceList] = useState([]);
 
-  const [page, setPage] = useState(1); 
-  const [pageSize] = useState(6); 
+  const [page, setPage] = useState(1);
+  const [pageSize] = useState(6);
   const [totalItems, setTotalItems] = useState(0);
 
   useSkipFirstEffect(() => {
@@ -104,7 +104,13 @@ export default function WorkOrders() {
 
   useEffect(() => {
     updateWorkOrderPage();
-  }, [searchTerm, selectedSite, selectedStatus, selectedPriority, selectedSpace]);
+  }, [
+    searchTerm,
+    selectedSite,
+    selectedStatus,
+    selectedPriority,
+    selectedSpace,
+  ]);
 
   useEffect(() => {
     if (selectedSite !== "all") {
