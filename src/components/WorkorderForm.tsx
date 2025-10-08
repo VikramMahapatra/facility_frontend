@@ -84,8 +84,8 @@ export function WorkOrderForm({
   };
 
   const loadAssetLookup = async () => {
-    const lookup = await assetApiService.getAssets(new URLSearchParams());
-    setAssetList(Array.isArray(lookup) ? lookup : lookup?.assets || []);
+    const lookup = await assetApiService.getAssetLookup();
+    setAssetList(lookup || []);
   };
 
   const loadStatusLookup = async () => {
@@ -123,7 +123,7 @@ export function WorkOrderForm({
         asset_id: formData.asset_id,
         space_id: null, // ✅ Explicitly set to null
         due_at: formData.due_at,
-        org_id: orgData.id, 
+        org_id: orgData.id,
         updated_at: new Date().toISOString(),
       };
 

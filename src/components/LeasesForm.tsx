@@ -20,38 +20,18 @@ import {
 import { useToast } from "@/hooks/use-toast";
 import { siteApiService } from "@/services/spaces_sites/sitesapi";
 import { spacesApiService } from "@/services/spaces_sites/spacesapi";
-import { leasesApiService } from "@/services/Leasing_Tenants/leasesapi";
-
-export interface LeaseFormModel {
-  id?: string;
-  org_id?: string;
-  site_id?: string;
-  space_id?: string;
-
-  kind?: "commercial" | "residential";
-  partner_id?: string; // when kind = commercial
-  tenant_id?: string;  // when kind = residential
-
-  start_date?: string;
-  end_date?: string;
-  rent_amount?: number;
-  deposit_amount?: number;
-  cam_rate?: number;
-  utilities?: { electricity?: string; water?: string };
-  status?: "active" | "expired" | "terminated" | "draft";
-  created_at?: string;
-  updated_at?: string;
-}
+import { leasesApiService } from "@/services/leasing_tenants/leasesapi";
+import { Lease } from "@/interfaces/leasing_tenants_interface";
 
 interface LeaseFormProps {
-  lease?: LeaseFormModel;
+  lease?: Lease;
   isOpen: boolean;
   onClose: () => void;
-  onSave: (lease: Partial<LeaseFormModel>) => void;
+  onSave: (lease: Partial<Lease>) => void;
   mode: "create" | "edit" | "view";
 }
 
-const EMPTY: Partial<LeaseFormModel> = {
+const EMPTY: Partial<Lease> = {
   kind: "commercial",
   site_id: "",
   space_id: "",
@@ -68,7 +48,7 @@ const EMPTY: Partial<LeaseFormModel> = {
 
 export function LeaseForm({ lease, isOpen, onClose, onSave, mode }: LeaseFormProps) {
   const { toast } = useToast();
-  const [formData, setFormData] = useState<Partial<LeaseFormModel>>(EMPTY);
+  const [formData, setFormData] = useState<Partial<Lease>>(EMPTY);
   const [siteList, setSiteList] = useState<any[]>([]);
   const [spaceList, setSpaceList] = useState<any[]>([]);
   const [leasePartnerList, setLeasePartnerList] = useState<any[]>([]);
@@ -106,7 +86,6 @@ export function LeaseForm({ lease, isOpen, onClose, onSave, mode }: LeaseFormPro
   }, [leasePartnerList]); // 🔑 re-run after partner list loads
 
   const loadSpaces = async () => {
-    if (!formData.site_id) return;
     const spaces = await spacesApiService.getSpaceLookup(formData.site_id);
     setSpaceList(spaces);
   }
@@ -154,7 +133,7 @@ export function LeaseForm({ lease, isOpen, onClose, onSave, mode }: LeaseFormPro
       return;
     }
 
-    const payload: Partial<LeaseFormModel> = {
+    const payload: Partial<Lease> = {
       id: lease?.id,
       kind: formData.kind,
       site_id: formData.site_id,
