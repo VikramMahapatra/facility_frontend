@@ -39,3 +39,9 @@ class WorkOrderApiService {
 }
 
 export const workOrderApiService = new WorkOrderApiService();
+
+//if params.status and params.status.lower() != "all":
+//filters.append(func.lower(WorkOrder.status) == params.status.lower())
+
+//if params.priority and params.priority.lower() != "all":
+//filters.append(func.lower(WorkOrder.priority) == params.priority.lower())  in crud backend
