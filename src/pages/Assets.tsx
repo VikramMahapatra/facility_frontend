@@ -14,7 +14,8 @@ import { Asset, AssetOverview } from "@/interfaces/assets_interface";
 import { assetApiService } from "@/services/maintenance_assets/assetsapi";
 import { useToast } from "@/hooks/use-toast";
 import { Pagination } from "@/components/Pagination";
-import { AssetForm, AssetFormValues } from "@/components/AssetForm";
+import { AssetForm } from "@/components/AssetForm";
+import { useSkipFirstEffect } from "@/hooks/use-skipfirst-effect";
 
 export default function Assets() {
   const { toast } = useToast();
@@ -23,8 +24,8 @@ export default function Assets() {
   const [statusFilter, setStatusFilter] = useState("all");
 
   // NEW: dynamic filter sources
-  const [categoryOptions, setCategoryOptions] = useState<string[]>([]);
-  const [statusOptions, setStatusOptions] = useState<string[]>([]);
+  const [categoryOptions, setCategoryOptions] = useState([]);
+  const [statusOptions, setStatusOptions] = useState([]);
 
   const [formMode, setFormMode] = useState<'create' | 'edit' | 'view'>('create');
   const [isFormOpen, setIsFormOpen] = useState(false);
@@ -42,7 +43,7 @@ export default function Assets() {
   const [pageSize] = useState(5);
   const [totalItems, setTotalItems] = useState(0);
 
-  useEffect(() => {
+  useSkipFirstEffect(() => {
     loadAssets();
   }, [page]);
 
@@ -53,18 +54,8 @@ export default function Assets() {
   useEffect(() => {
     // load cards + filter sources once
     loadAssetOverView();
-    (async () => {
-      try {
-        const [cats, stats] = await Promise.all([
-          assetApiService.getCategories(),
-          assetApiService.getStatuses(),
-        ]);
-        setCategoryOptions(cats);
-        setStatusOptions(stats);
-      } catch {
-        // non-blocking
-      }
-    })();
+    loadCategories();
+    loadStatuses();
   }, []);
 
   const updateAssetPage = () => {
@@ -74,6 +65,16 @@ export default function Assets() {
       setPage(1);
     }
   };
+
+  const loadCategories = async () => {
+    const response = await assetApiService.getCategories();
+    setCategoryOptions(response);
+  }
+
+  const loadStatuses = async () => {
+    const response = await assetApiService.getStatuses();
+    setStatusOptions(response);
+  }
 
   const loadAssetOverView = async () => {
     const response = await assetApiService.getAssetOverview();
@@ -130,7 +131,7 @@ export default function Assets() {
     }
   };
 
-  const handleSave = async (values: Partial<AssetFormValues>) => {
+  const handleSave = async (values: Partial<Asset>) => {
     try {
       if (formMode === 'create') {
         await assetApiService.addAsset(values);
@@ -150,6 +151,7 @@ export default function Assets() {
   };
 
   const getStatusBadge = (status: string) => {
+    status = status.toLowerCase();
     const variants = {
       active: "default",
       retired: "secondary",
@@ -263,7 +265,7 @@ export default function Assets() {
                       <SelectContent>
                         <SelectItem value="all">All Categories</SelectItem>
                         {categoryOptions.map((c) => (
-                          <SelectItem key={c} value={c}>{c}</SelectItem>
+                          <SelectItem key={c.id} value={c.id}>{c.name}</SelectItem>
                         ))}
                       </SelectContent>
                     </Select>
@@ -274,8 +276,8 @@ export default function Assets() {
                       </SelectTrigger>
                       <SelectContent>
                         <SelectItem value="all">All Status</SelectItem>
-                        {statusOptions.map((s) => (
-                          <SelectItem key={s} value={s}>{s}</SelectItem>
+                        {statusOptions.map((c) => (
+                          <SelectItem key={c.id} value={c.id}>{c.name}</SelectItem>
                         ))}
                       </SelectContent>
                     </Select>
@@ -310,7 +312,7 @@ export default function Assets() {
                               </div>
                             </TableCell>
                             <TableCell>{(asset as any).category_name || 'Unknown'}</TableCell>
-                            <TableCell>{asset.site_id}</TableCell>
+                            <TableCell>{asset.location}</TableCell>
                             <TableCell>{getStatusBadge(asset.status)}</TableCell>
                             <TableCell>₹{asset.cost?.toLocaleString() || 'N/A'}</TableCell>
                             <TableCell>
@@ -385,7 +387,7 @@ export default function Assets() {
       <AssetForm
         isOpen={isFormOpen}
         mode={formMode}
-        asset={selectedAsset as unknown as AssetFormValues}
+        asset={selectedAsset}
         onClose={() => setIsFormOpen(false)}
         onSave={handleSave}
       />

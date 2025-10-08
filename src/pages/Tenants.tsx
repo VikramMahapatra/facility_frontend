@@ -9,7 +9,7 @@ import { SidebarProvider, SidebarInset, SidebarTrigger } from "@/components/ui/s
 import { PropertySidebar } from "@/components/PropertySidebar";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
 import { Plus, Search, Filter, Edit, Eye, Trash2, Users, Building2, Mail, Phone, MapPin } from "lucide-react";
-import { tenantsApiService } from "@/services/Leasing_Tenants/tenantsapi";
+import { tenantsApiService } from "@/services/leasing_tenants/tenantsapi";
 import { Tenant, TenantOverview } from "@/interfaces/leasing_tenants_interface";
 import { useSkipFirstEffect } from "@/hooks/use-skipfirst-effect";
 import { useToast } from "@/hooks/use-toast";

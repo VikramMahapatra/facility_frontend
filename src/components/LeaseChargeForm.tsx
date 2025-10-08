@@ -5,7 +5,7 @@ import { Label } from "@/components/ui/label";
 import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { useToast } from "@/hooks/use-toast";
-import { leasesApiService } from "@/services/Leasing_Tenants/leasesapi";
+import { leasesApiService } from "@/services/leasing_tenants/leasesapi";
 
 // ---- Types (kept minimal and local to the form, mirroring SpaceForm style) ----
 export type ChargeCode =
@@ -65,14 +65,14 @@ export function LeaseChargeForm({ charge, isOpen, onClose, onSave, mode }: Lease
       setFormData(emptyFormData);
     }
     loadLeaseLookup();
-    
+
   }, [charge, isOpen]);
 
   // ---- Lookups ----
   const loadLeaseLookup = async () => {
-      const lookup = await leasesApiService.getLeaseLookup();
-      setLeaseList(lookup);
-    }
+    const lookup = await leasesApiService.getLeaseLookup();
+    setLeaseList(lookup);
+  }
 
   // ---- Submit ----
   const handleSubmit = (e: React.FormEvent) => {
