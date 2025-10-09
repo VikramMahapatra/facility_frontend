@@ -52,7 +52,9 @@ import {
 import { useToast } from "@/hooks/use-toast";
 import { Pagination } from "@/components/Pagination";
 import { workOrderApiService } from "@/services/maintenance_assets/workorderapi";
+import { spacesApiService } from "@/services/spaces_sites/spacesapi";
 import { useSkipFirstEffect } from "@/hooks/use-skipfirst-effect";
+import { siteApiService } from "@/services/spaces_sites/sitesapi";
 import { WorkOrder, WorkOrderOverview } from "@/interfaces/assets_interface";
 
 export default function WorkOrders() {
@@ -61,6 +63,7 @@ export default function WorkOrders() {
   const [selectedStatus, setSelectedStatus] = useState<string>("all");
   const [selectedPriority, setSelectedPriority] = useState<string>("all");
   const [selectedSite, setSelectedSite] = useState<string>("all");
+  const [selectedSpace, setSelectedSpace] = useState<string>("all");
   const [workOrders, setWorkOrders] = useState<WorkOrder[]>([]);
   const [formMode, setFormMode] = useState<"create" | "edit" | "view">(
     "create"
@@ -82,9 +85,10 @@ export default function WorkOrders() {
   );
   const [statusList, setStatusList] = useState([]);
   const [priorityList, setPriorityList] = useState([]);
+  const [spaceList, setSpaceList] = useState([]);
 
-  const [page, setPage] = useState(1); // current page
-  const [pageSize] = useState(6); // items per page
+  const [page, setPage] = useState(1);
+  const [pageSize] = useState(6);
   const [totalItems, setTotalItems] = useState(0);
 
   useSkipFirstEffect(() => {
@@ -95,11 +99,27 @@ export default function WorkOrders() {
   useEffect(() => {
     loadStatusLookup();
     loadPriorityLookup();
+    loadSpaceLookup();
   }, []);
 
   useEffect(() => {
     updateWorkOrderPage();
-  }, [searchTerm, selectedSite, selectedStatus, selectedPriority]);
+  }, [
+    searchTerm,
+    selectedSite,
+    selectedStatus,
+    selectedPriority,
+    selectedSpace,
+  ]);
+
+  useEffect(() => {
+    if (selectedSite !== "all") {
+      loadSpaceLookup();
+    } else {
+      setSpaceList([]);
+      setSelectedSpace("all");
+    }
+  }, [selectedSite]);
 
   const updateWorkOrderPage = () => {
     if (page === 1) {
@@ -119,6 +139,8 @@ export default function WorkOrders() {
       params.append("status", selectedStatus);
     if (selectedPriority && selectedPriority !== "all")
       params.append("priority", selectedPriority);
+    if (selectedSpace && selectedSpace !== "all")
+      params.append("space_id", selectedSpace);
     const response = await workOrderApiService.getWorkOrderOverview(params);
     setWorkOrderOverview(response);
   };
@@ -131,6 +153,11 @@ export default function WorkOrders() {
   const loadPriorityLookup = async () => {
     const lookup = await workOrderApiService.getWorkOrderPriorityLookup();
     setPriorityList(lookup || []);
+  };
+
+  const loadSpaceLookup = async () => {
+    const lookup = await spacesApiService.getSpaceLookup(selectedSite);
+    setSpaceList(lookup || []);
   };
 
   const loadWorkOrders = async () => {
@@ -146,6 +173,8 @@ export default function WorkOrders() {
       params.append("status", selectedStatus);
     if (selectedPriority && selectedPriority !== "all")
       params.append("priority", selectedPriority);
+    if (selectedSpace && selectedSpace !== "all")
+      params.append("space_id", selectedSpace);
     params.append("skip", skip.toString());
     params.append("limit", limit.toString());
 
@@ -213,9 +242,8 @@ export default function WorkOrders() {
       toast({
         title:
           formMode === "create" ? "Work Order Created" : "Work Order Updated",
-        description: `Work order ${workOrderData.title} has been ${
-          formMode === "create" ? "created" : "updated"
-        } successfully.`,
+        description: `Work order ${workOrderData.title} has been ${formMode === "create" ? "created" : "updated"
+          } successfully.`,
       });
       updateWorkOrderPage();
     } catch (error) {
@@ -289,6 +317,18 @@ export default function WorkOrders() {
                 {priorityList.map((priority) => (
                   <option key={priority.id} value={priority.id}>
                     {priority.name}
+                  </option>
+                ))}
+              </select>
+              <select
+                value={selectedSpace}
+                onChange={(e) => setSelectedSpace(e.target.value)}
+                className="rounded-md border border-input bg-background px-3 py-2 text-sm w-[160px]"
+              >
+                <option value="all">All Spaces</option>
+                {spaceList.map((space) => (
+                  <option key={space.id} value={space.id}>
+                    {space.name}
                   </option>
                 ))}
               </select>
@@ -398,10 +438,10 @@ export default function WorkOrders() {
                               workOrder.priority === "critical"
                                 ? "destructive"
                                 : workOrder.priority === "high"
-                                ? "destructive"
-                                : workOrder.priority === "medium"
-                                ? "default"
-                                : "secondary"
+                                  ? "destructive"
+                                  : workOrder.priority === "medium"
+                                    ? "default"
+                                    : "secondary"
                             }
                           >
                             {workOrder.priority}
@@ -427,8 +467,8 @@ export default function WorkOrders() {
                               workOrder.status === "completed"
                                 ? "default"
                                 : workOrder.status === "in_progress"
-                                ? "secondary"
-                                : "outline"
+                                  ? "secondary"
+                                  : "outline"
                             }
                           >
                             {workOrder.status.replace("_", " ")}

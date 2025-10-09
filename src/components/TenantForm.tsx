@@ -19,7 +19,7 @@ import {
 } from "@/components/ui/dialog";
 import { useToast } from "@/hooks/use-toast";
 import { siteApiService } from "@/services/spaces_sites/sitesapi";
-import { tenantsApiService } from "@/services/Leasing_Tenants/tenantsapi";
+import { tenantsApiService } from "@/services/leasing_tenants/tenantsapi";
 import { Tenant } from "@/interfaces/leasing_tenants_interface";
 
 interface TenantFormProps {
@@ -115,11 +115,11 @@ export function TenantForm({
         email: email?.trim() || undefined,
         phone: phone?.trim() || undefined,
         address: {
-          line1: address.line1?.trim() || "",
-          line2: address.line2?.trim() || "",
-          city: address.city?.trim() || "",
-          state: address.state?.trim() || "",
-          pincode: address.pincode?.trim() || "",
+          line1: address?.line1?.trim() || "",
+          line2: address?.line2?.trim() || "",
+          city: address?.city?.trim() || "",
+          state: address?.state?.trim() || "",
+          pincode: address?.pincode?.trim() || "",
         }
       };
 

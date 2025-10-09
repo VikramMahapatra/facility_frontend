@@ -19,8 +19,10 @@ import {
 } from "@/components/ui/dialog";
 import { useToast } from "@/hooks/use-toast";
 import { siteApiService } from "@/services/spaces_sites/sitesapi";
-import { assetApiService } from "@/services/maintenance_assets/assetsapi";
+import { spacesApiService } from "@/services/spaces_sites/spacesapi";
 import { workOrderApiService } from "@/services/maintenance_assets/workorderapi";
+import { assetApiService } from "@/services/maintenance_assets/assetsapi";
+import { serviceRequestApiService } from "@/services/maintenance_assets/servicerequestapi";
 import { organisationApiService } from "@/services/spaces_sites/organisationapi";
 import {
   WorkOrder,
@@ -39,6 +41,7 @@ interface WorkOrderFormProps {
 
 const emptyFormData = {
   site_id: "",
+  space_id: "",
   title: "",
   description: "",
   priority: "medium" as const,
@@ -46,6 +49,9 @@ const emptyFormData = {
   type: "corrective" as const,
   asset_id: null,
   due_at: null,
+  sla: {
+    response_time: "",
+  },
 };
 
 export function WorkOrderForm({
@@ -58,7 +64,9 @@ export function WorkOrderForm({
   const { toast } = useToast();
   const [formData, setFormData] = useState<Partial<WorkOrder>>(emptyFormData);
   const [siteList, setSiteList] = useState([]);
+  const [spaceList, setSpaceList] = useState([]);
   const [assetList, setAssetList] = useState([]);
+  const [serviceRequestList, setServiceRequestList] = useState([]);
   const [statusList, setStatusList] = useState([]);
   const [priorityList, setPriorityList] = useState([]);
 
@@ -69,23 +77,42 @@ export function WorkOrderForm({
       setFormData(emptyFormData);
     }
     loadSiteLookup();
+    loadSpaceLookup();
     loadAssetLookup();
     loadStatusLookup();
+    loadServiceRequestLookup();
     loadPriorityLookup();
   }, [workOrder]);
 
   useEffect(() => {
-    loadAssetLookup();
+    loadSpaceLookup();
   }, [formData.site_id]);
+
+  useEffect(() => {
+    loadAssetLookup();
+  }, [formData.asset_id]);
 
   const loadSiteLookup = async () => {
     const lookup = await siteApiService.getSiteLookup();
     setSiteList(lookup);
   };
 
+  const loadSpaceLookup = async () => {
+    if (!formData.site_id) {
+      setSpaceList([]);
+      return;
+    }
+    try {
+      const spaces = await spacesApiService.getSpaceLookup(formData.site_id);
+      setSpaceList(spaces || []);
+    } catch {
+      setSpaceList([]);
+    }
+  };
+
   const loadAssetLookup = async () => {
-    const lookup = await assetApiService.getAssets(new URLSearchParams());
-    setAssetList(Array.isArray(lookup) ? lookup : lookup?.assets || []);
+    const lookup = await assetApiService.getAssetLookup();
+    setAssetList(lookup || []);
   };
 
   const loadStatusLookup = async () => {
@@ -96,6 +123,19 @@ export function WorkOrderForm({
   const loadPriorityLookup = async () => {
     const lookup = await workOrderApiService.getWorkOrderPriorityLookup();
     setPriorityList(lookup || []);
+  };
+
+  const loadServiceRequestLookup = async () => {
+    try {
+      const rows = await serviceRequestApiService.getServiceRequestLookup();
+      setServiceRequestList(Array.isArray(rows) ? rows : []);
+    } catch {
+      setServiceRequestList([]);
+    }
+  };
+
+  const handleSLAFieldChange = (field: string, value: any) => {
+    setFormData((prev) => ({ ...prev, sla: { ...prev.sla, [field]: value } }));
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -115,18 +155,21 @@ export function WorkOrderForm({
       const workOrderData = {
         ...workOrder,
         title: formData.title,
-        description: formData.description,
+        description: formData.description || null,
         priority: formData.priority,
         status: formData.status,
         type: formData.type,
         site_id: formData.site_id,
-        asset_id: formData.asset_id,
-        space_id: null, // ✅ Explicitly set to null
+        space_id: formData.space_id || null,
+        request_id: formData.request_id || null,
+        asset_id: formData.asset_id || null,
         due_at: formData.due_at,
-        org_id: orgData.id, 
+        sla: formData.sla?.response_time ? formData.sla : null,
+        org_id: orgData.id,
         updated_at: new Date().toISOString(),
       };
 
+      console.log("WorkOrder payload:", workOrderData);
       onSave(workOrderData);
     } catch (error) {
       toast({
@@ -151,6 +194,7 @@ export function WorkOrderForm({
         </DialogHeader>
 
         <form onSubmit={handleSubmit} className="space-y-4">
+          {/* Row 1: Title | Status */}
           <div className="grid grid-cols-2 gap-4">
             <div>
               <Label htmlFor="title">Title *</Label>
@@ -163,65 +207,6 @@ export function WorkOrderForm({
                 placeholder="e.g., AC Not Cooling Properly"
                 disabled={isReadOnly}
               />
-            </div>
-            <div>
-              <Label htmlFor="site">Site *</Label>
-              <Select
-                value={formData.site_id}
-                onValueChange={(value) =>
-                  setFormData({ ...formData, site_id: value })
-                }
-                disabled={isReadOnly}
-              >
-                <SelectTrigger>
-                  <SelectValue placeholder="Select site" />
-                </SelectTrigger>
-                <SelectContent>
-                  {siteList.map((site) => (
-                    <SelectItem key={site.id} value={site.id}>
-                      {site.name}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </div>
-          </div>
-
-          <div>
-            <Label htmlFor="description">Description</Label>
-            <Textarea
-              id="description"
-              value={formData.description || ""}
-              onChange={(e) =>
-                setFormData({ ...formData, description: e.target.value })
-              }
-              placeholder="Detailed description of the work order..."
-              rows={3}
-              disabled={isReadOnly}
-            />
-          </div>
-
-          <div className="grid grid-cols-2 gap-4">
-            <div>
-              <Label htmlFor="priority">Priority</Label>
-              <Select
-                value={formData.priority}
-                onValueChange={(value: WorkOrderPriority) =>
-                  setFormData({ ...formData, priority: value })
-                }
-                disabled={isReadOnly}
-              >
-                <SelectTrigger>
-                  <SelectValue placeholder="Select priority" />
-                </SelectTrigger>
-                <SelectContent>
-                  {priorityList.map((priority) => (
-                    <SelectItem key={priority.id} value={priority.id}>
-                      {priority.name}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
             </div>
             <div>
               <Label htmlFor="status">Status</Label>
@@ -246,27 +231,54 @@ export function WorkOrderForm({
             </div>
           </div>
 
+          {/* Row 2: Site | Space */}
           <div className="grid grid-cols-2 gap-4">
             <div>
-              <Label htmlFor="type">Type</Label>
+              <Label htmlFor="site">Site *</Label>
               <Select
-                value={formData.type}
-                onValueChange={(value: WorkOrderType) =>
-                  setFormData({ ...formData, type: value })
+                value={formData.site_id}
+                onValueChange={(value) =>
+                  setFormData({ ...formData, site_id: value, space_id: "" })
                 }
                 disabled={isReadOnly}
               >
                 <SelectTrigger>
-                  <SelectValue placeholder="Select type" />
+                  <SelectValue placeholder="Select site" />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="corrective">Corrective</SelectItem>
-                  <SelectItem value="preventive">Preventive</SelectItem>
-                  <SelectItem value="emergency">Emergency</SelectItem>
-                  <SelectItem value="inspection">Inspection</SelectItem>
+                  {siteList.map((site) => (
+                    <SelectItem key={site.id} value={site.id}>
+                      {site.name}
+                    </SelectItem>
+                  ))}
                 </SelectContent>
               </Select>
             </div>
+            <div>
+              <Label htmlFor="space">Space</Label>
+              <Select
+                value={formData.space_id}
+                onValueChange={(value) =>
+                  setFormData({ ...formData, space_id: value })
+                }
+                disabled={isReadOnly || !formData.site_id}
+              >
+                <SelectTrigger>
+                  <SelectValue placeholder="Select space (optional)" />
+                </SelectTrigger>
+                <SelectContent>
+                  {spaceList.map((space) => (
+                    <SelectItem key={space.id} value={space.id}>
+                      {space.name}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+          </div>
+
+          {/* Row 3: Asset | Service Request */}
+          <div className="grid grid-cols-2 gap-4">
             <div>
               <Label htmlFor="asset">Asset</Label>
               <Select
@@ -293,6 +305,115 @@ export function WorkOrderForm({
               </Select>
             </div>
             <div>
+              <Label htmlFor="service_request">Service Request</Label>
+              <Select
+                value={formData.request_id || "none"}
+                onValueChange={(value) =>
+                  setFormData({
+                    ...formData,
+                    request_id: value !== "none" ? value : null,
+                  })
+                }
+                disabled={isReadOnly}
+              >
+                <SelectTrigger>
+                  <SelectValue placeholder="Select service request (optional)" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="none">No Service Request</SelectItem>
+                  {serviceRequestList.map((sr: any) => (
+                    <SelectItem key={sr.id} value={sr.id}>
+                      {sr.name}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+          </div>
+
+          {/* Row 4: Priority | Type | Response Time */}
+          <div className="grid grid-cols-3 gap-4">
+            <div>
+              <Label htmlFor="priority">Priority</Label>
+              <Select
+                value={formData.priority}
+                onValueChange={(value: WorkOrderPriority) =>
+                  setFormData({ ...formData, priority: value })
+                }
+                disabled={isReadOnly}
+              >
+                <SelectTrigger>
+                  <SelectValue placeholder="Select priority" />
+                </SelectTrigger>
+                <SelectContent>
+                  {priorityList.map((priority) => (
+                    <SelectItem key={priority.id} value={priority.id}>
+                      {priority.name}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+            <div>
+              <Label htmlFor="type">Type</Label>
+              <Select
+                value={formData.type}
+                onValueChange={(value: WorkOrderType) =>
+                  setFormData({ ...formData, type: value })
+                }
+                disabled={isReadOnly}
+              >
+                <SelectTrigger>
+                  <SelectValue placeholder="Select type" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="corrective">Corrective</SelectItem>
+                  <SelectItem value="preventive">Preventive</SelectItem>
+                  <SelectItem value="emergency">Emergency</SelectItem>
+                  <SelectItem value="inspection">Inspection</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+            <div>
+              <Label htmlFor="sla">Response Time</Label>
+              <Select
+                value={formData.sla?.response_time || ""}
+                onValueChange={(value) =>
+                  handleSLAFieldChange("response_time", value)
+                }
+                disabled={isReadOnly}
+              >
+                <SelectTrigger>
+                  <SelectValue placeholder="Select Response time" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="12h">12 Hours</SelectItem>
+                  <SelectItem value="24h">24 Hours</SelectItem>
+                  <SelectItem value="48h">48 Hours</SelectItem>
+                  <SelectItem value="72h">72 Hours</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+          </div>
+
+          {/* Row 5: Description */}
+          <div>
+            <Label htmlFor="description">Description</Label>
+            <Textarea
+              id="description"
+              value={formData.description || ""}
+              onChange={(e) =>
+                setFormData({ ...formData, description: e.target.value })
+              }
+              placeholder="Detailed description of the work order..."
+              rows={3}
+              disabled={isReadOnly}
+            />
+          </div>
+
+          {/* Row 6: Due Date */}
+          <div className="grid grid-cols-1 gap-4">
+            <div>
               <Label htmlFor="due_at">Due Date</Label>
               <Input
                 id="due_at"
@@ -307,6 +428,7 @@ export function WorkOrderForm({
                   })
                 }
                 disabled={isReadOnly}
+                className="w-48"
               />
             </div>
           </div>
@@ -326,4 +448,3 @@ export function WorkOrderForm({
     </Dialog>
   );
 }
-//FORM

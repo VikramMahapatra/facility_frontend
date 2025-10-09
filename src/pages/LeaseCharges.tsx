@@ -14,7 +14,7 @@ import {
   AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle
 } from "@/components/ui/alert-dialog";
 import { useToast } from "@/hooks/use-toast";
-import { leaseChargeApiService } from "@/services/Leasing_Tenants/leasechargeapi";
+import { leaseChargeApiService } from "@/services/leasing_tenants/leasechargeapi";
 import { LeaseChargeForm } from "@/components/LeaseChargeForm";
 import { useSkipFirstEffect } from "@/hooks/use-skipfirst-effect";
 
