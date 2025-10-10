@@ -21,6 +21,18 @@ import { useToast } from "@/hooks/use-toast";
 import { preventiveMaintenanceApiService } from "@/services/maintenance_assets/preventive_maintenanceapi";
 //import { siteApiService } from "@/services/spaces_sites/sitesapi";
 
+interface ChecklistItem {
+  step: number;
+  pass_fail: boolean;
+  instruction: string;
+}
+
+interface SLAConfig {
+  priority: string;
+  resolve_hrs: number;
+  response_hrs: number;
+}
+
 interface PMTemplate {
   id?: string;
   name?: string;
@@ -28,10 +40,10 @@ interface PMTemplate {
   asset_category?: string;
   frequency?: string;
   next_due?: string;
-  checklist?: string;
+  checklist?: ChecklistItem[];
   meter_metric?: string;
   threshold?: number;
-  sla?: string;
+  sla?: SLAConfig;
   status?: string;
   created_at?: string;
   updated_at?: string;
@@ -51,10 +63,14 @@ const emptyFormData = {
   frequency: "monthly" as const,
   status: "active" as const,
   next_due: null,
-  checklist: null,
+  checklist: [] as ChecklistItem[],
   meter_metric: "",
   threshold: 0,
-  sla: null,
+  sla: {
+    priority: "",
+    resolve_hrs: 0,
+    response_hrs: 0,
+  } as SLAConfig,
 };
 
 export function PMTemplateForm({
@@ -71,10 +87,23 @@ export function PMTemplateForm({
   const [statusList, setStatusList] = useState([]);
 
   useEffect(() => {
+    const defaultChecklistItem: ChecklistItem = { step: 1, pass_fail: false, instruction: "" };
     if (template) {
-      setFormData(template);
+      setFormData({
+        ...emptyFormData,
+        ...template,
+        checklist:
+          template.checklist && template.checklist.length > 0
+            ? template.checklist
+            : [defaultChecklistItem],
+        sla: template.sla || {
+          priority: "",
+          resolve_hrs: 0,
+          response_hrs: 0,
+        },
+      });
     } else {
-      setFormData(emptyFormData);
+      setFormData({ ...emptyFormData, checklist: [defaultChecklistItem] });
     }
     loadCategoryLookup();
     loadFrequencyLookup();
@@ -95,6 +124,43 @@ export function PMTemplateForm({
       const lookup = await preventiveMaintenanceApiService.getPreventiveMaintenanceStatusLookup();
       setStatusList(lookup || []);
     }
+
+  // Checklist helpers: add, update, remove multiple items
+  const addChecklistItem = () => {
+    const nextStep = (formData.checklist?.length || 0) + 1;
+    const newItem: ChecklistItem = { step: nextStep, pass_fail: false, instruction: "" };
+    setFormData((prev) => ({
+      ...prev,
+      checklist: [...(prev.checklist || []), newItem],
+    }));
+  };
+
+  const updateChecklistItem = (
+    index: number,
+    field: keyof ChecklistItem,
+    value: string | number | boolean
+  ) => {
+    const updated = [...(formData.checklist || [])];
+    updated[index] = { ...updated[index], [field]: value } as ChecklistItem;
+    setFormData({ ...formData, checklist: updated });
+  };
+
+  const removeChecklistItem = (index: number) => {
+    const remaining = (formData.checklist || []).filter((_, i) => i !== index);
+    // Ensure at least one item remains visible
+    const ensured =
+      remaining.length === 0
+        ? [{ step: 1, pass_fail: false, instruction: "" }]
+        : remaining;
+    // Re-number steps to keep them sequential
+    const renumbered = ensured.map((item, i) => ({ ...item, step: i + 1 }));
+    setFormData({ ...formData, checklist: renumbered });
+  };
+
+
+  const handleSLAFieldChange = (field: string, value: any) => {
+    setFormData((prev) => ({ ...prev, sla: { ...prev.sla, [field]: value } }));
+  };
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
@@ -274,34 +340,115 @@ export function PMTemplateForm({
             </div>
           </div>
 
-          {/* Checklist */}
-          <div>
-            <Label htmlFor="checklist">Checklist Items</Label>
-            <Textarea
-              id="checklist"
-              value={formData.checklist || ""}
-              onChange={(e) => {
-                setFormData({ ...formData, checklist: e.target.value });
-              }}
-              placeholder="Enter checklist items (e.g. Check oil levels, Inspect filters, Test functionality)"
-              disabled={isReadOnly}
-              rows={4}
-            />
+          {/* Checklist Configuration */}
+          <div className="border rounded-lg p-4 space-y-4">
+            <div className="flex items-center justify-between">
+              <h3 className="text-sm font-medium text-gray-700">Checklist Configuration</h3>
+              {!isReadOnly && (
+                <Button type="button" variant="outline" onClick={addChecklistItem}>
+                  Add Item
+                </Button>
+              )}
+            </div>
+
+            {(formData.checklist || []).length === 0 && (
+              <div className="text-sm text-muted-foreground">No items yet. Click Add Item.</div>
+            )}
+
+            <div className="space-y-3">
+              {(formData.checklist || []).map((item, index) => (
+                <div key={index} className="grid grid-cols-12 gap-2 items-end p-3 border rounded-md">
+                  <div className="col-span-2">
+                    <Label className="text-xs">Step</Label>
+                    <Input
+                      type="number"
+                      value={item.step}
+                      onChange={(e) => updateChecklistItem(index, "step", parseInt(e.target.value) || 0)}
+                      disabled={isReadOnly}
+                    />
+                  </div>
+                  <div className="col-span-3">
+                    <Label className="text-xs">Pass/Fail</Label>
+                    <Select
+                      value={item.pass_fail ? "pass" : "fail"}
+                      onValueChange={(value) => updateChecklistItem(index, "pass_fail", value === "pass")}
+                      disabled={isReadOnly}
+                    >
+                      <SelectTrigger>
+                        <SelectValue placeholder="Select pass/fail" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="pass">Pass</SelectItem>
+                        <SelectItem value="fail">Fail</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
+                  <div className="col-span-6">
+                    <Label className="text-xs">Instruction</Label>
+                    <Input
+                      value={item.instruction}
+                      onChange={(e) => updateChecklistItem(index, "instruction", e.target.value)}
+                      placeholder="Enter instruction..."
+                      disabled={isReadOnly}
+                    />
+                  </div>
+                  <div className="col-span-1 flex justify-end">
+                    {!isReadOnly && (
+                      <Button type="button" variant="outline" onClick={() => removeChecklistItem(index)}>
+                        Remove
+                      </Button>
+                    )}
+                  </div>
+                </div>
+              ))}
+            </div>
           </div>
 
-          {/* SLA */}
-          <div>
-            <Label htmlFor="sla">SLA Configuration</Label>
-            <Textarea
-              id="sla"
-              value={formData.sla || ""}
-              onChange={(e) => {
-                setFormData({ ...formData, sla: e.target.value });
-              }}
-              placeholder="Enter SLA configuration (e.g., Response time: 2 hours, Resolution time: 24 hours)"
-              disabled={isReadOnly}
-              rows={3}
-            />
+          {/* SLA Configuration */}
+          <div className="border rounded-lg p-4 space-y-4">
+            <h3 className="text-sm font-medium text-gray-700">SLA Configuration</h3>
+            <div className="grid grid-cols-3 gap-4">
+              <div>
+                <Label htmlFor="priority">Priority</Label>
+                <Select
+                  value={formData.sla?.priority || ""}
+                  onValueChange={(value) => handleSLAFieldChange("priority", value)}
+                  disabled={isReadOnly}
+                >
+                  <SelectTrigger>
+                    <SelectValue placeholder="Select priority" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="low">Low</SelectItem>
+                    <SelectItem value="medium">Medium</SelectItem>
+                    <SelectItem value="high">High</SelectItem>
+                    <SelectItem value="critical">Critical</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+              <div>
+                <Label htmlFor="response_hrs">Response Hours</Label>
+                <Input
+                  id="response_hrs"
+                  type="number"
+                  value={formData.sla?.response_hrs || ""}
+                  onChange={(e) => handleSLAFieldChange("response_hrs", parseInt(e.target.value) || 0)}
+                  placeholder="e.g., 2"
+                  disabled={isReadOnly}
+                />
+              </div>
+              <div>
+                <Label htmlFor="resolve_hrs">Resolve Hours</Label>
+                <Input
+                  id="resolve_hrs"
+                  type="number"
+                  value={formData.sla?.resolve_hrs || ""}
+                  onChange={(e) => handleSLAFieldChange("resolve_hrs", parseInt(e.target.value) || 0)}
+                  placeholder="e.g., 24"
+                  disabled={isReadOnly}
+                />
+              </div>
+            </div>
           </div>
 
           <DialogFooter>

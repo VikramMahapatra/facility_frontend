@@ -5,11 +5,13 @@ import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Dialog, DialogContent, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import { Card, CardContent } from "@/components/ui/card";
 import { useToast } from "@/hooks/use-toast";
-import { contractsApiService } from "@/services/procurement/contractsapi";
-import { vendorsApiService } from "@/services/procurement/vendorsapi";
+import { contractApiService } from "@/services/pocurments/contractapi";
+import { vendorsApiService } from "@/services/pocurments/vendorsapi";
 import { siteApiService } from "@/services/spaces_sites/sitesapi";
 import { organisationApiService } from "@/services/spaces_sites/organisationapi";
+import { Plus, Trash2, ExternalLink } from "lucide-react";
 
 interface ContractFormProps {
   contract?: any;
@@ -19,9 +21,16 @@ interface ContractFormProps {
   mode: "create" | "edit" | "view";
 }
 
+interface Document {
+  id: string;
+  url: string;
+  name: string;
+}
+
 const emptyFormData = {
   title: "",
   type: "",
+  status: "",
   vendor_id: "",
   site_id: "",
   start_date: "",
@@ -31,41 +40,58 @@ const emptyFormData = {
     sla: {
       response_hrs: "",
     },
+    penalty: {
+      per_day: "",
+    },
   },
-  documents: [],
+  documents: [] as Document[],
 };
 
 export function ContractForm({ contract, isOpen, onClose, onSave, mode }: ContractFormProps) {
   const { toast } = useToast();
   const [formData, setFormData] = useState<any>(emptyFormData);
   const [typeList, setTypeList] = useState<any[]>([]);
+  const [statusList, setStatusList] = useState<any[]>([]);
   const [vendorList, setVendorList] = useState<any[]>([]);
   const [siteList, setSiteList] = useState<any[]>([]);
 
   useEffect(() => {
     if (contract) {
+      // Convert existing documents to new format
+      const documents = (contract.documents || []).map((doc: any, index: number) => ({
+        id: doc.id || `doc-${index}`,
+        url: typeof doc === 'string' ? doc : doc.url || '',
+        name: doc.name || (typeof doc === 'string' ? (doc.split('/').pop() || 'Document') : (doc.url?.split('/').pop() || 'Document')),
+      }));
+      
       setFormData({
         ...emptyFormData,
         ...contract,
-        terms: contract.terms || { sla: { response_hrs: "" } },
-        documents: contract.documents || [],
+        terms: contract.terms || { sla: { response_hrs: "" }, penalty: { per_day: "" } },
+        documents: documents,
       });
     } else {
       setFormData(emptyFormData);
     }
     loadTypeLookup();
+    loadStatusLookup();
     loadVendorLookup();
     loadSiteLookup();
   }, [contract]);
 
   const loadTypeLookup = async () => {
-    const types = await contractsApiService.getContractsTypeLookup().catch(() => []);
+    const types = await contractApiService.getTypeLookup().catch(() => []);
     setTypeList(types || []);
   };
 
+  const loadStatusLookup = async () => {
+    const statuses = await contractApiService.getStatusLookup().catch(() => []);
+    setStatusList(statuses || []);
+  };
+
   const loadVendorLookup = async () => {
-    const vendors = await vendorsApiService.getVendors(new URLSearchParams()).catch(() => []);
-    setVendorList(vendors?.vendors || []);
+    const vendors = await vendorsApiService.getVendorLookup().catch(() => []);
+    setVendorList(vendors || []);
   };
 
   const loadSiteLookup = async () => {
@@ -88,6 +114,53 @@ export function ContractForm({ contract, isOpen, onClose, onSave, mode }: Contra
         sla: { ...(prev.terms?.sla || {}), [field]: value } 
       },
     }));
+  };
+
+  const handlePenaltyFieldChange = (field: string, value: any) => {
+    setFormData((prev) => ({
+      ...prev,
+      terms: { 
+        ...(prev.terms || {}), 
+        penalty: { ...(prev.terms?.penalty || {}), [field]: value } 
+      },
+    }));
+  };
+
+  const addDocument = () => {
+    const newDocument: Document = {
+      id: `doc-${Date.now()}`,
+      url: '',
+      name: '',
+    };
+    setFormData((prev) => ({
+      ...prev,
+      documents: [...prev.documents, newDocument],
+    }));
+  };
+
+  const removeDocument = (documentId: string) => {
+    setFormData((prev) => ({
+      ...prev,
+      documents: prev.documents.filter((doc) => doc.id !== documentId),
+    }));
+  };
+
+  const updateDocument = (documentId: string, field: keyof Document, value: string) => {
+    setFormData((prev) => ({
+      ...prev,
+      documents: prev.documents.map((doc) =>
+        doc.id === documentId ? { ...doc, [field]: value } : doc
+      ),
+    }));
+  };
+
+  const isValidUrl = (url: string) => {
+    try {
+      new URL(url);
+      return true;
+    } catch {
+      return false;
+    }
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -150,7 +223,7 @@ export function ContractForm({ contract, isOpen, onClose, onSave, mode }: Contra
 
         <form onSubmit={handleSubmit} className="space-y-4">
           {/* Contract Details Section */}
-          <div className="grid grid-cols-2 gap-4">
+          <div className="grid grid-cols-3 gap-4">
             <div>
               <Label htmlFor="title">Contract Title *</Label>
               <Input 
@@ -173,8 +246,27 @@ export function ContractForm({ contract, isOpen, onClose, onSave, mode }: Contra
                 </SelectTrigger>
                 <SelectContent>
                   {typeList.map((type: any) => (
-                    <SelectItem key={(type.id ?? type.value ?? type).toString()} value={(type.id ?? type.value ?? type).toString()}>
-                      {type.name ?? type.label ?? type}
+                    <SelectItem key={type.id} value={type.id}>
+                      {type.name}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+            <div>
+              <Label htmlFor="status">Contract Status</Label>
+              <Select
+                value={formData.status}
+                onValueChange={(v) => setFormData({ ...formData, status: v })}
+                disabled={isReadOnly}
+              >
+                <SelectTrigger>
+                  <SelectValue placeholder="Select contract status" />
+                </SelectTrigger>
+                <SelectContent>
+                  {statusList.map((status: any) => (
+                    <SelectItem key={status.id} value={status.id }>
+                      {status.name }
                     </SelectItem>
                   ))}
                 </SelectContent>
@@ -259,10 +351,10 @@ export function ContractForm({ contract, isOpen, onClose, onSave, mode }: Contra
 
           {/* SLA Terms Section */}
           <div className="border rounded-lg p-4 space-y-4">
-            <h3 className="text-sm font-medium text-gray-700">SLA Terms:</h3>
+            <h3 className="text-sm font-medium text-gray-700">Terms:</h3>
             <div className="grid grid-cols-2 gap-4">
               <div>
-                <Label htmlFor="response_hrs">Response Hours</Label>
+                <Label htmlFor="response_hrs">SLA - Response Hours</Label>
                 <Input 
                   id="response_hrs" 
                   type="number" 
@@ -273,25 +365,107 @@ export function ContractForm({ contract, isOpen, onClose, onSave, mode }: Contra
                 />
               </div>
               <div>
-                {/* Empty space for alignment */}
+                <Label htmlFor="penalty_per_day">Penalty - Per Day (₹)</Label>
+                <Input 
+                  id="penalty_per_day" 
+                  type="number" 
+                  value={formData.terms?.penalty?.per_day || ""} 
+                  onChange={(e) => handlePenaltyFieldChange("per_day", e.target.value)} 
+                  disabled={isReadOnly} 
+                  placeholder="1000"
+                />
               </div>
             </div>
           </div>
 
           {/* Documents Section */}
           <div className="border rounded-lg p-4 space-y-4">
-            <h3 className="text-sm font-medium text-gray-700">Documents:</h3>
-            <div>
-              <Label htmlFor="documents">Document URLs (one per line)</Label>
-              <Textarea 
-                id="documents" 
-                value={Array.isArray(formData.documents) ? formData.documents.join('\n') : ''} 
-                onChange={(e) => setFormData({ ...formData, documents: e.target.value.split('\n').filter(url => url.trim()) })} 
-                disabled={isReadOnly} 
-                placeholder="https://example.com/contract.pdf&#10;https://example.com/terms.pdf"
-                rows={3}
-              />
+            <div className="flex items-center justify-between">
+              <h3 className="text-sm font-medium text-gray-700">Document URLs</h3>
+              {!isReadOnly && (
+                <Button
+                  type="button"
+                  variant="outline"
+                  size="sm"
+                  onClick={addDocument}
+                  className="flex items-center"
+                >
+                  <Plus className="h-4 w-4 mr-1" />
+                  Add URL
+                </Button>
+              )}
             </div>
+            
+            {/* URL Items */}
+            <Card className="bg-gray-50">
+              <CardContent className="p-4">
+                <div className="space-y-3">
+                  {formData.documents.map((doc: Document, index: number) => (
+                    <div key={doc.id} className="flex items-center space-x-3 p-3 bg-white rounded border">
+                      {/* Step Number */}
+                      <div className="flex-shrink-0 w-6 text-center">
+                        <span className="text-sm font-medium text-gray-600">{index + 1}</span>
+                      </div>
+                      
+                      {/* Name Field */}
+                      <div className="w-56">
+                        <Input
+                          placeholder="Name"
+                          value={doc.name}
+                          onChange={(e) => updateDocument(doc.id, 'name', e.target.value)}
+                          disabled={isReadOnly}
+                          className="h-8"
+                        />
+                      </div>
+
+                      {/* URL Field */}
+                      <div className="flex-1">
+                        <Input
+                          placeholder="Enter document URL..."
+                          value={doc.url}
+                          onChange={(e) => updateDocument(doc.id, 'url', e.target.value)}
+                          disabled={isReadOnly}
+                          className="h-8"
+                        />
+                      </div>
+                      
+                      {/* Actions */}
+                      <div className="flex items-center space-x-2 flex-shrink-0">
+                        {doc.url && isValidUrl(doc.url) && (
+                          <Button
+                            type="button"
+                            variant="ghost"
+                            size="sm"
+                            onClick={() => window.open(doc.url, '_blank')}
+                            className="h-8 w-8 p-0"
+                          >
+                            <ExternalLink className="h-4 w-4" />
+                          </Button>
+                        )}
+                        {!isReadOnly && (
+                          <Button
+                            type="button"
+                            variant="ghost"
+                            size="sm"
+                            onClick={() => removeDocument(doc.id)}
+                            className="h-8 w-8 p-0 text-red-500 hover:text-red-700"
+                          >
+                            <Trash2 className="h-4 w-4" />
+                          </Button>
+                        )}
+                      </div>
+                    </div>
+                  ))}
+                  
+                  {formData.documents.length === 0 && (
+                    <div className="text-center py-8 text-gray-500">
+                      <p className="text-sm">No URLs added yet</p>
+                      <p className="text-xs">Click "Add URL" to add your first document URL</p>
+                    </div>
+                  )}
+                </div>
+              </CardContent>
+            </Card>
           </div>
 
           <DialogFooter>
