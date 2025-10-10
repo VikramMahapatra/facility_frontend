@@ -36,6 +36,14 @@ class WorkOrderApiService {
   async getWorkOrderPriorityLookup() {
     return await apiService.request("/workorder/priority-lookup");
   }
+
+  async getWorkOrderStatusFilterLookup() {
+    return await apiService.request("/workorder/filter-status-lookup");
+  }
+
+  async getWorkOrderPriorityFilterLookup() {
+    return await apiService.request("/workorder/filter-priority-lookup");
+  }
 }
 
 export const workOrderApiService = new WorkOrderApiService();

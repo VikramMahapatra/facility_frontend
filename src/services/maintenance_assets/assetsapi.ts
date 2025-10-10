@@ -6,6 +6,10 @@ class AssetApiService {
     return await apiService.request(`/assets/all?${params.toString()}`);
   }
 
+  async getAssetLookup() {
+    return await apiService.request('/assets/asset-lookup');
+  }
+
   async getAssetOverview() {
     return await apiService.request('/assets/overview');
   }

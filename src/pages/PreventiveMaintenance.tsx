@@ -66,6 +66,7 @@ import { PMTemplateForm } from "@/components/PMTemplateForm";
 interface PMTemplate {
   id: string;
   name: string;
+  pm_no?: string;
   category_id?: string;
   asset_category?: string;
   frequency?: string;
@@ -428,7 +429,9 @@ export default function PreventiveMaintenance() {
                     <TableRow>
                       <TableHead>Template</TableHead>
                       <TableHead>Category</TableHead>
+                      <TableHead>Categories</TableHead>
                       <TableHead>Frequency</TableHead>
+                      <TableHead>SLA</TableHead>
                       <TableHead>Next Due</TableHead>
                       <TableHead>Status</TableHead>
                       <TableHead>Actions</TableHead>
@@ -441,7 +444,7 @@ export default function PreventiveMaintenance() {
                           <div>
                             <div className="font-medium">{template.name}</div>
                             <div className="text-sm text-muted-foreground">
-                              #{template.id}
+                              #{template.pm_no || template.id}
                             </div>
                           </div>
                         </TableCell>
@@ -449,9 +452,47 @@ export default function PreventiveMaintenance() {
                           <Badge variant="outline">{template.asset_category || "No Category"}</Badge>
                         </TableCell>
                         <TableCell>
+                          <div className="space-y-1">
+                            {template.checklist && Array.isArray(template.checklist) && template.checklist.length > 0 ? (
+                              template.checklist.map((item, index) => (
+                                <div key={index} className="text-xs">
+                                  <span className="font-medium">Step {item.step}:</span> {item.instruction}
+                                </div>
+                              ))
+                            ) : (
+                              <span className="text-muted-foreground text-sm">No checklist items</span>
+                            )}
+                          </div>
+                        </TableCell>
+                        <TableCell>
                           <div className="flex items-center">
                             <Calendar className="w-4 h-4 mr-2" />
                             {template.frequency || "No Frequency"}
+                          </div>
+                        </TableCell>
+                        <TableCell>
+                          <div className="space-y-1">
+                            {template.sla ? (
+                              <>
+                                {template.sla.priority && (
+                                  <Badge variant="outline" className="text-xs">
+                                    {template.sla.priority}
+                                  </Badge>
+                                )}
+                                {template.sla.response_hrs && (
+                                  <div className="text-xs text-muted-foreground">
+                                    Response: {template.sla.response_hrs}h
+                                  </div>
+                                )}
+                                {template.sla.resolve_hrs && (
+                                  <div className="text-xs text-muted-foreground">
+                                    Resolve: {template.sla.resolve_hrs}h
+                                  </div>
+                                )}
+                              </>
+                            ) : (
+                              <span className="text-muted-foreground text-sm">No SLA</span>
+                            )}
                           </div>
                         </TableCell>
                         <TableCell>

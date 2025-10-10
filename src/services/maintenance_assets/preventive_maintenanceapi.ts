@@ -6,7 +6,9 @@ class PreventiveMaintenanceApiService {
   }
 
   async getPreventiveMaintenanceOverview(params: any) {
-    return await apiService.request(`/pm_templates/overview?${params.toString()}`);
+    return await apiService.request(
+      `/pm_templates/overview?${params.toString()}`
+    );
   }
 
   async addPreventiveMaintenance(pmData: any) {
@@ -16,7 +18,7 @@ class PreventiveMaintenanceApiService {
     });
   }
 
-  async updatePreventiveMaintenance( pmData: any) {
+  async updatePreventiveMaintenance(pmData: any) {
     return await apiService.request(`/pm_templates/`, {
       method: "PUT",
       body: JSON.stringify(pmData),
@@ -54,4 +56,6 @@ class PreventiveMaintenanceApiService {
   }
 }
 
-export const preventiveMaintenanceApiService = new PreventiveMaintenanceApiService();
+export const preventiveMaintenanceApiService =
+  new PreventiveMaintenanceApiService();
+//ulh

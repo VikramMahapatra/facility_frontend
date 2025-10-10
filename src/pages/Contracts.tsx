@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -9,24 +9,149 @@ import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, D
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Plus, Search, Eye, Edit, FileText, Calendar, Building, Filter, AlertCircle, CheckCircle } from "lucide-react";
-import { mockContracts, mockVendors, type Contract } from "@/data/mockVendorData";
+import { contractApiService } from "@/services/pocurments/contractapi";
+import { vendorsApiService } from "@/services/pocurments/vendorsapi";
+import { useSkipFirstEffect } from "@/hooks/use-skipfirst-effect";
 import { SidebarProvider, SidebarTrigger } from "@/components/ui/sidebar";
 import { PropertySidebar } from "@/components/PropertySidebar";
+import { Pagination } from "@/components/Pagination";
+import { useToast } from "@/hooks/use-toast";
+import { ContractForm } from "@/components/ContractsForm";
 
 export default function Contracts() {
+  const { toast } = useToast();
   const [searchTerm, setSearchTerm] = useState("");
   const [statusFilter, setStatusFilter] = useState("all");
   const [typeFilter, setTypeFilter] = useState("all");
   const [isCreateDialogOpen, setIsCreateDialogOpen] = useState(false);
+  const [contracts, setContracts] = useState<any[]>([]);
+  const [overview, setOverview] = useState({ total_contracts: 0, active_contracts: 0, expiring_soon: 0, total_value: 0 });
+  const [statusList, setStatusList] = useState<any[]>([]);
+  const [typeList, setTypeList] = useState<any[]>([]);
+  const [vendorList, setVendorList] = useState<any[]>([]);
+  const [page, setPage] = useState(1);
+  const [pageSize] = useState(10);
+  const [totalItems, setTotalItems] = useState(0);
+  const [formMode, setFormMode] = useState<"create" | "edit" | "view">("create");
+  const [selectedContract, setSelectedContract] = useState<any | undefined>();
 
-  const filteredContracts = mockContracts.filter(contract => {
-    const matchesSearch = contract.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                         contract.vendor_name.toLowerCase().includes(searchTerm.toLowerCase());
-    const matchesStatus = statusFilter === "all" || contract.status === statusFilter;
-    const matchesType = typeFilter === "all" || contract.type === typeFilter;
+  useEffect(() => {
+    loadStatusLookup();
+    loadTypeLookup();
+    loadVendorLookup();
+    loadOverview();
+  }, []);
+
+  useSkipFirstEffect(() => {
+    loadContracts();
+  }, [page]);
+
+  useEffect(() => {
+    updateContractsPage();
+  }, [searchTerm, statusFilter, typeFilter]);
+
+  const updateContractsPage = () => {
+    if (page === 1) {
+      loadContracts();
+      loadOverview();
+    } else {
+      setPage(1);
+    }
+  };
+
+  const loadContracts = async () => {
+    const skip = (page - 1) * pageSize;
+    const limit = pageSize;
+
+    // build query params
+    const params = new URLSearchParams();
+    if (searchTerm) params.append("search", searchTerm);
+    if (statusFilter !== "all") params.append("status", statusFilter);
+    if (typeFilter !== "all") params.append("type", typeFilter);
+    params.append("skip", skip.toString());
+    params.append("limit", limit.toString());
+
+    const response = await contractApiService.getContracts(params);
+    const contractsList = response.contracts || [];
+    setContracts(contractsList);
+    setTotalItems(response.total || 0);
+  };
+
+  const loadOverview = async () => {
+    const params = new URLSearchParams();
+    if (searchTerm) params.append("search", searchTerm);
+    if (statusFilter !== "all") params.append("status", statusFilter);
+    if (typeFilter !== "all") params.append("type", typeFilter);
+    const response = await contractApiService.getContractsOverview(params);
     
-    return matchesSearch && matchesStatus && matchesType;
-  });
+    // Map API response to expected format
+    const overviewData = {
+      total_contracts: response?.totalContracts || response?.total_contracts || 0,
+      active_contracts: response?.activeContracts || response?.active_contracts || 0,
+      expiring_soon: response?.expiringSoon || response?.expiring_soon || 0,
+      total_value: response?.totalValue || response?.total_value || 0
+    };
+    
+    setOverview(overviewData);
+  };
+
+  const loadStatusLookup = async () => {
+    const lookup = await contractApiService.getFilterStatusLookup();
+    setStatusList(lookup || []);
+  };
+
+  const loadTypeLookup = async () => {
+    const lookup = await contractApiService.getFilterTypeLookup();
+    setTypeList(lookup || []);
+  };
+
+  const loadVendorLookup = async () => {
+    const vendors = await vendorsApiService.getVendorLookup().catch(() => []);
+    setVendorList(vendors || []);
+  };
+
+  const getVendorName = (vendorId: string) => {
+    if (!vendorId) return "No Vendor";
+    const vendor = vendorList.find((v: any) => v.id === vendorId);
+    return vendor ? vendor.name : vendorId;
+  };
+
+  const handleCreate = () => {
+    setSelectedContract(undefined);
+    setFormMode("create");
+    setIsCreateDialogOpen(true);
+  };
+
+  const handleEdit = (contract: any) => {
+    setSelectedContract(contract);
+    setFormMode("edit");
+    setIsCreateDialogOpen(true);
+  };
+
+  const handleView = (contract: any) => {
+    setSelectedContract(contract);
+    setFormMode("view");
+    setIsCreateDialogOpen(true);
+  };
+
+  const handleSave = async (contractData: any) => {
+    try {
+      if (formMode === 'create') {
+        await contractApiService.addContract(contractData);
+      } else if (formMode === 'edit' && selectedContract) {
+        const updatedContract = { ...selectedContract, ...contractData };
+        await contractApiService.updateContract(updatedContract);
+      }
+      setIsCreateDialogOpen(false);
+      toast({
+        title: formMode === 'create' ? "Contract Created" : "Contract Updated",
+        description: `Contract has been ${formMode === 'create' ? 'created' : 'updated'} successfully.`,
+      });
+      updateContractsPage();
+    } catch (error) {
+      toast({ title: "Technical Error!", variant: "destructive" });
+    }
+  };
 
   const getStatusBadge = (status: string) => {
     const variants: Record<string, 'default' | 'secondary' | 'destructive'> = {
@@ -83,92 +208,10 @@ export default function Contracts() {
                   <p className="text-sm text-muted-foreground">Manage vendor contracts and agreements</p>
                 </div>
               </div>
-              <Dialog open={isCreateDialogOpen} onOpenChange={setIsCreateDialogOpen}>
-                <DialogTrigger asChild>
-                  <Button>
-                    <Plus className="w-4 h-4 mr-2" />
-                    New Contract
-                  </Button>
-                </DialogTrigger>
-                <DialogContent className="max-w-3xl">
-                  <DialogHeader>
-                    <DialogTitle>Create New Contract</DialogTitle>
-                    <DialogDescription>
-                      Set up a new contract with vendor terms and conditions.
-                    </DialogDescription>
-                  </DialogHeader>
-                  <div className="grid gap-4 py-4">
-                    <div className="grid grid-cols-2 gap-4">
-                      <div className="space-y-2">
-                        <Label htmlFor="title">Contract Title *</Label>
-                        <Input id="title" placeholder="Annual Maintenance Contract" />
-                      </div>
-                      <div className="space-y-2">
-                        <Label htmlFor="vendor">Vendor *</Label>
-                        <Select>
-                          <SelectTrigger>
-                            <SelectValue placeholder="Select vendor" />
-                          </SelectTrigger>
-                          <SelectContent>
-                            {mockVendors.map((vendor) => (
-                              <SelectItem key={vendor.id} value={vendor.id}>
-                                {vendor.name}
-                              </SelectItem>
-                            ))}
-                          </SelectContent>
-                        </Select>
-                      </div>
-                    </div>
-                    <div className="grid grid-cols-3 gap-4">
-                      <div className="space-y-2">
-                        <Label htmlFor="type">Contract Type *</Label>
-                        <Select>
-                          <SelectTrigger>
-                            <SelectValue placeholder="Select type" />
-                          </SelectTrigger>
-                          <SelectContent>
-                            <SelectItem value="AMC">AMC</SelectItem>
-                            <SelectItem value="SLA">SLA</SelectItem>
-                            <SelectItem value="Cleaning">Cleaning</SelectItem>
-                            <SelectItem value="Security">Security</SelectItem>
-                            <SelectItem value="Rent Share">Rent Share</SelectItem>
-                          </SelectContent>
-                        </Select>
-                      </div>
-                      <div className="space-y-2">
-                        <Label htmlFor="start_date">Start Date *</Label>
-                        <Input id="start_date" type="date" />
-                      </div>
-                      <div className="space-y-2">
-                        <Label htmlFor="end_date">End Date *</Label>
-                        <Input id="end_date" type="date" />
-                      </div>
-                    </div>
-                    <div className="grid grid-cols-2 gap-4">
-                      <div className="space-y-2">
-                        <Label htmlFor="value">Contract Value (₹)</Label>
-                        <Input id="value" type="number" placeholder="500000" />
-                      </div>
-                      <div className="space-y-2">
-                        <Label htmlFor="response_hrs">SLA Response Hours</Label>
-                        <Input id="response_hrs" type="number" placeholder="4" />
-                      </div>
-                    </div>
-                    <div className="space-y-2">
-                      <Label htmlFor="terms">Terms & Conditions</Label>
-                      <Textarea id="terms" placeholder="Contract terms and conditions..." />
-                    </div>
-                  </div>
-                  <DialogFooter>
-                    <Button variant="outline" onClick={() => setIsCreateDialogOpen(false)}>
-                      Cancel
-                    </Button>
-                    <Button onClick={() => setIsCreateDialogOpen(false)}>
-                      Create Contract
-                    </Button>
-                  </DialogFooter>
-                </DialogContent>
-              </Dialog>
+              <Button onClick={handleCreate}>
+                <Plus className="w-4 h-4 mr-2" />
+                New Contract
+              </Button>
             </div>
           </header>
 
@@ -192,9 +235,11 @@ export default function Contracts() {
                   </SelectTrigger>
                   <SelectContent>
                     <SelectItem value="all">All Status</SelectItem>
-                    <SelectItem value="active">Active</SelectItem>
-                    <SelectItem value="expired">Expired</SelectItem>
-                    <SelectItem value="terminated">Terminated</SelectItem>
+                    {statusList.map((status) => (
+                      <SelectItem key={status.id} value={status.id}>
+                        {status.name}
+                      </SelectItem>
+                    ))}
                   </SelectContent>
                 </Select>
                 <Select value={typeFilter} onValueChange={setTypeFilter}>
@@ -203,11 +248,11 @@ export default function Contracts() {
                   </SelectTrigger>
                   <SelectContent>
                     <SelectItem value="all">All Types</SelectItem>
-                    <SelectItem value="AMC">AMC</SelectItem>
-                    <SelectItem value="SLA">SLA</SelectItem>
-                    <SelectItem value="Cleaning">Cleaning</SelectItem>
-                    <SelectItem value="Security">Security</SelectItem>
-                    <SelectItem value="Rent Share">Rent Share</SelectItem>
+                    {typeList.map((type) => (
+                      <SelectItem key={type.id} value={type.id}>
+                        {type.name}
+                      </SelectItem>
+                    ))}
                   </SelectContent>
                 </Select>
               </div>
@@ -220,7 +265,7 @@ export default function Contracts() {
                     <FileText className="h-4 w-4 text-muted-foreground" />
                   </CardHeader>
                   <CardContent>
-                    <div className="text-2xl font-bold">{mockContracts.length}</div>
+                    <div className="text-2xl font-bold">{overview.total_contracts}</div>
                   </CardContent>
                 </Card>
                 <Card>
@@ -229,9 +274,7 @@ export default function Contracts() {
                     <CheckCircle className="h-4 w-4 text-muted-foreground" />
                   </CardHeader>
                   <CardContent>
-                    <div className="text-2xl font-bold">
-                      {mockContracts.filter(c => c.status === 'active').length}
-                    </div>
+                    <div className="text-2xl font-bold">{overview.active_contracts}</div>
                   </CardContent>
                 </Card>
                 <Card>
@@ -240,9 +283,7 @@ export default function Contracts() {
                     <AlertCircle className="h-4 w-4 text-muted-foreground" />
                   </CardHeader>
                   <CardContent>
-                    <div className="text-2xl font-bold">
-                      {mockContracts.filter(c => getDaysUntilExpiry(c.end_date) <= 30 && c.status === 'active').length}
-                    </div>
+                    <div className="text-2xl font-bold">{overview.expiring_soon}</div>
                   </CardContent>
                 </Card>
                 <Card>
@@ -251,9 +292,7 @@ export default function Contracts() {
                     <Building className="h-4 w-4 text-muted-foreground" />
                   </CardHeader>
                   <CardContent>
-                    <div className="text-2xl font-bold">
-                      {formatCurrency(mockContracts.reduce((sum, c) => sum + c.value, 0))}
-                    </div>
+                    <div className="text-2xl font-bold">{formatCurrency(overview.total_value)}</div>
                   </CardContent>
                 </Card>
               </div>
@@ -263,7 +302,7 @@ export default function Contracts() {
                 <CardHeader>
                   <CardTitle>Contract Management</CardTitle>
                   <CardDescription>
-                    Showing {filteredContracts.length} contracts
+                    Showing {contracts.length} contracts
                   </CardDescription>
                 </CardHeader>
                 <CardContent>
@@ -280,22 +319,22 @@ export default function Contracts() {
                       </TableRow>
                     </TableHeader>
                     <TableBody>
-                      {filteredContracts.map((contract) => (
+                      {contracts.map((contract) => (
                         <TableRow key={contract.id}>
                           <TableCell>
                             <div>
                               <div className="font-medium">{contract.title}</div>
                               <div className="text-sm text-muted-foreground flex items-center">
                                 <FileText className="w-3 h-3 mr-1" />
-                                {contract.documents.length} document(s)
+                                {contract.documents?.length || 0} document(s)
                               </div>
                             </div>
                           </TableCell>
                           <TableCell>
                             <div>
-                              <div className="font-medium">{contract.vendor_name}</div>
+                              <div className="font-medium">{getVendorName(contract.vendor_id || contract.vendor_name)}</div>
                               <div className="text-sm text-muted-foreground">
-                                SLA: {contract.terms.sla?.response_hrs || 'N/A'}h response
+                                SLA: {contract.terms?.sla?.response_hrs || 'N/A'}h response
                               </div>
                             </div>
                           </TableCell>
@@ -326,10 +365,10 @@ export default function Contracts() {
                           </TableCell>
                           <TableCell>
                             <div className="flex space-x-2">
-                              <Button variant="ghost" size="sm">
+                              <Button variant="ghost" size="sm" onClick={() => handleView(contract)}>
                                 <Eye className="w-4 h-4" />
                               </Button>
-                              <Button variant="ghost" size="sm">
+                              <Button variant="ghost" size="sm" onClick={() => handleEdit(contract)}>
                                 <Edit className="w-4 h-4" />
                               </Button>
                             </div>
@@ -338,12 +377,31 @@ export default function Contracts() {
                       ))}
                     </TableBody>
                   </Table>
+
+                  {/* Pagination */}
+                  <div className="mt-4">
+                    <Pagination
+                      page={page}
+                      pageSize={pageSize}
+                      totalItems={totalItems}
+                      onPageChange={setPage}
+                    />
+                  </div>
                 </CardContent>
               </Card>
             </div>
           </main>
         </div>
       </div>
+
+      {/* Create/Edit/View Form */}
+      <ContractForm
+        contract={selectedContract}
+        isOpen={isCreateDialogOpen}
+        onClose={() => setIsCreateDialogOpen(false)}
+        onSave={handleSave}
+        mode={formMode}
+      />
     </SidebarProvider>
   );
 }
