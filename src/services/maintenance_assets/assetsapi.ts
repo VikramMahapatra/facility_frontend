@@ -35,30 +35,17 @@ class AssetApiService {
   }
 
   /** ENSURE string[] of category names */
-  async getCategories(): Promise<string[]> {
-    const rows = await apiService.request('/assets/by-category'); // rows: AssetCategoryOutFilter[]
-    // Safely pluck strings only
-    const out = Array.from(
-      new Set(
-        (Array.isArray(rows) ? rows : [])
-          .map((r: any) => (typeof r?.category === 'string' ? r.category.trim() : ''))
-          .filter(Boolean)
-      )
-    ).sort((a, b) => a.localeCompare(b));
-    return out;
+  async getCategories() {
+    return await apiService.request("/assets/category-lookup");
   }
 
   /** ENSURE string[] of statuses */
-  async getStatuses(): Promise<string[]> {
-    const rows = await apiService.request('/assets/by-status'); // rows: AssetCategoryOutFilter[]
-    const out = Array.from(
-      new Set(
-        (Array.isArray(rows) ? rows : [])
-          .map((r: any) => (typeof r?.status === 'string' ? r.status.trim() : ''))
-          .filter(Boolean)
-      )
-    ).sort((a, b) => a.localeCompare(b));
-    return out;
+  async getStatuses() {
+    return await apiService.request("/assets/status-lookup");
+  }
+
+  async getAssetLookup() {
+    return await apiService.request("/assets/asset-lookup");
   }
 }
 

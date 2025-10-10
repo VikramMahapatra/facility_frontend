@@ -257,9 +257,8 @@ export default function WorkOrders() {
       toast({
         title:
           formMode === "create" ? "Work Order Created" : "Work Order Updated",
-        description: `Work order ${workOrderData.title} has been ${
-          formMode === "create" ? "created" : "updated"
-        } successfully.`,
+        description: `Work order ${workOrderData.title} has been ${formMode === "create" ? "created" : "updated"
+          } successfully.`,
       });
       updateWorkOrderPage();
     } catch (error) {
@@ -442,10 +441,10 @@ export default function WorkOrders() {
                               workOrder.priority === "critical"
                                 ? "destructive"
                                 : workOrder.priority === "high"
-                                ? "destructive"
-                                : workOrder.priority === "medium"
-                                ? "default"
-                                : "secondary"
+                                  ? "destructive"
+                                  : workOrder.priority === "medium"
+                                    ? "default"
+                                    : "secondary"
                             }
                           >
                             {workOrder.priority}
@@ -471,8 +470,8 @@ export default function WorkOrders() {
                               workOrder.status === "completed"
                                 ? "default"
                                 : workOrder.status === "in_progress"
-                                ? "secondary"
-                                : "outline"
+                                  ? "secondary"
+                                  : "outline"
                             }
                           >
                             {workOrder.status.replace("_", " ")}

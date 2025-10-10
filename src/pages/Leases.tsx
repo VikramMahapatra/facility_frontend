@@ -15,7 +15,7 @@ import {
 import { useToast } from "@/hooks/use-toast";
 import { Pagination } from "@/components/Pagination";
 import { siteApiService } from "@/services/spaces_sites/sitesapi";
-import { leasesApiService } from "@/services/Leasing_Tenants/leasesapi";
+import { leasesApiService } from "@/services/leasing_tenants/leasesapi";
 import { strict } from "assert";
 import { Lease, LeaseOverview } from "@/interfaces/leasing_tenants_interface";
 

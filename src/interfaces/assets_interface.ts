@@ -20,6 +20,7 @@ export interface Asset {
   org_id: string;
   site_id: string;
   space_id?: string;
+  location?: string;
   category_id: string;
   category_name: string;
   tag: string;

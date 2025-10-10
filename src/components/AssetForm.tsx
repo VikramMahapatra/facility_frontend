@@ -8,37 +8,19 @@ import { Dialog, DialogContent, DialogFooter, DialogHeader, DialogTitle } from '
 import { useToast } from '@/hooks/use-toast';
 import { assetApiService } from '@/services/maintenance_assets/assetsapi';
 import { siteApiService } from '@/services/spaces_sites/sitesapi';
-
-export interface AssetFormValues {
-  id?: string;
-  org_id?: string;
-  site_id: string;
-  space_id?: string | null;
-  category_id?: string | null;           // optional if you store ID
-  category_name?: string | null;         // for display / choose by name
-  tag: string;
-  name: string;
-  serial_no?: string;
-  model?: string;
-  manufacturer?: string;
-  purchase_date?: string;                // ISO date (yyyy-mm-dd)
-  warranty_expiry?: string;              // ISO date
-  cost?: number;
-  attributes?: Record<string, any>;
-  status?: string;                       // "active" | "retired" | "in_repair" | ...
-}
+import { Asset } from '@/interfaces/assets_interface';
 
 type Mode = 'create' | 'edit' | 'view';
 
 interface Props {
   isOpen: boolean;
   mode: Mode;
-  asset?: AssetFormValues;
+  asset?: Asset;
   onClose: () => void;
-  onSave: (values: Partial<AssetFormValues>) => void;
+  onSave: (values: Partial<Asset>) => void;
 }
 
-const empty: AssetFormValues = {
+const empty: Partial<Asset> = {
   site_id: '',
   tag: '',
   name: '',
@@ -47,37 +29,43 @@ const empty: AssetFormValues = {
 
 export function AssetForm({ isOpen, mode, asset, onClose, onSave }: Props) {
   const { toast } = useToast();
-  const [form, setForm] = useState<AssetFormValues>(empty);
+  const [form, setForm] = useState<Partial<Asset>>(empty);
 
   const [sites, setSites] = useState<{ id: string; name: string }[]>([]);
-  const [categories, setCategories] = useState<string[]>([]);
-  const [statuses, setStatuses] = useState<string[]>([]);
+  const [categories, setCategories] = useState([]);
+  const [statuses, setStatuses] = useState([]);
 
   const readOnly = mode === 'view';
 
   useEffect(() => {
     setForm(asset ? { ...empty, ...asset } : empty);
-  }, [asset, isOpen]);
+    console.log('selected asset :', asset);
+  }, [asset]);
 
   useEffect(() => {
-    (async () => {
-      try {
-        const [siteLookup, cats, stats] = await Promise.all([
-          siteApiService.getSiteLookup(),
-          assetApiService.getCategories(),
-          assetApiService.getStatuses(),
-        ]);
-        setSites(siteLookup || []);
-        setCategories(cats || []);
-        setStatuses(stats || []);
-      } catch {
-        toast({ title: 'Failed to load lookups', variant: 'destructive' });
-      }
-    })();
-  }, [toast]);
+    loadSites();
+    loadCategories();
+    loadStatuses();
+  }, []);
 
-  const update = (patch: Partial<AssetFormValues>) =>
+  const loadSites = async () => {
+    const response = await siteApiService.getSiteLookup();
+    setSites(response || []);
+  }
+
+  const loadCategories = async () => {
+    const response = await assetApiService.getCategories();
+    setCategories(response || []);
+  }
+
+  const loadStatuses = async () => {
+    const response = await assetApiService.getStatuses();
+    setStatuses(response || []);
+  }
+
+  const update = (patch: Partial<Asset>) => {
     setForm((prev) => ({ ...prev, ...patch }));
+  };
 
   const submit = (e: React.FormEvent) => {
     e.preventDefault();
@@ -140,16 +128,16 @@ export function AssetForm({ isOpen, mode, asset, onClose, onSave }: Props) {
             <div>
               <Label>Category</Label>
               <Select
-                value={form.category_name || ''}
-                onValueChange={(v) => update({ category_name: v })}
+                value={form.category_id || ''}
+                onValueChange={(v) => update({ category_id: v })}
                 disabled={readOnly}
               >
                 <SelectTrigger>
                   <SelectValue placeholder="Select category" />
                 </SelectTrigger>
                 <SelectContent>
-                  {categories.map((c) => (
-                    <SelectItem key={c} value={c}>{c}</SelectItem>
+                  {categories.map((s) => (
+                    <SelectItem key={s.id} value={s.id}>{s.name}</SelectItem>
                   ))}
                 </SelectContent>
               </Select>
@@ -218,7 +206,7 @@ export function AssetForm({ isOpen, mode, asset, onClose, onSave }: Props) {
               <Label>Status</Label>
               <Select
                 value={form.status || ''}
-                onValueChange={(v) => update({ status: v })}
+                onValueChange={(v) => update({ status: v as any })}
                 disabled={readOnly}
               >
                 <SelectTrigger>
@@ -226,7 +214,7 @@ export function AssetForm({ isOpen, mode, asset, onClose, onSave }: Props) {
                 </SelectTrigger>
                 <SelectContent>
                   {statuses.map((s) => (
-                    <SelectItem key={s} value={s}>{s}</SelectItem>
+                    <SelectItem key={s.id} value={s.id}>{s.name}</SelectItem>
                   ))}
                 </SelectContent>
               </Select>

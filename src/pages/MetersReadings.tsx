@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Plus, Search, Filter, Download, Eye, Edit, Trash2, Zap, Droplets, Flame, Users, Gauge } from "lucide-react";
 import { SidebarProvider, SidebarTrigger } from "@/components/ui/sidebar";
 import { PropertySidebar } from "@/components/PropertySidebar";
@@ -12,9 +12,12 @@ import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Textarea } from "@/components/ui/textarea";
 import { useForm } from "react-hook-form";
-import { mockMeters, mockMeterReadings, type Meter, type MeterReading } from "@/data/mockEnergyData";
+import { mockMeters, mockMeterReadings } from "@/data/mockEnergyData";
 import { BulkUploadDialog } from "@/components/BulkUploadDialog";
 import { toast } from "@/hooks/use-toast";
+import { Meter, MeterReading, MeterReadingOverview } from "@/interfaces/energy_iot_interface";
+import { useSkipFirstEffect } from "@/hooks/use-skipfirst-effect";
+import { meterReadingApiService } from "@/services/energy_iot/meterreadingsapi";
 
 const getMeterIcon = (kind: string) => {
   switch (kind) {
@@ -29,7 +32,7 @@ const getMeterIcon = (kind: string) => {
 const getStatusBadge = (status: string) => {
   const variants = {
     active: "bg-green-100 text-green-800",
-    inactive: "bg-gray-100 text-gray-800", 
+    inactive: "bg-gray-100 text-gray-800",
     maintenance: "bg-yellow-100 text-yellow-800"
   };
   return <Badge className={variants[status as keyof typeof variants]}>{status}</Badge>;
@@ -38,9 +41,94 @@ const getStatusBadge = (status: string) => {
 export default function MetersReadings() {
   const [activeTab, setActiveTab] = useState<'meters' | 'readings'>('meters');
   const [searchTerm, setSearchTerm] = useState("");
+  const [searchReadingTerm, setSearchReadingTerm] = useState("");
   const [selectedMeter, setSelectedMeter] = useState<Meter | null>(null);
   const [isCreateMeterOpen, setIsCreateMeterOpen] = useState(false);
   const [isCreateReadingOpen, setIsCreateReadingOpen] = useState(false);
+  const [meters, setMeters] = useState<Meter[]>([]);
+  const [meterReadings, setMeterReadings] = useState<MeterReading[]>([]);
+  const [meterReadingOverview, setMeterReadingOverview] = useState<MeterReadingOverview>({
+    totalMeters: 0,
+    activeMeters: 0,
+    latestReadings: 0,
+    iotConnected: 0
+  });
+
+  const [page, setPage] = useState(1); // current page
+  const [pageSize] = useState(5); // items per page
+  const [totalItems, setTotalItems] = useState(0);
+
+  const [readingsPage, setReadingsPage] = useState(1); // current page
+  const [readingsPageSize] = useState(5); // items per page
+  const [totalReadingsItems, setTotalReadingsItems] = useState(0);
+
+  useEffect(() => {
+    loadReadingOverView();
+  }, []);
+
+  useSkipFirstEffect(() => {
+    loadMeters();
+  }, [page]);
+
+  useEffect(() => {
+    loadMeterReadings();
+  }, [readingsPage]);
+
+  useEffect(() => {
+    updateMeterTab();
+  }, [searchTerm]);
+
+  useEffect(() => {
+    updateMeterReadingTab();
+  }, [searchReadingTerm]);
+
+  const updateMeterTab = () => {
+    if (page === 1) {
+      loadMeters();
+    } else {
+      setPage(1);
+    }
+  }
+
+  const updateMeterReadingTab = () => {
+    if (readingsPage === 1) {
+      loadMeterReadings();
+    } else {
+      setReadingsPage(1);
+    }
+  }
+
+  const loadReadingOverView = async () => {
+    const response = await meterReadingApiService.getReadingOverview();
+    setMeterReadingOverview(response);
+  }
+
+  const loadMeters = async () => {
+    const skip = (page - 1) * pageSize;
+    const limit = pageSize;
+
+    // build query params
+    const params = new URLSearchParams();
+    if (searchTerm) params.append("search", searchTerm);
+    params.append("skip", skip.toString());
+    params.append("limit", limit.toString());
+    const response = await meterReadingApiService.getMeters(params);
+    setMeters(response.meters);
+    setTotalItems(response.total);
+  }
+
+  const loadMeterReadings = async () => {
+    const skip = (readingsPage - 1) * readingsPageSize;
+    const limit = readingsPageSize;
+
+    // build query params
+    const params = new URLSearchParams();
+    params.append("skip", skip.toString());
+    params.append("limit", limit.toString());
+    const response = await meterReadingApiService.getMeterReadings(params);
+    setMeterReadings(response.readings);
+    setTotalReadingsItems(response.total);
+  }
 
   const meterForm = useForm<Partial<Meter>>({
     defaultValues: {
@@ -119,17 +207,42 @@ export default function MetersReadings() {
           <main className="flex-1 space-y-6 p-6">
             {/* Stats Cards */}
             <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
-              {stats.map((stat, index) => (
-                <Card key={index}>
-                  <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                    <CardTitle className="text-sm font-medium">{stat.title}</CardTitle>
-                    {stat.icon}
-                  </CardHeader>
-                  <CardContent>
-                    <div className="text-2xl font-bold">{stat.value}</div>
-                  </CardContent>
-                </Card>
-              ))}
+              <Card>
+                <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                  <CardTitle className="text-sm font-medium">Total Meters</CardTitle>
+                  <Gauge className="h-4 w-4" />
+                </CardHeader>
+                <CardContent>
+                  <div className="text-2xl font-bold">{meterReadingOverview.totalMeters}</div>
+                </CardContent>
+              </Card>
+              <Card>
+                <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                  <CardTitle className="text-sm font-medium">Active Meters</CardTitle>
+                  <Zap className="h-4 w-4 text-green-500" />
+                </CardHeader>
+                <CardContent>
+                  <div className="text-2xl font-bold">{meterReadingOverview.activeMeters}</div>
+                </CardContent>
+              </Card>
+              <Card>
+                <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                  <CardTitle className="text-sm font-medium">Latest Readings</CardTitle>
+                  <Eye className="h-4 w-4" />
+                </CardHeader>
+                <CardContent>
+                  <div className="text-2xl font-bold">{meterReadingOverview.latestReadings}</div>
+                </CardContent>
+              </Card>
+              <Card>
+                <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                  <CardTitle className="text-sm font-medium">IoT Connected</CardTitle>
+                  <Users className="h-4 w-4 text-blue-500" />
+                </CardHeader>
+                <CardContent>
+                  <div className="text-2xl font-bold">{meterReadingOverview.iotConnected}</div>
+                </CardContent>
+              </Card>
             </div>
 
             {/* Main Content */}
@@ -176,8 +289,8 @@ export default function MetersReadings() {
                       <Download className="h-4 w-4 mr-2" />
                       Export
                     </Button>
-                    <BulkUploadDialog 
-                      type={activeTab} 
+                    <BulkUploadDialog
+                      type={activeTab}
                       onImport={activeTab === 'meters' ? handleBulkMeterImport : handleBulkReadingImport}
                     />
                     {activeTab === 'meters' ? (
@@ -285,7 +398,7 @@ export default function MetersReadings() {
                             <form onSubmit={readingForm.handleSubmit(onCreateReading)} className="space-y-4">
                               <FormField
                                 control={readingForm.control}
-                                name="meterId"
+                                name="meter_id"
                                 render={({ field }) => (
                                   <FormItem>
                                     <FormLabel>Meter</FormLabel>
@@ -371,7 +484,7 @@ export default function MetersReadings() {
                       </TableRow>
                     </TableHeader>
                     <TableBody>
-                      {filteredMeters.map((meter) => (
+                      {meters.map((meter) => (
                         <TableRow key={meter.id}>
                           <TableCell>
                             <div className="flex items-center gap-2">
@@ -380,15 +493,15 @@ export default function MetersReadings() {
                             </div>
                           </TableCell>
                           <TableCell className="font-medium">{meter.code}</TableCell>
-                          <TableCell>{meter.siteName}</TableCell>
-                          <TableCell>{meter.spaceName || meter.assetName || 'General'}</TableCell>
+                          <TableCell>{meter.site_name}</TableCell>
+                          <TableCell>{meter.space_name || meter.asset_name || 'General'}</TableCell>
                           <TableCell>{meter.unit}</TableCell>
                           <TableCell>
-                            {meter.lastReading ? (
+                            {meter.last_reading ? (
                               <div>
-                                <div className="font-medium">{meter.lastReading} {meter.unit}</div>
+                                <div className="font-medium">{meter.last_reading} {meter.unit}</div>
                                 <div className="text-xs text-muted-foreground">
-                                  {new Date(meter.lastReadingDate!).toLocaleDateString()}
+                                  {new Date(meter.last_reading_date!).toLocaleDateString()}
                                 </div>
                               </div>
                             ) : (
@@ -427,18 +540,18 @@ export default function MetersReadings() {
                       </TableRow>
                     </TableHeader>
                     <TableBody>
-                      {filteredReadings.map((reading) => (
+                      {meterReadings.map((reading) => (
                         <TableRow key={reading.id}>
                           <TableCell>
                             <div>
-                              <div className="font-medium">{reading.meterCode}</div>
-                              <div className="text-sm text-muted-foreground capitalize">{reading.meterKind}</div>
+                              <div className="font-medium">{reading.meter_code}</div>
+                              <div className="text-sm text-muted-foreground capitalize">{reading.meter_kind}</div>
                             </div>
                           </TableCell>
                           <TableCell>
                             <div className="flex items-center gap-2">
-                              {getMeterIcon(reading.meterKind)}
-                              <span className="capitalize">{reading.meterKind}</span>
+                              {getMeterIcon(reading.meter_kind)}
+                              <span className="capitalize">{reading.meter_kind}</span>
                             </div>
                           </TableCell>
                           <TableCell>

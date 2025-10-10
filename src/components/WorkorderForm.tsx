@@ -115,8 +115,8 @@ export function WorkOrderForm({
   };
 
   const loadAssetLookup = async () => {
-    const assets = await assetApiService.getAssetLookup();
-    setAssetList(assets || []);
+    const lookup = await assetApiService.getAssetLookup();
+    setAssetList(lookup || []);
   };
 
   const loadStatusLookup = async () => {
