@@ -24,6 +24,7 @@ import { workOrderApiService } from "@/services/maintenance_assets/workorderapi"
 import { assetApiService } from "@/services/maintenance_assets/assetsapi";
 import { serviceRequestApiService } from "@/services/maintenance_assets/servicerequestapi";
 import { organisationApiService } from "@/services/spaces_sites/organisationapi";
+import { vendorsApiService } from "@/services/pocurments/vendorsapi";
 import {
   WorkOrder,
   WorkOrderPriority,
@@ -48,6 +49,7 @@ const emptyFormData = {
   status: "open" as const,
   type: "corrective" as const,
   asset_id: null,
+  vendor_id: "",
   due_at: null,
   sla: {
     response_time: "",
@@ -69,6 +71,7 @@ export function WorkOrderForm({
   const [serviceRequestList, setServiceRequestList] = useState([]);
   const [statusList, setStatusList] = useState([]);
   const [priorityList, setPriorityList] = useState([]);
+  const [vendorList, setVendorList] = useState([]);
 
   useEffect(() => {
     if (workOrder) {
@@ -82,6 +85,7 @@ export function WorkOrderForm({
     loadStatusLookup();
     loadServiceRequestLookup();
     loadPriorityLookup();
+    loadVendorLookup();
   }, [workOrder]);
 
   useEffect(() => {
@@ -125,6 +129,11 @@ export function WorkOrderForm({
     setPriorityList(lookup || []);
   };
 
+  const loadVendorLookup = async () => {
+    const vendors = await vendorsApiService.getVendorLookup().catch(() => []);
+    setVendorList(vendors || []);
+  };
+
   const loadServiceRequestLookup = async () => {
     try {
       const rows = await serviceRequestApiService.getServiceRequestLookup();
@@ -163,6 +172,7 @@ export function WorkOrderForm({
         space_id: formData.space_id || null,
         request_id: formData.request_id || null,
         asset_id: formData.asset_id || null,
+        assigned_to: formData.vendor_id || null,
         due_at: formData.due_at,
         sla: formData.sla?.response_time ? formData.sla : null,
         org_id: orgData.id,
@@ -277,7 +287,7 @@ export function WorkOrderForm({
             </div>
           </div>
 
-          {/* Row 3: Asset | Service Request */}
+          {/* Row 3: Asset | Vendor */}
           <div className="grid grid-cols-2 gap-4">
             <div>
               <Label htmlFor="asset">Asset</Label>
@@ -304,6 +314,35 @@ export function WorkOrderForm({
                 </SelectContent>
               </Select>
             </div>
+            <div>
+              <Label htmlFor="vendor">Vendor</Label>
+              <Select
+                value={formData.vendor_id || "none"}
+                onValueChange={(value) =>
+                  setFormData({
+                    ...formData,
+                    vendor_id: value === "none" ? "" : value,
+                  })
+                }
+                disabled={isReadOnly}
+              >
+                <SelectTrigger>
+                  <SelectValue placeholder="Select vendor (optional)" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="none">No Vendor</SelectItem>
+                  {vendorList.map((vendor: any) => (
+                    <SelectItem key={vendor.id} value={vendor.id}>
+                      {vendor.name}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+          </div>
+
+          {/* Row 4: Service Request */}
+          <div className="grid grid-cols-1 gap-4">
             <div>
               <Label htmlFor="service_request">Service Request</Label>
               <Select

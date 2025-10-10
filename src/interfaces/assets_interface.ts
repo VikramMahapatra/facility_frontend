@@ -45,11 +45,13 @@ export type WorkOrderType =
 
 export interface WorkOrder {
   id: string;
+  wo_no?: string;
   org_id?: string;
   site_id: string;
   asset_id?: string | null;
   space_id?: string | null;
   request_id?: string | null;
+  vendor_id?: string | null;
   title: string;
   description?: string | null;
   priority: WorkOrderPriority;

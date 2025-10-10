@@ -55,6 +55,7 @@ import { workOrderApiService } from "@/services/maintenance_assets/workorderapi"
 import { spacesApiService } from "@/services/spaces_sites/spacesapi";
 import { useSkipFirstEffect } from "@/hooks/use-skipfirst-effect";
 import { siteApiService } from "@/services/spaces_sites/sitesapi";
+import { vendorsApiService } from "@/services/pocurments/vendorsapi";
 import { WorkOrder, WorkOrderOverview } from "@/interfaces/assets_interface";
 
 export default function WorkOrders() {
@@ -86,6 +87,7 @@ export default function WorkOrders() {
   const [statusList, setStatusList] = useState([]);
   const [priorityList, setPriorityList] = useState([]);
   const [spaceList, setSpaceList] = useState([]);
+  const [vendorList, setVendorList] = useState([]);
 
   const [page, setPage] = useState(1);
   const [pageSize] = useState(6);
@@ -100,6 +102,7 @@ export default function WorkOrders() {
     loadStatusLookup();
     loadPriorityLookup();
     loadSpaceLookup();
+    loadVendorLookup();
   }, []);
 
   useEffect(() => {
@@ -109,7 +112,6 @@ export default function WorkOrders() {
     selectedSite,
     selectedStatus,
     selectedPriority,
-    selectedSpace,
   ]);
 
   useEffect(() => {
@@ -139,25 +141,40 @@ export default function WorkOrders() {
       params.append("status", selectedStatus);
     if (selectedPriority && selectedPriority !== "all")
       params.append("priority", selectedPriority);
-    if (selectedSpace && selectedSpace !== "all")
-      params.append("space_id", selectedSpace);
     const response = await workOrderApiService.getWorkOrderOverview(params);
     setWorkOrderOverview(response);
   };
 
   const loadStatusLookup = async () => {
-    const lookup = await workOrderApiService.getWorkOrderStatusLookup();
+    const lookup = await workOrderApiService.getWorkOrderStatusFilterLookup();
     setStatusList(lookup || []);
   };
 
   const loadPriorityLookup = async () => {
-    const lookup = await workOrderApiService.getWorkOrderPriorityLookup();
+    const lookup = await workOrderApiService.getWorkOrderPriorityFilterLookup();
     setPriorityList(lookup || []);
   };
 
   const loadSpaceLookup = async () => {
-    const lookup = await spacesApiService.getSpaceLookup(selectedSite);
+    const lookup = await spacesApiService.getSpaceLookup("all");
     setSpaceList(lookup || []);
+  };
+
+  const loadVendorLookup = async () => {
+    const vendors = await vendorsApiService.getVendorLookup().catch(() => []);
+    setVendorList(vendors || []);
+  };
+
+  const getSpaceName = (spaceId: string) => {
+    if (!spaceId || spaceId === "No Location") return "No Location";
+    const space = spaceList.find((s: any) => s.id === spaceId);
+    return space ? space.name : spaceId;
+  };
+
+  const getVendorName = (vendorId: string) => {
+    if (!vendorId || vendorId === "Unassigned") return "Unassigned";
+    const vendor = vendorList.find((v: any) => v.id === vendorId);
+    return vendor ? vendor.name : "Unknown Vendor";
   };
 
   const loadWorkOrders = async () => {
@@ -173,8 +190,6 @@ export default function WorkOrders() {
       params.append("status", selectedStatus);
     if (selectedPriority && selectedPriority !== "all")
       params.append("priority", selectedPriority);
-    if (selectedSpace && selectedSpace !== "all")
-      params.append("space_id", selectedSpace);
     params.append("skip", skip.toString());
     params.append("limit", limit.toString());
 
@@ -321,18 +336,6 @@ export default function WorkOrders() {
                   </option>
                 ))}
               </select>
-              <select
-                value={selectedSpace}
-                onChange={(e) => setSelectedSpace(e.target.value)}
-                className="rounded-md border border-input bg-background px-3 py-2 text-sm w-[160px]"
-              >
-                <option value="all">All Spaces</option>
-                {spaceList.map((space) => (
-                  <option key={space.id} value={space.id}>
-                    {space.name}
-                  </option>
-                ))}
-              </select>
             </div>
 
             {/* Stats Cards */}
@@ -416,7 +419,7 @@ export default function WorkOrders() {
                           <div>
                             <div className="font-medium">{workOrder.title}</div>
                             <div className="text-sm text-muted-foreground">
-                              #{workOrder.id}
+                              #{workOrder.wo_no || workOrder.id}
                             </div>
                           </div>
                         </TableCell>
@@ -426,7 +429,7 @@ export default function WorkOrders() {
                               {workOrder.asset_name || "No Asset"}
                             </div>
                             <div className="text-sm text-muted-foreground">
-                              {workOrder.space_id || "No Location"}
+                              {getSpaceName(workOrder.space_id) || "No Location"}
                             </div>
                           </div>
                         </TableCell>
@@ -451,7 +454,7 @@ export default function WorkOrders() {
                         <TableCell>
                           <div className="flex items-center">
                             <User className="w-4 h-4 mr-2" />
-                            {workOrder.assigned_to || "Unassigned"}
+                            {getVendorName(workOrder.assigned_to || "Unassigned")}
                           </div>
                         </TableCell>
                         <TableCell>
