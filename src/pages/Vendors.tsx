@@ -1,32 +1,139 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
-import { Label } from "@/components/ui/label";
-import { Textarea } from "@/components/ui/textarea";
-import { Plus, Search, Eye, Edit, Mail, Phone, MapPin, Star, Building, Filter } from "lucide-react";
-import { mockVendors, type Vendor } from "@/data/mockVendorData";
+import { Plus, Search, Eye, Edit, Mail, Phone, Star, Building, Filter, User, MapPin } from "lucide-react";
+import { vendorsApiService } from "@/services/pocurments/vendorsapi";
+import { useSkipFirstEffect } from "@/hooks/use-skipfirst-effect";
 import { SidebarProvider, SidebarTrigger } from "@/components/ui/sidebar";
 import { PropertySidebar } from "@/components/PropertySidebar";
+import { VendorForm } from "@/components/VendorForm";
+import { Pagination } from "@/components/Pagination";
+import { useToast } from "@/hooks/use-toast";
 
 export default function Vendors() {
+  const { toast } = useToast();
   const [searchTerm, setSearchTerm] = useState("");
   const [statusFilter, setStatusFilter] = useState("all");
   const [categoryFilter, setCategoryFilter] = useState("all");
   const [isCreateDialogOpen, setIsCreateDialogOpen] = useState(false);
+  const [vendors, setVendors] = useState<any[]>([]);
+  const [overview, setOverview] = useState({ total_vendors: 0, active_vendors: 0, avg_rating: 0, distinct_categories: 0 });
+  const [statusList, setStatusList] = useState<any[]>([]);
+  const [categoriesList, setCategoriesList] = useState<any[]>([]);
+  const [page, setPage] = useState(1);
+  const [pageSize] = useState(7);
+  const [totalItems, setTotalItems] = useState(0);
+  const [formMode, setFormMode] = useState<"create" | "edit" | "view">("create");
+  const [selectedVendor, setSelectedVendor] = useState<any | undefined>();
 
-  const filteredVendors = mockVendors.filter(vendor => {
-    const matchesSearch = vendor.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                         vendor.contact.email?.toLowerCase().includes(searchTerm.toLowerCase());
-    const matchesStatus = statusFilter === "all" || vendor.status === statusFilter;
-    const matchesCategory = categoryFilter === "all" || vendor.categories.includes(categoryFilter);
+  useEffect(() => {
+    loadStatusLookup();
+    loadCategoriesLookup();
+    loadOverview();
+  }, []);
+
+  useSkipFirstEffect(() => {
+    loadVendors();
+  }, [page]);
+
+  useEffect(() => {
+    updateVendorsPage();
+  }, [searchTerm, statusFilter, categoryFilter]);
+
+  const updateVendorsPage = () => {
+    if (page === 1) {
+      loadVendors();
+      loadOverview();
+    } else {
+      setPage(1);
+    }
+  };
+
+  const loadVendors = async () => {
+    const skip = (page - 1) * pageSize;
+    const limit = pageSize;
+
+    // build query params
+    const params = new URLSearchParams();
+    if (searchTerm) params.append("search", searchTerm);
+    if (statusFilter !== "all") params.append("status", statusFilter);
+    if (categoryFilter !== "all") params.append("category", categoryFilter);
+    params.append("skip", skip.toString());
+    params.append("limit", limit.toString());
+
+    const response = await vendorsApiService.getVendors(params);
+    const vendorsList = response.vendors || [];
+    setVendors(vendorsList);
+    setTotalItems(response.total || 0);
+  };
+
+  const loadOverview = async () => {
+    const params = new URLSearchParams();
+    if (searchTerm) params.append("search", searchTerm);
+    if (statusFilter !== "all") params.append("status", statusFilter);
+    if (categoryFilter !== "all") params.append("category", categoryFilter);
+    const response = await vendorsApiService.getVendorsOverview(params);
     
-    return matchesSearch && matchesStatus && matchesCategory;
-  });
+    // Map API response to expected format
+    const overviewData = {
+      total_vendors: response?.totalVendors || 0,
+      active_vendors: response?.activeVendors || 0,
+      avg_rating: response?.avgRating || 0,
+      distinct_categories: response?.Categories || 0
+    };
+    
+    setOverview(overviewData);
+  };
+
+  const loadStatusLookup = async () => {
+    const lookup = await vendorsApiService.getFilterStatusLookup();
+    setStatusList(lookup || []);
+  };
+
+  const loadCategoriesLookup = async () => {
+    const lookup = await vendorsApiService.getFilterCategoriesLookup();
+    setCategoriesList(lookup || []);
+  };
+
+  const handleCreate = () => {
+    setSelectedVendor(undefined);
+    setFormMode("create");
+    setIsCreateDialogOpen(true);
+  };
+
+  const handleEdit = (vendor: any) => {
+    setSelectedVendor(vendor);
+    setFormMode("edit");
+    setIsCreateDialogOpen(true);
+  };
+
+  const handleView = (vendor: any) => {
+    setSelectedVendor(vendor);
+    setFormMode("view");
+    setIsCreateDialogOpen(true);
+  };
+
+  const handleSave = async (vendorData: any) => {
+    try {
+      if (formMode === "create") {
+        await vendorsApiService.addVendor(vendorData);
+      } else if (formMode === "edit" && selectedVendor) {
+        await vendorsApiService.updateVendor({ ...selectedVendor, ...vendorData });
+      }
+      setIsCreateDialogOpen(false);
+      toast({
+        title: formMode === "create" ? "Vendor Created" : "Vendor Updated",
+        description: `Vendor ${vendorData.name || ""} has been ${formMode === "create" ? "created" : "updated"} successfully.`,
+      });
+      updateVendorsPage();
+    } catch (error) {
+      toast({ title: "Technical Error!", variant: "destructive" });
+    }
+  };
 
   const getStatusBadge = (status: string) => {
     return (
@@ -65,60 +172,10 @@ export default function Vendors() {
                   <p className="text-sm text-muted-foreground">Manage your vendor relationships</p>
                 </div>
               </div>
-              <Dialog open={isCreateDialogOpen} onOpenChange={setIsCreateDialogOpen}>
-                <DialogTrigger asChild>
-                  <Button>
-                    <Plus className="w-4 h-4 mr-2" />
-                    Add Vendor
-                  </Button>
-                </DialogTrigger>
-                <DialogContent className="max-w-2xl">
-                  <DialogHeader>
-                    <DialogTitle>Add New Vendor</DialogTitle>
-                    <DialogDescription>
-                      Create a new vendor profile with contact information and categories.
-                    </DialogDescription>
-                  </DialogHeader>
-                  <div className="grid gap-4 py-4">
-                    <div className="grid grid-cols-2 gap-4">
-                      <div className="space-y-2">
-                        <Label htmlFor="name">Vendor Name *</Label>
-                        <Input id="name" placeholder="ABC Services Ltd." />
-                      </div>
-                      <div className="space-y-2">
-                        <Label htmlFor="gst">GST/VAT ID</Label>
-                        <Input id="gst" placeholder="GST123456789" />
-                      </div>
-                    </div>
-                    <div className="grid grid-cols-2 gap-4">
-                      <div className="space-y-2">
-                        <Label htmlFor="email">Email</Label>
-                        <Input id="email" type="email" placeholder="contact@vendor.com" />
-                      </div>
-                      <div className="space-y-2">
-                        <Label htmlFor="phone">Phone</Label>
-                        <Input id="phone" placeholder="+91-9876543210" />
-                      </div>
-                    </div>
-                    <div className="space-y-2">
-                      <Label htmlFor="address">Address</Label>
-                      <Textarea id="address" placeholder="Complete business address" />
-                    </div>
-                    <div className="space-y-2">
-                      <Label htmlFor="categories">Categories</Label>
-                      <Input id="categories" placeholder="HVAC, Electrical, Plumbing (comma separated)" />
-                    </div>
-                  </div>
-                  <DialogFooter>
-                    <Button variant="outline" onClick={() => setIsCreateDialogOpen(false)}>
-                      Cancel
-                    </Button>
-                    <Button onClick={() => setIsCreateDialogOpen(false)}>
-                      Create Vendor
-                    </Button>
-                  </DialogFooter>
-                </DialogContent>
-              </Dialog>
+              <Button onClick={handleCreate}>
+                <Plus className="w-4 h-4 mr-2" />
+                Add Vendor
+              </Button>
             </div>
           </header>
 
@@ -135,30 +192,30 @@ export default function Vendors() {
                     className="pl-10"
                   />
                 </div>
-                <Select value={statusFilter} onValueChange={setStatusFilter}>
-                  <SelectTrigger className="w-[160px]">
-                    <Filter className="w-4 h-4 mr-2" />
-                    <SelectValue placeholder="Status" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="all">All Status</SelectItem>
-                    <SelectItem value="active">Active</SelectItem>
-                    <SelectItem value="inactive">Inactive</SelectItem>
-                  </SelectContent>
-                </Select>
-                <Select value={categoryFilter} onValueChange={setCategoryFilter}>
-                  <SelectTrigger className="w-[160px]">
-                    <SelectValue placeholder="Category" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="all">All Categories</SelectItem>
-                    <SelectItem value="HVAC">HVAC</SelectItem>
-                    <SelectItem value="Electrical">Electrical</SelectItem>
-                    <SelectItem value="Plumbing">Plumbing</SelectItem>
-                    <SelectItem value="Security">Security</SelectItem>
-                    <SelectItem value="Cleaning">Cleaning</SelectItem>
-                  </SelectContent>
-                </Select>
+                <select
+                  value={statusFilter}
+                  onChange={(e) => setStatusFilter(e.target.value)}
+                  className="rounded-md border border-input bg-background px-3 py-2 text-sm w-[160px]"
+                >
+                  <option value="all">All Status</option>
+                  {statusList.map((status: any) => (
+                    <option key={status.id} value={status.id}>
+                      {status.name}
+                    </option>
+                  ))}
+                </select>
+                <select
+                  value={categoryFilter}
+                  onChange={(e) => setCategoryFilter(e.target.value)}
+                  className="rounded-md border border-input bg-background px-3 py-2 text-sm w-[160px]"
+                >
+                  <option value="all">All Categories</option>
+                  {categoriesList.map((cat: any) => (
+                    <option key={cat.id} value={cat.id}>
+                      {cat.name}
+                    </option>
+                  ))}
+                </select>
               </div>
 
               {/* Stats Cards */}
@@ -169,7 +226,7 @@ export default function Vendors() {
                     <Building className="h-4 w-4 text-muted-foreground" />
                   </CardHeader>
                   <CardContent>
-                    <div className="text-2xl font-bold">{mockVendors.length}</div>
+                  <div className="text-2xl font-bold">{overview.total_vendors}</div>
                   </CardContent>
                 </Card>
                 <Card>
@@ -178,9 +235,7 @@ export default function Vendors() {
                     <Building className="h-4 w-4 text-muted-foreground" />
                   </CardHeader>
                   <CardContent>
-                    <div className="text-2xl font-bold">
-                      {mockVendors.filter(v => v.status === 'active').length}
-                    </div>
+                  <div className="text-2xl font-bold">{overview.active_vendors}</div>
                   </CardContent>
                 </Card>
                 <Card>
@@ -189,9 +244,7 @@ export default function Vendors() {
                     <Star className="h-4 w-4 text-muted-foreground" />
                   </CardHeader>
                   <CardContent>
-                    <div className="text-2xl font-bold">
-                      {(mockVendors.reduce((sum, v) => sum + v.rating, 0) / mockVendors.length).toFixed(1)}
-                    </div>
+                  <div className="text-2xl font-bold">{overview.avg_rating}</div>
                   </CardContent>
                 </Card>
                 <Card>
@@ -200,9 +253,7 @@ export default function Vendors() {
                     <Building className="h-4 w-4 text-muted-foreground" />
                   </CardHeader>
                   <CardContent>
-                    <div className="text-2xl font-bold">
-                      {new Set(mockVendors.flatMap(v => v.categories)).size}
-                    </div>
+                  <div className="text-2xl font-bold">{overview.distinct_categories}</div>
                   </CardContent>
                 </Card>
               </div>
@@ -212,7 +263,7 @@ export default function Vendors() {
                 <CardHeader>
                   <CardTitle>Vendor Directory</CardTitle>
                   <CardDescription>
-                    Showing {filteredVendors.length} vendors
+                    Showing {vendors.length} vendors
                   </CardDescription>
                 </CardHeader>
                 <CardContent>
@@ -228,7 +279,7 @@ export default function Vendors() {
                       </TableRow>
                     </TableHeader>
                     <TableBody>
-                      {filteredVendors.map((vendor) => (
+                      {vendors.map((vendor) => (
                         <TableRow key={vendor.id}>
                           <TableCell>
                             <div>
@@ -240,6 +291,12 @@ export default function Vendors() {
                           </TableCell>
                           <TableCell>
                             <div className="space-y-1">
+                              {vendor.contact.name && (
+                                <div className="flex items-center text-sm font-medium">
+                                  <User className="w-3 h-3 mr-1" />
+                                  {vendor.contact.name}
+                                </div>
+                              )}
                               {vendor.contact.email && (
                                 <div className="flex items-center text-sm">
                                   <Mail className="w-3 h-3 mr-1" />
@@ -250,6 +307,14 @@ export default function Vendors() {
                                 <div className="flex items-center text-sm">
                                   <Phone className="w-3 h-3 mr-1" />
                                   {vendor.contact.phone}
+                                </div>
+                              )}
+                              {vendor.contact.address && (
+                                <div className="flex items-center text-sm text-muted-foreground">
+                                  <MapPin className="w-3 h-3 mr-1" />
+                                  <span className="truncate max-w-[200px]" title={vendor.contact.address}>
+                                    {vendor.contact.address}
+                                  </span>
                                 </div>
                               )}
                             </div>
@@ -276,10 +341,10 @@ export default function Vendors() {
                           </TableCell>
                           <TableCell>
                             <div className="flex space-x-2">
-                              <Button variant="ghost" size="sm">
+                              <Button variant="ghost" size="sm" onClick={() => handleView(vendor)}>
                                 <Eye className="w-4 h-4" />
                               </Button>
-                              <Button variant="ghost" size="sm">
+                              <Button variant="ghost" size="sm" onClick={() => handleEdit(vendor)}>
                                 <Edit className="w-4 h-4" />
                               </Button>
                             </div>
@@ -290,6 +355,22 @@ export default function Vendors() {
                   </Table>
                 </CardContent>
               </Card>
+              
+              {/* Pagination */}
+              <Pagination
+                page={page}
+                pageSize={pageSize}
+                totalItems={totalItems}
+                onPageChange={setPage}
+              />
+              
+              <VendorForm
+                vendor={selectedVendor}
+                isOpen={isCreateDialogOpen}
+                onClose={() => setIsCreateDialogOpen(false)}
+                onSave={handleSave}
+                mode={formMode}
+              />
             </div>
           </main>
         </div>
