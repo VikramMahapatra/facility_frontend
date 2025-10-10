@@ -47,6 +47,7 @@ export interface ServiceRequest {
   linked_work_order_id?: string | null;
   created_at?: string;
   updated_at?: string;
+
 }
 
 interface ServiceRequestFormProps {
@@ -68,7 +69,7 @@ const emptyFormData: ServiceRequest = {
   priority: "medium",
   status: "open",
   sla: { duration: "" },
-  linked_work_order_id: null,
+  linked_work_order_id: "",
 };
 
 export function ServiceRequestForm({
@@ -89,6 +90,7 @@ export function ServiceRequestForm({
   const [channelList, setChannelList] = useState<any[]>([]);
   const [requesterKindList, setRequesterKindList] = useState<any[]>([]);
   const [customerList, setCustomerList] = useState<any[]>([]);
+  const[workOrderList, setWorkOrderList]=useState<any[]>([]);
 
  useEffect(() => {
   const kind = serviceRequest?.requester_kind || emptyFormData.requester_kind;
@@ -106,13 +108,25 @@ export function ServiceRequestForm({
     loadCategoryLookup();
     loadChannelLookup();
     loadRequesterKindLookup();
-  
+    loadServiceRequestFilterWorkorderLookup();
+
     loadCustomerLookup(kind, serviceRequest?.requester_id);
 }, [serviceRequest]);
 
   useEffect(() => {
+
     loadSpaceLookup();
   }, [formData.site_id]);
+
+  useEffect(() => {
+    if (!serviceRequest) return;
+
+    console.log("selectedservicerequest",serviceRequest)
+
+   
+      setFormData((prev) => ({ ...prev, requester_id: String(serviceRequest.requester_id) }));
+    
+  }, [customerList]);
 
   const loadSiteLookup = async () => {
     try {
@@ -122,6 +136,19 @@ export function ServiceRequestForm({
       setSiteList([]);
     }
   };
+  
+  const loadServiceRequestFilterWorkorderLookup = async () => {
+    try {
+      const rows = await serviceRequestApiService. getServiceRequestFilterWorkorderLookup();
+      setWorkOrderList(rows || []);
+    } catch {
+      setWorkOrderList([]);
+    }
+  };
+
+
+
+
 
   const loadSpaceLookup = async () => {
     if (!formData.site_id) {
@@ -185,8 +212,7 @@ export function ServiceRequestForm({
     const lookup = await contactApiService.getCustomerLookup(kind);
     setCustomerList(lookup);
 
-    if (selectedCustomerId)
-      setFormData(prev => ({ ...prev, customer_id: selectedCustomerId }));
+    
   };
 
   const handleSLAFieldChange = (field: string, value: any) => {
@@ -419,16 +445,16 @@ export function ServiceRequestForm({
             </div>
 
             <div>
-              <Label htmlFor="customer_id">Customer *</Label>
+              <Label htmlFor="requester_id">Requester*</Label>
               <Select
                 key={customerList.map(c => c.id).join("-")}
-                name="customer_id"
+                name="requester_id"
                 value={formData.requester_id}
                 onValueChange={(value) => setFormData({ ...formData, requester_id: value })}
                 disabled={isReadOnly}
               >
                 <SelectTrigger>
-                  <SelectValue placeholder="Select customer" />
+                  <SelectValue placeholder="Select Requester" />
                 </SelectTrigger>
                 <SelectContent>
                   {customerList.map((cust) => (
@@ -445,15 +471,22 @@ export function ServiceRequestForm({
           <div className="grid grid-cols-2 gap-4">
             <div>
               <Label htmlFor="linked_work_order_id">Linked Work Order</Label>
-              <Input
-                id="linked_work_order_id"
-                value={formData.linked_work_order_id || ""}
-                onChange={(e) =>
-                  setFormData({ ...formData, linked_work_order_id: e.target.value })
-                }
-                placeholder="Work order ID (optional)"
+              <Select
+                value={(formData.linked_work_order_id as string) || ""}
+                onValueChange={(value) => setFormData({ ...formData, linked_work_order_id: value })}
                 disabled={isReadOnly}
-              />
+              >
+                <SelectTrigger>
+                  <SelectValue placeholder="Select work order (optional)" />
+                </SelectTrigger>
+                <SelectContent>
+                  {workOrderList.map((wo: any) => (
+                    <SelectItem key={wo.id} value={wo.id}>
+                      #{String(wo.name || wo.id)}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
             </div>
 
             <div>

@@ -57,6 +57,10 @@ class ServiceRequestApiService {
   async getServiceRequestRequesterKindLookup() {
     return await apiService.request("/service-requests/requester-kind-lookup");
   }
+   async getServiceRequestFilterWorkorderLookup() {
+    return await apiService.request("/service-requests/filter-workorderid-lookup");
+  }
+
 
 
 }

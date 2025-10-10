@@ -7,6 +7,7 @@ export type Category = "Maintenance" | "Housekeeping" | "Security" | "Utilities"
 
 export interface ServiceRequest {
   id: string;
+  sr_no?: string;
   org_id?: string;
   site_id: string;
   space_id?: string | null;
