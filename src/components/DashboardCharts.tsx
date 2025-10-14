@@ -1,3 +1,4 @@
+import { useState, useEffect } from 'react';
 import {
   BarChart,
   Bar,
@@ -14,12 +15,30 @@ import {
   Area,
   AreaChart
 } from "recharts";
+
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { leasingData, financialData, maintenanceData, energyData, occupancyData } from "@/data/mockPropertyData";
+import {  occupancyData } from "@/data/mockPropertyData";
+import { dashboardApiService } from '@/services/dashboardapi';
 
 const COLORS = ['hsl(215 100% 25%)', 'hsl(156 73% 59%)', 'hsl(0 84.2% 60.2%)', 'hsl(45 93% 47%)'];
 
 export function RevenueChart() {
+  const [revenueData, setRevenueData] = useState<any[]>([]);
+
+  useEffect(() => {
+    loadRevenueData();
+  }, []);
+
+  const loadRevenueData = async () => {
+    try {
+      const data = await dashboardApiService.getMonthlyRevenueTrend();
+      setRevenueData(Array.isArray(data) ? data : []);
+    } catch (error) {
+      console.error('Failed to load revenue data:', error);
+      setRevenueData([]);
+    }
+  };
+
   return (
     <Card className="col-span-2">
       <CardHeader>
@@ -27,7 +46,7 @@ export function RevenueChart() {
       </CardHeader>
       <CardContent>
         <ResponsiveContainer width="100%" height={300}>
-          <AreaChart data={financialData.monthlyRevenueTrend}>
+          <AreaChart data={revenueData}>
             <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" />
             <XAxis dataKey="month" stroke="hsl(var(--muted-foreground))" />
             <YAxis stroke="hsl(var(--muted-foreground))" />
@@ -60,11 +79,32 @@ export function RevenueChart() {
 }
 
 export function OccupancyChart() {
-  const pieData = [
-    { name: 'Occupied', value: occupancyData.occupiedSpaces, color: 'hsl(var(--accent))' },
-    { name: 'Available', value: occupancyData.availableSpaces, color: 'hsl(var(--primary))' },
-    { name: 'Out of Service', value: occupancyData.outOfServiceSpaces, color: 'hsl(var(--destructive))' }
-  ];
+  const [pieData, setPieData] = useState<any[]>([]);
+  const [meta, setMeta] = useState<{ total: number; occupancyRate: number } | null>(null);
+
+  useEffect(() => {
+    loadOccupancy();
+  }, []);
+
+  const loadOccupancy = async () => {
+    try {
+      const resp = await dashboardApiService.getSpaceOccupancy();
+      // Strictly use API response fields; no mock fallbacks
+      const chartData = [
+        { name: 'Occupied', value: resp.occupied, color: 'hsl(var(--accent))' },
+        { name: 'Available', value: resp.available, color: 'hsl(var(--primary))' },
+        { name: 'Out of Service', value: resp.outOfService, color: 'hsl(var(--destructive))' }
+      ];
+      setPieData(chartData);
+      setMeta({ total: Number(resp.total) || 0, occupancyRate: Number(resp.occupancyRate) || 0 });
+    } catch (error) {
+      console.error('Failed to load space occupancy:', error);
+      setPieData([]);
+      setMeta(null);
+    }
+  };
+
+  const hasData = pieData.length > 0;
 
   return (
     <Card>
@@ -90,23 +130,60 @@ export function OccupancyChart() {
             <Tooltip />
           </PieChart>
         </ResponsiveContainer>
-        <div className="flex justify-center space-x-4 mt-4">
-          {pieData.map((item, index) => (
-            <div key={index} className="flex items-center space-x-2">
-              <div 
-                className="w-3 h-3 rounded-full" 
-                style={{ backgroundColor: item.color }}
-              />
-              <span className="text-sm text-muted-foreground">{item.name}</span>
-            </div>
-          ))}
-        </div>
+        {meta && (
+          <div className="mt-3 flex items-center justify-center gap-6 text-sm">
+            <span>
+              Total Spaces: <strong>{meta.total}</strong>
+            </span>
+            <span>
+              Occupancy Rate: <strong>{meta.occupancyRate}%</strong>
+            </span>
+          </div>
+        )}
+        {hasData && (
+          <div className="flex justify-center space-x-4 mt-4">
+            {pieData.map((item, index) => (
+              <div key={index} className="flex items-center space-x-2">
+                <div 
+                  className="w-3 h-3 rounded-full" 
+                  style={{ backgroundColor: item.color }}
+                />
+                <span className="text-sm text-muted-foreground">{item.name}</span>
+              </div>
+            ))}
+          </div>
+        )}
       </CardContent>
     </Card>
   );
 }
 
 export function MaintenanceChart() {
+  const [priorityData, setPriorityData] = useState<any[]>([]);
+
+  useEffect(() => {
+    loadPriority();
+  }, []);
+
+  const loadPriority = async () => {
+
+      const data = await dashboardApiService.getWorkOrdersPriority();
+      const colorByPriority: Record<string, string> = {
+        critical: 'hsl(var(--destructive))',
+        high: 'hsl(0 84.2% 60.2%)',
+        medium: 'hsl(45 93% 47%)',
+        low: 'hsl(156 73% 59%)'
+      };
+      const normalized = Array.isArray(data)
+        ? data
+        : Object.entries(data || {}).map(([priority, count]) => ({
+            priority,
+            count: Number(count) || 0,
+            color: colorByPriority[priority as keyof typeof colorByPriority] || COLORS[0]
+          }));
+      setPriorityData(normalized);
+    
+  }
   return (
     <Card>
       <CardHeader>
@@ -114,7 +191,7 @@ export function MaintenanceChart() {
       </CardHeader>
       <CardContent>
         <ResponsiveContainer width="100%" height={250}>
-          <BarChart data={maintenanceData.priorityBreakdown}>
+          <BarChart data={priorityData}>
             <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" />
             <XAxis dataKey="priority" stroke="hsl(var(--muted-foreground))" />
             <YAxis stroke="hsl(var(--muted-foreground))" />
@@ -126,8 +203,8 @@ export function MaintenanceChart() {
               }} 
             />
             <Bar dataKey="count" radius={[4, 4, 0, 0]}>
-              {maintenanceData.priorityBreakdown.map((entry, index) => (
-                <Cell key={`cell-${index}`} fill={entry.color} />
+              {priorityData.map((entry, index) => (
+                <Cell key={`cell-${index}`} fill={entry.color || COLORS[index % COLORS.length]} />
               ))}
             </Bar>
           </BarChart>
@@ -138,6 +215,22 @@ export function MaintenanceChart() {
 }
 
 export function EnergyChart() {
+  const [energyTrend, setEnergyTrend] = useState<any[]>([]);
+
+  useEffect(() => {
+    loadEnergy();
+  }, []);
+
+  const loadEnergy = async () => {
+    try {
+      const data = await dashboardApiService.getEnergyConsumptionTrend();
+      setEnergyTrend(Array.isArray(data) ? data : []);
+    } catch (error) {
+      console.error('Failed to load energy trend:', error);
+      setEnergyTrend([]);
+    }
+  };
+
   return (
     <Card className="col-span-2">
       <CardHeader>
@@ -145,7 +238,7 @@ export function EnergyChart() {
       </CardHeader>
       <CardContent>
         <ResponsiveContainer width="100%" height={300}>
-          <LineChart data={energyData.monthlyTrend}>
+          <LineChart data={energyTrend}>
             <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" />
             <XAxis dataKey="month" stroke="hsl(var(--muted-foreground))" />
             <YAxis stroke="hsl(var(--muted-foreground))" />
@@ -185,6 +278,17 @@ export function EnergyChart() {
 }
 
 export function FloorOccupancyChart() {
+  const [occupancyData, setOccupancyData] = useState<any[]>([]);
+
+  useEffect(() => {
+    loadOccupancyData();
+  }, []);
+
+  const loadOccupancyData = async () => {
+    const data = await dashboardApiService.getOccupancyByFloor();
+    setOccupancyData(Array.isArray(data) ? data : []);
+  };
+
   return (
     <Card className="col-span-3">
       <CardHeader>
@@ -192,7 +296,7 @@ export function FloorOccupancyChart() {
       </CardHeader>
       <CardContent>
         <ResponsiveContainer width="100%" height={300}>
-          <BarChart data={occupancyData.floorDistribution}>
+            <BarChart data={occupancyData}>
             <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" />
             <XAxis dataKey="floor" stroke="hsl(var(--muted-foreground))" />
             <YAxis stroke="hsl(var(--muted-foreground))" />
@@ -206,6 +310,7 @@ export function FloorOccupancyChart() {
             <Bar dataKey="occupied" stackId="a" fill="hsl(var(--accent))" name="Occupied" />
             <Bar dataKey="available" stackId="a" fill="hsl(var(--primary))" name="Available" />
             <Bar dataKey="outOfService" stackId="a" fill="hsl(var(--destructive))" name="Out of Service" />
+            <Bar dataKey="total" stackId="a" fill="hsl(var(--muted-foreground))" name="Total" />
           </BarChart>
         </ResponsiveContainer>
       </CardContent>
