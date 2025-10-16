@@ -1,5 +1,8 @@
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
+import { useEffect } from "react";
+import { siteApiService } from "@/services/spaces_sites/sitesapi";
+import { useToast } from "@/hooks/use-toast";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Download, TrendingUp, TrendingDown, DollarSign, FileText, Calendar, Target } from "lucide-react";
 import { AreaChart, Area, BarChart, Bar, LineChart, Line, PieChart, Pie, Cell, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer } from "recharts";
@@ -7,11 +10,81 @@ import { mockRevenueReports } from "@/data/mockFinancialsData";
 import { useState } from "react";
 import { SidebarProvider, SidebarTrigger } from "@/components/ui/sidebar";
 import { PropertySidebar } from "@/components/PropertySidebar";
+import { revenueReportsApiService } from "@/services/financials/revenuereportsapi";
 
-export default function RevenueReports() {
-  const [selectedPeriod, setSelectedPeriod] = useState("6months");
-  const [selectedSite, setSelectedSite] = useState("all");
 
+
+interface RevenueReportsOverview {
+  TotalRevenue: number;
+  RentRevenue:  number;
+  CamRevenue:  number;
+  CollectionRate:  number;
+}
+  
+  export default function RevenueReports() {
+  const { toast } = useToast();
+  const [selectedPeriod, setSelectedPeriod] = useState<string>("all");
+  const [selectedSite, setSelectedSite] = useState<string>("all");
+  const [siteList, setSiteList] = useState<any[]>([]);
+  const[trendData,setTrendData]=useState<any[]>([]);
+  const[sourceData,setSourceData]=useState<any[]>([]);
+  const[outstandingReceivablesData,setOutstandingReceivablesData]=useState<any[]>([]);
+  const [revenueReportsOverview, setRevenueReportsOverview] = useState<RevenueReportsOverview>({
+       TotalRevenue: 85.7,
+  RentRevenue: 62.4,
+  CamRevenue: 23.3,
+  CollectionRate: 92.5,
+    });
+
+
+  useEffect(() => {
+    loadSiteLookup();
+  }, []);
+
+
+
+
+  const loadSiteLookup = async () => {
+    const lookup = await siteApiService.getSiteLookup();
+    setSiteList(lookup);
+  }
+
+   
+
+  useEffect(() => {
+    loadRevenueReportsMonthLookup();
+    loadRevenueReportsByTrend();
+    loadRevenueReportsBySource();
+    loadRevenueReportsByOutstandingReceivables();
+    loadRevenueReportsOverview();
+  }, []);
+  
+
+   const loadRevenueReportsMonthLookup= async () => {
+      const selectedPeriod = await revenueReportsApiService.getRevenueReportsMonthLookup();
+      setSelectedPeriod(selectedPeriod);
+    }
+
+    const loadRevenueReportsByTrend= async () => {
+      const trendData = await revenueReportsApiService.getRevenueReportsByTrend();
+      setTrendData(trendData);
+    }
+   
+   
+    const loadRevenueReportsBySource= async () => {
+      const sourceData = await revenueReportsApiService.getRevenueReportsBySource();
+     setSourceData(sourceData);
+    }
+    
+    const loadRevenueReportsByOutstandingReceivables= async () => {
+      const outstandingReceivablesData = await revenueReportsApiService.getRevenueReportsByOutstandingReceivables();
+      setOutstandingReceivablesData(outstandingReceivablesData);
+    }
+    const loadRevenueReportsOverview= async () => {
+      const revenueReportsOverview = await revenueReportsApiService.getRevenueReportsOverview();
+     setRevenueReportsOverview(revenueReportsOverview);
+    }
+  
   return (
     <SidebarProvider>
       <div className="min-h-screen flex w-full bg-background">
@@ -38,29 +111,28 @@ export default function RevenueReports() {
             <div className="space-y-6">
               {/* Filters */}
               <div className="flex flex-col sm:flex-row gap-4">
-                <Select value={selectedPeriod} onValueChange={setSelectedPeriod}>
-                  <SelectTrigger className="w-[180px]">
-                    <Calendar className="w-4 h-4 mr-2" />
-                    <SelectValue placeholder="Select period" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="1month">Last Month</SelectItem>
-                    <SelectItem value="3months">Last 3 Months</SelectItem>
-                    <SelectItem value="6months">Last 6 Months</SelectItem>
-                    <SelectItem value="1year">Last Year</SelectItem>
-                  </SelectContent>
-                </Select>
-                <Select value={selectedSite} onValueChange={setSelectedSite}>
-                  <SelectTrigger className="w-[180px]">
-                    <SelectValue placeholder="Select site" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="all">All Sites</SelectItem>
-                    <SelectItem value="site1">Mumbai Central</SelectItem>
-                    <SelectItem value="site2">Delhi NCR</SelectItem>
-                    <SelectItem value="site3">Bangalore Tech Park</SelectItem>
-                  </SelectContent>
-                </Select>
+               <select
+                  value={selectedPeriod}
+                  onChange={(e) => setSelectedPeriod(e.target.value)}
+                  className="rounded-md border border-input bg-background px-3 py-2 text-sm"
+                >
+                  <option value="Last_Month">Last Month</option>
+                  <option value="Last_3_Months">Last 3 Months</option>
+                  <option value="Last_6_Months">Last 6 Months</option>
+                  <option value="Last_Year">Last Year</option>
+                </select>
+                <select
+                  value={selectedSite}
+                  onChange={(e) => setSelectedSite(e.target.value)}
+                  className="rounded-md border border-input bg-background px-3 py-2 text-sm"
+                >
+                  <option value="all">All Sites</option>
+                  {siteList.map((s: any) => (
+                    <option key={s.id} value={s.id}>
+                      {s.name}
+                    </option>
+                  ))}
+                </select>
               </div>
 
               {/* Key Metrics */}
@@ -71,7 +143,7 @@ export default function RevenueReports() {
                     <DollarSign className="h-4 w-4 text-muted-foreground" />
                   </CardHeader>
                   <CardContent>
-                    <div className="text-2xl font-bold">₹{(85.7).toFixed(1)}L</div>
+                    <div className="text-2xl font-bold">₹{revenueReportsOverview.TotalRevenue}L</div>
                     <p className="text-xs text-muted-foreground flex items-center">
                       <TrendingUp className="w-3 h-3 mr-1 text-green-500" />
                       +12.5% from last period
@@ -84,7 +156,7 @@ export default function RevenueReports() {
                     <FileText className="h-4 w-4 text-muted-foreground" />
                   </CardHeader>
                   <CardContent>
-                    <div className="text-2xl font-bold">₹{(62.4).toFixed(1)}L</div>
+                    <div className="text-2xl font-bold">₹{revenueReportsOverview.RentRevenue}L</div>
                     <p className="text-xs text-muted-foreground flex items-center">
                       <TrendingUp className="w-3 h-3 mr-1 text-green-500" />
                       +8.3% from last period
@@ -97,7 +169,7 @@ export default function RevenueReports() {
                     <Target className="h-4 w-4 text-muted-foreground" />
                   </CardHeader>
                   <CardContent>
-                    <div className="text-2xl font-bold">₹{(23.3).toFixed(1)}L</div>
+                    <div className="text-2xl font-bold">₹{revenueReportsOverview.CamRevenue}L</div>
                     <p className="text-xs text-muted-foreground flex items-center">
                       <TrendingDown className="w-3 h-3 mr-1 text-red-500" />
                       -2.1% from last period
@@ -110,7 +182,7 @@ export default function RevenueReports() {
                     <TrendingUp className="h-4 w-4 text-muted-foreground" />
                   </CardHeader>
                   <CardContent>
-                    <div className="text-2xl font-bold">{92.5}%</div>
+                    <div className="text-2xl font-bold">{revenueReportsOverview.CollectionRate}%</div>
                     <p className="text-xs text-muted-foreground flex items-center">
                       <TrendingUp className="w-3 h-3 mr-1 text-green-500" />
                       +3.2% from last period
@@ -128,12 +200,7 @@ export default function RevenueReports() {
                   </CardHeader>
                   <CardContent>
                     <ResponsiveContainer width="100%" height={300}>
-                      <AreaChart data={mockRevenueReports.slice(0, 6).map((item) => ({
-                        month: item.month,
-                        rent: item.rent / 1000,
-                        cam: item.cam / 1000,
-                        utilities: item.utilities / 1000
-                      }))}>
+                      <AreaChart data={trendData}>
                         <CartesianGrid strokeDasharray="3 3" />
                         <XAxis dataKey="month" />
                         <YAxis />
@@ -174,12 +241,7 @@ export default function RevenueReports() {
                     <ResponsiveContainer width="100%" height={300}>
                       <PieChart>
                         <Pie
-                          data={[
-                            { name: 'Rent', value: 60 },
-                            { name: 'CAM', value: 25 },
-                            { name: 'Utilities', value: 10 },
-                            { name: 'Parking', value: 5 }
-                          ]}
+                           data={sourceData && sourceData.length > 0 ? sourceData : []}
                           cx="50%"
                           cy="50%"
                           labelLine={false}
@@ -188,15 +250,11 @@ export default function RevenueReports() {
                           fill="#8884d8"
                           dataKey="value"
                         >
-                          {[
-                            { name: 'Rent', value: 60 },
-                            { name: 'CAM', value: 25 },
-                            { name: 'Utilities', value: 10 },
-                            { name: 'Parking', value: 5 }
-                          ].map((entry, index) => {
-                            const colors = ['#0088FE', '#00C49F', '#FFBB28', '#FF8042'];
-                            return <Cell key={`cell-${index}`} fill={colors[index % colors.length]} />;
+                          {(sourceData && sourceData.length > 0 ? sourceData : []).map((entry, index) => {
+                          const colors = ['#0088FE', '#00C49F', '#FFBB28', '#FF8042'];
+                           return <Cell key={`cell-${index}`} fill={colors[index % colors.length]} />;
                           })}
+
                         </Pie>
                         <Tooltip />
                       </PieChart>
@@ -213,12 +271,7 @@ export default function RevenueReports() {
                 </CardHeader>
                 <CardContent>
                   <ResponsiveContainer width="100%" height={300}>
-                    <BarChart data={[
-                      { period: '0-30 days', amount: 125000 },
-                      { period: '31-60 days', amount: 85000 },
-                      { period: '61-90 days', amount: 45000 },
-                      { period: '90+ days', amount: 25000 }
-                    ]}>
+                    <BarChart  data={outstandingReceivablesData && outstandingReceivablesData.length > 0 ? outstandingReceivablesData : []}>
                       <CartesianGrid strokeDasharray="3 3" />
                       <XAxis dataKey="period" />
                       <YAxis />
