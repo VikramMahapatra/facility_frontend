@@ -1,15 +1,15 @@
-import { useState } from "react";
-import { Search, Filter, Download, TrendingUp, TrendingDown, Minus, BarChart3 } from "lucide-react";
+import React, { useState, useEffect } from "react";
+import { Filter, Download, TrendingUp, TrendingDown, Minus, BarChart3 } from "lucide-react";
 import { SidebarProvider, SidebarTrigger } from "@/components/ui/sidebar";
 import { PropertySidebar } from "@/components/PropertySidebar";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, BarChart, Bar } from "recharts";
-import { mockConsumptionReports, mockMeterReadings, type ConsumptionReport } from "@/data/mockEnergyData";
+//import { mockConsumptionReports, mockMeterReadings, type ConsumptionReport } from "@/data/mockEnergyData";
+import { consumptionApiService } from "@/services/energy_iot/consumptionapi";
 
 const getTrendIcon = (trend: string) => {
   switch (trend) {
@@ -40,29 +40,75 @@ const formatCurrency = (amount: number) => {
   }).format(amount);
 };
 
-// Mock chart data
-const consumptionChartData = [
-  { name: 'Week 1', electricity: 850, water: 120, gas: 180 },
-  { name: 'Week 2', electricity: 920, water: 110, gas: 165 },
-  { name: 'Week 3', electricity: 780, water: 105, gas: 190 },
-  { name: 'Week 4', electricity: 1030, water: 125, gas: 175 }
-];
-
-const costChartData = [
-  { name: 'Jan', cost: 45000 },
-  { name: 'Feb', cost: 38000 },
-  { name: 'Mar', cost: 52000 },
-  { name: 'Apr', cost: 41000 },
-  { name: 'May', cost: 49000 },
-  { name: 'Jun', cost: 43000 }
-];
-
 export default function ConsumptionReports() {
-  const [searchTerm, setSearchTerm] = useState("");
   const [selectedPeriod, setSelectedPeriod] = useState("January 2024");
   const [selectedMeterKind, setSelectedMeterKind] = useState("all");
+  const [overviewData, setOverviewData] = useState<any>(null);
+  const [weeklyTrendData, setWeeklyTrendData] = useState<any[]>([]);
+  const [monthlyCostAnalysisData, setMonthlyCostAnalysisData] = useState<any[]>([]);
+  const [utilityTypes, setUtilityTypes] = useState<any[]>([]);
+  const [availableMonths, setAvailableMonths] = useState<any[]>([]);
 
-  const filteredReports = mockConsumptionReports.filter(report => {
+  useEffect(() => {
+    loadOverviewData();
+    loadWeeklyTrendData();
+    loadMonthlyCostAnalysisData();
+    loadUtilityTypes();
+    loadAvailableMonths();
+  }, []);
+  
+  const loadUtilityTypes = async () => {
+    try {
+      const types = await consumptionApiService.getAvailableMonths();
+      setUtilityTypes(types);
+    } catch (error) {
+      console.error('Failed to load utility types:', error);
+      setUtilityTypes([]);
+    }
+  };
+
+  const loadAvailableMonths = async () => {
+    try {
+      const months = await consumptionApiService.getUtilityTypes();
+      setAvailableMonths(months);
+    } catch (error) {
+      console.error('Failed to load available months:', error);
+      setAvailableMonths([]);
+    }
+  };
+
+  const loadOverviewData = async () => {
+    try {
+      const data = await consumptionApiService.getOverview();
+      setOverviewData(data);
+    } catch (error) {
+      console.error('Failed to load overview data:', error);
+      setOverviewData(null);
+    }
+  };
+
+  const loadWeeklyTrendData = async () => {
+    try {
+      const data = await consumptionApiService.getWeeklyConsumptionTrend();
+      setWeeklyTrendData(data);
+    } catch (error) {
+      console.error('Failed to load weekly trend data:', error);
+      setWeeklyTrendData([]);
+    }
+  };
+
+  const loadMonthlyCostAnalysisData = async () => {
+    try {
+      const data = await consumptionApiService.getMonthlyCostAnalysis();
+      setMonthlyCostAnalysisData(data);
+    } catch (error) {
+      console.error('Failed to load monthly cost analysis data:', error);
+      setMonthlyCostAnalysisData([]);
+    }
+  };
+
+
+ /* const filteredReports = mockConsumptionReports.filter(report => {
     const matchesSearch = report.siteName.toLowerCase().includes(searchTerm.toLowerCase()) ||
                          report.meterKind.toLowerCase().includes(searchTerm.toLowerCase());
     const matchesKind = selectedMeterKind === "all" || report.meterKind === selectedMeterKind;
@@ -80,33 +126,46 @@ export default function ConsumptionReports() {
   const stats = [
     { 
       title: "Total Cost", 
-      value: formatCurrency(totalCost), 
+      //value: formatCurrency(totalCost), 
+      value: overviewData?.totalCost, 
       icon: <BarChart3 className="h-4 w-4" />,
-      trend: "up",
-      trendValue: 12.5
+      //trend: "up",
+      //trendValue: 12.5
+      trend: overviewData?.totalCostTrend,
+      trendValue: overviewData?.totalCostTrendValue
     },
     { 
       title: "Electricity", 
-      value: `${totalConsumptionByKind.electricity || 0} kWh`, 
+     // value: `${totalConsumptionByKind.electricity || 0} kWh`,
+      value: overviewData?.electricity, 
       icon: <TrendingUp className="h-4 w-4 text-yellow-500" />,
-      trend: "up",
-      trendValue: 15.2
+      //trend: "up",
+      //trendValue: 15.2
+      trend: overviewData?.electricityTrend,
+      trendValue: overviewData?.electricityTrendValue
     },
     { 
       title: "Water", 
-      value: `${totalConsumptionByKind.water || 0} m³`, 
+      //value: `${totalConsumptionByKind.water || 0} m³`,
+      value: overviewData?.water,      
       icon: <TrendingDown className="h-4 w-4 text-blue-500" />,
-      trend: "down",
-      trendValue: 8.1
+       //trend: "down",
+      //trendValue: 8.1
+      trend: overviewData?.waterTrend,
+      trendValue: overviewData?.waterTrendValue
     },
     { 
       title: "Daily Average", 
-      value: formatCurrency(avgDailyCost), 
+      //value: formatCurrency(avgDailyCost), 
+      value: overviewData?.dailyAverage, 
       icon: <Minus className="h-4 w-4 text-gray-500" />,
-      trend: "stable",
-      trendValue: 2.3
+      //trend: "stable",
+      //trendValue: 2.3
+      trend: overviewData?.dailyAverageTrend,
+      trendValue: overviewData?.dailyAverageTrendValue
     }
   ];
+  */
 
   return (
     <SidebarProvider>
@@ -124,20 +183,64 @@ export default function ConsumptionReports() {
           <main className="flex-1 space-y-6 p-6">
             {/* Stats Cards */}
             <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
-              {stats.map((stat, index) => (
-                <Card key={index}>
+                {overviewData?.map((overviewData: any, index: number) => (
+                <React.Fragment key={index}>
+                <Card>
                   <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                    <CardTitle className="text-sm font-medium">{stat.title}</CardTitle>
-                    {stat.icon}
+                    <CardTitle className="text-sm font-medium">Total Cost</CardTitle>
+                    <BarChart3 className="h-4 w-4" />
                   </CardHeader>
                   <CardContent>
-                    <div className="text-2xl font-bold">{stat.value}</div>
+                    <div className="text-2xl font-bold">{overviewData.Totalcost}</div>
                     <div className="flex items-center gap-1 text-xs text-muted-foreground mt-1">
-                      {getTrendIcon(stat.trend)}
-                      {stat.trendValue}% from last month
+                      <TrendingUp className="h-4 w-4 text-green-500" />
+                   
                     </div>
                   </CardContent>
                 </Card>
+                
+                <Card>
+                  <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                    <CardTitle className="text-sm font-medium">Electricity</CardTitle>
+                    <TrendingUp className="h-4 w-4 text-yellow-500" />
+                  </CardHeader>
+                  <CardContent>
+                    <div className="text-2xl font-bold">{overviewData.Electricity} kWh</div>
+                    <div className="flex items-center gap-1 text-xs text-muted-foreground mt-1">
+                      <TrendingUp className="h-4 w-4 text-green-500" />
+                     
+                    </div>
+                  </CardContent>
+                </Card>
+                
+                <Card>
+                  <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                    <CardTitle className="text-sm font-medium">Water</CardTitle>
+                    <TrendingDown className="h-4 w-4 text-blue-500" />
+                  </CardHeader>
+                  <CardContent>
+                    <div className="text-2xl font-bold">{overviewData.Water} m³</div>
+                    <div className="flex items-center gap-1 text-xs text-muted-foreground mt-1">
+                      <TrendingDown className="h-4 w-4 text-red-500" />
+                     
+                    </div>
+                  </CardContent>
+                </Card>
+                
+                <Card>
+                  <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                    <CardTitle className="text-sm font-medium">Daily Average</CardTitle>
+                    <Minus className="h-4 w-4 text-gray-500" />
+                  </CardHeader>
+                  <CardContent>
+                    <div className="text-2xl font-bold">{overviewData.DailyAverage}</div>
+                    <div className="flex items-center gap-1 text-xs text-muted-foreground mt-1">
+                      <Minus className="h-4 w-4 text-gray-500" />
+                      
+                    </div>
+                  </CardContent>
+                </Card>
+                </React.Fragment>
               ))}
             </div>
 
@@ -150,7 +253,7 @@ export default function ConsumptionReports() {
                 </CardHeader>
                 <CardContent>
                   <ResponsiveContainer width="100%" height={300}>
-                    <LineChart data={consumptionChartData}>
+                    <LineChart data={weeklyTrendData}>
                       <CartesianGrid strokeDasharray="3 3" />
                       <XAxis dataKey="name" />
                       <YAxis />
@@ -188,7 +291,7 @@ export default function ConsumptionReports() {
                 </CardHeader>
                 <CardContent>
                   <ResponsiveContainer width="100%" height={300}>
-                    <BarChart data={costChartData}>
+                    <BarChart data={monthlyCostAnalysisData}>
                       <CartesianGrid strokeDasharray="3 3" />
                       <XAxis dataKey="name" />
                       <YAxis />
@@ -219,25 +322,17 @@ export default function ConsumptionReports() {
                 {/* Filters */}
                 <div className="flex items-center justify-between space-y-2 mb-6">
                   <div className="flex flex-1 items-center space-x-4 max-w-xl">
-                    <div className="flex items-center space-x-2">
-                      <Search className="h-4 w-4 text-muted-foreground" />
-                      <Input
-                        placeholder="Search sites or utility types..."
-                        value={searchTerm}
-                        onChange={(e) => setSearchTerm(e.target.value)}
-                        className="max-w-sm"
-                      />
-                    </div>
                     <Select value={selectedMeterKind} onValueChange={setSelectedMeterKind}>
                       <SelectTrigger className="w-40">
                         <SelectValue placeholder="Utility Type" />
                       </SelectTrigger>
                       <SelectContent>
                         <SelectItem value="all">All Types</SelectItem>
-                        <SelectItem value="electricity">Electricity</SelectItem>
-                        <SelectItem value="water">Water</SelectItem>
-                        <SelectItem value="gas">Gas</SelectItem>
-                        <SelectItem value="people_counter">Footfall</SelectItem>
+                        {utilityTypes.map((type) => (
+                          <SelectItem key={type.value} value={type.value}>
+                            {type.name}
+                          </SelectItem>
+                        ))}
                       </SelectContent>
                     </Select>
                     <Select value={selectedPeriod} onValueChange={setSelectedPeriod}>
@@ -245,17 +340,16 @@ export default function ConsumptionReports() {
                         <SelectValue placeholder="Period" />
                       </SelectTrigger>
                       <SelectContent>
-                        <SelectItem value="January 2024">January 2024</SelectItem>
-                        <SelectItem value="December 2023">December 2023</SelectItem>
-                        <SelectItem value="November 2023">November 2023</SelectItem>
+                      <SelectItem value="all">All Months</SelectItem>
+                        {availableMonths.map((month) => (
+                          <SelectItem key={month.value} value={month.value}>
+                            {month.name}
+                          </SelectItem>
+                        ))}
                       </SelectContent>
                     </Select>
                   </div>
                   <div className="flex items-center space-x-2">
-                    <Button variant="outline" size="sm">
-                      <Filter className="h-4 w-4 mr-2" />
-                      Filter
-                    </Button>
                     <Button variant="outline" size="sm">
                       <Download className="h-4 w-4 mr-2" />
                       Export
@@ -276,40 +370,11 @@ export default function ConsumptionReports() {
                     </TableRow>
                   </TableHeader>
                   <TableBody>
-                    {filteredReports.map((report) => (
-                      <TableRow key={report.id}>
-                        <TableCell>
-                          <div className="font-medium">{report.siteName}</div>
-                          <div className="text-sm text-muted-foreground">{report.period}</div>
-                        </TableCell>
-                        <TableCell>
-                          <div className="capitalize font-medium">{report.meterKind}</div>
-                          <div className="text-sm text-muted-foreground">{report.unit}</div>
-                        </TableCell>
-                        <TableCell>
-                          <span className="font-medium">
-                            {report.totalConsumption.toLocaleString()} {report.unit}
-                          </span>
-                        </TableCell>
-                        <TableCell>
-                          {report.averageDaily.toFixed(1)} {report.unit}
-                        </TableCell>
-                        <TableCell>
-                          <span className="text-orange-600 font-medium">
-                            {report.peakUsage.toFixed(1)} {report.unit}
-                          </span>
-                        </TableCell>
-                        <TableCell>
-                          <span className="font-medium">{formatCurrency(report.cost)}</span>
-                        </TableCell>
-                        <TableCell>
-                          <div className="flex items-center gap-2">
-                            {getTrendIcon(report.trend)}
-                            {getTrendBadge(report.trend, report.trendPercentage)}
-                          </div>
-                        </TableCell>
-                      </TableRow>
-                    ))}
+                    <TableRow>
+                      <TableCell colSpan={7} className="text-center text-muted-foreground py-8">
+                        No consumption data available
+                      </TableCell>
+                    </TableRow>
                   </TableBody>
                 </Table>
               </CardContent>
