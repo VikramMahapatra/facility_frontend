@@ -1,14 +1,20 @@
 import { apiService } from "../api";
 
 class ServiceRequestApiService {
+  async getServiceRequestLookup() {
+    return await apiService.request("/service-requests/service-request-lookup");
+  }
+
   async getServiceRequests(params) {
-    
-    return await apiService.request(`/service-requests/all?${params.toString()}`);
+    return await apiService.request(
+      `/service-requests/all?${params.toString()}`
+    );
   }
 
   async getServiceRequestOverview(params) {
-    
-     return await apiService.request(`/service-requests/overview?${params.toString()}`);
+    return await apiService.request(
+      `/service-requests/overview?${params.toString()}`
+    );
   }
 
   async addServiceRequest(data: any) {
@@ -48,21 +54,20 @@ class ServiceRequestApiService {
     return await apiService.request("/service-requests/filter-status-lookup");
   }
 
-   async getServiceRequestCategoryFilterLookup() {
+  async getServiceRequestCategoryFilterLookup() {
     return await apiService.request("/service-requests/filter-category-lookup");
   }
-   async getServiceRequestChannelLookup() {
+  async getServiceRequestChannelLookup() {
     return await apiService.request("/service-requests/channel-lookup");
   }
   async getServiceRequestRequesterKindLookup() {
     return await apiService.request("/service-requests/requester-kind-lookup");
   }
-   async getServiceRequestFilterWorkorderLookup() {
-    return await apiService.request("/service-requests/filter-workorderid-lookup");
+  async getServiceRequestFilterWorkorderLookup() {
+    return await apiService.request(
+      "/service-requests/filter-workorderid-lookup"
+    );
   }
-
-
-
 }
 
 export const serviceRequestApiService = new ServiceRequestApiService();

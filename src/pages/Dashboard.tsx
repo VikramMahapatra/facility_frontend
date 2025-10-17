@@ -20,6 +20,7 @@ import {
   EnergyChart, 
   FloorOccupancyChart 
 } from "@/components/DashboardCharts";
+import { dashboardApiService } from "@/services/dashboardapi";
 
 interface User {
   id: string;
@@ -33,6 +34,12 @@ interface User {
 const Dashboard = () => {
   const navigate = useNavigate();
   const [user, setUser] = useState<User | null>(null);
+  const [leasingOverviewData, setLeasingOverviewData] = useState<any>(null);
+  const [maintenanceOverviewData, setMaintenanceOverviewData] = useState<any>(null);
+  const [accessAndParkingOverviewData, setAccessAndParkingOverviewData] = useState<any>(null);
+  const [financialSummaryData, setFinancialSummaryData] = useState<any>(null);
+ 
+ 
 
   useEffect(() => {
     const userData = localStorage.getItem('user');
@@ -52,6 +59,8 @@ const Dashboard = () => {
       navigate('/login');
     }
   }, [navigate]);
+
+
 
   const handleLogout = () => {
     localStorage.removeItem('user');
