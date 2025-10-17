@@ -17,7 +17,7 @@ import {
 } from "recharts";
 
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import {  occupancyData } from "@/data/mockPropertyData";
+//import {  occupancyData, leasingData , financialData , dashboardStats } from "@/data/mockPropertyData";
 import { dashboardApiService } from '@/services/dashboardapi';
 
 const COLORS = ['hsl(215 100% 25%)', 'hsl(156 73% 59%)', 'hsl(0 84.2% 60.2%)', 'hsl(45 93% 47%)'];
@@ -32,7 +32,7 @@ export function RevenueChart() {
   const loadRevenueData = async () => {
     try {
       const data = await dashboardApiService.getMonthlyRevenueTrend();
-      setRevenueData(Array.isArray(data) ? data : []);
+      setRevenueData(data);
     } catch (error) {
       console.error('Failed to load revenue data:', error);
       setRevenueData([]);
@@ -59,17 +59,27 @@ export function RevenueChart() {
             />
             <Area 
               type="monotone" 
-              dataKey="total" 
-              stroke="hsl(var(--primary))" 
-              fill="hsl(var(--primary) / 0.1)"
-              strokeWidth={2}
-            />
-            <Area 
-              type="monotone" 
               dataKey="rental" 
               stroke="hsl(var(--accent))" 
               fill="hsl(var(--accent) / 0.1)"
               strokeWidth={2}
+              name="Rental Income"
+            />
+            <Area 
+              type="monotone" 
+              dataKey="cam" 
+              stroke="hsl(var(--destructive))" 
+              fill="hsl(var(--destructive) / 0.1)"
+              strokeWidth={2}
+              name="CAM Charges"
+            />
+            <Area 
+              type="monotone" 
+              dataKey="total" 
+              stroke="hsl(var(--primary))" 
+              fill="hsl(var(--primary) / 0.1)"
+              strokeWidth={2}
+              name="Total Revenue"
             />
           </AreaChart>
         </ResponsiveContainer>
@@ -89,14 +99,13 @@ export function OccupancyChart() {
   const loadOccupancy = async () => {
     try {
       const resp = await dashboardApiService.getSpaceOccupancy();
-      // Strictly use API response fields; no mock fallbacks
       const chartData = [
         { name: 'Occupied', value: resp.occupied, color: 'hsl(var(--accent))' },
         { name: 'Available', value: resp.available, color: 'hsl(var(--primary))' },
         { name: 'Out of Service', value: resp.outOfService, color: 'hsl(var(--destructive))' }
       ];
       setPieData(chartData);
-      setMeta({ total: Number(resp.total) || 0, occupancyRate: Number(resp.occupancyRate) || 0 });
+      setMeta({ total: Number(resp.total), occupancyRate: Number(resp.occupancyRate)});
     } catch (error) {
       console.error('Failed to load space occupancy:', error);
       setPieData([]);
@@ -166,23 +175,13 @@ export function MaintenanceChart() {
   }, []);
 
   const loadPriority = async () => {
-
+    try {
       const data = await dashboardApiService.getWorkOrdersPriority();
-      const colorByPriority: Record<string, string> = {
-        critical: 'hsl(var(--destructive))',
-        high: 'hsl(0 84.2% 60.2%)',
-        medium: 'hsl(45 93% 47%)',
-        low: 'hsl(156 73% 59%)'
-      };
-      const normalized = Array.isArray(data)
-        ? data
-        : Object.entries(data || {}).map(([priority, count]) => ({
-            priority,
-            count: Number(count) || 0,
-            color: colorByPriority[priority as keyof typeof colorByPriority] || COLORS[0]
-          }));
-      setPriorityData(normalized);
-    
+      setPriorityData(data);
+    } catch (error) {
+      console.error('Failed to load work orders priority:', error);
+      setPriorityData([]);
+    }
   }
   return (
     <Card>
@@ -204,7 +203,7 @@ export function MaintenanceChart() {
             />
             <Bar dataKey="count" radius={[4, 4, 0, 0]}>
               {priorityData.map((entry, index) => (
-                <Cell key={`cell-${index}`} fill={entry.color || COLORS[index % COLORS.length]} />
+                <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
               ))}
             </Bar>
           </BarChart>
@@ -224,7 +223,7 @@ export function EnergyChart() {
   const loadEnergy = async () => {
     try {
       const data = await dashboardApiService.getEnergyConsumptionTrend();
-      setEnergyTrend(Array.isArray(data) ? data : []);
+      setEnergyTrend(data);
     } catch (error) {
       console.error('Failed to load energy trend:', error);
       setEnergyTrend([]);
@@ -286,7 +285,7 @@ export function FloorOccupancyChart() {
 
   const loadOccupancyData = async () => {
     const data = await dashboardApiService.getOccupancyByFloor();
-    setOccupancyData(Array.isArray(data) ? data : []);
+    setOccupancyData(data);
   };
 
   return (

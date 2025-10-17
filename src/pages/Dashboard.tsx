@@ -34,10 +34,7 @@ interface User {
 const Dashboard = () => {
   const navigate = useNavigate();
   const [user, setUser] = useState<User | null>(null);
-  const [leasingOverviewData, setLeasingOverviewData] = useState<any>(null);
-  const [maintenanceOverviewData, setMaintenanceOverviewData] = useState<any>(null);
-  const [accessAndParkingOverviewData, setAccessAndParkingOverviewData] = useState<any>(null);
-  const [financialSummaryData, setFinancialSummaryData] = useState<any>(null);
+  
  
  
 

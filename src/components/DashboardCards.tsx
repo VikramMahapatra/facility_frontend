@@ -7,7 +7,7 @@ import {
   Car, UserCheck, Calendar
 } from "lucide-react";
 import { dashboardApiService } from '@/services/dashboardapi';
-
+ 
 const iconMap = {
   Building2,
   Users,
@@ -17,21 +17,15 @@ const iconMap = {
   Zap
 };
 
-interface MaintenanceOverviewData {
-  openWorkOrders: number;
-  closedWorkOrders: number;
-  upcomingPM: number;
-  activeServiceRequests: number;
-  assetsAtRisk: number;
-}
 
-interface LeasingOverview {
+
+/*interface LeasingOverview {
   activeLeases: number;
   renewalsDue30Days: number;
   renewalsDue60Days: number;
   renewalsDue90Days: number;
   rentCollectionRate: number;
-}
+}*/
 
 export function StatsGrid() {
   const [overviewData, setOverviewData] = useState<any>(null);
@@ -41,65 +35,19 @@ export function StatsGrid() {
   }, []);
 
   const loadOverviewData = async () => {
-    const overview = await dashboardApiService.getOverview();
-    setOverviewData(overview);
+    try {
+      const overview = await dashboardApiService.getOverview();
+      setOverviewData(overview);
+    } catch (error) {
+      console.error('Failed to load overview data:', error);
+      setOverviewData(null);
+    }
   };
 
-  // Map object-shaped API to display items (no mock fallback)
-  const stats = overviewData ? [
-    {
-      title: 'Total Properties',
-      value: overviewData.total_properties,
-      icon: 'Building2',
-      trend: 'up',
-      change: '+0%',
-      description: 'Active properties',
-    },
-    {
-      title: 'Occupancy Rate',
-      value: `${overviewData.occupancy_rate}%`,
-      icon: 'Users',
-      trend: 'up',
-      change: '+0%',
-      description: 'Current occupancy',
-    },
-    {
-      title: 'Monthly Revenue',
-      value: `₹${Number(overviewData.monthly_revenue ?? 0).toLocaleString()}`,
-      icon: 'CreditCard',
-      trend: 'up',
-      change: '+0%',
-      description: 'This month\'s income',
-    },
-    {
-      title: 'Work Orders',
-      value: overviewData.work_orders,
-      icon: 'Wrench',
-      trend: 'up',
-      change: '+0%',
-      description: 'Open tickets',
-    },
-    {
-      title: 'Rent Collections',
-      value: `₹${Number(overviewData.rent_collections ?? 0).toLocaleString()}`,
-      icon: 'BarChart3',
-      trend: 'up',
-      change: '+0%',
-      description: 'Collection rate',
-    },
-    {
-      title: 'Energy Usage',
-      value: overviewData.energy_usage,
-      icon: 'Zap',
-      trend: 'up',
-      change: '+0%',
-      description: 'Monthly consumption',
-    },
-  ] : [];
 
   return (
     <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-6 gap-6 mb-8">
-      {stats.map((stat, index) => {
+      {overviewData?.stats?.map((stat: any, index: number) => {
         const IconComponent = iconMap[stat.icon as keyof typeof iconMap] || Building2;
         const isPositive = stat.trend === 'up';
 
@@ -123,7 +71,7 @@ export function StatsGrid() {
               <div className="space-y-1">
                 <div className="text-2xl font-bold text-foreground">{stat.value}</div>
                 <div className="text-sm font-medium text-foreground">{stat.title}</div>
-                <div className="text-xs text-muted-foreground">{stat.description}</div>
+                <div className="text-xs text-muted-foreground">{stat.description}</div> 
               </div>
             </CardContent>
           </Card>
@@ -156,26 +104,26 @@ export function LeasingOverview() {
       <CardContent className="space-y-4">
         <div className="flex items-center justify-between"> 
           <span className="text-sm text-muted-foreground">Active Leases</span>
-          <span className="text-xl font-semibold">{leasingData?.activeLeases ?? 0}</span>
+          <span className="text-xl font-semibold">{leasingData?.activeLeases}</span>
         </div>
 
         <div className="space-y-2">
           <div className="flex items-center justify-between text-sm">
             <span className="text-muted-foreground">Renewals (30 days)</span>
             <Badge variant="outline" className="text-destructive border-destructive">
-              {leasingData?.renewals_30_days ?? 0}
+              {leasingData?.renewals_30_days}
             </Badge>
           </div>
           <div className="flex items-center justify-between text-sm">
             <span className="text-muted-foreground">Renewals (60 days)</span>
             <Badge variant="outline" className="text-orange-500 border-orange-500">
-              {leasingData?.renewals_60_days ?? 0}
+              {leasingData?.renewals_60_days}
             </Badge>
           </div>
           <div className="flex items-center justify-between text-sm">
             <span className="text-muted-foreground">Renewals (90 days)</span>
             <Badge variant="outline" className="text-primary border-primary">
-              {leasingData?.renewals_90_days ?? 0}
+              {leasingData?.renewals_90_days}
             </Badge>
           </div>
         </div>
@@ -183,7 +131,7 @@ export function LeasingOverview() {
         <div className="pt-2 border-t border-border">
           <div className="flex items-center justify-between text-sm">
             <span className="text-muted-foreground">Collection Rate</span>
-            <span className="text-accent font-semibold">{leasingData?.collection_rate_pct ?? 0}%</span>
+            <span className="text-accent font-semibold">{leasingData?.collection_rate_pct}%</span>
           </div>
         </div>
       </CardContent>
@@ -214,11 +162,11 @@ export function MaintenanceOverview() {
       <CardContent className="space-y-4">
         <div className="grid grid-cols-2 gap-4">
           <div className="text-center p-3 bg-primary/5 rounded-lg">
-            <div className="text-2xl font-bold text-primary">{maintenanceData?.open_work_orders ?? 0}</div>
+            <div className="text-2xl font-bold text-primary">{maintenanceData?.open_work_orders}</div>
             <div className="text-xs text-muted-foreground">Open</div>
           </div>
           <div className="text-center p-3 bg-accent/5 rounded-lg">
-            <div className="text-2xl font-bold text-accent">{maintenanceData?.closed_work_orders ?? 0}</div>
+            <div className="text-2xl font-bold text-accent">{maintenanceData?.closed_work_orders}</div>
             <div className="text-xs text-muted-foreground">Closed</div>
           </div>
         </div>
@@ -229,21 +177,21 @@ export function MaintenanceOverview() {
               <Calendar className="w-4 h-4 mr-2" />
               Upcoming PM
             </span>
-            <Badge variant="secondary">{maintenanceData?.upcoming_pm ?? 0}</Badge>
+            <Badge variant="secondary">{maintenanceData?.upcoming_pm}</Badge>
           </div>
           <div className="flex items-center justify-between text-sm">
             <span className="flex items-center text-muted-foreground">
               <AlertTriangle className="w-4 h-4 mr-2" />
               Service Requests
             </span>
-            <Badge variant="outline">{maintenanceData?.open_service_requests ?? 0}</Badge>
+            <Badge variant="outline">{maintenanceData?.open_service_requests}</Badge>
           </div>
           <div className="flex items-center justify-between text-sm">
             <span className="flex items-center text-destructive">
               <Clock className="w-4 h-4 mr-2" />
               Assets at Risk
             </span>
-            <Badge variant="destructive">{maintenanceData?.assets_at_risk ?? 0}</Badge>
+            <Badge variant="destructive">{maintenanceData?.assets_at_risk}</Badge>
           </div>
         </div>
       </CardContent>
@@ -387,7 +335,7 @@ export function EnergyOverview() {
       <CardContent className="space-y-4">
         <div className="flex items-center justify-between">
           <span className="text-sm text-muted-foreground">Total Consumption</span>
-          <span className="text-xl font-semibold">{energyData?.totalConsumption?.toLocaleString() ?? 0} kWh</span>
+          <span className="text-xl font-semibold">{energyData?.totalConsumption?.toLocaleString()} kWh</span>
         </div>
 
         <div className="space-y-2">
