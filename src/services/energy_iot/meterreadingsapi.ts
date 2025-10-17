@@ -34,6 +34,14 @@ class MeterReadingApiService {
         return await apiService.request(`/meter-readings/all?${params.toString()}`);
     }
 
+    async getMeterReadingLookup() {
+        return await apiService.request('/meter-readings/meter-reading-lookup');
+    }
+
+    async getMetersLookup() {
+        return await apiService.request('/meters/meter-lookup');
+    }
+
     async addMeterReading(data: any) {
         return await apiService.request('/meter-readings', {
             method: 'POST',
