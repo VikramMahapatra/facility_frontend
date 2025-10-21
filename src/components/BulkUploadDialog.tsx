@@ -7,6 +7,7 @@ import { Badge } from "@/components/ui/badge";
 import { toast } from "@/hooks/use-toast";
 import * as XLSX from 'xlsx';
 import type { Meter, MeterReading } from "@/data/mockEnergyData";
+import { meterReadingApiService } from "@/services/energy_iot/meterreadingsapi";
 
 interface BulkUploadDialogProps {
   type: 'meters' | 'readings';
@@ -16,13 +17,13 @@ interface BulkUploadDialogProps {
 export function BulkUploadDialog({ type, onImport }: BulkUploadDialogProps) {
   const [isOpen, setIsOpen] = useState(false);
   const [parsedData, setParsedData] = useState<any[]>([]);
-  const [validationErrors, setValidationErrors] = useState<{row: number, errors: string[]}[]>([]);
+  const [validationErrors, setValidationErrors] = useState<{ row: number, errors: string[] }[]>([]);
   const [isUploading, setIsUploading] = useState(false);
 
   const downloadTemplate = () => {
     let templateData: any[] = [];
     let filename = '';
-    
+
     if (type === 'meters') {
       filename = 'meters_template.xlsx';
       templateData = [
@@ -38,7 +39,7 @@ export function BulkUploadDialog({ type, onImport }: BulkUploadDialogProps) {
         {
           code: 'WAT-002',
           kind: 'water',
-          unit: 'm³',
+          unit: 'm3',
           multiplier: 1.0,
           siteName: 'Hotel Paradise',
           spaceName: 'Basement',
@@ -74,27 +75,48 @@ export function BulkUploadDialog({ type, onImport }: BulkUploadDialogProps) {
     });
   };
 
+  const meterUnits = [
+    { id: 'kWh', name: 'kWh (Kilowatt Hours)' },
+    { id: 'kW', name: 'kW (Kilowatts)' },
+    { id: 'm3', name: 'm³ (Cubic Meters)' },
+    { id: 'L', name: 'L (Liters)' },
+    { id: 'gal', name: 'Gallons' },
+    { id: 'therms', name: 'Therms' },
+    { id: 'BTU', name: 'BTU (British Thermal Units)' },
+    { id: 'tons', name: 'Tons' },
+    { id: 'count', name: 'Count' },
+    { id: 'hours', name: 'Hours' }
+  ];
+
   const validateMeter = (meter: any, index: number): string[] => {
     const errors: string[] = [];
-    
+
     if (!meter.code) errors.push('Code is required');
     if (!meter.kind) errors.push('Kind is required');
     if (!['electricity', 'water', 'gas', 'btuh', 'people_counter'].includes(meter.kind)) {
       errors.push('Invalid kind (must be: electricity, water, gas, btuh, or people_counter)');
     }
-    if (!meter.unit) errors.push('Unit is required');
+    if (!meter.unit) {
+      errors.push('Unit is required');
+    }
+    else if (!meterUnits.some(u => u.id === meter.unit)) {
+      const validUnits = meterUnits.map(u => u.id).join(', ');
+      errors.push(`Invalid unit '${meter.unit}' (must be one of: ${validUnits})`);
+    }
     if (meter.multiplier === undefined || meter.multiplier === null) errors.push('Multiplier is required');
+    if (isNaN(meter.multiplier)) errors.push('Multiplier must be a number');
     if (!meter.siteName) errors.push('Site name is required');
+    if (!meter.spaceName) errors.push('Space name is required');
     if (!['active', 'inactive', 'maintenance'].includes(meter.status)) {
       errors.push('Invalid status (must be: active, inactive, or maintenance)');
     }
-    
+
     return errors;
   };
 
   const validateReading = (reading: any, index: number): string[] => {
     const errors: string[] = [];
-    
+
     if (!reading.meterCode) errors.push('Meter code is required');
     if (reading.reading === undefined || reading.reading === null) errors.push('Reading value is required');
     if (isNaN(reading.reading)) errors.push('Reading must be a number');
@@ -102,7 +124,7 @@ export function BulkUploadDialog({ type, onImport }: BulkUploadDialogProps) {
     if (!['manual', 'iot'].includes(reading.source)) {
       errors.push('Invalid source (must be: manual or iot)');
     }
-    
+
     return errors;
   };
 
@@ -122,12 +144,12 @@ export function BulkUploadDialog({ type, onImport }: BulkUploadDialogProps) {
         const jsonData = XLSX.utils.sheet_to_json(worksheet);
 
         // Validate data
-        const errors: {row: number, errors: string[]}[] = [];
+        const errors: { row: number, errors: string[] }[] = [];
         jsonData.forEach((row: any, index) => {
-          const rowErrors = type === 'meters' 
+          const rowErrors = type === 'meters'
             ? validateMeter(row, index)
             : validateReading(row, index);
-          
+
           if (rowErrors.length > 0) {
             errors.push({ row: index + 2, errors: rowErrors }); // +2 because of header row and 0-index
           }
@@ -163,7 +185,7 @@ export function BulkUploadDialog({ type, onImport }: BulkUploadDialogProps) {
     event.target.value = ''; // Reset input
   };
 
-  const handleImport = () => {
+  const handleImport = async () => {
     if (validationErrors.length > 0) {
       toast({
         title: "Cannot Import",
@@ -173,15 +195,62 @@ export function BulkUploadDialog({ type, onImport }: BulkUploadDialogProps) {
       return;
     }
 
-    onImport(parsedData);
-    toast({
-      title: "Import Successful",
-      description: `${parsedData.length} ${type} have been imported.`,
-    });
-    
-    setParsedData([]);
-    setValidationErrors([]);
-    setIsOpen(false);
+    try {
+      let importResponse;
+      if (type === "meters")
+        importResponse = await handleBulkMeterImport(parsedData)
+      else
+        importResponse = await handleBulkReadingImport(parsedData)
+
+      if (!importResponse.validations || importResponse.validations.length === 0) {
+        onImport(parsedData);
+        toast({
+          title: "Import Successful",
+          description: `${parsedData.length} ${type} have been imported.`,
+        });
+
+        setParsedData([]);
+        setValidationErrors([]);
+        setIsOpen(false);
+      }
+      else {
+        setValidationErrors(importResponse.validations);
+        toast({
+          title: "Import Failed",
+          description: `${importResponse.inserted} ${type} have been imported, ${importResponse.validations.length} ${type} import failed`,
+        });
+      }
+    } catch (err) {
+      console.error("Import failed:", err);
+      toast({
+        title: "Import Failed",
+        description: "A technical error occurred during import.",
+        variant: "destructive",
+      });
+    }
+
+  };
+
+  const handleBulkMeterImport = async (data: any[]) => {
+    console.log("Importing meters:", data);
+    try {
+      const resp = await meterReadingApiService.bulkUploadMeters(data);
+      return resp;
+    }
+    catch (err) {
+      throw err;
+    }
+  };
+
+  const handleBulkReadingImport = async (data: any[]) => {
+    console.log("Importing readings:", data);
+    try {
+      const resp = await meterReadingApiService.bulkUploadMeterReadings(data);
+      return resp;
+    }
+    catch (err) {
+      throw err;
+    }
   };
 
   const handleCancel = () => {
@@ -232,9 +301,9 @@ export function BulkUploadDialog({ type, onImport }: BulkUploadDialogProps) {
                 </p>
                 <p className="text-xs text-muted-foreground">Excel files only (.xlsx, .xls)</p>
               </div>
-              <input 
-                type="file" 
-                className="hidden" 
+              <input
+                type="file"
+                className="hidden"
                 accept=".xlsx,.xls"
                 onChange={handleFileUpload}
                 disabled={isUploading}
@@ -317,6 +386,7 @@ export function BulkUploadDialog({ type, onImport }: BulkUploadDialogProps) {
                             <TableHead>Kind</TableHead>
                             <TableHead>Unit</TableHead>
                             <TableHead>Site</TableHead>
+                            <TableHead>Space</TableHead>
                             <TableHead>Status</TableHead>
                           </>
                         ) : (
@@ -338,6 +408,7 @@ export function BulkUploadDialog({ type, onImport }: BulkUploadDialogProps) {
                               <TableCell className="capitalize">{row.kind}</TableCell>
                               <TableCell>{row.unit}</TableCell>
                               <TableCell>{row.siteName}</TableCell>
+                              <TableCell>{row.spaceName}</TableCell>
                               <TableCell>
                                 <Badge variant={row.status === 'active' ? 'default' : 'secondary'}>
                                   {row.status}
@@ -375,7 +446,7 @@ export function BulkUploadDialog({ type, onImport }: BulkUploadDialogProps) {
                 <Button variant="outline" onClick={handleCancel}>
                   Cancel
                 </Button>
-                <Button 
+                <Button
                   onClick={handleImport}
                   disabled={validationErrors.length > 0}
                 >

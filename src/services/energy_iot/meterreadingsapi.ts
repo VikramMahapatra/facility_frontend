@@ -62,6 +62,22 @@ class MeterReadingApiService {
         });
     }
 
+    async bulkUploadMeters(meters: any) {
+        const payload = { meters }
+        return await apiService.request('/meters/bulk-upload', {
+            method: 'POST',
+            body: JSON.stringify(payload),
+        });
+    }
+
+    async bulkUploadMeterReadings(readings: any) {
+        const payload = { readings }
+        return await apiService.request('/meter-readings/bulk-upload', {
+            method: 'POST',
+            body: JSON.stringify(payload),
+        });
+    }
+
 }
 
 export const meterReadingApiService = new MeterReadingApiService();

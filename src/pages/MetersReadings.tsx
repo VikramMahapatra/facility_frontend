@@ -45,6 +45,7 @@ import {
 } from "@/interfaces/energy_iot_interface";
 import { useSkipFirstEffect } from "@/hooks/use-skipfirst-effect";
 import { meterReadingApiService } from "@/services/energy_iot/meterreadingsapi";
+import { Pagination } from "@/components/Pagination";
 
 const getMeterIcon = (kind: string) => {
   switch (kind) {
@@ -209,13 +210,18 @@ export default function MetersReadings() {
   const onSaveMeter = async (meterData: Partial<Meter>) => {
     try {
       console.log("Saving meter:", meterData);
-      await loadMeters();
 
+      if (meterFormMode === 'create') {
+        await meterReadingApiService.addMeter(meterData);
+      } else if (meterFormMode === 'edit' && meterData) {
+        await meterReadingApiService.updateMeter({ ...selectedMeter, ...meterData });
+      }
+      updateMeterTab();
+      setIsMeterFormOpen(false)
       toast({
         title: "Success",
-        description: `Meter ${
-          meterFormMode === "create" ? "created" : "updated"
-        } successfully.`,
+        description: `Meter ${meterFormMode === "create" ? "created" : "updated"
+          } successfully.`,
       });
     } catch (error) {
       console.error("Error saving meter:", error);
@@ -249,9 +255,8 @@ export default function MetersReadings() {
       await loadMeterReadings();
       toast({
         title: "Success",
-        description: `Meter reading ${
-          meterReadingFormMode === "create" ? "added" : "updated"
-        } successfully.`,
+        description: `Meter reading ${meterReadingFormMode === "create" ? "added" : "updated"
+          } successfully.`,
       });
     } catch (error) {
       console.error("Error saving meter reading:", error);
@@ -263,20 +268,15 @@ export default function MetersReadings() {
     console.log("Opening reading form...");
   };
 
-  const handleBulkMeterImport = (data: any[]) => {
+  const handleBulkImport = async (data: any[]) => {
     console.log("Importing meters:", data);
-    toast({
-      title: "Meters Imported",
-      description: `Successfully imported ${data.length} meters.`,
-    });
-  };
 
-  const handleBulkReadingImport = (data: any[]) => {
-    console.log("Importing readings:", data);
-    toast({
-      title: "Readings Imported",
-      description: `Successfully imported ${data.length} readings.`,
-    });
+    if (activeTab === "meters")
+      updateMeterTab()
+    else
+      updateMeterReadingTab()
+
+    loadReadingOverView();
   };
 
   const stats = [
@@ -422,11 +422,7 @@ export default function MetersReadings() {
                     </Button>
                     <BulkUploadDialog
                       type={activeTab}
-                      onImport={
-                        activeTab === "meters"
-                          ? handleBulkMeterImport
-                          : handleBulkReadingImport
-                      }
+                      onImport={handleBulkImport}
                     />
                     {activeTab === "meters" ? (
                       <Button size="sm" onClick={onCreateMeter}>
@@ -444,171 +440,189 @@ export default function MetersReadings() {
 
                 {/* Content Tables */}
                 {activeTab === "meters" ? (
-                  <Table>
-                    <TableHeader>
-                      <TableRow>
-                        <TableHead>Type</TableHead>
-                        <TableHead>Code</TableHead>
-                        <TableHead>Site</TableHead>
-                        <TableHead>Location</TableHead>
-                        <TableHead>Unit</TableHead>
-                        <TableHead>Last Reading</TableHead>
-                        <TableHead>Status</TableHead>
-                        <TableHead>Actions</TableHead>
-                      </TableRow>
-                    </TableHeader>
-                    <TableBody>
-                      {meters.map((meter) => (
-                        <TableRow key={meter.id}>
-                          <TableCell>
-                            <div className="flex items-center gap-2">
-                              {getMeterIcon(meter.kind)}
-                              <span className="capitalize">{meter.kind}</span>
-                            </div>
-                          </TableCell>
-                          <TableCell className="font-medium">
-                            {meter.code}
-                          </TableCell>
-                          <TableCell>{meter.site_name}</TableCell>
-                          <TableCell>
-                            {meter.space_name || meter.asset_name || "General"}
-                          </TableCell>
-                          <TableCell>{meter.unit}</TableCell>
-                          <TableCell>
-                            {meter.last_reading ? (
+                  <div>
+                    <Table>
+                      <TableHeader>
+                        <TableRow>
+                          <TableHead>Type</TableHead>
+                          <TableHead>Code</TableHead>
+                          <TableHead>Site</TableHead>
+                          <TableHead>Location</TableHead>
+                          <TableHead>Unit</TableHead>
+                          <TableHead>Last Reading</TableHead>
+                          <TableHead>Status</TableHead>
+                          <TableHead>Actions</TableHead>
+                        </TableRow>
+                      </TableHeader>
+                      <TableBody>
+                        {meters.map((meter) => (
+                          <TableRow key={meter.id}>
+                            <TableCell>
+                              <div className="flex items-center gap-2">
+                                {getMeterIcon(meter.kind)}
+                                <span className="capitalize">{meter.kind}</span>
+                              </div>
+                            </TableCell>
+                            <TableCell className="font-medium">
+                              {meter.code}
+                            </TableCell>
+                            <TableCell>{meter.site_name}</TableCell>
+                            <TableCell>
+                              {meter.space_name || meter.asset_name || "General"}
+                            </TableCell>
+                            <TableCell>{meter.unit}</TableCell>
+                            <TableCell>
+                              {meter.last_reading ? (
+                                <div>
+                                  <div className="font-medium">
+                                    {meter.last_reading} {meter.unit}
+                                  </div>
+                                  <div className="text-xs text-muted-foreground">
+                                    {new Date(
+                                      meter.last_reading_date!
+                                    ).toLocaleDateString()}
+                                  </div>
+                                </div>
+                              ) : (
+                                "No readings"
+                              )}
+                            </TableCell>
+                            <TableCell>{getStatusBadge(meter.status)}</TableCell>
+                            <TableCell>
+                              <div className="flex items-center gap-2">
+                                <Button
+                                  variant="ghost"
+                                  size="sm"
+                                  onClick={() => onViewMeter(meter)}
+                                >
+                                  <Eye className="h-4 w-4" />
+                                </Button>
+                                <Button
+                                  variant="ghost"
+                                  size="sm"
+                                  onClick={() => onEditMeter(meter)}
+                                >
+                                  <Edit className="h-4 w-4" />
+                                </Button>
+                                <Button variant="ghost" size="sm">
+                                  <Trash2 className="h-4 w-4" />
+                                </Button>
+                              </div>
+                            </TableCell>
+                          </TableRow>
+                        ))}
+                      </TableBody>
+                    </Table>
+                    <Pagination
+                      page={page}
+                      pageSize={pageSize}
+                      totalItems={totalItems}
+                      onPageChange={(newPage) => setPage(newPage)}
+                    />
+                  </div>
+                ) : (
+                  <div>
+                    <Table>
+                      <TableHeader>
+                        <TableRow>
+                          <TableHead>Meter</TableHead>
+                          <TableHead>Type</TableHead>
+                          <TableHead>Reading</TableHead>
+                          <TableHead>Delta</TableHead>
+                          <TableHead>Source</TableHead>
+                          <TableHead>Timestamp</TableHead>
+                          <TableHead>Actions</TableHead>
+                        </TableRow>
+                      </TableHeader>
+                      <TableBody>
+                        {meterReadings.map((reading) => (
+                          <TableRow key={reading.id}>
+                            <TableCell>
                               <div>
                                 <div className="font-medium">
-                                  {meter.last_reading} {meter.unit}
+                                  {reading.meter_code}
                                 </div>
+                                <div className="text-sm text-muted-foreground capitalize">
+                                  {reading.meter_kind}
+                                </div>
+                              </div>
+                            </TableCell>
+                            <TableCell>
+                              <div className="flex items-center gap-2">
+                                {getMeterIcon(reading.meter_kind)}
+                                <span className="capitalize">
+                                  {reading.meter_kind}
+                                </span>
+                              </div>
+                            </TableCell>
+                            <TableCell>
+                              <span className="font-medium">
+                                {reading.reading} {reading.unit}
+                              </span>
+                            </TableCell>
+                            <TableCell>
+                              {reading.delta ? (
+                                <span className="text-blue-600">
+                                  +{reading.delta} {reading.unit}
+                                </span>
+                              ) : (
+                                "-"
+                              )}
+                            </TableCell>
+                            <TableCell>
+                              <Badge
+                                variant={
+                                  reading.source === "iot"
+                                    ? "default"
+                                    : "secondary"
+                                }
+                              >
+                                {reading.source}
+                              </Badge>
+                            </TableCell>
+                            <TableCell>
+                              <div className="text-sm">
+                                {new Date(reading.ts).toLocaleDateString()}
                                 <div className="text-xs text-muted-foreground">
-                                  {new Date(
-                                    meter.last_reading_date!
-                                  ).toLocaleDateString()}
+                                  {new Date(reading.ts).toLocaleTimeString()}
                                 </div>
                               </div>
-                            ) : (
-                              "No readings"
-                            )}
-                          </TableCell>
-                          <TableCell>{getStatusBadge(meter.status)}</TableCell>
-                          <TableCell>
-                            <div className="flex items-center gap-2">
-                              <Button
-                                variant="ghost"
-                                size="sm"
-                                onClick={() => onViewMeter(meter)}
-                              >
-                                <Eye className="h-4 w-4" />
-                              </Button>
-                              <Button
-                                variant="ghost"
-                                size="sm"
-                                onClick={() => onEditMeter(meter)}
-                              >
-                                <Edit className="h-4 w-4" />
-                              </Button>
-                              <Button variant="ghost" size="sm">
-                                <Trash2 className="h-4 w-4" />
-                              </Button>
-                            </div>
-                          </TableCell>
-                        </TableRow>
-                      ))}
-                    </TableBody>
-                  </Table>
-                ) : (
-                  <Table>
-                    <TableHeader>
-                      <TableRow>
-                        <TableHead>Meter</TableHead>
-                        <TableHead>Type</TableHead>
-                        <TableHead>Reading</TableHead>
-                        <TableHead>Delta</TableHead>
-                        <TableHead>Source</TableHead>
-                        <TableHead>Timestamp</TableHead>
-                        <TableHead>Actions</TableHead>
-                      </TableRow>
-                    </TableHeader>
-                    <TableBody>
-                      {meterReadings.map((reading) => (
-                        <TableRow key={reading.id}>
-                          <TableCell>
-                            <div>
-                              <div className="font-medium">
-                                {reading.meter_code}
+                            </TableCell>
+                            <TableCell>
+                              <div className="flex items-center gap-2">
+                                <Button
+                                  variant="ghost"
+                                  size="sm"
+                                  onClick={() => onViewMeterReading(reading)}
+                                >
+                                  <Eye className="h-4 w-4" />
+                                </Button>
+                                <Button
+                                  variant="ghost"
+                                  size="sm"
+                                  onClick={() => onEditMeterReading(reading)}
+                                >
+                                  <Edit className="h-4 w-4" />
+                                </Button>
+                                <Button variant="ghost" size="sm">
+                                  <Trash2 className="h-4 w-4" />
+                                </Button>
                               </div>
-                              <div className="text-sm text-muted-foreground capitalize">
-                                {reading.meter_kind}
-                              </div>
-                            </div>
-                          </TableCell>
-                          <TableCell>
-                            <div className="flex items-center gap-2">
-                              {getMeterIcon(reading.meter_kind)}
-                              <span className="capitalize">
-                                {reading.meter_kind}
-                              </span>
-                            </div>
-                          </TableCell>
-                          <TableCell>
-                            <span className="font-medium">
-                              {reading.reading} {reading.unit}
-                            </span>
-                          </TableCell>
-                          <TableCell>
-                            {reading.delta ? (
-                              <span className="text-blue-600">
-                                +{reading.delta} {reading.unit}
-                              </span>
-                            ) : (
-                              "-"
-                            )}
-                          </TableCell>
-                          <TableCell>
-                            <Badge
-                              variant={
-                                reading.source === "iot"
-                                  ? "default"
-                                  : "secondary"
-                              }
-                            >
-                              {reading.source}
-                            </Badge>
-                          </TableCell>
-                          <TableCell>
-                            <div className="text-sm">
-                              {new Date(reading.ts).toLocaleDateString()}
-                              <div className="text-xs text-muted-foreground">
-                                {new Date(reading.ts).toLocaleTimeString()}
-                              </div>
-                            </div>
-                          </TableCell>
-                          <TableCell>
-                            <div className="flex items-center gap-2">
-                              <Button
-                                variant="ghost"
-                                size="sm"
-                                onClick={() => onViewMeterReading(reading)}
-                              >
-                                <Eye className="h-4 w-4" />
-                              </Button>
-                              <Button
-                                variant="ghost"
-                                size="sm"
-                                onClick={() => onEditMeterReading(reading)}
-                              >
-                                <Edit className="h-4 w-4" />
-                              </Button>
-                              <Button variant="ghost" size="sm">
-                                <Trash2 className="h-4 w-4" />
-                              </Button>
-                            </div>
-                          </TableCell>
-                        </TableRow>
-                      ))}
-                    </TableBody>
-                  </Table>
+                            </TableCell>
+                          </TableRow>
+                        ))}
+                      </TableBody>
+                    </Table>
+                    <Pagination
+                      page={readingsPage}
+                      pageSize={readingsPageSize}
+                      totalItems={totalReadingsItems}
+                      onPageChange={(newPage) => setReadingsPage(newPage)}
+                    />
+                  </div>
+
                 )}
+
               </CardContent>
             </Card>
           </main>

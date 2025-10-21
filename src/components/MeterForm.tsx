@@ -8,23 +8,7 @@ import { useToast } from "@/hooks/use-toast";
 import { siteApiService } from "@/services/spaces_sites/sitesapi";
 import { spacesApiService } from "@/services/spaces_sites/spacesapi";
 import { assetApiService } from "@/services/maintenance_assets/assetsapi";
-// Import your other API services here
-// import { metersApiService } from "@/services/energy_iot/metersapi";
-
-export interface Meter {
-  id: string;
-  org_id: string;
-  site_id: string;
-  kind: string;
-  code: string;
-  asset_id?: string;
-  space_id?: string;
-  unit: string;
-  multiplier?: number;
-  status: 'active' | 'inactive' | 'maintenance' | 'retired';
-  created_at?: string;
-  updated_at?: string;
-}
+import { Meter } from "@/interfaces/energy_iot_interface";
 
 interface MeterFormProps {
   meter?: Meter;
@@ -36,15 +20,14 @@ interface MeterFormProps {
 
 const emptyFormData = {
   site_id: "",
-  kind: "",
+  kind: "electricity" as Meter["kind"],
   code: "",
-  asset_id: "",
-  space_id: "",
+  asset_id: null,
+  space_id: null,
   unit: "",
   multiplier: 1,
   status: "active" as Meter["status"],
 };
-
 export function MeterForm({ meter, isOpen, onClose, onSave, mode }: MeterFormProps) {
   const { toast } = useToast();
   const [formData, setFormData] = useState(emptyFormData);
@@ -55,7 +38,7 @@ export function MeterForm({ meter, isOpen, onClose, onSave, mode }: MeterFormPro
   const [sites, setSites] = useState<any[]>([]);
   const [assets, setAssets] = useState<any[]>([]);
   const [spaces, setSpaces] = useState<any[]>([]);
-  
+
   // Hardcoded dropdown options
   const meterUnits = [
     { id: 'kWh', name: 'kWh (Kilowatt Hours)' },
@@ -95,7 +78,7 @@ export function MeterForm({ meter, isOpen, onClose, onSave, mode }: MeterFormPro
     if (meter && mode !== "create") {
       setFormData({
         site_id: meter.site_id || "",
-        kind: meter.kind || "",
+        kind: meter.kind,
         code: meter.code || "",
         asset_id: meter.asset_id || "",
         space_id: meter.space_id || "",
@@ -107,20 +90,12 @@ export function MeterForm({ meter, isOpen, onClose, onSave, mode }: MeterFormPro
       setFormData(emptyFormData);
     }
     setErrors({});
-  }, [meter, mode, isOpen]);
+    loadDropdownData();
+  }, [meter]);
+
 
   useEffect(() => {
-    if (isOpen) {
-      loadDropdownData();
-    }
-  }, [isOpen]);
-
-  useEffect(() => {
-    if (formData.site_id) {
-      loadSpacesLookup();
-    } else {
-      setSpaces([]);
-    }
+    loadSpacesLookup();
   }, [formData.site_id]);
 
   const loadDropdownData = async () => {
@@ -130,7 +105,7 @@ export function MeterForm({ meter, isOpen, onClose, onSave, mode }: MeterFormPro
         siteApiService.getSiteLookup(),
         assetApiService.getAssetLookup()
       ]);
-      
+
       setSites(sitesData || []);
       setAssets(assetsData || []);
     } catch (error) {
@@ -184,19 +159,24 @@ export function MeterForm({ meter, isOpen, onClose, onSave, mode }: MeterFormPro
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    
+
     if (!validateForm()) {
       return;
     }
 
     setIsLoading(true);
     try {
-      await onSave(formData);
+
+      const payload = {
+        ...formData,
+        asset_id: formData.asset_id || null,
+        space_id: formData.space_id || null,
+      };
+      await onSave(payload);
       toast({
         title: "Success",
         description: `Meter ${mode === "create" ? "created" : "updated"} successfully.`,
       });
-      onClose();
     } catch (error) {
       console.error('Error saving meter:', error);
       toast({
@@ -214,7 +194,7 @@ export function MeterForm({ meter, isOpen, onClose, onSave, mode }: MeterFormPro
       ...prev,
       [field]: value
     }));
-    
+
     // Clear error when user starts typing
     if (errors[field]) {
       setErrors(prev => ({
@@ -242,8 +222,8 @@ export function MeterForm({ meter, isOpen, onClose, onSave, mode }: MeterFormPro
             {/* Site */}
             <div className="space-y-2">
               <Label htmlFor="site_id">Site *</Label>
-              <Select 
-                value={formData.site_id} 
+              <Select
+                value={formData.site_id}
                 onValueChange={(value) => handleInputChange('site_id', value)}
                 disabled={isReadOnly}
               >
@@ -266,8 +246,8 @@ export function MeterForm({ meter, isOpen, onClose, onSave, mode }: MeterFormPro
             {/* Associated Space */}
             <div className="space-y-2">
               <Label htmlFor="space_id">Space</Label>
-              <Select 
-                value={formData.space_id || 'none'} 
+              <Select
+                value={formData.space_id || 'none'}
                 onValueChange={(value) => handleInputChange('space_id', value === 'none' ? undefined : value)}
                 disabled={isReadOnly}
               >
@@ -306,8 +286,8 @@ export function MeterForm({ meter, isOpen, onClose, onSave, mode }: MeterFormPro
             {/* Unit */}
             <div className="space-y-2">
               <Label htmlFor="unit">Unit *</Label>
-              <Select 
-                value={formData.unit} 
+              <Select
+                value={formData.unit}
                 onValueChange={(value) => handleInputChange('unit', value)}
                 disabled={isReadOnly}
               >
@@ -332,9 +312,9 @@ export function MeterForm({ meter, isOpen, onClose, onSave, mode }: MeterFormPro
             {/* Meter Kind */}
             <div className="space-y-2">
               <Label htmlFor="kind">Meter Kind *</Label>
-              <Select 
-                value={formData.kind} 
-                onValueChange={(value) => handleInputChange('kind', value)}
+              <Select
+                value={formData.kind}
+                onValueChange={(value) => handleInputChange('kind', value as any)}
                 disabled={isReadOnly}
               >
                 <SelectTrigger className={errors.kind ? 'border-red-500' : ''}>
@@ -356,8 +336,8 @@ export function MeterForm({ meter, isOpen, onClose, onSave, mode }: MeterFormPro
             {/* Associated Asset */}
             <div className="space-y-2">
               <Label htmlFor="asset_id">Asset</Label>
-              <Select 
-                value={formData.asset_id || 'none'} 
+              <Select
+                value={formData.asset_id || 'none'}
                 onValueChange={(value) => handleInputChange('asset_id', value === 'none' ? undefined : value)}
                 disabled={isReadOnly}
               >
@@ -402,9 +382,9 @@ export function MeterForm({ meter, isOpen, onClose, onSave, mode }: MeterFormPro
             {/* Status */}
             <div className="space-y-2">
               <Label htmlFor="status">Status</Label>
-              <Select 
-                value={formData.status} 
-                onValueChange={(value) => handleInputChange('status', value)}
+              <Select
+                value={formData.status}
+                onValueChange={(value) => handleInputChange('status', value as any)}
                 disabled={isReadOnly}
               >
                 <SelectTrigger>
