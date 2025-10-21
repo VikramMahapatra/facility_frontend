@@ -390,15 +390,16 @@ export default function Spaces() {
                       )}
 
                       {/* Key Attributes */}
-                      {Object.keys(space.attributes).length > 0 && (
-                        <div className="flex flex-wrap gap-1">
-                          {Object.entries(space.attributes).slice(0, 3).map(([key, value]) => (
-                            <Badge key={key} variant="outline" className="text-xs">
-                              {key}: {String(value)}
-                            </Badge>
-                          ))}
-                        </div>
-                      )}
+                    {space.attributes && Object.keys(space.attributes || {}).length > 0 && (
+                      <div className="flex flex-wrap gap-1">
+                     {Object.entries(space.attributes || {}).slice(0, 3).map(([key, value]) => (
+                     <Badge key={key} variant="outline" className="text-xs">
+                     {key}: {String(value)}
+                      </Badge>
+                      ))}
+                       </div>
+                        )}
+
 
                       {/* Actions */}
                       <div className="flex items-center justify-end gap-2 pt-2">
