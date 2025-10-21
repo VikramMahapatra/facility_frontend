@@ -7,16 +7,8 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "
 import { useToast } from "@/hooks/use-toast";
 import { Plus } from "lucide-react";
 import { meterReadingApiService } from "@/services/energy_iot/meterreadingsapi";
-
-export interface MeterReading {
-  id?: string;
-  meter_id: string;
-  ts: string;
-  reading: number;
-  delta?: number;
-  source?: string;
-  metadata?: any;
-}
+import { MeterReading } from "@/interfaces/energy_iot_interface";
+import { utcToLocal } from "@/helpers/dateHelpers";
 
 interface MeterReadingFormProps {
   meterReading?: MeterReading;
@@ -28,14 +20,14 @@ interface MeterReadingFormProps {
 
 const emptyFormData = {
   meter_id: '',
-  ts: new Date().toISOString().slice(0, 16), 
+  ts: new Date().toISOString().slice(0, 16),
   reading: 0,
   delta: undefined,
-  source: 'manual',
+  source: 'manual' as MeterReading["source"],
   metadata: undefined
 };
 
-export function MeterReadingForm({ 
+export function MeterReadingForm({
   meterReading,
   isOpen,
   onClose,
@@ -60,9 +52,10 @@ export function MeterReadingForm({
 
   useEffect(() => {
     if (meterReading && mode !== "create") {
+      console.log("meter reading :", meterReading);
       setFormData({
         meter_id: meterReading.meter_id || "",
-        ts: meterReading.ts ? new Date(meterReading.ts).toISOString().slice(0, 16) : new Date().toISOString().slice(0, 16),
+        ts: meterReading.ts ? new Date(meterReading.ts).toISOString().slice(0, 16) : "",
         reading: meterReading.reading || 0,
         delta: meterReading.delta,
         source: meterReading.source || 'manual',
@@ -73,19 +66,13 @@ export function MeterReadingForm({
       setFormData(emptyFormData);
     }
     setErrors({});
-  }, [meterReading, mode, isOpen]);
-
-  useEffect(() => {
-    if (isOpen) {
-      loadDropdownData();
-    }
-  }, [isOpen]);
+    loadDropdownData();
+  }, [meterReading]);
 
   const loadDropdownData = async () => {
     const metersData = await meterReadingApiService.getMeterReadingLookup();
     setMeters(metersData);
   };
-  
 
   const validateForm = (): boolean => {
     const newErrors: Record<string, string> = {};
@@ -109,7 +96,7 @@ export function MeterReadingForm({
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    
+
     if (!validateForm()) {
       return;
     }
@@ -132,7 +119,7 @@ export function MeterReadingForm({
       ...prev,
       [field]: value
     }));
-    
+
     // Clear error when user starts typing
     if (errors[field]) {
       setErrors(prev => ({
@@ -160,8 +147,8 @@ export function MeterReadingForm({
             {/* Meter */}
             <div className="space-y-2">
               <Label htmlFor="meter_id">Meter *</Label>
-              <Select 
-                value={formData.meter_id} 
+              <Select
+                value={formData.meter_id}
                 onValueChange={(value) => handleInputChange('meter_id', value)}
                 disabled={isReadOnly}
               >
@@ -184,8 +171,8 @@ export function MeterReadingForm({
             {/* Source */}
             <div className="space-y-2">
               <Label htmlFor="source">Source</Label>
-              <Select 
-                value={formData.source || 'manual'} 
+              <Select
+                value={formData.source || 'manual'}
                 onValueChange={(value) => handleInputChange('source', value)}
                 disabled={isReadOnly}
               >
@@ -210,7 +197,7 @@ export function MeterReadingForm({
               <Input
                 id="ts"
                 type="datetime-local"
-                value={formData.ts}
+                value={utcToLocal(formData.ts)}
                 onChange={(e) => handleInputChange('ts', e.target.value)}
                 className={errors.ts ? 'border-red-500' : ''}
                 disabled={isReadOnly}
@@ -259,7 +246,7 @@ export function MeterReadingForm({
             </div>
 
             {/* Metadata */}
-            <div className="space-y-2">
+            {/* <div className="space-y-2">
               <Label htmlFor="metadata">Metadata (Optional)</Label>
               <Input
                 id="metadata"
@@ -279,7 +266,7 @@ export function MeterReadingForm({
               <p className="text-sm text-muted-foreground">
                 Additional data in JSON format
               </p>
-            </div>
+            </div> */}
           </div>
 
           {/* Form Actions */}
