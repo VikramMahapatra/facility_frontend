@@ -101,24 +101,56 @@ export default function Buildings() {
     setDeleteBuildingId(buildingId);
   };
 
-  const confirmDelete = async () => {
-    if (deleteBuildingId) {
-      try {
-        await buildingApiService.deleteBuilding(deleteBuildingId);
+  // In Building.tsx - Replace the confirmDelete function
+// In Building.tsx - Update confirmDelete function
+const confirmDelete = async () => {
+  if (deleteBuildingId) {
+    try {
+      console.log('=== BUILDING DELETE DEBUG ===');
+      console.log('Building ID to delete:', deleteBuildingId);
+      
+      const response = await buildingApiService.deleteBuilding(deleteBuildingId);
+      console.log('Building Delete Response:', response);
+      
+      if (response.success) {
         loadBuildings();
+        setDeleteBuildingId(null);
         toast({
           title: "Building Deleted",
           description: "The building has been removed successfully.",
         });
-      } catch (error) {
+      } else {
         toast({
-          title: "Techical Error!",
+          title: "Cannot Delete Building",
+          description: response.message,
           variant: "destructive",
         });
       }
-
+    } catch (error: any) {
+      console.log('=== BUILDING DELETE ERROR ===');
+      console.log('Full error:', error);
+      console.log('Error status:', error.response?.status);
+      console.log('Error data:', error.response?.data);
+      
+      if (error.response?.status === 400) {
+        const errorMessage = error.response.data?.detail || "Cannot delete building";
+        toast({
+          title: "Cannot Delete Building",
+          description: errorMessage,
+          variant: "destructive",
+        });
+      } else {
+        toast({
+          title: "Delete Failed",
+          description: "An error occurred while deleting the building.",
+          variant: "destructive",
+        });
+      }
+    } finally {
+      setDeleteBuildingId(null);
     }
-  };
+  }
+};
 
   const handleSave = async (building: any) => {
     try {
