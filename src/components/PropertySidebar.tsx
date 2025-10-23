@@ -3,7 +3,7 @@ import { NavLink, useLocation } from "react-router-dom";
 import {
   Building2, Users, FileText, BarChart3, Wrench, Car, Zap, UserCheck,
   Hotel, ShoppingCart, Settings, Bell, Shield, Home, Calendar, CreditCard,
-  Briefcase, Package, MapPin, AlertTriangle, TrendingUp, Archive, Key, Receipt, Bot
+  Briefcase, Package, MapPin, AlertTriangle, TrendingUp, Archive, Key, Receipt, Bot, Search, UserCog
 } from "lucide-react";
 import {
   Sidebar,
@@ -17,6 +17,7 @@ import {
   SidebarTrigger,
   useSidebar,
 } from "@/components/ui/sidebar";
+import { Input } from "@/components/ui/input";
 
 const navigationItems = [
   {
@@ -24,6 +25,7 @@ const navigationItems = [
     items: [
       { title: "Dashboard", url: "/dashboard", icon: Home },
       { title: "Analytics", url: "/analytics", icon: TrendingUp },
+      { title: "AI Predictions", url: "/ai-predictions", icon: Bot },
     ]
   },
   {
@@ -66,17 +68,19 @@ const navigationItems = [
     title: "Hospitality",
     items: [
       { title: "Bookings", url: "/bookings", icon: Hotel },
+      { title: "Guests", url: "/guests", icon: Users },
       { title: "Rate Plans", url: "/rates", icon: CreditCard },
+      { title: "Folios", url: "/folios", icon: Receipt },
       { title: "Housekeeping", url: "/housekeeping", icon: Shield },
     ]
   },
-  {
-    title: "Procurement",
-    items: [
-      { title: "Vendors", url: "/vendors", icon: Building2 },
-      { title: "Contracts", url: "/contracts", icon: FileText },
-    ]
-  },
+    {
+      title: "Procurement",
+      items: [
+        { title: "Vendors", url: "/vendors", icon: Building2 },
+        { title: "Contracts", url: "/contracts", icon: FileText },
+      ]
+    },
   {
     title: "Parking & Access",
     items: [
@@ -99,10 +103,19 @@ const navigationItems = [
     ]
   },
   {
+    title: "Access Control",
+    items: [
+      { title: "Roles Management", url: "/roles", icon: Shield },
+      { title: "Role Policies", url: "/role-policies", icon: UserCog },
+      { title: "Users Management", url: "/users-management", icon: Users },
+    ]
+  },
+  {
     title: "System",
     items: [
       { title: "Notifications", url: "/notifications", icon: Bell },
       { title: "Settings", url: "/settings", icon: Settings },
+      { title: "Documentation", url: "/documentation", icon: FileText },
     ]
   }
 ];
@@ -112,6 +125,7 @@ export function PropertySidebar() {
   const location = useLocation();
   const currentPath = location.pathname;
   const [expandedGroups, setExpandedGroups] = useState<string[]>(["Overview"]);
+  const [searchQuery, setSearchQuery] = useState("");
   // Ensure the group containing the current route is always expanded
   useEffect(() => {
     const activeGroups: string[] = [];
@@ -130,17 +144,25 @@ export function PropertySidebar() {
 
   const isActive = (path: string) => currentPath === path;
   const getNavClass = (isActiveRoute: boolean) =>
-    isActiveRoute
-      ? "bg-sidebar-accent text-sidebar-primary font-medium"
+    isActiveRoute 
+      ? "bg-sidebar-accent text-sidebar-primary font-medium" 
       : "hover:bg-sidebar-accent/50 text-sidebar-foreground";
 
   const toggleGroup = (groupTitle: string) => {
-    setExpandedGroups(prev =>
+    setExpandedGroups(prev => 
       prev.includes(groupTitle)
         ? prev.filter(g => g !== groupTitle)
         : [...prev, groupTitle]
     );
   };
+
+  // Filter navigation items based on search query
+  const filteredNavigationItems = navigationItems.map(section => ({
+    ...section,
+    items: section.items.filter(item =>
+      item.title.toLowerCase().includes(searchQuery.toLowerCase())
+    )
+  })).filter(section => section.items.length > 0);
 
   return (
     <Sidebar className={isCollapsed ? "w-16" : "w-64"} collapsible="icon">
@@ -163,11 +185,27 @@ export function PropertySidebar() {
         )}
       </div>
 
+      {/* Search Box */}
+      {!isCollapsed && (
+        <div className="p-3 border-b border-sidebar-border">
+          <div className="relative">
+            <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-sidebar-foreground/50" />
+            <Input
+              type="text"
+              placeholder="Search menu..."
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+              className="pl-10 h-8 text-sm bg-sidebar-accent/30 border-sidebar-border/50 focus:border-sidebar-primary"
+            />
+          </div>
+        </div>
+      )}
+
       <SidebarContent className="p-2">
-        {navigationItems.map((section) => (
+        {filteredNavigationItems.map((section) => (
           <SidebarGroup key={section.title} className="mb-2">
             {!isCollapsed && (
-              <SidebarGroupLabel
+              <SidebarGroupLabel 
                 className="text-sidebar-foreground/70 hover:text-sidebar-primary cursor-pointer flex items-center justify-between px-2 py-1"
                 onClick={() => toggleGroup(section.title)}
               >
@@ -177,15 +215,15 @@ export function PropertySidebar() {
                 </span>
               </SidebarGroupLabel>
             )}
-
+            
             {(isCollapsed || expandedGroups.includes(section.title)) && (
               <SidebarGroupContent>
                 <SidebarMenu>
                   {section.items.map((item) => (
                     <SidebarMenuItem key={item.title}>
                       <SidebarMenuButton asChild className="mb-1">
-                        <NavLink
-                          to={item.url}
+                        <NavLink 
+                          to={item.url} 
                           className={getNavClass(isActive(item.url))}
                           title={isCollapsed ? item.title : undefined}
                         >
