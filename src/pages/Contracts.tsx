@@ -8,15 +8,16 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
-import { Plus, Search, Eye, Edit, FileText, Calendar, Building, Filter, AlertCircle, CheckCircle } from "lucide-react";
-import { contractApiService } from "@/services/pocurments/contractapi";
-import { vendorsApiService } from "@/services/pocurments/vendorsapi";
+import { Plus, Search, Eye, Edit, FileText, Calendar, Building, Filter, AlertCircle, CheckCircle, Trash2 } from "lucide-react";
+import { contractsApiService } from "@/services/procurement/contractsapi";
+import { vendorsApiService } from "@/services/procurement/vendorsapi";
 import { useSkipFirstEffect } from "@/hooks/use-skipfirst-effect";
 import { SidebarProvider, SidebarTrigger } from "@/components/ui/sidebar";
 import { PropertySidebar } from "@/components/PropertySidebar";
 import { Pagination } from "@/components/Pagination";
 import { useToast } from "@/hooks/use-toast";
 import { ContractForm } from "@/components/ContractsForm";
+import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
 
 export default function Contracts() {
   const { toast } = useToast();
@@ -34,6 +35,7 @@ export default function Contracts() {
   const [totalItems, setTotalItems] = useState(0);
   const [formMode, setFormMode] = useState<"create" | "edit" | "view">("create");
   const [selectedContract, setSelectedContract] = useState<any | undefined>();
+  const [deleteContractId, setDeleteContractId] = useState<string | null>(null);
 
   useEffect(() => {
     loadStatusLookup();
@@ -71,18 +73,14 @@ export default function Contracts() {
     params.append("skip", skip.toString());
     params.append("limit", limit.toString());
 
-    const response = await contractApiService.getContracts(params);
+    const response = await contractsApiService.getContracts(params);
     const contractsList = response.contracts || [];
     setContracts(contractsList);
     setTotalItems(response.total || 0);
   };
 
   const loadOverview = async () => {
-    const params = new URLSearchParams();
-    if (searchTerm) params.append("search", searchTerm);
-    if (statusFilter !== "all") params.append("status", statusFilter);
-    if (typeFilter !== "all") params.append("type", typeFilter);
-    const response = await contractApiService.getContractsOverview(params);
+    const response = await contractsApiService.getContractsOverview();
     
     // Map API response to expected format
     const overviewData = {
@@ -96,18 +94,18 @@ export default function Contracts() {
   };
 
   const loadStatusLookup = async () => {
-    const lookup = await contractApiService.getFilterStatusLookup();
+    const lookup = await contractsApiService.getContractsStatusLookup();
     setStatusList(lookup || []);
   };
 
   const loadTypeLookup = async () => {
-    const lookup = await contractApiService.getFilterTypeLookup();
+    const lookup = await contractsApiService.getContractsTypeLookup();
     setTypeList(lookup || []);
   };
 
   const loadVendorLookup = async () => {
-    const vendors = await vendorsApiService.getVendorLookup().catch(() => []);
-    setVendorList(vendors || []);
+    // Vendor lookup functionality removed - not available in API
+    setVendorList([]);
   };
 
   const getVendorName = (vendorId: string) => {
@@ -134,13 +132,39 @@ export default function Contracts() {
     setIsCreateDialogOpen(true);
   };
 
+  const handleDelete = (contractId: string) => {
+    setDeleteContractId(contractId);
+  };
+
+  const confirmDelete = async () => {
+    if (deleteContractId) {
+      try {
+        await contractsApiService.deleteContracts(deleteContractId);
+        updateContractsPage();
+        setDeleteContractId(null);
+        toast({
+          title: "Contract Deleted",
+          description: "Contract has been deleted successfully.",
+        });
+        setDeleteContractId(null);
+
+      } catch (error) {
+        toast({
+          title: "Techical Error!",
+          variant: "destructive",
+        });
+      }
+
+    }
+  };
+
   const handleSave = async (contractData: any) => {
     try {
       if (formMode === 'create') {
-        await contractApiService.addContract(contractData);
+        await contractsApiService.addContracts(contractData);
       } else if (formMode === 'edit' && selectedContract) {
         const updatedContract = { ...selectedContract, ...contractData };
-        await contractApiService.updateContract(updatedContract);
+        await contractsApiService.updateContracts(updatedContract);
       }
       setIsCreateDialogOpen(false);
       toast({
@@ -371,6 +395,14 @@ export default function Contracts() {
                               <Button variant="ghost" size="sm" onClick={() => handleEdit(contract)}>
                                 <Edit className="w-4 h-4" />
                               </Button>
+                              <Button
+                                variant="ghost"
+                                size="sm"
+                                className="text-destructive hover:text-destructive"
+                                onClick={() => handleDelete(contract.id)}
+                              >
+                                <Trash2 className="w-4 h-4" />
+                              </Button>
                             </div>
                           </TableCell>
                         </TableRow>
@@ -402,6 +434,23 @@ export default function Contracts() {
         onSave={handleSave}
         mode={formMode}
       />
+
+      <AlertDialog open={!!deleteContractId} onOpenChange={() => setDeleteContractId(null)}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Delete Contract</AlertDialogTitle>
+            <AlertDialogDescription>
+              Are you sure you want to delete this contract? This action cannot be undone.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancel</AlertDialogCancel>
+            <AlertDialogAction onClick={confirmDelete} className="bg-destructive text-destructive-foreground">
+              Delete
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </SidebarProvider>
   );
 }

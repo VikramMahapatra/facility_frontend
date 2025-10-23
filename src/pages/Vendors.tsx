@@ -5,14 +5,15 @@ import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Plus, Search, Eye, Edit, Mail, Phone, Star, Building, Filter, User, MapPin } from "lucide-react";
-import { vendorsApiService } from "@/services/pocurments/vendorsapi";
+import { Plus, Search, Eye, Edit, Mail, Phone, Star, Building, Filter, User, MapPin, Trash2 } from "lucide-react";
+import { vendorsApiService } from "@/services/procurement/vendorsapi";
 import { useSkipFirstEffect } from "@/hooks/use-skipfirst-effect";
 import { SidebarProvider, SidebarTrigger } from "@/components/ui/sidebar";
 import { PropertySidebar } from "@/components/PropertySidebar";
 import { VendorForm } from "@/components/VendorForm";
 import { Pagination } from "@/components/Pagination";
 import { useToast } from "@/hooks/use-toast";
+import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
 
 export default function Vendors() {
   const { toast } = useToast();
@@ -29,6 +30,7 @@ export default function Vendors() {
   const [totalItems, setTotalItems] = useState(0);
   const [formMode, setFormMode] = useState<"create" | "edit" | "view">("create");
   const [selectedVendor, setSelectedVendor] = useState<any | undefined>();
+  const [deleteVendorId, setDeleteVendorId] = useState<string | null>(null);
 
   useEffect(() => {
     loadStatusLookup();
@@ -72,11 +74,7 @@ export default function Vendors() {
   };
 
   const loadOverview = async () => {
-    const params = new URLSearchParams();
-    if (searchTerm) params.append("search", searchTerm);
-    if (statusFilter !== "all") params.append("status", statusFilter);
-    if (categoryFilter !== "all") params.append("category", categoryFilter);
-    const response = await vendorsApiService.getVendorsOverview(params);
+    const response = await vendorsApiService.getVendorsOverview();
     
     // Map API response to expected format
     const overviewData = {
@@ -90,12 +88,12 @@ export default function Vendors() {
   };
 
   const loadStatusLookup = async () => {
-    const lookup = await vendorsApiService.getFilterStatusLookup();
+    const lookup = await vendorsApiService.getVendorsStatusLookup();
     setStatusList(lookup || []);
   };
 
   const loadCategoriesLookup = async () => {
-    const lookup = await vendorsApiService.getFilterCategoriesLookup();
+    const lookup = await vendorsApiService.getVendorsCatgoriesLookup();
     setCategoriesList(lookup || []);
   };
 
@@ -117,12 +115,38 @@ export default function Vendors() {
     setIsCreateDialogOpen(true);
   };
 
+  const handleDelete = (vendorId: string) => {
+    setDeleteVendorId(vendorId);
+  };
+
+  const confirmDelete = async () => {
+    if (deleteVendorId) {
+      try {
+        await vendorsApiService.deleteVendors(deleteVendorId);
+        updateVendorsPage();
+        setDeleteVendorId(null);
+        toast({
+          title: "Vendor Deleted",
+          description: "Vendor has been deleted successfully.",
+        });
+        setDeleteVendorId(null);
+
+      } catch (error) {
+        toast({
+          title: "Techical Error!",
+          variant: "destructive",
+        });
+      }
+
+    }
+  };
+
   const handleSave = async (vendorData: any) => {
     try {
       if (formMode === "create") {
-        await vendorsApiService.addVendor(vendorData);
+        await vendorsApiService.addVendors(vendorData);
       } else if (formMode === "edit" && selectedVendor) {
-        await vendorsApiService.updateVendor({ ...selectedVendor, ...vendorData });
+        await vendorsApiService.updateVendors({ ...selectedVendor, ...vendorData });
       }
       setIsCreateDialogOpen(false);
       toast({
@@ -347,6 +371,14 @@ export default function Vendors() {
                               <Button variant="ghost" size="sm" onClick={() => handleEdit(vendor)}>
                                 <Edit className="w-4 h-4" />
                               </Button>
+                              <Button
+                                variant="ghost"
+                                size="sm"
+                                className="text-destructive hover:text-destructive"
+                                onClick={() => handleDelete(vendor.id)}
+                              >
+                                <Trash2 className="w-4 h-4" />
+                              </Button>
                             </div>
                           </TableCell>
                         </TableRow>
@@ -371,6 +403,23 @@ export default function Vendors() {
                 onSave={handleSave}
                 mode={formMode}
               />
+
+              <AlertDialog open={!!deleteVendorId} onOpenChange={() => setDeleteVendorId(null)}>
+                <AlertDialogContent>
+                  <AlertDialogHeader>
+                    <AlertDialogTitle>Delete Vendor</AlertDialogTitle>
+                    <AlertDialogDescription>
+                      Are you sure you want to delete this vendor? This action cannot be undone.
+                    </AlertDialogDescription>
+                  </AlertDialogHeader>
+                  <AlertDialogFooter>
+                    <AlertDialogCancel>Cancel</AlertDialogCancel>
+                    <AlertDialogAction onClick={confirmDelete} className="bg-destructive text-destructive-foreground">
+                      Delete
+                    </AlertDialogAction>
+                  </AlertDialogFooter>
+                </AlertDialogContent>
+              </AlertDialog>
             </div>
           </main>
         </div>
