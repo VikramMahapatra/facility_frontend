@@ -29,10 +29,10 @@ class BuildingApiService {
     }
 
     async deleteBuilding(id: any) {
-        return await apiService.request(`/sites/${id}`, {
-            method: 'DELETE',
-        });
-    }
+    return await apiService.request(`/buildings/${id}`, {  // ✅ Correct URL
+        method: 'DELETE',
+    });
+}
 
 }
 
