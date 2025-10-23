@@ -109,6 +109,32 @@ class ApiService {
             throw new Error("Technical Error!");
         }
     }
+
+    public async requestExcelFile(endpoint: string, options: RequestInit = {}) {
+        const url = `${this.baseUrl}${endpoint}`;
+        const config = {
+            ...options,
+            headers: {
+                ...this.getHeaders(),
+                ...options.headers,
+            },
+        };
+
+        try {
+            console.log('request config: ', config, url);
+            const response = await fetch(url, config);
+
+            if (!response.ok) {
+                const errorData = await response.json().catch(() => ({}));
+                throw new Error(errorData.detail || `HTTP error! status: ${response.status}`);
+            }
+
+            return response;
+        } catch (error) {
+            console.error('API request failed:', error);
+            throw new Error("Technical Error!");
+        }
+    }
 }
 
 export const facilityAuthApiService = new ApiService(AUTH_API_BASE_URL);

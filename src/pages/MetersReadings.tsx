@@ -46,6 +46,7 @@ import {
 import { useSkipFirstEffect } from "@/hooks/use-skipfirst-effect";
 import { meterReadingApiService } from "@/services/energy_iot/meterreadingsapi";
 import { Pagination } from "@/components/Pagination";
+import { exportToExcel } from "@/helpers/exportToExcelHelper";
 
 const getMeterIcon = (kind: string) => {
   switch (kind) {
@@ -264,6 +265,13 @@ export default function MetersReadings() {
     }
   };
 
+  const onExport = async () => {
+    const params = new URLSearchParams();
+    if (searchTerm) params.append("search", searchTerm);
+
+    await exportToExcel(activeTab, params);
+  }
+
   const onCreateReading = () => {
     console.log("Opening reading form...");
   };
@@ -416,7 +424,7 @@ export default function MetersReadings() {
                       <Filter className="h-4 w-4 mr-2" />
                       Filter
                     </Button>
-                    <Button variant="outline" size="sm">
+                    <Button variant="outline" size="sm" onClick={() => onExport()}>
                       <Download className="h-4 w-4 mr-2" />
                       Export
                     </Button>
