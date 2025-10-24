@@ -10,14 +10,14 @@ class UserManagementApiService {
   }
 
   async addUser(userData: any) {
-    return await apiService.request("/users/", {
+    return await apiService.request("/users", {
       method: "POST",
       body: JSON.stringify(userData),
     });
   }
 
-  async updateUser(userId: string, userData: any) {
-    return await apiService.request(`/users/${userId}`, {
+  async updateUser(userData: any) {
+    return await apiService.request('/users', {
       method: "PUT",
       body: JSON.stringify(userData),
     });
