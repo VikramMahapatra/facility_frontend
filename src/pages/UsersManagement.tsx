@@ -14,7 +14,7 @@ import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/com
 import { Badge } from "@/components/ui/badge";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { UserForm } from "@/components/UserForm";
-import { userManagementApiService } from "@/services/access_control/usermanagenemtapi";
+import { userManagementApiService } from "@/services/access_control/usermanagementapi";
 import { toast } from "sonner";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
 
@@ -75,6 +75,7 @@ export default function UsersManagement() {
   const handleCreateUser = async (values: any) => {
     try {
       await userManagementApiService.addUser(values);
+      setIsFormOpen(false);
       toast.success("User created successfully");
       // Refresh the users list
       loadUsers();
@@ -87,8 +88,14 @@ export default function UsersManagement() {
   const handleUpdateUser = async (values: any) => {
     if (!editingUser) return;
     try {
-      await userManagementApiService.updateUser(editingUser.id, values);
+      console.log("form values :", values);
+      const payload = {
+        ...values,
+        id: editingUser.id, // ✅ add id to values before sending
+      };
+      await userManagementApiService.updateUser(payload);
       toast.success("User updated successfully");
+      setIsFormOpen(false);
       setEditingUser(undefined);
       // Refresh the users list
       loadUsers();
@@ -120,12 +127,12 @@ export default function UsersManagement() {
     try {
       const skip = (page - 1) * pageSize;
       const limit = pageSize;
-      
+
       const params = new URLSearchParams();
       if (searchQuery) params.append("search", searchQuery);
       params.append("skip", String(skip));
       params.append("limit", String(limit));
-      
+
       const response = await userManagementApiService.getUsers(params);
       setUsers(response?.users || response || []);
       setTotalItems(response?.total || 0);
@@ -153,7 +160,7 @@ export default function UsersManagement() {
     <SidebarProvider>
       <div className="min-h-screen flex w-full bg-background">
         <PropertySidebar />
-        
+
         <div className="flex-1 flex flex-col">
           <header className="bg-card border-b border-border px-6 py-4">
             <SidebarTrigger />
@@ -161,160 +168,160 @@ export default function UsersManagement() {
 
           <main className="flex-1 p-6 overflow-auto">
             <div className="max-w-7xl mx-auto space-y-6">
-        <div className="flex items-center justify-between">
-          <div>
-            <h1 className="text-3xl font-bold text-foreground">Users Management</h1>
-            <p className="text-muted-foreground mt-1">
-              Create and manage users and assign roles
-            </p>
-          </div>
-          <Button onClick={() => handleOpenForm()}>
-            <Plus className="h-4 w-4 mr-2" />
-            Create User
-          </Button>
-        </div>
-
-        <Card>
-          <CardHeader>
-            <CardTitle>All Users</CardTitle>
-            <CardDescription>
-              Manage users and their role assignments
-            </CardDescription>
-          </CardHeader>
-          <CardContent>
-            <div className="mb-4">
-              <div className="relative">
-                <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-                <Input
-                  type="text"
-                  placeholder="Search users..."
-                  value={searchQuery}
-                  onChange={(e) => setSearchQuery(e.target.value)}
-                  className="pl-10"
-                />
+              <div className="flex items-center justify-between">
+                <div>
+                  <h1 className="text-3xl font-bold text-foreground">Users Management</h1>
+                  <p className="text-muted-foreground mt-1">
+                    Create and manage users and assign roles
+                  </p>
+                </div>
+                <Button onClick={() => handleOpenForm()}>
+                  <Plus className="h-4 w-4 mr-2" />
+                  Create User
+                </Button>
               </div>
+
+              <Card>
+                <CardHeader>
+                  <CardTitle>All Users</CardTitle>
+                  <CardDescription>
+                    Manage users and their role assignments
+                  </CardDescription>
+                </CardHeader>
+                <CardContent>
+                  <div className="mb-4">
+                    <div className="relative">
+                      <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                      <Input
+                        type="text"
+                        placeholder="Search users..."
+                        value={searchQuery}
+                        onChange={(e) => setSearchQuery(e.target.value)}
+                        className="pl-10"
+                      />
+                    </div>
+                  </div>
+
+                  <div className="rounded-md border">
+                    <Table>
+                      <TableHeader>
+                        <TableRow>
+                          <TableHead>User</TableHead>
+                          <TableHead>Contact</TableHead>
+                          <TableHead>Roles</TableHead>
+                          <TableHead>Status</TableHead>
+                          <TableHead className="text-right">Actions</TableHead>
+                        </TableRow>
+                      </TableHeader>
+                      <TableBody>
+                        {users.length === 0 ? (
+                          <TableRow>
+                            <TableCell colSpan={5} className="text-center text-muted-foreground">
+                              No users found
+                            </TableCell>
+                          </TableRow>
+                        ) : (
+                          users.map((user) => (
+                            <TableRow key={user.id}>
+                              <TableCell>
+                                <div className="flex items-center gap-3">
+                                  <Avatar>
+                                    <AvatarFallback>
+                                      {getInitials(user.full_name)}
+                                    </AvatarFallback>
+                                  </Avatar>
+                                  <div>
+                                    <div className="font-medium">{user.full_name}</div>
+                                    <div className="text-xs text-muted-foreground">
+                                      {user.email}
+                                    </div>
+                                  </div>
+                                </div>
+                              </TableCell>
+                              <TableCell className="text-muted-foreground">
+                                {user.phone}
+                              </TableCell>
+                              <TableCell>
+                                <div className="flex flex-wrap gap-1">
+                                  {user.roles?.map((role) => (
+                                    <Badge key={role.id} variant="secondary">
+                                      {role.name}
+                                    </Badge>
+                                  ))}
+                                </div>
+                              </TableCell>
+                              <TableCell>
+                                <Badge
+                                  variant={user.status === "active" ? "default" : "outline"}
+                                >
+                                  {user.status}
+                                </Badge>
+                              </TableCell>
+                              <TableCell className="text-right">
+                                <div className="flex justify-end gap-2">
+                                  <Button
+                                    variant="ghost"
+                                    size="icon"
+                                    onClick={() => handleOpenForm(user)}
+                                  >
+                                    <Pencil className="h-4 w-4" />
+                                  </Button>
+                                  <Button
+                                    variant="ghost"
+                                    size="icon"
+                                    onClick={() => handleDeleteUser(user.id)}
+                                  >
+                                    <Trash2 className="h-4 w-4 text-destructive" />
+                                  </Button>
+                                </div>
+                              </TableCell>
+                            </TableRow>
+                          ))
+                        )}
+                      </TableBody>
+                    </Table>
+                  </div>
+
+                  {/* Pagination */}
+                  <div className="mt-4">
+                    <Pagination
+                      page={page}
+                      pageSize={pageSize}
+                      totalItems={totalItems}
+                      onPageChange={setPage}
+                    />
+                  </div>
+                </CardContent>
+              </Card>
             </div>
 
-            <div className="rounded-md border">
-              <Table>
-                <TableHeader>
-                  <TableRow>
-                    <TableHead>User</TableHead>
-                    <TableHead>Contact</TableHead>
-                    <TableHead>Roles</TableHead>
-                    <TableHead>Status</TableHead>
-                    <TableHead className="text-right">Actions</TableHead>
-                  </TableRow>
-                </TableHeader>
-                <TableBody>
-                  {users.length === 0 ? (
-                    <TableRow>
-                      <TableCell colSpan={5} className="text-center text-muted-foreground">
-                        No users found
-                      </TableCell>
-                    </TableRow>
-                  ) : (
-                    users.map((user) => (
-                      <TableRow key={user.id}>
-                        <TableCell>
-                          <div className="flex items-center gap-3">
-                            <Avatar>
-                              <AvatarFallback>
-                                {getInitials(user.full_name)}
-                              </AvatarFallback>
-                            </Avatar>
-                            <div>
-                              <div className="font-medium">{user.full_name}</div>
-                              <div className="text-xs text-muted-foreground">
-                                {user.email}
-                              </div>
-                            </div>
-                          </div>
-                        </TableCell>
-                        <TableCell className="text-muted-foreground">
-                          {user.phone}
-                        </TableCell>
-                        <TableCell>
-                          <div className="flex flex-wrap gap-1">
-                            {user.roles?.map((role) => (
-                              <Badge key={role.id} variant="secondary">
-                                {role.name}
-                              </Badge>
-                            ))}
-                          </div>
-                        </TableCell>
-                        <TableCell>
-                          <Badge
-                            variant={user.status === "active" ? "default" : "outline"}
-                          >
-                            {user.status}
-                          </Badge>
-                        </TableCell>
-                        <TableCell className="text-right">
-                          <div className="flex justify-end gap-2">
-                            <Button
-                              variant="ghost"
-                              size="icon"
-                              onClick={() => handleOpenForm(user)}
-                            >
-                              <Pencil className="h-4 w-4" />
-                            </Button>
-                            <Button
-                              variant="ghost"
-                              size="icon"
-                              onClick={() => handleDeleteUser(user.id)}
-                            >
-                              <Trash2 className="h-4 w-4 text-destructive" />
-                            </Button>
-                          </div>
-                        </TableCell>
-                      </TableRow>
-                    ))
-                  )}
-                </TableBody>
-              </Table>
-            </div>
-            
-            {/* Pagination */}
-            <div className="mt-4">
-              <Pagination
-                page={page}
-                pageSize={pageSize}
-                totalItems={totalItems}
-                onPageChange={setPage}
-              />
-            </div>
-          </CardContent>
-        </Card>
-              </div>
-              
-               <UserForm
-                 user={editingUser}
-                 open={isFormOpen}
-                 onOpenChange={setIsFormOpen}
-                 onSubmit={editingUser ? handleUpdateUser : handleCreateUser}
-               />
+            <UserForm
+              user={editingUser}
+              open={isFormOpen}
+              onOpenChange={setIsFormOpen}
+              onSubmit={editingUser ? handleUpdateUser : handleCreateUser}
+            />
 
-               {/* Delete Confirmation Dialog */}
-               <AlertDialog open={!!deleteUserId} onOpenChange={() => setDeleteUserId(null)}>
-                 <AlertDialogContent>
-                   <AlertDialogHeader>
-                     <AlertDialogTitle>Delete User</AlertDialogTitle>
-                     <AlertDialogDescription>
-                       Are you sure you want to delete this user? This action cannot be undone.
-                     </AlertDialogDescription>
-                   </AlertDialogHeader>
-                   <AlertDialogFooter>
-                     <AlertDialogCancel>Cancel</AlertDialogCancel>
-                     <AlertDialogAction onClick={confirmDelete} className="bg-destructive text-destructive-foreground hover:bg-destructive/90">
-                       Delete
-                     </AlertDialogAction>
-                   </AlertDialogFooter>
-                 </AlertDialogContent>
-               </AlertDialog>
-            </main>
-          </div>
+            {/* Delete Confirmation Dialog */}
+            <AlertDialog open={!!deleteUserId} onOpenChange={() => setDeleteUserId(null)}>
+              <AlertDialogContent>
+                <AlertDialogHeader>
+                  <AlertDialogTitle>Delete User</AlertDialogTitle>
+                  <AlertDialogDescription>
+                    Are you sure you want to delete this user? This action cannot be undone.
+                  </AlertDialogDescription>
+                </AlertDialogHeader>
+                <AlertDialogFooter>
+                  <AlertDialogCancel>Cancel</AlertDialogCancel>
+                  <AlertDialogAction onClick={confirmDelete} className="bg-destructive text-destructive-foreground hover:bg-destructive/90">
+                    Delete
+                  </AlertDialogAction>
+                </AlertDialogFooter>
+              </AlertDialogContent>
+            </AlertDialog>
+          </main>
         </div>
-      </SidebarProvider>
-    );
-  }
+      </div>
+    </SidebarProvider>
+  );
+}

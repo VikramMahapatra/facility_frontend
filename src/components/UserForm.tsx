@@ -26,7 +26,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { Checkbox } from "@/components/ui/checkbox";
-import { userManagementApiService } from "@/services/access_control/usermanagenemtapi";
+import { userManagementApiService } from "@/services/access_control/usermanagementapi";
 import { toast } from "sonner";
 
 // Define interfaces for API data
@@ -67,7 +67,7 @@ interface UserFormProps {
 }
 
 export function UserForm({ user, open, onOpenChange, onSubmit }: UserFormProps) {
-  
+
   const [statusList, setStatusList] = useState([]);
   const [roleList, setRoleList] = useState([]);
 
@@ -111,8 +111,6 @@ export function UserForm({ user, open, onOpenChange, onSubmit }: UserFormProps) 
 
   const handleSubmit = (values: UserFormValues) => {
     onSubmit(values);
-    form.reset();
-    onOpenChange(false);
   };
 
   return (
