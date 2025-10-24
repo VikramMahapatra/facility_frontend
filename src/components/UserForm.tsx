@@ -1,6 +1,7 @@
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useForm } from "react-hook-form";
 import * as z from "zod";
+import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import {
   Form,
@@ -25,13 +26,34 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { Checkbox } from "@/components/ui/checkbox";
-import { User, Role } from "@/data/mockRbacData";
+import { userManagementApiService } from "@/services/access_control/usermanagenemtapi";
+import { toast } from "sonner";
+
+// Define interfaces for API data
+interface User {
+  id: string;
+  org_id: string;
+  full_name: string;
+  email: string;
+  phone?: string;
+  status: string;
+  created_at: string;
+  updated_at: string;
+  roles?: Role[];
+}
+
+interface Role {
+  id: string;
+  org_id: string;
+  name: string;
+  description: string;
+}
 
 const userFormSchema = z.object({
   full_name: z.string().min(2, "Name must be at least 2 characters").max(200),
   email: z.string().email("Invalid email address").max(200),
-  phone_e164: z.string().optional(),
-  status: z.enum(["active", "inactive"]),
+  phone: z.string().optional(),
+  status: z.string(),
   role_ids: z.array(z.string()).min(1, "At least one role must be selected"),
 });
 
@@ -39,23 +61,53 @@ type UserFormValues = z.infer<typeof userFormSchema>;
 
 interface UserFormProps {
   user?: User;
-  roles: Role[];
   open: boolean;
   onOpenChange: (open: boolean) => void;
   onSubmit: (values: UserFormValues) => void;
 }
 
-export function UserForm({ user, roles, open, onOpenChange, onSubmit }: UserFormProps) {
+export function UserForm({ user, open, onOpenChange, onSubmit }: UserFormProps) {
+  
+  const [statusList, setStatusList] = useState([]);
+  const [roleList, setRoleList] = useState([]);
+
+  // Load lookup data when form opens 
+  useEffect(() => {
+    if (open) {
+      loadStatusLookup();
+      loadRolesLookup();
+    }
+  }, [open]);
+
+  const loadStatusLookup = async () => {
+    const lookup = await userManagementApiService.getUserStatusOverview();
+    setStatusList(lookup || []);
+  };
+
+  const loadRolesLookup = async () => {
+    const lookup = await userManagementApiService.getUserRolesLookup();
+    setRoleList(lookup || []);
+  };
   const form = useForm<UserFormValues>({
     resolver: zodResolver(userFormSchema),
     defaultValues: {
       full_name: user?.full_name || "",
       email: user?.email || "",
-      phone_e164: user?.phone_e164 || "",
+      phone: user?.phone || "",
       status: user?.status || "active",
       role_ids: user?.roles?.map(r => r.id) || [],
     },
   });
+
+  useEffect(() => {
+    form.reset({
+      full_name: user?.full_name || "",
+      email: user?.email || "",
+      phone: user?.phone || "",
+      status: user?.status || "active",
+      role_ids: user?.roles?.map(r => r.id) || [],
+    });
+  }, [user, form]);
 
   const handleSubmit = (values: UserFormValues) => {
     onSubmit(values);
@@ -100,7 +152,7 @@ export function UserForm({ user, roles, open, onOpenChange, onSubmit }: UserForm
               />
               <FormField
                 control={form.control}
-                name="phone_e164"
+                name="phone"
                 render={({ field }) => (
                   <FormItem>
                     <FormLabel>Phone</FormLabel>
@@ -125,8 +177,11 @@ export function UserForm({ user, roles, open, onOpenChange, onSubmit }: UserForm
                       </SelectTrigger>
                     </FormControl>
                     <SelectContent>
-                      <SelectItem value="active">Active</SelectItem>
-                      <SelectItem value="inactive">Inactive</SelectItem>
+                      {statusList.map((status) => (
+                        <SelectItem key={status.id} value={status.id}>
+                          {status.name}
+                        </SelectItem>
+                      ))}
                     </SelectContent>
                   </Select>
                   <FormMessage />
@@ -140,7 +195,7 @@ export function UserForm({ user, roles, open, onOpenChange, onSubmit }: UserForm
                 <FormItem>
                   <FormLabel>Assign Roles</FormLabel>
                   <div className="space-y-2 border rounded-md p-4 max-h-48 overflow-y-auto">
-                    {roles.map((role) => (
+                    {roleList.map((role) => (
                       <FormField
                         key={role.id}
                         control={form.control}
@@ -167,7 +222,7 @@ export function UserForm({ user, roles, open, onOpenChange, onSubmit }: UserForm
                                 {role.name}
                               </FormLabel>
                               <p className="text-xs text-muted-foreground">
-                                {role.description}
+                                {role.description || "no description"}
                               </p>
                             </div>
                           </FormItem>
@@ -180,7 +235,12 @@ export function UserForm({ user, roles, open, onOpenChange, onSubmit }: UserForm
               )}
             />
             <div className="flex justify-end gap-3">
-              <Button type="button" variant="outline" onClick={() => onOpenChange(false)}>
+              <Button type="button" variant="outline" onClick={() => {
+                form.reset();
+                loadStatusLookup();
+                loadRolesLookup();
+                onOpenChange(false);
+              }}>
                 Cancel
               </Button>
               <Button type="submit">

@@ -6,6 +6,7 @@ import { Badge } from "@/components/ui/badge";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Plus, Search, Filter, Download, Eye, Edit, Send, Trash2, CreditCard, FileText, TrendingUp, AlertTriangle } from "lucide-react";
+import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
 import { SidebarProvider, SidebarTrigger } from "@/components/ui/sidebar";
 import { PropertySidebar } from "@/components/PropertySidebar";
 import { invoiceApiService } from "@/services/financials/invoicesapi";
@@ -147,14 +148,26 @@ export default function Invoices() {
     setDeleteInvoiceId(invoiceId);
   };
 
-  const confirmDelete = () => {
+  const confirmDelete = async () => {
     if (deleteInvoiceId) {
-      setInvoices(invoices.filter(invoice => invoice.id !== deleteInvoiceId));
-      toast({
-        title: "Space Deleted",
-        description: "Space has been deleted successfully.",
-      });
-      setDeleteInvoiceId(null);
+      try {
+        await invoiceApiService.deleteInvoice(deleteInvoiceId);
+        updateInvoicesPage();
+        loadInvoicesOverView();
+        setDeleteInvoiceId(null);
+        toast({
+          title: "Invoice Deleted",
+          description: "Invoice has been deleted successfully.",
+        });
+        setDeleteInvoiceId(null);
+
+      } catch (error) {
+        toast({
+          title: "Techical Error!",
+          variant: "destructive",
+        });
+      }
+
     }
   };
 
@@ -355,6 +368,14 @@ export default function Invoices() {
                               <Button variant="ghost" size="sm">
                                 <Download className="h-4 w-4" />
                               </Button>
+                              <Button
+                                variant="ghost"
+                                size="sm"
+                                className="text-destructive hover:text-destructive"
+                                onClick={() => handleDelete(invoice.id)}
+                              >
+                                <Trash2 className="h-4 w-4" />
+                              </Button>
                             </div>
                           </TableCell>
                         </TableRow>
@@ -422,6 +443,23 @@ export default function Invoices() {
         onSave={handleSave}
         mode={formMode}
       />
+
+      <AlertDialog open={!!deleteInvoiceId} onOpenChange={() => setDeleteInvoiceId(null)}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Delete Invoice</AlertDialogTitle>
+            <AlertDialogDescription>
+              Are you sure you want to delete this invoice? This action cannot be undone.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancel</AlertDialogCancel>
+            <AlertDialogAction onClick={confirmDelete} className="bg-destructive text-destructive-foreground">
+              Delete
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </SidebarProvider>
   );
 }
