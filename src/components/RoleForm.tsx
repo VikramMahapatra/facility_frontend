@@ -1,6 +1,7 @@
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useForm } from "react-hook-form";
 import * as z from "zod";
+import { useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import {
   Form,
@@ -18,7 +19,7 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
-import { Role } from "@/data/mockRbacData";
+import { Role } from "@/interfaces/role_management";
 
 const roleFormSchema = z.object({
   name: z.string().min(2, "Role name must be at least 2 characters").max(64),
@@ -29,12 +30,13 @@ type RoleFormValues = z.infer<typeof roleFormSchema>;
 
 interface RoleFormProps {
   role?: Role;
-  open: boolean;
-  onOpenChange: (open: boolean) => void;
-  onSubmit: (values: RoleFormValues) => void;
+  isOpen: boolean;
+  onClose: () => void;
+  onSave: (role: Partial<Role>) => void;
+  mode: "create" | "edit" | "view";
 }
 
-export function RoleForm({ role, open, onOpenChange, onSubmit }: RoleFormProps) {
+export function RoleForm({ role, isOpen, onClose, onSave, mode  }: RoleFormProps) {
   const form = useForm<RoleFormValues>({
     resolver: zodResolver(roleFormSchema),
     defaultValues: {
@@ -43,14 +45,22 @@ export function RoleForm({ role, open, onOpenChange, onSubmit }: RoleFormProps) 
     },
   });
 
+  // Reset form when role changes
+  useEffect(() => {
+    form.reset({
+      name: role?.name || "",
+      description: role?.description || "",
+    });
+  }, [role, form]);
+
   const handleSubmit = (values: RoleFormValues) => {
-    onSubmit(values);
+    onSave(values);
     form.reset();
-    onOpenChange(false);
+    onClose();
   };
 
   return (
-    <Dialog open={open} onOpenChange={onOpenChange}>
+    <Dialog open={isOpen} onOpenChange={onClose}>
       <DialogContent className="sm:max-w-[500px]">
         <DialogHeader>
           <DialogTitle>{role ? "Edit Role" : "Create New Role"}</DialogTitle>
@@ -88,7 +98,10 @@ export function RoleForm({ role, open, onOpenChange, onSubmit }: RoleFormProps) 
               )}
             />
             <div className="flex justify-end gap-3">
-              <Button type="button" variant="outline" onClick={() => onOpenChange(false)}>
+              <Button type="button" variant="outline" onClick={() => {
+                form.reset();
+                onClose();
+              }}>
                 Cancel
               </Button>
               <Button type="submit">
