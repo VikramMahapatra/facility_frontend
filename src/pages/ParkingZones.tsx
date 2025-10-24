@@ -106,14 +106,26 @@ export default function ParkingZones() {
     setDeleteZoneId(zoneId);
   };
 
-  const confirmDelete = () => {
+  const confirmDelete = async () => {
     if (deleteZoneId) {
-      setZones(zones.filter(zone => zone.id !== deleteZoneId));
-      toast({
-        title: "Zone Deleted",
-        description: "Parking zone has been deleted successfully.",
-      });
-      setDeleteZoneId(null);
+      try {
+        await parkingZoneApiService.deleteParkingZone(deleteZoneId);
+        updateParkingZonePage();
+        loadParkingZoneOverView();
+        setDeleteZoneId(null);
+        toast({
+          title: "Zone Deleted",
+          description: "Parking zone has been deleted successfully.",
+        });
+        setDeleteZoneId(null);
+
+      } catch (error) {
+        toast({
+          title: "Techical Error!",
+          variant: "destructive",
+        });
+      }
+
     }
   };
 

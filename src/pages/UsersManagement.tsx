@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Plus, Pencil, Trash2, Search, UserCircle } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -14,64 +14,125 @@ import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/com
 import { Badge } from "@/components/ui/badge";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { UserForm } from "@/components/UserForm";
-import { mockUsers, mockRoles, User } from "@/data/mockRbacData";
+import { userManagementApiService } from "@/services/access_control/usermanagenemtapi";
 import { toast } from "sonner";
+import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
+
+
+// Define interfaces for API data
+interface User {
+  id: string;
+  org_id: string;
+  full_name: string;
+  email: string;
+  phone?: string;
+  status: string;
+  created_at: string;
+  updated_at: string;
+  roles?: Role[];
+}
+
+interface Role {
+  id: string;
+  org_id: string;
+  name: string;
+  description: string;
+}
 import { SidebarProvider, SidebarTrigger } from "@/components/ui/sidebar";
 import { PropertySidebar } from "@/components/PropertySidebar";
+import { Pagination } from "@/components/Pagination";
+import { useSkipFirstEffect } from "@/hooks/use-skipfirst-effect";
 
 export default function UsersManagement() {
-  const [users, setUsers] = useState<User[]>(mockUsers);
+  const [users, setUsers] = useState<User[]>([]);
   const [searchQuery, setSearchQuery] = useState("");
   const [isFormOpen, setIsFormOpen] = useState(false);
   const [editingUser, setEditingUser] = useState<User | undefined>();
+  const [deleteUserId, setDeleteUserId] = useState<string | null>(null);
+  const [page, setPage] = useState(1);
+  const [pageSize] = useState(10);
+  const [totalItems, setTotalItems] = useState(0);
 
-  const filteredUsers = users.filter((user) =>
-    user.full_name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-    user.email.toLowerCase().includes(searchQuery.toLowerCase())
-  );
+  // Load users on component mount and when search changes
+  useSkipFirstEffect(() => {
+    loadUsers();
+  }, [page]);
 
-  const handleCreateUser = (values: any) => {
-    const selectedRoles = mockRoles.filter((r) => values.role_ids.includes(r.id));
-    const newUser: User = {
-      id: `user-${Date.now()}`,
-      org_id: "org-1",
-      full_name: values.full_name,
-      email: values.email,
-      phone_e164: values.phone_e164,
-      status: values.status,
-      created_at: new Date().toISOString(),
-      updated_at: new Date().toISOString(),
-      roles: selectedRoles,
-    };
-    setUsers([...users, newUser]);
-    toast.success("User created successfully");
+  useEffect(() => {
+    updateUsersPage();
+  }, [searchQuery]);
+
+  const updateUsersPage = () => {
+    if (page === 1) {
+      loadUsers();
+    } else {
+      setPage(1);
+    }
   };
 
-  const handleUpdateUser = (values: any) => {
+  // Remove client-side filtering since we're using server-side pagination
+
+  const handleCreateUser = async (values: any) => {
+    try {
+      await userManagementApiService.addUser(values);
+      toast.success("User created successfully");
+      // Refresh the users list
+      loadUsers();
+    } catch (error) {
+      console.error('Error creating user:', error);
+      toast.error("Failed to create user");
+    }
+  };
+
+  const handleUpdateUser = async (values: any) => {
     if (!editingUser) return;
-    const selectedRoles = mockRoles.filter((r) => values.role_ids.includes(r.id));
-    setUsers(
-      users.map((u) =>
-        u.id === editingUser.id
-          ? {
-              ...u,
-              full_name: values.full_name,
-              email: values.email,
-              phone_e164: values.phone_e164,
-              status: values.status,
-              roles: selectedRoles,
-              updated_at: new Date().toISOString(),
-            }
-          : u
-      )
-    );
-    setEditingUser(undefined);
-    toast.success("User updated successfully");
+    try {
+      await userManagementApiService.updateUser(editingUser.id, values);
+      toast.success("User updated successfully");
+      setEditingUser(undefined);
+      // Refresh the users list
+      loadUsers();
+    } catch (error) {
+      console.error('Error updating user:', error);
+      toast.error("Failed to update user");
+    }
   };
 
   const handleDeleteUser = (userId: string) => {
-    setUsers(users.filter((u) => u.id !== userId));
-    toast.success("User deleted successfully");
+    setDeleteUserId(userId);
+  };
+
+  const confirmDelete = async () => {
+    if (!deleteUserId) return;
+    try {
+      await userManagementApiService.deleteUser(deleteUserId);
+      toast.success("User deleted successfully");
+      loadUsers();
+    } catch (error) {
+      console.error('Error deleting user:', error);
+      toast.error("Failed to delete user");
+    } finally {
+      setDeleteUserId(null);
+    }
+  };
+
+  const loadUsers = async () => {
+    try {
+      const skip = (page - 1) * pageSize;
+      const limit = pageSize;
+      
+      const params = new URLSearchParams();
+      if (searchQuery) params.append("search", searchQuery);
+      params.append("skip", String(skip));
+      params.append("limit", String(limit));
+      
+      const response = await userManagementApiService.getUsers(params);
+      setUsers(response?.users || response || []);
+      setTotalItems(response?.total || 0);
+    } catch (error) {
+      console.error('Error loading users:', error);
+      toast.error("Failed to load users");
+    }
   };
 
   const handleOpenForm = (user?: User) => {
@@ -146,14 +207,14 @@ export default function UsersManagement() {
                   </TableRow>
                 </TableHeader>
                 <TableBody>
-                  {filteredUsers.length === 0 ? (
+                  {users.length === 0 ? (
                     <TableRow>
                       <TableCell colSpan={5} className="text-center text-muted-foreground">
                         No users found
                       </TableCell>
                     </TableRow>
                   ) : (
-                    filteredUsers.map((user) => (
+                    users.map((user) => (
                       <TableRow key={user.id}>
                         <TableCell>
                           <div className="flex items-center gap-3">
@@ -171,7 +232,7 @@ export default function UsersManagement() {
                           </div>
                         </TableCell>
                         <TableCell className="text-muted-foreground">
-                          {user.phone_e164 || "—"}
+                          {user.phone}
                         </TableCell>
                         <TableCell>
                           <div className="flex flex-wrap gap-1">
@@ -213,17 +274,44 @@ export default function UsersManagement() {
                 </TableBody>
               </Table>
             </div>
+            
+            {/* Pagination */}
+            <div className="mt-4">
+              <Pagination
+                page={page}
+                pageSize={pageSize}
+                totalItems={totalItems}
+                onPageChange={setPage}
+              />
+            </div>
           </CardContent>
         </Card>
               </div>
               
-              <UserForm
-                user={editingUser}
-                roles={mockRoles}
-                open={isFormOpen}
-                onOpenChange={setIsFormOpen}
-                onSubmit={editingUser ? handleUpdateUser : handleCreateUser}
-              />
+               <UserForm
+                 user={editingUser}
+                 open={isFormOpen}
+                 onOpenChange={setIsFormOpen}
+                 onSubmit={editingUser ? handleUpdateUser : handleCreateUser}
+               />
+
+               {/* Delete Confirmation Dialog */}
+               <AlertDialog open={!!deleteUserId} onOpenChange={() => setDeleteUserId(null)}>
+                 <AlertDialogContent>
+                   <AlertDialogHeader>
+                     <AlertDialogTitle>Delete User</AlertDialogTitle>
+                     <AlertDialogDescription>
+                       Are you sure you want to delete this user? This action cannot be undone.
+                     </AlertDialogDescription>
+                   </AlertDialogHeader>
+                   <AlertDialogFooter>
+                     <AlertDialogCancel>Cancel</AlertDialogCancel>
+                     <AlertDialogAction onClick={confirmDelete} className="bg-destructive text-destructive-foreground hover:bg-destructive/90">
+                       Delete
+                     </AlertDialogAction>
+                   </AlertDialogFooter>
+                 </AlertDialogContent>
+               </AlertDialog>
             </main>
           </div>
         </div>
