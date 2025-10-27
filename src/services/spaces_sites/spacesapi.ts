@@ -30,10 +30,13 @@ class SpacesApiService {
         });
     }
 
-    async getSpaceLookup(site_id?: any) {
+    async getSpaceLookup(site_id?: any, building_id?: any) {
         let url = '/spaces/lookup';
         if (site_id) {
             url += `?site_id=${site_id}`;
+        }
+        if (building_id) {
+            url +=`&building_id=${building_id}`;
         }
         return await apiService.request(url);
     }
