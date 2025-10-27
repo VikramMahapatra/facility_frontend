@@ -52,7 +52,7 @@ interface Role {
 const userFormSchema = z.object({
   full_name: z.string().min(2, "Name must be at least 2 characters").max(200),
   email: z.string().email("Invalid email address").max(200),
-  phone: z.string().optional(),
+  phone: z.string().regex(/^\d{10}$/, "Phone must be 10 digits").optional(),
   status: z.string(),
   role_ids: z.array(z.string()).min(1, "At least one role must be selected"),
 });
@@ -155,7 +155,11 @@ export function UserForm({ user, open, onOpenChange, onSubmit }: UserFormProps) 
                   <FormItem>
                     <FormLabel>Phone</FormLabel>
                     <FormControl>
-                      <Input placeholder="+1234567890" {...field} />
+                      <Input 
+                        placeholder="+1234567890" 
+                        maxLength={10}
+                        {...field}
+                      />
                     </FormControl>
                     <FormMessage />
                   </FormItem>
