@@ -19,7 +19,9 @@ import {
 } from "@/components/ui/dialog";
 import { useToast } from "@/hooks/use-toast";
 import { siteApiService } from "@/services/spaces_sites/sitesapi";
-import { tenantsApiService } from "@/services/leasing_tenants/tenantsapi";
+import { spacesApiService } from "@/services/spaces_sites/spacesapi";
+import { buildingApiService } from "@/services/spaces_sites/buildingsapi";
+import { tenantsApiService } from "@/services/Leasing_Tenants/tenantsapi";
 import { Tenant } from "@/interfaces/leasing_tenants_interface";
 
 interface TenantFormProps {
@@ -32,6 +34,8 @@ interface TenantFormProps {
 
 const emptyFormData = {
   site_id: "",
+  building_id: "",
+  space_id: "",
   name: "",
   email: "",
   phone: "",
@@ -63,6 +67,8 @@ export function TenantForm({
   const { toast } = useToast();
   const [formData, setFormData] = useState<Partial<Tenant>>(emptyFormData);
   const [siteList, setSiteList] = useState([]);
+  const [buildingList, setBuildingList] = useState([]);
+  const [spaceList, setSpaceList] = useState([]);
   const [statusList, setStatusList] = useState([]);
   const [typeList, setTypeList] = useState([]);
 
@@ -77,25 +83,49 @@ export function TenantForm({
     loadTypeLookup();
   }, [tenant]);
 
+  useEffect(() => {
+    loadBuildingLookup();
+  }, [formData.site_id]);
+
+  useEffect(() => {
+    loadSpaceLookup();
+  }, [formData.site_id, formData.building_id]);
+
   const loadSiteLookup = async () => {
     const lookup = await siteApiService.getSiteLookup();
     setSiteList(lookup);
   };
 
+  const loadBuildingLookup = async () => {
+    if (!formData.site_id) {
+      setBuildingList([]);
+      return;
+    }
+    const lookup = await buildingApiService.getBuildingLookup(formData.site_id);
+    setBuildingList(lookup);
+  };
+
+  const loadSpaceLookup = async () => {
+    if (!formData.building_id) {
+      setSpaceList([]);
+      return;
+    }
+    const lookup = await spacesApiService.getSpaceLookup(formData.site_id, formData.building_id);
+    setSpaceList(lookup);
+  };
+
   const loadStatusLookup = async () => {
     const lookup = await tenantsApiService.getTenantStatusLookup();
-    setStatusList(lookup || []);
+    setStatusList(lookup);
   };
 
   const loadTypeLookup = async () => {
     const lookup = await tenantsApiService.getTenantTypeLookup();
-    setTypeList(lookup || []);
+    setTypeList(lookup);
   };
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-
-    console.log("Form Data :", formData);
 
     if (!formData.name || !formData.email || !formData.phone || !formData.site_id) {
       toast({
@@ -129,19 +159,21 @@ export function TenantForm({
       }
     }
 
-    const tenantData: Partial<Tenant> = {
-      ...tenant, // for edit mode
-      id: tenant?.id, // ensure id passes during edit
+    const tenantData: any = {
+      ...(tenant?.id && { id: tenant.id }), 
       name: formData.name?.trim(),
       email: formData.email?.trim(),
       phone: formData.phone?.trim(),
       tenant_type: formData.tenant_type,
       status: formData.status,
       site_id: formData.site_id,
+      space_id: formData.space_id || undefined,
+      building_block_id: formData.building_id || undefined, 
       contact_info: contactInfo,
-      type: formData.type || undefined,
-      legal_name: formData.legal_name?.trim() || undefined,
-      updated_at: new Date().toISOString(),
+      ...(formData.tenant_type === "commercial" && {
+        type: formData.type || undefined,
+        legal_name: formData.legal_name?.trim() || undefined,
+      }),
     };
 
     onSave(tenantData);
@@ -180,7 +212,7 @@ export function TenantForm({
               <Select
                 value={formData.site_id}
                 onValueChange={(value) =>
-                  setFormData({ ...formData, site_id: value })
+                  setFormData({ ...formData, site_id: value, building_id: "", space_id: "" })
                 }
                 disabled={isReadOnly}
               >
@@ -191,6 +223,51 @@ export function TenantForm({
                   {siteList.map((site) => (
                     <SelectItem key={site.id} value={site.id}>
                       {site.name}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+          </div>
+
+          <div className="grid grid-cols-2 gap-4">
+            <div>
+              <Label htmlFor="building">Building</Label>
+              <Select
+                value={formData.building_id || ""}
+                onValueChange={(value) =>
+                  setFormData({ ...formData, building_id: value, space_id: "" })
+                }
+                disabled={isReadOnly || !formData.site_id}
+              >
+                <SelectTrigger>
+                  <SelectValue placeholder={formData.site_id ? "Select building" : "Select site first"} />
+                </SelectTrigger>
+                <SelectContent>
+                  {buildingList.map((building) => (
+                    <SelectItem key={building.id} value={building.id}>
+                      {building.name}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+            <div>
+              <Label htmlFor="space">Space</Label>
+              <Select
+                value={formData.space_id || ""}
+                onValueChange={(value) =>
+                  setFormData({ ...formData, space_id: value })
+                }
+                disabled={isReadOnly || !formData.building_id}
+              >
+                <SelectTrigger>
+                  <SelectValue placeholder={!formData.building_id ? "Select building first" : "Select space"} />
+                </SelectTrigger>
+                <SelectContent>
+                  {spaceList.map((space) => (
+                    <SelectItem key={space.id} value={space.id}>
+                      {space.name}
                     </SelectItem>
                   ))}
                 </SelectContent>
@@ -463,7 +540,10 @@ export function TenantForm({
 
 
           <DialogFooter>
-            <Button type="button" variant="outline" onClick={onClose}>
+            <Button type="button" variant="outline" onClick={() => {
+              setFormData(emptyFormData);
+              onClose();
+            }}>
               {mode === "view" ? "Close" : "Cancel"}
             </Button>
             {mode !== "view" && (
