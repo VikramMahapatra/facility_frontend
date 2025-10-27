@@ -252,9 +252,15 @@ export default function UsersManagement() {
                               </TableCell>
                               <TableCell>
                                 <Badge
-                                  variant={user.status === "active" ? "default" : "outline"}
+                                  variant={
+                                    user.status === "active"
+                                      ? "default"
+                                      : user.status === "pending_approval"
+                                        ? "secondary"
+                                        : "outline"
+                                  }
                                 >
-                                  {user.status}
+                                  {user.status === "pending_approval" ? "Pending" : user.status}
                                 </Badge>
                               </TableCell>
                               <TableCell className="text-right">

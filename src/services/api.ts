@@ -45,39 +45,45 @@ class ApiService {
                 ...options.headers,
             },
         };
+        const errorMessage = "Something went wrong";
 
         try {
-            console.log('request config: ', config, url);
+            console.log('API request config: ', config, url);
             const response = await fetch(url, config);
-            const result = await response.json().catch(() => null);
-            console.log('response data: ', result);
+            let result: any = null;
+            try {
+                result = await response.json();
+            } catch {
+                result = null;
+            }
+            console.log('API response data: ', result);
+
+            if (!response.ok) {
+                toast.error(errorMessage);
+            }
+
             if (result?.status === "Failure") {
-                const message = result.message || "Something went wrong";
+                const message = result.message || errorMessage;
+
+                toast.error(message);
 
                 // ✅ Handle token expiration or invalid authentication
                 if (
-                    result.status_code === "AUTH_TOKEN_EXPIRED" ||
-                    result.message?.includes("Token expired")
+                    result.status_code === "106" ||
+                    result.message?.includes("User inactive.")
                 ) {
                     localStorage.removeItem("access_token");
                     window.location.href = "/login";
                     return;
                 }
-
-                toast.error(message);
-                throw new Error(message);
-
             }
 
-            if (!response.ok) {
-                const errorData = await response.json().catch(() => ({}));
-                throw new Error(errorData.detail || `HTTP error! status: ${response.status}`);
-            }
+
 
             return result.data;
         } catch (error) {
             console.error('API request failed:', error);
-            throw new Error("Technical Error!");
+            toast.error(errorMessage);
         }
     }
 

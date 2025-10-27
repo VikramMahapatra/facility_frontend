@@ -12,10 +12,18 @@ export interface User {
   email: string;
   phone_e164?: string;
   picture_url?: string;
-  status: 'active' | 'inactive';
+  status: 'active' | 'inactive' | 'pending_approval';
   created_at: string;
   updated_at: string;
   roles?: Role[];
+}
+
+export interface ApprovalRule {
+  id: string;
+  org_id: string;
+  approver_role_id: string;
+  can_approve_role_id: string;
+  created_at: string;
 }
 
 export interface RolePolicy {
@@ -76,6 +84,28 @@ export const mockUsers: User[] = [
     created_at: "2024-01-16T10:00:00Z",
     updated_at: "2024-01-16T10:00:00Z",
     roles: [mockRoles[1]]
+  },
+  {
+    id: "user-3",
+    org_id: "org-1",
+    full_name: "Mike Accountant",
+    email: "mike@example.com",
+    phone_e164: "+1234567892",
+    status: "pending_approval",
+    created_at: "2024-01-17T10:00:00Z",
+    updated_at: "2024-01-17T10:00:00Z",
+    roles: [mockRoles[2]]
+  },
+  {
+    id: "user-4",
+    org_id: "org-1",
+    full_name: "Emily FrontDesk",
+    email: "emily@example.com",
+    phone_e164: "+1234567893",
+    status: "pending_approval",
+    created_at: "2024-01-18T10:00:00Z",
+    updated_at: "2024-01-18T10:00:00Z",
+    roles: [mockRoles[3]]
   }
 ];
 
@@ -134,5 +164,43 @@ export const mockRolePolicies: RolePolicy[] = [
     role_id: "role-2",
     resource: "sites",
     action: "write"
+  }
+];
+
+export const mockApprovalRules: ApprovalRule[] = [
+  {
+    id: "approval-1",
+    org_id: "org-1",
+    approver_role_id: "role-1", // admin
+    can_approve_role_id: "role-1", // can approve admin
+    created_at: "2024-01-15T10:00:00Z"
+  },
+  {
+    id: "approval-2",
+    org_id: "org-1",
+    approver_role_id: "role-1", // admin
+    can_approve_role_id: "role-2", // can approve manager
+    created_at: "2024-01-15T10:00:00Z"
+  },
+  {
+    id: "approval-3",
+    org_id: "org-1",
+    approver_role_id: "role-1", // admin
+    can_approve_role_id: "role-3", // can approve accountant
+    created_at: "2024-01-15T10:00:00Z"
+  },
+  {
+    id: "approval-4",
+    org_id: "org-1",
+    approver_role_id: "role-1", // admin
+    can_approve_role_id: "role-4", // can approve frontdesk
+    created_at: "2024-01-15T10:00:00Z"
+  },
+  {
+    id: "approval-5",
+    org_id: "org-1",
+    approver_role_id: "role-2", // manager
+    can_approve_role_id: "role-4", // can approve frontdesk
+    created_at: "2024-01-15T10:00:00Z"
   }
 ];
