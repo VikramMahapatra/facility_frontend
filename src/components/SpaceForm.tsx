@@ -299,7 +299,7 @@ export function SpaceForm({ space, isOpen, onClose, onSave, mode }: SpaceFormPro
               <Label htmlFor="view">View</Label>
               <Input
                 id="view"
-                value={formData.attributes.view}
+                value={formData.attributes?.view}
                 onChange={(e) => handleAttributesFieldChange('view', e.target.value)}
                 placeholder="e.g., Sea, Garden, City"
                 disabled={isReadOnly}
@@ -311,7 +311,7 @@ export function SpaceForm({ space, isOpen, onClose, onSave, mode }: SpaceFormPro
             <div>
               <Label htmlFor="furnished">Furnished</Label>
               <Select
-                value={formData.attributes.furnished}
+                value={formData.attributes?.furnished}
                 onValueChange={(value) => handleAttributesFieldChange('furnished', value)}
                 disabled={isReadOnly}
               >
@@ -328,7 +328,7 @@ export function SpaceForm({ space, isOpen, onClose, onSave, mode }: SpaceFormPro
             <div>
               <Label htmlFor="star_rating">Star Rating</Label>
               <Select
-                value={formData.attributes.star_rating}
+                value={formData.attributes?.star_rating}
                 onValueChange={(value) => handleAttributesFieldChange('star_rating', value)}
                 disabled={isReadOnly}
               >
