@@ -48,6 +48,8 @@ import Documentation from "./pages/Documentation";
 import RolesManagement from "./pages/RolesManagement";
 import RolePolicies from "./pages/RolePolicies";
 import UsersManagement from "./pages/UsersManagement";
+import PendingApprovals from "./pages/PendingApprovals";
+import ApprovalRules from "./pages/ApprovalRules";
 import { GoogleOAuthProvider } from "@react-oauth/google";
 
 const queryClient = new QueryClient();
@@ -105,6 +107,8 @@ const App = () => {
               <Route path="/roles" element={<RolesManagement />} />
               <Route path="/role-policies" element={<RolePolicies />} />
               <Route path="/users-management" element={<UsersManagement />} />
+              <Route path="/pending-approvals" element={<PendingApprovals />} />
+              <Route path="/approval-rules" element={<ApprovalRules />} />
               {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
               <Route path="*" element={<NotFound />} />
             </Routes>

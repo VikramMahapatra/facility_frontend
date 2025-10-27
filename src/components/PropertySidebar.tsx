@@ -108,6 +108,8 @@ const navigationItems = [
       { title: "Roles Management", url: "/roles", icon: Shield },
       { title: "Role Policies", url: "/role-policies", icon: UserCog },
       { title: "Users Management", url: "/users-management", icon: Users },
+      { title: "Pending Approvals", url: "/pending-approvals", icon: UserCheck },
+      { title: "Approval Rules", url: "/approval-rules", icon: Shield },
     ]
   },
   {
