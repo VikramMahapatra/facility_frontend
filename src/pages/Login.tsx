@@ -12,6 +12,8 @@ const Login = () => {
   const [isLoading, setIsLoading] = useState(false);
 
   localStorage.removeItem('access_token');
+  localStorage.removeItem('loggedInUser');
+
 
   const googleLogin = useGoogleLogin({
     onSuccess: async (tokenResponse) => {
@@ -31,14 +33,7 @@ const Login = () => {
           });
         } else {
           // Existing user - go to dashboard
-          localStorage.setItem('user', JSON.stringify({
-            id: authResponse.user.id,
-            email: authResponse.user.email,
-            name: authResponse.user.name,
-            accountType: authResponse.user.accountType,
-            organizationName: authResponse.user.organizationName,
-            isAuthenticated: true
-          }));
+          localStorage.setItem('loggedInUser', JSON.stringify(authResponse.user));
           navigate('/dashboard');
         }
         setIsLoading(false);

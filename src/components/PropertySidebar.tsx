@@ -23,101 +23,101 @@ const navigationItems = [
   {
     title: "Overview",
     items: [
-      { title: "Dashboard", url: "/dashboard", icon: Home },
-      { title: "Analytics", url: "/analytics", icon: TrendingUp },
-      { title: "AI Predictions", url: "/ai-predictions", icon: Bot },
+      { title: "Dashboard", url: "/dashboard", icon: Home, resource: "dashboard" },
+      { title: "Analytics", url: "/analytics", icon: TrendingUp, resource: "analytics" },
+      { title: "AI Predictions", url: "/ai-predictions", icon: Bot, resource: "ai_predictions" },
     ]
   },
   {
     title: "Spaces & Sites",
     items: [
-      { title: "Organizations", url: "/organizations", icon: Building2 },
-      { title: "Sites (Properties)", url: "/sites", icon: MapPin },
-      { title: "Buildings (Wings/Towers)", url: "/buildings", icon: Building2 },
-      { title: "Space Groups (Templates)", url: "/space-groups", icon: Archive },
-      { title: "Spaces", url: "/spaces", icon: Home },
-      { title: "Group Assignments", url: "/space-assignments", icon: Users },
+      { title: "Organizations", url: "/organizations", icon: Building2, resource: "organizations" },
+      { title: "Sites (Properties)", url: "/sites", icon: MapPin, resource: "sites" },
+      { title: "Buildings (Wings/Towers)", url: "/buildings", icon: Building2, resource: "buildings" },
+      { title: "Space Groups (Templates)", url: "/space-groups", icon: Archive, resource: "space_groups" },
+      { title: "Spaces", url: "/spaces", icon: Home, resource: "spaces" },
+      { title: "Group Assignments", url: "/space-assignments", icon: Users, resource: "group_assignments" },
     ]
   },
   {
     title: "Leasing & Tenants",
     items: [
-      { title: "Leases", url: "/leases", icon: FileText },
-      { title: "Tenants", url: "/tenants", icon: Users },
-      { title: "Lease Charges", url: "/lease-charges", icon: Receipt },
+      { title: "Leases", url: "/leases", icon: FileText, resource: "leases" },
+      { title: "Tenants", url: "/tenants", icon: Users, resource: "tenants" },
+      { title: "Lease Charges", url: "/lease-charges", icon: Receipt, resource: "lease_charges" },
     ]
   },
   {
     title: "Financials",
     items: [
-      { title: "Invoices & Payments", url: "/invoices", icon: BarChart3 },
-      { title: "Revenue Reports", url: "/revenue-reports", icon: TrendingUp },
-      { title: "Tax Management", url: "/tax-management", icon: Briefcase },
+      { title: "Invoices & Payments", url: "/invoices", icon: BarChart3, resource: "invoices" },
+      { title: "Revenue Reports", url: "/revenue-reports", icon: TrendingUp, resource: "revenue_reports" },
+      { title: "Tax Management", url: "/tax-management", icon: Briefcase, resource: "tax_management" },
     ]
   },
   {
     title: "Maintenance & Assets",
     items: [
-      { title: "Assets", url: "/assets", icon: Package },
-      { title: "Work Orders", url: "/work-orders", icon: Wrench },
-      { title: "Service Requests", url: "/service-requests", icon: AlertTriangle },
-      { title: "Preventive Maintenance", url: "/preventive-maintenance", icon: Calendar },
+      { title: "Assets", url: "/assets", icon: Package, resource: "assets" },
+      { title: "Work Orders", url: "/work-orders", icon: Wrench, resource: "work_orders" },
+      { title: "Service Requests", url: "/service-requests", icon: AlertTriangle, resource: "service_requests" },
+      { title: "Preventive Maintenance", url: "/preventive-maintenance", icon: Calendar, resource: "preventive_maintenance" },
     ]
   },
   {
     title: "Hospitality",
     items: [
-      { title: "Bookings", url: "/bookings", icon: Hotel },
-      { title: "Guests", url: "/guests", icon: Users },
-      { title: "Rate Plans", url: "/rates", icon: CreditCard },
-      { title: "Folios", url: "/folios", icon: Receipt },
-      { title: "Housekeeping", url: "/housekeeping", icon: Shield },
+      { title: "Bookings", url: "/bookings", icon: Hotel, resource: "bookings" },
+      { title: "Guests", url: "/guests", icon: Users, resource: "guests" },
+      { title: "Rate Plans", url: "/rates", icon: CreditCard, resource: "rate_plans" },
+      { title: "Folios", url: "/folios", icon: Receipt, resource: "folios" },
+      { title: "Housekeeping", url: "/housekeeping", icon: Shield, resource: "housekeeping" },
     ]
   },
-    {
-      title: "Procurement",
-      items: [
-        { title: "Vendors", url: "/vendors", icon: Building2 },
-        { title: "Contracts", url: "/contracts", icon: FileText },
-      ]
-    },
+  {
+    title: "Procurement",
+    items: [
+      { title: "Vendors", url: "/vendors", icon: Building2, resource: "vendors" },
+      { title: "Contracts", url: "/contracts", icon: FileText, resource: "contracts" },
+    ]
+  },
   {
     title: "Parking & Access",
     items: [
-      { title: "Parking Zones", url: "/parking-zones", icon: Car },
-      { title: "Access Logs", url: "/access-logs", icon: Key },
-      { title: "Visitor Management", url: "/visitors", icon: UserCheck },
+      { title: "Parking Zones", url: "/parking-zones", icon: Car, resource: "parking_zones" },
+      { title: "Access Logs", url: "/access-logs", icon: Key, resource: "access_logs" },
+      { title: "Visitor Management", url: "/visitors", icon: UserCheck, resource: "visitors" },
     ]
   },
   {
     title: "Energy & IoT",
     items: [
-      { title: "Meters & Readings", url: "/meters", icon: Zap },
-      { title: "Consumption Reports", url: "/consumption", icon: BarChart3 },
+      { title: "Meters & Readings", url: "/meters", icon: Zap, resource: "meter_readings" },
+      { title: "Consumption Reports", url: "/consumption", icon: BarChart3, resource: "consumption_reports" },
     ]
   },
   {
     title: "AI & Automation",
     items: [
-      { title: "AI ChatBot", url: "/chatbot", icon: Bot },
+      { title: "AI ChatBot", url: "/chatbot", icon: Bot, resource: "ai_chatbot" },
     ]
   },
   {
     title: "Access Control",
     items: [
-      { title: "Roles Management", url: "/roles", icon: Shield },
-      { title: "Role Policies", url: "/role-policies", icon: UserCog },
-      { title: "Users Management", url: "/users-management", icon: Users },
-      { title: "Pending Approvals", url: "/pending-approvals", icon: UserCheck },
-      { title: "Approval Rules", url: "/approval-rules", icon: Shield },
+      { title: "Roles Management", url: "/roles", icon: Shield, resource: "roles" },
+      { title: "Role Policies", url: "/role-policies", icon: UserCog, resource: "role_policies" },
+      { title: "Users Management", url: "/users-management", icon: Users, resource: "users_management" },
+      { title: "Pending Approvals", url: "/pending-approvals", icon: UserCheck, resource: "pending_approvals" },
+      { title: "Approval Rules", url: "/approval-rules", icon: Shield, resource: "approval_rules" },
     ]
   },
   {
     title: "System",
     items: [
-      { title: "Notifications", url: "/notifications", icon: Bell },
-      { title: "Settings", url: "/settings", icon: Settings },
-      { title: "Documentation", url: "/documentation", icon: FileText },
+      { title: "Notifications", url: "/notifications", icon: Bell, resource: "notifications" },
+      { title: "Settings", url: "/settings", icon: Settings, resource: "settings" },
+      { title: "Documentation", url: "/documentation", icon: FileText, resource: "documentation" },
     ]
   }
 ];
@@ -128,10 +128,28 @@ export function PropertySidebar() {
   const currentPath = location.pathname;
   const [expandedGroups, setExpandedGroups] = useState<string[]>(["Overview"]);
   const [searchQuery, setSearchQuery] = useState("");
+  const [roleWiseNavigationItems, setRoleWiseNavigationItems] = useState<any[]>([]);
+
+  const storedUser = localStorage.getItem("loggedInUser");
+  const user = JSON.parse(storedUser);
+
   // Ensure the group containing the current route is always expanded
   useEffect(() => {
     const activeGroups: string[] = [];
-    navigationItems.forEach((section) => {
+
+    const filteredRoleWiseNavigationItems = navigationItems
+      .map((section) => ({
+        ...section,
+        items: section.items
+          .filter((item) => userCanView(item.resource))
+      }))
+      .filter((section) => section.items.length > 0);
+
+    console.log("filetered pages:", filteredRoleWiseNavigationItems);
+
+    setRoleWiseNavigationItems(filteredRoleWiseNavigationItems);
+
+    filteredRoleWiseNavigationItems.forEach((section) => {
       if (section.items.some((item) => currentPath.startsWith(item.url))) {
         activeGroups.push(section.title);
       }
@@ -146,20 +164,31 @@ export function PropertySidebar() {
 
   const isActive = (path: string) => currentPath === path;
   const getNavClass = (isActiveRoute: boolean) =>
-    isActiveRoute 
-      ? "bg-sidebar-accent text-sidebar-primary font-medium" 
+    isActiveRoute
+      ? "bg-sidebar-accent text-sidebar-primary font-medium"
       : "hover:bg-sidebar-accent/50 text-sidebar-foreground";
 
   const toggleGroup = (groupTitle: string) => {
-    setExpandedGroups(prev => 
+    setExpandedGroups(prev =>
       prev.includes(groupTitle)
         ? prev.filter(g => g !== groupTitle)
         : [...prev, groupTitle]
     );
   };
 
+  const userCanView = (resource?: string) => {
+    if (!resource) return true; // allow if no restriction set
+
+    console.log("user policies:", user.role_policies);
+    return user.role_policies?.some(
+      (policy) =>
+        policy.resource === resource &&
+        policy.action.toLowerCase() === "read"
+    );
+  };
+
   // Filter navigation items based on search query
-  const filteredNavigationItems = navigationItems.map(section => ({
+  const filteredNavigationItems = roleWiseNavigationItems.map(section => ({
     ...section,
     items: section.items.filter(item =>
       item.title.toLowerCase().includes(searchQuery.toLowerCase())
@@ -207,7 +236,7 @@ export function PropertySidebar() {
         {filteredNavigationItems.map((section) => (
           <SidebarGroup key={section.title} className="mb-2">
             {!isCollapsed && (
-              <SidebarGroupLabel 
+              <SidebarGroupLabel
                 className="text-sidebar-foreground/70 hover:text-sidebar-primary cursor-pointer flex items-center justify-between px-2 py-1"
                 onClick={() => toggleGroup(section.title)}
               >
@@ -217,15 +246,15 @@ export function PropertySidebar() {
                 </span>
               </SidebarGroupLabel>
             )}
-            
+
             {(isCollapsed || expandedGroups.includes(section.title)) && (
               <SidebarGroupContent>
                 <SidebarMenu>
                   {section.items.map((item) => (
                     <SidebarMenuItem key={item.title}>
                       <SidebarMenuButton asChild className="mb-1">
-                        <NavLink 
-                          to={item.url} 
+                        <NavLink
+                          to={item.url}
                           className={getNavClass(isActive(item.url))}
                           title={isCollapsed ? item.title : undefined}
                         >
