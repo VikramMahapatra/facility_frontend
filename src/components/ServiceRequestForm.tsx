@@ -23,7 +23,7 @@ import { siteApiService } from "@/services/spaces_sites/sitesapi";
 import { spacesApiService } from "@/services/spaces_sites/spacesapi";
 import { organisationApiService } from "@/services/spaces_sites/organisationapi";
 import { serviceRequestApiService } from "@/services/maintenance_assets/servicerequestapi";
-import { contactApiService } from "@/services/crm/contactapi";
+import { leasesApiService } from "@/services/Leasing_Tenants/leasesapi";
 
 export type ServiceRequestPriority = "low" | "medium" | "high" | "urgent";
 export type ServiceRequestStatus   = "open" | "in_progress" | "on_hold" | "resolved" | "closed" | "cancelled";
@@ -110,8 +110,12 @@ export function ServiceRequestForm({
     loadRequesterKindLookup();
     loadServiceRequestFilterWorkorderLookup();
 
-    loadCustomerLookup(kind, serviceRequest?.requester_id);
+    loadCustomerLookup(kind, serviceRequest?.site_id);
 }, [serviceRequest]);
+
+  useEffect(() => {
+    loadCustomerLookup(formData.requester_kind, formData.site_id);
+  }, [formData.requester_kind, formData.site_id]);
 
   useEffect(() => {
 
@@ -145,10 +149,6 @@ export function ServiceRequestForm({
       setWorkOrderList([]);
     }
   };
-
-
-
-
 
   const loadSpaceLookup = async () => {
     if (!formData.site_id) {
@@ -208,12 +208,14 @@ export function ServiceRequestForm({
     }
   };
 
-  const loadCustomerLookup = async (kind?: string, selectedCustomerId?: string) => {
-    const lookup = await contactApiService.getCustomerLookup(kind);
-    setCustomerList(lookup);
-
+  const loadCustomerLookup = async (kind?: string, site_id?: string) => {
+    if (!kind || !site_id) return;
     
+    const Kind = kind === "resident" ? "individual" : kind === "merchant" ? "commercial" : kind;
+    const lookup = await leasesApiService.getLeasePartnerLookup(Kind, site_id);
+    setCustomerList(lookup);
   };
+
 
   const handleSLAFieldChange = (field: string, value: any) => {
     setFormData((prev) => ({
@@ -286,9 +288,10 @@ export function ServiceRequestForm({
               <Label htmlFor="site">Site *</Label>
               <Select
                 value={formData.site_id || ""}
-                onValueChange={(value) =>
-                  setFormData({ ...formData, site_id: value, space_id: "" })
-                }
+                onValueChange={(value) => {
+                  setFormData({ ...formData, site_id: value, space_id: "", requester_id: "" });
+                  loadCustomerLookup(formData.requester_kind, value);
+                }}
                 disabled={isReadOnly}
               >
                 <SelectTrigger>
@@ -425,10 +428,11 @@ export function ServiceRequestForm({
               <Label htmlFor="Requester_kind">Requester Kind *</Label>
               <Select
                 name="Requester_kind"
-                value={(formData.requester_kind as string) || "Resident"}
-                onValueChange={(value: ServiceRequesterKind) =>
-                  setFormData({ ...formData, requester_kind: value })
-                }
+                value={(formData.requester_kind as string) || "resident"}
+                onValueChange={(value: ServiceRequesterKind) => {
+                  setFormData({ ...formData, requester_kind: value, requester_id: "" });
+                  loadCustomerLookup(value, formData.site_id);
+                }}
                 disabled={isReadOnly}
               >
                 <SelectTrigger>
@@ -449,9 +453,9 @@ export function ServiceRequestForm({
               <Select
                 key={customerList.map(c => c.id).join("-")}
                 name="requester_id"
-                value={formData.requester_id}
+                value={formData.requester_id || ""}
                 onValueChange={(value) => setFormData({ ...formData, requester_id: value })}
-                disabled={isReadOnly}
+                disabled={isReadOnly || !formData.site_id}
               >
                 <SelectTrigger>
                   <SelectValue placeholder="Select Requester" />
