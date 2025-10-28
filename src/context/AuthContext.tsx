@@ -16,6 +16,7 @@ export interface AuthUser {
 interface AuthContextType {
     user: AuthUser | null;
     loading: boolean;
+    setUser: (user: AuthUser) => void;
     canRead: (resource: string) => boolean;
     canWrite: (resource: string) => boolean;
     canDelete: (resource: string) => boolean;
@@ -28,17 +29,32 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     const [loading, setLoading] = useState(true);
 
     useEffect(() => {
-        const stored = localStorage.getItem("loggedInUser");
-        if (stored) {
-            try {
-                const parsed = JSON.parse(stored);
-                setUser(parsed);
-            } catch {
-                setUser(null);
+        const loadUser = async () => {
+            const stored = localStorage.getItem("loggedInUser");
+
+            if (stored) {
+                try {
+                    const parsed = JSON.parse(stored);
+                    setUser(parsed);
+                } catch {
+                    setUser(null);
+                }
             }
-        }
-        setLoading(false);
+
+            setLoading(false); // ✅ Only after user set attempt
+        };
+
+        loadUser();
     }, []);
+
+    // ✅ Save to storage whenever user changes
+    useEffect(() => {
+        if (user) {
+            localStorage.setItem("loggedInUser", JSON.stringify(user));
+        } else {
+            localStorage.removeItem("loggedInUser");
+        }
+    }, [user]);
 
     const hasPermission = (resource: string, action: string) => {
         if (!user?.role_policies) return false;
@@ -51,16 +67,15 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     };
 
     return (
-        <AuthContext.Provider
-            value={{
-                user,
-                loading,
-                canRead: (resource: string) => hasPermission(resource, "read"),
-                canWrite: (resource: string) => hasPermission(resource, "write"),
-                canDelete: (resource: string) => hasPermission(resource, "delete"),
-            }}
-        >
-            {!loading && children}
+        <AuthContext.Provider value={{
+            user,
+            loading,
+            setUser, // ✅ Now available in login success handler
+            canRead: (r) => hasPermission(r, "read"),
+            canWrite: (r) => hasPermission(r, "write"),
+            canDelete: (r) => hasPermission(r, "delete"),
+        }}>
+            {children}
         </AuthContext.Provider>
     );
 };
