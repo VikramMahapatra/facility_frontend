@@ -21,6 +21,7 @@ import {
   FloorOccupancyChart
 } from "@/components/DashboardCharts";
 import { dashboardApiService } from "@/services/dashboardapi";
+import { useAuth } from "@/context/AuthContext";
 
 interface User {
   id: string;
@@ -33,13 +34,7 @@ interface User {
 
 const Dashboard = () => {
   const navigate = useNavigate();
-  const [user, setUser] = useState<User | null>(null);
-
-  useEffect(() => {
-    const userData = localStorage.getItem('loggedInUser');
-    const parsedUser = JSON.parse(userData);
-    setUser(parsedUser);
-  }, []);
+  const { user } = useAuth();
 
   const handleLogout = () => {
     localStorage.removeItem('user');

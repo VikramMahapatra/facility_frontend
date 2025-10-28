@@ -1,17 +1,28 @@
-import { Navigate, Outlet } from "react-router-dom";
+import { Navigate, Outlet, useLocation } from "react-router-dom";
+import { resourceMap } from "@/helpers/routePermissions";
+import { useAuth } from "@/context/AuthContext";
+import Forbidden from "@/pages/Forbidden";
 
 const ProtectedRoute = () => {
-    const storedUser = localStorage.getItem("loggedInUser");
-    let user;
-    if (storedUser) {
-        user = JSON.parse(storedUser);
+    const { user, loading, canRead } = useAuth();
+    const location = useLocation();
+
+    const path = location.pathname;
+    const resource = resourceMap[path];
+
+    console.log("ProtectedRoute:", { user, loading });
+
+    if (loading) return <div>Loading...</div>; // or a Loader component
+
+
+    if (!user?.is_authenticated) return <Navigate to="/login" replace />;
+
+    // ✅ If resource exists, check read permission
+    if (resource && !canRead(resource)) {
+        return <Forbidden />;
     }
 
-    if (!user || !user.is_authenticated) {
-        return <Navigate to="/login" replace />;
-    }
-
-    return <Outlet />; // renders child protected routes
+    return <Outlet />;
 };
 
 export default ProtectedRoute;
