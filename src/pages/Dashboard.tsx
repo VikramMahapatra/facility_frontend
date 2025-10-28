@@ -5,20 +5,20 @@ import { useNavigate } from "react-router-dom";
 import { LogOut, Building2 } from "lucide-react";
 import { SidebarProvider, SidebarTrigger } from "@/components/ui/sidebar";
 import { PropertySidebar } from "@/components/PropertySidebar";
-import { 
-  StatsGrid, 
-  LeasingOverview, 
-  MaintenanceOverview, 
-  AccessOverview, 
-  FinancialSummary, 
-  EnergyOverview 
+import {
+  StatsGrid,
+  LeasingOverview,
+  MaintenanceOverview,
+  AccessOverview,
+  FinancialSummary,
+  EnergyOverview
 } from "@/components/DashboardCards";
-import { 
-  RevenueChart, 
-  OccupancyChart, 
-  MaintenanceChart, 
-  EnergyChart, 
-  FloorOccupancyChart 
+import {
+  RevenueChart,
+  OccupancyChart,
+  MaintenanceChart,
+  EnergyChart,
+  FloorOccupancyChart
 } from "@/components/DashboardCharts";
 import { dashboardApiService } from "@/services/dashboardapi";
 
@@ -34,30 +34,12 @@ interface User {
 const Dashboard = () => {
   const navigate = useNavigate();
   const [user, setUser] = useState<User | null>(null);
-  
- 
- 
 
   useEffect(() => {
-    const userData = localStorage.getItem('user');
-    if (!userData) {
-      navigate('/login');
-      return;
-    }
-    
-    try {
-      const parsedUser = JSON.parse(userData);
-      if (!parsedUser.isAuthenticated) {
-        navigate('/login');
-        return;
-      }
-      setUser(parsedUser);
-    } catch {
-      navigate('/login');
-    }
-  }, [navigate]);
-
-
+    const userData = localStorage.getItem('loggedInUser');
+    const parsedUser = JSON.parse(userData);
+    setUser(parsedUser);
+  }, []);
 
   const handleLogout = () => {
     localStorage.removeItem('user');
@@ -75,13 +57,13 @@ const Dashboard = () => {
     );
   }
 
-// Stats are now imported from mock data
+  // Stats are now imported from mock data
 
   return (
     <SidebarProvider>
       <div className="min-h-screen flex w-full bg-background">
         <PropertySidebar />
-        
+
         <div className="flex-1 flex flex-col">
           {/* Header */}
           <header className="bg-card border-b border-border">
@@ -113,7 +95,7 @@ const Dashboard = () => {
                     <p className="text-xs text-muted-foreground">{user.accountType}</p>
                   </div>
                 </div>
-                
+
                 <Button
                   variant="ghost"
                   size="sm"
@@ -135,7 +117,7 @@ const Dashboard = () => {
                   Welcome back, {user.name}!
                 </h2>
                 <p className="text-muted-foreground">
-                  {user.organizationName 
+                  {user.organizationName
                     ? `Managing facilities for ${user.organizationName}`
                     : "Your comprehensive property management dashboard"
                   }

@@ -13,6 +13,8 @@ import { useToast } from "@/hooks/use-toast";
 import { siteApiService } from "@/services/spaces_sites/sitesapi";
 import { Pagination } from "@/components/Pagination";
 import { useSkipFirstEffect } from "@/hooks/use-skipfirst-effect";
+import { useAuth } from "../context/AuthContext";
+
 export interface Site {
   id: string;
   org_id: string;
@@ -49,6 +51,8 @@ export default function Sites() {
   const [page, setPage] = useState(1); // current page
   const [pageSize] = useState(3); // items per page
   const [totalItems, setTotalItems] = useState(0);
+  const { canRead, canWrite, canDelete } = useAuth();
+  const resource = "sites"; // must match resource name from backend policies
 
   useSkipFirstEffect(() => {
     loadSites();
@@ -143,45 +147,45 @@ export default function Sites() {
   };
 
   // In Site.tsx - Replace the confirmDelete function
-const confirmDelete = async () => {
-  if (deleteId) {
-    try {
-      const response = await siteApiService.deleteSite(deleteId);
-      
-      if (response.success) {
-        // Success - refresh data
-        loadSites();
-        setDeleteId(null);
-        toast({
-          title: "Site Deleted",
-          description: "The site has been removed successfully.",
-        });
-      } else {
-        // Show error popup from backend
-        toast({
-          title: "Cannot Delete Site",
-          description: response.message,
-          variant: "destructive",
-        });
-      }
-    } catch (error: any) {
-      if (error.response?.status === 400) {
-        // Show hierarchical deletion error
-        toast({
-          title: "Cannot Delete Site",
-          description: error.response.data.detail,
-          variant: "destructive",
-        });
-      } else {
-        toast({
-          title: "Delete Failed",
-          description: "An error occurred while deleting the site.",
-          variant: "destructive",
-        });
+  const confirmDelete = async () => {
+    if (deleteId) {
+      try {
+        const response = await siteApiService.deleteSite(deleteId);
+
+        if (response.success) {
+          // Success - refresh data
+          loadSites();
+          setDeleteId(null);
+          toast({
+            title: "Site Deleted",
+            description: "The site has been removed successfully.",
+          });
+        } else {
+          // Show error popup from backend
+          toast({
+            title: "Cannot Delete Site",
+            description: response.message,
+            variant: "destructive",
+          });
+        }
+      } catch (error: any) {
+        if (error.response?.status === 400) {
+          // Show hierarchical deletion error
+          toast({
+            title: "Cannot Delete Site",
+            description: error.response.data.detail,
+            variant: "destructive",
+          });
+        } else {
+          toast({
+            title: "Delete Failed",
+            description: "An error occurred while deleting the site.",
+            variant: "destructive",
+          });
+        }
       }
     }
-  }
-};
+  };
 
   return (
     <SidebarProvider>
@@ -295,17 +299,20 @@ const confirmDelete = async () => {
                           <Button size="sm" variant="outline" onClick={() => handleView(site)}>
                             <Eye className="h-3 w-3" />
                           </Button>
-                          <Button size="sm" variant="outline" onClick={() => handleEdit(site)}>
+                          {canWrite(resource) && <Button size="sm" variant="outline" onClick={() => handleEdit(site)}>
                             <Edit className="h-3 w-3" />
                           </Button>
-                          <Button
-                            size="sm"
-                            variant="outline"
-                            className="text-destructive hover:text-destructive"
-                            onClick={() => handleDelete(site.id)}
-                          >
-                            <Trash2 className="h-3 w-3" />
-                          </Button>
+                          }
+                          {canDelete(resource) &&
+                            <Button
+                              size="sm"
+                              variant="outline"
+                              className="text-destructive hover:text-destructive"
+                              onClick={() => handleDelete(site.id)}
+                            >
+                              <Trash2 className="h-3 w-3" />
+                            </Button>
+                          }
                         </div>
                       </CardContent>
                     </Card>

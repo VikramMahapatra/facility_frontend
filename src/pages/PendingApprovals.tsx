@@ -68,20 +68,27 @@ export default function PendingApprovals() {
     setTotalItems(response.total);
   }
 
-  // Get current user role (simulating logged-in admin)
-  const currentUserRoleId = "role-1"; // admin
 
   // Check if current user can approve a specific user based on their roles
   const canApprove = (user: User): boolean => {
-    if (!user.roles || user.roles.length === 0) return false;
+    const userData = localStorage.getItem('loggedInUser');
+    const currentUser = JSON.parse(userData);
 
-    return user.roles.every((userRole) => {
-      return approvalRules.some(
-        (rule) =>
-          rule.approver_role_id === currentUserRoleId &&
-          rule.can_approve_role_id === userRole.id
-      );
-    });
+    if (!user.roles?.length) return false;
+    if (!currentUser.roles?.length) return false;
+
+    const currentUserRoleIds = currentUser.roles.map(r => r.id);
+
+    // Check if at least one logged-in role can approve all target user's roles
+    return currentUserRoleIds.some(currentRoleId =>
+      user.roles.every(userRole =>
+        approvalRules.some(
+          rule =>
+            rule.approver_role_id === currentRoleId &&
+            rule.can_approve_role_id === userRole.id
+        )
+      )
+    );
   };
 
   const handleApprove = (user: User) => {

@@ -65,7 +65,7 @@ class ApiService {
             if (result?.status === "Failure") {
                 const message = result.message || errorMessage;
 
-                toast.error(message);
+                toast.error(errorMessage);
 
                 // ✅ Handle token expiration or invalid authentication
                 if (
