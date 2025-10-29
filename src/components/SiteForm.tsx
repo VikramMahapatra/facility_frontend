@@ -4,7 +4,10 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
-import { useToast } from "@/hooks/use-toast";
+import { Controller, useForm } from "react-hook-form";
+import { zodResolver } from "@hookform/resolvers/zod";
+import { SiteFormValues, siteSchema } from "@/schemas/site.schema";
+import { toast } from "sonner";
 
 export interface Site {
   id: string;
@@ -40,71 +43,74 @@ interface SiteFormProps {
 
 const siteKinds = ["residential", "commercial", "hotel", "mall", "mixed", "campus"];
 
+const emptyFormData: SiteFormValues = {
+  code: "",
+  name: "",
+  kind: "residential",
+  status: "active",
+  opened_on: new Date().toISOString().split("T")[0],
+  address: {
+    line1: "",
+    city: "",
+    state: "",
+    pincode: "",
+  },
+};
+
 export function SiteForm({ site, isOpen, onClose, onSave, mode }: SiteFormProps) {
-  const { toast } = useToast();
-  const [formData, setFormData] = useState({
-    code: "",
-    name: "",
-    kind: "residential" as Site["kind"],
-    status: "active" as Site["status"],
-    opened_on: new Date().toISOString().split("T")[0],
-    address: {
-      line1: "",
-      city: "",
-      state: "",
-      pincode: "",
-    },
+  const {
+    register,
+    handleSubmit,
+    control,
+    setValue,
+    reset,
+    formState: { errors, isSubmitting, isValid },
+  } = useForm<SiteFormValues>({
+    resolver: zodResolver(siteSchema),
+    defaultValues: emptyFormData,
+    mode: "onChange",
+    reValidateMode: "onChange",
   });
 
   useEffect(() => {
-    if (site) {
-      setFormData({
-        code: site?.code,
-        name: site?.name,
-        kind: site?.kind,
-        status: site?.status,
-        opened_on: site?.opened_on || new Date().toISOString().split("T")[0],
+    if (site && mode !== "create") {
+      reset({
+        code: site.code || "",
+        name: site.name || "",
+        kind: site.kind || "residential",
+        status: site.status || "active",
+        opened_on: site.opened_on || new Date().toISOString().split("T")[0],
         address: {
-          line1: site?.address.line1 || "",
-          city: site?.address.city || "",
-          state: site?.address.state || "",
-          pincode: site?.address.pincode || "",
+          line1: site.address?.line1 || "",
+          line2: site.address?.line2,
+          city: site.address?.city || "",
+          state: site.address?.state || "",
+          country: site.address?.country,
+          pincode: site.address?.pincode || "",
         },
-      })
+        geo: site.geo ? {
+          lat: site.geo.lat,
+          lng: site.geo.lng,
+        } : undefined,
+      });
     } else {
-      setFormData({
-        code: "",
-        name: "",
-        kind: "residential" as Site["kind"],
-        status: "active" as Site["status"],
-        opened_on: new Date().toISOString().split("T")[0],
-        address: {
-          line1: "",
-          city: "",
-          state: "",
-          pincode: "",
-        },
-      });
+      reset(emptyFormData);
     }
-  }, [site, isOpen])
+  }, [site, mode, reset]);
 
-  const handleSubmit = (e: React.FormEvent) => {
-    e.preventDefault();
-
-    if (!formData.code || !formData.name) {
-      toast({
-        title: "Validation Error",
-        description: "Code and Name are required fields",
-        variant: "destructive",
-      });
-      return;
+  const onSubmitForm = async (data: SiteFormValues) => {
+    try {
+      await onSave({
+        ...site,
+        ...data,
+        updated_at: new Date().toISOString(),
+      } as Partial<Site>);
+      reset(emptyFormData);
+      onClose();
+    } catch (error) {
+      reset(undefined, { keepErrors: true, keepValues: true });
+      toast("Failed to save site");
     }
-
-    onSave({
-      ...site,
-      ...formData,
-      updated_at: new Date().toISOString(),
-    });
   };
 
   const isReadOnly = mode === "view";
@@ -120,116 +126,180 @@ export function SiteForm({ site, isOpen, onClose, onSave, mode }: SiteFormProps)
           </DialogTitle>
         </DialogHeader>
 
-        <form onSubmit={handleSubmit} className="space-y-4">
+        <form onSubmit={isSubmitting ? undefined : handleSubmit(onSubmitForm)} className="space-y-4">
           <div className="grid grid-cols-2 gap-4">
-            <div>
+            <div className="space-y-2">
               <Label htmlFor="code">Code *</Label>
               <Input
                 id="code"
-                value={formData.code}
-                onChange={(e) => setFormData({ ...formData, code: e.target.value })}
+                {...register("code")}
                 disabled={isReadOnly}
+                className={errors.code ? 'border-red-500' : ''}
               />
+              {errors.code && (
+                <p className="text-sm text-red-500">{errors.code.message}</p>
+              )}
             </div>
-            <div>
+            <div className="space-y-2">
               <Label htmlFor="name">Name *</Label>
               <Input
                 id="name"
-                value={formData.name}
-                onChange={(e) => setFormData({ ...formData, name: e.target.value })}
+                {...register("name")}
                 disabled={isReadOnly}
+                className={errors.name ? 'border-red-500' : ''}
               />
+              {errors.name && (
+                <p className="text-sm text-red-500">{errors.name.message}</p>
+              )}
             </div>
           </div>
 
           <div className="grid grid-cols-2 gap-4">
-            <div>
-              <Label htmlFor="kind">Type</Label>
-              <Select
-                value={formData.kind}
-                onValueChange={(value) => setFormData({ ...formData, kind: value as Site["kind"] })}
+            <Controller
+              name="kind"
+              control={control}
+              render={({ field }) => (
+                <div className="space-y-2">
+                  <Label htmlFor="kind">Type</Label>
+                  <Select
+                    value={field.value}
+                    onValueChange={field.onChange}
+                    disabled={isReadOnly}
+                  >
+                    <SelectTrigger className={errors.kind ? 'border-red-500' : ''}>
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {siteKinds.map((k) => (
+                        <SelectItem key={k} value={k}>
+                          {k.charAt(0).toUpperCase() + k.slice(1)}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                  {errors.kind && (
+                    <p className="text-sm text-red-500">{errors.kind.message}</p>
+                  )}
+                </div>
+              )}
+            />
+            <Controller
+              name="status"
+              control={control}
+              render={({ field }) => (
+                <div className="space-y-2">
+                  <Label htmlFor="status">Status</Label>
+                  <Select
+                    value={field.value}
+                    onValueChange={field.onChange}
+                    disabled={isReadOnly}
+                  >
+                    <SelectTrigger className={errors.status ? 'border-red-500' : ''}>
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="active">Active</SelectItem>
+                      <SelectItem value="inactive">Inactive</SelectItem>
+                    </SelectContent>
+                  </Select>
+                  {errors.status && (
+                    <p className="text-sm text-red-500">{errors.status.message}</p>
+                  )}
+                </div>
+              )}
+            />
+          </div>
+
+          <div className="grid grid-cols-2 gap-4">
+            <div className="space-y-2">
+              <Label htmlFor="opened_on">Opened On *</Label>
+              <Input
+                id="opened_on"
+                type="date"
+                {...register("opened_on")}
                 disabled={isReadOnly}
-              >
-                <SelectTrigger>
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                  {siteKinds.map((k) => (
-                    <SelectItem key={k} value={k}>
-                      {k.charAt(0).toUpperCase() + k.slice(1)}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </div>
-            <div>
-              <Label htmlFor="status">Status</Label>
-              <Select
-                value={formData.status}
-                onValueChange={(value) => setFormData({ ...formData, status: value as Site["status"] })}
-                disabled={isReadOnly}
-              >
-                <SelectTrigger>
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="active">Active</SelectItem>
-                  <SelectItem value="inactive">Inactive</SelectItem>
-                </SelectContent>
-              </Select>
+                className={errors.opened_on ? 'border-red-500' : ''}
+              />
+              {errors.opened_on && (
+                <p className="text-sm text-red-500">{errors.opened_on.message}</p>
+              )}
             </div>
           </div>
 
           {/* Address */}
           <div className="grid grid-cols-2 gap-4">
-            <div>
-              <Label htmlFor="line1">Address Line</Label>
+            <div className="space-y-2">
+              <Label htmlFor="line1">Address Line *</Label>
               <Input
                 id="line1"
-                value={formData.address.line1}
-                onChange={(e) => setFormData({ ...formData, address: { ...formData.address, line1: e.target.value } })}
+                {...register("address.line1")}
                 disabled={isReadOnly}
+                className={errors.address?.line1 ? 'border-red-500' : ''}
               />
+              {errors.address?.line1 && (
+                <p className="text-sm text-red-500">{errors.address.line1.message}</p>
+              )}
             </div>
-            <div>
-              <Label htmlFor="city">City</Label>
+            <div className="space-y-2">
+              <Label htmlFor="city">City *</Label>
               <Input
                 id="city"
-                value={formData.address.city}
-                onChange={(e) => setFormData({ ...formData, address: { ...formData.address, city: e.target.value } })}
+                {...register("address.city")}
                 disabled={isReadOnly}
+                className={errors.address?.city ? 'border-red-500' : ''}
               />
+              {errors.address?.city && (
+                <p className="text-sm text-red-500">{errors.address.city.message}</p>
+              )}
             </div>
           </div>
 
           <div className="grid grid-cols-2 gap-4">
-            <div>
-              <Label htmlFor="state">State</Label>
+            <div className="space-y-2">
+              <Label htmlFor="state">State *</Label>
               <Input
                 id="state"
-                value={formData.address.state}
-                onChange={(e) => setFormData({ ...formData, address: { ...formData.address, state: e.target.value } })}
+                {...register("address.state")}
                 disabled={isReadOnly}
+                className={errors.address?.state ? 'border-red-500' : ''}
               />
+              {errors.address?.state && (
+                <p className="text-sm text-red-500">{errors.address.state.message}</p>
+              )}
             </div>
-            <div>
-              <Label htmlFor="pincode">Pincode</Label>
-              <Input
-                id="pincode"
-                value={formData.address.pincode}
-                onChange={(e) => setFormData({ ...formData, address: { ...formData.address, pincode: e.target.value } })}
-                disabled={isReadOnly}
-              />
-            </div>
+            <Controller
+              name="address.pincode"
+              control={control}
+              render={({ field }) => (
+                <div className="space-y-2">
+                  <Label htmlFor="pincode">Pincode *</Label>
+                  <Input
+                    id="pincode"
+                    {...field}
+                    onChange={(e) => {
+                      // Filter out non-numeric characters
+                      const numericValue = e.target.value.replace(/\D/g, '');
+                      field.onChange(numericValue);
+                    }}
+                    disabled={isReadOnly}
+                    className={errors.address?.pincode ? 'border-red-500' : ''}
+                    placeholder="Enter pincode (numbers only)"
+                  />
+                  {errors.address?.pincode && (
+                    <p className="text-sm text-red-500">{errors.address.pincode.message}</p>
+                  )}
+                </div>
+              )}
+            />
           </div>
 
           <DialogFooter>
-            <Button type="button" variant="outline" onClick={onClose}>
+            <Button type="button" variant="outline" onClick={onClose} disabled={isSubmitting}>
               {mode === "view" ? "Close" : "Cancel"}
             </Button>
             {mode !== "view" && (
-              <Button type="submit">
-                {mode === "create" ? "Create Site" : "Update Site"}
+              <Button type="submit" disabled={!isValid || isSubmitting}>
+                {isSubmitting ? "Saving..." : mode === "create" ? "Create Site" : "Update Site"}
               </Button>
             )}
           </DialogFooter>

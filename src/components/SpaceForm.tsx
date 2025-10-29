@@ -5,7 +5,10 @@ import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
-import { useToast } from "@/hooks/use-toast";
+import { Controller, useForm } from "react-hook-form";
+import { zodResolver } from "@hookform/resolvers/zod";
+import { SpaceFormValues, spaceSchema } from "@/schemas/space.schema";
+import { toast } from "sonner";
 import { siteApiService } from "@/services/spaces_sites/sitesapi";
 import { buildingApiService } from "@/services/spaces_sites/buildingsapi";
 import { SpaceKind, spaceKinds } from "@/interfaces/spaces_interfaces";
@@ -42,97 +45,121 @@ interface SpaceFormProps {
   mode: 'create' | 'edit' | 'view';
 }
 
-const emptyFormData = {
+const emptyFormData: SpaceFormValues = {
   code: "",
   name: "",
-  kind: "room" as SpaceKind,
+  kind: "room",
   site_id: "",
   floor: "",
   building_block_id: "",
-  area_sqft: 0,
-  beds: 0,
-  baths: 0,
-  status: "available" as const,
+  area_sqft: undefined,
+  beds: undefined,
+  baths: undefined,
+  status: "available",
   attributes: {
     view: "",
     smoking: false,
-    furnished: "",
+    furnished: undefined,
     star_rating: "",
   }
-}
+};
 
 export function SpaceForm({ space, isOpen, onClose, onSave, mode }: SpaceFormProps) {
-  const { toast } = useToast();
-  const [formData, setFormData] = useState<Partial<Space>>(emptyFormData);
-  const [siteList, setSiteList] = useState([]);
-  const [buildingList, setBuildingList] = useState([]);
+  const {
+    register,
+    handleSubmit,
+    control,
+    reset,
+    watch,
+    formState: { errors, isSubmitting, isValid },
+  } = useForm<SpaceFormValues>({
+    resolver: zodResolver(spaceSchema),
+    defaultValues: emptyFormData,
+    mode: "onChange",
+    reValidateMode: "onChange",
+  });
+
+  const [siteList, setSiteList] = useState<any[]>([]);
+  const [buildingList, setBuildingList] = useState<any[]>([]);
+  const selectedSiteId = watch("site_id");
 
   useEffect(() => {
-    if (space) {
-      setFormData(space);
-    } else {
-      setFormData(emptyFormData);
-    }
     loadSiteLookup();
-    loadBuildingLookup();
-  }, [space]);
+  }, []);
 
   useEffect(() => {
-    loadBuildingLookup();
-  }, [formData.site_id]);
+    if (selectedSiteId) {
+      loadBuildingLookup(selectedSiteId);
+    } else {
+      setBuildingList([]);
+    }
+  }, [selectedSiteId]);
+
+  useEffect(() => {
+    if (space && mode !== "create") {
+      reset({
+        code: space.code || "",
+        name: space.name || "",
+        kind: space.kind || "room",
+        site_id: space.site_id || "",
+        floor: space.floor || "",
+        building_block_id: space.building_block_id || "",
+        area_sqft: space.area_sqft,
+        beds: space.beds,
+        baths: space.baths,
+        status: space.status || "available",
+        attributes: {
+          view: space.attributes?.view || "",
+          smoking: space.attributes?.smoking ?? false,
+          furnished: space.attributes?.furnished as "unfurnished" | "semi" | "fully" | undefined,
+          star_rating: space.attributes?.star_rating || "",
+        }
+      });
+      if (space.site_id) {
+        loadBuildingLookup(space.site_id);
+      }
+    } else {
+      reset(emptyFormData);
+    }
+  }, [space, mode, reset]);
 
   const loadSiteLookup = async () => {
-    const lookup = await siteApiService.getSiteLookup();
-    setSiteList(lookup);
-  }
-
-  const loadBuildingLookup = async () => {
-    const lookup = await buildingApiService.getBuildingLookup(formData.site_id);
-    setBuildingList(lookup);
-  }
-
-  const handleSubmit = (e: React.FormEvent) => {
-    e.preventDefault();
-
-    if (!formData.code || !formData.site_id || !formData.building_block_id) {
-      toast({
-        title: "Validation Error",
-        description: "Code and Site are required fields",
-        variant: "destructive",
-      });
-      return;
+    try {
+      const lookup = await siteApiService.getSiteLookup();
+      setSiteList(lookup || []);
+    } catch (error) {
+      console.error('Failed to load sites:', error);
+      setSiteList([]);
     }
-
-    const spaceData = {
-      ...space,
-      code: formData.code,
-      name: formData.name,
-      kind: formData.kind,
-      site_id: formData.site_id,
-      floor: formData.floor,
-      building_block_id: formData.building_block_id,
-      area_sqft: formData.area_sqft,
-      beds: formData.beds,
-      baths: formData.baths,
-      status: formData.status,
-      attributes: {
-        view: formData.attributes.view,
-        smoking: formData.attributes.smoking,
-        furnished: formData.attributes.furnished,
-        star_rating: formData.attributes.star_rating,
-      },
-      updated_at: new Date().toISOString(),
-    };
-
-    onSave(spaceData);
-
   };
 
-  const handleAttributesFieldChange = (field: string, value: any) => {
-    setFormData((prev) => ({ ...prev, attributes: { ...prev.attributes, [field]: value, } }));
+  const loadBuildingLookup = async (siteId: string) => {
+    try {
+      const lookup = await buildingApiService.getBuildingLookup(siteId);
+      setBuildingList(lookup || []);
+    } catch (error) {
+      console.error('Failed to load buildings:', error);
+      setBuildingList([]);
+    }
+  };
+
+  const onSubmitForm = async (data: SpaceFormValues) => {
+    try {
+      await onSave({
+        ...space,
+        ...data,
+        updated_at: new Date().toISOString(),
+      } as Partial<Space>);
+      reset(emptyFormData);
+      onClose();
+    } catch (error) {
+      reset(undefined, { keepErrors: true, keepValues: true });
+      toast("Failed to save space");
+    }
   };
 
   const isReadOnly = mode === 'view';
+  const selectedKind = watch("kind");
 
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
@@ -145,24 +172,26 @@ export function SpaceForm({ space, isOpen, onClose, onSave, mode }: SpaceFormPro
           </DialogTitle>
         </DialogHeader>
 
-        <form onSubmit={handleSubmit} className="space-y-4">
+        <form onSubmit={isSubmitting ? undefined : handleSubmit(onSubmitForm)} className="space-y-4">
           <div className="grid grid-cols-2 gap-4">
-            <div>
+            <div className="space-y-2">
               <Label htmlFor="code">Code *</Label>
               <Input
                 id="code"
-                value={formData.code}
-                onChange={(e) => setFormData({ ...formData, code: e.target.value })}
+                {...register("code")}
                 placeholder="e.g., 101, A-1203, SH-12"
                 disabled={isReadOnly}
+                className={errors.code ? 'border-red-500' : ''}
               />
+              {errors.code && (
+                <p className="text-sm text-red-500">{errors.code.message}</p>
+              )}
             </div>
-            <div>
+            <div className="space-y-2">
               <Label htmlFor="name">Name</Label>
               <Input
                 id="name"
-                value={formData.name}
-                onChange={(e) => setFormData({ ...formData, name: e.target.value })}
+                {...register("name")}
                 placeholder="Space name"
                 disabled={isReadOnly}
               />
@@ -170,137 +199,191 @@ export function SpaceForm({ space, isOpen, onClose, onSave, mode }: SpaceFormPro
           </div>
 
           <div className="grid grid-cols-2 gap-4">
-            <div>
-              <Label htmlFor="site">Site *</Label>
-              <Select
-                value={formData.site_id}
-                onValueChange={(value) => setFormData({ ...formData, site_id: value })}
-                disabled={isReadOnly}
-              >
-                <SelectTrigger>
-                  <SelectValue placeholder="Select site" />
-                </SelectTrigger>
-                <SelectContent>
-                  {siteList.map((site) => (
-                    <SelectItem key={site.id} value={site.id}>
-                      {site.name}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </div>
-            <div>
-              <Label htmlFor="kind">Type</Label>
-              <Select
-                value={formData.kind}
-                onValueChange={(value: SpaceKind) => setFormData({ ...formData, kind: value })}
-                disabled={isReadOnly}
-              >
-                <SelectTrigger>
-                  <SelectValue placeholder="Select type" />
-                </SelectTrigger>
-                <SelectContent>
-                  {spaceKinds.map((kind) => (
-                    <SelectItem key={kind} value={kind}>
-                      {kind.replace('_', ' ').replace(/\b\w/g, l => l.toUpperCase())}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </div>
+            <Controller
+              name="site_id"
+              control={control}
+              render={({ field }) => (
+                <div className="space-y-2">
+                  <Label htmlFor="site_id">Site *</Label>
+                  <Select
+                    value={field.value}
+                    onValueChange={field.onChange}
+                    disabled={isReadOnly}
+                  >
+                    <SelectTrigger className={errors.site_id ? 'border-red-500' : ''}>
+                      <SelectValue placeholder="Select site" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {siteList.length === 0 ? (
+                        <SelectItem value="none" disabled>No sites available</SelectItem>
+                      ) : (
+                        siteList.map((site) => (
+                          <SelectItem key={site.id} value={site.id}>
+                            {site.name}
+                          </SelectItem>
+                        ))
+                      )}
+                    </SelectContent>
+                  </Select>
+                  {errors.site_id && (
+                    <p className="text-sm text-red-500">{errors.site_id.message}</p>
+                  )}
+                </div>
+              )}
+            />
+            <Controller
+              name="kind"
+              control={control}
+              render={({ field }) => (
+                <div className="space-y-2">
+                  <Label htmlFor="kind">Type *</Label>
+                  <Select
+                    value={field.value}
+                    onValueChange={field.onChange}
+                    disabled={isReadOnly}
+                  >
+                    <SelectTrigger className={errors.kind ? 'border-red-500' : ''}>
+                      <SelectValue placeholder="Select type" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {spaceKinds.map((kind) => (
+                        <SelectItem key={kind} value={kind}>
+                          {kind.replace('_', ' ').replace(/\b\w/g, l => l.toUpperCase())}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                  {errors.kind && (
+                    <p className="text-sm text-red-500">{errors.kind.message}</p>
+                  )}
+                </div>
+              )}
+            />
           </div>
 
           <div className="grid grid-cols-3 gap-4">
-            <div>
+            <div className="space-y-2">
               <Label htmlFor="floor">Floor</Label>
               <Input
                 id="floor"
-                value={formData.floor}
-                onChange={(e) => setFormData({ ...formData, floor: e.target.value })}
+                {...register("floor")}
                 placeholder="e.g., Ground, 1st, B1"
                 disabled={isReadOnly}
               />
             </div>
-            <div>
-              <Label htmlFor="building_block">Building Block</Label>
-              <Select
-                value={formData.building_block_id}
-                onValueChange={(value) => setFormData({ ...formData, building_block_id: value })}
-                disabled={isReadOnly}
-              >
-                <SelectTrigger>
-                  <SelectValue placeholder="Select building block" />
-                </SelectTrigger>
-                <SelectContent>
-                  {buildingList.map((building_block) => (
-                    <SelectItem key={building_block.id} value={building_block.id}>
-                      {building_block.name}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </div>
-            <div>
+            <Controller
+              name="building_block_id"
+              control={control}
+              render={({ field }) => (
+                <div className="space-y-2">
+                  <Label htmlFor="building_block_id">Building Block *</Label>
+                  <Select
+                    value={field.value || ""}
+                    onValueChange={field.onChange}
+                    disabled={isReadOnly}
+                  >
+                    <SelectTrigger className={errors.building_block_id ? 'border-red-500' : ''}>
+                      <SelectValue placeholder="Select building block" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {buildingList.length === 0 ? (
+                        <SelectItem value="none" disabled>No buildings available</SelectItem>
+                      ) : (
+                        buildingList.map((building_block) => (
+                          <SelectItem key={building_block.id} value={building_block.id}>
+                            {building_block.name}
+                          </SelectItem>
+                        ))
+                      )}
+                    </SelectContent>
+                  </Select>
+                  {errors.building_block_id && (
+                    <p className="text-sm text-red-500">{errors.building_block_id.message}</p>
+                  )}
+                </div>
+              )}
+            />
+            <div className="space-y-2">
               <Label htmlFor="area_sqft">Area (sq ft)</Label>
               <Input
                 id="area_sqft"
                 type="number"
-                value={formData.area_sqft}
-                onChange={(e) => setFormData({ ...formData, area_sqft: Number(e.target.value) })}
+                {...register("area_sqft", { valueAsNumber: true })}
                 disabled={isReadOnly}
+                className={errors.area_sqft ? 'border-red-500' : ''}
+                min="0"
               />
+              {errors.area_sqft && (
+                <p className="text-sm text-red-500">{errors.area_sqft.message}</p>
+              )}
             </div>
           </div>
 
-          {['room', 'apartment'].includes(formData.kind) && (
+          {selectedKind && ['room', 'apartment'].includes(selectedKind) && (
             <div className="grid grid-cols-2 gap-4">
-              <div>
+              <div className="space-y-2">
                 <Label htmlFor="beds">Beds</Label>
                 <Input
                   id="beds"
                   type="number"
-                  value={formData.beds}
-                  onChange={(e) => setFormData({ ...formData, beds: Number(e.target.value) })}
+                  {...register("beds", { valueAsNumber: true })}
                   disabled={isReadOnly}
+                  className={errors.beds ? 'border-red-500' : ''}
+                  min="0"
                 />
+                {errors.beds && (
+                  <p className="text-sm text-red-500">{errors.beds.message}</p>
+                )}
               </div>
-              <div>
+              <div className="space-y-2">
                 <Label htmlFor="baths">Baths</Label>
                 <Input
                   id="baths"
                   type="number"
-                  value={formData.baths}
-                  onChange={(e) => setFormData({ ...formData, baths: Number(e.target.value) })}
+                  {...register("baths", { valueAsNumber: true })}
                   disabled={isReadOnly}
+                  className={errors.baths ? 'border-red-500' : ''}
+                  min="0"
                 />
+                {errors.baths && (
+                  <p className="text-sm text-red-500">{errors.baths.message}</p>
+                )}
               </div>
             </div>
           )}
 
           <div className="grid grid-cols-2 gap-4">
-            <div>
-              <Label htmlFor="status">Status</Label>
-              <Select
-                value={formData.status}
-                onValueChange={(value: "available" | "occupied" | "out_of_service") => setFormData({ ...formData, status: value })}
-                disabled={isReadOnly}
-              >
-                <SelectTrigger>
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="available">Available</SelectItem>
-                  <SelectItem value="occupied">Occupied</SelectItem>
-                  <SelectItem value="out_of_service">Out of Service</SelectItem>
-                </SelectContent>
-              </Select>
-            </div>
-            <div>
+            <Controller
+              name="status"
+              control={control}
+              render={({ field }) => (
+                <div className="space-y-2">
+                  <Label htmlFor="status">Status *</Label>
+                  <Select
+                    value={field.value}
+                    onValueChange={field.onChange}
+                    disabled={isReadOnly}
+                  >
+                    <SelectTrigger className={errors.status ? 'border-red-500' : ''}>
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="available">Available</SelectItem>
+                      <SelectItem value="occupied">Occupied</SelectItem>
+                      <SelectItem value="out_of_service">Out of Service</SelectItem>
+                    </SelectContent>
+                  </Select>
+                  {errors.status && (
+                    <p className="text-sm text-red-500">{errors.status.message}</p>
+                  )}
+                </div>
+              )}
+            />
+            <div className="space-y-2">
               <Label htmlFor="view">View</Label>
               <Input
                 id="view"
-                value={formData.attributes?.view}
-                onChange={(e) => handleAttributesFieldChange('view', e.target.value)}
+                {...register("attributes.view")}
                 placeholder="e.g., Sea, Garden, City"
                 disabled={isReadOnly}
               />
@@ -308,51 +391,63 @@ export function SpaceForm({ space, isOpen, onClose, onSave, mode }: SpaceFormPro
           </div>
 
           <div className="grid grid-cols-2 gap-4">
-            <div>
-              <Label htmlFor="furnished">Furnished</Label>
-              <Select
-                value={formData.attributes?.furnished}
-                onValueChange={(value) => handleAttributesFieldChange('furnished', value)}
-                disabled={isReadOnly}
-              >
-                <SelectTrigger>
-                  <SelectValue placeholder="Select option" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="unfurnished">Unfurnished</SelectItem>
-                  <SelectItem value="semi">Semi Furnished</SelectItem>
-                  <SelectItem value="fully">Fully Furnished</SelectItem>
-                </SelectContent>
-              </Select>
-            </div>
-            <div>
-              <Label htmlFor="star_rating">Star Rating</Label>
-              <Select
-                value={formData.attributes?.star_rating}
-                onValueChange={(value) => handleAttributesFieldChange('star_rating', value)}
-                disabled={isReadOnly}
-              >
-                <SelectTrigger>
-                  <SelectValue placeholder="Select rating" />
-                </SelectTrigger>
-                <SelectContent>
-                  {[0, 1, 2, 3, 4, 5].map((rating) => (
-                    <SelectItem key={rating} value={rating.toString()}>
-                      {rating === 0 ? "No Rating" : `${rating} Star${rating > 1 ? 's' : ''}`}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </div>
+            <Controller
+              name="attributes.furnished"
+              control={control}
+              render={({ field }) => (
+                <div className="space-y-2">
+                  <Label htmlFor="furnished">Furnished</Label>
+                  <Select
+                    value={field.value || ""}
+                    onValueChange={field.onChange}
+                    disabled={isReadOnly}
+                  >
+                    <SelectTrigger>
+                      <SelectValue placeholder="Select option" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="unfurnished">Unfurnished</SelectItem>
+                      <SelectItem value="semi">Semi Furnished</SelectItem>
+                      <SelectItem value="fully">Fully Furnished</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+              )}
+            />
+            <Controller
+              name="attributes.star_rating"
+              control={control}
+              render={({ field }) => (
+                <div className="space-y-2">
+                  <Label htmlFor="star_rating">Star Rating</Label>
+                  <Select
+                    value={field.value || ""}
+                    onValueChange={field.onChange}
+                    disabled={isReadOnly}
+                  >
+                    <SelectTrigger>
+                      <SelectValue placeholder="Select rating" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {[0, 1, 2, 3, 4, 5].map((rating) => (
+                        <SelectItem key={rating} value={rating.toString()}>
+                          {rating === 0 ? "No Rating" : `${rating} Star${rating > 1 ? 's' : ''}`}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+              )}
+            />
           </div>
 
           <DialogFooter>
-            <Button type="button" variant="outline" onClick={onClose}>
+            <Button type="button" variant="outline" onClick={onClose} disabled={isSubmitting}>
               {mode === 'view' ? 'Close' : 'Cancel'}
             </Button>
             {mode !== 'view' && (
-              <Button type="submit">
-                {mode === 'create' ? 'Create Space' : 'Update Space'}
+              <Button type="submit" disabled={!isValid || isSubmitting}>
+                {isSubmitting ? "Saving..." : mode === 'create' ? 'Create Space' : 'Update Space'}
               </Button>
             )}
           </DialogFooter>
