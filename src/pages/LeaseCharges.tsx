@@ -14,9 +14,10 @@ import {
   AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle
 } from "@/components/ui/alert-dialog";
 import { useToast } from "@/hooks/use-toast";
-import { leaseChargeApiService } from "@/services/leasing_tenants/leasechargeapi";
+import { leaseChargeApiService } from "@/services/Leasing_Tenants/leasechargeapi";
 import { LeaseChargeForm } from "@/components/LeaseChargeForm";
 import { useSkipFirstEffect } from "@/hooks/use-skipfirst-effect";
+import { useAuth } from "../context/AuthContext";
 
 type ChargeCode = "RENT" | "CAM" | "ELEC" | "WATER" | "PARK" | "PENALTY" | "MAINTENANCE" | string;
 
@@ -81,6 +82,9 @@ export default function LeaseCharges() {
   const [page, setPage] = useState(1); // current page
   const [pageSize] = useState(6); // items per page
   const [totalItems, setTotalItems] = useState(0);
+  const { canRead, canWrite, canDelete } = useAuth();
+  const resource = "lease_charges"; // must match resource name from backend policies
+
 
   useSkipFirstEffect(() => {
     loadLeaseCharges();
@@ -457,12 +461,15 @@ export default function LeaseCharges() {
                                 <Button variant="ghost" size="sm" onClick={() => { handleView(charge) }}>
                                   <Eye className="h-4 w-4" />
                                 </Button>
-                                <Button variant="ghost" size="sm" onClick={() => handleEdit(charge)}>
+                                 {canWrite(resource) && <Button variant="ghost" size="sm" onClick={() => handleEdit(charge)}>
                                   <Edit className="h-4 w-4" />
                                 </Button>
+                                  }
+                                {canDelete(resource) &&
                                 <Button variant="ghost" size="sm" onClick={() => setDeleteId(charge.id)}>
                                   <Trash2 className="h-4 w-4" />
                                 </Button>
+                                 }
                               </div>
                             </div>
                           </div>

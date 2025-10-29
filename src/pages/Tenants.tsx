@@ -15,6 +15,7 @@ import { useSkipFirstEffect } from "@/hooks/use-skipfirst-effect";
 import { useToast } from "@/hooks/use-toast";
 import { Pagination } from "@/components/Pagination";
 import { TenantForm } from "@/components/TenantForm";
+import { useAuth } from "../context/AuthContext";
 
 const Tenants = () => {
   const { toast } = useToast();
@@ -39,6 +40,9 @@ const Tenants = () => {
   const [page, setPage] = useState(1); // current page
   const [pageSize] = useState(6); // items per page
   const [totalItems, setTotalItems] = useState(0);
+  const { canRead, canWrite, canDelete } = useAuth();
+  const resource = "tenants"; // must match resource name from backend policies
+
 
   useSkipFirstEffect(() => {
     loadTenants();
@@ -124,25 +128,37 @@ const Tenants = () => {
   };
 
   const confirmDelete = async () => {
-    if (deleteTenantId) {
-      try {
-        await tenantsApiService.deleteTenant(deleteTenantId);
-        updateTenantPage();
-        setDeleteTenantId(null);
-        toast({
-          title: "Tenant Deleted",
-          description: "Tenant has been deleted successfully.",
-        });
-        setDeleteTenantId(null);
-      } catch (error) {
-        toast({
-          title: "Technical Error!",
-          variant: "destructive",
-        });
-      }
-    }
-  };
+  if (!deleteTenantId) return;
 
+  try {
+    // Show loading
+    toast({
+      title: "Deleting...",
+      description: "Please wait",
+    });
+
+    // Call API - wait for backend response
+    const result = await tenantsApiService.deleteTenant(deleteTenantId);
+    
+    // ✅ Show the exact message from backend
+    toast({
+      title: "Success!",
+      description: result.message, // This will show one of your 3 messages
+    });
+    
+    // Refresh data
+    await loadTenants();
+    await loadTenantOverview();
+    setDeleteTenantId(null);
+    
+  } catch (error: any) {
+    toast({
+      title: "Delete Failed",
+      description: error.message || "Failed to delete tenant",
+      variant: "destructive",
+    });
+  }
+};
   const handleSave = async (tenantData: Partial<Tenant>) => {
     try {
       if (formMode === "create") {
@@ -356,12 +372,15 @@ const Tenants = () => {
                               <Button variant="ghost" size="sm" onClick={() => handleView(tenant)}>
                                 <Eye className="h-4 w-4" />
                               </Button>
-                              <Button variant="ghost" size="sm" onClick={() => handleEdit(tenant)}>
+                              {canWrite(resource) &&<Button variant="ghost" size="sm" onClick={() => handleEdit(tenant)}>
                                 <Edit className="h-4 w-4" />
                               </Button>
+                                }
+                              {canDelete(resource) &&
                               <Button variant="ghost" size="sm" onClick={() => handleDelete(tenant.id!)}>
                                 <Trash2 className="h-4 w-4" />
                               </Button>
+                          }
                             </div>
                           </div>
                         </div>
