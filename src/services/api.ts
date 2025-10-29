@@ -62,7 +62,7 @@ class ApiService {
                 toast.error(errorMessage);
             }
 
-            if (result?.status === "Failure") {
+            if (result?.status?.toString().toLowerCase() === "failure") {
                 const message = result.message || errorMessage;
 
                 toast.error(errorMessage);
@@ -76,14 +76,13 @@ class ApiService {
                     window.location.href = "/login";
                     return;
                 }
+                return { success: false };
             }
-
-
-
-            return result.data;
+            return { success: true, data: result.data };
         } catch (error) {
-            console.error('API request failed:', error);
+            console.log('API request failed:', error);
             toast.error(errorMessage);
+            return { success: false };
         }
     }
 

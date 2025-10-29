@@ -52,7 +52,7 @@ export default function PendingApprovals() {
 
   const loadApprovalRules = async () => {
     const response = await approvalRulesApiService.getRules();
-    setApprovalRules(response.rules);
+    if (response.success) setApprovalRules(response.data?.rules || []);
   }
 
   const loadUsersForApproval = async () => {
@@ -64,8 +64,11 @@ export default function PendingApprovals() {
     params.append("skip", skip.toString());
     params.append("limit", limit.toString());
     const response = await pendingApprovalApiService.getUsers(params);
-    setUsers(response.users);
-    setTotalItems(response.total);
+
+    if (response.success) {
+      setUsers(response.data?.users ?? []);
+      setTotalItems(response.data?.total ?? 0);
+    }
   }
 
 
@@ -104,17 +107,19 @@ export default function PendingApprovals() {
   const confirmAction = async () => {
     if (!selectedUser) return;
 
-    await pendingApprovalApiService.updateUser({ user_id: selectedUser.id, status: actionType })
+    const resp = await pendingApprovalApiService.updateUser({ user_id: selectedUser.id, status: actionType })
 
-    if (actionType === 'approve') {
-      toast.success(`User ${selectedUser.full_name} has been approved`);
-    } else {
-      toast.success(`User ${selectedUser.full_name} has been rejected`);
+    if (resp) {
+      if (actionType === 'approve') {
+        toast.success(`User ${selectedUser.full_name} has been approved`);
+      } else {
+        toast.success(`User ${selectedUser.full_name} has been rejected`);
+      }
+
+      setSelectedUser(null);
+      setActionType(null);
+      loadUsersForApproval();
     }
-
-    setSelectedUser(null);
-    setActionType(null);
-    loadUsersForApproval();
   };
 
   const getInitials = (name: string) => {
