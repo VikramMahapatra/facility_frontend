@@ -37,6 +37,7 @@ export function MeterReadingForm({
   onSave,
   mode
 }: MeterReadingFormProps) {
+
   const {
     register,
     handleSubmit,
@@ -234,7 +235,7 @@ export function MeterReadingForm({
             <div className="space-y-2">
               <Label htmlFor="delta">Delta (Optional)</Label>
               <Controller
-                name="ts"
+                name="delta"
                 control={control}
                 render={({ field }) => (
                   <Input
