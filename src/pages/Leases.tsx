@@ -15,9 +15,10 @@ import {
 import { useToast } from "@/hooks/use-toast";
 import { Pagination } from "@/components/Pagination";
 import { siteApiService } from "@/services/spaces_sites/sitesapi";
-import { leasesApiService } from "@/services/leasing_tenants/leasesapi";
+import { leasesApiService } from "@/services/Leasing_Tenants/leasesapi";
 import { strict } from "assert";
 import { Lease, LeaseOverview } from "@/interfaces/leasing_tenants_interface";
+import { useAuth } from "../context/AuthContext";
 
 export default function Leases() {
   const { toast } = useToast();
@@ -33,6 +34,8 @@ export default function Leases() {
   const [isFormOpen, setIsFormOpen] = useState(false);
   const [deleteLeaseId, setDeleteLeaseId] = useState<string | null>(null);
   const [siteList, setSiteList] = useState<any[]>([]);
+  const { canRead, canWrite, canDelete } = useAuth();
+  const resource = "leases"; // must match resource name from backend policies
 
   const [leaseOverview, setLeaseOverview] = useState<LeaseOverview>({
     activeLeases: 0,
@@ -326,9 +329,11 @@ export default function Leases() {
                         <Button size="sm" variant="outline" onClick={() => handleView(lease)}>
                           <Eye className="h-3 w-3" />
                         </Button>
-                        <Button size="sm" variant="outline" onClick={() => handleEdit(lease)}>
+                        {canWrite(resource) && <Button size="sm" variant="outline" onClick={() => handleEdit(lease)}>
                           <Edit className="h-3 w-3" />
                         </Button>
+                         } 
+                         {canDelete(resource) &&
                         <Button
                           size="sm"
                           variant="outline"
@@ -337,6 +342,7 @@ export default function Leases() {
                         >
                           <Trash2 className="h-3 w-3" />
                         </Button>
+                         }
                       </div>
                     </CardContent>
                   </Card>

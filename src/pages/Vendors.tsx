@@ -14,6 +14,7 @@ import { VendorForm } from "@/components/VendorForm";
 import { Pagination } from "@/components/Pagination";
 import { useToast } from "@/hooks/use-toast";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
+import { useAuth } from "../context/AuthContext";
 
 export default function Vendors() {
   const { toast } = useToast();
@@ -31,6 +32,9 @@ export default function Vendors() {
   const [formMode, setFormMode] = useState<"create" | "edit" | "view">("create");
   const [selectedVendor, setSelectedVendor] = useState<any | undefined>();
   const [deleteVendorId, setDeleteVendorId] = useState<string | null>(null);
+  const { canRead, canWrite, canDelete } = useAuth();
+  const resource = "vendors"; // must match resource name from backend policies
+
 
   useEffect(() => {
     loadStatusLookup();
@@ -368,9 +372,11 @@ export default function Vendors() {
                               <Button variant="ghost" size="sm" onClick={() => handleView(vendor)}>
                                 <Eye className="w-4 h-4" />
                               </Button>
-                              <Button variant="ghost" size="sm" onClick={() => handleEdit(vendor)}>
+                              {canWrite(resource) && <Button size="sm" variant="outline" onClick={() => handleEdit(vendor)}>
                                 <Edit className="w-4 h-4" />
                               </Button>
+                               }
+                               {canDelete(resource) &&
                               <Button
                                 variant="ghost"
                                 size="sm"
@@ -379,6 +385,7 @@ export default function Vendors() {
                               >
                                 <Trash2 className="w-4 h-4" />
                               </Button>
+                               }
                             </div>
                           </TableCell>
                         </TableRow>
