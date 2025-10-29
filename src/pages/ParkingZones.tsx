@@ -15,7 +15,7 @@ import { Pagination } from "@/components/Pagination";
 import { siteApiService } from "@/services/spaces_sites/sitesapi";
 import { parkingZoneApiService } from "@/services/parking_access/parkingzonesapi";
 import { useSkipFirstEffect } from "@/hooks/use-skipfirst-effect";
-
+import { useAuth } from "../context/AuthContext";
 export default function ParkingZones() {
   const { toast } = useToast();
   const [searchTerm, setSearchTerm] = useState("");
@@ -34,7 +34,8 @@ export default function ParkingZones() {
   const [page, setPage] = useState(1); // current page
   const [pageSize] = useState(5); // items per page
   const [totalItems, setTotalItems] = useState(0);
-
+  const { canRead, canWrite, canDelete } = useAuth();
+  const resource = "parking_zones";
   useSkipFirstEffect(() => {
     loadParkingZone();
   }, [page]);
@@ -258,10 +259,11 @@ export default function ParkingZones() {
                               <Button size="sm" variant="outline" onClick={() => handleView(zone)}>
                                 <Eye className="h-3 w-3" />
                               </Button>
-                              <Button size="sm" variant="outline" onClick={() => handleEdit(zone)}>
+                              {canWrite(resource) && <Button size="sm" variant="outline" onClick={() => handleEdit(zone)}>
                                 <Edit className="h-3 w-3" />
                               </Button>
-                              <Button
+                              }
+                              {canDelete(resource) && <Button
                                 size="sm"
                                 variant="outline"
                                 className="text-destructive hover:text-destructive"
@@ -269,6 +271,7 @@ export default function ParkingZones() {
                               >
                                 <Trash2 className="h-3 w-3" />
                               </Button>
+                              }
                             </div>
                           </TableCell>
                         </TableRow>
