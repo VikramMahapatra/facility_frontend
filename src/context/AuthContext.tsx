@@ -9,6 +9,9 @@ export interface AuthUser {
     id: string;
     name: string;
     email: string;
+    phone?: string;
+    account_type: string;
+    organization_name: string;
     is_authenticated: boolean;
     role_policies?: RolePolicy[];
 }
