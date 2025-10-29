@@ -20,7 +20,7 @@ import {
 import { useToast } from "@/hooks/use-toast";
 import { siteApiService } from "@/services/spaces_sites/sitesapi";
 import { spacesApiService } from "@/services/spaces_sites/spacesapi";
-import { leasesApiService } from "@/services/leasing_tenants/leasesapi";
+import { leasesApiService } from "@/services/Leasing_Tenants/leasesapi";
 import { Lease } from "@/interfaces/leasing_tenants_interface";
 
 interface LeaseFormProps {

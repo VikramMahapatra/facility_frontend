@@ -18,6 +18,7 @@ import { Pagination } from "@/components/Pagination";
 import { useToast } from "@/hooks/use-toast";
 import { ContractForm } from "@/components/ContractsForm";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
+import { useAuth } from "../context/AuthContext";
 
 export default function Contracts() {
   const { toast } = useToast();
@@ -36,6 +37,8 @@ export default function Contracts() {
   const [formMode, setFormMode] = useState<"create" | "edit" | "view">("create");
   const [selectedContract, setSelectedContract] = useState<any | undefined>();
   const [deleteContractId, setDeleteContractId] = useState<string | null>(null);
+  const { canRead, canWrite, canDelete } = useAuth();
+  const resource = "contracts"; // must match resource name from backend policies
 
   useEffect(() => {
     loadStatusLookup();
@@ -392,9 +395,11 @@ export default function Contracts() {
                               <Button variant="ghost" size="sm" onClick={() => handleView(contract)}>
                                 <Eye className="w-4 h-4" />
                               </Button>
-                              <Button variant="ghost" size="sm" onClick={() => handleEdit(contract)}>
+                              {canWrite(resource) &&<Button variant="ghost" size="sm" onClick={() => handleEdit(contract)}>
                                 <Edit className="w-4 h-4" />
                               </Button>
+                               }
+                               {canDelete(resource) &&
                               <Button
                                 variant="ghost"
                                 size="sm"
@@ -403,6 +408,7 @@ export default function Contracts() {
                               >
                                 <Trash2 className="w-4 h-4" />
                               </Button>
+                               }
                             </div>
                           </TableCell>
                         </TableRow>
