@@ -57,7 +57,8 @@ import { useSkipFirstEffect } from "@/hooks/use-skipfirst-effect";
 import { siteApiService } from "@/services/spaces_sites/sitesapi";
 import { vendorsApiService } from "@/services/pocurments/vendorsapi";
 import { WorkOrder, WorkOrderOverview } from "@/interfaces/assets_interface";
-
+import { useAuth } from "../context/AuthContext";
+  
 export default function WorkOrders() {
   const { toast } = useToast();
   const [searchTerm, setSearchTerm] = useState("");
@@ -88,7 +89,8 @@ export default function WorkOrders() {
   const [priorityList, setPriorityList] = useState([]);
   const [spaceList, setSpaceList] = useState([]);
   const [vendorList, setVendorList] = useState([]);
-
+  const { canRead, canWrite, canDelete } = useAuth();
+  const resource = "work_orders"; 
   const [page, setPage] = useState(1);
   const [pageSize] = useState(6);
   const [totalItems, setTotalItems] = useState(0);
@@ -486,14 +488,15 @@ export default function WorkOrders() {
                             >
                               <Eye className="w-4 h-4" />
                             </Button>
-                            <Button
+                            {canWrite(resource) && <Button
                               variant="ghost"
                               size="sm"
                               onClick={() => handleEdit(workOrder)}
                             >
                               <Edit className="w-4 h-4" />
                             </Button>
-                            <Button
+                            }
+                            {canDelete(resource) && <Button
                               variant="ghost"
                               size="sm"
                               className="text-destructive hover:text-destructive"
@@ -501,6 +504,7 @@ export default function WorkOrders() {
                             >
                               <Trash2 className="w-4 h-4" />
                             </Button>
+                            }
                           </div>
                         </TableCell>
                       </TableRow>
