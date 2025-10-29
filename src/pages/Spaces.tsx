@@ -14,6 +14,7 @@ import { siteApiService } from "@/services/spaces_sites/sitesapi";
 import { spacesApiService } from "@/services/spaces_sites/spacesapi";
 import { SpaceKind, spaceKinds } from "@/interfaces/spaces_interfaces";
 import { useSkipFirstEffect } from "@/hooks/use-skipfirst-effect";
+import { useAuth } from "../context/AuthContext";
 
 export interface Space {
   id: string;
@@ -63,6 +64,8 @@ export default function Spaces() {
   const [page, setPage] = useState(1); // current page
   const [pageSize] = useState(6); // items per page
   const [totalItems, setTotalItems] = useState(0);
+  const { canRead, canWrite, canDelete } = useAuth();
+  const resource = "spaces";
 
   useSkipFirstEffect(() => {
     loadSpaces();
@@ -406,10 +409,11 @@ export default function Spaces() {
                         <Button size="sm" variant="outline" onClick={() => handleView(space)}>
                           <Eye className="h-3 w-3" />
                         </Button>
-                        <Button size="sm" variant="outline" onClick={() => handleEdit(space)}>
+                        {canWrite(resource) && <Button size="sm" variant="outline" onClick={() => handleEdit(space)}>
                           <Edit className="h-3 w-3" />
                         </Button>
-                        <Button
+                        }
+                        {canDelete(resource) && <Button
                           size="sm"
                           variant="outline"
                           className="text-destructive hover:text-destructive"
@@ -417,6 +421,7 @@ export default function Spaces() {
                         >
                           <Trash2 className="h-3 w-3" />
                         </Button>
+                        }
                       </div>
                     </CardContent>
                   </Card>

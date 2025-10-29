@@ -25,6 +25,7 @@ import { serviceRequestApiService } from "@/services/maintenance_assets/servicer
 import { useSkipFirstEffect } from "@/hooks/use-skipfirst-effect";
 import { ServiceRequestForm } from "@/components/ServiceRequestForm";
 import { set } from "date-fns";
+import { useAuth } from "../context/AuthContext";
 
 export type ServiceRequestPriority = "low" | "medium" | "high" | "urgent";
 export type ServiceRequestStatus   = "open" | "in_progress" | "on_hold" | "resolved" | "closed" | "cancelled";
@@ -89,6 +90,8 @@ export default function ServiceRequest() {
   const [page, setPage] = useState(1);
   const [pageSize] = useState(6);
   const [totalItems, setTotalItems] = useState(0);
+  const { canRead, canWrite, canDelete } = useAuth();
+  const resource = "service_requests";
 
   useSkipFirstEffect(() => {
     loadServiceRequest();
@@ -388,12 +391,14 @@ export default function ServiceRequest() {
                               <Button variant="ghost" size="sm" onClick={() => handleView(request)}>
                                 <Eye className="w-4 h-4" />
                               </Button>
-                              <Button variant="ghost" size="sm" onClick={() => handleEdit(request)}>
+                              {canWrite(resource) && <Button variant="ghost" size="sm" onClick={() => handleEdit(request)}>
                                 <Edit className="w-4 h-4" />
                               </Button>
-                              <Button variant="ghost" size="sm" onClick={() => handleDelete(request.id!)}>
+                              }
+                              {canDelete(resource) && <Button variant="ghost" size="sm" onClick={() => handleDelete(request.id!)}>
                                 Delete
                               </Button>
+                              }
                             </div>
                           </TableCell>
                         </TableRow>

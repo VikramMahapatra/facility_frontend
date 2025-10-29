@@ -62,7 +62,7 @@ import { Pagination } from "@/components/Pagination";
 import { preventiveMaintenanceApiService } from "@/services/maintenance_assets/preventive_maintenanceapi";
 import { useSkipFirstEffect } from "@/hooks/use-skipfirst-effect";
 import { PMTemplateForm } from "@/components/PMTemplateForm";
-
+import { useAuth } from "../context/AuthContext";
 interface PMTemplate {
   id: string;
   name: string;
@@ -118,7 +118,8 @@ export default function PreventiveMaintenance() {
   const [page, setPage] = useState(1); // current page
   const [pageSize] = useState(6); // items per page
   const [totalItems, setTotalItems] = useState(0);
-
+  const { canRead, canWrite, canDelete } = useAuth();
+  const resource = "pm_templates";
   useSkipFirstEffect(() => {
     loadTemplates();
     loadTemplateOverview();
@@ -525,20 +526,22 @@ export default function PreventiveMaintenance() {
                             >
                               <Eye className="w-4 h-4" />
                             </Button>
-                            <Button
+                            {canWrite(resource) && <Button
                               variant="ghost"
                               size="sm"
                               onClick={() => handleEdit(template)}
                             >
                               <Edit className="w-4 h-4" />
                             </Button>
-                            <Button
+                            }
+                            {canDelete(resource) && <Button
                               variant="ghost"
                               size="sm"
                               onClick={() => handleDelete(template.id)}
                             >
                               <Trash2 className="w-4 h-4" />
                             </Button>
+                            }
                           </div>
                         </TableCell>
                       </TableRow>

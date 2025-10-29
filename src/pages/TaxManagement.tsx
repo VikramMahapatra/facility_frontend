@@ -16,6 +16,7 @@ import { Pagination } from "@/components/Pagination";
 import { TaxCodeForm } from "@/components/TaxCodeForm";
 import { useToast } from "@/hooks/use-toast";
 import { useSkipFirstEffect } from "@/hooks/use-skipfirst-effect";
+import { useAuth } from "../context/AuthContext"; 
 
 export default function TaxManagement() {
   const { toast } = useToast();
@@ -27,6 +28,8 @@ export default function TaxManagement() {
   const [formMode, setFormMode] = useState<'create' | 'edit' | 'view'>('create');
   const [isFormOpen, setIsFormOpen] = useState(false);
   const [deleteTaxCodeId, setDeleteTaxCodeId] = useState<string | null>(null);
+  const { canRead, canWrite, canDelete } = useAuth();
+  const resource = "tax_codes";
   const [taxOverview, setTaxOverview] = useState<TaxOverview>({
     activeTaxCodes: 0,
     totalTaxCollected: 0,
@@ -295,12 +298,14 @@ export default function TaxManagement() {
                               <Button variant="ghost" size="sm" onClick={() => handleView(taxCode)}>
                                 <Eye className="h-4 w-4" />
                               </Button>
-                              <Button variant="ghost" size="sm" onClick={() => handleEdit(taxCode)}>
+                              {canWrite(resource) && <Button variant="ghost" size="sm" onClick={() => handleEdit(taxCode)}>
                                 <Edit className="h-4 w-4" />
                               </Button>
-                              <Button variant="ghost" size="sm" className="text-destructive" onClick={() => handleDelete(taxCode.id)}>
+                              }
+                              {canDelete(resource) && <Button variant="ghost" size="sm" className="text-destructive" onClick={() => handleDelete(taxCode.id)}>
                                 <Trash2 className="h-4 w-4" />
                               </Button>
+                              }
                             </div>
                           </TableCell>
                         </TableRow>

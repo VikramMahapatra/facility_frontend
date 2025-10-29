@@ -24,7 +24,7 @@ export interface MeterReading {
     ts: string;
     reading: number;
     delta?: number;
-    source: 'manual' | 'iot';
+    source: string;
     metadata?: any;
     unit: string;
 }

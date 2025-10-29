@@ -15,6 +15,7 @@ import { Pagination } from "@/components/Pagination";
 import { useToast } from "@/hooks/use-toast";
 import { InvoiceForm } from "@/components/InvoiceForm";
 import { useSkipFirstEffect } from "@/hooks/use-skipfirst-effect";
+import { useAuth } from "../context/AuthContext";
 
 
 
@@ -30,7 +31,9 @@ export default function Invoices() {
   const [formMode, setFormMode] = useState<'create' | 'edit' | 'view'>('create');
   const [isFormOpen, setIsFormOpen] = useState(false);
   const [deleteInvoiceId, setDeleteInvoiceId] = useState<string | null>(null);
-  const [invoiceOverview, setInvoiceOverview] = useState<InvoiceOverview>({
+  const { canRead, canWrite, canDelete } = useAuth();
+  const resource = "invoices";
+    const [invoiceOverview, setInvoiceOverview] = useState<InvoiceOverview>({
     totalInvoices: 0,
     totalAmount: 0,
     paidAmount: 0,
@@ -357,9 +360,10 @@ export default function Invoices() {
                               <Button variant="ghost" size="sm" onClick={() => handleView(invoice)}>
                                 <Eye className="h-4 w-4" />
                               </Button>
-                              <Button variant="ghost" size="sm" onClick={() => handleEdit(invoice)}>
+                              {canWrite(resource) && <Button variant="ghost" size="sm" onClick={() => handleEdit(invoice)}>
                                 <Edit className="h-4 w-4" />
                               </Button>
+                              }
                               {invoice.status === 'draft' && (
                                 <Button variant="ghost" size="sm">
                                   <Send className="h-4 w-4" />
@@ -368,7 +372,8 @@ export default function Invoices() {
                               <Button variant="ghost" size="sm">
                                 <Download className="h-4 w-4" />
                               </Button>
-                              <Button
+                              
+                              {canDelete(resource) && <Button
                                 variant="ghost"
                                 size="sm"
                                 className="text-destructive hover:text-destructive"
@@ -376,6 +381,7 @@ export default function Invoices() {
                               >
                                 <Trash2 className="h-4 w-4" />
                               </Button>
+                              }
                             </div>
                           </TableCell>
                         </TableRow>

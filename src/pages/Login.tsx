@@ -6,10 +6,13 @@ import { useNavigate } from "react-router-dom";
 import { Chrome } from "lucide-react";
 import { useGoogleLogin } from "@react-oauth/google";
 import { authApiService } from "@/services/authapi";
+import { useAuth } from "@/context/AuthContext";
+
 
 const Login = () => {
   const navigate = useNavigate();
   const [isLoading, setIsLoading] = useState(false);
+  const { setUser } = useAuth();
 
   localStorage.removeItem('access_token');
   localStorage.removeItem('loggedInUser');
@@ -33,7 +36,7 @@ const Login = () => {
           });
         } else {
           // Existing user - go to dashboard
-          localStorage.setItem('loggedInUser', JSON.stringify(authResponse.user));
+          setUser(authResponse.user);
           navigate('/dashboard');
         }
         setIsLoading(false);

@@ -21,6 +21,7 @@ import {
   FloorOccupancyChart
 } from "@/components/DashboardCharts";
 import { dashboardApiService } from "@/services/dashboardapi";
+import { useAuth } from "@/context/AuthContext";
 
 interface User {
   id: string;
@@ -33,13 +34,7 @@ interface User {
 
 const Dashboard = () => {
   const navigate = useNavigate();
-  const [user, setUser] = useState<User | null>(null);
-
-  useEffect(() => {
-    const userData = localStorage.getItem('loggedInUser');
-    const parsedUser = JSON.parse(userData);
-    setUser(parsedUser);
-  }, []);
+  const { user } = useAuth();
 
   const handleLogout = () => {
     localStorage.removeItem('user');
@@ -77,7 +72,7 @@ const Dashboard = () => {
                   <div>
                     <h1 className="text-xl font-bold">FacilityOS</h1>
                     <p className="text-sm text-muted-foreground">
-                      {user.organizationName || user.accountType} Dashboard
+                      {user.organization_name || user.account_type} Dashboard
                     </p>
                   </div>
                 </div>
@@ -92,7 +87,7 @@ const Dashboard = () => {
                   </Avatar>
                   <div className="text-right">
                     <p className="text-sm font-medium">{user.name}</p>
-                    <p className="text-xs text-muted-foreground">{user.accountType}</p>
+                    <p className="text-xs text-muted-foreground">{user.account_type}</p>
                   </div>
                 </div>
 
@@ -117,8 +112,8 @@ const Dashboard = () => {
                   Welcome back, {user.name}!
                 </h2>
                 <p className="text-muted-foreground">
-                  {user.organizationName
-                    ? `Managing facilities for ${user.organizationName}`
+                  {user.organization_name
+                    ? `Managing facilities for ${user.organization_name}`
                     : "Your comprehensive property management dashboard"
                   }
                 </p>

@@ -15,7 +15,7 @@ import { siteApiService } from "@/services/spaces_sites/sitesapi";
 import { visitorApiService } from "@/services/parking_access/visitorsapi";
 import { Visitor, VisitorOverview } from "@/interfaces/parking_access_interface";
 import { Pagination } from "@/components/Pagination";
-
+import { useAuth } from "../context/AuthContext";
 export default function Visitors() {
   const { toast } = useToast();
   const [searchTerm, setSearchTerm] = useState("");
@@ -36,7 +36,8 @@ export default function Visitors() {
     totalVisitors: 0,
     totalVisitorsWithVehicle: 0,
   });
-
+  const { canRead, canWrite, canDelete } = useAuth();
+  const resource = "visitors";
   useEffect(() => {
     loadSiteLookup();
     loadVisitorOverView();
@@ -300,10 +301,11 @@ export default function Visitors() {
                               <Button size="sm" variant="outline" onClick={() => handleView(visitor)}>
                                 <Eye className="h-3 w-3" />
                               </Button>
-                              <Button size="sm" variant="outline" onClick={() => handleEdit(visitor)}>
+                              {canWrite(resource) && <Button size="sm" variant="outline" onClick={() => handleEdit(visitor)}>
                                 <Edit className="h-3 w-3" />
                               </Button>
-                              <Button
+                              }
+                              {canDelete(resource) && <Button
                                 size="sm"
                                 variant="outline"
                                 className="text-destructive hover:text-destructive"
@@ -311,6 +313,7 @@ export default function Visitors() {
                               >
                                 <Trash2 className="h-3 w-3" />
                               </Button>
+                              }
                             </div>
                           </TableCell>
                         </TableRow>

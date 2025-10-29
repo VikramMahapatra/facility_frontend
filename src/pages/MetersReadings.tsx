@@ -47,6 +47,7 @@ import { useSkipFirstEffect } from "@/hooks/use-skipfirst-effect";
 import { meterReadingApiService } from "@/services/energy_iot/meterreadingsapi";
 import { Pagination } from "@/components/Pagination";
 import { exportToExcel } from "@/helpers/exportToExcelHelper";
+import { useAuth } from "../context/AuthContext";
 
 const getMeterIcon = (kind: string) => {
   switch (kind) {
@@ -104,7 +105,9 @@ export default function MetersReadings() {
   const [page, setPage] = useState(1); // current page
   const [pageSize] = useState(5); // items per page
   const [totalItems, setTotalItems] = useState(0);
-
+  const { canRead, canWrite, canDelete } = useAuth();
+  const resource = "meters";
+  const resourceReadings = "meter_readings";
   const [readingsPage, setReadingsPage] = useState(1); // current page
   const [readingsPageSize] = useState(5); // items per page
   const [totalReadingsItems, setTotalReadingsItems] = useState(0);
@@ -253,7 +256,13 @@ export default function MetersReadings() {
   ) => {
     try {
       console.log("Saving meter reading:", meterReadingData);
+      if (meterReadingFormMode === 'create') {
+        await meterReadingApiService.addMeterReading(meterReadingData);
+      } else if (meterReadingFormMode === 'edit') {
+        await meterReadingApiService.updateMeterReading({ ...selectedMeterReading, ...meterReadingData });
+      }
       await loadMeterReadings();
+      setIsMeterReadingFormOpen(false);
       toast({
         title: "Success",
         description: `Meter reading ${meterReadingFormMode === "create" ? "added" : "updated"
@@ -262,6 +271,24 @@ export default function MetersReadings() {
     } catch (error) {
       console.error("Error saving meter reading:", error);
       throw error;
+    }
+  };
+
+  const onDeleteMeterReading = async (reading: MeterReading) => {
+    try {
+      await meterReadingApiService.deleteMeterReading(reading.id);
+      await loadMeterReadings();
+      toast({
+        title: "Deleted",
+        description: `Meter reading for ${reading.meter_code} deleted successfully.`,
+      });
+    } catch (error) {
+      console.error("Error deleting meter reading:", error);
+      toast({
+        title: "Error",
+        description: "Failed to delete meter reading.",
+        variant: "destructive",
+      });
     }
   };
 
@@ -505,16 +532,18 @@ export default function MetersReadings() {
                                 >
                                   <Eye className="h-4 w-4" />
                                 </Button>
-                                <Button
+                                {canWrite(resource) && <Button
                                   variant="ghost"
                                   size="sm"
                                   onClick={() => onEditMeter(meter)}
                                 >
                                   <Edit className="h-4 w-4" />
                                 </Button>
-                                <Button variant="ghost" size="sm">
+                                }
+                                {canDelete(resource) && <Button variant="ghost" size="sm">
                                   <Trash2 className="h-4 w-4" />
                                 </Button>
+                                }
                               </div>
                             </TableCell>
                           </TableRow>
@@ -598,6 +627,7 @@ export default function MetersReadings() {
                             </TableCell>
                             <TableCell>
                               <div className="flex items-center gap-2">
+                                
                                 <Button
                                   variant="ghost"
                                   size="sm"
@@ -605,6 +635,7 @@ export default function MetersReadings() {
                                 >
                                   <Eye className="h-4 w-4" />
                                 </Button>
+                                {canWrite(resourceReadings) &&
                                 <Button
                                   variant="ghost"
                                   size="sm"
@@ -612,9 +643,12 @@ export default function MetersReadings() {
                                 >
                                   <Edit className="h-4 w-4" />
                                 </Button>
-                                <Button variant="ghost" size="sm">
+                                }
+                                {canDelete(resourceReadings) &&
+                                <Button variant="ghost" size="sm" onClick={() => onDeleteMeterReading(reading)}>
                                   <Trash2 className="h-4 w-4" />
                                 </Button>
+                                }
                               </div>
                             </TableCell>
                           </TableRow>

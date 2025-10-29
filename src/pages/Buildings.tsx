@@ -14,6 +14,7 @@ import { siteApiService } from "@/services/spaces_sites/sitesapi";
 import { useToast } from "@/hooks/use-toast";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
 import { useSkipFirstEffect } from "@/hooks/use-skipfirst-effect";
+import { useAuth } from "../context/AuthContext";
 
 export interface Building {
   id: string;
@@ -41,6 +42,8 @@ export default function Buildings() {
   const [totalItems, setTotalItems] = useState(0);
   const [siteList, setSiteList] = useState([]);
   const [deleteBuildingId, setDeleteBuildingId] = useState<string | null>(null);
+  const { canRead, canWrite, canDelete } = useAuth();
+  const resource = "buildings";
 
   useSkipFirstEffect(() => {
     loadBuildings();
@@ -314,10 +317,11 @@ const confirmDelete = async () => {
                           <Button size="sm" variant="outline" onClick={() => handleView(building)}>
                             <Eye className="h-3 w-3" />
                           </Button>
-                          <Button size="sm" variant="outline" onClick={() => handleEdit(building)}>
+                       {canWrite(resource) && <Button size="sm" variant="outline" onClick={() => handleEdit(building)}>
                             <Edit className="h-3 w-3" />
                           </Button>
-                          <Button
+                          }
+                        {canDelete(resource) && <Button
                             size="sm"
                             variant="outline"
                             className="text-destructive hover:text-destructive"
@@ -325,6 +329,7 @@ const confirmDelete = async () => {
                           >
                             <Trash2 className="h-3 w-3" />
                           </Button>
+                          }
                         </div>
                       </CardContent>
                     </Card>
