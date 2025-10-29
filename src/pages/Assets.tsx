@@ -16,13 +16,15 @@ import { useToast } from "@/hooks/use-toast";
 import { Pagination } from "@/components/Pagination";
 import { AssetForm } from "@/components/AssetForm";
 import { useSkipFirstEffect } from "@/hooks/use-skipfirst-effect";
+import { useAuth } from "../context/AuthContext";
 
 export default function Assets() {
   const { toast } = useToast();
   const [searchTerm, setSearchTerm] = useState("");
   const [categoryFilter, setCategoryFilter] = useState("all");
   const [statusFilter, setStatusFilter] = useState("all");
-
+  const { canRead, canWrite, canDelete } = useAuth();
+  const resource = "assets";  
   // NEW: dynamic filter sources
   const [categoryOptions, setCategoryOptions] = useState([]);
   const [statusOptions, setStatusOptions] = useState([]);
@@ -330,13 +332,14 @@ export default function Assets() {
                                 <Button variant="ghost" size="sm" onClick={() => handleView(asset)}>
                                   <Eye className="h-4 w-4" />
                                 </Button>
-                                <Button variant="ghost" size="sm" onClick={() => handleEdit(asset)}>
+                                {canWrite(resource) && <Button variant="ghost" size="sm" onClick={() => handleEdit(asset)}>
                                   <Edit className="h-4 w-4" />
                                 </Button>
+                                }
                                 <Button variant="ghost" size="sm">
                                   <Wrench className="h-4 w-4" />
                                 </Button>
-                                <Button
+                                {canDelete(resource) && <Button
                                   variant="ghost"
                                   size="sm"
                                   className="text-destructive"
@@ -344,6 +347,7 @@ export default function Assets() {
                                 >
                                   <Trash2 className="h-4 w-4" />
                                 </Button>
+                                }
                               </div>
                             </TableCell>
                           </TableRow>

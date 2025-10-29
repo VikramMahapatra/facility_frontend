@@ -14,6 +14,7 @@ import { siteApiService } from "@/services/spaces_sites/sitesapi";
 import { SpaceKind, spaceKinds } from "@/interfaces/spaces_interfaces";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
 import { useSkipFirstEffect } from "@/hooks/use-skipfirst-effect";
+import { useAuth } from "../context/AuthContext";
 
 
 export interface SpaceGroup {
@@ -42,6 +43,8 @@ export default function SpaceGroups() {
   const [pageSize] = useState(6); // items per page
   const [totalItems, setTotalItems] = useState(0);
   const [deleteSpaceGroupId, setDeleteSpaceGroupId] = useState<string | null>(null);
+  const { canRead, canWrite, canDelete } = useAuth();
+  const resource = "space_groups";
 
   const getKindIcon = (kind: SpaceKind) => {
     const icons = {
@@ -313,12 +316,15 @@ const confirmDelete = async () => {
                           <Button size="sm" variant="outline" onClick={() => handleView(group)}>
                             <Eye className="h-3 w-3" />
                           </Button>
-                          <Button size="sm" variant="outline" onClick={() => handleEdit(group)}>
+                          {canWrite(resource) && <Button size="sm" variant="outline" onClick={() => handleEdit(group)}>
                             <Edit className="h-3 w-3" />
                           </Button>
-                          <Button size="sm" variant="outline" className="text-destructive hover:text-destructive" onClick={() => handleDelete(group.id)}>
+                          }
+                          {canDelete(resource) && <Button size="sm" variant="outline" className="text-destructive hover:text-destructive" onClick={() => handleDelete(group.id)}>
+
                             <Trash2 className="h-3 w-3" />
                           </Button>
+                          }
                         </div>
                       </CardContent>
                     </Card>
