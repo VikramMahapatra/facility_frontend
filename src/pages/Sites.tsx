@@ -77,8 +77,11 @@ export default function Sites() {
     params.append("skip", skip.toString());
     params.append("limit", limit.toString());
     const response = await siteApiService.getSites(params);
-    setSites(response.sites);
-    setTotalItems(response.total);
+    if (response.success) {
+      setSites(response.data?.sites || []);
+      setTotalItems(response.data?.total || 0);
+    }
+
   }
 
   const getKindColor = (kind: string) => {
@@ -117,29 +120,27 @@ export default function Sites() {
   };
 
   const handleSave = async (siteData: Partial<Site>) => {
-    try {
-      if (formMode === "create") {
-        const newSite = await siteApiService.addSite(siteData);
-      } else if (formMode === "edit" && selectedSite) {
-        const updatedSite = {
-          ...selectedSite,
-          ...siteData,
-          updated_at: new Date().toISOString(),
-        }
-        await siteApiService.update(updatedSite);
+    let response;
+    if (formMode === "create") {
+      response = await siteApiService.addSite(siteData);
+    } else if (formMode === "edit" && selectedSite) {
+      const updatedSite = {
+        ...selectedSite,
+        ...siteData,
+        updated_at: new Date().toISOString(),
       }
+      response = await siteApiService.update(updatedSite);
+    }
+
+    if (response.success) {
       setShowForm(false);
       loadSites();
       toast({
         title: formMode === "create" ? "Site Created" : "Site Updated",
         description: `Site ${siteData.code} has been ${formMode === "create" ? "created" : "updated"} successfully.`,
       });
-    } catch (error) {
-      toast({
-        title: "Techical Error!",
-        variant: "destructive",
-      });
     }
+
   };
 
   const handleDelete = (id: string) => {
@@ -149,10 +150,11 @@ export default function Sites() {
   // In Site.tsx - Replace the confirmDelete function
   const confirmDelete = async () => {
     if (deleteId) {
-      try {
-        const response = await siteApiService.deleteSite(deleteId);
+      const response = await siteApiService.deleteSite(deleteId);
 
-        if (response.success) {
+      if (response.success) {
+        const authResponse = response.data;
+        if (authResponse.success) {
           // Success - refresh data
           loadSites();
           setDeleteId(null);
@@ -164,26 +166,12 @@ export default function Sites() {
           // Show error popup from backend
           toast({
             title: "Cannot Delete Site",
-            description: response.message,
-            variant: "destructive",
-          });
-        }
-      } catch (error: any) {
-        if (error.response?.status === 400) {
-          // Show hierarchical deletion error
-          toast({
-            title: "Cannot Delete Site",
-            description: error.response.data.detail,
-            variant: "destructive",
-          });
-        } else {
-          toast({
-            title: "Delete Failed",
-            description: "An error occurred while deleting the site.",
+            description: authResponse.message,
             variant: "destructive",
           });
         }
       }
+
     }
   };
 

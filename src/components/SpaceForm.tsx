@@ -124,23 +124,13 @@ export function SpaceForm({ space, isOpen, onClose, onSave, mode }: SpaceFormPro
   }, [space, mode, reset]);
 
   const loadSiteLookup = async () => {
-    try {
-      const lookup = await siteApiService.getSiteLookup();
-      setSiteList(lookup || []);
-    } catch (error) {
-      console.error('Failed to load sites:', error);
-      setSiteList([]);
-    }
+    const response = await siteApiService.getSiteLookup();
+    if (response.success) setSiteList(response.data || []);
   };
 
   const loadBuildingLookup = async (siteId: string) => {
-    try {
-      const lookup = await buildingApiService.getBuildingLookup(siteId);
-      setBuildingList(lookup || []);
-    } catch (error) {
-      console.error('Failed to load buildings:', error);
-      setBuildingList([]);
-    }
+    const response = await buildingApiService.getBuildingLookup(siteId);
+    if (response.success) setBuildingList(response.data || []);
   };
 
   const onSubmitForm = async (data: SpaceFormValues) => {

@@ -59,18 +59,20 @@ export default function AccessLogs() {
     params.append("skip", skip.toString());
     params.append("limit", limit.toString());
     const response = await accessEventApiService.getAccessEvents(params);
-    setEvents(response.events);
-    setTotalItems(response.total);
+    if (response.success) {
+      setEvents(response.data?.events || []);
+      setTotalItems(response.data?.total || 0);
+    }
   }
 
   const loadEventOverView = async () => {
     const response = await accessEventApiService.getAccessEventOverview();
-    setEventOverview(response);
+    if (response.success) setEventOverview(response.data || []);
   }
 
   const loadSiteLookup = async () => {
     const lookup = await siteApiService.getSiteLookup();
-    setSiteList(lookup);
+    if (lookup.success) setSiteList(lookup.data || []);
   }
 
   const getDirectionIcon = (direction: 'in' | 'out') => {

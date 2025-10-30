@@ -24,7 +24,7 @@ export default function Assets() {
   const [categoryFilter, setCategoryFilter] = useState("all");
   const [statusFilter, setStatusFilter] = useState("all");
   const { canRead, canWrite, canDelete } = useAuth();
-  const resource = "assets";  
+  const resource = "assets";
   // NEW: dynamic filter sources
   const [categoryOptions, setCategoryOptions] = useState([]);
   const [statusOptions, setStatusOptions] = useState([]);
@@ -70,17 +70,17 @@ export default function Assets() {
 
   const loadCategories = async () => {
     const response = await assetApiService.getCategories();
-    setCategoryOptions(response);
+    if (response.success) setCategoryOptions(response.data);
   }
 
   const loadStatuses = async () => {
     const response = await assetApiService.getStatuses();
-    setStatusOptions(response);
+    if (response.success) setStatusOptions(response.data);
   }
 
   const loadAssetOverView = async () => {
     const response = await assetApiService.getAssetOverview();
-    setAssetOverview(response);
+    if (response.success) setAssetOverview(response.data);
   };
 
   const loadAssets = async () => {
@@ -95,8 +95,10 @@ export default function Assets() {
     params.append("limit", String(limit));
 
     const response = await assetApiService.getAssets(params);
-    setAssets(response.assets);
-    setTotalItems(response.total);
+    if (response.success) {
+      setAssets(response.data?.assets || []);
+      setTotalItems(response.data?.total || 0);
+    }
   };
 
   const handleCreate = () => {
@@ -121,25 +123,23 @@ export default function Assets() {
 
   const confirmDelete = async () => {
     if (!deleteAssetId) return;
-    try {
-      await assetApiService.deleteAsset(deleteAssetId);
+    const resp = await assetApiService.deleteAsset(deleteAssetId);
+    if (resp.success) {
       updateAssetPage();
       loadAssetOverView();
       toast({ title: "Asset Deleted", description: "Asset has been removed successfully." });
-    } catch {
-      toast({ title: "Techical Error!", variant: "destructive" });
-    } finally {
-      setDeleteAssetId(null);
     }
   };
 
   const handleSave = async (values: Partial<Asset>) => {
-    try {
-      if (formMode === 'create') {
-        await assetApiService.addAsset(values);
-      } else if (formMode === 'edit' && selectedAsset) {
-        await assetApiService.updateAsset({ ...selectedAsset, ...values });
-      }
+    let response;
+    if (formMode === 'create') {
+      response = await assetApiService.addAsset(values);
+    } else if (formMode === 'edit' && selectedAsset) {
+      response = await assetApiService.updateAsset({ ...selectedAsset, ...values });
+    }
+
+    if (response.success) {
       setIsFormOpen(false);
       toast({
         title: formMode === 'create' ? "Asset Created" : "Asset Updated",
@@ -147,8 +147,6 @@ export default function Assets() {
       });
       updateAssetPage();
       loadAssetOverView();
-    } catch {
-      toast({ title: "Techical Error!", variant: "destructive" });
     }
   };
 

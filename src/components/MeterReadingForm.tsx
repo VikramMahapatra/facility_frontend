@@ -81,8 +81,8 @@ export function MeterReadingForm({
   }, [meterReading]);
 
   const loadDropdownData = async () => {
-    const metersData = await meterReadingApiService.getMeterReadingLookup();
-    setMeters(metersData);
+    const response = await meterReadingApiService.getMeterReadingLookup();
+    if (response) setMeters(response.data || []);
   };
 
 

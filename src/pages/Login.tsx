@@ -20,27 +20,30 @@ const Login = () => {
 
   const googleLogin = useGoogleLogin({
     onSuccess: async (tokenResponse) => {
-      const authResponse = await authApiService.authenticateGoogle(tokenResponse.access_token);
+      const response = await authApiService.authenticateGoogle(tokenResponse.access_token);
 
-      setTimeout(() => {
-        if (authResponse.needs_registration) {
-          // New user - go to signup
-          navigate('/signup', {
-            state: {
-              googleData: {
-                email: authResponse.email,
-                name: authResponse.name,
-                picture: authResponse.picture
+      if (response.success) {
+        const authResponse = response.data;
+        setTimeout(() => {
+          if (authResponse.needs_registration) {
+            // New user - go to signup
+            navigate('/signup', {
+              state: {
+                googleData: {
+                  email: authResponse.email,
+                  name: authResponse.name,
+                  picture: authResponse.picture
+                }
               }
-            }
-          });
-        } else {
-          // Existing user - go to dashboard
-          setUser(authResponse.user);
-          navigate('/dashboard');
-        }
-        setIsLoading(false);
-      }, 1000);
+            });
+          } else {
+            // Existing user - go to dashboard
+            setUser(authResponse.user);
+            navigate('/dashboard');
+          }
+          setIsLoading(false);
+        }, 1000);
+      }
     },
     onError: () => {
       console.error("Google login failed");

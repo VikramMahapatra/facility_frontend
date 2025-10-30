@@ -48,12 +48,12 @@ export default function ApprovalRules() {
 
   const loadApprovalRules = async () => {
     const response = await approvalRulesApiService.getRules();
-    setRules(response.rules);
+    if (response.success) setRules(response.data?.rules || []);
   }
 
   const loadRoles = async () => {
     const roleList = await rolePolicyApiService.getRoles()
-    setRoles(roleList);
+    if (roleList.success) setRoles(roleList.data || []);
   }
 
   const handleCreateRule = async () => {
@@ -86,9 +86,8 @@ export default function ApprovalRules() {
 
     const resp = await approvalRulesApiService.createRule(newRule);
 
-    if (resp) {
+    if (resp.success) {
       loadApprovalRules();
-
       toast.success("Approval rule created successfully");
       setIsDialogOpen(false);
       setApproverRoleId("");

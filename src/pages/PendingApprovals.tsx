@@ -109,7 +109,7 @@ export default function PendingApprovals() {
 
     const resp = await pendingApprovalApiService.updateUser({ user_id: selectedUser.id, status: actionType })
 
-    if (resp) {
+    if (resp.success) {
       if (actionType === 'approve') {
         toast.success(`User ${selectedUser.full_name} has been approved`);
       } else {

@@ -75,7 +75,7 @@ export function BuildingForm({ building, isOpen, onClose, onSave, mode }: Buildi
   const loadSiteLookup = async () => {
     try {
       const lookup = await siteApiService.getSiteLookup();
-      setSiteList(lookup || []);
+      if (lookup) setSiteList(lookup.data || []);
     } catch (error) {
       console.error('Failed to load sites:', error);
       setSiteList([]);

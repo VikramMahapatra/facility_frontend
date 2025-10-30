@@ -72,13 +72,15 @@ export default function Buildings() {
     params.append("skip", skip.toString());
     params.append("limit", limit.toString());
     const response = await buildingApiService.getBuildings(params);
-    setBuildings(response.buildings);
-    setTotalItems(response.total);
+    if (response.success) {
+      setBuildings(response.data?.buildings || []);
+      setTotalItems(response.data?.total || 0);
+    }
   }
 
   const loadSiteLookup = async () => {
     const lookup = await siteApiService.getSiteLookup();
-    setSiteList(lookup);
+    if (lookup.success) setSiteList(lookup.data || []);
   }
 
   // --- CRUD Handlers ---
@@ -105,77 +107,52 @@ export default function Buildings() {
   };
 
   // In Building.tsx - Replace the confirmDelete function
-// In Building.tsx - Update confirmDelete function
-const confirmDelete = async () => {
-  if (deleteBuildingId) {
-    try {
-      console.log('=== BUILDING DELETE DEBUG ===');
-      console.log('Building ID to delete:', deleteBuildingId);
-      
+  // In Building.tsx - Update confirmDelete function
+  const confirmDelete = async () => {
+    if (deleteBuildingId) {
       const response = await buildingApiService.deleteBuilding(deleteBuildingId);
       console.log('Building Delete Response:', response);
-      
+
       if (response.success) {
-        loadBuildings();
-        setDeleteBuildingId(null);
-        toast({
-          title: "Building Deleted",
-          description: "The building has been removed successfully.",
-        });
-      } else {
-        toast({
-          title: "Cannot Delete Building",
-          description: response.message,
-          variant: "destructive",
-        });
+        const deleteResponse = response.data;
+        if (deleteResponse.success) {
+          loadBuildings();
+          setDeleteBuildingId(null);
+          toast({
+            title: "Building Deleted",
+            description: "The building has been removed successfully.",
+          });
+        } else {
+          toast({
+            title: "Cannot Delete Building",
+            description: deleteResponse.message,
+            variant: "destructive",
+          });
+        }
       }
-    } catch (error: any) {
-      console.log('=== BUILDING DELETE ERROR ===');
-      console.log('Full error:', error);
-      console.log('Error status:', error.response?.status);
-      console.log('Error data:', error.response?.data);
-      
-      if (error.response?.status === 400) {
-        const errorMessage = error.response.data?.detail || "Cannot delete building";
-        toast({
-          title: "Cannot Delete Building",
-          description: errorMessage,
-          variant: "destructive",
-        });
-      } else {
-        toast({
-          title: "Delete Failed",
-          description: "An error occurred while deleting the building.",
-          variant: "destructive",
-        });
-      }
-    } finally {
+
       setDeleteBuildingId(null);
     }
-  }
-};
+  };
 
   const handleSave = async (building: any) => {
-    try {
-      if (formMode === "create") {
-        const newBuilding = await buildingApiService.addBuilding(building);
-      } else if (formMode === "edit") {
-        const updatedBuilding = {
-          ...selectedBuilding,
-          ...building
-        };
-        await buildingApiService.updateBuilding(updatedBuilding);
-      }
+    let response;
+    if (formMode === "create") {
+      response = await buildingApiService.addBuilding(building);
+    } else if (formMode === "edit") {
+      const updatedBuilding = {
+        ...selectedBuilding,
+        ...building
+      };
+      response = await buildingApiService.updateBuilding(updatedBuilding);
+    }
+
+    if (response.success) {
       setShowForm(false);
       loadBuildings();
       toast({
         title: formMode === "create" ? "Building Created" : "Building Updated",
         description: `Building ${building.name} has been ${formMode === "create" ? "created" : "updated"} successfully.`,
-      });
-    } catch (error) {
-      toast({
-        title: "Techical Error!",
-        variant: "destructive",
       });
     }
 
@@ -317,11 +294,11 @@ const confirmDelete = async () => {
                           <Button size="sm" variant="outline" onClick={() => handleView(building)}>
                             <Eye className="h-3 w-3" />
                           </Button>
-                       {canWrite(resource) && <Button size="sm" variant="outline" onClick={() => handleEdit(building)}>
+                          {canWrite(resource) && <Button size="sm" variant="outline" onClick={() => handleEdit(building)}>
                             <Edit className="h-3 w-3" />
                           </Button>
                           }
-                        {canDelete(resource) && <Button
+                          {canDelete(resource) && <Button
                             size="sm"
                             variant="outline"
                             className="text-destructive hover:text-destructive"

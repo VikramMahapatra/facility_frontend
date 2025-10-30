@@ -28,8 +28,10 @@ class AuthApiService {
         });
 
         localStorage.removeItem('access_token');
-        let token = response.access_token;
-        localStorage.setItem('access_token', token);
+        if (response.success) {
+            let token = response.data?.access_token;
+            localStorage.setItem('access_token', token);
+        }
         return response;
     }
 
@@ -46,8 +48,10 @@ class AuthApiService {
         });
 
         localStorage.removeItem('access_token');
-        let token = response.access_token;
-        localStorage.setItem('access_token', token);
+        if (response.success) {
+            let token = response.data?.access_token;
+            localStorage.setItem('access_token', token);
+        }
         return response;
     }
 
@@ -65,8 +69,10 @@ class AuthApiService {
         });
 
         localStorage.removeItem('access_token');
-        let token = response.access_token;
-        localStorage.setItem('access_token', token);
+        if (response.success) {
+            let token = response.data?.access_token;
+            localStorage.setItem('access_token', token);
+        }
         return response;
     }
 
