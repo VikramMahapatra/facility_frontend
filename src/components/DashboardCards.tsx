@@ -7,7 +7,7 @@ import {
   Car, UserCheck, Calendar
 } from "lucide-react";
 import { dashboardApiService } from '@/services/dashboardapi';
- 
+
 const iconMap = {
   Building2,
   Users,
@@ -35,13 +35,8 @@ export function StatsGrid() {
   }, []);
 
   const loadOverviewData = async () => {
-    try {
-      const overview = await dashboardApiService.getOverview();
-      setOverviewData(overview);
-    } catch (error) {
-      console.error('Failed to load overview data:', error);
-      setOverviewData(null);
-    }
+    const overview = await dashboardApiService.getOverview();
+    if (overview.success) setOverviewData(overview.data);
   };
 
 
@@ -71,7 +66,7 @@ export function StatsGrid() {
               <div className="space-y-1">
                 <div className="text-2xl font-bold text-foreground">{stat.value}</div>
                 <div className="text-sm font-medium text-foreground">{stat.title}</div>
-                <div className="text-xs text-muted-foreground">{stat.description}</div> 
+                <div className="text-xs text-muted-foreground">{stat.description}</div>
               </div>
             </CardContent>
           </Card>
@@ -89,8 +84,8 @@ export function LeasingOverview() {
   }, [])
 
   const loadLeasingData = async () => {
-    const data = await dashboardApiService.getLeasingOverviewData();
-    setLeasingData(data);
+    const resp = await dashboardApiService.getLeasingOverviewData();
+    if (resp.success) setLeasingData(resp.data);
   }
 
   return (
@@ -102,7 +97,7 @@ export function LeasingOverview() {
         </CardTitle>
       </CardHeader>
       <CardContent className="space-y-4">
-        <div className="flex items-center justify-between"> 
+        <div className="flex items-center justify-between">
           <span className="text-sm text-muted-foreground">Active Leases</span>
           <span className="text-xl font-semibold">{leasingData?.activeLeases}</span>
         </div>
@@ -148,7 +143,7 @@ export function MaintenanceOverview() {
 
   const loadMaintenanceData = async () => {
     const maintenanceData = await dashboardApiService.getMaintenanceOverviewData();
-    setMaintenanceData(maintenanceData);
+    if (maintenanceData.success) setMaintenanceData(maintenanceData.data);
   };
 
   return (
@@ -209,7 +204,7 @@ export function AccessOverview() {
 
   const loadAccessAndParkingData = async () => {
     const accessAndParkingData = await dashboardApiService.getAccessAndParkingOverviewData();
-    setData(accessAndParkingData);
+    if (accessAndParkingData.success) setData(accessAndParkingData.data);
   };
 
   return (
@@ -263,7 +258,7 @@ export function AccessOverview() {
 
 export function FinancialSummary() {
 
-  const [ data, setData] = useState<any>(null);
+  const [data, setData] = useState<any>(null);
 
   useEffect(() => {
     loadFinancialSummaryData();
@@ -271,7 +266,7 @@ export function FinancialSummary() {
 
   const loadFinancialSummaryData = async () => {
     const financialSummaryData = await dashboardApiService.getFinancialSummaryData();
-    setData(financialSummaryData);
+    if (financialSummaryData.success) setData(financialSummaryData.data);
   };
 
   return (
@@ -322,7 +317,7 @@ export function EnergyOverview() {
 
   const loadEnergyData = async () => {
     const energyData = await dashboardApiService.getEnergyStatus();
-    setEnergyData(energyData);
+    if (energyData.success) setEnergyData(energyData.data);
   };
   return (
     <Card>

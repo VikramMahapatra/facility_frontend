@@ -59,7 +59,7 @@ export default function Organizations() {
 
   const loadOrganisation = async () => {
     const organisationObj = await organisationApiService.getOrg()
-    setOrganizations([organisationObj]);
+    if (organisationObj.success) setOrganizations([organisationObj.data]);
   }
 
   const filteredOrganizations = organizations.filter(org => {
@@ -108,32 +108,18 @@ export default function Organizations() {
 
   const handleSave = async (orgData: Partial<Organization>) => {
     try {
-      if (formMode === 'create') {
-        const newOrg: Organization = {
-          id: `org-${Date.now()}`,
-          name: orgData.name!,
-          legal_name: orgData.legal_name!,
-          gst_vat_id: orgData.gst_vat_id,
-          billing_email: orgData.billing_email!,
-          contact_phone: orgData.contact_phone,
-          plan: orgData.plan!,
-          locale: orgData.locale!,
-          timezone: orgData.timezone!,
-          status: orgData.status!,
-          created_at: new Date().toISOString(),
-          updated_at: new Date().toISOString()
-        };
-        setOrganizations([...organizations, newOrg]);
-      } else if (formMode === 'edit' && selectedOrg) {
+      if (formMode === 'edit' && selectedOrg) {
         const updatedOrg = {
           ...selectedOrg,
           ...orgData,
           updated_at: new Date().toISOString()
         }
-        await organisationApiService.update(updatedOrg);
-        setOrganizations(organizations.map(org =>
-          org.id === selectedOrg.id ? updatedOrg : org
-        ));
+        const resp = await organisationApiService.update(updatedOrg);
+        if (resp.success) {
+          setOrganizations(organizations.map(org =>
+            org.id === selectedOrg.id ? updatedOrg : org
+          ));
+        }
       }
       setShowForm(false);
 

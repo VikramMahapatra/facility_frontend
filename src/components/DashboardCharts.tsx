@@ -31,8 +31,8 @@ export function RevenueChart() {
 
   const loadRevenueData = async () => {
     try {
-      const data = await dashboardApiService.getMonthlyRevenueTrend();
-      setRevenueData(data);
+      const resp = await dashboardApiService.getMonthlyRevenueTrend();
+      if (resp.success) setRevenueData(resp.data);
     } catch (error) {
       console.error('Failed to load revenue data:', error);
       setRevenueData([]);
@@ -50,33 +50,33 @@ export function RevenueChart() {
             <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" />
             <XAxis dataKey="month" stroke="hsl(var(--muted-foreground))" />
             <YAxis stroke="hsl(var(--muted-foreground))" />
-            <Tooltip 
-              contentStyle={{ 
-                backgroundColor: "hsl(var(--card))", 
+            <Tooltip
+              contentStyle={{
+                backgroundColor: "hsl(var(--card))",
                 border: "1px solid hsl(var(--border))",
                 borderRadius: "6px"
-              }} 
+              }}
             />
-            <Area 
-              type="monotone" 
-              dataKey="rental" 
-              stroke="hsl(var(--accent))" 
+            <Area
+              type="monotone"
+              dataKey="rental"
+              stroke="hsl(var(--accent))"
               fill="hsl(var(--accent) / 0.1)"
               strokeWidth={2}
               name="Rental Income"
             />
-            <Area 
-              type="monotone" 
-              dataKey="cam" 
-              stroke="hsl(var(--destructive))" 
+            <Area
+              type="monotone"
+              dataKey="cam"
+              stroke="hsl(var(--destructive))"
               fill="hsl(var(--destructive) / 0.1)"
               strokeWidth={2}
               name="CAM Charges"
             />
-            <Area 
-              type="monotone" 
-              dataKey="total" 
-              stroke="hsl(var(--primary))" 
+            <Area
+              type="monotone"
+              dataKey="total"
+              stroke="hsl(var(--primary))"
               fill="hsl(var(--primary) / 0.1)"
               strokeWidth={2}
               name="Total Revenue"
@@ -99,13 +99,16 @@ export function OccupancyChart() {
   const loadOccupancy = async () => {
     try {
       const resp = await dashboardApiService.getSpaceOccupancy();
-      const chartData = [
-        { name: 'Occupied', value: resp.occupied, color: 'hsl(var(--accent))' },
-        { name: 'Available', value: resp.available, color: 'hsl(var(--primary))' },
-        { name: 'Out of Service', value: resp.outOfService, color: 'hsl(var(--destructive))' }
-      ];
-      setPieData(chartData);
-      setMeta({ total: Number(resp.total), occupancyRate: Number(resp.occupancyRate)});
+      if (resp.success) {
+        const chartData = [
+          { name: 'Occupied', value: resp.data.occupied, color: 'hsl(var(--accent))' },
+          { name: 'Available', value: resp.data.available, color: 'hsl(var(--primary))' },
+          { name: 'Out of Service', value: resp.data.outOfService, color: 'hsl(var(--destructive))' }
+        ];
+        setPieData(chartData);
+        setMeta({ total: Number(resp.data.total), occupancyRate: Number(resp.data.occupancyRate) });
+      }
+
     } catch (error) {
       console.error('Failed to load space occupancy:', error);
       setPieData([]);
@@ -153,8 +156,8 @@ export function OccupancyChart() {
           <div className="flex justify-center space-x-4 mt-4">
             {pieData.map((item, index) => (
               <div key={index} className="flex items-center space-x-2">
-                <div 
-                  className="w-3 h-3 rounded-full" 
+                <div
+                  className="w-3 h-3 rounded-full"
                   style={{ backgroundColor: item.color }}
                 />
                 <span className="text-sm text-muted-foreground">{item.name}</span>
@@ -176,8 +179,8 @@ export function MaintenanceChart() {
 
   const loadPriority = async () => {
     try {
-      const data = await dashboardApiService.getWorkOrdersPriority();
-      setPriorityData(data);
+      const resp = await dashboardApiService.getWorkOrdersPriority();
+      if (resp.success) setPriorityData(resp.data);
     } catch (error) {
       console.error('Failed to load work orders priority:', error);
       setPriorityData([]);
@@ -194,12 +197,12 @@ export function MaintenanceChart() {
             <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" />
             <XAxis dataKey="priority" stroke="hsl(var(--muted-foreground))" />
             <YAxis stroke="hsl(var(--muted-foreground))" />
-            <Tooltip 
-              contentStyle={{ 
-                backgroundColor: "hsl(var(--card))", 
+            <Tooltip
+              contentStyle={{
+                backgroundColor: "hsl(var(--card))",
                 border: "1px solid hsl(var(--border))",
                 borderRadius: "6px"
-              }} 
+              }}
             />
             <Bar dataKey="count" radius={[4, 4, 0, 0]}>
               {priorityData.map((entry, index) => (
@@ -222,8 +225,8 @@ export function EnergyChart() {
 
   const loadEnergy = async () => {
     try {
-      const data = await dashboardApiService.getEnergyConsumptionTrend();
-      setEnergyTrend(data);
+      const resp = await dashboardApiService.getEnergyConsumptionTrend();
+      if (resp.success) setEnergyTrend(resp.data);
     } catch (error) {
       console.error('Failed to load energy trend:', error);
       setEnergyTrend([]);
@@ -241,31 +244,31 @@ export function EnergyChart() {
             <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" />
             <XAxis dataKey="month" stroke="hsl(var(--muted-foreground))" />
             <YAxis stroke="hsl(var(--muted-foreground))" />
-            <Tooltip 
-              contentStyle={{ 
-                backgroundColor: "hsl(var(--card))", 
+            <Tooltip
+              contentStyle={{
+                backgroundColor: "hsl(var(--card))",
                 border: "1px solid hsl(var(--border))",
                 borderRadius: "6px"
-              }} 
+              }}
             />
-            <Line 
-              type="monotone" 
-              dataKey="electricity" 
-              stroke="hsl(var(--primary))" 
+            <Line
+              type="monotone"
+              dataKey="electricity"
+              stroke="hsl(var(--primary))"
               strokeWidth={3}
               name="Electricity (kWh)"
             />
-            <Line 
-              type="monotone" 
-              dataKey="water" 
-              stroke="hsl(var(--accent))" 
+            <Line
+              type="monotone"
+              dataKey="water"
+              stroke="hsl(var(--accent))"
               strokeWidth={3}
               name="Water (gallons)"
             />
-            <Line 
-              type="monotone" 
-              dataKey="gas" 
-              stroke="hsl(var(--destructive))" 
+            <Line
+              type="monotone"
+              dataKey="gas"
+              stroke="hsl(var(--destructive))"
               strokeWidth={3}
               name="Gas (cubic ft)"
             />
@@ -284,8 +287,8 @@ export function FloorOccupancyChart() {
   }, []);
 
   const loadOccupancyData = async () => {
-    const data = await dashboardApiService.getOccupancyByFloor();
-    setOccupancyData(data);
+    const resp = await dashboardApiService.getOccupancyByFloor();
+    if (resp.success) setOccupancyData(resp.data);
   };
 
   return (
@@ -295,16 +298,16 @@ export function FloorOccupancyChart() {
       </CardHeader>
       <CardContent>
         <ResponsiveContainer width="100%" height={300}>
-            <BarChart data={occupancyData}>
+          <BarChart data={occupancyData}>
             <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" />
             <XAxis dataKey="floor" stroke="hsl(var(--muted-foreground))" />
             <YAxis stroke="hsl(var(--muted-foreground))" />
-            <Tooltip 
-              contentStyle={{ 
-                backgroundColor: "hsl(var(--card))", 
+            <Tooltip
+              contentStyle={{
+                backgroundColor: "hsl(var(--card))",
                 border: "1px solid hsl(var(--border))",
                 borderRadius: "6px"
-              }} 
+              }}
             />
             <Bar dataKey="occupied" stackId="a" fill="hsl(var(--accent))" name="Occupied" />
             <Bar dataKey="available" stackId="a" fill="hsl(var(--primary))" name="Available" />
