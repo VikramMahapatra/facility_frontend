@@ -157,22 +157,22 @@ export default function PreventiveMaintenance() {
     if (selectedFrequency && selectedFrequency !== "all")
       params.append("frequency", selectedFrequency);
     const response = await preventiveMaintenanceApiService.getPreventiveMaintenanceOverview(params);
-    setTemplateOverview(response);
+    if (response.success) setTemplateOverview(response.data || {});
   };
 
   const loadStatusLookup = async () => {
       const lookup = await preventiveMaintenanceApiService.getPmFilterStatusLookup();
-      setStatusList(lookup || []); 
+      if (lookup.success) setStatusList(lookup.data || []); 
   };
 
   const loadFrequencyLookup = async () => {
     const lookup = await preventiveMaintenanceApiService.getPmFilterFrequencyLookup();
-    setFrequencyList(lookup || []);
+    if (lookup.success) setFrequencyList(lookup.data || []);
   };
 
   const loadCategoryLookup = async () => {
     const lookup = await preventiveMaintenanceApiService.getPreventiveMaintenanceCategoryLookup();
-    setCategoryList(lookup || []);
+    if (lookup.success) setCategoryList(lookup.data || []);
   };
 
   const loadTemplates = async () => {
@@ -196,8 +196,8 @@ export default function PreventiveMaintenance() {
 
     const response = await preventiveMaintenanceApiService.getPreventiveMaintenance(params);
 
-    setTemplates(response.templates || []);
-    setTotalItems(response.total || 0);
+    setTemplates(response.data?.templates || []);
+    setTotalItems(response.data?.total || 0);
   };
 
   // Form handlers
@@ -225,47 +225,33 @@ export default function PreventiveMaintenance() {
 
   const confirmDelete = async () => {
     if (deleteTemplateId) {
-      try {
-        await preventiveMaintenanceApiService.deletePreventiveMaintenance(deleteTemplateId);
-        updateTemplatePage();
-        setDeleteTemplateId(null);
-        toast({
-          title: "PM Template Deleted",
-          description: "PM template has been deleted successfully.",
-        });
-        setDeleteTemplateId(null);
-      } catch (error) {
-        toast({
-          title: "Technical Error!",
-          variant: "destructive",
-        });
+      const response = await preventiveMaintenanceApiService.deletePreventiveMaintenance(deleteTemplateId);
+      
+        if (response.success) {
+          updateTemplatePage();
+          setDeleteTemplateId(null);
+          toast({ title: "PM Template Deleted", description: "PM template has been deleted successfully." });
+        
       }
     }
   };
 
   const handleSave = async (templateData: Partial<PMTemplate>) => {
-    try {
-      if (formMode === "create") {
-        await preventiveMaintenanceApiService.addPreventiveMaintenance(templateData);
-      } else if (formMode === "edit" && selectedTemplate) {
-        const updatedTemplate = { ...selectedTemplate, ...templateData };
-        await preventiveMaintenanceApiService.updatePreventiveMaintenance(updatedTemplate);
-        
-      }
+    let response;
+    if (formMode === "create") {
+      response = await preventiveMaintenanceApiService.addPreventiveMaintenance(templateData);
+    } else if (formMode === "edit" && selectedTemplate) {
+      const updatedTemplate = { ...selectedTemplate, ...templateData };
+      response = await preventiveMaintenanceApiService.updatePreventiveMaintenance(updatedTemplate);
+    }
+
+    if (response?.success) {
       setIsFormOpen(false);
       toast({
-        title:
-          formMode === "create" ? "PM Template Created" : "PM Template Updated",
-        description: `PM template ${templateData.name} has been ${
-          formMode === "create" ? "created" : "updated"
-        } successfully.`,
+        title: formMode === "create" ? "PM Template Created" : "PM Template Updated",
+        description: `PM template ${templateData.name} has been ${formMode === "create" ? "created" : "updated"} successfully.`,
       });
       updateTemplatePage();
-    } catch (error) {
-      toast({
-        title: "Technical Error!",
-        variant: "destructive",
-      });
     }
   };
 

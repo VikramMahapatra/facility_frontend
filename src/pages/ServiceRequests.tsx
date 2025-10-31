@@ -122,7 +122,7 @@ export default function ServiceRequest() {
    if (selectedCategory && selectedCategory !== "all") params.append("category", selectedCategory);
    if (selectedStatus && selectedStatus !== "all") params.append("status", selectedStatus);
    const response = await serviceRequestApiService.getServiceRequestOverview(params);
-   setServiceRequestOverview(response);
+   if (response.success) setServiceRequestOverview(response.data || {});
    };
   
 
@@ -139,8 +139,8 @@ export default function ServiceRequest() {
     params.append("skip", skip.toString());
     params.append("limit",limit.toString());
     const response = await serviceRequestApiService.getServiceRequests(params);
-    setServiceRequest(response.requests);
-    setTotalItems(response.total);
+    setServiceRequest(response.data?.requests || []);
+    setTotalItems(response.data?.total || 0);
   };
 
 
@@ -151,12 +151,12 @@ export default function ServiceRequest() {
   // LOOKUPS (FILTER variants for the list page)
   const loadServiceRequestStatusLookup = async () => {
     const lookup = await serviceRequestApiService.getServiceRequestStatusFilterLookup();
-    setStatusOptions(lookup)
+    if (lookup.success) setStatusOptions(lookup.data || [])
   };
 
   const loadServiceRequestCategoryLookup = async () => {
     const lookup = await serviceRequestApiService.getServiceRequestCategoryFilterLookup();
-    setCategoryOptions(lookup)
+    if (lookup.success) setCategoryOptions(lookup.data || [])
     console.log("categories:",lookup)
   };
 
@@ -184,36 +184,35 @@ export default function ServiceRequest() {
   };
 
   const confirmDelete = async () => {
-    if (!deleteServiceRequestId) return;
-    try {
-      await serviceRequestApiService.deleteServiceRequest(deleteServiceRequestId);
-      setDeleteServiceRequestId(null);
-      await loadServiceRequest();
-      toast({
-        title: "Service Request Deleted",
-        description: "The service request has been removed successfully.",
-      });
-    } catch (error) {
-      toast({ title: "Technical Error!", variant: "destructive" });
+    if (deleteServiceRequestId) {
+      const response = await serviceRequestApiService.deleteServiceRequest(deleteServiceRequestId);
+      if (response.success) {
+        setDeleteServiceRequestId(null);
+        await loadServiceRequest();
+        toast({
+          title: "Service Request Deleted",
+          description: "The service request has been removed successfully.",
+        });
+     }
     }
   };
 
   const handleSave = async (serviceRequestData: Partial<ServiceRequest>) => {
-    try {
-      if (formMode === 'create') {
-        await serviceRequestApiService.addServiceRequest(serviceRequestData);
-      } else if (formMode === 'edit' && selectedServiceRequest) {
-        const updatedServiceRequest = { ...selectedServiceRequest, ...serviceRequestData };
-        await serviceRequestApiService.updateServiceRequest(updatedServiceRequest);
-      }
+    let response;
+    if (formMode === 'create') {
+      response = await serviceRequestApiService.addServiceRequest(serviceRequestData);
+    } else if (formMode === 'edit' && selectedServiceRequest) {
+      const updatedServiceRequest = { ...selectedServiceRequest, ...serviceRequestData };
+      response = await serviceRequestApiService.updateServiceRequest(updatedServiceRequest);
+    }
+
+    if (response?.success) {
       setIsFormOpen(false);
       toast({
         title: formMode === 'create' ? "Service Request Created" : "Service Request Updated",
         description: `Service Request (${serviceRequestData.category || ''}) has been ${formMode === 'create' ? 'created' : 'updated'} successfully.`,
       });
       updateServiceRequestPage();
-    } catch (error) {
-      toast({ title: "Technical Error!", variant: "destructive" });
     }
   };
 

@@ -50,17 +50,17 @@ export function AssetForm({ isOpen, mode, asset, onClose, onSave }: Props) {
 
   const loadSites = async () => {
     const response = await siteApiService.getSiteLookup();
-    setSites(response || []);
+    if (response.success) setSites(response.data || []);
   }
 
   const loadCategories = async () => {
     const response = await assetApiService.getCategories();
-    setCategories(response || []);
+    if (response.success) setCategories(response.data || []);
   }
 
   const loadStatuses = async () => {
     const response = await assetApiService.getStatuses();
-    setStatuses(response || []);
+    if (response.success) setStatuses(response.data || []);
   }
 
   const update = (patch: Partial<Asset>) => {

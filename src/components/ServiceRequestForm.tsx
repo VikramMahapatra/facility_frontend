@@ -135,7 +135,7 @@ export function ServiceRequestForm({
   const loadSiteLookup = async () => {
     try {
       const rows = await siteApiService.getSiteLookup();
-      setSiteList(rows || []);
+      if (rows.success) setSiteList(rows.data || []);
     } catch {
       setSiteList([]);
     }
@@ -144,7 +144,7 @@ export function ServiceRequestForm({
   const loadServiceRequestFilterWorkorderLookup = async () => {
     try {
       const rows = await serviceRequestApiService. getServiceRequestFilterWorkorderLookup();
-      setWorkOrderList(rows || []);
+      if (rows.success) setWorkOrderList(rows.data || []);
     } catch {
       setWorkOrderList([]);
     }
@@ -157,7 +157,7 @@ export function ServiceRequestForm({
     }
     try {
       const rows = await spacesApiService.getSpaceLookup(formData.site_id as string);
-      setSpaceList(rows || []);
+      if (rows.success) setSpaceList(rows.data || []);
     } catch {
       setSpaceList([]);
     }
@@ -166,7 +166,7 @@ export function ServiceRequestForm({
   const loadStatusLookup = async () => {
     try {
       const rows = await serviceRequestApiService.getServiceRequestStatusLookup();
-      setStatusList(rows || []);
+      if (rows.success) setStatusList(rows.data || []);
     } catch {
       setStatusList([]);
     }
@@ -175,7 +175,7 @@ export function ServiceRequestForm({
   const loadPriorityLookup = async () => {
     try {
       const rows = await serviceRequestApiService.getServiceRequestPriorityLookup();
-      setPriorityList(rows || []);
+      if (rows.success) setPriorityList(rows.data || []);
     } catch {
       setPriorityList([]);
     }
@@ -184,7 +184,7 @@ export function ServiceRequestForm({
   const loadCategoryLookup = async () => {
     try {
       const rows = await serviceRequestApiService.getServiceRequestCategoryLookup();
-      setCategoryList(rows || []);
+      if (rows.success) setCategoryList(rows.data || []);
     } catch {
       setCategoryList([]);
     }
@@ -193,7 +193,7 @@ export function ServiceRequestForm({
   const loadChannelLookup = async () => {
     try {
       const rows = await serviceRequestApiService.getServiceRequestChannelLookup();
-      setChannelList(rows || []);
+      if (rows.success) setChannelList(rows.data || []);
     } catch {
       setChannelList([]);
     }
@@ -202,7 +202,7 @@ export function ServiceRequestForm({
   const loadRequesterKindLookup = async () => {
     try {
       const rows = await serviceRequestApiService.getServiceRequestRequesterKindLookup();
-      setRequesterKindList(rows || []);
+      if (rows.success) setRequesterKindList(rows.data || []);
     } catch {
       setRequesterKindList([]);
     }
@@ -213,7 +213,7 @@ export function ServiceRequestForm({
     
     const Kind = kind === "resident" ? "individual" : kind === "merchant" ? "commercial" : kind;
     const lookup = await leasesApiService.getLeasePartnerLookup(Kind, site_id);
-    setCustomerList(lookup);
+    if (lookup.success) setCustomerList(lookup.data || []);
   };
 
 
@@ -254,7 +254,7 @@ export function ServiceRequestForm({
           formData.sla && formData.sla.duration
             ? { duration: formData.sla.duration }
             : null,
-        org_id: orgData?.id,
+        org_id: orgData?.data?.id,
         updated_at: new Date().toISOString(),
       };
 

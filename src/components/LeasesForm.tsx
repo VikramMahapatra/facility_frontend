@@ -87,18 +87,18 @@ export function LeaseForm({ lease, isOpen, onClose, onSave, mode }: LeaseFormPro
 
   const loadSpaces = async () => {
     const spaces = await spacesApiService.getSpaceLookup(formData.site_id);
-    setSpaceList(spaces);
+    if (spaces.success) setSpaceList(spaces.data || []);
   }
 
   const loadSites = async () => {
     const sites = await siteApiService.getSiteLookup();
-    setSiteList(sites);
+    if (sites.success) setSiteList(sites.data || []);
   }
 
   const loadLeasePartners = async (kind?: string, site_id?: string) => {
     if (!kind || !site_id) return;
     const partners = await leasesApiService.getLeasePartnerLookup(kind, site_id);
-    setLeasePartnerList(partners);
+    if (partners?.success) setLeasePartnerList(partners.data || []);
   }
 
   const handleSubmit = (e: React.FormEvent) => {

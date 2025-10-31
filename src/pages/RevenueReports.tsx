@@ -46,7 +46,7 @@ interface RevenueReportsOverview {
 
   const loadSiteLookup = async () => {
     const lookup = await siteApiService.getSiteLookup();
-    setSiteList(lookup);
+    if (lookup.success) setSiteList(lookup.data || []);
   }
 
    
@@ -62,27 +62,27 @@ interface RevenueReportsOverview {
 
    const loadRevenueReportsMonthLookup= async () => {
       const selectedPeriod = await revenueReportsApiService.getRevenueReportsMonthLookup();
-      setSelectedPeriod(selectedPeriod);
+      if (selectedPeriod.success) setSelectedPeriod(selectedPeriod.data || "");
     }
 
     const loadRevenueReportsByTrend= async () => {
       const trendData = await revenueReportsApiService.getRevenueReportsByTrend();
-      setTrendData(trendData);
+      if (trendData.success) setTrendData(trendData.data || []);
     }
    
    
     const loadRevenueReportsBySource= async () => {
       const sourceData = await revenueReportsApiService.getRevenueReportsBySource();
-     setSourceData(sourceData);
+      if (sourceData.success) setSourceData(sourceData.data || []);
     }
     
     const loadRevenueReportsByOutstandingReceivables= async () => {
       const outstandingReceivablesData = await revenueReportsApiService.getRevenueReportsByOutstandingReceivables();
-      setOutstandingReceivablesData(outstandingReceivablesData);
+      if (outstandingReceivablesData.success) setOutstandingReceivablesData(outstandingReceivablesData.data || []);
     }
     const loadRevenueReportsOverview= async () => {
       const revenueReportsOverview = await revenueReportsApiService.getRevenueReportsOverview();
-     setRevenueReportsOverview(revenueReportsOverview);
+      if (revenueReportsOverview.success) setRevenueReportsOverview(revenueReportsOverview.data || {});
     }
   
   return (

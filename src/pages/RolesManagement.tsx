@@ -57,14 +57,9 @@ export default function RolesManagement() {
     params.append("skip", skip.toString());
     params.append("limit", limit.toString());
     
-    try {
-      const response = await roleManagementApiService.getRoleManagement(params);
-      setRoles(response?.roles || response || []);
-      setTotalItems(response?.total || 0);
-    } catch (error) {
-      console.error('Error loading roles:', error);
-      toast.error("Failed to load roles");
-    }
+    const response = await roleManagementApiService.getRoleManagement(params);
+    if (response?.success) setRoles(response?.data?.roles || []);
+    setTotalItems(response?.data?.total || 0);
   };
 
   const handleCreate = () => {
@@ -82,35 +77,28 @@ export default function RolesManagement() {
   };
 
   const confirmDelete = async () => {
-    if (!deleteRoleId) return;
-    try {
-      await roleManagementApiService.deleteRoleManagement(deleteRoleId);
-      toast.success("Role deleted successfully");
-      loadRoleManagement();
-    } catch (error) {
-      console.error('Error deleting role:', error);
-      toast.error("Failed to delete role");
-    } finally {
-      setDeleteRoleId(null);
+    if (deleteRoleId) {
+      const response = await roleManagementApiService.deleteRoleManagement(deleteRoleId);
+      if (response?.success) {
+        toast.success("Role deleted successfully");
+        loadRoleManagement();
+        setDeleteRoleId(null);
+      }
     }
   };
 
   const handleSave = async (roleData: any) => {
-    try {
-      if (selectedRole) {
-        // Edit mode
-        await roleManagementApiService.updateRoleManagement({...selectedRole, ...roleData});
-        toast.success("Role updated successfully");
-      } else {
-        // Create mode
-        await roleManagementApiService.addRoleManagement(roleData);
-        toast.success("Role created successfully");
-      }
+    let response;
+    if (selectedRole) {
+      response = await roleManagementApiService.updateRoleManagement({ ...selectedRole, ...roleData });
+    } else {
+      response = await roleManagementApiService.addRoleManagement(roleData);
+    }
+
+    if (response?.success) {
+      toast.success(selectedRole ? "Role updated successfully" : "Role created successfully");
       setIsFormOpen(false);
       loadRoleManagement();
-    } catch (error) {
-      console.error('Error saving role:', error);
-      toast.error("Failed to save role");
     }
   };
 

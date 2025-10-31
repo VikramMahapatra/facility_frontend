@@ -144,27 +144,33 @@ export default function WorkOrders() {
     if (selectedPriority && selectedPriority !== "all")
       params.append("priority", selectedPriority);
     const response = await workOrderApiService.getWorkOrderOverview(params);
-    setWorkOrderOverview(response);
+    if (response.success) setWorkOrderOverview(response.data || {});
   };
 
   const loadStatusLookup = async () => {
     const lookup = await workOrderApiService.getWorkOrderStatusFilterLookup();
-    setStatusList(lookup || []);
+    if (lookup.success) setStatusList(lookup.data || []);
   };
 
   const loadPriorityLookup = async () => {
     const lookup = await workOrderApiService.getWorkOrderPriorityFilterLookup();
-    setPriorityList(lookup || []);
+    if (lookup.success) setPriorityList(lookup.data || []);
   };
 
   const loadSpaceLookup = async () => {
     const lookup = await spacesApiService.getSpaceLookup("all");
-    setSpaceList(lookup || []);
+    if (lookup.success) setSpaceList(lookup.data || []);
   };
 
   const loadVendorLookup = async () => {
-    const vendors = await vendorsApiService.getVendorLookup().catch(() => []);
-    setVendorList(vendors || []);
+    const vendors = await vendorsApiService.getVendorLookup().catch(() => [] as any[]);
+    if (Array.isArray(vendors)) {
+      setVendorList(vendors);
+    } else if (vendors?.success) {
+      setVendorList(vendors.data || []);
+    } else {
+      setVendorList([]);
+    }
   };
 
   const getSpaceName = (spaceId: string) => {
@@ -197,8 +203,8 @@ export default function WorkOrders() {
 
     const response = await workOrderApiService.getWorkOrders(params);
 
-    setWorkOrders(response.work_orders || []);
-    setTotalItems(response.total || 0);
+    setWorkOrders(response.data?.work_orders || []);
+    setTotalItems(response.data?.total || 0);
   };
 
   // Form handlers
@@ -226,48 +232,39 @@ export default function WorkOrders() {
 
   const confirmDelete = async () => {
     if (deleteWorkOrderId) {
-      try {
-        await workOrderApiService.deleteWorkOrder(deleteWorkOrderId);
-        updateWorkOrderPage();
-        setDeleteWorkOrderId(null);
-        toast({
-          title: "Work Order Deleted",
-          description: "Work order has been deleted successfully.",
-        });
-        setDeleteWorkOrderId(null);
-      } catch (error) {
-        toast({
-          title: "Technical Error!",
-          variant: "destructive",
-        });
+      const response = await workOrderApiService.deleteWorkOrder(deleteWorkOrderId);
+      if (response?.success) {
+        const authResponse = response.data;
+        if (authResponse?.success) {
+          updateWorkOrderPage();
+          setDeleteWorkOrderId(null);
+          toast({
+            title: "Work Order Deleted",
+            description: "Work order has been deleted successfully.",
+          });
+        } else {
+          toast({ title: "Cannot Delete Work Order", description: authResponse?.message, variant: "destructive" });
+        }
       }
     }
   };
 
   const handleSave = async (workOrderData: Partial<WorkOrder>) => {
-    try {
-      if (formMode === "create") {
-        await workOrderApiService.addWorkOrder(workOrderData);
-      } else if (formMode === "edit" && selectedWorkOrder) {
-        const updatedWorkOrder = { ...selectedWorkOrder, ...workOrderData };
-        await workOrderApiService.updateWorkOrder(
-          selectedWorkOrder.id,
-          updatedWorkOrder
-        );
-      }
+    let response;
+    if (formMode === "create") {
+      response = await workOrderApiService.addWorkOrder(workOrderData);
+    } else if (formMode === "edit" && selectedWorkOrder) {
+      const updatedWorkOrder = { ...selectedWorkOrder, ...workOrderData };
+      response = await workOrderApiService.updateWorkOrder(selectedWorkOrder.id, updatedWorkOrder);
+    }
+
+    if (response?.success) {
       setIsFormOpen(false);
       toast({
-        title:
-          formMode === "create" ? "Work Order Created" : "Work Order Updated",
-        description: `Work order ${workOrderData.title} has been ${formMode === "create" ? "created" : "updated"
-          } successfully.`,
+        title: formMode === "create" ? "Work Order Created" : "Work Order Updated",
+        description: `Work order ${workOrderData.title} has been ${formMode === "create" ? "created" : "updated"} successfully.`,
       });
       updateWorkOrderPage();
-    } catch (error) {
-      toast({
-        title: "Technical Error!",
-        variant: "destructive",
-      });
     }
   };
 

@@ -106,8 +106,8 @@ export function MeterForm({ meter, isOpen, onClose, onSave, mode }: MeterFormPro
         assetApiService.getAssetLookup()
       ]);
 
-      setSites(sitesData || []);
-      setAssets(assetsData || []);
+      setSites(sitesData?.data || []);
+      setAssets(assetsData?.data || []);
     } catch (error) {
       console.error('Failed to load dropdown data:', error);
       toast({
@@ -121,7 +121,7 @@ export function MeterForm({ meter, isOpen, onClose, onSave, mode }: MeterFormPro
   const loadSpacesLookup = async () => {
     try {
       const spacesData = await spacesApiService.getSpaceLookup(formData.site_id);
-      setSpaces(spacesData || []);
+      if (spacesData.success) setSpaces(spacesData.data || []);
     } catch (error) {
       console.error('Failed to load spaces:', error);
       setSpaces([]);

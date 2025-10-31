@@ -58,53 +58,28 @@ export default function ConsumptionReports() {
   }, []);
   
   const loadUtilityTypes = async () => {
-    try {
-      const types = await consumptionApiService.getAvailableMonths();
-      setUtilityTypes(types);
-    } catch (error) {
-      console.error('Failed to load utility types:', error);
-      setUtilityTypes([]);
-    }
+    const types = await consumptionApiService.getAvailableMonths();
+    if (types?.success) setUtilityTypes(types.data || []);
   };
 
   const loadAvailableMonths = async () => {
-    try {
-      const months = await consumptionApiService.getUtilityTypes();
-      setAvailableMonths(months);
-    } catch (error) {
-      console.error('Failed to load available months:', error);
-      setAvailableMonths([]);
-    }
+    const months = await consumptionApiService.getUtilityTypes();
+    if (months?.success) setAvailableMonths(months.data || []);
   };
 
   const loadOverviewData = async () => {
-    try {
-      const data = await consumptionApiService.getOverview();
-      setOverviewData(data);
-    } catch (error) {
-      console.error('Failed to load overview data:', error);
-      setOverviewData(null);
-    }
+    const data = await consumptionApiService.getOverview();
+    if (data?.success) setOverviewData(data.data || null);
   };
 
   const loadWeeklyTrendData = async () => {
-    try {
-      const data = await consumptionApiService.getWeeklyConsumptionTrend();
-      setWeeklyTrendData(data);
-    } catch (error) {
-      console.error('Failed to load weekly trend data:', error);
-      setWeeklyTrendData([]);
-    }
+    const data = await consumptionApiService.getWeeklyConsumptionTrend();
+    if (data?.success) setWeeklyTrendData(data.data || []);
   };
 
   const loadMonthlyCostAnalysisData = async () => {
-    try {
-      const data = await consumptionApiService.getMonthlyCostAnalysis();
-      setMonthlyCostAnalysisData(data);
-    } catch (error) {
-      console.error('Failed to load monthly cost analysis data:', error);
-      setMonthlyCostAnalysisData([]);
-    }
+    const data = await consumptionApiService.getMonthlyCostAnalysis();
+    if (data?.success) setMonthlyCostAnalysisData(data.data || []);
   };
 
 

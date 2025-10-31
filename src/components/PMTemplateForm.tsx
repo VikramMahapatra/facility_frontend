@@ -112,17 +112,17 @@ export function PMTemplateForm({
 
   const loadCategoryLookup = async () => {
     const lookup = await preventiveMaintenanceApiService.getPreventiveMaintenanceCategoryLookup();
-    setCategoryList(lookup || []);
+    if (lookup.success) setCategoryList(lookup.data || []);
   };
 
   const loadFrequencyLookup = async () => {
     const lookup = await preventiveMaintenanceApiService.getPreventiveMaintenanceFrequencyLookup();
-    setFrequencyList(lookup || []);
+    if (lookup.success) setFrequencyList(lookup.data || []);
   };
 
   const loadStatusLookup = async () => {    
       const lookup = await preventiveMaintenanceApiService.getPreventiveMaintenanceStatusLookup();
-      setStatusList(lookup || []);
+      if (lookup.success) setStatusList(lookup.data || []);
     }
 
   // Checklist helpers: add, update, remove multiple items

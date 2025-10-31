@@ -51,12 +51,12 @@ export function InvoiceForm({ invoice, isOpen, onClose, onSave, mode }: InvoiceF
 
     const loadSiteLookup = async () => {
         const lookup = await siteApiService.getSiteLookup();
-        setSiteList(lookup);
+        if (lookup.success) setSiteList(lookup.data || []);
     };
 
     const loadCustomerLookup = async (kind?: string, selectedCustomerId?: string) => {
         const lookup = await contactApiService.getCustomerLookup(kind);
-        setCustomerList(lookup);
+        if (lookup.success) setCustomerList(lookup.data|| []);
 
         if (selectedCustomerId)
             setFormData(prev => ({ ...prev, customer_id: selectedCustomerId }));

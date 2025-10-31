@@ -98,7 +98,7 @@ export function WorkOrderForm({
 
   const loadSiteLookup = async () => {
     const lookup = await siteApiService.getSiteLookup();
-    setSiteList(lookup);
+    if (lookup.success) setSiteList(lookup.data || []);
   };
 
   const loadSpaceLookup = async () => {
@@ -108,7 +108,7 @@ export function WorkOrderForm({
     }
     try {
       const spaces = await spacesApiService.getSpaceLookup(formData.site_id);
-      setSpaceList(spaces || []);
+      if (spaces.success) setSpaceList(spaces.data || []);
     } catch {
       setSpaceList([]);
     }
@@ -116,22 +116,28 @@ export function WorkOrderForm({
 
   const loadAssetLookup = async () => {
     const lookup = await assetApiService.getAssetLookup();
-    setAssetList(lookup || []);
+    if (lookup.success) setAssetList(lookup.data || []);
   };
 
   const loadStatusLookup = async () => {
     const lookup = await workOrderApiService.getWorkOrderStatusLookup();
-    setStatusList(lookup || []);
+    if (lookup.success) setStatusList(lookup.data || []);
   };
 
   const loadPriorityLookup = async () => {
     const lookup = await workOrderApiService.getWorkOrderPriorityLookup();
-    setPriorityList(lookup || []);
+    if (lookup.success) setPriorityList(lookup.data || []);
   };
 
   const loadVendorLookup = async () => {
     const vendors = await vendorsApiService.getVendorLookup().catch(() => []);
-    setVendorList(vendors || []);
+    if (Array.isArray(vendors)) {
+      setVendorList(vendors);
+    } else if (vendors?.success) {
+      setVendorList(vendors.data || []);
+    } else {
+      setVendorList([]);
+    }
   };
 
   const loadServiceRequestLookup = async () => {
@@ -175,7 +181,7 @@ export function WorkOrderForm({
         assigned_to: formData.vendor_id || null,
         due_at: formData.due_at,
         sla: formData.sla?.response_time ? formData.sla : null,
-        org_id: orgData.id,
+        org_id: orgData?.data?.id,
         updated_at: new Date().toISOString(),
       };
 

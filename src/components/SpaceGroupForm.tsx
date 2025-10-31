@@ -69,13 +69,8 @@ export function SpaceGroupForm({ group, isOpen, onClose, onSave, mode }: Props) 
   }, [group, mode, reset]);
 
   const loadSiteLookup = async () => {
-    try {
       const lookup = await siteApiService.getSiteLookup();
-      setSiteList(lookup || []);
-    } catch (error) {
-      console.error('Failed to load sites:', error);
-      setSiteList([]);
-    }
+      if (lookup.success) setSiteList(lookup.data || []);
   };
 
   const onSubmitForm = async (data: SpaceGroupFormValues) => {

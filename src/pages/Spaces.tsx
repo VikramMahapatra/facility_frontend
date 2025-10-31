@@ -95,8 +95,9 @@ export default function Spaces() {
     if (selectedSite) params.append("site_id", selectedSite);
     if (selectedKind) params.append("kind", selectedKind);
     if (selectedStatus) params.append("status", selectedStatus);
+
     const response = await spacesApiService.getSpaceOverview(params);
-    setSpaceOverview(response);
+    if (response.success) setSpaceOverview(response.data || {});
   }
 
   const loadSpaces = async () => {
@@ -112,13 +113,14 @@ export default function Spaces() {
     params.append("skip", skip.toString());
     params.append("limit", limit.toString());
     const response = await spacesApiService.getSpaces(params);
-    setSpaces(response.spaces);
-    setTotalItems(response.total);
+    if (response.success) {
+    setSpaces(response.data?.spaces || []);
+    setTotalItems(response.data?.total || 0);
   }
-
+}
   const loadSiteLookup = async () => {
     const lookup = await siteApiService.getSiteLookup();
-    setSiteList(lookup);
+    if (lookup.success) setSiteList(lookup.data || []);
   }
 
   const handleCreate = () => {
@@ -145,45 +147,39 @@ export default function Spaces() {
 
   const confirmDelete = async () => {
     if (deleteSpaceId) {
-      try {
-        await spacesApiService.deleteSpace(deleteSpaceId);
-        updateSpacePage();
-        setDeleteSpaceId(null);
-        toast({
-          title: "Space Deleted",
-          description: "Space has been deleted successfully.",
-        });
-        setDeleteSpaceId(null);
-
-      } catch (error) {
-        toast({
-          title: "Techical Error!",
-          variant: "destructive",
-        });
+      const response = await spacesApiService.deleteSpace(deleteSpaceId);
+      if (response.success) {
+        const authResponse = response.data;
+        if (authResponse?.success) {
+          updateSpacePage();
+          setDeleteSpaceId(null);
+          toast({
+            title: "Space Deleted",
+            description: "Space has been deleted successfully.",
+          });
+        } else {
+          toast({ title: "Cannot delete space", description: authResponse?.message, variant: "destructive" });
+        }
       }
-
     }
   };
 
   const handleSave = async (spaceData: Partial<Space>) => {
-    try {
-      if (formMode === 'create') {
-        await spacesApiService.addSpace(spaceData);
-      } else if (formMode === 'edit' && selectedSpace) {
-        const updatedSpace = { ...selectedSpace, ...spaceData };
-        await spacesApiService.updateSpace(updatedSpace);
-      }
+    let response;
+    if (formMode === 'create') {
+      response = await spacesApiService.addSpace(spaceData);
+    } else if (formMode === 'edit' && selectedSpace) {
+      const updatedSpace = { ...selectedSpace, ...spaceData };
+      response = await spacesApiService.updateSpace(updatedSpace);
+    }
+
+    if (response?.success) {
       setIsFormOpen(false);
       toast({
         title: formMode === 'create' ? "Space Created" : "Space Updated",
         description: `Space ${spaceData.code} has been ${formMode === 'create' ? 'created' : 'updated'} successfully.`,
       });
       updateSpacePage();
-    } catch (error) {
-      toast({
-        title: "Techical Error!",
-        variant: "destructive",
-      });
     }
   };
 

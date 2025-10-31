@@ -60,7 +60,7 @@ export default function Leases() {
   useEffect(() => {
     (async () => {
       const lookup = await siteApiService.getSiteLookup();
-      setSiteList(lookup);
+      if (lookup.success) setSiteList(lookup.data || []);
     })();
   }, []);
 
@@ -82,7 +82,7 @@ export default function Leases() {
     if (selectedStatus) params.append("status", selectedStatus);
 
     const response = await leasesApiService.getLeaseOverview(params);
-    setLeaseOverview(response);
+    if (response.success) setLeaseOverview(response.data || {});
   };
 
   const loadLeases = async () => {
@@ -98,8 +98,8 @@ export default function Leases() {
     params.append("limit", String(limit));
 
     const response = await leasesApiService.getLeases(params);
-    setLeases(response.leases);
-    setTotalItems(response.total);
+    if (response.success) setLeases(response.data?.leases || []);
+    setTotalItems(response.data?.total || 0);
   };
 
   const handleCreate = () => {
@@ -124,27 +124,33 @@ export default function Leases() {
 
   const confirmDelete = async () => {
     if (!deleteLeaseId) return;
-    await leasesApiService.deleteLease(deleteLeaseId);
-    setLeases((prev) => prev.filter((l) => l.id !== deleteLeaseId));
-    toast({ title: "Lease Deleted", description: "Lease has been deleted successfully." });
-    setDeleteLeaseId(null);
-    updateLeasePage();
+    const response = await leasesApiService.deleteLease(deleteLeaseId);
+    if (response.success) {
+      const authResponse = response.data;
+      if (authResponse?.success) {
+        setLeases((prev) => prev.filter((l) => l.id !== deleteLeaseId));
+        toast({ title: "Lease Deleted", description: "Lease has been deleted successfully." });
+        setDeleteLeaseId(null);
+        updateLeasePage();
+      } else {
+        toast({ title: "Cannot delete lease", description: authResponse?.message, variant: "destructive" });
+      }
+    }
   };
 
   const handleSave = async (leaseData: Partial<Lease>) => {
-    try {
-      if (formMode === "create") {
-        await leasesApiService.addLease(leaseData);
-        toast({ title: "Lease Created" });
-      } else if (formMode === "edit" && selectedLease) {
-        const updated = { ...selectedLease, ...leaseData };
-        await leasesApiService.updateLease(updated);
-        toast({ title: "Lease Updated" });
-      }
+    let response;
+    if (formMode === "create") {
+      response = await leasesApiService.addLease(leaseData);
+    } else if (formMode === "edit" && selectedLease) {
+      const updated = { ...selectedLease, ...leaseData };
+      response = await leasesApiService.updateLease(updated);
+    }
+
+    if (response?.success) {
       setIsFormOpen(false);
+      toast({ title: formMode === "create" ? "Lease Created" : "Lease Updated" });
       updateLeasePage();
-    } catch {
-      toast({ title: "Technical Error!", variant: "destructive" });
     }
   };
 

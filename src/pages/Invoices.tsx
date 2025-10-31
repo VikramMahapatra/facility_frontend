@@ -73,7 +73,7 @@ export default function Invoices() {
 
   const loadInvoicesOverView = async () => {
     const response = await invoiceApiService.getInvoiceOverview();
-    setInvoiceOverview(response);
+    if (response.success) setInvoiceOverview(response.data || {});
   }
 
   const loadInvoices = async () => {
@@ -88,8 +88,8 @@ export default function Invoices() {
     params.append("skip", skip.toString());
     params.append("limit", limit.toString());
     const response = await invoiceApiService.getInvoices(params);
-    setInvoices(response.invoices);
-    setTotalItems(response.total);
+    if (response.success) setInvoices(response.data?.invoices || []);
+    setTotalItems(response.data?.total || 0);
   }
 
   const loadPayments = async () => {
@@ -101,8 +101,8 @@ export default function Invoices() {
     params.append("skip", skip.toString());
     params.append("limit", limit.toString());
     const response = await invoiceApiService.getPayments(params);
-    setPayments(response.payments);
-    setTotalPaymentItems(response.total);
+    if (response.success) setPayments(response.data?.payments || []);
+    setTotalPaymentItems(response.data?.totalpayments || 0);
   }
 
 
@@ -153,35 +153,26 @@ export default function Invoices() {
 
   const confirmDelete = async () => {
     if (deleteInvoiceId) {
-      try {
-        await invoiceApiService.deleteInvoice(deleteInvoiceId);
-        updateInvoicesPage();
-        loadInvoicesOverView();
-        setDeleteInvoiceId(null);
-        toast({
-          title: "Invoice Deleted",
-          description: "Invoice has been deleted successfully.",
-        });
-        setDeleteInvoiceId(null);
-
-      } catch (error) {
-        toast({
-          title: "Techical Error!",
-          variant: "destructive",
-        });
+      const response = await invoiceApiService.deleteInvoice(deleteInvoiceId);
+      if (response.success) { 
+          updateInvoicesPage();
+          loadInvoicesOverView();
+          setDeleteInvoiceId(null);
+          toast({ title: "Invoice Deleted", description: "Invoice has been deleted successfully." });
       }
-
     }
   };
 
   const handleSave = async (invoiceData: Partial<Invoice>) => {
-    try {
-      if (formMode === 'create') {
-        await invoiceApiService.addInvoice(invoiceData);
-      } else if (formMode === 'edit' && selectedInvoice) {
-        const updatedInvoice = { ...selectedInvoice, ...invoiceData };
-        await invoiceApiService.updateInvoice(updatedInvoice);
-      }
+    let response;
+    if (formMode === 'create') {
+      response = await invoiceApiService.addInvoice(invoiceData);
+    } else if (formMode === 'edit' && selectedInvoice) {
+      const updatedInvoice = { ...selectedInvoice, ...invoiceData };
+      response = await invoiceApiService.updateInvoice(updatedInvoice);
+    }
+
+    if (response?.success) {
       setIsFormOpen(false);
       toast({
         title: formMode === 'create' ? "Invoice Created" : "Invoice Updated",
@@ -189,11 +180,6 @@ export default function Invoices() {
       });
       updateInvoicesPage();
       loadInvoicesOverView();
-    } catch (error) {
-      toast({
-        title: "Techical Error!",
-        variant: "destructive",
-      });
     }
   };
 
@@ -353,7 +339,7 @@ export default function Invoices() {
                           <TableCell>{getCustomerTypeBadge(invoice.customer_kind)}</TableCell>
                           <TableCell>{new Date(invoice.date).toLocaleDateString()}</TableCell>
                           <TableCell>{new Date(invoice.due_date).toLocaleDateString()}</TableCell>
-                          <TableCell>₹{invoice.totals.grand.toLocaleString()}</TableCell>
+                          <TableCell>₹{Number(invoice?.totals?.grand ?? 0).toLocaleString()}</TableCell>
                           <TableCell>{getStatusBadge(invoice.status)}</TableCell>
                           <TableCell>
                             <div className="flex gap-1">
