@@ -80,25 +80,24 @@ export function ContractForm({ contract, isOpen, onClose, onSave, mode }: Contra
   }, [contract]);
 
   const loadTypeLookup = async () => {
-    const types = await contractApiService.getTypeLookup().catch(() => []);
-    setTypeList(types || []);
-  };
+  const response = await contractApiService.getTypeLookup();
+  if (response.success) setTypeList(response.data || []);
+};
 
-  const loadStatusLookup = async () => {
-    const statuses = await contractApiService.getStatusLookup().catch(() => []);
-    setStatusList(statuses || []);
-  };
+const loadStatusLookup = async () => {
+  const response = await contractApiService.getStatusLookup();
+  if (response.success) setStatusList(response.data || []);
+};
 
-  const loadVendorLookup = async () => {
-    const vendors = await vendorsApiService.getVendorLookup().catch(() => []);
-    setVendorList(vendors || []);
-  };
+const loadVendorLookup = async () => {
+  const response = await vendorsApiService.getVendorLookup();
+  if (response.success) setVendorList(response.data || []);
+};
 
-  const loadSiteLookup = async () => {
-    const sites = await siteApiService.getSiteLookup().catch(() => []);
-    setSiteList(sites || []);
-  };
-
+const loadSiteLookup = async () => {
+  const response = await siteApiService.getSiteLookup();
+  if (response.success) setSiteList(response.data || []);
+};
   const handleTermsFieldChange = (field: string, value: any) => {
     setFormData((prev) => ({
       ...prev,
@@ -194,7 +193,7 @@ export function ContractForm({ contract, isOpen, onClose, onSave, mode }: Contra
         value: formData.value ? parseFloat(formData.value) : null,
         terms: formData.terms,
         documents: formData.documents,
-        org_id: orgData.id,
+        org_id: orgData?.data?.id,
       };
       
       if (mode === "edit" && contract?.id) {

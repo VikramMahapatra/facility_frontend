@@ -85,12 +85,12 @@ export function VisitorForm({ visitor, isOpen, onClose, onSave, mode }: VisitorF
 
   const loadSiteLookup = async () => {
     const lookup = await siteApiService.getSiteLookup();
-    setSiteList(lookup);
+    if (lookup.success) setSiteList(lookup.data || []);
   }
 
   const loadSpaceLookup = async () => {
     const lookup = await spacesApiService.getSpaceWithBuildingLookup(formData.site_id);
-    setSpaceList(lookup);
+    if (lookup.success) setSpaceList(lookup.data || []);
   }
 
   const isReadOnly = mode === 'view';

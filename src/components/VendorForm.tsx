@@ -58,14 +58,14 @@ export function VendorForm({ vendor, isOpen, onClose, onSave, mode }: VendorForm
   }, [vendor]);
 
   const loadStatusLookup = async () => {
-    const status = await vendorsApiService.getStatusLookup().catch(() => []);
-    setStatusList(status || []);
-  };
+  const response = await vendorsApiService.getStatusLookup();
+  if (response.success) setStatusList(response.data || []);
+};
 
-  const loadCategoriesLookup = async () => {
-    const categories = await vendorsApiService.getCategoriesLookup().catch(() => []);
-    setCategoriesList(categories || []);
-  };
+const loadCategoriesLookup = async () => {
+  const response = await vendorsApiService.getCategoriesLookup();
+  if (response.success) setCategoriesList(response.data || []);
+};
 
   const handleCategoryToggle = (categoryId: string) => {
     const currentCategories = formData.categories || [];
@@ -115,7 +115,7 @@ export function VendorForm({ vendor, isOpen, onClose, onSave, mode }: VendorForm
         status: formData.status,
         categories: formData.categories,
         contact: formData.contact,
-        org_id: orgData.id,
+        org_id: orgData?.data?.id,
       };
       
       if (mode === "edit" && vendor?.id) {
