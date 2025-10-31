@@ -48,6 +48,7 @@ import { meterReadingApiService } from "@/services/energy_iot/meterreadingsapi";
 import { Pagination } from "@/components/Pagination";
 import { exportToExcel } from "@/helpers/exportToExcelHelper";
 import { useAuth } from "../context/AuthContext";
+import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
 
 const getMeterIcon = (kind: string) => {
   switch (kind) {
@@ -111,6 +112,7 @@ export default function MetersReadings() {
   const [readingsPage, setReadingsPage] = useState(1); // current page
   const [readingsPageSize] = useState(5); // items per page
   const [totalReadingsItems, setTotalReadingsItems] = useState(0);
+  const [deleteReadingId, setDeleteReadingId] = useState<string | null>(null);
 
   useEffect(() => {
     loadReadingOverView();
@@ -150,7 +152,7 @@ export default function MetersReadings() {
 
   const loadReadingOverView = async () => {
     const response = await meterReadingApiService.getReadingOverview();
-    setMeterReadingOverview(response);
+    if (response.success) setMeterReadingOverview(response.data || {});
   };
 
   const loadMeters = async () => {
@@ -163,8 +165,8 @@ export default function MetersReadings() {
     params.append("skip", skip.toString());
     params.append("limit", limit.toString());
     const response = await meterReadingApiService.getMeters(params);
-    setMeters(response.meters);
-    setTotalItems(response.total);
+    setMeters(response.data?.meters || []);
+    setTotalItems(response.data?.total || 0);
   };
 
   const loadMeterReadings = async () => {
@@ -176,8 +178,8 @@ export default function MetersReadings() {
     params.append("skip", skip.toString());
     params.append("limit", limit.toString());
     const response = await meterReadingApiService.getMeterReadings(params);
-    setMeterReadings(response.readings);
-    setTotalReadingsItems(response.total);
+    setMeterReadings(response.data?.readings || []);
+    setTotalReadingsItems(response.data?.total || 0);
   };
 
   const filteredMeters = mockMeters.filter(
@@ -211,25 +213,21 @@ export default function MetersReadings() {
     setIsMeterFormOpen(true);
   };
 
-  const onSaveMeter = async (meterData: Partial<Meter>) => {
-    try {
-      console.log("Saving meter:", meterData);
+const onSaveMeter = async (meterData: Partial<Meter>) => {
+    let response;
+    if (meterFormMode === 'create') {
+      response = await meterReadingApiService.addMeter(meterData);
+    } else if (meterFormMode === 'edit' && meterData) {
+      response = await meterReadingApiService.updateMeter({ ...selectedMeter, ...meterData });
+    }
 
-      if (meterFormMode === 'create') {
-        await meterReadingApiService.addMeter(meterData);
-      } else if (meterFormMode === 'edit' && meterData) {
-        await meterReadingApiService.updateMeter({ ...selectedMeter, ...meterData });
-      }
+    if (response?.success) {
+      setIsMeterFormOpen(false);
       updateMeterTab();
-      setIsMeterFormOpen(false)
       toast({
         title: "Success",
-        description: `Meter ${meterFormMode === "create" ? "created" : "updated"
-          } successfully.`,
+        description: `Meter ${meterFormMode === "create" ? "created" : "updated"} successfully.`,
       });
-    } catch (error) {
-      console.error("Error saving meter:", error);
-      throw error;
     }
   };
 
@@ -254,41 +252,38 @@ export default function MetersReadings() {
   const onSaveMeterReading = async (
     meterReadingData: Partial<MeterReading>
   ) => {
-    try {
-      console.log("Saving meter reading:", meterReadingData);
-      if (meterReadingFormMode === 'create') {
-        await meterReadingApiService.addMeterReading(meterReadingData);
-      } else if (meterReadingFormMode === 'edit') {
-        await meterReadingApiService.updateMeterReading({ ...selectedMeterReading, ...meterReadingData });
-      }
-      await loadMeterReadings();
+    let response;
+    if (meterReadingFormMode === 'create') {
+      response = await meterReadingApiService.addMeterReading(meterReadingData);
+    } else if (meterReadingFormMode === 'edit') {
+      response = await meterReadingApiService.updateMeterReading({ ...selectedMeterReading, ...meterReadingData });
+    }
+
+    if (response?.success) {
       setIsMeterReadingFormOpen(false);
+      await loadMeterReadings();
       toast({
         title: "Success",
-        description: `Meter reading ${meterReadingFormMode === "create" ? "added" : "updated"
-          } successfully.`,
+        description: `Meter reading ${meterReadingFormMode === "create" ? "added" : "updated"} successfully.`,
       });
-    } catch (error) {
-      console.error("Error saving meter reading:", error);
-      throw error;
     }
   };
 
   const onDeleteMeterReading = async (reading: MeterReading) => {
-    try {
-      await meterReadingApiService.deleteMeterReading(reading.id);
-      await loadMeterReadings();
-      toast({
-        title: "Deleted",
-        description: `Meter reading for ${reading.meter_code} deleted successfully.`,
-      });
-    } catch (error) {
-      console.error("Error deleting meter reading:", error);
-      toast({
-        title: "Error",
-        description: "Failed to delete meter reading.",
-        variant: "destructive",
-      });
+    setDeleteReadingId(reading.id);
+  };
+
+  const confirmDeleteReading = async () => {
+    if (deleteReadingId) {
+      const response = await meterReadingApiService.deleteMeterReading(deleteReadingId);
+      if (response.success) {
+        await loadMeterReadings();
+        setDeleteReadingId(null);
+        toast({
+          title: "Deleted",
+          description: `Meter reading has been deleted successfully.`,
+        });
+      }
     }
   };
 
@@ -688,6 +683,24 @@ export default function MetersReadings() {
         onSave={onSaveMeterReading}
         mode={meterReadingFormMode}
       />
+
+      {/* Delete confirmation for meter reading */}
+      <AlertDialog open={!!deleteReadingId} onOpenChange={() => setDeleteReadingId(null)}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Delete Meter Reading</AlertDialogTitle>
+            <AlertDialogDescription>
+              Are you sure you want to delete this meter reading? This action cannot be undone.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancel</AlertDialogCancel>
+            <AlertDialogAction onClick={confirmDeleteReading} className="bg-destructive text-destructive-foreground">
+              Delete
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </SidebarProvider>
   );
 }

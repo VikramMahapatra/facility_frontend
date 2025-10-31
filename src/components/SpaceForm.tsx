@@ -298,7 +298,7 @@ export function SpaceForm({ space, isOpen, onClose, onSave, mode }: SpaceFormPro
               <Input
                 id="area_sqft"
                 type="number"
-                {...register("area_sqft", { valueAsNumber: true })}
+                {...register("area_sqft", { setValueAs: (v) => v === '' ? undefined : Number(v) })}
                 disabled={isReadOnly}
                 className={errors.area_sqft ? 'border-red-500' : ''}
                 min="0"
@@ -316,7 +316,7 @@ export function SpaceForm({ space, isOpen, onClose, onSave, mode }: SpaceFormPro
                 <Input
                   id="beds"
                   type="number"
-                  {...register("beds", { valueAsNumber: true })}
+                  {...register("beds", { setValueAs: (v) => v === '' ? undefined : Number(v) })}
                   disabled={isReadOnly}
                   className={errors.beds ? 'border-red-500' : ''}
                   min="0"
@@ -330,7 +330,7 @@ export function SpaceForm({ space, isOpen, onClose, onSave, mode }: SpaceFormPro
                 <Input
                   id="baths"
                   type="number"
-                  {...register("baths", { valueAsNumber: true })}
+                  {...register("baths", { setValueAs: (v) => v === '' ? undefined : Number(v) })}
                   disabled={isReadOnly}
                   className={errors.baths ? 'border-red-500' : ''}
                   min="0"

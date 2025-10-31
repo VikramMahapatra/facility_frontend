@@ -124,14 +124,14 @@ export default function RolePolicies() {
 
   const loadRoles = async () => {
     const roleList = await rolePolicyApiService.getRoles()
-    setRoles(roleList);
-    setSelectedRoleId(roleList[0]?.id || "");
+    if (roleList?.success) setRoles(roleList.data || []);
+    setSelectedRoleId(roleList.data?.[0]?.id || "");
   }
 
   const loadRolePolicies = async () => {
     if (selectedRoleId) {
       const response = await rolePolicyApiService.getRolePolicies(selectedRoleId)
-      setPolicies(response.policies);
+      if (response?.success) setPolicies(response.data.policies || []);
     }
   }
 
@@ -164,12 +164,10 @@ export default function RolePolicies() {
   };
 
   const handleSavePolicies = async () => {
-    try {
-      await rolePolicyApiService.savePolicies(selectedRoleId, policies);
+    const response = await rolePolicyApiService.savePolicies(selectedRoleId, policies);
+    if (response.success) {
       toast.success("Role policies saved successfully");
-    } catch (error) {
-      toast.error("Technical error!")
-    }
+    }  
   };
 
   return (

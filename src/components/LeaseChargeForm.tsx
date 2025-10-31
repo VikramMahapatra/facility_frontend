@@ -5,7 +5,7 @@ import { Label } from "@/components/ui/label";
 import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { useToast } from "@/hooks/use-toast";
-import { leasesApiService } from "@/services/leasing_tenants/leasesapi";
+import { leasesApiService } from "@/services/Leasing_Tenants/leasesapi";
 
 // ---- Types (kept minimal and local to the form, mirroring SpaceForm style) ----
 export type ChargeCode =
@@ -71,7 +71,7 @@ export function LeaseChargeForm({ charge, isOpen, onClose, onSave, mode }: Lease
   // ---- Lookups ----
   const loadLeaseLookup = async () => {
     const lookup = await leasesApiService.getLeaseLookup();
-    setLeaseList(lookup);
+    if (lookup.success) setLeaseList(lookup.data || []);
   }
 
   // ---- Submit ----
@@ -126,7 +126,7 @@ export function LeaseChargeForm({ charge, isOpen, onClose, onSave, mode }: Lease
                 <SelectValue placeholder="Select lease" />
               </SelectTrigger>
               <SelectContent>
-                {leaseList.map((lease) => (
+                {leaseList.map((lease: any) => (
                   <SelectItem key={lease.id} value={lease.id}>
                     {lease.name}
                   </SelectItem>

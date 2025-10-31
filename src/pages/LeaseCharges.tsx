@@ -117,20 +117,20 @@ export default function LeaseCharges() {
 
   const loadLeaseChargeLookup = async () => {
     const lookup = await leaseChargeApiService.getLeaseChargeLookup();
-    setChargeCodeList(lookup);
+    if (lookup.success) setChargeCodeList(lookup.data || []);
   }
 
 
   const loadLeaseMonthLookup = async () => {
     const lookup = await leaseChargeApiService.getLeaseMonthLookup();
-    setMonths(lookup || []);   // instead of setSelectedMonth
+    if (lookup.success) setMonths(lookup.data || []);   // instead of setSelectedMonth
   };
 
 
 
   const loadLeaseChargeOverView = async () => {
     const response = await leaseChargeApiService.getLeaseChargeOverview();
-    setLeaseChargeOverview(response);
+    if (response.success) setLeaseChargeOverview(response.data || {});
   }
 
   const loadLeaseCharges = async () => {
@@ -148,8 +148,8 @@ export default function LeaseCharges() {
     params.append("skip", skip.toString());
     params.append("limit", limit.toString());
     const response = await leaseChargeApiService.getLeaseCharges(params);
-    setLeaseCharges(response.items);
-    setTotalItems(response.total);
+    if (response.success) setLeaseCharges(response.data?.items || []);
+    setTotalItems(response.data?.total || 0);
   }
 
 
@@ -222,38 +222,34 @@ export default function LeaseCharges() {
   };
 
   const handleSave = async (data: Partial<LeaseCharge>) => {
-    try {
+    let response;
       if (formMode === 'create') {
-        await leaseChargeApiService.addLeaseCharge(data);
+        response = await leaseChargeApiService.addLeaseCharge(data);
       } else if (formMode === 'edit' && selectedCharge) {
         const updatedLeaseCharge = { ...selectedCharge, ...data };
-        await leaseChargeApiService.updateLeaseCharge(updatedLeaseCharge);
+        response = await leaseChargeApiService.updateLeaseCharge(updatedLeaseCharge);
       }
+
+    if (response?.success) {
       setIsFormOpen(false);
       toast({
         title: formMode === 'create' ? "Lease Charge Created" : "Lease Charge Updated",
         description: `Lease Charge ${data.charge_code} has been ${formMode === 'create' ? 'created' : 'updated'} successfully.`,
       });
       updateLeaseChargePage();
-    } catch (error) {
-      toast({
-        title: "Techical Error!",
-        variant: "destructive",
-      });
     }
   };
 
   // delete
   const handleDelete = async () => {
-    if (!deleteId) return;
-    try {
-      await leaseChargeApiService.deleteLeaseCharge(deleteId);
-      toast({ title: "Charge deleted" });
-      updateLeaseChargePage();
-    } catch {
-      toast({ title: "Delete failed", variant: "destructive" });
-    } finally {
-      setDeleteId(null);
+    if (deleteId) {
+      const response = await leaseChargeApiService.deleteLeaseCharge(deleteId);
+      if (response.success) {
+       
+          updateLeaseChargePage();
+          setDeleteId(null);
+          toast({ title: "Charge deleted" });
+      }
     }
   };
 

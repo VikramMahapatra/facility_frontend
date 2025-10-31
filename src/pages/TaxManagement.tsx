@@ -71,7 +71,7 @@ export default function TaxManagement() {
 
   const loadTaxOverView = async () => {
     const response = await taxCodeApiService.getTaxOverview();
-    setTaxOverview(response);
+    if (response.success) setTaxOverview(response.data || {});
   }
 
   const loadTaxCodes = async () => {
@@ -85,8 +85,8 @@ export default function TaxManagement() {
     params.append("skip", skip.toString());
     params.append("limit", limit.toString());
     const response = await taxCodeApiService.getTaxCodes(params);
-    setTaxCodes(response.tax_codes);
-    setTotalItems(response.total);
+    if (response.success) setTaxCodes(response.data?.tax_codes || []);
+    setTotalItems(response.data?.total || 0);
   }
 
   const loadTaxReturns = async () => {
@@ -98,8 +98,8 @@ export default function TaxManagement() {
     params.append("skip", skip.toString());
     params.append("limit", limit.toString());
     const response = await taxCodeApiService.getTaxReturns(params);
-    setTaxReturns(response.tax_returns);
-    setTotalReturnsItems(response.total);
+    if (response.success) setTaxReturns(response.data?.tax_returns || []);
+    setTotalReturnsItems(response.data?.total || 0);
   }
 
   const handleCreate = () => {
@@ -126,33 +126,26 @@ export default function TaxManagement() {
 
   const confirmDelete = async () => {
     if (deleteTaxCodeId) {
-      try {
-        await taxCodeApiService.deleteTaxCode(deleteTaxCodeId);
+      const response = await taxCodeApiService.deleteTaxCode(deleteTaxCodeId);       
+      if (response.success) {
         updateTaxPage();
         loadTaxOverView();
         setDeleteTaxCodeId(null);
-        toast({
-          title: "Tax Code Deleted",
-          description: "The tax code has been removed successfully.",
-        });
-      } catch (error) {
-        toast({
-          title: "Techical Error!",
-          variant: "destructive",
-        });
+        toast({ title: "Tax Code Deleted", description: "The tax code has been removed successfully." });
       }
-
     }
   };
 
   const handleSave = async (taxCodeData: Partial<TaxCode>) => {
-    try {
-      if (formMode === 'create') {
-        await taxCodeApiService.addTaxCode(taxCodeData);
-      } else if (formMode === 'edit' && selectedTaxCode) {
-        const updatedSpace = { ...selectedTaxCode, ...taxCodeData };
-        await taxCodeApiService.updateTaxCode(updatedSpace);
-      }
+    let response;
+    if (formMode === 'create') {
+      response = await taxCodeApiService.addTaxCode(taxCodeData);
+    } else if (formMode === 'edit' && selectedTaxCode) {
+      const updatedSpace = { ...selectedTaxCode, ...taxCodeData };
+      response = await taxCodeApiService.updateTaxCode(updatedSpace);
+    }
+
+    if (response?.success) {
       setIsFormOpen(false);
       toast({
         title: formMode === 'create' ? "Space Created" : "Space Updated",
@@ -160,11 +153,6 @@ export default function TaxManagement() {
       });
       updateTaxPage();
       loadTaxOverView();
-    } catch (error) {
-      toast({
-        title: "Techical Error!",
-        variant: "destructive",
-      });
     }
   };
 

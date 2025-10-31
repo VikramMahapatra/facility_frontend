@@ -93,7 +93,7 @@ export function TenantForm({
 
   const loadSiteLookup = async () => {
     const lookup = await siteApiService.getSiteLookup();
-    setSiteList(lookup);
+    if (lookup.success) setSiteList(lookup.data || []);
   };
 
   const loadBuildingLookup = async () => {
@@ -102,7 +102,7 @@ export function TenantForm({
       return;
     }
     const lookup = await buildingApiService.getBuildingLookup(formData.site_id);
-    setBuildingList(lookup);
+    if (lookup.success) setBuildingList(lookup.data || []);
   };
 
   const loadSpaceLookup = async () => {
@@ -111,17 +111,17 @@ export function TenantForm({
       return;
     }
     const lookup = await spacesApiService.getSpaceLookup(formData.site_id, formData.building_id);
-    setSpaceList(lookup);
+    if (lookup.success) setSpaceList(lookup.data || []);
   };
 
   const loadStatusLookup = async () => {
     const lookup = await tenantsApiService.getTenantStatusLookup();
-    setStatusList(lookup);
+    if (lookup.success) setStatusList(lookup.data || []);
   };
 
   const loadTypeLookup = async () => {
     const lookup = await tenantsApiService.getTenantTypeLookup();
-    setTypeList(lookup);
+    if (lookup.success) setTypeList(lookup.data || []);
   };
 
   const handleSubmit = (e: React.FormEvent) => {

@@ -41,3 +41,4 @@ export const spaceSchema = z.object({
 });
 
 export type SpaceFormValues = z.infer<typeof spaceSchema>;
+

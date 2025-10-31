@@ -23,8 +23,8 @@ export interface SpaceGroup {
   site_id: string;
   kind: SpaceKind;
   specs: {
-    base_rate: 0;
-    amenities: [];
+    base_rate: number;
+    amenities: string[];
   };
   group_members?: number
 }
@@ -89,9 +89,10 @@ export default function SpaceGroups() {
     params.append("skip", skip.toString());
     params.append("limit", limit.toString());
     const response = await spaceGroupsApiService.getSpaceGroups(params);
-    console.log("group list:", response.spaceGroups)
-    setGroups(response.spaceGroups);
-    setTotalItems(response.total);
+    if (response.success) {
+      setGroups(response.data?.spaceGroups || []);
+      setTotalItems(response.data?.total || 0);
+    }
   }
 
   const getKindColor = (kind: SpaceKind) => {
@@ -111,7 +112,7 @@ export default function SpaceGroups() {
 
   const loadSiteLookup = async () => {
     const lookup = await siteApiService.getSiteLookup();
-    setSiteList(lookup);
+    if (lookup.success) setSiteList(lookup.data || []);
   }
 
   const getSiteName = (siteId: string) => {
@@ -153,62 +154,35 @@ export default function SpaceGroups() {
  // In SpaceGroup.tsx - Replace the confirmDelete function
 const confirmDelete = async () => {
   if (deleteSpaceGroupId) {
-    try {
-      const response = await spaceGroupsApiService.deleteSpaceGroup(deleteSpaceGroupId);
-      
+    let response;   
+      response = await spaceGroupsApiService.deleteSpaceGroup(deleteSpaceGroupId);
       if (response.success) {
-        // Success - refresh data
-        loadSpaceGroups();
-        setDeleteSpaceGroupId(null);
-        toast({
-          title: "Group Deleted",
-          description: "Space group removed successfully."
-        });
-      } else {
-        // Show error popup from backend
-        toast({
-          title: "Cannot Delete Group",
-          description: response.message,
-          variant: "destructive",
-        });
-      }
-    } catch (error: any) {
-      if (error.response?.status === 400) {
-        // Show hierarchical deletion error
-        toast({
-          title: "Cannot Delete Group",
-          description: error.response.data.detail,
-          variant: "destructive",
-        });
-      } else {
-        toast({
-          title: "Delete Failed",
-          description: "An error occurred while deleting the space group.",
-          variant: "destructive",
-        });
+        const authResponse = response.data;
+        if (authResponse?.success) {
+          loadSpaceGroups();
+          setDeleteSpaceGroupId(null);
+          toast({ title: "Group Deleted", description: "Space group removed successfully." });
+        } else {
+          toast({ title: "Cannot delete group", description: authResponse?.message, variant: "destructive" });
+        }
       }
     }
-  }
-};
+  };
   const handleSave = async (data: Partial<SpaceGroup>) => {
-    try {
-      if (formMode === "create") {
-        await spaceGroupsApiService.addSpaceGroup(data);
-      } else if (formMode === "edit" && selectedGroup) {
-        const updatedGroup = { ...selectedGroup, ...data };
-        await spaceGroupsApiService.updateSpaceGroup(updatedGroup);
-      }
-      loadSpaceGroups();
+    let response;
+    if (formMode === "create") {
+      response = await spaceGroupsApiService.addSpaceGroup(data);
+    } else if (formMode === "edit" && selectedGroup) {
+      const updatedGroup = { ...selectedGroup, ...data };
+      response = await spaceGroupsApiService.updateSpaceGroup(updatedGroup);
+    }
+
+    if (response.success) {
       setShowForm(false);
+      loadSpaceGroups();
       toast({
         title: formMode === "create" ? "Group Created" : "Group Updated",
         description: `Group ${data.name} has been ${formMode === "create" ? "created" : "updated"} successfully.`,
-      });
-
-    } catch (error) {
-      toast({
-        title: "Techical Error!",
-        variant: "destructive",
       });
     }
 

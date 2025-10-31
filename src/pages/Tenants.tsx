@@ -69,17 +69,17 @@ const Tenants = () => {
 
   const loadTenantOverview = async () => {
     const response = await tenantsApiService.getTenantOverview();
-    setTenantOverview(response);
+    if (response.success) setTenantOverview(response.data || {});
   };
 
   const loadStatusLookup = async () => {
     const lookup = await tenantsApiService.getTenantStatusLookup();
-    setStatusList(lookup || []);
+    if (lookup.success) setStatusList(lookup.data || []);
   };
 
   const loadTypeLookup = async () => {
     const lookup = await tenantsApiService.getTenantTypeLookup();
-    setTypeList(lookup || []);
+    if (lookup.success) setTypeList(lookup.data || []);
   };
 
   const loadTenants = async () => {
@@ -100,8 +100,10 @@ const Tenants = () => {
 
     const response = await tenantsApiService.getTenants(params);
 
-    setTenants(response.tenants || []);
-    setTotalItems(response.total || 0);
+    if (response.success) {
+      setTenants(response.data?.tenants || []);
+      setTotalItems(response.data?.total || 0);
+    }
   };
 
   // Form handlers
@@ -128,45 +130,27 @@ const Tenants = () => {
   };
 
   const confirmDelete = async () => {
-  if (!deleteTenantId) return;
-
-  try {
-    // Show loading
-    toast({
-      title: "Deleting...",
-      description: "Please wait",
-    });
-
-    // Call API - wait for backend response
-    const result = await tenantsApiService.deleteTenant(deleteTenantId);
-    
-    // ✅ Show the exact message from backend
-    toast({
-      title: "Success!",
-      description: result.message, // This will show one of your 3 messages
-    });
-    
-    // Refresh data
-    await loadTenants();
-    await loadTenantOverview();
-    setDeleteTenantId(null);
-    
-  } catch (error: any) {
-    toast({
-      title: "Delete Failed",
-      description: error.message || "Failed to delete tenant",
-      variant: "destructive",
-    });
-  }
-};
-  const handleSave = async (tenantData: Partial<Tenant>) => {
-    try {
-      if (formMode === "create") {
-        await tenantsApiService.addTenant(tenantData);
-      } else if (formMode === "edit" && selectedTenant) {
-        const updatedTenant = { ...selectedTenant, ...tenantData };
-        await tenantsApiService.updateTenant(updatedTenant);
+    if (deleteTenantId) {
+      const response = await tenantsApiService.deleteTenant(deleteTenantId);       
+        if (response.success) {
+          await loadTenants();
+          await loadTenantOverview();
+          setDeleteTenantId(null);
+          toast({ title: "Tenant Deleted", description: "The tenant has been removed successfully." });
+        
       }
+    }
+  };
+  const handleSave = async (tenantData: Partial<Tenant>) => {
+    let response;
+      if (formMode === "create") {
+      response = await tenantsApiService.addTenant(tenantData);
+    } else if (formMode === "edit" && selectedTenant) {
+      const updatedTenant = { ...selectedTenant, ...tenantData };
+      response = await tenantsApiService.updateTenant(updatedTenant);
+    }
+
+    if (response?.success) {
       setIsFormOpen(false);
       toast({
         title:
@@ -175,11 +159,6 @@ const Tenants = () => {
           } successfully.`,
       });
       updateTenantPage();
-    } catch (error) {
-      toast({
-        title: "Technical Error!",
-        variant: "destructive",
-      });
     }
   };
 
@@ -504,5 +483,4 @@ const Tenants = () => {
     </SidebarProvider>
   );
 };
-
-export default Tenants;
+export default Tenants; 
