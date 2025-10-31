@@ -7,8 +7,11 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "
 import { useToast } from "@/hooks/use-toast";
 import { siteApiService } from "@/services/spaces_sites/sitesapi";
 import { Invoice } from "@/interfaces/invoices_interfaces";
-import { contactApiService } from "@/services/crm/contactapi";
+import { serviceRequestApiService } from "@/services/maintenance_assets/servicerequestapi";
+import { leasesApiService } from "@/services/Leasing_Tenants/leasesapi";
 
+// ✅ Same types as service request form
+type CustomerKind = 'resident' | 'merchant' | 'guest' | 'staff' | 'other';
 
 interface InvoiceFormProps {
     invoice?: Invoice;
@@ -23,7 +26,7 @@ const emptyFormData: Partial<Invoice> = {
     customer_kind: "resident",
     customer_id: "",
     invoice_no: "",
-    date: new Date().toISOString().split("T")[0], // default today
+    date: new Date().toISOString().split("T")[0],
     due_date: "",
     status: "draft",
     currency: "INR",
@@ -36,30 +39,67 @@ export function InvoiceForm({ invoice, isOpen, onClose, onSave, mode }: InvoiceF
     const [formData, setFormData] = useState<Partial<Invoice>>(emptyFormData);
     const [siteList, setSiteList] = useState<any[]>([]);
     const [customerList, setCustomerList] = useState<any[]>([]);
+    const [requesterKindList, setRequesterKindList] = useState<any[]>([]);
 
     useEffect(() => {
         const kind = invoice?.customer_kind || emptyFormData.customer_kind;
+        
         if (invoice) {
             console.log("selected invoice:", invoice);
             setFormData(invoice);
         } else {
             setFormData(emptyFormData);
         }
+        
         loadSiteLookup();
-        loadCustomerLookup(kind, invoice?.customer_id);
+        loadRequesterKindLookup();
+        loadCustomerLookup(kind, invoice?.site_id);
     }, [invoice]);
 
+    // ✅ Load customer when kind or site changes (SAME as service request)
+    useEffect(() => {
+        loadCustomerLookup(formData.customer_kind, formData.site_id);
+    }, [formData.customer_kind, formData.site_id]);
+
+    // ✅ Set customer_id when customerList loads (SAME as service request)
+    useEffect(() => {
+        if (!invoice) return;
+        setFormData((prev) => ({ ...prev, customer_id: String(invoice.customer_id) }));
+    }, [customerList]);
+
     const loadSiteLookup = async () => {
-        const lookup = await siteApiService.getSiteLookup();
-        if (lookup.success) setSiteList(lookup.data || []);
+        try {
+            const rows = await siteApiService.getSiteLookup();
+            if (rows.success) setSiteList(rows.data || []);
+        } catch {
+            setSiteList([]);
+        }
     };
 
-    const loadCustomerLookup = async (kind?: string, selectedCustomerId?: string) => {
-        const lookup = await contactApiService.getCustomerLookup(kind);
-        if (lookup.success) setCustomerList(lookup.data|| []);
+    const loadRequesterKindLookup = async () => {
+        try {
+            // ✅ Use service request requester kind lookup (SAME as service request)
+            const rows = await serviceRequestApiService.getServiceRequestRequesterKindLookup();
+            if (rows.success) setRequesterKindList(rows.data || []);
+        } catch {
+            setRequesterKindList([]);
+        }
+    };
 
-        if (selectedCustomerId)
-            setFormData(prev => ({ ...prev, customer_id: selectedCustomerId }));
+    const loadCustomerLookup = async (kind?: CustomerKind, site_id?: string) => {
+        if (!kind || !site_id) {
+            setCustomerList([]);
+            return;
+        }
+        
+        try {
+            // ✅ SAME LOGIC AS SERVICE REQUEST FORM - Use leasesApiService for customer lookup
+            const Kind = kind === "resident" ? "individual" : kind === "merchant" ? "commercial" : kind;
+            const lookup = await leasesApiService.getLeasePartnerLookup(Kind, site_id);
+            if (lookup.success) setCustomerList(lookup.data || []);
+        } catch {
+            setCustomerList([]);
+        }
     };
 
     const handleSubmit = (e: React.FormEvent) => {
@@ -112,7 +152,10 @@ export function InvoiceForm({ invoice, isOpen, onClose, onSave, mode }: InvoiceF
                             <Select
                                 name="site_id"
                                 value={formData.site_id}
-                                onValueChange={(value) => setFormData({ ...formData, site_id: value })}
+                                onValueChange={(value) => {
+                                    // ✅ SAME as service request - clear customer when site changes
+                                    setFormData({ ...formData, site_id: value, customer_id: "" });
+                                }}
                                 disabled={isReadOnly}
                             >
                                 <SelectTrigger>
@@ -136,19 +179,22 @@ export function InvoiceForm({ invoice, isOpen, onClose, onSave, mode }: InvoiceF
                             <Select
                                 name="customer_kind"
                                 value={formData.customer_kind}
-                                onValueChange={(value: "resident" | "partner" | "guest") => {
-                                    setFormData({ ...formData, customer_kind: value });
-                                    loadCustomerLookup(value);
+                                onValueChange={(value: CustomerKind) => {
+                                    // ✅ SAME as service request - clear customer when type changes
+                                    setFormData({ ...formData, customer_kind: value, customer_id: "" });
                                 }}
                                 disabled={isReadOnly}
                             >
                                 <SelectTrigger>
-                                    <SelectValue placeholder="Select type" />
+                                    <SelectValue placeholder="Select customer type" />
                                 </SelectTrigger>
                                 <SelectContent>
-                                    <SelectItem value="resident">Resident</SelectItem>
-                                    <SelectItem value="partner">Partner</SelectItem>
-                                    <SelectItem value="guest">Guest</SelectItem>
+                                    {/* ✅ Use service request requester kind options */}
+                                    {requesterKindList.map((rk: any) => (
+                                        <SelectItem key={rk.id} value={rk.id}>
+                                            {rk.name}
+                                        </SelectItem>
+                                    ))}
                                 </SelectContent>
                             </Select>
                         </div>
@@ -159,7 +205,7 @@ export function InvoiceForm({ invoice, isOpen, onClose, onSave, mode }: InvoiceF
                                 name="customer_id"
                                 value={formData.customer_id}
                                 onValueChange={(value) => setFormData({ ...formData, customer_id: value })}
-                                disabled={isReadOnly}
+                                disabled={isReadOnly || !formData.site_id}
                             >
                                 <SelectTrigger>
                                     <SelectValue placeholder="Select customer" />

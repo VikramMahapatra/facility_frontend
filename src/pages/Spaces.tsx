@@ -145,25 +145,28 @@ export default function Spaces() {
     setDeleteSpaceId(spaceId);
   };
 
-  const confirmDelete = async () => {
-    if (deleteSpaceId) {
-      const response = await spacesApiService.deleteSpace(deleteSpaceId);
-      if (response.success) {
-        const authResponse = response.data;
-        if (authResponse?.success) {
-          updateSpacePage();
-          setDeleteSpaceId(null);
-          toast({
-            title: "Space Deleted",
-            description: "Space has been deleted successfully.",
-          });
-        } else {
-          toast({ title: "Cannot delete space", description: authResponse?.message, variant: "destructive" });
-        }
-      }
-    }
-  };
+ const confirmDelete = async () => {
+  if (deleteSpaceId) {
+    const response = await spacesApiService.deleteSpace(deleteSpaceId);
 
+    if (response.success) {
+      // Success case
+      updateSpacePage();
+      setDeleteSpaceId(null);
+      toast({
+        title: "Space Deleted",
+        description: "Space has been deleted successfully.",
+      });
+    } else {
+      // Error case - use the message from response.data
+      toast({
+        title: "Cannot Delete Space",
+        description: response.data?.message || "Cannot delete space that has ever had tenants or leases associated with it",
+        variant: "destructive",
+      });
+    }
+  }
+};
   const handleSave = async (spaceData: Partial<Space>) => {
     let response;
     if (formMode === 'create') {
