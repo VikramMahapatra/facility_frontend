@@ -2,7 +2,7 @@ export interface Invoice {
     id: string;
     org_id: string;
     site_id: string;
-    customer_kind: 'resident' | 'partner' | 'guest';
+    customer_kind: 'resident' | 'merchant' | 'guest' | 'staff' | 'other'; // ✅ Match service request types
     customer_id: string;
     customer_name: string;
     invoice_no: string;
