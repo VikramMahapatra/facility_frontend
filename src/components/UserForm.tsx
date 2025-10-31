@@ -81,12 +81,12 @@ export function UserForm({ user, open, onOpenChange, onSubmit }: UserFormProps) 
 
   const loadStatusLookup = async () => {
     const lookup = await userManagementApiService.getUserStatusOverview();
-    setStatusList(lookup || []);
+    if (lookup?.success) setStatusList(lookup.data || []);
   };
 
   const loadRolesLookup = async () => {
     const lookup = await userManagementApiService.getUserRolesLookup();
-    setRoleList(lookup || []);
+    if (lookup?.success) setRoleList(lookup.data || []);
   };
   const form = useForm<UserFormValues>({
     resolver: zodResolver(userFormSchema),

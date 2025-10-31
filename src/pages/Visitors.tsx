@@ -61,12 +61,13 @@ export default function Visitors() {
 
   const loadSiteLookup = async () => {
     const lookup = await siteApiService.getSiteLookup();
-    setSiteList(lookup);
+    if (lookup.success) setSiteList(lookup.data || []);
   }
 
   const loadVisitorOverView = async () => {
     const response = await visitorApiService.getVisitorOverview();
-    setVisitorOverview(response);
+    if (response.success) {setVisitorOverview(response.data || {});
+    }
   }
 
   const loadVisitors = async () => {
@@ -82,8 +83,8 @@ export default function Visitors() {
     params.append("skip", skip.toString());
     params.append("limit", limit.toString());
     const response = await visitorApiService.getVisitors(params);
-    setVisitors(response.visitors);
-    setTotalItems(response.total);
+    setVisitors(response.data?.visitors || []);
+    setTotalItems(response.data?.total || 0);
   }
 
   const getStatusColor = (status: string) => {
@@ -118,44 +119,52 @@ export default function Visitors() {
   };
 
   const handleDelete = (visitorId: string) => {
-    setDeleteVisitorId(visitorId);
-  };
+  setDeleteVisitorId(visitorId);
+};
 
-  const confirmDelete = () => {
-    if (deleteVisitorId) {
-      setVisitors(visitors.filter(visitor => visitor.id !== deleteVisitorId));
-      toast({
-        title: "Visitor Removed",
-        description: "Visitor record has been removed successfully.",
-      });
-      setDeleteVisitorId(null);
-    }
-  };
+const confirmDelete = async () => {
+  if (deleteVisitorId) {
+    const response = await visitorApiService.deleteVisitor(deleteVisitorId);
 
-  const handleSave = async (visitorData: Partial<Visitor>) => {
-    try {
-      if (formMode === 'create') {
-        await visitorApiService.addVisitor(visitorData);
-      } else if (formMode === 'edit' && selectedVisitor) {
-        const updatedLog = { ...selectedVisitor, ...visitorData }
-        await visitorApiService.updateVisitor(updatedLog);
-      }
-      setIsFormOpen(false);
-      updateVisitorPage();
-      loadVisitorOverView();
-      toast({
-        title: formMode === 'create' ? "Visitor Added" : "Visitor Updated",
-        description: `Visitor "${visitorData.name}" has been ${formMode === 'create' ? 'added' : 'updated'} successfully.`,
-      });
-
-    } catch (error) {
-      toast({
-        title: "Techical Error!",
-        variant: "destructive",
-      });
+    if (response.success) {
+     
+        // Success - refresh data
+        setVisitors(visitors.filter(visitor => visitor.id !== deleteVisitorId));
+        setDeleteVisitorId(null);
+        toast({
+          title: "Visitor Removed",
+          description: "Visitor record has been removed successfully.",
+        });
+      
     }
 
-  };
+    setDeleteVisitorId(null);
+  }
+};
+
+ const handleSave = async (visitorData: Partial<Visitor>) => {
+  let response;
+  if (formMode === "create") {
+    response = await visitorApiService.addVisitor(visitorData);
+  } else if (formMode === "edit" && selectedVisitor) {
+    const updatedLog = {
+      ...selectedVisitor,
+      ...visitorData,
+      updated_at: new Date().toISOString(),
+    }
+    response = await visitorApiService.updateVisitor(updatedLog);
+  }
+
+  if (response?.success) {
+    setIsFormOpen(false);
+    updateVisitorPage();
+    loadVisitorOverView();
+    toast({
+      title: formMode === "create" ? "Visitor Added" : "Visitor Updated",
+      description: `Visitor "${visitorData.name}" has been ${formMode === "create" ? "added" : "updated"} successfully.`,
+    });
+  }
+};
 
   return (
     <SidebarProvider>

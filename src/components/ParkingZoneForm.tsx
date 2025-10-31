@@ -42,7 +42,7 @@ export function ParkingZoneForm({ zone, isOpen, onClose, onSave, mode }: Parking
 
   const loadSiteLookup = async () => {
     const lookup = await siteApiService.getSiteLookup();
-    setSiteList(lookup);
+    if (lookup.success) setSiteList(lookup.data || []);
   }
 
   const handleSubmit = (e: React.FormEvent) => {
