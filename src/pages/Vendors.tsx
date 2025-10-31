@@ -60,46 +60,48 @@ export default function Vendors() {
   };
 
   const loadVendors = async () => {
-    const skip = (page - 1) * pageSize;
-    const limit = pageSize;
+  const skip = (page - 1) * pageSize;
+  const limit = pageSize;
 
-    // build query params
-    const params = new URLSearchParams();
-    if (searchTerm) params.append("search", searchTerm);
-    if (statusFilter !== "all") params.append("status", statusFilter);
-    if (categoryFilter !== "all") params.append("category", categoryFilter);
-    params.append("skip", skip.toString());
-    params.append("limit", limit.toString());
+  // build query params - same pattern as site
+  const params = new URLSearchParams();
+  if (searchTerm) params.append("search", searchTerm);
+  if (statusFilter !== "all") params.append("status", statusFilter);
+  if (categoryFilter !== "all") params.append("category", categoryFilter);
+  params.append("skip", skip.toString());
+  params.append("limit", limit.toString());
 
-    const response = await vendorsApiService.getVendors(params);
-    const vendorsList = response.vendors || [];
-    setVendors(vendorsList);
-    setTotalItems(response.total || 0);
-  };
+  const response = await vendorsApiService.getVendors(params);
+  if (response.success) {
+    setVendors(response.data?.vendors || []);
+    setTotalItems(response.data?.total || 0);
+  }
+};
 
   const loadOverview = async () => {
-    const response = await vendorsApiService.getVendorsOverview();
-    
+  const response = await vendorsApiService.getVendorsOverview();
+  
+  if (response.success) {
     // Map API response to expected format
     const overviewData = {
-      total_vendors: response?.totalVendors || 0,
-      active_vendors: response?.activeVendors || 0,
-      avg_rating: response?.avgRating || 0,
-      distinct_categories: response?.Categories || 0
+      total_vendors: response.data?.totalVendors || 0,
+      active_vendors: response.data?.activeVendors || 0,
+      avg_rating: response.data?.avgRating || 0,
+      distinct_categories: response.data?.Categories || 0
     };
     
     setOverview(overviewData);
-  };
-
+  }
+};
   const loadStatusLookup = async () => {
-    const lookup = await vendorsApiService.getVendorsStatusLookup();
-    setStatusList(lookup || []);
-  };
+  const lookup = await vendorsApiService.getVendorsStatusLookup();
+  if (lookup.success) setStatusList(lookup.data || []);
+};
 
-  const loadCategoriesLookup = async () => {
-    const lookup = await vendorsApiService.getVendorsCatgoriesLookup();
-    setCategoriesList(lookup || []);
-  };
+const loadCategoriesLookup = async () => {
+  const lookup = await vendorsApiService.getVendorsCatgoriesLookup();
+  if (lookup.success) setCategoriesList(lookup.data || []);
+};
 
   const handleCreate = () => {
     setSelectedVendor(undefined);
@@ -119,49 +121,49 @@ export default function Vendors() {
     setIsCreateDialogOpen(true);
   };
 
-  const handleDelete = (vendorId: string) => {
-    setDeleteVendorId(vendorId);
-  };
+ const handleDelete = (vendorId: string) => {
+  setDeleteVendorId(vendorId);
+};
 
-  const confirmDelete = async () => {
-    if (deleteVendorId) {
-      try {
-        await vendorsApiService.deleteVendors(deleteVendorId);
-        updateVendorsPage();
-        setDeleteVendorId(null);
-        toast({
-          title: "Vendor Deleted",
-          description: "Vendor has been deleted successfully.",
-        });
-        setDeleteVendorId(null);
+const confirmDelete = async () => {
+  if (deleteVendorId) {
+    const response = await vendorsApiService.deleteVendors(deleteVendorId);
 
-      } catch (error) {
-        toast({
-          title: "Techical Error!",
-          variant: "destructive",
-        });
-      }
-
+    if (response.success) {
+      // Success - refresh data
+      updateVendorsPage();
+      setDeleteVendorId(null);
+      toast({
+        title: "Vendor Deleted",
+        description: "Vendor has been deleted successfully.",
+      });
     }
-  };
+
+    setDeleteVendorId(null);
+  }
+};
 
   const handleSave = async (vendorData: any) => {
-    try {
-      if (formMode === "create") {
-        await vendorsApiService.addVendors(vendorData);
-      } else if (formMode === "edit" && selectedVendor) {
-        await vendorsApiService.updateVendors({ ...selectedVendor, ...vendorData });
-      }
-      setIsCreateDialogOpen(false);
-      toast({
-        title: formMode === "create" ? "Vendor Created" : "Vendor Updated",
-        description: `Vendor ${vendorData.name || ""} has been ${formMode === "create" ? "created" : "updated"} successfully.`,
-      });
-      updateVendorsPage();
-    } catch (error) {
-      toast({ title: "Technical Error!", variant: "destructive" });
-    }
-  };
+  let response;
+  if (formMode === "create") {
+    response = await vendorsApiService.addVendors(vendorData);
+  } else if (formMode === "edit" && selectedVendor) {
+    const updatedVendor = {
+      ...selectedVendor,
+      ...vendorData
+    };
+    response = await vendorsApiService.updateVendors(updatedVendor);
+  }
+
+  if (response?.success) {
+    setIsCreateDialogOpen(false);
+    updateVendorsPage();
+    toast({
+      title: formMode === "create" ? "Vendor Created" : "Vendor Updated",
+      description: `Vendor ${vendorData.name || ""} has been ${formMode === "create" ? "created" : "updated"} successfully.`,
+    });
+  }
+};
 
   const getStatusBadge = (status: string) => {
     return (
@@ -385,7 +387,7 @@ export default function Vendors() {
                               >
                                 <Trash2 className="w-4 h-4" />
                               </Button>
-                               }
+}
                             </div>
                           </TableCell>
                         </TableRow>

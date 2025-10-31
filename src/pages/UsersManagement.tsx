@@ -73,35 +73,22 @@ export default function UsersManagement() {
   // Remove client-side filtering since we're using server-side pagination
 
   const handleCreateUser = async (values: any) => {
-    try {
-      await userManagementApiService.addUser(values);
+    const response = await userManagementApiService.addUser(values);
+    if (response?.success) {
       setIsFormOpen(false);
       toast.success("User created successfully");
-      // Refresh the users list
       loadUsers();
-    } catch (error) {
-      console.error('Error creating user:', error);
-      toast.error("Failed to create user");
     }
   };
 
   const handleUpdateUser = async (values: any) => {
     if (!editingUser) return;
-    try {
-      console.log("form values :", values);
-      const payload = {
-        ...values,
-        id: editingUser.id, // ✅ add id to values before sending
-      };
-      await userManagementApiService.updateUser(payload);
-      toast.success("User updated successfully");
+    const response = await userManagementApiService.updateUser({ ...editingUser, ...values });
+    if (response?.success) {
+        toast.success("User updated successfully");
       setIsFormOpen(false);
       setEditingUser(undefined);
-      // Refresh the users list
       loadUsers();
-    } catch (error) {
-      console.error('Error updating user:', error);
-      toast.error("Failed to update user");
     }
   };
 
@@ -110,21 +97,23 @@ export default function UsersManagement() {
   };
 
   const confirmDelete = async () => {
-    if (!deleteUserId) return;
-    try {
-      await userManagementApiService.deleteUser(deleteUserId);
-      toast.success("User deleted successfully");
-      loadUsers();
-    } catch (error) {
-      console.error('Error deleting user:', error);
-      toast.error("Failed to delete user");
-    } finally {
-      setDeleteUserId(null);
+    if (deleteUserId) {
+    const response = await userManagementApiService.deleteUser(deleteUserId);
+    if (response?.success) {
+      
+      const authResponse = response.data;
+      if (authResponse?.success) {
+        toast.success("User deleted successfully");
+        loadUsers();
+        setDeleteUserId(null);
+      } else {
+        toast.error(authResponse?.message || "Failed to delete user");
+      }
+      }
     }
   };
 
   const loadUsers = async () => {
-    try {
       const skip = (page - 1) * pageSize;
       const limit = pageSize;
 
@@ -134,12 +123,8 @@ export default function UsersManagement() {
       params.append("limit", String(limit));
 
       const response = await userManagementApiService.getUsers(params);
-      setUsers(response?.users || response || []);
-      setTotalItems(response?.total || 0);
-    } catch (error) {
-      console.error('Error loading users:', error);
-      toast.error("Failed to load users");
-    }
+      if (response?.success) setUsers(response?.data?.users || []);
+      setTotalItems(response?.data?.total || 0);
   };
 
   const handleOpenForm = (user?: User) => {

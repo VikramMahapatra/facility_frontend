@@ -62,7 +62,7 @@ export default function ParkingZones() {
     if (searchTerm) params.append("search", searchTerm);
     if (selectedSite) params.append("site_id", selectedSite);
     const response = await parkingZoneApiService.getParkingZoneOverview();
-    setParkingZoneOverview(response);
+    if (response.success) setParkingZoneOverview(response.data);
   }
 
   const loadParkingZone = async () => {
@@ -76,13 +76,13 @@ export default function ParkingZones() {
     params.append("skip", skip.toString());
     params.append("limit", limit.toString());
     const response = await parkingZoneApiService.getParkingZones(params);
-    setZones(response.zones);
-    setTotalItems(response.total);
+    setZones(response.data?.zones || []);
+    setTotalItems(response.data?.total || 0);
   }
 
   const loadSiteLookup = async () => {
     const lookup = await siteApiService.getSiteLookup();
-    setSiteList(lookup);
+    if (lookup.success) setSiteList(lookup.data || []);
   }
 
   const handleCreate = () => {
@@ -103,14 +103,17 @@ export default function ParkingZones() {
     setIsFormOpen(true);
   };
 
-  const handleDelete = (zoneId: string) => {
-    setDeleteZoneId(zoneId);
-  };
+ const handleDelete = (zoneId: string) => {
+  setDeleteZoneId(zoneId);
+};
 
-  const confirmDelete = async () => {
-    if (deleteZoneId) {
-      try {
-        await parkingZoneApiService.deleteParkingZone(deleteZoneId);
+const confirmDelete = async () => {
+  if (deleteZoneId) {
+    const response = await parkingZoneApiService.deleteParkingZone(deleteZoneId);
+
+    if (response.success) {
+     
+        // Success - refresh data
         updateParkingZonePage();
         loadParkingZoneOverView();
         setDeleteZoneId(null);
@@ -118,41 +121,37 @@ export default function ParkingZones() {
           title: "Zone Deleted",
           description: "Parking zone has been deleted successfully.",
         });
-        setDeleteZoneId(null);
-
-      } catch (error) {
-        toast({
-          title: "Techical Error!",
-          variant: "destructive",
-        });
+     
+        
       }
+    
 
-    }
-  };
-
+    setDeleteZoneId(null);
+  }
+};
   const handleSave = async (zoneData: Partial<ParkingZone>) => {
-    try {
-      if (formMode === 'create') {
-        await parkingZoneApiService.addParkingZone(zoneData);
-      } else if (formMode === 'edit' && selectedZone) {
-        const updatedZone = { ...selectedZone, ...zoneData }
-        await parkingZoneApiService.updateParkingZone(updatedZone);
-      }
-      setIsFormOpen(false);
-      toast({
-        title: formMode === 'create' ? "Zone Created" : "Zone Updated",
-        description: `Parking zone "${zoneData.name}" has been ${formMode === 'create' ? 'created' : 'updated'} successfully.`,
-      });
-      updateParkingZonePage();
-      loadParkingZoneOverView();
-    } catch (error) {
-      toast({
-        title: "Techical Error!",
-        variant: "destructive",
-      });
+  let response;
+  if (formMode === "create") {
+    response = await parkingZoneApiService.addParkingZone(zoneData);
+  } else if (formMode === "edit" && selectedZone) {
+    const updatedZone = {
+      ...selectedZone,
+      ...zoneData,
+      updated_at: new Date().toISOString(),
     }
+    response = await parkingZoneApiService.updateParkingZone(updatedZone);
+  }
 
-  };
+  if (response?.success) {
+    setIsFormOpen(false);
+    updateParkingZonePage();
+    loadParkingZoneOverView();
+    toast({
+      title: formMode === "create" ? "Zone Created" : "Zone Updated",
+      description: `Parking zone "${zoneData.name}" has been ${formMode === "create" ? "created" : "updated"} successfully.`,
+    });
+  }
+};
 
   return (
     <SidebarProvider>

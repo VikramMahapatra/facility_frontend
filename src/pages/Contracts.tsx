@@ -77,9 +77,9 @@ export default function Contracts() {
     params.append("limit", limit.toString());
 
     const response = await contractsApiService.getContracts(params);
-    const contractsList = response.contracts || [];
-    setContracts(contractsList);
-    setTotalItems(response.total || 0);
+    const contractsList = response.data?.contracts || [];
+    setContracts(response.data?.contracts || []);
+    setTotalItems(response.data?.total || 0);
   };
 
   const loadOverview = async () => {
@@ -87,10 +87,10 @@ export default function Contracts() {
     
     // Map API response to expected format
     const overviewData = {
-      total_contracts: response?.totalContracts || response?.total_contracts || 0,
-      active_contracts: response?.activeContracts || response?.active_contracts || 0,
-      expiring_soon: response?.expiringSoon || response?.expiring_soon || 0,
-      total_value: response?.totalValue || response?.total_value || 0
+      total_contracts: response?.data?.totalContracts || response?.data?.total_contracts || 0,
+      active_contracts: response?.data?.activeContracts || response?.data?.active_contracts || 0,
+      expiring_soon: response?.data?.expiringSoon || response?.data?.expiring_soon || 0,
+      total_value: response?.data?.totalValue || response?.data?.total_value || 0
     };
     
     setOverview(overviewData);
@@ -98,12 +98,12 @@ export default function Contracts() {
 
   const loadStatusLookup = async () => {
     const lookup = await contractsApiService.getContractsStatusLookup();
-    setStatusList(lookup || []);
+    if (lookup.success) setStatusList(lookup.data || []);
   };
 
   const loadTypeLookup = async () => {
     const lookup = await contractsApiService.getContractsTypeLookup();
-    setTypeList(lookup || []);
+    if (lookup.success) setTypeList(lookup.data || []);
   };
 
   const loadVendorLookup = async () => {
@@ -135,50 +135,52 @@ export default function Contracts() {
     setIsCreateDialogOpen(true);
   };
 
-  const handleDelete = (contractId: string) => {
-    setDeleteContractId(contractId);
-  };
+ const handleDelete = (contractId: string) => {
+  setDeleteContractId(contractId);
+};
 
-  const confirmDelete = async () => {
-    if (deleteContractId) {
-      try {
-        await contractsApiService.deleteContracts(deleteContractId);
+const confirmDelete = async () => {
+  if (deleteContractId) {
+    const response = await contractsApiService.deleteContracts(deleteContractId);
+
+    if (response.success) {
+       
+        // Success - refresh data
         updateContractsPage();
         setDeleteContractId(null);
         toast({
           title: "Contract Deleted",
           description: "Contract has been deleted successfully.",
         });
-        setDeleteContractId(null);
-
-      } catch (error) {
-        toast({
-          title: "Techical Error!",
-          variant: "destructive",
-        });
-      }
-
+      
     }
-  };
+
+    setDeleteContractId(null);
+  }
+};
 
   const handleSave = async (contractData: any) => {
-    try {
-      if (formMode === 'create') {
-        await contractsApiService.addContracts(contractData);
-      } else if (formMode === 'edit' && selectedContract) {
-        const updatedContract = { ...selectedContract, ...contractData };
-        await contractsApiService.updateContracts(updatedContract);
-      }
-      setIsCreateDialogOpen(false);
-      toast({
-        title: formMode === 'create' ? "Contract Created" : "Contract Updated",
-        description: `Contract has been ${formMode === 'create' ? 'created' : 'updated'} successfully.`,
-      });
-      updateContractsPage();
-    } catch (error) {
-      toast({ title: "Technical Error!", variant: "destructive" });
+  let response;
+  if (formMode === "create") {
+    response = await contractsApiService.addContracts(contractData);
+  } else if (formMode === "edit" && selectedContract) {
+    const updatedContract = {
+      ...selectedContract,
+      ...contractData,
+      updated_at: new Date().toISOString(),
     }
-  };
+    response = await contractsApiService.updateContracts(updatedContract);
+  }
+
+  if (response?.success) {
+    setIsCreateDialogOpen(false);
+    updateContractsPage();
+    toast({
+      title: formMode === "create" ? "Contract Created" : "Contract Updated",
+      description: `Contract ${contractData.code || contractData.contract_number || ""} has been ${formMode === "create" ? "created" : "updated"} successfully.`,
+    });
+  }
+};
 
   const getStatusBadge = (status: string) => {
     const variants: Record<string, 'default' | 'secondary' | 'destructive'> = {
