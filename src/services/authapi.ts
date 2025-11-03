@@ -27,11 +27,7 @@ class AuthApiService {
                 }),
         });
 
-        localStorage.removeItem('access_token');
-        if (response.success) {
-            let token = response.data?.access_token;
-            localStorage.setItem('access_token', token);
-        }
+        this.updateTokens(response);
         return response;
     }
 
@@ -47,11 +43,7 @@ class AuthApiService {
                 }),
         });
 
-        localStorage.removeItem('access_token');
-        if (response.success) {
-            let token = response.data?.access_token;
-            localStorage.setItem('access_token', token);
-        }
+        this.updateTokens(response);
         return response;
     }
 
@@ -78,6 +70,21 @@ class AuthApiService {
 
     async logout() {
         localStorage.removeItem('access_token');
+    }
+
+    private updateTokens(response: any) {
+        // 🧹 Always start by clearing old tokens
+        localStorage.removeItem('access_token');
+        localStorage.removeItem('refresh_token');
+
+        // ✅ If new tokens exist, store them
+        const accessToken = response?.data?.access_token;
+        const refreshToken = response?.data?.refresh_token;
+
+        if (accessToken && refreshToken) {
+            localStorage.setItem('access_token', accessToken);
+            localStorage.setItem('refresh_token', refreshToken);
+        }
     }
 
 }
