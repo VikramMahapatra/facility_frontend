@@ -1,22 +1,15 @@
 import { zodResolver } from "@hookform/resolvers/zod";
-import { useForm } from "react-hook-form";
-import * as z from "zod";
+import { Controller, useForm } from "react-hook-form";
 import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
-import {
-  Form,
-  FormControl,
-  FormField,
-  FormItem,
-  FormLabel,
-  FormMessage,
-} from "@/components/ui/form";
 import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
 import {
   Dialog,
   DialogContent,
   DialogHeader,
   DialogTitle,
+  DialogFooter,
 } from "@/components/ui/dialog";
 import {
   Select,
@@ -27,7 +20,7 @@ import {
 } from "@/components/ui/select";
 import { Checkbox } from "@/components/ui/checkbox";
 import { userManagementApiService } from "@/services/access_control/usermanagementapi";
-import { toast } from "sonner";
+import { UserFormValues, userSchema } from "@/schemas/user.schema";
 
 // Define interfaces for API data
 interface User {
@@ -49,27 +42,42 @@ interface Role {
   description: string;
 }
 
-const userFormSchema = z.object({
-  full_name: z.string().min(2, "Name must be at least 2 characters").max(200),
-  email: z.string().email("Invalid email address").max(200),
-  phone: z.string().regex(/^\d{10}$/, "Phone must be 10 digits").optional(),
-  status: z.string(),
-  role_ids: z.array(z.string()).min(1, "At least one role must be selected"),
-});
-
-type UserFormValues = z.infer<typeof userFormSchema>;
-
 interface UserFormProps {
   user?: User;
   open: boolean;
   onOpenChange: (open: boolean) => void;
   onSubmit: (values: UserFormValues) => void;
+  mode?: "create" | "edit" | "view";
 }
 
-export function UserForm({ user, open, onOpenChange, onSubmit }: UserFormProps) {
+const emptyFormData: UserFormValues = {
+  full_name: "",
+  email: "",
+  phone: "",
+  status: "active",
+  role_ids: [],
+};
+
+export function UserForm({ user, open, onOpenChange, onSubmit, mode = "create" }: UserFormProps) {
+  const {
+    register,
+    handleSubmit,
+    control,
+    reset,
+    watch,
+    formState: { errors, isSubmitting, isValid },
+  } = useForm<UserFormValues>({
+    resolver: zodResolver(userSchema),
+    defaultValues: emptyFormData,
+    mode: "onChange",
+    reValidateMode: "onChange",
+  });
 
   const [statusList, setStatusList] = useState([]);
   const [roleList, setRoleList] = useState([]);
+
+  const selectedRoleIds = watch("role_ids") || [];
+  const isReadOnly = mode === "view";
 
   // Load lookup data when form opens 
   useEffect(() => {
@@ -78,6 +86,20 @@ export function UserForm({ user, open, onOpenChange, onSubmit }: UserFormProps) 
       loadRolesLookup();
     }
   }, [open]);
+
+  useEffect(() => {
+    if (user && mode !== "create") {
+      reset({
+        full_name: user.full_name || "",
+        email: user.email || "",
+        phone: user.phone || "",
+        status: user.status || "active",
+        role_ids: user.roles?.map(r => r.id) || [],
+      });
+    } else {
+      reset(emptyFormData);
+    }
+  }, [user, mode, reset]);
 
   const loadStatusLookup = async () => {
     const lookup = await userManagementApiService.getUserStatusOverview();
@@ -88,169 +110,167 @@ export function UserForm({ user, open, onOpenChange, onSubmit }: UserFormProps) 
     const lookup = await userManagementApiService.getUserRolesLookup();
     if (lookup?.success) setRoleList(lookup.data || []);
   };
-  const form = useForm<UserFormValues>({
-    resolver: zodResolver(userFormSchema),
-    defaultValues: {
-      full_name: user?.full_name || "",
-      email: user?.email || "",
-      phone: user?.phone || "",
-      status: user?.status || "active",
-      role_ids: user?.roles?.map(r => r.id) || [],
-    },
-  });
 
-  useEffect(() => {
-    form.reset({
-      full_name: user?.full_name || "",
-      email: user?.email || "",
-      phone: user?.phone || "",
-      status: user?.status || "active",
-      role_ids: user?.roles?.map(r => r.id) || [],
-    });
-  }, [user, form]);
-
-  const handleSubmit = (values: UserFormValues) => {
-    onSubmit(values);
+  const onSubmitForm = async (data: UserFormValues) => {
+    try {
+      await onSubmit(data);
+      reset(emptyFormData);
+      onOpenChange(false);
+    } catch (error) {
+      // Error handling is done by parent component
+    }
   };
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="sm:max-w-[600px]">
         <DialogHeader>
-          <DialogTitle>{user ? "Edit User" : "Create New User"}</DialogTitle>
+          <DialogTitle>
+            {mode === "create" && "Create New User"}
+            {mode === "edit" && "Edit User"}
+            {mode === "view" && "User Details"}
+          </DialogTitle>
         </DialogHeader>
-        <Form {...form}>
-          <form onSubmit={form.handleSubmit(handleSubmit)} className="space-y-4">
-            <FormField
-              control={form.control}
-              name="full_name"
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel>Full Name</FormLabel>
-                  <FormControl>
-                    <Input placeholder="John Doe" {...field} />
-                  </FormControl>
-                  <FormMessage />
-                </FormItem>
-              )}
+        <form onSubmit={handleSubmit(onSubmitForm)} className="space-y-4">
+          <div className="space-y-2">
+            <Label htmlFor="full_name">Full Name *</Label>
+            <Input
+              id="full_name"
+              {...register("full_name")}
+              placeholder="John Doe"
+              disabled={isReadOnly}
+              className={errors.full_name ? 'border-red-500' : ''}
             />
-            <div className="grid grid-cols-2 gap-4">
-              <FormField
-                control={form.control}
-                name="email"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Email</FormLabel>
-                    <FormControl>
-                      <Input type="email" placeholder="john@example.com" {...field} />
-                    </FormControl>
-                    <FormMessage />
-                  </FormItem>
-                )}
+            {errors.full_name && (
+              <p className="text-sm text-red-500">{errors.full_name.message}</p>
+            )}
+          </div>
+
+          <div className="grid grid-cols-2 gap-4">
+            <div className="space-y-2">
+              <Label htmlFor="email">Email *</Label>
+              <Input
+                id="email"
+                type="email"
+                {...register("email")}
+                placeholder="john@example.com"
+                disabled={isReadOnly}
+                className={errors.email ? 'border-red-500' : ''}
               />
-              <FormField
-                control={form.control}
-                name="phone"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Phone</FormLabel>
-                    <FormControl>
-                      <Input 
-                        placeholder="+1234567890" 
-                        maxLength={10}
-                        {...field}
-                      />
-                    </FormControl>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
+              {errors.email && (
+                <p className="text-sm text-red-500">{errors.email.message}</p>
+              )}
             </div>
-            <FormField
-              control={form.control}
-              name="status"
+            <Controller
+              name="phone"
+              control={control}
               render={({ field }) => (
-                <FormItem>
-                  <FormLabel>Status</FormLabel>
-                  <Select onValueChange={field.onChange} defaultValue={field.value}>
-                    <FormControl>
-                      <SelectTrigger>
-                        <SelectValue placeholder="Select status" />
-                      </SelectTrigger>
-                    </FormControl>
-                    <SelectContent>
-                      {statusList.map((status) => (
-                        <SelectItem key={status.id} value={status.id}>
-                          {status.name}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                  <FormMessage />
-                </FormItem>
+                <div className="space-y-2">
+                  <Label htmlFor="phone">Phone</Label>
+                  <Input
+                    id="phone"
+                    value={field.value || ""}
+                    onChange={(e) => {
+                      const value = e.target.value.replace(/\D/g, '').slice(0, 10);
+                      field.onChange(value);
+                    }}
+                    placeholder="9876543210"
+                    maxLength={10}
+                    disabled={isReadOnly}
+                    className={errors.phone ? 'border-red-500' : ''}
+                  />
+                  {errors.phone && (
+                    <p className="text-sm text-red-500">{errors.phone.message}</p>
+                  )}
+                </div>
               )}
             />
-            <FormField
-              control={form.control}
-              name="role_ids"
-              render={() => (
-                <FormItem>
-                  <FormLabel>Assign Roles</FormLabel>
-                  <div className="space-y-2 border rounded-md p-4 max-h-48 overflow-y-auto">
-                    {roleList.map((role) => (
-                      <FormField
-                        key={role.id}
-                        control={form.control}
-                        name="role_ids"
-                        render={({ field }) => (
-                          <FormItem className="flex items-center space-x-3 space-y-0">
-                            <FormControl>
-                              <Checkbox
-                                checked={field.value?.includes(role.id)}
-                                onCheckedChange={(checked) => {
-                                  const currentValues = field.value || [];
-                                  if (checked) {
-                                    field.onChange([...currentValues, role.id]);
-                                  } else {
-                                    field.onChange(
-                                      currentValues.filter((value) => value !== role.id)
-                                    );
-                                  }
-                                }}
-                              />
-                            </FormControl>
-                            <div className="space-y-0">
-                              <FormLabel className="font-medium cursor-pointer">
-                                {role.name}
-                              </FormLabel>
-                              <p className="text-xs text-muted-foreground">
-                                {role.description || "no description"}
-                              </p>
-                            </div>
-                          </FormItem>
-                        )}
-                      />
+          </div>
+
+          <Controller
+            name="status"
+            control={control}
+            render={({ field }) => (
+              <div className="space-y-2">
+                <Label htmlFor="status">Status *</Label>
+                <Select
+                  value={field.value || ""}
+                  onValueChange={field.onChange}
+                  disabled={isReadOnly}
+                >
+                  <SelectTrigger className={errors.status ? 'border-red-500' : ''}>
+                    <SelectValue placeholder="Select status" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {statusList.map((status) => (
+                      <SelectItem key={status.id} value={status.id}>
+                        {status.name}
+                      </SelectItem>
                     ))}
-                  </div>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
-            <div className="flex justify-end gap-3">
-              <Button type="button" variant="outline" onClick={() => {
-                form.reset();
-                loadStatusLookup();
-                loadRolesLookup();
-                onOpenChange(false);
-              }}>
-                Cancel
+                  </SelectContent>
+                </Select>
+                {errors.status && (
+                  <p className="text-sm text-red-500">{errors.status.message}</p>
+                )}
+              </div>
+            )}
+          />
+
+          <Controller
+            name="role_ids"
+            control={control}
+            render={({ field }) => (
+              <div className="space-y-2">
+                <Label>Assign Roles *</Label>
+                <div className="space-y-2 border rounded-md p-4 max-h-48 overflow-y-auto">
+                  {roleList.map((role) => {
+                    const isChecked = selectedRoleIds.includes(role.id);
+                    return (
+                      <div key={role.id} className="flex items-center space-x-3">
+                        <Checkbox
+                          checked={isChecked}
+                          onCheckedChange={(checked) => {
+                            const currentValues = field.value || [];
+                            if (checked) {
+                              field.onChange([...currentValues, role.id]);
+                            } else {
+                              field.onChange(
+                                currentValues.filter((value) => value !== role.id)
+                              );
+                            }
+                          }}
+                          disabled={isReadOnly}
+                        />
+                        <div className="space-y-0">
+                          <Label className="font-medium cursor-pointer">
+                            {role.name}
+                          </Label>
+                          <p className="text-xs text-muted-foreground">
+                            {role.description || "no description"}
+                          </p>
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>
+                {errors.role_ids && (
+                  <p className="text-sm text-red-500">{errors.role_ids.message}</p>
+                )}
+              </div>
+            )}
+          />
+
+          <DialogFooter>
+            <Button type="button" variant="outline" onClick={() => onOpenChange(false)} disabled={isSubmitting}>
+              {mode === "view" ? "Close" : "Cancel"}
+            </Button>
+            {mode !== "view" && (
+              <Button type="submit" disabled={!isValid || isSubmitting}>
+                {isSubmitting ? "Saving..." : mode === "create" ? "Create User" : "Update User"}
               </Button>
-              <Button type="submit">
-                {user ? "Update" : "Create"} User
-              </Button>
-            </div>
-          </form>
-        </Form>
+            )}
+          </DialogFooter>
+        </form>
       </DialogContent>
     </Dialog>
   );
