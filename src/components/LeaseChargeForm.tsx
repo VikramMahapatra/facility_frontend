@@ -6,6 +6,9 @@ import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { useToast } from "@/hooks/use-toast";
 import { leasesApiService } from "@/services/Leasing_Tenants/leasesapi";
+import { Controller, useForm } from "react-hook-form";
+import { zodResolver } from "@hookform/resolvers/zod";
+import { leaseChargeSchema, LeaseChargeFormValues } from "@/schemas/leaseCharge.schema";
 
 // ---- Types (kept minimal and local to the form, mirroring SpaceForm style) ----
 export type ChargeCode =
@@ -52,21 +55,52 @@ const emptyFormData: Partial<LeaseCharge> = {
 
 export function LeaseChargeForm({ charge, isOpen, onClose, onSave, mode }: LeaseChargeFormProps) {
   const { toast } = useToast();
-  const [formData, setFormData] = useState<Partial<LeaseCharge>>(emptyFormData);
+  const {
+    register,
+    handleSubmit,
+    control,
+    reset,
+    formState: { errors, isSubmitting, isValid },
+  } = useForm<LeaseChargeFormValues>({ 
+    resolver: zodResolver(leaseChargeSchema),
+    defaultValues: {
+      lease_id: "",
+      charge_code: "RENT",
+      period_start: "",
+      period_end: "",
+      amount: undefined as any,
+      tax_pct: 0 as any,
+    },
+    mode: "onChange",
+    reValidateMode: "onChange",
+  });
   const [leaseList, setLeaseList] = useState([]);
 
   const isReadOnly = mode === "view";
 
   // hydrate form data like SpaceForm
   useEffect(() => {
-    if (charge) {
-      setFormData({ ...emptyFormData, ...charge });
+    if (charge && mode !== "create") {
+      reset({
+        lease_id: (charge.lease_id as any) || "",
+        charge_code: (charge.charge_code as any) || "RENT",
+        period_start: charge.period_start || "",
+        period_end: charge.period_end || "",
+        amount: charge.amount as any,
+        tax_pct: (charge.tax_pct as any) ?? 0,
+      });
     } else {
-      setFormData(emptyFormData);
+      reset({
+        lease_id: "",
+        charge_code: "RENT",
+        period_start: "",
+        period_end: "",
+        amount: undefined as any,
+        tax_pct: 0 as any,
+      });
     }
     loadLeaseLookup();
-
-  }, [charge, isOpen]);
+  }, [charge, isOpen, mode, reset]);
 
   // ---- Lookups ----
   const loadLeaseLookup = async () => {
@@ -75,31 +109,22 @@ export function LeaseChargeForm({ charge, isOpen, onClose, onSave, mode }: Lease
   }
 
   // ---- Submit ----
-  const handleSubmit = (e: React.FormEvent) => {
-    e.preventDefault();
-
-    // validation (single toast per SpaceForm pattern)
-    if (!formData.lease_id || !formData.charge_code || !formData.period_start || !formData.period_end || formData.amount == null || Number.isNaN(Number(formData.amount))) {
-      toast({
-        title: "Validation Error",
-        description: "Lease, Charge Code, Dates and Amount are required",
-        variant: "destructive",
-      });
-      return;
-    }
-
+  const onSubmitForm = async (data: LeaseChargeFormValues) => {
     const payload: Partial<LeaseCharge> = {
       ...charge,
-      lease_id: formData.lease_id,
-      charge_code: formData.charge_code,
-      period_start: formData.period_start,
-      period_end: formData.period_end,
-      amount: Number(formData.amount),
-      tax_pct: Number(formData.tax_pct || 0),
+      lease_id: data.lease_id,
+      charge_code: data.charge_code,
+      period_start: data.period_start,
+      period_end: data.period_end,
+      amount: Number(data.amount),
+      tax_pct: Number(data.tax_pct || 0),
       updated_at: new Date().toISOString(),
     };
-
-    onSave(payload);
+    try {
+      onSave(payload);
+    } catch (error) {
+      toast({ title: "Failed to save lease charge", variant: "destructive" });
+    }
   };
 
   return (
@@ -113,49 +138,55 @@ export function LeaseChargeForm({ charge, isOpen, onClose, onSave, mode }: Lease
           </DialogTitle>
         </DialogHeader>
 
-        <form onSubmit={handleSubmit} className="space-y-4">
+        <form onSubmit={isSubmitting ? undefined : handleSubmit(onSubmitForm)} className="space-y-4">
           {/* Lease */}
           <div>
             <Label htmlFor="lease">Lease *</Label>
-            <Select
-              value={formData.lease_id || ""}
-              onValueChange={(v) => setFormData((p) => ({ ...p, lease_id: v }))}
-              disabled={isReadOnly}
-            >
-              <SelectTrigger>
-                <SelectValue placeholder="Select lease" />
-              </SelectTrigger>
-              <SelectContent>
-                {leaseList.map((lease: any) => (
-                  <SelectItem key={lease.id} value={lease.id}>
-                    {lease.name}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
+            <Controller
+              name="lease_id"
+              control={control}
+              render={({ field }) => (
+                <Select value={field.value} onValueChange={field.onChange} disabled={isReadOnly}>
+                  <SelectTrigger className={errors.lease_id ? 'border-red-500' : ''}>
+                    <SelectValue placeholder="Select lease" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {leaseList.map((lease: any) => (
+                      <SelectItem key={lease.id} value={lease.id}>
+                        {lease.name}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              )}
+            />
+            {errors.lease_id && (<p className="text-sm text-red-500">{errors.lease_id.message as any}</p>)}
           </div>
 
           {/* Charge Code */}
           <div>
             <Label htmlFor="charge_code">Charge Code *</Label>
-            <Select
-              value={(formData.charge_code as string) || ""}
-              onValueChange={(v) => setFormData((p) => ({ ...p, charge_code: v as ChargeCode }))}
-              disabled={isReadOnly}
-            >
-              <SelectTrigger>
-                <SelectValue placeholder="Select type" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="RENT">RENT</SelectItem>
-                <SelectItem value="CAM">CAM</SelectItem>
-                <SelectItem value="ELEC">ELEC</SelectItem>
-                <SelectItem value="WATER">WATER</SelectItem>
-                <SelectItem value="PARK">PARK</SelectItem>
-                <SelectItem value="PENALTY">PENALTY</SelectItem>
-                <SelectItem value="MAINTENANCE">MAINTENANCE</SelectItem>
-              </SelectContent>
-            </Select>
+            <Controller
+              name="charge_code"
+              control={control}
+              render={({ field }) => (
+                <Select value={field.value} onValueChange={field.onChange} disabled={isReadOnly}>
+                  <SelectTrigger className={errors.charge_code ? 'border-red-500' : ''}>
+                    <SelectValue placeholder="Select type" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="RENT">RENT</SelectItem>
+                    <SelectItem value="CAM">CAM</SelectItem>
+                    <SelectItem value="ELEC">ELEC</SelectItem>
+                    <SelectItem value="WATER">WATER</SelectItem>
+                    <SelectItem value="PARK">PARK</SelectItem>
+                    <SelectItem value="PENALTY">PENALTY</SelectItem>
+                    <SelectItem value="MAINTENANCE">MAINTENANCE</SelectItem>
+                  </SelectContent>
+                </Select>
+              )}
+            />
+            {errors.charge_code && (<p className="text-sm text-red-500">{errors.charge_code.message as any}</p>)}
           </div>
 
           {/* Dates */}
@@ -165,20 +196,22 @@ export function LeaseChargeForm({ charge, isOpen, onClose, onSave, mode }: Lease
               <Input
                 id="period_start"
                 type="date"
-                value={formData.period_start || ""}
-                onChange={(e) => setFormData((p) => ({ ...p, period_start: e.target.value }))}
+                {...register("period_start")}
                 disabled={isReadOnly}
+                className={errors.period_start ? 'border-red-500' : ''}
               />
+              {errors.period_start && (<p className="text-sm text-red-500">{errors.period_start.message as any}</p>)}
             </div>
             <div>
               <Label htmlFor="period_end">Period End *</Label>
               <Input
                 id="period_end"
                 type="date"
-                value={formData.period_end || ""}
-                onChange={(e) => setFormData((p) => ({ ...p, period_end: e.target.value }))}
+                {...register("period_end")}
                 disabled={isReadOnly}
+                className={errors.period_end ? 'border-red-500' : ''}
               />
+              {errors.period_end && (<p className="text-sm text-red-500">{errors.period_end.message as any}</p>)}
             </div>
           </div>
 
@@ -189,29 +222,33 @@ export function LeaseChargeForm({ charge, isOpen, onClose, onSave, mode }: Lease
               <Input
                 id="amount"
                 type="number"
-                value={formData.amount ?? ""}
-                onChange={(e) => setFormData((p) => ({ ...p, amount: Number(e.target.value) }))}
+                {...register("amount", { setValueAs: (v) => v === '' ? undefined : Number(v) })}
                 disabled={isReadOnly}
+                className={errors.amount ? 'border-red-500' : ''}
+                min="0"
               />
+              {errors.amount && (<p className="text-sm text-red-500">{errors.amount.message as any}</p>)}
             </div>
             <div>
               <Label htmlFor="tax_pct">Tax %</Label>
               <Input
                 id="tax_pct"
                 type="number"
-                value={formData.tax_pct ?? 0}
-                onChange={(e) => setFormData((p) => ({ ...p, tax_pct: Number(e.target.value) }))}
+                {...register("tax_pct", { setValueAs: (v) => v === '' ? undefined : Number(v) })}
                 disabled={isReadOnly}
+                className={errors.tax_pct ? 'border-red-500' : ''}
+                min="0"
               />
+              {errors.tax_pct && (<p className="text-sm text-red-500">{errors.tax_pct.message as any}</p>)}
             </div>
           </div>
 
           <DialogFooter>
-            <Button type="button" variant="outline" onClick={onClose}>
+            <Button type="button" variant="outline" onClick={onClose} disabled={isSubmitting}>
               {mode === "view" ? "Close" : "Cancel"}
             </Button>
             {mode !== "view" && (
-              <Button type="submit">{mode === "create" ? "Create Charge" : "Update Charge"}</Button>
+              <Button type="submit" disabled={!isValid || isSubmitting}>{mode === "create" ? "Create Charge" : "Update Charge"}</Button>
             )}
           </DialogFooter>
         </form>

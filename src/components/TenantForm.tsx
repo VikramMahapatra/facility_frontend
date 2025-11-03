@@ -18,6 +18,9 @@ import {
   DialogFooter,
 } from "@/components/ui/dialog";
 import { useToast } from "@/hooks/use-toast";
+import { Controller, useForm } from "react-hook-form";
+import { zodResolver } from "@hookform/resolvers/zod";
+import { tenantSchema, TenantFormValues } from "@/schemas/tenant.schema";
 import { siteApiService } from "@/services/spaces_sites/sitesapi";
 import { spacesApiService } from "@/services/spaces_sites/spacesapi";
 import { buildingApiService } from "@/services/spaces_sites/buildingsapi";
@@ -65,7 +68,19 @@ export function TenantForm({
   mode,
 }: TenantFormProps) {
   const { toast } = useToast();
-  const [formData, setFormData] = useState<Partial<Tenant>>(emptyFormData);
+  const {
+    register,
+    handleSubmit,
+    control,
+    reset,
+    watch,
+    formState: { errors, isSubmitting, isValid },
+  } = useForm<TenantFormValues>({
+    resolver: zodResolver(tenantSchema),
+    defaultValues: emptyFormData as any,
+    mode: "onChange",
+    reValidateMode: "onChange",
+  });
   const [siteList, setSiteList] = useState([]);
   const [buildingList, setBuildingList] = useState([]);
   const [spaceList, setSpaceList] = useState([]);
@@ -73,44 +88,72 @@ export function TenantForm({
   const [typeList, setTypeList] = useState([]);
 
   useEffect(() => {
-    if (tenant) {
-      setFormData(tenant);
+    if (tenant && mode !== "create") {
+      reset({
+        name: tenant.name || "",
+        email: tenant.email || "",
+        phone: tenant.phone || "",
+        tenant_type: tenant.tenant_type || "individual",
+        status: tenant.status || "active",
+        site_id: tenant.site_id || "",
+        building_id: tenant.building_id || (tenant as any).building_id || "",
+        space_id: tenant.space_id || "",
+        type: tenant.type || "",
+        legal_name: tenant.legal_name || "",
+        contact_info: tenant.contact_info ? {
+          name: tenant.contact_info.name || "",
+          email: tenant.contact_info.email || "",
+          phone: tenant.contact_info.phone || "",
+          address: tenant.contact_info.address ? {
+            line1: tenant.contact_info.address.line1 || "",
+            line2: tenant.contact_info.address.line2 || "",
+            city: tenant.contact_info.address.city || "",
+            state: tenant.contact_info.address.state || "",
+            pincode: tenant.contact_info.address.pincode || "",
+          } : undefined,
+        } : undefined,
+      } as any);
     } else {
-      setFormData(emptyFormData);
+      reset(emptyFormData as any);
     }
     loadSiteLookup();
     loadStatusLookup();
     loadTypeLookup();
-  }, [tenant]);
+  }, [tenant, mode, reset]);
+
+  const selectedSiteId = watch("site_id");
+  const selectedBuildingId = watch("building_id");
+  const selectedTenantType = watch("tenant_type");
 
   useEffect(() => {
-    loadBuildingLookup();
-  }, [formData.site_id]);
+    if (selectedSiteId) {
+      loadBuildingLookup(selectedSiteId);
+    } else {
+      setBuildingList([]);
+      setSpaceList([]);
+    }
+  }, [selectedSiteId]);
 
   useEffect(() => {
-    loadSpaceLookup();
-  }, [formData.site_id, formData.building_id]);
+    if (selectedSiteId && selectedBuildingId) {
+      loadSpaceLookup(selectedSiteId, selectedBuildingId);
+    } else {
+      setSpaceList([]);
+    }
+  }, [selectedSiteId, selectedBuildingId]);
 
   const loadSiteLookup = async () => {
     const lookup = await siteApiService.getSiteLookup();
     if (lookup.success) setSiteList(lookup.data || []);
   };
 
-  const loadBuildingLookup = async () => {
-    if (!formData.site_id) {
-      setBuildingList([]);
-      return;
-    }
-    const lookup = await buildingApiService.getBuildingLookup(formData.site_id);
+  const loadBuildingLookup = async (siteId: string) => {
+    const lookup = await buildingApiService.getBuildingLookup(siteId);
     if (lookup.success) setBuildingList(lookup.data || []);
   };
 
-  const loadSpaceLookup = async () => {
-    if (!formData.building_id) {
-      setSpaceList([]);
-      return;
-    }
-    const lookup = await spacesApiService.getSpaceLookup(formData.site_id, formData.building_id);
+  const loadSpaceLookup = async (siteId: string, buildingId: string) => {
+    const lookup = await spacesApiService.getSpaceLookup(siteId, buildingId);
     if (lookup.success) setSpaceList(lookup.data || []);
   };
 
@@ -124,59 +167,39 @@ export function TenantForm({
     if (lookup.success) setTypeList(lookup.data || []);
   };
 
-  const handleSubmit = (e: React.FormEvent) => {
-    e.preventDefault();
-
-    if (!formData.name || !formData.email || !formData.phone || !formData.site_id) {
-      toast({
-        title: "Validation Error",
-        description: "Name, Email, Phone, and Site are required fields",
-        variant: "destructive",
-      });
-      return;
-    }
-
-    let contactInfo = formData.contact_info;
-    if (contactInfo) {
-      const { name, email, phone, address } = contactInfo;
-
-      contactInfo = {
-        name: name?.trim() || undefined,
-        email: email?.trim() || undefined,
-        phone: phone?.trim() || undefined,
-        address: {
-          line1: address?.line1?.trim() || "",
-          line2: address?.line2?.trim() || "",
-          city: address?.city?.trim() || "",
-          state: address?.state?.trim() || "",
-          pincode: address?.pincode?.trim() || "",
-        }
-      };
-
-      // if everything empty, drop contact_info
-      if (!contactInfo.name && !contactInfo.email && !contactInfo.phone && !contactInfo.address) {
-        contactInfo = undefined;
-      }
-    }
-
-    const tenantData: any = {
-      ...(tenant?.id && { id: tenant.id }), 
-      name: formData.name?.trim(),
-      email: formData.email?.trim(),
-      phone: formData.phone?.trim(),
-      tenant_type: formData.tenant_type,
-      status: formData.status,
-      site_id: formData.site_id,
-      space_id: formData.space_id || undefined,
-      building_block_id: formData.building_id || undefined, 
-      contact_info: contactInfo,
-      ...(formData.tenant_type === "commercial" && {
-        type: formData.type || undefined,
-        legal_name: formData.legal_name?.trim() || undefined,
+  const onSubmitForm = async (data: TenantFormValues) => {
+    const payload: Partial<Tenant> = {
+      ...(tenant?.id && { id: tenant.id }),
+      name: data.name.trim(),
+      email: data.email.trim(),
+      phone: data.phone.trim(),
+      tenant_type: data.tenant_type,
+      status: data.status,
+      site_id: data.site_id,
+      space_id: data.space_id || undefined,
+      building_block_id: (data as any).building_id || undefined,
+      contact_info: data.contact_info ? {
+        name: data.contact_info.name || undefined,
+        email: data.contact_info.email || undefined,
+        phone: data.contact_info.phone || undefined,
+        address: data.contact_info.address ? {
+          line1: data.contact_info.address.line1 || "",
+          line2: data.contact_info.address.line2 || "",
+          city: data.contact_info.address.city || "",
+          state: data.contact_info.address.state || "",
+          pincode: data.contact_info.address.pincode || "",
+        } : undefined,
+      } : undefined,
+      ...(data.tenant_type === "commercial" && {
+        type: data.type || undefined,
+        legal_name: data.legal_name?.trim() || undefined,
       }),
     };
-
-    onSave(tenantData);
+    try {
+      onSave(payload);
+    } catch (error) {
+      toast({ title: "Failed to save tenant", variant: "destructive" });
+    }
   };
 
 
@@ -193,85 +216,85 @@ export function TenantForm({
           </DialogTitle>
         </DialogHeader>
 
-        <form onSubmit={handleSubmit} className="space-y-4">
+        <form onSubmit={isSubmitting ? undefined : handleSubmit(onSubmitForm)} className="space-y-4">
           <div className="grid grid-cols-2 gap-4">
             <div>
               <Label htmlFor="name">Name *</Label>
               <Input
                 id="name"
-                value={formData.name}
-                onChange={(e) =>
-                  setFormData({ ...formData, name: e.target.value })
-                }
+                {...register("name")}
                 placeholder="e.g., John Smith"
                 disabled={isReadOnly}
+                className={errors.name ? 'border-red-500' : ''}
               />
+              {errors.name && (<p className="text-sm text-red-500">{errors.name.message as any}</p>)}
             </div>
             <div>
               <Label htmlFor="site">Site *</Label>
-              <Select
-                value={formData.site_id}
-                onValueChange={(value) =>
-                  setFormData({ ...formData, site_id: value, building_id: "", space_id: "" })
-                }
-                disabled={isReadOnly}
-              >
-                <SelectTrigger>
-                  <SelectValue placeholder="Select site" />
-                </SelectTrigger>
-                <SelectContent>
-                  {siteList.map((site) => (
-                    <SelectItem key={site.id} value={site.id}>
-                      {site.name}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
+              <Controller
+                name="site_id"
+                control={control}
+                render={({ field }) => (
+                  <Select value={field.value} onValueChange={field.onChange} disabled={isReadOnly}>
+                    <SelectTrigger className={errors.site_id ? 'border-red-500' : ''}>
+                      <SelectValue placeholder="Select site" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {siteList.map((site) => (
+                        <SelectItem key={site.id} value={site.id}>
+                          {site.name}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                )}
+              />
+              {errors.site_id && (<p className="text-sm text-red-500">{errors.site_id.message as any}</p>)}
             </div>
           </div>
 
           <div className="grid grid-cols-2 gap-4">
             <div>
               <Label htmlFor="building">Building</Label>
-              <Select
-                value={formData.building_id || ""}
-                onValueChange={(value) =>
-                  setFormData({ ...formData, building_id: value, space_id: "" })
-                }
-                disabled={isReadOnly || !formData.site_id}
-              >
-                <SelectTrigger>
-                  <SelectValue placeholder={formData.site_id ? "Select building" : "Select site first"} />
-                </SelectTrigger>
-                <SelectContent>
-                  {buildingList.map((building) => (
-                    <SelectItem key={building.id} value={building.id}>
-                      {building.name}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
+              <Controller
+                name="building_id"
+                control={control}
+                render={({ field }) => (
+                  <Select value={field.value || ""} onValueChange={field.onChange} disabled={isReadOnly || !selectedSiteId}>
+                    <SelectTrigger>
+                      <SelectValue placeholder={selectedSiteId ? "Select building" : "Select site first"} />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {buildingList.map((building) => (
+                        <SelectItem key={building.id} value={building.id}>
+                          {building.name}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                )}
+              />
             </div>
             <div>
               <Label htmlFor="space">Space</Label>
-              <Select
-                value={formData.space_id || ""}
-                onValueChange={(value) =>
-                  setFormData({ ...formData, space_id: value })
-                }
-                disabled={isReadOnly || !formData.building_id}
-              >
-                <SelectTrigger>
-                  <SelectValue placeholder={!formData.building_id ? "Select building first" : "Select space"} />
-                </SelectTrigger>
-                <SelectContent>
-                  {spaceList.map((space) => (
-                    <SelectItem key={space.id} value={space.id}>
-                      {space.name}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
+              <Controller
+                name="space_id"
+                control={control}
+                render={({ field }) => (
+                  <Select value={field.value || ""} onValueChange={field.onChange} disabled={isReadOnly || !selectedBuildingId}>
+                    <SelectTrigger>
+                      <SelectValue placeholder={!selectedBuildingId ? "Select building first" : "Select space"} />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {spaceList.map((space) => (
+                        <SelectItem key={space.id} value={space.id}>
+                          {space.name}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                )}
+              />
             </div>
           </div>
 
@@ -281,112 +304,108 @@ export function TenantForm({
               <Input
                 id="email"
                 type="email"
-                value={formData.email}
-                onChange={(e) =>
-                  setFormData({ ...formData, email: e.target.value })
-                }
+                {...register("email")}
                 placeholder="e.g., john@example.com"
                 disabled={isReadOnly}
+                className={errors.email ? 'border-red-500' : ''}
               />
+              {errors.email && (<p className="text-sm text-red-500">{errors.email.message as any}</p>)}
             </div>
             <div>
               <Label htmlFor="phone">Phone *</Label>
               <Input
                 id="phone"
                 type="tel"
-                value={formData.phone}
-                onChange={(e) =>
-                  setFormData({ ...formData, phone: e.target.value })
-                }
+                {...register("phone")}
                 placeholder="e.g., +91-9876543210"
                 disabled={isReadOnly}
+                className={errors.phone ? 'border-red-500' : ''}
               />
+              {errors.phone && (<p className="text-sm text-red-500">{errors.phone.message as any}</p>)}
             </div>
           </div>
 
           <div className="grid grid-cols-2 gap-4">
             <div>
               <Label htmlFor="tenant_type">Tenant Type</Label>
-              <Select
-                value={formData.tenant_type}
-                onValueChange={(value) =>
-                  setFormData({ ...formData, tenant_type: value as "individual" | "commercial" })
-                }
-                disabled={isReadOnly}
-              >
-                <SelectTrigger>
-                  <SelectValue placeholder="Select tenant type" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="individual">Individual</SelectItem>
-                  <SelectItem value="commercial">Commercial</SelectItem>
-                </SelectContent>
-              </Select>
+              <Controller
+                name="tenant_type"
+                control={control}
+                render={({ field }) => (
+                  <Select value={field.value} onValueChange={field.onChange} disabled={isReadOnly}>
+                    <SelectTrigger>
+                      <SelectValue placeholder="Select tenant type" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="individual">Individual</SelectItem>
+                      <SelectItem value="commercial">Commercial</SelectItem>
+                    </SelectContent>
+                  </Select>
+                )}
+              />
             </div>
             <div>
               <Label htmlFor="status">Status</Label>
-              <Select
-                value={formData.status}
-                onValueChange={(value) =>
-                  setFormData({ ...formData, status: value as "active" | "inactive" | "suspended" })
-                }
-                disabled={isReadOnly}
-              >
-                <SelectTrigger>
-                  <SelectValue placeholder="Select status" />
-                </SelectTrigger>
-                <SelectContent>
-                  {statusList.map((status) => (
-                    <SelectItem key={status.id} value={status.id}>
-                      {status.name}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
+              <Controller
+                name="status"
+                control={control}
+                render={({ field }) => (
+                  <Select value={field.value} onValueChange={field.onChange} disabled={isReadOnly}>
+                    <SelectTrigger>
+                      <SelectValue placeholder="Select status" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {statusList.map((status) => (
+                        <SelectItem key={status.id} value={status.id}>
+                          {status.name}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                )}
+              />
             </div>
           </div>
 
-          {formData.tenant_type === "commercial" && (
+          {selectedTenantType === "commercial" && (
             <div className="grid grid-cols-2 gap-4">
               <div>
                 <Label htmlFor="legal_name">Legal Name</Label>
                 <Input
                   id="legal_name"
-                  value={formData.legal_name || ""}
-                  onChange={(e) =>
-                    setFormData({ ...formData, legal_name: e.target.value })
-                  }
+                  {...register("legal_name")}
                   placeholder="e.g., ABC Company Ltd"
                   disabled={isReadOnly}
                 />
               </div>
               <div>
                 <Label htmlFor="type">Business Type</Label>
-                <Select
-                  value={formData.type || "none"}
-                  onValueChange={(value) =>
-                    setFormData({
-                      ...formData,
-                      type: value === "none" ? "" : value,
-                    })
-                  }
-                  disabled={isReadOnly}
-                >
-                  <SelectTrigger>
-                    <SelectValue placeholder="Select business type (optional)" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="none">No Type</SelectItem>
-                    <SelectItem value="merchant">Merchant</SelectItem>
-                    <SelectItem value="brand">Brand</SelectItem>
-                    <SelectItem value="kiosk">Kiosk</SelectItem>
-                  </SelectContent>
-                </Select>
+                <Controller
+                  name="type"
+                  control={control}
+                  render={({ field }) => (
+                    <Select
+                      value={field.value || "none"}
+                      onValueChange={(v) => field.onChange(v === "none" ? "" : v)}
+                      disabled={isReadOnly}
+                    >
+                      <SelectTrigger>
+                        <SelectValue placeholder="Select business type (optional)" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="none">No Type</SelectItem>
+                        <SelectItem value="merchant">Merchant</SelectItem>
+                        <SelectItem value="brand">Brand</SelectItem>
+                        <SelectItem value="kiosk">Kiosk</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  )}
+                />
               </div>
             </div>
           )}
 
-          {formData.tenant_type === "commercial" && (
+          {selectedTenantType === "commercial" && (
             <div>
               <Label htmlFor="contact_info">Business Contact Information</Label>
               <div className="space-y-3 p-3 border rounded-md">
@@ -395,16 +414,7 @@ export function TenantForm({
                     <Label htmlFor="contact_name">Contact Name</Label>
                     <Input
                       id="contact_name"
-                      value={formData.contact_info?.name || ""}
-                      onChange={(e) =>
-                        setFormData({
-                          ...formData,
-                          contact_info: {
-                            ...formData.contact_info,
-                            name: e.target.value,
-                          },
-                        })
-                      }
+                      {...register("contact_info.name")}
                       placeholder="e.g., Jane Doe"
                       disabled={isReadOnly}
                     />
@@ -414,16 +424,7 @@ export function TenantForm({
                     <Input
                       id="contact_email"
                       type="email"
-                      value={formData.contact_info?.email || ""}
-                      onChange={(e) =>
-                        setFormData({
-                          ...formData,
-                          contact_info: {
-                            ...formData.contact_info,
-                            email: e.target.value,
-                          },
-                        })
-                      }
+                      {...register("contact_info.email")}
                       placeholder="e.g., jane@company.com"
                       disabled={isReadOnly}
                     />
@@ -434,16 +435,7 @@ export function TenantForm({
                   <Input
                     id="contact_phone"
                     type="tel"
-                    value={formData.contact_info?.phone || ""}
-                    onChange={(e) =>
-                      setFormData({
-                        ...formData,
-                        contact_info: {
-                          ...formData.contact_info,
-                          phone: e.target.value,
-                        },
-                      })
-                    }
+                    {...register("contact_info.phone")}
                     placeholder="e.g., +91-9876543210"
                     disabled={isReadOnly}
                   />
@@ -458,19 +450,7 @@ export function TenantForm({
                 <div>
                   <Label>Line 1</Label>
                   <Input
-                    value={formData.contact_info?.address?.line1 || ""}
-                    onChange={(e) =>
-                      setFormData({
-                        ...formData,
-                        contact_info: {
-                          ...formData.contact_info,
-                          address: {
-                            ...formData.contact_info.address,
-                            line1: e.target.value,
-                          },
-                        },
-                      })
-                    }
+                    {...register("contact_info.address.line1")}
                     disabled={isReadOnly}
                   />
                 </div>
@@ -478,19 +458,7 @@ export function TenantForm({
                 <div>
                   <Label>City</Label>
                   <Input
-                    value={formData.contact_info?.address?.city || ""}
-                    onChange={(e) =>
-                      setFormData({
-                        ...formData,
-                        contact_info: {
-                          ...formData.contact_info,
-                          address: {
-                            ...formData.contact_info.address,
-                            city: e.target.value,
-                          },
-                        },
-                      })
-                    }
+                    {...register("contact_info.address.city")}
                     disabled={isReadOnly}
                   />
                 </div>
@@ -499,40 +467,31 @@ export function TenantForm({
                 <div>
                   <Label>State</Label>
                   <Input
-                    value={formData.contact_info?.address?.state || ""}
-                    onChange={(e) =>
-                      setFormData({
-                        ...formData,
-                        contact_info: {
-                          ...formData.contact_info,
-                          address: {
-                            ...formData.contact_info.address,
-                            state: e.target.value,
-                          },
-                        },
-                      })
-                    }
+                    {...register("contact_info.address.state")}
                     disabled={isReadOnly}
                   />
                 </div>
                 <div>
                   <Label>Pincode</Label>
-                  <Input
-                    value={formData.contact_info?.address?.pincode || ""}
-                    onChange={(e) =>
-                      setFormData({
-                        ...formData,
-                        contact_info: {
-                          ...(formData.contact_info),
-                          address: {
-                            ...formData.contact_info.address,
-                            pincode: e.target.value,
-                          },
-                        },
-                      })
-                    }
-                    disabled={isReadOnly}
+                  <Controller
+                    name="contact_info.address.pincode"
+                    control={control}
+                    render={({ field }) => (
+                      <Input
+                        {...field}
+                        onChange={(e) => {
+                          const numeric = e.target.value.replace(/\D/g, "");
+                          field.onChange(numeric);
+                        }}
+                        disabled={isReadOnly}
+                        className={errors.contact_info?.address?.pincode ? 'border-red-500' : ''}
+                        placeholder="Numbers only"
+                      />
+                    )}
                   />
+                  {errors.contact_info?.address?.pincode && (
+                    <p className="text-sm text-red-500">{errors.contact_info?.address?.pincode?.message as any}</p>
+                  )}
                 </div>
               </div>
             </div>
@@ -540,14 +499,11 @@ export function TenantForm({
 
 
           <DialogFooter>
-            <Button type="button" variant="outline" onClick={() => {
-              setFormData(emptyFormData);
-              onClose();
-            }}>
+            <Button type="button" variant="outline" onClick={onClose} disabled={isSubmitting}>
               {mode === "view" ? "Close" : "Cancel"}
             </Button>
             {mode !== "view" && (
-              <Button type="submit">
+              <Button type="submit" disabled={!isValid || isSubmitting}>
                 {mode === "create" ? "Create Tenant" : "Update Tenant"}
               </Button>
             )}

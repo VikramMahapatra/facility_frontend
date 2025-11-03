@@ -202,97 +202,97 @@ export default function Analytics() {
   
   const loadAdvanceAnalytics = async () => {
     const advanceObj = await analyticsApiService.getAdvanceAnalytics();
-    setAdvanceAnalytics(advanceObj);
+    if (advanceObj.success) setAdvanceAnalytics(advanceObj.data || []);
   };
   
   const loadRevenueAnalytics = async () => {
     const revenueObj = await analyticsApiService.getRevenueAnalytics();
-    setRevenueAnalytics(revenueObj);
+    if (revenueObj.success) setRevenueAnalytics(revenueObj.data || null);
   };
 
   const loadSiteProfitability = async () => {
     const siteProfitObj = await analyticsApiService.getSiteProfitability();
-    setSiteProfitability(siteProfitObj);
+    if (siteProfitObj.success) setSiteProfitability(siteProfitObj.data || []);
   };
 
   const loadCollectionPerformance = async () => {
     const collectionObj = await analyticsApiService.getCollectionPerformance();
-    setCollectionPerformance(collectionObj);
+    if (collectionObj.success) setCollectionPerformance(collectionObj.data);
   };
 
   const loadOccupancyTrends = async () => {
     const occupancyObj = await analyticsApiService.getOccupancyTrends();
-    setOccupancyTrends(occupancyObj);
+    if (occupancyObj.success) setOccupancyTrends(occupancyObj.data);
   };
 
   const loadSpaceTypePerformance = async () => {
     const spaceTypeObj = await analyticsApiService.getSpaceTypePerformance();
-    setSpaceTypePerformance(spaceTypeObj);
+    if (spaceTypeObj.success) setSpaceTypePerformance(spaceTypeObj.data || []);
   };
 
   const loadPortfolioDistribution = async () => {
     const portfolioObj = await analyticsApiService.getPortfolioDistribution();
-    setPortfolioDistribution(portfolioObj);
+    if (portfolioObj.success) setPortfolioDistribution(portfolioObj.data || []);
   };
 
   const loadYoyPerformance = async () => {
     const yoyObj = await analyticsApiService.getYoyPerformance();
-    setYoyPerformance(yoyObj);
+    if (yoyObj.success) setYoyPerformance(yoyObj.data || null );
   };
 
   const loadSiteComparison = async () => {
     const siteCompObj = await analyticsApiService.getSiteComparison();
-    setSiteComparison(siteCompObj);
+    if (siteCompObj.success) setSiteComparison(siteCompObj.data || []);
   };
 
   const loadMaintenanceEfficiency = async () => {
     const maintenanceObj = await analyticsApiService.getMaintenanceEfficiency();
-    setMaintenanceEfficiency(maintenanceObj);
+    if (maintenanceObj.success) setMaintenanceEfficiency(maintenanceObj.data || []);
   };
 
   const loadEnergyConsumption = async () => {
     const energyObj = await analyticsApiService.getEnergyConsumption();
-    setEnergyConsumption(energyObj);
+    if (energyObj.success) setEnergyConsumption(energyObj.data || []);
   };
 
   const loadDailyVisitorTrends = async () => {
     const visitorObj = await analyticsApiService.getDailyVisitorTrends();
-    setDailyVisitorTrends(visitorObj);
+    if (visitorObj.success) setDailyVisitorTrends(visitorObj.data || []);
   };
 
   const loadHourlyAccessPattern = async () => {
     const accessObj = await analyticsApiService.getHourlyAccessPattern();
-    setHourlyAccessPattern(accessObj);
+    if (accessObj.success) setHourlyAccessPattern(accessObj.data || []);
   };
 
   const loadTenantSatisfaction = async () => {
     const satisfactionObj = await analyticsApiService.getTenantSatisfaction();
-    setTenantSatisfaction(satisfactionObj);
+    if (satisfactionObj.success) setTenantSatisfaction(satisfactionObj.data || []);
   };
 
   const loadTenantRetention = async () => {
     const retentionObj = await analyticsApiService.getTenantRetention();
-    setTenantRetention(retentionObj);
+    if (retentionObj.success) setTenantRetention(retentionObj.data || []);
   };
 
   const loadPortfolioHeatmap = async () => {
     const heatmapObj = await analyticsApiService.getPortfolioHeatmap();
-    setPortfolioHeatmap(heatmapObj);
+    if (heatmapObj.success) setPortfolioHeatmap(heatmapObj.data || []);
   };
 
   const loadPerformanceSummary = async () => {
     const summaryObj = await analyticsApiService.getPerformanceSummary();
-    setPerformanceSummary(summaryObj);
+    if (summaryObj.success) setPerformanceSummary(summaryObj.data || null);
   };
   
   const loadMonthlyData = async () => {
     const monthlyObj = await analyticsApiService.getByMonth();
-    setMonthlyData(monthlyObj);
+    if (monthlyObj.success) setMonthlyData(monthlyObj.data || []);
   };
   
   const loadSiteOptions = async () => {
     const siteObj = await analyticsApiService.getSitePropertyLookup();
-    setSiteOptions(siteObj);
+    if (siteObj.success) setSiteOptions(siteObj.data || []);
   };
   
   const handleRefresh = async () => {
