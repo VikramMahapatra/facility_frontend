@@ -6,14 +6,15 @@ import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Dialog, DialogContent, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
-import { Command, CommandEmpty, CommandGroup, CommandInput, CommandItem, CommandList } from "@/components/ui/command";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Badge } from "@/components/ui/badge";
-import { useToast } from "@/hooks/use-toast";
+import { Controller, useForm } from "react-hook-form";
+import { zodResolver } from "@hookform/resolvers/zod";
+import { VendorFormValues, vendorSchema } from "@/schemas/vendor.schema";
+import { toast } from "sonner";
 import { vendorsApiService } from "@/services/pocurments/vendorsapi";
 import { organisationApiService } from "@/services/spaces_sites/organisationapi";
-import { Check, ChevronsUpDown, X } from "lucide-react";
-import { cn } from "@/lib/utils";
+import { ChevronsUpDown, X } from "lucide-react";
 
 interface VendorFormProps {
   vendor?: any;
@@ -23,11 +24,11 @@ interface VendorFormProps {
   mode: "create" | "edit" | "view";
 }
 
-const emptyFormData = {
+const emptyFormData: VendorFormValues = {
   name: "",
   gst_vat_id: "",
-  status: "active",
-  categories: [] as string[],
+  status: "",
+  categories: [],
   contact: {
     name: "",
     email: "",
@@ -37,25 +38,48 @@ const emptyFormData = {
 };
 
 export function VendorForm({ vendor, isOpen, onClose, onSave, mode }: VendorFormProps) {
-  const { toast } = useToast();
-  const [formData, setFormData] = useState<any>(emptyFormData);
+  const {
+    register,
+    handleSubmit,
+    control,
+    reset,
+    setValue,
+    getValues,
+    watch,
+    formState: { errors, isSubmitting, isValid },
+  } = useForm<VendorFormValues>({
+    resolver: zodResolver(vendorSchema),
+    defaultValues: emptyFormData,
+    mode: "onChange",
+    reValidateMode: "onChange",
+  });
+
   const [statusList, setStatusList] = useState<any[]>([]);
   const [categoriesList, setCategoriesList] = useState<any[]>([]);
   const [categoryPopoverOpen, setCategoryPopoverOpen] = useState(false);
 
+  const selectedCategories = watch("categories") || [];
+
   useEffect(() => {
-    if (vendor) {
-      setFormData({
-        ...emptyFormData,
-        ...vendor,
+    if (vendor && mode !== "create") {
+      reset({
+        name: vendor.name || "",
+        gst_vat_id: vendor.gst_vat_id || "",
+        status: vendor.status || "",
         categories: vendor.categories || [],
+        contact: vendor.contact || {
+          name: "",
+          email: "",
+          phone: "",
+          address: "",
+        },
       });
     } else {
-      setFormData(emptyFormData);
+      reset(emptyFormData);
     }
     loadStatusLookup();
     loadCategoriesLookup();
-  }, [vendor]);
+  }, [vendor, mode, reset]);
 
   const loadStatusLookup = async () => {
   const response = await vendorsApiService.getStatusLookup();
@@ -68,28 +92,19 @@ const loadCategoriesLookup = async () => {
 };
 
   const handleCategoryToggle = (categoryId: string) => {
-    const currentCategories = formData.categories || [];
+    const currentCategories = getValues("categories") || [];
     const isSelected = currentCategories.includes(categoryId);
     
     if (isSelected) {
-      setFormData({
-        ...formData,
-        categories: currentCategories.filter((id: string) => id !== categoryId)
-      });
+      setValue("categories", currentCategories.filter((id: string) => id !== categoryId));
     } else {
-      setFormData({
-        ...formData,
-        categories: [...currentCategories, categoryId]
-      });
+      setValue("categories", [...currentCategories, categoryId]);
     }
   };
 
   const handleCategoryRemove = (categoryId: string) => {
-    const currentCategories = formData.categories || [];
-    setFormData({
-      ...formData,
-      categories: currentCategories.filter((id: string) => id !== categoryId)
-    });
+    const currentCategories = getValues("categories") || [];
+    setValue("categories", currentCategories.filter((id: string) => id !== categoryId));
   };
 
   const getCategoryName = (categoryId: string) => {
@@ -97,24 +112,15 @@ const loadCategoriesLookup = async () => {
     return category?.name ?? category?.label ?? category ?? categoryId;
   };
 
-  const handleContactFieldChange = (field: string, value: any) => {
-    setFormData((prev) => ({ ...prev, contact: { ...prev.contact, [field]: value } }));
-  };
-
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!formData.name) {
-      toast({ title: "Validation Error", description: "Name is required", variant: "destructive" });
-      return;
-    }
+  const onSubmitForm = async (data: VendorFormValues) => {
     try {
       const orgData = await organisationApiService.getOrg();
       const payload: any = {
-        name: formData.name,
-        gst_vat_id: formData.gst_vat_id,
-        status: formData.status,
-        categories: formData.categories,
-        contact: formData.contact,
+        name: data.name,
+        gst_vat_id: data.gst_vat_id,
+        status: data.status,
+        categories: data.categories,
+        contact: data.contact,
         org_id: orgData?.data?.id,
       };
       
@@ -122,10 +128,12 @@ const loadCategoriesLookup = async () => {
         payload.id = vendor.id;
       }
       
-      console.log("Vendor payload:", payload);
-      onSave(payload);
+      await onSave(payload);
+      reset(emptyFormData);
+      onClose();
     } catch (error) {
-      toast({ title: "Error", description: "Failed to get organization data", variant: "destructive" });
+      reset(undefined, { keepErrors: true, keepValues: true });
+      toast("Failed to save vendor");
     }
   };
 
@@ -142,168 +150,216 @@ const loadCategoriesLookup = async () => {
           </DialogTitle>
         </DialogHeader>
 
-        <form onSubmit={handleSubmit} className="space-y-4">
+        <form onSubmit={isSubmitting ? undefined : handleSubmit(onSubmitForm)} className="space-y-4">
           {/* Vendor Details Section */}
           <div className="grid grid-cols-2 gap-4">
-            <div>
+            <div className="space-y-2">
               <Label htmlFor="name">Vendor Name *</Label>
-              <Input id="name" value={formData.name} onChange={(e) => setFormData({ ...formData, name: e.target.value })} disabled={isReadOnly} />
+              <Input
+                id="name"
+                {...register("name")}
+                disabled={isReadOnly}
+                className={errors.name ? 'border-red-500' : ''}
+              />
+              {errors.name && (
+                <p className="text-sm text-red-500">{errors.name.message}</p>
+              )}
             </div>
-            <div>
-              <Label htmlFor="gst">GST/VAT ID</Label>
-              <Input id="gst" value={formData.gst_vat_id} onChange={(e) => setFormData({ ...formData, gst_vat_id: e.target.value })} disabled={isReadOnly} />
+            <div className="space-y-2">
+              <Label htmlFor="gst_vat_id">GST/VAT ID</Label>
+              <Input
+                id="gst_vat_id"
+                {...register("gst_vat_id")}
+                disabled={isReadOnly}
+              />
             </div>
           </div>
 
           <div className="grid grid-cols-2 gap-4">
-            <div>
-              <Label>Status</Label>
-              <Select value={formData.status} onValueChange={(v) => setFormData({ ...formData, status: v })} disabled={isReadOnly}>
-                <SelectTrigger>
-                  <SelectValue placeholder="Select status" />
-                </SelectTrigger>
-                <SelectContent>
-                  {statusList.map((s: any) => (
-                    <SelectItem key={(s.id ?? s.value ?? s).toString()} value={(s.id ?? s.value ?? s).toString()}>
-                      {s.name ?? s.label ?? s}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </div>
-            <div>
-              <Label>Category</Label>
-              <Popover open={categoryPopoverOpen} onOpenChange={setCategoryPopoverOpen}>
-                <PopoverTrigger asChild>
-                  <Button
-                    variant="outline"
-                    role="combobox"
-                    aria-expanded={categoryPopoverOpen}
-                    className="w-full justify-between"
+            <Controller
+              name="status"
+              control={control}
+              render={({ field }) => (
+                <div className="space-y-2">
+                  <Label>Status</Label>
+                  <Select
+                    value={field.value || ""}
+                    onValueChange={field.onChange}
                     disabled={isReadOnly}
                   >
-                    {formData.categories.length > 0 ? (
-                      <div className="flex flex-wrap gap-1">
-                        {formData.categories.slice(0, 2).map((categoryId: string) => (
-                          <Badge key={categoryId} variant="secondary" className="text-xs">
-                            {getCategoryName(categoryId)}
-                          </Badge>
-                        ))}
-                        {formData.categories.length > 2 && (
-                          <Badge variant="secondary" className="text-xs">
-                            +{formData.categories.length - 2} more
-                          </Badge>
-                        )}
-                      </div>
-                    ) : (
-                      "Select categories..."
-                    )}
-                    <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
-                  </Button>
-                </PopoverTrigger>
-                <PopoverContent className="w-full p-0" align="start">
-                  <div className="max-h-96 overflow-y-auto">
-                    <div className="p-1">
-                      {categoriesList.map((c: any) => {
-                        const categoryId = (c.id ?? c.value ?? c).toString();
-                        const categoryName = c.name ?? c.label ?? c;
-                        const isSelected = formData.categories.includes(categoryId);
-                        
-                        return (
-                          <div
-                            key={categoryId}
-                            className="flex items-center space-x-2 px-2 py-1.5 hover:bg-accent hover:text-accent-foreground rounded-sm cursor-pointer"
-                            onClick={() => handleCategoryToggle(categoryId)}
-                          >
-                            <Checkbox
-                              checked={isSelected}
-                              onChange={() => handleCategoryToggle(categoryId)}
-                            />
-                            <span className="text-sm">{categoryName}</span>
-                          </div>
-                        );
-                      })}
-                    </div>
-                  </div>
-                </PopoverContent>
-              </Popover>
-              
-              {/* Selected Categories Display */}
-              {formData.categories.length > 0 && (
-                <div className="mt-2 flex flex-wrap gap-1">
-                  {formData.categories.map((categoryId: string) => (
-                    <Badge key={categoryId} variant="secondary" className="text-xs">
-                      {getCategoryName(categoryId)}
-                      {!isReadOnly && (
-                        <button
-                          type="button"
-                          onClick={() => handleCategoryRemove(categoryId)}
-                          className="ml-1 hover:bg-destructive hover:text-destructive-foreground rounded-full p-0.5"
-                        >
-                          <X className="h-3 w-3" />
-                        </button>
-                      )}
-                    </Badge>
-                  ))}
+                    <SelectTrigger className={errors.status ? 'border-red-500' : ''}>
+                      <SelectValue placeholder="Select status" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {statusList.map((s: any) => (
+                        <SelectItem key={(s.id ?? s.value ?? s).toString()} value={(s.id ?? s.value ?? s).toString()}>
+                          {s.name ?? s.label ?? s}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                  {errors.status && (
+                    <p className="text-sm text-red-500">{errors.status.message}</p>
+                  )}
                 </div>
               )}
-            </div>
+            />
+            <Controller
+              name="categories"
+              control={control}
+              render={({ field }) => (
+                <div className="space-y-2">
+                  <Label>Category</Label>
+                  <Popover open={categoryPopoverOpen} onOpenChange={setCategoryPopoverOpen}>
+                    <PopoverTrigger asChild>
+                      <Button
+                        variant="outline"
+                        role="combobox"
+                        aria-expanded={categoryPopoverOpen}
+                        className="w-full justify-between"
+                        disabled={isReadOnly}
+                      >
+                        {selectedCategories.length > 0 ? (
+                          <div className="flex flex-wrap gap-1">
+                            {selectedCategories.slice(0, 2).map((categoryId: string) => (
+                              <Badge key={categoryId} variant="secondary" className="text-xs">
+                                {getCategoryName(categoryId)}
+                              </Badge>
+                            ))}
+                            {selectedCategories.length > 2 && (
+                              <Badge variant="secondary" className="text-xs">
+                                +{selectedCategories.length - 2} more
+                              </Badge>
+                            )}
+                          </div>
+                        ) : (
+                          "Select categories..."
+                        )}
+                        <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
+                      </Button>
+                    </PopoverTrigger>
+                    <PopoverContent className="w-full p-0" align="start">
+                      <div className="max-h-96 overflow-y-auto">
+                        <div className="p-1">
+                          {categoriesList.map((c: any) => {
+                            const categoryId = (c.id ?? c.value ?? c).toString();
+                            const categoryName = c.name ?? c.label ?? c;
+                            const isSelected = selectedCategories.includes(categoryId);
+                            
+                            return (
+                              <div
+                                key={categoryId}
+                                className="flex items-center space-x-2 px-2 py-1.5 hover:bg-accent hover:text-accent-foreground rounded-sm cursor-pointer"
+                                onClick={() => handleCategoryToggle(categoryId)}
+                              >
+                                <Checkbox
+                                  checked={isSelected}
+                                  onChange={() => handleCategoryToggle(categoryId)}
+                                />
+                                <span className="text-sm">{categoryName}</span>
+                              </div>
+                            );
+                          })}
+                        </div>
+                      </div>
+                    </PopoverContent>
+                  </Popover>
+                  
+                  {/* Selected Categories Display */}
+                  {selectedCategories.length > 0 && (
+                    <div className="mt-2 flex flex-wrap gap-1">
+                      {selectedCategories.map((categoryId: string) => (
+                        <Badge key={categoryId} variant="secondary" className="text-xs">
+                          {getCategoryName(categoryId)}
+                          {!isReadOnly && (
+                            <button
+                              type="button"
+                              onClick={() => handleCategoryRemove(categoryId)}
+                              className="ml-1 hover:bg-destructive hover:text-destructive-foreground rounded-full p-0.5"
+                            >
+                              <X className="h-3 w-3" />
+                            </button>
+                          )}
+                        </Badge>
+                      ))}
+                    </div>
+                  )}
+                </div>
+              )}
+            />
           </div>
 
           {/* Contact Information Section */}
           <div className="border rounded-lg p-4 space-y-4">
             <h3 className="text-sm font-medium text-gray-700">Contact Info:</h3>
-            <div>
-              <Label htmlFor="contact_name">Contact Name</Label>
-              <Input 
-                id="contact_name" 
-                value={formData.contact?.name || ""} 
-                onChange={(e) => handleContactFieldChange("name", e.target.value)} 
-                disabled={isReadOnly} 
+            <div className="space-y-2">
+              <Label htmlFor="contact.name">Contact Name</Label>
+              <Input
+                id="contact.name"
+                {...register("contact.name")}
+                disabled={isReadOnly}
               />
             </div>
             <div className="grid grid-cols-2 gap-4">
-              <div>
-                <Label htmlFor="email">Email</Label>
-                <Input 
-                  id="email" 
-                  type="email" 
-                  value={formData.contact?.email || ""} 
-                  onChange={(e) => handleContactFieldChange("email", e.target.value)} 
-                  disabled={isReadOnly} 
+              <div className="space-y-2">
+                <Label htmlFor="contact.email">Email</Label>
+                <Input
+                  id="contact.email"
+                  type="email"
+                  {...register("contact.email")}
+                  disabled={isReadOnly}
+                  className={errors.contact?.email ? 'border-red-500' : ''}
                 />
+                {errors.contact?.email && (
+                  <p className="text-sm text-red-500">{errors.contact.email.message}</p>
+                )}
               </div>
-              <div>
-                <Label htmlFor="phone">Phone</Label>
-                <Input 
-                  id="phone" 
-                  value={formData.contact?.phone || ""} 
-                  onChange={(e) => handleContactFieldChange("phone", e.target.value)} 
-                  disabled={isReadOnly} 
-                />
-              </div>
+              <Controller
+                name="contact.phone"
+                control={control}
+                render={({ field }) => (
+                  <div className="space-y-2">
+                    <Label htmlFor="contact.phone">Phone</Label>
+                    <Input
+                      id="contact.phone"
+                      value={field.value || ""}
+                      onChange={(e) => {
+                        const value = e.target.value.replace(/\D/g, '').slice(0, 10);
+                        field.onChange(value);
+                      }}
+                      maxLength={10}
+                      disabled={isReadOnly}
+                      className={errors.contact?.phone ? 'border-red-500' : ''}
+                    />
+                    {errors.contact?.phone && (
+                      <p className="text-sm text-red-500">{errors.contact.phone.message}</p>
+                    )}
+                  </div>
+                )}
+              />
             </div>
-            <div>
-              <Label htmlFor="address">Address</Label>
-              <Textarea 
-                id="address" 
-                value={formData.contact?.address || ""} 
-                onChange={(e) => handleContactFieldChange("address", e.target.value)} 
-                disabled={isReadOnly} 
+            <div className="space-y-2">
+              <Label htmlFor="contact.address">Address</Label>
+              <Textarea
+                id="contact.address"
+                {...register("contact.address")}
+                disabled={isReadOnly}
               />
             </div>
           </div>
 
           <DialogFooter>
-            <Button type="button" variant="outline" onClick={onClose}>
+            <Button type="button" variant="outline" onClick={onClose} disabled={isSubmitting}>
               {mode === "view" ? "Close" : "Cancel"}
             </Button>
-            {mode !== "view" && <Button type="submit">{mode === "create" ? "Create Vendor" : "Update Vendor"}</Button>}
+            {mode !== "view" && (
+              <Button type="submit" disabled={!isValid || isSubmitting}>
+                {isSubmitting ? "Saving..." : mode === "create" ? "Create Vendor" : "Update Vendor"}
+              </Button>
+            )}
           </DialogFooter>
         </form>
       </DialogContent>
     </Dialog>
   );
 }
-
-
