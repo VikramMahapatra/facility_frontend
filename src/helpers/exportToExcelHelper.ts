@@ -1,15 +1,24 @@
 import * as XLSX from "xlsx";
-import { toast } from "@/hooks/use-toast";
 import { exportApiService } from "@/services/common/exportapi";
+import { toast } from "sonner";
 
 export const exportToExcel = async (type, params: any) => {
     try {
         const excelResponse = await exportApiService.getExcelFileData(type, params);
 
-        const ws = XLSX.utils.json_to_sheet(excelResponse.data);
-        const wb = XLSX.utils.book_new();
-        XLSX.utils.book_append_sheet(wb, ws, type);
-        XLSX.writeFile(wb, excelResponse.filename);
+        if (excelResponse.success) {
+            const excelData = excelResponse.data;
+            const ws = XLSX.utils.json_to_sheet(excelData.data);
+            const wb = XLSX.utils.book_new();
+            XLSX.utils.book_append_sheet(wb, ws, type);
+            XLSX.writeFile(wb, excelData.filename);
+
+            toast(`${excelData.filename} has been downloaded successfully.`);
+        }
+        else {
+            toast("Something went wrong while exporting the file.");
+        }
+
 
         // const blob = await response.blob();
         // // ✅ Get filename from headers, fallback to default
@@ -33,16 +42,8 @@ export const exportToExcel = async (type, params: any) => {
         // a.remove();
         // window.URL.revokeObjectURL(url);
 
-        toast({
-            title: "File Downloaded",
-            description: `${excelResponse.filename} has been downloaded successfully.`,
-        });
     } catch (error: any) {
         console.error("Error exporting file:", error);
-        toast({
-            title: "Export Error",
-            description: error.message || "Something went wrong while exporting the file.",
-            variant: "destructive",
-        });
+        toast("Something went wrong while exporting the file.");
     };
 }
