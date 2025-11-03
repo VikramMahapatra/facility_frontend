@@ -17,7 +17,10 @@ import {
   DialogTitle,
   DialogFooter,
 } from "@/components/ui/dialog";
-import { useToast } from "@/hooks/use-toast";
+import { Controller, useForm } from "react-hook-form";
+import { zodResolver } from "@hookform/resolvers/zod";
+import { WorkOrderFormValues, workorderSchema } from "@/schemas/workorder.schema";
+import { toast } from "sonner";
 import { siteApiService } from "@/services/spaces_sites/sitesapi";
 import { spacesApiService } from "@/services/spaces_sites/spacesapi";
 import { workOrderApiService } from "@/services/maintenance_assets/workorderapi";
@@ -40,14 +43,14 @@ interface WorkOrderFormProps {
   mode: "create" | "edit" | "view";
 }
 
-const emptyFormData = {
+const emptyFormData: WorkOrderFormValues = {
   site_id: "",
   space_id: "",
   title: "",
   description: "",
-  priority: "medium" as const,
-  status: "open" as const,
-  type: "corrective" as const,
+  priority: "medium",
+  status: "open",
+  type: "corrective",
   asset_id: null,
   vendor_id: "",
   due_at: null,
@@ -63,8 +66,21 @@ export function WorkOrderForm({
   onSave,
   mode,
 }: WorkOrderFormProps) {
-  const { toast } = useToast();
-  const [formData, setFormData] = useState<Partial<WorkOrder>>(emptyFormData);
+  const {
+    register,
+    handleSubmit,
+    control,
+    reset,
+    setValue,
+    watch,
+    formState: { errors, isSubmitting, isValid },
+  } = useForm<WorkOrderFormValues>({
+    resolver: zodResolver(workorderSchema),
+    defaultValues: emptyFormData,
+    mode: "onChange",
+    reValidateMode: "onChange",
+  });
+
   const [siteList, setSiteList] = useState([]);
   const [spaceList, setSpaceList] = useState([]);
   const [assetList, setAssetList] = useState([]);
@@ -73,41 +89,51 @@ export function WorkOrderForm({
   const [priorityList, setPriorityList] = useState([]);
   const [vendorList, setVendorList] = useState([]);
 
+  const selectedSiteId = watch("site_id");
+
   useEffect(() => {
-    if (workOrder) {
-      setFormData(workOrder);
+    if (workOrder && mode !== "create") {
+      reset({
+        title: workOrder.title || "",
+        site_id: workOrder.site_id || "",
+        space_id: workOrder.space_id || "",
+        asset_id: workOrder.asset_id || null,
+        vendor_id: workOrder.assigned_to || "",
+        request_id: workOrder.request_id || null,
+        priority: workOrder.priority || "medium",
+        status: workOrder.status || "open",
+        type: workOrder.type || "corrective",
+        description: workOrder.description || "",
+        due_at: workOrder.due_at ? workOrder.due_at.slice(0, 16) : null,
+        sla: workOrder.sla || { response_time: "" },
+      });
     } else {
-      setFormData(emptyFormData);
+      reset(emptyFormData);
     }
     loadSiteLookup();
-    loadSpaceLookup();
     loadAssetLookup();
     loadStatusLookup();
     loadServiceRequestLookup();
     loadPriorityLookup();
     loadVendorLookup();
-  }, [workOrder]);
+  }, [workOrder, mode, reset]);
 
   useEffect(() => {
-    loadSpaceLookup();
-  }, [formData.site_id]);
-
-  useEffect(() => {
-    loadAssetLookup();
-  }, [formData.asset_id]);
+    if (selectedSiteId) {
+      loadSpaceLookup(selectedSiteId);
+    } else {
+      setSpaceList([]);
+    }
+  }, [selectedSiteId]);
 
   const loadSiteLookup = async () => {
     const lookup = await siteApiService.getSiteLookup();
     if (lookup.success) setSiteList(lookup.data || []);
   };
 
-  const loadSpaceLookup = async () => {
-    if (!formData.site_id) {
-      setSpaceList([]);
-      return;
-    }
+  const loadSpaceLookup = async (siteId: string) => {
     try {
-      const spaces = await spacesApiService.getSpaceLookup(formData.site_id);
+      const spaces = await spacesApiService.getSpaceLookup(siteId);
       if (spaces.success) setSpaceList(spaces.data || []);
     } catch {
       setSpaceList([]);
@@ -149,50 +175,33 @@ export function WorkOrderForm({
     }
   };
 
-  const handleSLAFieldChange = (field: string, value: any) => {
-    setFormData((prev) => ({ ...prev, sla: { ...prev.sla, [field]: value } }));
-  };
-
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-
-    if (!formData.title || !formData.site_id) {
-      toast({
-        title: "Validation Error",
-        description: "Title and Site are required fields",
-        variant: "destructive",
-      });
-      return;
-    }
-
+  const onSubmitForm = async (data: WorkOrderFormValues) => {
     try {
       const orgData = await organisationApiService.getOrg();
       const workOrderData = {
         ...workOrder,
-        title: formData.title,
-        description: formData.description || null,
-        priority: formData.priority,
-        status: formData.status,
-        type: formData.type,
-        site_id: formData.site_id,
-        space_id: formData.space_id || null,
-        request_id: formData.request_id || null,
-        asset_id: formData.asset_id || null,
-        assigned_to: formData.vendor_id || null,
-        due_at: formData.due_at,
-        sla: formData.sla?.response_time ? formData.sla : null,
+        title: data.title,
+        description: data.description || null,
+        priority: data.priority,
+        status: data.status,
+        type: data.type,
+        site_id: data.site_id,
+        space_id: data.space_id || null,
+        request_id: data.request_id || null,
+        asset_id: data.asset_id || null,
+        assigned_to: data.vendor_id || null,
+        due_at: data.due_at ? new Date(data.due_at).toISOString() : null,
+        sla: data.sla?.response_time ? data.sla : null,
         org_id: orgData?.data?.id,
         updated_at: new Date().toISOString(),
       };
 
-      console.log("WorkOrder payload:", workOrderData);
-      onSave(workOrderData);
+      await onSave(workOrderData);
+      reset(emptyFormData);
+      onClose();
     } catch (error) {
-      toast({
-        title: "Error",
-        description: "Failed to get organization data",
-        variant: "destructive",
-      });
+      reset(undefined, { keepErrors: true, keepValues: true });
+      toast("Failed to save work order");
     }
   };
 
@@ -209,247 +218,287 @@ export function WorkOrderForm({
           </DialogTitle>
         </DialogHeader>
 
-        <form onSubmit={handleSubmit} className="space-y-4">
+        <form onSubmit={isSubmitting ? undefined : handleSubmit(onSubmitForm)} className="space-y-4">
           {/* Row 1: Title | Status */}
           <div className="grid grid-cols-2 gap-4">
-            <div>
+            <div className="space-y-2">
               <Label htmlFor="title">Title *</Label>
               <Input
                 id="title"
-                value={formData.title}
-                onChange={(e) =>
-                  setFormData({ ...formData, title: e.target.value })
-                }
+                {...register("title")}
                 placeholder="e.g., AC Not Cooling Properly"
                 disabled={isReadOnly}
+                className={errors.title ? 'border-red-500' : ''}
               />
+              {errors.title && (
+                <p className="text-sm text-red-500">{errors.title.message}</p>
+              )}
             </div>
-            <div>
-              <Label htmlFor="status">Status</Label>
-              <Select
-                value={formData.status}
-                onValueChange={(value: WorkOrderStatus) =>
-                  setFormData({ ...formData, status: value })
-                }
-                disabled={isReadOnly}
-              >
-                <SelectTrigger>
-                  <SelectValue placeholder="Select status" />
-                </SelectTrigger>
-                <SelectContent>
-                  {statusList.map((status) => (
-                    <SelectItem key={status.id} value={status.id}>
-                      {status.name}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </div>
+            <Controller
+              name="status"
+              control={control}
+              render={({ field }) => (
+                <div className="space-y-2">
+                  <Label htmlFor="status">Status</Label>
+                  <Select
+                    value={field.value}
+                    onValueChange={field.onChange}
+                    disabled={isReadOnly}
+                  >
+                    <SelectTrigger className={errors.status ? 'border-red-500' : ''}>
+                      <SelectValue placeholder="Select status" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {statusList.map((status) => (
+                        <SelectItem key={status.id} value={status.id}>
+                          {status.name}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                  {errors.status && (
+                    <p className="text-sm text-red-500">{errors.status.message}</p>
+                  )}
+                </div>
+              )}
+            />
           </div>
 
           {/* Row 2: Site | Space */}
           <div className="grid grid-cols-2 gap-4">
-            <div>
-              <Label htmlFor="site">Site *</Label>
-              <Select
-                value={formData.site_id}
-                onValueChange={(value) =>
-                  setFormData({ ...formData, site_id: value, space_id: "" })
-                }
-                disabled={isReadOnly}
-              >
-                <SelectTrigger>
-                  <SelectValue placeholder="Select site" />
-                </SelectTrigger>
-                <SelectContent>
-                  {siteList.map((site) => (
-                    <SelectItem key={site.id} value={site.id}>
-                      {site.name}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </div>
-            <div>
-              <Label htmlFor="space">Space</Label>
-              <Select
-                value={formData.space_id}
-                onValueChange={(value) =>
-                  setFormData({ ...formData, space_id: value })
-                }
-                disabled={isReadOnly || !formData.site_id}
-              >
-                <SelectTrigger>
-                  <SelectValue placeholder="Select space (optional)" />
-                </SelectTrigger>
-                <SelectContent>
-                  {spaceList.map((space) => (
-                    <SelectItem key={space.id} value={space.id}>
-                      {space.name}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </div>
+            <Controller
+              name="site_id"
+              control={control}
+              render={({ field }) => (
+                <div className="space-y-2">
+                  <Label htmlFor="site_id">Site *</Label>
+                  <Select
+                    value={field.value}
+                    onValueChange={(value) => {
+                      field.onChange(value);
+                      setValue("space_id", "");
+                    }}
+                    disabled={isReadOnly}
+                  >
+                    <SelectTrigger className={errors.site_id ? 'border-red-500' : ''}>
+                      <SelectValue placeholder="Select site" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {siteList.map((site) => (
+                        <SelectItem key={site.id} value={site.id}>
+                          {site.name}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                  {errors.site_id && (
+                    <p className="text-sm text-red-500">{errors.site_id.message}</p>
+                  )}
+                </div>
+              )}
+            />
+            <Controller
+              name="space_id"
+              control={control}
+              render={({ field }) => (
+                <div className="space-y-2">
+                  <Label htmlFor="space_id">Space</Label>
+                  <Select
+                    value={field.value || ""}
+                    onValueChange={field.onChange}
+                    disabled={isReadOnly || !selectedSiteId}
+                  >
+                    <SelectTrigger>
+                      <SelectValue placeholder="Select space (optional)" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {spaceList.map((space) => (
+                        <SelectItem key={space.id} value={space.id}>
+                          {space.name}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+              )}
+            />
           </div>
 
           {/* Row 3: Asset | Vendor */}
           <div className="grid grid-cols-2 gap-4">
-            <div>
-              <Label htmlFor="asset">Asset</Label>
-              <Select
-                value={formData.asset_id || "none"}
-                onValueChange={(value) =>
-                  setFormData({
-                    ...formData,
-                    asset_id: value === "none" ? null : value,
-                  })
-                }
-                disabled={isReadOnly}
-              >
-                <SelectTrigger>
-                  <SelectValue placeholder="Select asset (optional)" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="none">No Asset</SelectItem>
-                  {assetList.map((asset) => (
-                    <SelectItem key={asset.id} value={asset.id}>
-                      {asset.name}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </div>
-            <div>
-              <Label htmlFor="vendor">Vendor</Label>
-              <Select
-                value={formData.vendor_id || "none"}
-                onValueChange={(value) =>
-                  setFormData({
-                    ...formData,
-                    vendor_id: value === "none" ? "" : value,
-                  })
-                }
-                disabled={isReadOnly}
-              >
-                <SelectTrigger>
-                  <SelectValue placeholder="Select vendor (optional)" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="none">No Vendor</SelectItem>
-                  {vendorList.map((vendor: any) => (
-                    <SelectItem key={vendor.id} value={vendor.id}>
-                      {vendor.name}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </div>
+            <Controller
+              name="asset_id"
+              control={control}
+              render={({ field }) => (
+                <div className="space-y-2">
+                  <Label htmlFor="asset_id">Asset</Label>
+                  <Select
+                    value={field.value || "none"}
+                    onValueChange={(value) => field.onChange(value === "none" ? null : value)}
+                    disabled={isReadOnly}
+                  >
+                    <SelectTrigger>
+                      <SelectValue placeholder="Select asset (optional)" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="none">No Asset</SelectItem>
+                      {assetList.map((asset) => (
+                        <SelectItem key={asset.id} value={asset.id}>
+                          {asset.name}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+              )}
+            />
+            <Controller
+              name="vendor_id"
+              control={control}
+              render={({ field }) => (
+                <div className="space-y-2">
+                  <Label htmlFor="vendor_id">Vendor</Label>
+                  <Select
+                    value={field.value || "none"}
+                    onValueChange={(value) => field.onChange(value === "none" ? "" : value)}
+                    disabled={isReadOnly}
+                  >
+                    <SelectTrigger>
+                      <SelectValue placeholder="Select vendor (optional)" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="none">No Vendor</SelectItem>
+                      {vendorList.map((vendor: any) => (
+                        <SelectItem key={vendor.id} value={vendor.id}>
+                          {vendor.name}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+              )}
+            />
           </div>
 
           {/* Row 4: Service Request */}
           <div className="grid grid-cols-1 gap-4">
-            <div>
-              <Label htmlFor="service_request">Service Request</Label>
-              <Select
-                value={formData.request_id || "none"}
-                onValueChange={(value) =>
-                  setFormData({
-                    ...formData,
-                    request_id: value !== "none" ? value : null,
-                  })
-                }
-                disabled={isReadOnly}
-              >
-                <SelectTrigger>
-                  <SelectValue placeholder="Select service request (optional)" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="none">No Service Request</SelectItem>
-                  {serviceRequestList.map((sr: any) => (
-                    <SelectItem key={sr.id} value={sr.id}>
-                      {sr.name}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </div>
+            <Controller
+              name="request_id"
+              control={control}
+              render={({ field }) => (
+                <div className="space-y-2">
+                  <Label htmlFor="request_id">Service Request</Label>
+                  <Select
+                    value={field.value || "none"}
+                    onValueChange={(value) => field.onChange(value !== "none" ? value : null)}
+                    disabled={isReadOnly}
+                  >
+                    <SelectTrigger>
+                      <SelectValue placeholder="Select service request (optional)" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="none">No Service Request</SelectItem>
+                      {serviceRequestList.map((sr: any) => (
+                        <SelectItem key={sr.id} value={sr.id}>
+                          {sr.name}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+              )}
+            />
           </div>
 
           {/* Row 4: Priority | Type | Response Time */}
           <div className="grid grid-cols-3 gap-4">
-            <div>
-              <Label htmlFor="priority">Priority</Label>
-              <Select
-                value={formData.priority}
-                onValueChange={(value: WorkOrderPriority) =>
-                  setFormData({ ...formData, priority: value })
-                }
-                disabled={isReadOnly}
-              >
-                <SelectTrigger>
-                  <SelectValue placeholder="Select priority" />
-                </SelectTrigger>
-                <SelectContent>
-                  {priorityList.map((priority) => (
-                    <SelectItem key={priority.id} value={priority.id}>
-                      {priority.name}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </div>
-            <div>
-              <Label htmlFor="type">Type</Label>
-              <Select
-                value={formData.type}
-                onValueChange={(value: WorkOrderType) =>
-                  setFormData({ ...formData, type: value })
-                }
-                disabled={isReadOnly}
-              >
-                <SelectTrigger>
-                  <SelectValue placeholder="Select type" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="corrective">Corrective</SelectItem>
-                  <SelectItem value="preventive">Preventive</SelectItem>
-                  <SelectItem value="emergency">Emergency</SelectItem>
-                  <SelectItem value="inspection">Inspection</SelectItem>
-                </SelectContent>
-              </Select>
-            </div>
-            <div>
-              <Label htmlFor="sla">Response Time</Label>
-              <Select
-                value={formData.sla?.response_time || ""}
-                onValueChange={(value) =>
-                  handleSLAFieldChange("response_time", value)
-                }
-                disabled={isReadOnly}
-              >
-                <SelectTrigger>
-                  <SelectValue placeholder="Select Response time" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="12h">12 Hours</SelectItem>
-                  <SelectItem value="24h">24 Hours</SelectItem>
-                  <SelectItem value="48h">48 Hours</SelectItem>
-                  <SelectItem value="72h">72 Hours</SelectItem>
-                </SelectContent>
-              </Select>
-            </div>
+            <Controller
+              name="priority"
+              control={control}
+              render={({ field }) => (
+                <div className="space-y-2">
+                  <Label htmlFor="priority">Priority</Label>
+                  <Select
+                    value={field.value}
+                    onValueChange={field.onChange}
+                    disabled={isReadOnly}
+                  >
+                    <SelectTrigger className={errors.priority ? 'border-red-500' : ''}>
+                      <SelectValue placeholder="Select priority" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {priorityList.map((priority) => (
+                        <SelectItem key={priority.id} value={priority.id}>
+                          {priority.name}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                  {errors.priority && (
+                    <p className="text-sm text-red-500">{errors.priority.message}</p>
+                  )}
+                </div>
+              )}
+            />
+            <Controller
+              name="type"
+              control={control}
+              render={({ field }) => (
+                <div className="space-y-2">
+                  <Label htmlFor="type">Type</Label>
+                  <Select
+                    value={field.value}
+                    onValueChange={field.onChange}
+                    disabled={isReadOnly}
+                  >
+                    <SelectTrigger className={errors.type ? 'border-red-500' : ''}>
+                      <SelectValue placeholder="Select type" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="corrective">Corrective</SelectItem>
+                      <SelectItem value="preventive">Preventive</SelectItem>
+                      <SelectItem value="emergency">Emergency</SelectItem>
+                      <SelectItem value="inspection">Inspection</SelectItem>
+                    </SelectContent>
+                  </Select>
+                  {errors.type && (
+                    <p className="text-sm text-red-500">{errors.type.message}</p>
+                  )}
+                </div>
+              )}
+            />
+            <Controller
+              name="sla.response_time"
+              control={control}
+              render={({ field }) => (
+                <div className="space-y-2">
+                  <Label htmlFor="sla">Response Time</Label>
+                  <Select
+                    value={field.value || ""}
+                    onValueChange={field.onChange}
+                    disabled={isReadOnly}
+                  >
+                    <SelectTrigger>
+                      <SelectValue placeholder="Select Response time" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="12h">12 Hours</SelectItem>
+                      <SelectItem value="24h">24 Hours</SelectItem>
+                      <SelectItem value="48h">48 Hours</SelectItem>
+                      <SelectItem value="72h">72 Hours</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+              )}
+            />
           </div>
 
           {/* Row 5: Description */}
-          <div>
+          <div className="space-y-2">
             <Label htmlFor="description">Description</Label>
             <Textarea
               id="description"
-              value={formData.description || ""}
-              onChange={(e) =>
-                setFormData({ ...formData, description: e.target.value })
-              }
+              {...register("description")}
               placeholder="Detailed description of the work order..."
               rows={3}
               disabled={isReadOnly}
@@ -458,20 +507,12 @@ export function WorkOrderForm({
 
           {/* Row 6: Due Date */}
           <div className="grid grid-cols-1 gap-4">
-            <div>
+            <div className="space-y-2">
               <Label htmlFor="due_at">Due Date</Label>
               <Input
                 id="due_at"
                 type="datetime-local"
-                value={formData.due_at ? formData.due_at.slice(0, 16) : ""}
-                onChange={(e) =>
-                  setFormData({
-                    ...formData,
-                    due_at: e.target.value
-                      ? new Date(e.target.value).toISOString()
-                      : null,
-                  })
-                }
+                {...register("due_at")}
                 disabled={isReadOnly}
                 className="w-48"
               />
@@ -479,12 +520,12 @@ export function WorkOrderForm({
           </div>
 
           <DialogFooter>
-            <Button type="button" variant="outline" onClick={onClose}>
+            <Button type="button" variant="outline" onClick={onClose} disabled={isSubmitting}>
               {mode === "view" ? "Close" : "Cancel"}
             </Button>
             {mode !== "view" && (
-              <Button type="submit">
-                {mode === "create" ? "Create Work Order" : "Update Work Order"}
+              <Button type="submit" disabled={!isValid || isSubmitting}>
+                {isSubmitting ? "Saving..." : mode === "create" ? "Create Work Order" : "Update Work Order"}
               </Button>
             )}
           </DialogFooter>

@@ -17,7 +17,10 @@ import {
   DialogTitle,
   DialogFooter,
 } from "@/components/ui/dialog";
-import { useToast } from "@/hooks/use-toast";
+import { Controller, useForm } from "react-hook-form";
+import { zodResolver } from "@hookform/resolvers/zod";
+import { PMTemplateFormValues, pmTemplateSchema } from "@/schemas/pmTemplate.schema";
+import { toast } from "sonner";
 import { preventiveMaintenanceApiService } from "@/services/maintenance_assets/preventive_maintenanceapi";
 //import { siteApiService } from "@/services/spaces_sites/sitesapi";
 
@@ -57,20 +60,22 @@ interface PMTemplateFormProps {
   mode: "create" | "edit" | "view";
 }
 
-const emptyFormData = {
+const defaultChecklistItem: ChecklistItem = { step: 1, pass_fail: false, instruction: "" };
+
+const emptyFormData: PMTemplateFormValues = {
   name: "",
-  category_id: "",
-  frequency: "monthly" as const,
-  status: "active" as const,
+  category_id: null,
+  frequency: "",
+  status: "",
   next_due: null,
-  checklist: [] as ChecklistItem[],
+  checklist: [defaultChecklistItem],
   meter_metric: "",
-  threshold: 0,
+  threshold: undefined,
   sla: {
     priority: "",
-    resolve_hrs: 0,
-    response_hrs: 0,
-  } as SLAConfig,
+    resolve_hrs: undefined,
+    response_hrs: undefined,
+  },
 };
 
 export function PMTemplateForm({
@@ -80,35 +85,54 @@ export function PMTemplateForm({
   onSave,
   mode,
 }: PMTemplateFormProps) {
-  const { toast } = useToast();
-  const [formData, setFormData] = useState<Partial<PMTemplate>>(emptyFormData);
+  const {
+    register,
+    handleSubmit,
+    control,
+    reset,
+    setValue,
+    getValues,
+    watch,
+    formState: { errors, isSubmitting, isValid },
+  } = useForm<PMTemplateFormValues>({
+    resolver: zodResolver(pmTemplateSchema),
+    defaultValues: emptyFormData,
+    mode: "onChange",
+    reValidateMode: "onChange",
+  });
+
   const [categoryList, setCategoryList] = useState([]);
   const [frequencyList, setFrequencyList] = useState([]);
   const [statusList, setStatusList] = useState([]);
 
+  const checklist = watch("checklist") || [];
+
   useEffect(() => {
-    const defaultChecklistItem: ChecklistItem = { step: 1, pass_fail: false, instruction: "" };
-    if (template) {
-      setFormData({
-        ...emptyFormData,
-        ...template,
-        checklist:
-          template.checklist && template.checklist.length > 0
-            ? template.checklist
-            : [defaultChecklistItem],
+    if (template && mode !== "create") {
+      reset({
+        name: template.name || "",
+        category_id: template.category_id || null,
+        frequency: template.frequency || "",
+        status: template.status || "",
+        next_due: template.next_due || null,
+        checklist: template.checklist && template.checklist.length > 0
+          ? template.checklist
+          : [defaultChecklistItem],
+        meter_metric: template.meter_metric || "",
+        threshold: template.threshold,
         sla: template.sla || {
           priority: "",
-          resolve_hrs: 0,
-          response_hrs: 0,
+          resolve_hrs: undefined,
+          response_hrs: undefined,
         },
       });
     } else {
-      setFormData({ ...emptyFormData, checklist: [defaultChecklistItem] });
+      reset(emptyFormData);
     }
     loadCategoryLookup();
     loadFrequencyLookup();
     loadStatusLookup();
-  }, [template]);
+  }, [template, mode, reset]);
 
   const loadCategoryLookup = async () => {
     const lookup = await preventiveMaintenanceApiService.getPreventiveMaintenanceCategoryLookup();
@@ -127,12 +151,10 @@ export function PMTemplateForm({
 
   // Checklist helpers: add, update, remove multiple items
   const addChecklistItem = () => {
-    const nextStep = (formData.checklist?.length || 0) + 1;
+    const currentChecklist = getValues("checklist") || [];
+    const nextStep = currentChecklist.length + 1;
     const newItem: ChecklistItem = { step: nextStep, pass_fail: false, instruction: "" };
-    setFormData((prev) => ({
-      ...prev,
-      checklist: [...(prev.checklist || []), newItem],
-    }));
+    setValue("checklist", [...currentChecklist, newItem]);
   };
 
   const updateChecklistItem = (
@@ -140,55 +162,47 @@ export function PMTemplateForm({
     field: keyof ChecklistItem,
     value: string | number | boolean
   ) => {
-    const updated = [...(formData.checklist || [])];
+    const currentChecklist = getValues("checklist") || [];
+    const updated = [...currentChecklist];
     updated[index] = { ...updated[index], [field]: value } as ChecklistItem;
-    setFormData({ ...formData, checklist: updated });
+    setValue("checklist", updated);
   };
 
   const removeChecklistItem = (index: number) => {
-    const remaining = (formData.checklist || []).filter((_, i) => i !== index);
+    const currentChecklist = getValues("checklist") || [];
+    const remaining = currentChecklist.filter((_, i) => i !== index);
     // Ensure at least one item remains visible
-    const ensured =
-      remaining.length === 0
-        ? [{ step: 1, pass_fail: false, instruction: "" }]
-        : remaining;
+    const ensured = remaining.length === 0 ? [defaultChecklistItem] : remaining;
     // Re-number steps to keep them sequential
     const renumbered = ensured.map((item, i) => ({ ...item, step: i + 1 }));
-    setFormData({ ...formData, checklist: renumbered });
+    setValue("checklist", renumbered);
   };
 
-
-  const handleSLAFieldChange = (field: string, value: any) => {
-    setFormData((prev) => ({ ...prev, sla: { ...prev.sla, [field]: value } }));
-  };
-
-  const handleSubmit = (e: React.FormEvent) => {
-    e.preventDefault();
-    
-    if (!formData.name) {
-      toast({
-        title: "Validation Error",
-        description: "Name is a required field",
-        variant: "destructive",
-      });
-      return;
+  const onSubmitForm = async (data: PMTemplateFormValues) => {
+    try {
+      const templateData = {
+        name: data.name,
+        category_id: data.category_id || null,
+        frequency: data.frequency,
+        status: data.status,
+        next_due: data.next_due,
+        checklist: data.checklist as ChecklistItem[],
+        meter_metric: data.meter_metric,
+        threshold: data.threshold,
+        sla: data.sla ? {
+          priority: data.sla.priority || "",
+          resolve_hrs: data.sla.resolve_hrs || 0,
+          response_hrs: data.sla.response_hrs || 0,
+        } as SLAConfig : undefined,
+        updated_at: new Date().toISOString(),
+      };
+      await onSave(templateData);
+      reset(emptyFormData);
+      onClose();
+    } catch (error) {
+      reset(undefined, { keepErrors: true, keepValues: true });
+      toast("Failed to save PM template");
     }
-
-    
-    const templateData = {
-      name: formData.name,
-      category_id: formData.category_id || null,
-      frequency: formData.frequency,
-      status: formData.status,
-      next_due: formData.next_due,
-      checklist: formData.checklist,
-      meter_metric: formData.meter_metric,
-      threshold: formData.threshold,
-      sla: formData.sla,
-      updated_at: new Date().toISOString(),
-    };
-
-    onSave(templateData);
   };
 
   const isReadOnly = mode === "view";
@@ -204,103 +218,116 @@ export function PMTemplateForm({
           </DialogTitle>
         </DialogHeader>
 
-        <form onSubmit={handleSubmit} className="space-y-4">
+        <form onSubmit={isSubmitting ? undefined : handleSubmit(onSubmitForm)} className="space-y-4">
           {/* Template Name */}
-          <div>
+          <div className="space-y-2">
             <Label htmlFor="name">Template Name *</Label>
             <Input
               id="name"
-              value={formData.name || ""}
-              onChange={(e) => setFormData({ ...formData, name: e.target.value })}
+              {...register("name")}
               placeholder="Enter template name"
               disabled={isReadOnly}
+              className={errors.name ? 'border-red-500' : ''}
             />
+            {errors.name && (
+              <p className="text-sm text-red-500">{errors.name.message}</p>
+            )}
           </div>
 
           {/* Category and Frequency */}
           <div className="grid grid-cols-2 gap-4">
-            <div>
-              <Label htmlFor="category">Asset Category</Label>
-              <Select
-                value={formData.category_id ?? undefined}
-                onValueChange={(value) => {
-                  if (value === "none") {
-                    setFormData({ ...formData, category_id: null as unknown as string });
-                  } else {
-                    setFormData({ ...formData, category_id: value });
-                  }
-                }}
-                disabled={isReadOnly}
-              >
-                <SelectTrigger>
-                  <SelectValue placeholder="Select category" />
-                </SelectTrigger>
-                <SelectContent>
-                  {/* Optional none value - must not be empty string for Radix */}
-                  <SelectItem value="none">None</SelectItem>
-                  {categoryList.map((category) => (
-                    <SelectItem key={category.id} value={category.id}>
-                      {category.name}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </div>
-            <div>
-              <Label htmlFor="frequency">Frequency</Label>
-              <Select
-                value={formData.frequency || ""}
-                onValueChange={(value) =>
-                  setFormData({ ...formData, frequency: value })
-                }
-                disabled={isReadOnly}
-              >
-                <SelectTrigger>
-                  <SelectValue placeholder="Select frequency" />
-                </SelectTrigger>
-                <SelectContent>
-                  {frequencyList.map((frequency) => (
-                    <SelectItem key={frequency.id} value={frequency.id}>
-                      {frequency.name}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </div>
+            <Controller
+              name="category_id"
+              control={control}
+              render={({ field }) => (
+                <div className="space-y-2">
+                  <Label htmlFor="category_id">Asset Category</Label>
+                  <Select
+                    value={field.value || "none"}
+                    onValueChange={(value) => field.onChange(value === "none" ? null : value)}
+                    disabled={isReadOnly}
+                  >
+                    <SelectTrigger>
+                      <SelectValue placeholder="Select category" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="none">None</SelectItem>
+                      {categoryList.map((category) => (
+                        <SelectItem key={category.id} value={category.id}>
+                          {category.name}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+              )}
+            />
+            <Controller
+              name="frequency"
+              control={control}
+              render={({ field }) => (
+                <div className="space-y-2">
+                  <Label htmlFor="frequency">Frequency</Label>
+                  <Select
+                    value={field.value || ""}
+                    onValueChange={field.onChange}
+                    disabled={isReadOnly}
+                  >
+                    <SelectTrigger className={errors.frequency ? 'border-red-500' : ''}>
+                      <SelectValue placeholder="Select frequency" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {frequencyList.map((frequency) => (
+                        <SelectItem key={frequency.id} value={frequency.id}>
+                          {frequency.name}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                  {errors.frequency && (
+                    <p className="text-sm text-red-500">{errors.frequency.message}</p>
+                  )}
+                </div>
+              )}
+            />
           </div>
 
           {/* Status and Next Due */}
           <div className="grid grid-cols-2 gap-4">
-            <div>
-              <Label htmlFor="status">Status</Label>
-              <Select
-                value={formData.status || ""}
-                onValueChange={(value) =>
-                  setFormData({ ...formData, status: value })
-                }
-                disabled={isReadOnly}
-              >
-                <SelectTrigger>
-                  <SelectValue placeholder="Select status" />
-                </SelectTrigger>
-                <SelectContent>
-                  {statusList.map((status) => (
-                    <SelectItem key={status.id} value={status.id}>
-                      {status.name}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </div>
-            <div>
+            <Controller
+              name="status"
+              control={control}
+              render={({ field }) => (
+                <div className="space-y-2">
+                  <Label htmlFor="status">Status</Label>
+                  <Select
+                    value={field.value || ""}
+                    onValueChange={field.onChange}
+                    disabled={isReadOnly}
+                  >
+                    <SelectTrigger className={errors.status ? 'border-red-500' : ''}>
+                      <SelectValue placeholder="Select status" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {statusList.map((status) => (
+                        <SelectItem key={status.id} value={status.id}>
+                          {status.name}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                  {errors.status && (
+                    <p className="text-sm text-red-500">{errors.status.message}</p>
+                  )}
+                </div>
+              )}
+            />
+            <div className="space-y-2">
               <Label htmlFor="next_due">Next Due Date</Label>
               <Input
                 id="next_due"
                 type="date"
-                value={formData.next_due ? new Date(formData.next_due).toISOString().split('T')[0] : ""}
-                onChange={(e) =>
-                  setFormData({ ...formData, next_due: e.target.value })
-                }
+                {...register("next_due")}
                 disabled={isReadOnly}
               />
             </div>
@@ -308,35 +335,28 @@ export function PMTemplateForm({
 
           {/* Meter Metric and Threshold */}
           <div className="grid grid-cols-2 gap-4">
-            <div>
+            <div className="space-y-2">
               <Label htmlFor="meter_metric">Meter Metric</Label>
               <Input
                 id="meter_metric"
-                value={formData.meter_metric || ""}
-                onChange={(e) =>
-                  setFormData({ ...formData, meter_metric: e.target.value })
-                }
+                {...register("meter_metric")}
                 placeholder="e.g., Hours, Cycles, Days"
                 disabled={isReadOnly}
               />
             </div>
-            <div>
+            <div className="space-y-2">
               <Label htmlFor="threshold">Threshold</Label>
               <Input
                 id="threshold"
                 type="number"
-                value={formData.threshold ?? ""}
-                onChange={(e) => {
-                  const value = e.target.value;
-                  if (value === "") {
-                    setFormData({ ...formData, threshold: undefined });
-                  } else {
-                    setFormData({ ...formData, threshold: Number(value) });
-                  }
-                }}
+                {...register("threshold", { setValueAs: (v) => v === "" ? undefined : Number(v) })}
                 placeholder="Enter threshold value"
                 disabled={isReadOnly}
+                className={errors.threshold ? 'border-red-500' : ''}
               />
+              {errors.threshold && (
+                <p className="text-sm text-red-500">{errors.threshold.message}</p>
+              )}
             </div>
           </div>
 
@@ -350,13 +370,15 @@ export function PMTemplateForm({
                 </Button>
               )}
             </div>
-
-            {(formData.checklist || []).length === 0 && (
+            {errors.checklist && typeof errors.checklist === "object" && !Array.isArray(errors.checklist) && (
+              <p className="text-sm text-red-500">{errors.checklist.message}</p>
+            )}
+            {checklist.length === 0 && (
               <div className="text-sm text-muted-foreground">No items yet. Click Add Item.</div>
             )}
 
             <div className="space-y-3">
-              {(formData.checklist || []).map((item, index) => (
+              {checklist.map((item, index) => (
                 <div key={index} className="grid grid-cols-12 gap-2 items-end p-3 border rounded-md">
                   <div className="col-span-2">
                     <Label className="text-xs">Step</Label>
@@ -365,7 +387,11 @@ export function PMTemplateForm({
                       value={item.step}
                       onChange={(e) => updateChecklistItem(index, "step", parseInt(e.target.value) || 0)}
                       disabled={isReadOnly}
+                      className={errors.checklist?.[index]?.step ? 'border-red-500' : ''}
                     />
+                    {errors.checklist?.[index]?.step && (
+                      <p className="text-xs text-red-500">{errors.checklist[index]?.step?.message}</p>
+                    )}
                   </div>
                   <div className="col-span-3">
                     <Label className="text-xs">Pass/Fail</Label>
@@ -390,7 +416,11 @@ export function PMTemplateForm({
                       onChange={(e) => updateChecklistItem(index, "instruction", e.target.value)}
                       placeholder="Enter instruction..."
                       disabled={isReadOnly}
+                      className={errors.checklist?.[index]?.instruction ? 'border-red-500' : ''}
                     />
+                    {errors.checklist?.[index]?.instruction && (
+                      <p className="text-xs text-red-500">{errors.checklist[index]?.instruction?.message}</p>
+                    )}
                   </div>
                   <div className="col-span-1 flex justify-end">
                     {!isReadOnly && (
@@ -408,56 +438,82 @@ export function PMTemplateForm({
           <div className="border rounded-lg p-4 space-y-4">
             <h3 className="text-sm font-medium text-gray-700">SLA Configuration</h3>
             <div className="grid grid-cols-3 gap-4">
-              <div>
-                <Label htmlFor="priority">Priority</Label>
-                <Select
-                  value={formData.sla?.priority || ""}
-                  onValueChange={(value) => handleSLAFieldChange("priority", value)}
-                  disabled={isReadOnly}
-                >
-                  <SelectTrigger>
-                    <SelectValue placeholder="Select priority" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="low">Low</SelectItem>
-                    <SelectItem value="medium">Medium</SelectItem>
-                    <SelectItem value="high">High</SelectItem>
-                    <SelectItem value="critical">Critical</SelectItem>
-                  </SelectContent>
-                </Select>
-              </div>
-              <div>
-                <Label htmlFor="response_hrs">Response Hours</Label>
-                <Input
-                  id="response_hrs"
-                  type="number"
-                  value={formData.sla?.response_hrs || ""}
-                  onChange={(e) => handleSLAFieldChange("response_hrs", parseInt(e.target.value) || 0)}
-                  placeholder="e.g., 2"
-                  disabled={isReadOnly}
-                />
-              </div>
-              <div>
-                <Label htmlFor="resolve_hrs">Resolve Hours</Label>
-                <Input
-                  id="resolve_hrs"
-                  type="number"
-                  value={formData.sla?.resolve_hrs || ""}
-                  onChange={(e) => handleSLAFieldChange("resolve_hrs", parseInt(e.target.value) || 0)}
-                  placeholder="e.g., 24"
-                  disabled={isReadOnly}
-                />
-              </div>
+              <Controller
+                name="sla.priority"
+                control={control}
+                render={({ field }) => (
+                  <div className="space-y-2">
+                    <Label htmlFor="sla.priority">Priority</Label>
+                    <Select
+                      value={field.value || ""}
+                      onValueChange={field.onChange}
+                      disabled={isReadOnly}
+                    >
+                      <SelectTrigger>
+                        <SelectValue placeholder="Select priority" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="low">Low</SelectItem>
+                        <SelectItem value="medium">Medium</SelectItem>
+                        <SelectItem value="high">High</SelectItem>
+                        <SelectItem value="critical">Critical</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
+                )}
+              />
+              <Controller
+                name="sla.response_hrs"
+                control={control}
+                render={({ field }) => (
+                  <div className="space-y-2">
+                    <Label htmlFor="sla.response_hrs">Response Hours</Label>
+                    <Input
+                      id="response_hrs"
+                      type="number"
+                      value={field.value ?? ""}
+                      onChange={(e) => field.onChange(e.target.value === "" ? undefined : parseInt(e.target.value) || 0)}
+                      placeholder="e.g., 2"
+                      disabled={isReadOnly}
+                      className={errors.sla?.response_hrs ? 'border-red-500' : ''}
+                    />
+                    {errors.sla?.response_hrs && (
+                      <p className="text-sm text-red-500">{errors.sla.response_hrs.message}</p>
+                    )}
+                  </div>
+                )}
+              />
+              <Controller
+                name="sla.resolve_hrs"
+                control={control}
+                render={({ field }) => (
+                  <div className="space-y-2">
+                    <Label htmlFor="sla.resolve_hrs">Resolve Hours</Label>
+                    <Input
+                      id="resolve_hrs"
+                      type="number"
+                      value={field.value ?? ""}
+                      onChange={(e) => field.onChange(e.target.value === "" ? undefined : parseInt(e.target.value) || 0)}
+                      placeholder="e.g., 24"
+                      disabled={isReadOnly}
+                      className={errors.sla?.resolve_hrs ? 'border-red-500' : ''}
+                    />
+                    {errors.sla?.resolve_hrs && (
+                      <p className="text-sm text-red-500">{errors.sla.resolve_hrs.message}</p>
+                    )}
+                  </div>
+                )}
+              />
             </div>
           </div>
 
           <DialogFooter>
-            <Button type="button" variant="outline" onClick={onClose}>
+            <Button type="button" variant="outline" onClick={onClose} disabled={isSubmitting}>
               {mode === "view" ? "Close" : "Cancel"}
             </Button>
             {mode !== "view" && (
-              <Button type="submit">
-                {mode === "create" ? "Create Template" : "Update Template"}
+              <Button type="submit" disabled={!isValid || isSubmitting}>
+                {isSubmitting ? "Saving..." : mode === "create" ? "Create Template" : "Update Template"}
               </Button>
             )}
           </DialogFooter>

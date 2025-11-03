@@ -34,17 +34,15 @@ class AssetApiService {
     });
   }
 
-  /** ENSURE string[] of category names */
   async getCategories() {
     return await apiService.request("/assets/category-lookup");
   }
 
-  /** ENSURE string[] of statuses */
   async getStatuses() {
     return await apiService.request("/assets/status-lookup");
   }
 
-  async getAssetLookup() {
+  async getAssetCategories() {
     return await apiService.request("/assets/asset-lookup");
   }
 }
