@@ -8,7 +8,8 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Plus, Search, Eye, Edit, Trash2, Package, Wrench, AlertTriangle, CheckCircle, DollarSign } from "lucide-react";
 import { AlertDialog, AlertDialogContent, AlertDialogHeader, AlertDialogFooter, AlertDialogTitle, AlertDialogDescription, AlertDialogCancel, AlertDialogAction } from "@/components/ui/alert-dialog";
-import { SidebarProvider, SidebarTrigger } from "@/components/ui/sidebar";
+import { SidebarProvider, SidebarTrigger, SidebarInset } from "@/components/ui/sidebar";
+import { Separator } from "@/components/ui/separator";
 import { PropertySidebar } from "@/components/PropertySidebar";
 import { Asset, AssetOverview } from "@/interfaces/assets_interface";
 import { assetApiService } from "@/services/maintenance_assets/assetsapi";
@@ -162,27 +163,36 @@ export default function Assets() {
 
   return (
     <SidebarProvider>
-      <div className="min-h-screen flex w-full bg-background">
+      <div className="min-h-screen flex w-full">
         <PropertySidebar />
-        <div className="flex-1 flex flex-col">
-          <header className="bg-card border-b border-border">
-            <div className="flex items-center justify-between px-6 py-4">
-              <div className="flex items-center space-x-4">
-                <SidebarTrigger />
-                <div>
-                  <h1 className="text-2xl font-bold">Assets</h1>
-                  <p className="text-sm text-muted-foreground">Manage facility assets and equipment</p>
-                </div>
+        <SidebarInset className="flex-1">
+          <div className="flex h-16 shrink-0 items-center gap-2 border-b px-4">
+            <SidebarTrigger className="-ml-1" />
+            <Separator orientation="vertical" className="mr-2 h-4" />
+            <div className="flex items-center gap-2">
+              <Package className="h-5 w-5 text-muted-foreground" />
+              <h1 className="text-lg font-semibold">Assets</h1>
+            </div>
+          </div>
+
+          <div className="flex-1 space-y-6 p-6">
+            {/* Header Actions */}
+            <div className="flex items-center justify-between">
+              <div>
+                <h2 className="text-2xl font-bold text-sidebar-primary">
+                 All Assets
+                </h2>
+                <p className="text-muted-foreground">
+                  Manage facility assets and equipment
+                </p>
               </div>
-              <Button onClick={handleCreate}>
-                <Plus className="w-4 h-4 mr-2" />
+              <Button onClick={handleCreate} className="gap-2">
+                <Plus className="h-4 w-4" />
                 Add Asset
               </Button>
             </div>
-          </header>
 
-          <main className="flex-1 p-6 overflow-auto">
-            <div className="container mx-auto py-6 space-y-6">
+            <div className="space-y-6">
               {/* Summary Cards */}
               <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
                 <Card>
@@ -363,8 +373,8 @@ export default function Assets() {
                 </CardContent>
               </Card>
             </div>
-          </main>
-        </div>
+          </div>
+        </SidebarInset>
       </div>
 
       {/* Delete dialog */}
