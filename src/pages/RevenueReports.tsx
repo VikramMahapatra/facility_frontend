@@ -8,7 +8,8 @@ import { Download, TrendingUp, TrendingDown, DollarSign, FileText, Calendar, Tar
 import { AreaChart, Area, BarChart, Bar, LineChart, Line, PieChart, Pie, Cell, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer } from "recharts";
 import { mockRevenueReports } from "@/data/mockFinancialsData";
 import { useState } from "react";
-import { SidebarProvider, SidebarTrigger } from "@/components/ui/sidebar";
+import { SidebarProvider, SidebarTrigger, SidebarInset } from "@/components/ui/sidebar";
+import { Separator } from "@/components/ui/separator";
 import { PropertySidebar } from "@/components/PropertySidebar";
 import { revenueReportsApiService } from "@/services/financials/revenuereportsapi";
 
@@ -87,27 +88,35 @@ interface RevenueReportsOverview {
   
   return (
     <SidebarProvider>
-      <div className="min-h-screen flex w-full bg-background">
+      <div className="min-h-screen flex w-full">
         <PropertySidebar />
+        <SidebarInset className="flex-1">
+          <div className="flex h-16 shrink-0 items-center gap-2 border-b px-4">
+            <SidebarTrigger className="-ml-1" />
+            <Separator orientation="vertical" className="mr-2 h-4" />
+            <div className="flex items-center gap-2">
+              <TrendingUp className="h-5 w-5 text-muted-foreground" />
+              <h1 className="text-lg font-semibold">Revenue Reports</h1>
+            </div>
+          </div>
 
-        <div className="flex-1 flex flex-col">
-          <header className="bg-card border-b border-border">
-            <div className="flex items-center justify-between px-6 py-4">
-              <div className="flex items-center space-x-4">
-                <SidebarTrigger />
-                <div>
-                  <h1 className="text-2xl font-bold">Revenue Reports</h1>
-                  <p className="text-sm text-muted-foreground">Financial performance and analytics</p>
-                </div>
+          <div className="flex-1 space-y-6 p-6">
+            {/* Header Actions */}
+            <div className="flex items-center justify-between">
+              <div>
+                <h2 className="text-2xl font-bold text-sidebar-primary">
+                  Revenue Reports
+                </h2>
+                <p className="text-muted-foreground">
+                  Financial performance and analytics
+                </p>
               </div>
-              <Button variant="outline">
-                <Download className="w-4 h-4 mr-2" />
+              <Button variant="outline" className="gap-2">
+                <Download className="h-4 w-4" />
                 Export Report
               </Button>
             </div>
-          </header>
 
-          <main className="flex-1 p-6 overflow-auto">
             <div className="space-y-6">
               {/* Filters */}
               <div className="flex flex-col sm:flex-row gap-4">
@@ -282,8 +291,8 @@ interface RevenueReportsOverview {
                 </CardContent>
               </Card>
             </div>
-          </main>
-        </div>
+          </div>
+        </SidebarInset>
       </div>
     </SidebarProvider>
   );
