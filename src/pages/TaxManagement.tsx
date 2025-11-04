@@ -8,7 +8,8 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Plus, Search, Edit, Trash2, FileText, Calculator, TrendingUp, AlertCircle, Download, Eye } from "lucide-react";
 import { AlertDialog, AlertDialogContent, AlertDialogHeader, AlertDialogFooter, AlertDialogTitle, AlertDialogDescription, AlertDialogCancel, AlertDialogAction } from "@/components/ui/alert-dialog";
 import { mockTaxCodes } from "@/data/mockFinancialsData";
-import { SidebarProvider, SidebarTrigger } from "@/components/ui/sidebar";
+import { SidebarProvider, SidebarTrigger, SidebarInset } from "@/components/ui/sidebar";
+import { Separator } from "@/components/ui/separator";
 import { PropertySidebar } from "@/components/PropertySidebar";
 import { TaxCode, TaxOverview } from "@/interfaces/tax_interfaces";
 import { taxCodeApiService } from "@/services/financials/taxcodesapi";
@@ -158,28 +159,36 @@ export default function TaxManagement() {
 
   return (
     <SidebarProvider>
-      <div className="min-h-screen flex w-full bg-background">
+      <div className="min-h-screen flex w-full">
         <PropertySidebar />
+        <SidebarInset className="flex-1">
+          <div className="flex h-16 shrink-0 items-center gap-2 border-b px-4">
+            <SidebarTrigger className="-ml-1" />
+            <Separator orientation="vertical" className="mr-2 h-4" />
+            <div className="flex items-center gap-2">
+              <Calculator className="h-5 w-5 text-muted-foreground" />
+              <h1 className="text-lg font-semibold">Tax Management</h1>
+            </div>
+          </div>
 
-        <div className="flex-1 flex flex-col">
-          <header className="bg-card border-b border-border">
-            <div className="flex items-center justify-between px-6 py-4">
-              <div className="flex items-center space-x-4">
-                <SidebarTrigger />
-                <div>
-                  <h1 className="text-2xl font-bold">Tax Management</h1>
-                  <p className="text-sm text-muted-foreground">Manage tax codes, rates and compliance</p>
-                </div>
+          <div className="flex-1 space-y-6 p-6">
+            {/* Header Actions */}
+            <div className="flex items-center justify-between">
+              <div>
+                <h2 className="text-2xl font-bold text-sidebar-primary">
+                  Tax Management
+                </h2>
+                <p className="text-muted-foreground">
+                  Manage tax codes, rates and compliance
+                </p>
               </div>
-              <Button onClick={handleCreate}>
-                <Plus className="w-4 h-4 mr-2" />
+              <Button onClick={handleCreate} className="gap-2">
+                <Plus className="h-4 w-4" />
                 Add Tax Code
               </Button>
             </div>
-          </header>
 
-          <main className="flex-1 p-6 overflow-auto">
-            <div className="container mx-auto py-6 space-y-6">
+            <div className="space-y-6">
 
               {/* Summary Cards */}
               <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
@@ -406,9 +415,10 @@ export default function TaxManagement() {
                 onPageChange={(newPage) => setReturnsPage(newPage)}
               />
             </div>
-          </main>
-        </div>
+          </div>
+        </SidebarInset>
       </div>
+
       <TaxCodeForm
         taxCode={selectedTaxCode}
         isOpen={isFormOpen}
