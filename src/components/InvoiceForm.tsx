@@ -4,14 +4,13 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
-import { useToast } from "@/hooks/use-toast";
 import { siteApiService } from "@/services/spaces_sites/sitesapi";
 import { Invoice } from "@/interfaces/invoices_interfaces";
 import { serviceRequestApiService } from "@/services/maintenance_assets/servicerequestapi";
 import { leasesApiService } from "@/services/Leasing_Tenants/leasesapi";
-
-// ✅ Same types as service request form
-type CustomerKind = 'resident' | 'merchant' | 'guest' | 'staff' | 'other';
+import { useForm, Controller } from "react-hook-form";
+import { zodResolver } from "@hookform/resolvers/zod";
+import { invoiceSchema, InvoiceFormValues } from "@/schemas/invoice.schema";
 
 interface InvoiceFormProps {
     invoice?: Invoice;
@@ -21,51 +20,80 @@ interface InvoiceFormProps {
     mode: "create" | "edit" | "view";
 }
 
-const emptyFormData: Partial<Invoice> = {
-    site_id: "",
-    customer_kind: "resident",
-    customer_id: "",
-    invoice_no: "",
-    date: new Date().toISOString().split("T")[0],
-    due_date: "",
-    status: "draft",
-    currency: "INR",
-    totals: { sub: 0, tax: 0, grand: 0 },
-    meta: {},
-};
-
 export function InvoiceForm({ invoice, isOpen, onClose, onSave, mode }: InvoiceFormProps) {
-    const { toast } = useToast();
-    const [formData, setFormData] = useState<Partial<Invoice>>(emptyFormData);
+    const {
+        register,
+        control,
+        handleSubmit,
+        reset,
+        watch,
+        setValue,
+        formState: { errors, isSubmitting, isValid },
+    } = useForm<InvoiceFormValues>({
+        resolver: zodResolver(invoiceSchema),
+        mode: "onChange",
+        defaultValues: {
+            invoice_no: "",
+            site_id: "",
+            customer_kind: "resident",
+            customer_id: "",
+            date: new Date().toISOString().split("T")[0],
+            due_date: "",
+            status: "draft",
+            currency: "INR",
+            totals: { sub: 0, tax: 0, grand: 0 },
+        },
+    });
+
     const [siteList, setSiteList] = useState<any[]>([]);
     const [customerList, setCustomerList] = useState<any[]>([]);
     const [requesterKindList, setRequesterKindList] = useState<any[]>([]);
 
+    const watchedSiteId = watch("site_id");
+    const watchedCustomerKind = watch("customer_kind");
+
     useEffect(() => {
-        const kind = invoice?.customer_kind || emptyFormData.customer_kind;
-        
-        if (invoice) {
-            console.log("selected invoice:", invoice);
-            setFormData(invoice);
-        } else {
-            setFormData(emptyFormData);
-        }
-        
         loadSiteLookup();
         loadRequesterKindLookup();
-        loadCustomerLookup(kind, invoice?.site_id);
-    }, [invoice]);
+    }, []);
 
-    // ✅ Load customer when kind or site changes (SAME as service request)
     useEffect(() => {
-        loadCustomerLookup(formData.customer_kind, formData.site_id);
-    }, [formData.customer_kind, formData.site_id]);
+        if (invoice) {
+            reset({
+                invoice_no: invoice.invoice_no || "",
+                site_id: invoice.site_id || "",
+                customer_kind: invoice.customer_kind || "resident",
+                customer_id: String(invoice.customer_id || ""),
+                date: invoice.date || new Date().toISOString().split("T")[0],
+                due_date: invoice.due_date || "",
+                status: invoice.status || "draft",
+                currency: invoice.currency || "INR",
+                totals: invoice.totals || { sub: 0, tax: 0, grand: 0 },
+            });
+        } else {
+            reset({
+                invoice_no: "",
+                site_id: "",
+                customer_kind: "resident",
+                customer_id: "",
+                date: new Date().toISOString().split("T")[0],
+                due_date: "",
+                status: "draft",
+                currency: "INR",
+                totals: { sub: 0, tax: 0, grand: 0 },
+            });
+        }
+    }, [invoice, reset]);
 
-    // ✅ Set customer_id when customerList loads (SAME as service request)
+    // ✅ Load customer when kind or site changes
     useEffect(() => {
-        if (!invoice) return;
-        setFormData((prev) => ({ ...prev, customer_id: String(invoice.customer_id) }));
-    }, [customerList]);
+        if (watchedCustomerKind && watchedSiteId) {
+            loadCustomerLookup(watchedCustomerKind, watchedSiteId);
+        } else {
+            setCustomerList([]);
+            setValue("customer_id", "");
+        }
+    }, [watchedCustomerKind, watchedSiteId, setValue]);
 
     const loadSiteLookup = async () => {
         try {
@@ -86,7 +114,7 @@ export function InvoiceForm({ invoice, isOpen, onClose, onSave, mode }: InvoiceF
         }
     };
 
-    const loadCustomerLookup = async (kind?: CustomerKind, site_id?: string) => {
+    const loadCustomerLookup = async (kind?: string, site_id?: string) => {
         if (!kind || !site_id) {
             setCustomerList([]);
             return;
@@ -102,23 +130,19 @@ export function InvoiceForm({ invoice, isOpen, onClose, onSave, mode }: InvoiceF
         }
     };
 
-    const handleSubmit = (e: React.FormEvent) => {
-        e.preventDefault();
-
-        if (!formData.invoice_no || !formData.customer_id || !formData.site_id) {
-            toast({
-                title: "Validation Error",
-                description: "Invoice No, Site and Customer are required",
-                variant: "destructive",
-            });
-            return;
-        }
-
-        onSave({
+    const onSubmitForm = async (data: InvoiceFormValues) => {
+        const payload: Partial<Invoice> = {
             ...invoice,
-            ...formData,
+            ...data,
+            customer_id: data.customer_id,
+            totals: {
+                sub: data.totals?.sub ?? 0,
+                tax: data.totals?.tax ?? 0,
+                grand: data.totals?.grand ?? 0,
+            },
             updated_at: new Date().toISOString(),
-        });
+        };
+        await onSave(payload);
     };
 
     const isReadOnly = mode === "view";
@@ -134,112 +158,139 @@ export function InvoiceForm({ invoice, isOpen, onClose, onSave, mode }: InvoiceF
                     </DialogTitle>
                 </DialogHeader>
 
-                <form onSubmit={handleSubmit} className="space-y-4">
+                <form onSubmit={handleSubmit(onSubmitForm)} className="space-y-4">
                     {/* Invoice No + Site */}
                     <div className="grid grid-cols-2 gap-4">
-                        <div>
+                        <div className="space-y-2">
                             <Label htmlFor="invoice_no">Invoice No *</Label>
                             <Input
                                 id="invoice_no"
-                                value={formData.invoice_no}
-                                onChange={(e) => setFormData({ ...formData, invoice_no: e.target.value })}
+                                {...register("invoice_no")}
                                 placeholder="INV-2025-001"
                                 disabled={isReadOnly}
+                                className={errors.invoice_no ? "border-red-500" : ""}
                             />
+                            {errors.invoice_no && (
+                                <p className="text-sm text-red-500">{errors.invoice_no.message}</p>
+                            )}
                         </div>
-                        <div>
+                        <div className="space-y-2">
                             <Label htmlFor="site_id">Site *</Label>
-                            <Select
+                            <Controller
                                 name="site_id"
-                                value={formData.site_id}
-                                onValueChange={(value) => {
-                                    // ✅ SAME as service request - clear customer when site changes
-                                    setFormData({ ...formData, site_id: value, customer_id: "" });
-                                }}
-                                disabled={isReadOnly}
-                            >
-                                <SelectTrigger>
-                                    <SelectValue placeholder="Select site" />
-                                </SelectTrigger>
-                                <SelectContent>
-                                    {siteList.map((site) => (
-                                        <SelectItem key={site.id} value={site.id}>
-                                            {site.name}
-                                        </SelectItem>
-                                    ))}
-                                </SelectContent>
-                            </Select>
+                                control={control}
+                                render={({ field }) => (
+                                    <Select
+                                        value={field.value || ""}
+                                        onValueChange={(value) => {
+                                            field.onChange(value);
+                                            setValue("customer_id", "");
+                                        }}
+                                        disabled={isReadOnly}
+                                    >
+                                        <SelectTrigger className={errors.site_id ? "border-red-500" : ""}>
+                                            <SelectValue placeholder="Select site" />
+                                        </SelectTrigger>
+                                        <SelectContent>
+                                            {siteList.map((site) => (
+                                                <SelectItem key={site.id} value={site.id}>
+                                                    {site.name}
+                                                </SelectItem>
+                                            ))}
+                                        </SelectContent>
+                                    </Select>
+                                )}
+                            />
+                            {errors.site_id && (
+                                <p className="text-sm text-red-500">{errors.site_id.message}</p>
+                            )}
                         </div>
                     </div>
 
                     {/* Customer Kind + Customer ID */}
                     <div className="grid grid-cols-2 gap-4">
-                        <div>
+                        <div className="space-y-2">
                             <Label htmlFor="customer_kind">Customer Type *</Label>
-                            <Select
+                            <Controller
                                 name="customer_kind"
-                                value={formData.customer_kind}
-                                onValueChange={(value: CustomerKind) => {
-                                    // ✅ SAME as service request - clear customer when type changes
-                                    setFormData({ ...formData, customer_kind: value, customer_id: "" });
-                                }}
-                                disabled={isReadOnly}
-                            >
-                                <SelectTrigger>
-                                    <SelectValue placeholder="Select customer type" />
-                                </SelectTrigger>
-                                <SelectContent>
-                                    {/* ✅ Use service request requester kind options */}
-                                    {requesterKindList.map((rk: any) => (
-                                        <SelectItem key={rk.id} value={rk.id}>
-                                            {rk.name}
-                                        </SelectItem>
-                                    ))}
-                                </SelectContent>
-                            </Select>
+                                control={control}
+                                render={({ field }) => (
+                                    <Select
+                                        value={field.value || "resident"}
+                                        onValueChange={(value) => {
+                                            field.onChange(value);
+                                            setValue("customer_id", "");
+                                        }}
+                                        disabled={isReadOnly}
+                                    >
+                                        <SelectTrigger className={errors.customer_kind ? "border-red-500" : ""}>
+                                            <SelectValue placeholder="Select customer type" />
+                                        </SelectTrigger>
+                                        <SelectContent>
+                                            {requesterKindList.map((rk: any) => (
+                                                <SelectItem key={rk.id} value={rk.id}>
+                                                    {rk.name}
+                                                </SelectItem>
+                                            ))}
+                                        </SelectContent>
+                                    </Select>
+                                )}
+                            />
+                            {errors.customer_kind && (
+                                <p className="text-sm text-red-500">{errors.customer_kind.message}</p>
+                            )}
                         </div>
-                        <div>
+                        <div className="space-y-2">
                             <Label htmlFor="customer_id">Customer *</Label>
-                            <Select
-                                key={customerList.map(c => c.id).join("-")}
+                            <Controller
                                 name="customer_id"
-                                value={formData.customer_id}
-                                onValueChange={(value) => setFormData({ ...formData, customer_id: value })}
-                                disabled={isReadOnly || !formData.site_id}
-                            >
-                                <SelectTrigger>
-                                    <SelectValue placeholder="Select customer" />
-                                </SelectTrigger>
-                                <SelectContent>
-                                    {customerList.map((cust) => (
-                                        <SelectItem key={cust.id} value={cust.id}>
-                                            {cust.name}
-                                        </SelectItem>
-                                    ))}
-                                </SelectContent>
-                            </Select>
+                                control={control}
+                                render={({ field }) => (
+                                    <Select
+                                        value={field.value || ""}
+                                        onValueChange={field.onChange}
+                                        disabled={isReadOnly || !watchedSiteId || !watchedCustomerKind}
+                                    >
+                                        <SelectTrigger className={errors.customer_id ? "border-red-500" : ""}>
+                                            <SelectValue placeholder="Select customer" />
+                                        </SelectTrigger>
+                                        <SelectContent>
+                                            {customerList.map((cust) => (
+                                                <SelectItem key={cust.id} value={cust.id}>
+                                                    {cust.name}
+                                                </SelectItem>
+                                            ))}
+                                        </SelectContent>
+                                    </Select>
+                                )}
+                            />
+                            {errors.customer_id && (
+                                <p className="text-sm text-red-500">{errors.customer_id.message}</p>
+                            )}
                         </div>
                     </div>
 
                     {/* Dates */}
                     <div className="grid grid-cols-2 gap-4">
-                        <div>
+                        <div className="space-y-2">
                             <Label htmlFor="date">Invoice Date *</Label>
                             <Input
                                 id="date"
                                 type="date"
-                                value={formData.date}
-                                onChange={(e) => setFormData({ ...formData, date: e.target.value })}
+                                {...register("date")}
                                 disabled={isReadOnly}
+                                className={errors.date ? "border-red-500" : ""}
                             />
+                            {errors.date && (
+                                <p className="text-sm text-red-500">{errors.date.message}</p>
+                            )}
                         </div>
-                        <div>
+                        <div className="space-y-2">
                             <Label htmlFor="due_date">Due Date</Label>
                             <Input
                                 id="due_date"
                                 type="date"
-                                value={formData.due_date || ""}
-                                onChange={(e) => setFormData({ ...formData, due_date: e.target.value })}
+                                {...register("due_date")}
                                 disabled={isReadOnly}
                             />
                         </div>
@@ -247,31 +298,36 @@ export function InvoiceForm({ invoice, isOpen, onClose, onSave, mode }: InvoiceF
 
                     {/* Status + Currency */}
                     <div className="grid grid-cols-2 gap-4">
-                        <div>
+                        <div className="space-y-2">
                             <Label htmlFor="status">Status</Label>
-                            <Select
-                                value={formData.status}
-                                onValueChange={(value: Invoice["status"]) => setFormData({ ...formData, status: value })}
-                                disabled={isReadOnly}
-                            >
-                                <SelectTrigger>
-                                    <SelectValue />
-                                </SelectTrigger>
-                                <SelectContent>
-                                    <SelectItem value="draft">Draft</SelectItem>
-                                    <SelectItem value="issued">Issued</SelectItem>
-                                    <SelectItem value="paid">Paid</SelectItem>
-                                    <SelectItem value="partial">Partial</SelectItem>
-                                    <SelectItem value="void">Void</SelectItem>
-                                </SelectContent>
-                            </Select>
+                            <Controller
+                                name="status"
+                                control={control}
+                                render={({ field }) => (
+                                    <Select
+                                        value={field.value || "draft"}
+                                        onValueChange={field.onChange}
+                                        disabled={isReadOnly}
+                                    >
+                                        <SelectTrigger>
+                                            <SelectValue />
+                                        </SelectTrigger>
+                                        <SelectContent>
+                                            <SelectItem value="draft">Draft</SelectItem>
+                                            <SelectItem value="issued">Issued</SelectItem>
+                                            <SelectItem value="paid">Paid</SelectItem>
+                                            <SelectItem value="partial">Partial</SelectItem>
+                                            <SelectItem value="void">Void</SelectItem>
+                                        </SelectContent>
+                                    </Select>
+                                )}
+                            />
                         </div>
-                        <div>
+                        <div className="space-y-2">
                             <Label htmlFor="currency">Currency</Label>
                             <Input
                                 id="currency"
-                                value={formData.currency}
-                                onChange={(e) => setFormData({ ...formData, currency: e.target.value })}
+                                {...register("currency")}
                                 disabled={isReadOnly}
                             />
                         </div>
@@ -279,39 +335,30 @@ export function InvoiceForm({ invoice, isOpen, onClose, onSave, mode }: InvoiceF
 
                     {/* Totals */}
                     <div className="grid grid-cols-3 gap-4">
-                        <div>
+                        <div className="space-y-2">
                             <Label htmlFor="sub">Subtotal</Label>
                             <Input
                                 id="sub"
                                 type="number"
-                                value={formData.totals?.sub ?? 0}
-                                onChange={(e) =>
-                                    setFormData({ ...formData, totals: { ...formData.totals, sub: Number(e.target.value) } })
-                                }
+                                {...register("totals.sub", { setValueAs: (v) => (v === "" ? 0 : Number(v)) })}
                                 disabled={isReadOnly}
                             />
                         </div>
-                        <div>
+                        <div className="space-y-2">
                             <Label htmlFor="tax">Tax</Label>
                             <Input
                                 id="tax"
                                 type="number"
-                                value={formData.totals?.tax ?? 0}
-                                onChange={(e) =>
-                                    setFormData({ ...formData, totals: { ...formData.totals, tax: Number(e.target.value) } })
-                                }
+                                {...register("totals.tax", { setValueAs: (v) => (v === "" ? 0 : Number(v)) })}
                                 disabled={isReadOnly}
                             />
                         </div>
-                        <div>
+                        <div className="space-y-2">
                             <Label htmlFor="grand">Grand Total</Label>
                             <Input
                                 id="grand"
                                 type="number"
-                                value={formData.totals?.grand ?? 0}
-                                onChange={(e) =>
-                                    setFormData({ ...formData, totals: { ...formData.totals, grand: Number(e.target.value) } })
-                                }
+                                {...register("totals.grand", { setValueAs: (v) => (v === "" ? 0 : Number(v)) })}
                                 disabled={isReadOnly}
                             />
                         </div>
@@ -323,7 +370,9 @@ export function InvoiceForm({ invoice, isOpen, onClose, onSave, mode }: InvoiceF
                             {mode === "view" ? "Close" : "Cancel"}
                         </Button>
                         {mode !== "view" && (
-                            <Button type="submit">{mode === "create" ? "Create Invoice" : "Update Invoice"}</Button>
+                            <Button type="submit" disabled={!isValid || isSubmitting}>
+                                {mode === "create" ? "Create Invoice" : "Update Invoice"}
+                            </Button>
                         )}
                     </DialogFooter>
                 </form>

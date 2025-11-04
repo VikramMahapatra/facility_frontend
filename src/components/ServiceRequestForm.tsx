@@ -57,7 +57,7 @@ interface ServiceRequestFormProps {
   serviceRequest?: ServiceRequest;
   isOpen: boolean;
   onClose: () => void;
-  onSave: (data: Partial<ServiceRequest>) => void;
+  onSubmit: (data: Partial<ServiceRequest>) => void | Promise<void>;
   mode: "create" | "edit" | "view";
 }
 
@@ -79,7 +79,7 @@ export function ServiceRequestForm({
   serviceRequest,
   isOpen,
   onClose,
-  onSave,
+  onSubmit,
   mode,
 }: ServiceRequestFormProps) {
   const {
@@ -287,7 +287,7 @@ export function ServiceRequestForm({
         updated_at: new Date().toISOString(),
       };
 
-      await onSave(payload);
+      await onSubmit(payload);
       reset(emptyFormData);
       onClose();
     } catch (error) {
