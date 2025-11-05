@@ -1,72 +1,21 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { PropertySidebar } from "@/components/PropertySidebar";
 import { SidebarProvider } from "@/components/ui/sidebar";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Switch } from "@/components/ui/switch";
-import { Bell, AlertTriangle, CheckCircle, Clock, Settings, Trash2 } from "lucide-react";
+import { Bell, AlertTriangle, CheckCircle, Clock, Settings, Trash2, Search } from "lucide-react";
+import { notificationsApiService } from "@/services/system/notificationsapi";
+import { notificationSettingsApiService } from "@/services/system/notificationsettingsapi";
+import { useSkipFirstEffect } from "@/hooks/use-skipfirst-effect";
+import { Pagination } from "@/components/Pagination";
+import { useToast } from "@/hooks/use-toast";
 
-const mockNotifications = [
-  {
-    id: 1,
-    type: "alert",
-    title: "Critical: HVAC System Failure",
-    message: "Building A - Floor 3 HVAC system has stopped working. Temperature rising.",
-    timestamp: "2 minutes ago",
-    read: false,
-    priority: "high"
-  },
-  {
-    id: 2,
-    type: "maintenance",
-    title: "Scheduled Maintenance Reminder",
-    message: "Fire safety system inspection due in Building B tomorrow at 10:00 AM.",
-    timestamp: "1 hour ago",
-    read: false,
-    priority: "medium"
-  },
-  {
-    id: 3,
-    type: "lease",
-    title: "Lease Renewal Due",
-    message: "Tenant ABC Corp lease expires in 30 days. Renewal documentation required.",
-    timestamp: "3 hours ago",
-    read: true,
-    priority: "medium"
-  },
-  {
-    id: 4,
-    type: "financial",
-    title: "Payment Received",
-    message: "Monthly rent payment of $15,000 received from XYZ Industries.",
-    timestamp: "1 day ago",
-    read: true,
-    priority: "low"
-  },
-  {
-    id: 5,
-    type: "system",
-    title: "AI Prediction Alert",
-    message: "Energy consumption predicted to increase by 25% next month. Review optimization strategies.",
-    timestamp: "2 days ago",
-    read: false,
-    priority: "medium"
-  },
-  {
-    id: 6,
-    type: "visitor",
-    title: "VIP Visitor Scheduled",
-    message: "Board member visit scheduled for tomorrow 2:00 PM. Security clearance approved.",
-    timestamp: "3 days ago",
-    read: true,
-    priority: "high"
-  }
-];
-
-const notificationSettings = [
-  { id: "system_alerts", label: "System Alerts", description: "Critical system failures and issues", enabled: true },
+/*const notificationSettings = [
+  { id: "system_alerts", label: "System Alerts", description: "Critical system failures and issues", enabled: true},
   { id: "maintenance", label: "Maintenance Reminders", description: "Scheduled and preventive maintenance notifications", enabled: true },
   { id: "lease_updates", label: "Lease Updates", description: "Lease renewals, expirations, and changes", enabled: true },
   { id: "financial", label: "Financial Notifications", description: "Payment confirmations and financial alerts", enabled: false },
@@ -74,34 +23,105 @@ const notificationSettings = [
   { id: "ai_predictions", label: "AI Predictions", description: "AI-generated insights and predictions", enabled: true },
   { id: "email_digest", label: "Daily Email Digest", description: "Summary of daily activities and alerts", enabled: false },
   { id: "mobile_push", label: "Mobile Push Notifications", description: "Real-time notifications on mobile devices", enabled: true }
-];
+];*/
 
 export default function Notifications() {
-  const [notifications, setNotifications] = useState(mockNotifications);
-  const [settings, setSettings] = useState(notificationSettings);
+  const { toast } = useToast();
+  const [notifications, setNotifications] = useState<any[]>([]);
+  const [settings, setSettings] = useState<any[]>([]);
+  const [searchTerm, setSearchTerm] = useState("");
+  const [page, setPage] = useState(1);
+  const [pageSize] = useState(10);
+  const [totalItems, setTotalItems] = useState(0);
 
-  const markAsRead = (id: number) => {
-    setNotifications(prev =>
-      prev.map(notif => notif.id === id ? { ...notif, read: true } : notif)
-    );
+  useEffect(() => {
+    loadNotificationSettings();
+  }, []);
+
+  useSkipFirstEffect(() => {
+    loadNotifications();
+  }, [page]);
+
+  useEffect(() => {
+    updateNotificationsPage();
+  }, [searchTerm]);
+
+  const updateNotificationsPage = () => {
+    if (page === 1) {
+      loadNotifications();
+    } else {
+      setPage(1);
+    }
   };
 
-  const deleteNotification = (id: number) => {
-    setNotifications(prev => prev.filter(notif => notif.id !== id));
+  const loadNotifications = async () => {
+    const skip = (page - 1) * pageSize;
+    const limit = pageSize;
+    const requestData: { search?: string; skip: number; limit: number } = { skip, limit };
+    if (searchTerm) requestData.search = searchTerm;
+
+    const response = await notificationsApiService.getNotifications(requestData);
+    if (response.success) {
+      setNotifications(response.data?.notifications || response.data || []);
+      setTotalItems(response.data?.total || 0);
+    }
   };
 
-  const markAllAsRead = () => {
-    setNotifications(prev => prev.map(notif => ({ ...notif, read: true })));
+  const markAsRead = async (id: number | string) => {
+    const data = await notificationsApiService.markAsRead(String(id));
+    if (data?.success) {
+      await loadNotifications();
+      toast({ title: "Marked as read", description: "Notification updated successfully." });
+    }
   };
 
-  const clearAllNotifications = () => {
-    setNotifications([]);
+  const deleteNotification = async (id: number | string) => {
+    const response = await notificationsApiService.deleteNotification(String(id));
+    if (response?.success) {
+      await loadNotifications();
+      toast({ title: "Notification Deleted", description: "Notification has been removed successfully." });
+    }
   };
 
-  const toggleSetting = (id: string) => {
-    setSettings(prev =>
-      prev.map(setting => setting.id === id ? { ...setting, enabled: !setting.enabled } : setting)
-    );
+  const markAllAsRead = async () => {
+    const data = await notificationsApiService.markAllAsRead();
+    if (data?.success) {
+      await loadNotifications();
+      toast({ title: "All Marked as Read", description: "All notifications have been marked as read." });
+    }
+  };
+
+  const clearAllNotifications = async () => {
+    const data = await notificationsApiService.clearAllNotifications();
+    if (data?.success) {
+      await loadNotifications();
+      toast({ title: "All Notifications Cleared", description: "All notifications have been cleared." });
+    }
+  };
+
+  const loadNotificationSettings = async () => {
+    const response = await notificationSettingsApiService.getNotificationSettings();
+    if (response.success) {
+      setSettings(response.data?.settings || response.data || []);
+    }
+  };
+
+  const toggleSetting = async (id: string) => {
+    const setting = settings.find(s => s.id === id);
+    if (!setting) return;
+
+    const updatedEnabled = !setting.enabled;
+    const response = await notificationSettingsApiService.updateNotificationSetting(id, { enabled: updatedEnabled });
+    
+    if (response?.success) {
+      setSettings(prev =>
+        prev.map(s => s.id === id ? { ...s, enabled: updatedEnabled } : s)
+      );
+      toast({ 
+        title: "Setting Updated", 
+        description: `${setting.label || 'Setting'} has been ${updatedEnabled ? 'enabled' : 'disabled'}.` 
+      });
+    }
   };
 
   const getNotificationIcon = (type: string) => {
@@ -163,6 +183,17 @@ export default function Notifications() {
               </TabsList>
 
               <TabsContent value="notifications" className="space-y-4">
+                {/* Search Input */}
+                <div className="relative">
+                  <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground w-4 h-4" />
+                  <Input
+                    placeholder="Search notifications..."
+                    value={searchTerm}
+                    onChange={(e) => setSearchTerm(e.target.value)}
+                    className="pl-10"
+                  />
+                </div>
+
                 {notifications.length === 0 ? (
                   <Card>
                     <CardContent className="flex flex-col items-center justify-center py-12">
@@ -224,6 +255,18 @@ export default function Notifications() {
                         </CardContent>
                       </Card>
                     ))}
+                  </div>
+                )}
+
+                {/* Pagination */}
+                {notifications.length > 0 && (
+                  <div className="mt-4">
+                    <Pagination
+                      page={page}
+                      pageSize={pageSize}
+                      totalItems={totalItems}
+                      onPageChange={setPage}
+                    />
                   </div>
                 )}
               </TabsContent>
