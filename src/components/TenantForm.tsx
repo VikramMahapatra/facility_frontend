@@ -124,6 +124,12 @@ export function TenantForm({
   const selectedSiteId = watch("site_id");
   const selectedBuildingId = watch("building_id");
   const selectedTenantType = watch("tenant_type");
+  const watchedName = watch("name");
+  const watchedEmail = watch("email");
+  const watchedPhone = watch("phone");
+  const watchedStatus = watch("status");
+  const selectedSpaceId = watch("space_id");
+  const canSubmitCreate = Boolean(watchedName && watchedEmail && watchedPhone && selectedSiteId && selectedSpaceId && watchedStatus);
 
   useEffect(() => {
     if (selectedSiteId) {
@@ -174,7 +180,7 @@ export function TenantForm({
       email: data.email.trim(),
       phone: data.phone.trim(),
       tenant_type: data.tenant_type,
-      status: data.status,
+      status: data.status as any,
       site_id: data.site_id,
       space_id: data.space_id || undefined,
       building_block_id: (data as any).building_id || undefined,
@@ -216,7 +222,7 @@ export function TenantForm({
           </DialogTitle>
         </DialogHeader>
 
-        <form onSubmit={isSubmitting ? undefined : handleSubmit(onSubmitForm)} className="space-y-4">
+        <form onSubmit={handleSubmit(onSubmitForm)} className="space-y-4">
           <div className="grid grid-cols-2 gap-4">
             <div>
               <Label htmlFor="name">Name *</Label>
@@ -276,13 +282,13 @@ export function TenantForm({
               />
             </div>
             <div>
-              <Label htmlFor="space">Space</Label>
+              <Label htmlFor="space">Space *</Label>
               <Controller
                 name="space_id"
                 control={control}
                 render={({ field }) => (
                   <Select value={field.value || ""} onValueChange={field.onChange} disabled={isReadOnly || !selectedBuildingId}>
-                    <SelectTrigger>
+                    <SelectTrigger className={errors.space_id ? 'border-red-500' : ''}>
                       <SelectValue placeholder={!selectedBuildingId ? "Select building first" : "Select space"} />
                     </SelectTrigger>
                     <SelectContent>
@@ -295,6 +301,7 @@ export function TenantForm({
                   </Select>
                 )}
               />
+              {errors.space_id && (<p className="text-sm text-red-500">{errors.space_id.message as any}</p>)}
             </div>
           </div>
 
@@ -313,13 +320,24 @@ export function TenantForm({
             </div>
             <div>
               <Label htmlFor="phone">Phone *</Label>
-              <Input
-                id="phone"
-                type="tel"
-                {...register("phone")}
-                placeholder="e.g., +91-9876543210"
-                disabled={isReadOnly}
-                className={errors.phone ? 'border-red-500' : ''}
+              <Controller
+                name="phone"
+                control={control}
+                render={({ field }) => (
+                  <Input
+                    id="phone"
+                    type="tel"
+                    value={field.value || ""}
+                    onChange={(e) => {
+                      const numeric = e.target.value.replace(/\D/g, "").slice(0, 10);
+                      field.onChange(numeric);
+                    }}
+                    placeholder="e.g., 9876543210"
+                    disabled={isReadOnly}
+                    className={errors.phone ? 'border-red-500' : ''}
+                    maxLength={10}
+                  />
+                )}
               />
               {errors.phone && (<p className="text-sm text-red-500">{errors.phone.message as any}</p>)}
             </div>
@@ -503,7 +521,7 @@ export function TenantForm({
               {mode === "view" ? "Close" : "Cancel"}
             </Button>
             {mode !== "view" && (
-              <Button type="submit" disabled={!isValid || isSubmitting}>
+              <Button type="submit" disabled={(mode === "create" ? !canSubmitCreate : false) || isSubmitting}>
                 {mode === "create" ? "Create Tenant" : "Update Tenant"}
               </Button>
             )}

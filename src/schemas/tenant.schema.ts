@@ -4,22 +4,25 @@ export const tenantSchema = z
   .object({
     name: z.string().min(1, "Name is required"),
     email: z.string().email("Invalid email address"),
-    phone: z.string().min(1, "Phone is required"),
+    phone: z.string().regex(/^\d{10}$/, "Phone number must be exactly 10 digits"),
     site_id: z.string().min(1, "Site is required"),
     building_id: z.string().optional(),
-    space_id: z.string().optional(),
+    space_id: z.string().min(1, "Space is required"),
     tenant_type: z.enum(["individual", "commercial"], {
-      required_error: "Tenant type is required",
+      required_error: "Tenant type is required",  
     }),
-    status: z.enum(["active", "inactive", "suspended"], {
-      required_error: "Status is required",
-    }),
+    
+    status: z.coerce.string().min(1, "Status is required"),
     type: z.string().optional(),
     legal_name: z.string().optional(),
     contact_info: z
       .object({
         name: z.string().optional(),
-        email: z.string().email("Invalid email").optional(),
+        email: z.union([
+          z.string().email("Invalid email"),
+          z.literal(""),
+          z.undefined()
+        ]).optional(),
         phone: z.string().optional(),
         address: z
           .object({
