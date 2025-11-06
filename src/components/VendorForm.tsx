@@ -47,6 +47,7 @@ export function VendorForm({ vendor, isOpen, onClose, onSave, mode }: VendorForm
     getValues,
     watch,
     formState: { errors, isSubmitting, isValid },
+    trigger,
   } = useForm<VendorFormValues>({
     resolver: zodResolver(vendorSchema),
     defaultValues: emptyFormData,
@@ -74,12 +75,14 @@ export function VendorForm({ vendor, isOpen, onClose, onSave, mode }: VendorForm
           address: "",
         },
       });
+    
+      setTimeout(() => trigger(), 100);
     } else {
       reset(emptyFormData);
     }
     loadStatusLookup();
     loadCategoriesLookup();
-  }, [vendor, mode, reset]);
+  }, [vendor, mode, reset, trigger]);
 
   const loadStatusLookup = async () => {
   const response = await vendorsApiService.getStatusLookup();
@@ -353,7 +356,7 @@ const loadCategoriesLookup = async () => {
               {mode === "view" ? "Close" : "Cancel"}
             </Button>
             {mode !== "view" && (
-              <Button type="submit" disabled={!isValid || isSubmitting}>
+              <Button type="submit" disabled={(mode === "create" && !isValid) || isSubmitting}>
                 {isSubmitting ? "Saving..." : mode === "create" ? "Create Vendor" : "Update Vendor"}
               </Button>
             )}
