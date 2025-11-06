@@ -103,7 +103,13 @@ export default function Invoices() {
     params.append("limit", limit.toString());
     const response = await invoiceApiService.getPayments(params);
     if (response.success) setPayments(response.data?.payments || []);
-    setTotalPaymentItems(response.data?.totalpayments || 0);
+    const totalFromApi =
+      response.data?.totalpayments ??
+      response.data?.totalPayments ??
+      response.data?.total_payments ??
+      response.data?.total ??
+      (Array.isArray(response.data?.payments) ? response.data.payments.length : 0);
+    setTotalPaymentItems(totalFromApi || 0);
   }
 
 
@@ -395,8 +401,10 @@ export default function Invoices() {
               {/* Recent Payments */}
               <Card>
                 <CardHeader>
-                  <CardTitle>Recent Payments</CardTitle>
-                  <CardDescription>Latest payment transactions</CardDescription>
+                  <CardTitle>Payments</CardTitle>
+                  <CardDescription>
+                    {totalPaymentItems} payment(s) found
+                  </CardDescription>
                 </CardHeader>
                 <CardContent>
                   <Table>
@@ -411,7 +419,7 @@ export default function Invoices() {
                       </TableRow>
                     </TableHeader>
                     <TableBody>
-                      {payments.slice(0, 5).map((payment) => (
+                      {payments.map((payment) => (
                         <TableRow key={payment.id}>
                           <TableCell className="font-medium">{payment.invoice_no}</TableCell>
                           <TableCell>{payment.customer_name}</TableCell>
