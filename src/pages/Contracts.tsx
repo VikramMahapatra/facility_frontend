@@ -9,8 +9,8 @@ import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, D
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Plus, Search, Eye, Edit, FileText, Calendar, Building, Filter, AlertCircle, CheckCircle, Trash2 } from "lucide-react";
-import { contractsApiService } from "@/services/procurement/contractsapi";
-import { vendorsApiService } from "@/services/procurement/vendorsapi";
+import { contractApiService } from "@/services/pocurments/contractapi";
+import { vendorsApiService } from "@/services/pocurments/vendorsapi";
 import { useSkipFirstEffect } from "@/hooks/use-skipfirst-effect";
 import { SidebarProvider, SidebarTrigger, SidebarInset } from "@/components/ui/sidebar";
 import { Separator } from "@/components/ui/separator";
@@ -77,14 +77,14 @@ export default function Contracts() {
     params.append("skip", skip.toString());
     params.append("limit", limit.toString());
 
-    const response = await contractsApiService.getContracts(params);
+    const response = await contractApiService.getContracts(params);
     const contractsList = response.data?.contracts || [];
     setContracts(response.data?.contracts || []);
     setTotalItems(response.data?.total || 0);
   };
 
   const loadOverview = async () => {
-    const response = await contractsApiService.getContractsOverview();
+    const response = await contractApiService.getContractsOverview();
     
     // Map API response to expected format
     const overviewData = {
@@ -98,18 +98,19 @@ export default function Contracts() {
   };
 
   const loadStatusLookup = async () => {
-    const lookup = await contractsApiService.getContractsStatusLookup();
+    const lookup = await contractApiService.getStatusLookup();
     if (lookup.success) setStatusList(lookup.data || []);
   };
 
   const loadTypeLookup = async () => {
-    const lookup = await contractsApiService.getContractsTypeLookup();
+    const lookup = await contractApiService.getTypeLookup();
     if (lookup.success) setTypeList(lookup.data || []);
   };
 
   const loadVendorLookup = async () => {
-    // Vendor lookup functionality removed - not available in API
-    setVendorList([]);
+    const response = await vendorsApiService.getVendorLookup();
+    if (response.success) setVendorList(response.data || []);
+    
   };
 
   const getVendorName = (vendorId: string) => {
@@ -142,7 +143,7 @@ export default function Contracts() {
 
 const confirmDelete = async () => {
   if (deleteContractId) {
-    const response = await contractsApiService.deleteContracts(deleteContractId);
+    const response = await contractApiService.deleteContract(deleteContractId);
 
     if (response.success) {
        
@@ -163,14 +164,14 @@ const confirmDelete = async () => {
   const handleSave = async (contractData: any) => {
   let response;
   if (formMode === "create") {
-    response = await contractsApiService.addContracts(contractData);
+    response = await contractApiService.addContract(contractData);
   } else if (formMode === "edit" && selectedContract) {
     const updatedContract = {
       ...selectedContract,
       ...contractData,
       updated_at: new Date().toISOString(),
     }
-    response = await contractsApiService.updateContracts(updatedContract);
+    response = await contractApiService.updateContract(updatedContract);
   }
 
   if (response?.success) {

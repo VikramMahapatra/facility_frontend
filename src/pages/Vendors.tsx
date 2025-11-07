@@ -6,7 +6,7 @@ import { Badge } from "@/components/ui/badge";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Plus, Search, Eye, Edit, Mail, Phone, Star, Building, Filter, User, MapPin, Trash2 } from "lucide-react";
-import { vendorsApiService } from "@/services/procurement/vendorsapi";
+import { vendorsApiService } from "@/services/pocurments/vendorsapi";
 import { useSkipFirstEffect } from "@/hooks/use-skipfirst-effect";
 import { SidebarProvider, SidebarTrigger, SidebarInset } from "@/components/ui/sidebar";
 import { Separator } from "@/components/ui/separator";
@@ -95,13 +95,13 @@ export default function Vendors() {
   }
 };
   const loadStatusLookup = async () => {
-  const lookup = await vendorsApiService.getVendorsStatusLookup();
+    const lookup = await vendorsApiService.getStatusLookup();
   if (lookup.success) setStatusList(lookup.data || []);
 };
 
 const loadCategoriesLookup = async () => {
-  const lookup = await vendorsApiService.getVendorsCatgoriesLookup();
-  if (lookup.success) setCategoriesList(lookup.data || []);
+  const lookup = await vendorsApiService.getCategoriesLookup();
+  if (lookup.success) setCategoriesList(lookup.data || []); 
 };
 
   const handleCreate = () => {
@@ -128,7 +128,7 @@ const loadCategoriesLookup = async () => {
 
 const confirmDelete = async () => {
   if (deleteVendorId) {
-    const response = await vendorsApiService.deleteVendors(deleteVendorId);
+    const response = await vendorsApiService.deleteVendor(deleteVendorId);
 
     if (response.success) {
       // Success - refresh data
@@ -147,13 +147,13 @@ const confirmDelete = async () => {
   const handleSave = async (vendorData: any) => {
   let response;
   if (formMode === "create") {
-    response = await vendorsApiService.addVendors(vendorData);
+    response = await vendorsApiService.addVendor(vendorData);
   } else if (formMode === "edit" && selectedVendor) {
     const updatedVendor = {
       ...selectedVendor,
       ...vendorData
     };
-    response = await vendorsApiService.updateVendors(updatedVendor);
+    response = await vendorsApiService.updateVendor(updatedVendor);
   }
 
   if (response?.success) {
