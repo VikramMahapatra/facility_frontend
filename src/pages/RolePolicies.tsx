@@ -24,6 +24,7 @@ import { toast } from "sonner";
 import { SidebarProvider, SidebarTrigger } from "@/components/ui/sidebar";
 import { PropertySidebar } from "@/components/PropertySidebar";
 import { rolePolicyApiService } from "@/services/access_control/rolepoliciesapi";
+import { navigationItems } from "@/data/navigationItems";
 
 export interface RolePolicy {
   role_id: string;
@@ -32,71 +33,13 @@ export interface RolePolicy {
   condition?: any;
 }
 
-export const availableResources = [
-  // ================= Overview =================
-  { id: "dashboard", label: "Dashboard" },
-  { id: "analytics", label: "Analytics" },
-  { id: "ai_predictions", label: "AI Predictions" },
-
-  // =============== Spaces & Sites ===============
-  { id: "organizations", label: "Organizations" },
-  { id: "sites", label: "Sites (Properties)" },
-  { id: "buildings", label: "Buildings (Wings/Towers)" },
-  { id: "space_groups", label: "Space Groups (Templates)" },
-  { id: "spaces", label: "Spaces" },
-  { id: "group_assignments", label: "Group Assignments" },
-
-  // ============ Leasing & Tenants ============
-  { id: "leases", label: "Leases" },
-  { id: "tenants", label: "Tenants" },
-  { id: "lease_charges", label: "Lease Charges" },
-
-  // =============== Financials ===============
-  { id: "invoices", label: "Invoices & Payments" },
-  { id: "revenue_reports", label: "Revenue Reports" },
-  { id: "tax_management", label: "Tax Management" },
-
-  // ========= Maintenance & Assets ==========
-  { id: "assets", label: "Assets" },
-  { id: "work_orders", label: "Work Orders" },
-  { id: "service_requests", label: "Service Requests" },
-  { id: "preventive_maintenance", label: "Preventive Maintenance" },
-
-  // =============== Hospitality ===============
-  { id: "bookings", label: "Bookings" },
-  { id: "guests", label: "Guests" },
-  { id: "rate_plans", label: "Rate Plans" },
-  { id: "folios", label: "Folios" },
-  { id: "housekeeping", label: "Housekeeping" },
-
-  // =============== Procurement ===============
-  { id: "vendors", label: "Vendors" },
-  { id: "contracts", label: "Contracts" },
-
-  // ========== Parking & Access ==========
-  { id: "parking_zones", label: "Parking Zones" },
-  { id: "access_logs", label: "Access Logs" },
-  { id: "visitors", label: "Visitor Management" },
-
-  // ============= Energy & IoT =============
-  { id: "meter_readings", label: "Meters & Readings" },
-  { id: "consumption_reports", label: "Consumption Reports" },
-
-  // ============= AI & Automation =============
-  { id: "ai_chatbot", label: "AI ChatBot" },
-
-  // ============= Access Control =============
-  { id: "roles", label: "Roles Management" },
-  { id: "role_policies", label: "Role Policies" },
-  { id: "users_management", label: "Users Management" },
-  { id: "pending_approvals", label: "Pending Approvals" },
-  { id: "approval_rules", label: "Approval Rules" },
-
-  // ================= System =================
-  { id: "notifications", label: "Notifications" },
-  { id: "settings", label: "Settings" },
-  { id: "documentation", label: "Documentation" },
-];
+export const availableResources = navigationItems
+  .flatMap(section => section.items) // flatten all sections
+  .filter(item => item.resource)     // ensure it has a resource
+  .map(item => ({
+    id: item.resource,
+    label: item.title
+  }));
 
 
 export const availableActions = [
@@ -167,7 +110,7 @@ export default function RolePolicies() {
     const response = await rolePolicyApiService.savePolicies(selectedRoleId, policies);
     if (response.success) {
       toast.success("Role policies saved successfully");
-    }  
+    }
   };
 
   return (
