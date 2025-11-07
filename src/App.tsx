@@ -28,6 +28,7 @@ import TaxManagement from "./pages/TaxManagement";
 import Assets from "./pages/Assets";
 import WorkOrders from "./pages/WorkOrders";
 import ServiceRequests from "./pages/ServiceRequests";
+import ServiceRequestDetail from "./pages/ServiceRequestDetail";
 import PreventiveMaintenance from "./pages/PreventiveMaintenance";
 import Vendors from "./pages/Vendors";
 import Contracts from "./pages/Contracts";
@@ -48,8 +49,13 @@ import Settings from "./pages/Settings";
 import Documentation from "./pages/Documentation";
 import RolesManagement from "./pages/RolesManagement";
 import RolePolicies from "./pages/RolePolicies";
+import TicketDetail from "./pages/TicketDetail";
 import UsersManagement from "./pages/UsersManagement";
+import TicketWorkload from "./pages/TicketWorkload";
+import TicketCategories from "./pages/TicketCategories";
 import PendingApprovals from "./pages/PendingApprovals";
+import TicketDashboard from "./pages/TicketDashboard";
+import Tickets from "./pages/Tickets";
 import ApprovalRules from "./pages/ApprovalRules";
 import { GoogleOAuthProvider } from "@react-oauth/google";
 import ProtectedLayout from "./components/ProtectedLayout";
@@ -94,6 +100,7 @@ const App = () => {
                   <Route path="/assets" element={<Assets />} />
                   <Route path="/work-orders" element={<WorkOrders />} />
                   <Route path="/service-requests" element={<ServiceRequests />} />
+                  <Route path="/service-requests/:id" element={<ServiceRequestDetail />} />
                   <Route path="/preventive-maintenance" element={<PreventiveMaintenance />} />
                   <Route path="/vendors" element={<Vendors />} />
                   <Route path="/contracts" element={<Contracts />} />
@@ -115,6 +122,12 @@ const App = () => {
                   <Route path="/role-policies" element={<RolePolicies />} />
                   <Route path="/users-management" element={<UsersManagement />} />
                   <Route path="/pending-approvals" element={<PendingApprovals />} />
+                  <Route path="/ticket-dashboard" element={<TicketDashboard />} />
+                
+                  <Route path="/tickets" element={<Tickets />} />
+                  <Route path="/tickets/:ticketId" element={<TicketDetail />} />
+                  <Route path="/ticket-categories" element={<TicketCategories />} />
+                  <Route path="/ticket-workload" element={<TicketWorkload />} />
                   <Route path="/approval-rules" element={<ApprovalRules />} />
                 </Route>
                 {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}

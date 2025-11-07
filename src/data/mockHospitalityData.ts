@@ -78,7 +78,7 @@ export interface Folio {
   id: string;
   bookingId: string;
   folioNo: string;
-  status: 'open' | 'settled';
+  status: 'open' | 'settled' | 'refunded';
   payerKind: 'guest' | 'company' | 'agent';
   payerId?: string;
   createdAt: string;
@@ -86,6 +86,24 @@ export interface Folio {
   totalCharges: number;
   totalPayments: number;
   balance: number;
+}
+
+export interface FolioCharge {
+  id: string;
+  folioId: string;
+  description: string;
+  code: string;
+  date: string;
+  amount: number;
+}
+
+export interface FolioPayment {
+  id: string;
+  folioId: string;
+  method: string;
+  refNo: string;
+  paidAt: string;
+  amount: number;
 }
 
 export interface HousekeepingTask {
@@ -351,6 +369,76 @@ export const mockFolios: Folio[] = [
     totalCharges: 0,
     totalPayments: 0,
     balance: 0
+  }
+];
+
+export const mockFolioCharges: FolioCharge[] = [
+  {
+    id: "charge-1",
+    folioId: "folio-1",
+    description: "Room Charges (3 nights)",
+    code: "ROOM",
+    date: "2024-01-15T10:30:00Z",
+    amount: 16500
+  },
+  {
+    id: "charge-2",
+    folioId: "folio-1",
+    description: "Restaurant - Dinner",
+    code: "F&B",
+    date: "2024-01-15T19:00:00Z",
+    amount: 1200
+  },
+  {
+    id: "charge-3",
+    folioId: "folio-1",
+    description: "Laundry Service",
+    code: "LAUNDRY",
+    date: "2024-01-16T14:00:00Z",
+    amount: 800
+  },
+  {
+    id: "charge-4",
+    folioId: "folio-2",
+    description: "Room Charges (4 nights)",
+    code: "ROOM",
+    date: "2024-01-08T09:20:00Z",
+    amount: 19200
+  },
+  {
+    id: "charge-5",
+    folioId: "folio-2",
+    description: "GST Tax",
+    code: "TAX",
+    date: "2024-01-08T09:20:00Z",
+    amount: 2000
+  }
+];
+
+export const mockFolioPayments: FolioPayment[] = [
+  {
+    id: "payment-1",
+    folioId: "folio-1",
+    method: "credit card",
+    refNo: "CC-123456",
+    paidAt: "2024-01-15T11:00:00Z",
+    amount: 10000
+  },
+  {
+    id: "payment-2",
+    folioId: "folio-2",
+    method: "bank transfer",
+    refNo: "BT-789012",
+    paidAt: "2024-01-08T10:00:00Z",
+    amount: 21200
+  },
+  {
+    id: "payment-3",
+    folioId: "folio-1",
+    method: "cash",
+    refNo: "CASH-001",
+    paidAt: "2024-01-16T15:00:00Z",
+    amount: 5000
   }
 ];
 
