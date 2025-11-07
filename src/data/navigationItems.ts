@@ -50,6 +50,15 @@ export const navigationItems = [
         ]
     },
     {
+        title: "Ticketing Service",
+        items: [
+            { title: "Ticket Dashboard", url: "/ticket-dashboard", icon: BarChart3, resource: "ticket_dashboard" },
+            { title: "Tickets", url: "/tickets", icon: AlertTriangle, resource: "tickets" },
+            { title: "Ticket Categories", url: "/ticket-categories", icon: Archive, resource: "ticket_categories" },
+            { title: "Workload Management", url: "/ticket-workload", icon: Users, resource: "workload_management" },
+        ]
+    },
+    {
         title: "Hospitality",
         items: [
             { title: "Bookings", url: "/bookings", icon: Hotel, resource: "bookings" },
