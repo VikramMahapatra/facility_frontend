@@ -1,7 +1,6 @@
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { SidebarProvider } from "@/components/ui/sidebar";
+import { SidebarProvider, SidebarInset, SidebarTrigger } from "@/components/ui/sidebar";
 import { PropertySidebar } from "@/components/PropertySidebar";
-import Navigation from "@/components/Navigation";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { mockTickets } from "@/data/mockTicketData";
 import { Button } from "@/components/ui/button";
@@ -9,7 +8,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/u
 import { Label } from "@/components/ui/label";
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { ArrowLeft, UserX, RefreshCw } from "lucide-react";
+import { ArrowLeft, UserX, RefreshCw, Users } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
@@ -112,24 +111,24 @@ export default function TicketWorkload() {
     <SidebarProvider>
       <div className="flex min-h-screen w-full">
         <PropertySidebar />
-        <div className="flex-1">
-          <Navigation />
-          <main className="p-6 space-y-6">
-            <div className="flex justify-between items-center">
-              <div>
-                <Button
-                  variant="ghost"
-                  onClick={() => navigate('/ticket-dashboard')}
-                  className="mb-2"
-                >
-                  <ArrowLeft className="h-4 w-4 mr-2" />
-                  Back to Dashboard
-                </Button>
-                <h1 className="text-3xl font-bold">Workload Management</h1>
-                <p className="text-muted-foreground mt-1">
-                  View and manage ticket assignments across your team
-                </p>
-              </div>
+        <SidebarInset className="flex-1">
+          <header className="flex h-16 shrink-0 items-center gap-2 border-b border-sidebar-border px-4">
+            <SidebarTrigger className="-ml-1" />
+            <div className="flex items-center gap-2">
+              <Users className="h-5 w-5 text-sidebar-primary" />
+              <h1 className="text-lg font-semibold text-sidebar-primary">Workload Management</h1>
+            </div>
+          </header>
+
+          <main className="flex-1 p-6">
+            <div className="space-y-6">
+              <div className="flex items-center justify-between">
+                <div>
+                  <h2 className="text-3xl font-bold text-sidebar-primary">Team Workload</h2>
+                  <p className="text-muted-foreground">
+                    View and manage ticket assignments across your team
+                  </p>
+                </div>
               <Select value={selectedSiteId} onValueChange={setSelectedSiteId}>
                 <SelectTrigger className="w-[200px]">
                   <SelectValue placeholder="Select Site" />
@@ -292,8 +291,9 @@ export default function TicketWorkload() {
                 )}
               </CardContent>
             </Card>
+            </div>
           </main>
-        </div>
+        </SidebarInset>
       </div>
 
       {/* Reassign Dialog */}

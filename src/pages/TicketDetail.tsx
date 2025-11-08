@@ -1,14 +1,13 @@
 import { useState } from "react";
 import { useParams, useNavigate } from "react-router-dom";
-import { SidebarProvider } from "@/components/ui/sidebar";
+import { SidebarProvider, SidebarInset, SidebarTrigger } from "@/components/ui/sidebar";
 import { PropertySidebar } from "@/components/PropertySidebar";
-import Navigation from "@/components/Navigation";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { ArrowLeft, MessageSquare, User, Clock, TrendingUp, FileText, Star } from "lucide-react";
+import { ArrowLeft, MessageSquare, User, Clock, TrendingUp, FileText, Star, TicketIcon } from "lucide-react";
 import { mockTickets, mockTicketWorkflows, mockTicketComments, mockTicketWorkOrders } from "@/data/mockTicketData";
 import { useToast } from "@/hooks/use-toast";
 
@@ -100,19 +99,27 @@ export default function TicketDetail() {
     <SidebarProvider>
       <div className="flex min-h-screen w-full">
         <PropertySidebar />
-        <div className="flex-1">
-          <Navigation />
-          <main className="p-6 space-y-6">
-            <div className="flex items-center gap-4">
-              <Button variant="ghost" size="sm" onClick={() => navigate("/tickets")}>
-                <ArrowLeft className="w-4 h-4 mr-2" />
-                Back
-              </Button>
-              <div className="flex-1">
-                <h1 className="text-3xl font-bold">Ticket #{ticket.ticket_id}</h1>
-                <p className="text-muted-foreground mt-1">{ticket.title}</p>
-              </div>
+        <SidebarInset className="flex-1">
+          <header className="flex h-16 shrink-0 items-center gap-2 border-b border-sidebar-border px-4">
+            <SidebarTrigger className="-ml-1" />
+            <div className="flex items-center gap-2">
+              <TicketIcon className="h-5 w-5 text-sidebar-primary" />
+              <h1 className="text-lg font-semibold text-sidebar-primary">Ticket Details</h1>
             </div>
+          </header>
+
+          <main className="flex-1 p-6">
+            <div className="space-y-6">
+              <div className="flex items-center gap-4">
+                <Button variant="ghost" size="sm" onClick={() => navigate("/tickets")}>
+                  <ArrowLeft className="w-4 h-4 mr-2" />
+                  Back
+                </Button>
+                <div className="flex-1">
+                  <h2 className="text-2xl font-bold text-sidebar-primary">Ticket #{ticket.ticket_id}</h2>
+                  <p className="text-muted-foreground">{ticket.title}</p>
+                </div>
+              </div>
 
             <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
               {/* Main Content */}
@@ -354,8 +361,9 @@ export default function TicketDetail() {
                 </Card>
               </div>
             </div>
+            </div>
           </main>
-        </div>
+        </SidebarInset>
       </div>
     </SidebarProvider>
   );

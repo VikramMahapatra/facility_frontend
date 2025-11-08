@@ -1,29 +1,46 @@
-import { useState } from "react";
-import { SidebarProvider } from "@/components/ui/sidebar";
+import { useState, useEffect } from "react";
+import { SidebarProvider, SidebarInset, SidebarTrigger } from "@/components/ui/sidebar";
 import { PropertySidebar } from "@/components/PropertySidebar";
-import Navigation from "@/components/Navigation";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
-import { Edit, Plus, Trash2 } from "lucide-react";
-import { mockTicketCategories } from "@/data/mockTicketData";
+import { Edit, Plus, Trash2, FileText, Archive } from "lucide-react";
 import TicketCategoryForm from "@/components/TicketCategoryForm";
 import { useToast } from "@/hooks/use-toast";
+import { ticketCategoriesApiService } from "@/services/ticketing_service/ticketcategoriesapi";
+import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
 
 export default function TicketCategories() {
   const { toast } = useToast();
   const [isFormOpen, setIsFormOpen] = useState(false);
   const [isEditOpen, setIsEditOpen] = useState(false);
   const [editingCategory, setEditingCategory] = useState<any>(null);
+  const [categories, setCategories] = useState<any[]>([]);
+  const [deleteCategoryId, setDeleteCategoryId] = useState<string | number | null>(null);
 
-  const handleCreate = (data: any) => {
-    toast({
-      title: "Category created",
-      description: "Ticket category has been created successfully.",
-    });
-    setIsFormOpen(false);
+  useEffect(() => {
+    loadTicketCategories();
+  }, []);
+
+  const loadTicketCategories = async () => {
+    const response = await ticketCategoriesApiService.getTicketCategories();
+    if (response.success) {
+      setCategories(response.data?.ticket_categories);
+    }
+  };
+
+  const handleCreate = async (data: any) => {
+    const response = await ticketCategoriesApiService.addTicketCategory(data);
+    if (response?.success) {
+      setIsFormOpen(false);
+      loadTicketCategories();
+      toast({
+        title: "Category created",
+        description: "Ticket category has been created successfully.",
+      });
+    }
   };
 
   const handleEdit = (category: any) => {
@@ -31,38 +48,66 @@ export default function TicketCategories() {
     setIsEditOpen(true);
   };
 
-  const handleEditSubmit = (data: any) => {
-    toast({
-      title: "Category updated",
-      description: "Ticket category has been updated successfully.",
-    });
-    setIsEditOpen(false);
-    setEditingCategory(null);
+  const handleEditSubmit = async (data: any) => {
+    const updatedCategory = {
+      ...editingCategory,
+      ...data,
+    };
+    const response = await ticketCategoriesApiService.updateTicketCategory(updatedCategory);
+    if (response?.success) {
+      setIsEditOpen(false);
+      setEditingCategory(null);
+      loadTicketCategories();
+      toast({
+        title: "Category updated",
+        description: "Ticket category has been updated successfully.",
+      });
+    }
   };
 
-  const handleDelete = (categoryId: number) => {
-    toast({
-      title: "Category deleted",
-      description: "Ticket category has been deleted successfully.",
-    });
+  const handleDelete = (categoryId: string | number) => {
+    setDeleteCategoryId(categoryId);
+  };
+
+  const confirmDelete = async () => {
+    if (deleteCategoryId) {
+      const response = await ticketCategoriesApiService.deleteTicketCategory(deleteCategoryId);
+      if (response.success) {
+        loadTicketCategories();
+        setDeleteCategoryId(null);
+        toast({
+          title: "Category deleted",
+          description: "Ticket category has been deleted successfully.",
+        });
+      }
+      setDeleteCategoryId(null);
+    }
   };
 
   return (
     <SidebarProvider>
       <div className="flex min-h-screen w-full">
         <PropertySidebar />
-        <div className="flex-1">
-          <Navigation />
-          <main className="p-6">
-            <div className="flex justify-between items-center mb-6">
+        <SidebarInset className="flex-1">
+          <header className="flex h-16 shrink-0 items-center gap-2 border-b border-sidebar-border px-4">
+            <SidebarTrigger className="-ml-1" />
+            <div className="flex items-center gap-2">
+              <Archive className="h-5 w-5 text-sidebar-primary" />
+              <h1 className="text-lg font-semibold text-sidebar-primary">Ticket Categories</h1>
+            </div>
+          </header>
+
+          <main className="flex-1 p-6">
+            <div className="space-y-6">
+            <div className="flex items-center justify-between">
               <div>
-                <h1 className="text-3xl font-bold">Ticket Categories</h1>
-                <p className="text-muted-foreground mt-1">
+                <h2 className="text-3xl font-bold text-sidebar-primary">Ticket Categories</h2>
+                <p className="text-muted-foreground">
                   Manage service ticket categories and SLA policies
                 </p>
               </div>
-              <Button onClick={() => setIsFormOpen(true)}>
-                <Plus className="w-4 h-4 mr-2" />
+              <Button onClick={() => setIsFormOpen(true)} className="gap-2">
+                <Plus className="h-4 w-4" />
                 Add Category
               </Button>
             </div>
@@ -83,8 +128,8 @@ export default function TicketCategories() {
                     </TableRow>
                   </TableHeader>
                   <TableBody>
-                    {mockTicketCategories.map((category) => (
-                      <TableRow key={category.category_id}>
+                    {categories.map((category) => (
+                      <TableRow key={category.id || category.category_id}>
                         <TableCell className="font-medium">{category.category_name}</TableCell>
                         <TableCell>
                           <Badge variant="outline">{category.auto_assign_role}</Badge>
@@ -100,7 +145,7 @@ export default function TicketCategories() {
                             <Button variant="ghost" size="sm" onClick={() => handleEdit(category)}>
                               <Edit className="w-4 h-4" />
                             </Button>
-                            <Button variant="ghost" size="sm" onClick={() => handleDelete(category.category_id)}>
+                            <Button variant="ghost" size="sm" onClick={() => handleDelete(category.id || category.category_id)}>
                               <Trash2 className="w-4 h-4" />
                             </Button>
                           </div>
@@ -111,8 +156,9 @@ export default function TicketCategories() {
                 </Table>
               </CardContent>
             </Card>
+            </div>
           </main>
-        </div>
+        </SidebarInset>
       </div>
 
       {/* Create Category Dialog */}
@@ -143,6 +189,23 @@ export default function TicketCategories() {
           />
         </DialogContent>
       </Dialog>
+
+      <AlertDialog open={!!deleteCategoryId} onOpenChange={() => setDeleteCategoryId(null)}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Delete Ticket Category</AlertDialogTitle>
+            <AlertDialogDescription>
+              Are you sure you want to delete this ticket category? This action cannot be undone.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancel</AlertDialogCancel>
+            <AlertDialogAction onClick={confirmDelete} className="bg-destructive text-destructive-foreground">
+              Delete
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </SidebarProvider>
   );
 }
