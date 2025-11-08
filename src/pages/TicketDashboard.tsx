@@ -1,10 +1,9 @@
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { SidebarProvider } from "@/components/ui/sidebar";
+import { SidebarProvider, SidebarInset, SidebarTrigger } from "@/components/ui/sidebar";
 import { PropertySidebar } from "@/components/PropertySidebar";
-import Navigation from "@/components/Navigation";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { mockTickets } from "@/data/mockTicketData";
-import { AlertTriangle, CheckCircle, Clock, TrendingUp, TicketIcon, Zap, Users, Calendar } from "lucide-react";
+import { AlertTriangle, CheckCircle, Clock, TrendingUp, TicketIcon, Zap, Users, Calendar, BarChart3 } from "lucide-react";
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { useNavigate } from "react-router-dom";
@@ -76,16 +75,24 @@ export default function TicketDashboard() {
     <SidebarProvider>
       <div className="flex min-h-screen w-full">
         <PropertySidebar />
-        <div className="flex-1">
-          <Navigation />
-          <main className="p-6 space-y-6">
-            <div className="flex justify-between items-center">
-              <div>
-                <h1 className="text-3xl font-bold">Ticketing Dashboard</h1>
-                <p className="text-muted-foreground mt-1">
-                  Monitor ticket status and performance metrics
-                </p>
-              </div>
+        <SidebarInset className="flex-1">
+          <header className="flex h-16 shrink-0 items-center gap-2 border-b border-sidebar-border px-4">
+            <SidebarTrigger className="-ml-1" />
+            <div className="flex items-center gap-2">
+              <BarChart3 className="h-5 w-5 text-sidebar-primary" />
+              <h1 className="text-lg font-semibold text-sidebar-primary">Ticketing Dashboard</h1>
+            </div>
+          </header>
+
+          <main className="flex-1 p-6">
+            <div className="space-y-6">
+              <div className="flex items-center justify-between">
+                <div>
+                  <h2 className="text-3xl font-bold text-sidebar-primary">Dashboard Overview</h2>
+                  <p className="text-muted-foreground">
+                    Monitor ticket status and performance metrics
+                  </p>
+                </div>
               <div className="flex gap-3">
                 <Select value={selectedSiteId} onValueChange={setSelectedSiteId}>
                   <SelectTrigger className="w-[200px]">
@@ -318,8 +325,9 @@ export default function TicketDashboard() {
                 </div>
               </CardContent>
             </Card>
+            </div>
           </main>
-        </div>
+        </SidebarInset>
       </div>
     </SidebarProvider>
   );
