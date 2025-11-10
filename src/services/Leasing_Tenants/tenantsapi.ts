@@ -44,6 +44,11 @@ class TenantsApiService {
   async getTenantTypeLookup() {
     return await apiService.request("/tenants/type-lookup");
   }
+
+  async getTenantsBySiteSpace(params?: URLSearchParams) {
+    const qs = params?.toString() ? `?${params.toString()}` : "";
+    return await apiService.request(`/tenants/by-site-space${qs}`);
+  }
 }
 
 export const tenantsApiService = new TenantsApiService();
