@@ -39,11 +39,27 @@ const Login = () => {
           } else {
             // Existing user - go to dashboard
             setUser(authResponse.user);
-            navigate('/dashboard');
+            if (authResponse.user.status.toLowerCase() === 'pending_approval') {
+              const user = authResponse.user;
+              navigate('/registration-status', {
+                state: {
+                  userData: {
+                    email: user.email,
+                    name: user.full_name
+                  }
+                }
+              });
+            } else {
+              navigate('/dashboard');
+            }
           }
           setIsLoading(false);
         }, 1000);
       }
+      else {
+        setIsLoading(false);
+      }
+
     },
     onError: () => {
       console.error("Google login failed");

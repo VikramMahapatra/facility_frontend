@@ -9,6 +9,9 @@ import { useNavigate, useLocation } from "react-router-dom";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Building2, Users, Truck } from "lucide-react";
 import { authApiService } from "@/services/authapi";
+import 'react-phone-input-2/lib/style.css';
+import PhoneInput from 'react-phone-input-2';
+import { toast } from "sonner";
 
 const SignUp = () => {
   const navigate = useNavigate();
@@ -18,6 +21,7 @@ const SignUp = () => {
   const [formData, setFormData] = useState({
     name: googleData?.name || "",
     email: googleData?.email || "",
+    phone: "",
     pictureUrl: googleData?.picture || "",
     accountType: "",
     organizationName: "",
@@ -50,29 +54,45 @@ const SignUp = () => {
     e.preventDefault();
     if (!formData.accountType) return;
 
+    const phoneDigits = formData.phone.replace(/\D/g, ''); // remove non-digits
+    if (phoneDigits.length < 10 || phoneDigits.length > 15) {
+      toast.error('Please enter a valid phone number');
+      return;
+    }
+
     setIsLoading(true);
 
     // registration process
     const userResponse = await authApiService.setupUser(formData);
 
-    setTimeout(() => {
-      localStorage.setItem('user', JSON.stringify({
-        id: userResponse.user.id,
-        email: userResponse.user.email,
-        name: userResponse.user.name,
-        accountType: userResponse.user.accountType,
-        organizationName: userResponse.user.organizationName,
-        isAuthenticated: true
-      }));
+    if (userResponse?.success) {
+      const user = userResponse.data?.user;
 
-      // Redirect based on account type
-      if (formData.accountType === 'organization') {
-        navigate('/dashboard');
+      if (user.status.lower() === 'pending_approval') {
+        navigate('/registration-status', {
+          state: {
+            userData: {
+              email: user.email,
+              name: user.full_name
+            }
+          }
+        });
       } else {
-        // For demo purposes, all account types go to dashboard
+
+        localStorage.setItem('user', JSON.stringify({
+          id: user.id,
+          email: user.email,
+          name: user.name,
+          accountType: user.accountType,
+          organizationName: user.organizationName,
+          isAuthenticated: true
+        }));
+
         navigate('/dashboard');
       }
-    }, 1500);
+    } else {
+      toast.error('Signup failed, please try again.');
+    }
   };
 
   if (!googleData) {
@@ -80,6 +100,7 @@ const SignUp = () => {
     navigate('/login');
     return null;
   }
+
 
   return (
     <div className="min-h-screen bg-background">
@@ -124,6 +145,23 @@ const SignUp = () => {
                     required
                   />
                 </div>
+                <div className="space-y-2">
+                  <Label htmlFor="phone">Phone</Label>
+                  <PhoneInput
+                    country={'in'}
+                    value={formData.phone}
+                    onChange={(value) => setFormData({ ...formData, phone: value })}
+                    inputProps={{
+                      name: 'phone',
+                      required: true,
+                    }}
+                    containerClass="w-full relative"
+                    inputClass="!w-full !h-10 !pl-12 !rounded-md !border !border-input !bg-background !px-3 !py-2 !text-base !ring-offset-background placeholder:!text-muted-foreground focus-visible:!outline-none focus-visible:!ring-2 focus-visible:!ring-ring focus-visible:!ring-offset-2 disabled:!cursor-not-allowed disabled:!opacity-50 md:!text-sm"
+                    buttonClass="!border-none !bg-transparent !absolute !left-2 !top-1/2 !-translate-y-1/2 z-10"
+                    dropdownClass="!absolute !z-50 !bg-white !border !border-gray-200 !rounded-md !shadow-lg max-h-60 overflow-y-auto"
+                    enableSearch={true}
+                  />
+                </div>
 
                 <div className="space-y-3">
                   <Label>Account Type</Label>
@@ -150,7 +188,7 @@ const SignUp = () => {
                   </Select>
                 </div>
 
-                {formData.accountType === "Organization" && (
+                {formData.accountType === "organization" && (
                   <div className="space-y-2">
                     <Label htmlFor="organizationName">Organization Name</Label>
                     <Input

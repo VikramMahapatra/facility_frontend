@@ -60,6 +60,7 @@ import ApprovalRules from "./pages/ApprovalRules";
 import { GoogleOAuthProvider } from "@react-oauth/google";
 import ProtectedLayout from "./components/ProtectedLayout";
 import ProtectedRoute from "./components/ProtectedRoute";
+import RegistrationStatus from "./pages/RegistrationStatus";
 
 const queryClient = new QueryClient();
 
@@ -78,6 +79,7 @@ const App = () => {
                 <Route path="/pricing" element={<Pricing />} />
                 <Route path="/login" element={<Login />} />
                 <Route path="/signup" element={<SignUp />} />
+                <Route path="/registration-status" element={<RegistrationStatus />} />
 
                 {/* All protected pages go inside */}
                 <Route element={<ProtectedRoute></ProtectedRoute>}>
@@ -123,7 +125,7 @@ const App = () => {
                   <Route path="/users-management" element={<UsersManagement />} />
                   <Route path="/pending-approvals" element={<PendingApprovals />} />
                   <Route path="/ticket-dashboard" element={<TicketDashboard />} />
-                
+
                   <Route path="/tickets" element={<Tickets />} />
                   <Route path="/tickets/:ticketId" element={<TicketDetail />} />
                   <Route path="/ticket-categories" element={<TicketCategories />} />

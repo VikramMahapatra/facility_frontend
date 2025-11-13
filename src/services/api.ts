@@ -61,22 +61,16 @@ class ApiService {
             }
             console.log('API response data: ', result);
 
-            if (!response.ok) {
-                toast.error(errorMessage);
-            }
-
-            if (result?.status?.toString().toLowerCase() === "failure") {
-                const message = result.message || errorMessage;
-                toast.error(errorMessage);
+            if (result?.status?.toString().toLowerCase() === "failed") {
+                let message = errorMessage;
 
                 if (result.status_code != "210" && result.status_code != "400" && result.status_code != "500")
-                    toast.error(result.message);
+                    message = result.message
+
+                toast.error(message);
 
                 // ✅ Handle token expiration or invalid authentication
-                if (
-                    (result.status_code === "210" ||
-                        result.message?.includes("expired")) && !isRetry
-                ) {
+                if (result.status_code === "210" && !isRetry) {
                     console.warn("Access token expired, attempting refresh...");
                     const refreshed = await this.refreshToken();
                     if (refreshed) {
