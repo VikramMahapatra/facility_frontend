@@ -1,18 +1,18 @@
-import { useState } from "react";
-import { SidebarProvider } from "@/components/ui/sidebar";
+import { useState, useEffect } from "react";
+import { SidebarProvider, SidebarInset, SidebarTrigger } from "@/components/ui/sidebar";
 import { PropertySidebar } from "@/components/PropertySidebar";
-import Navigation from "@/components/Navigation";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
-import { Edit, Eye, Plus } from "lucide-react";
-import { mockTickets } from "@/data/mockTicketData";
+import { Edit, Eye, Plus, TicketIcon, AlertTriangle } from "lucide-react";
 import TicketForm from "@/components/TicketForm";
 import { useToast } from "@/hooks/use-toast";
 import { useNavigate } from "react-router-dom";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { mockTickets } from "@/data/mockTicketData";
+import { ticketsApiService } from "@/services/ticketing_service/ticketsapi";
 
 export default function Tickets() {
   const { toast } = useToast();
@@ -20,21 +20,43 @@ export default function Tickets() {
   const [isFormOpen, setIsFormOpen] = useState(false);
   const [isEditOpen, setIsEditOpen] = useState(false);
   const [editingTicket, setEditingTicket] = useState<any>(null);
+  const [tickets, setTickets] = useState<any[]>([]);
   const [statusFilter, setStatusFilter] = useState("ALL");
   const [priorityFilter, setPriorityFilter] = useState("ALL");
 
-  const filteredTickets = mockTickets.filter((ticket) => {
-    if (statusFilter !== "ALL" && ticket.status !== statusFilter) return false;
-    if (priorityFilter !== "ALL" && ticket.priority !== priorityFilter) return false;
+  useEffect(() => {
+    loadTickets();
+  }, []);
+
+  const loadTickets = async () => {
+    const response = await ticketsApiService.getTickets();
+    if (response.success) {
+      setTickets(response.data?.tickets);
+    }
+  };
+
+  const filteredTickets = tickets.filter((ticket) => {
+    if (statusFilter !== "ALL" && ticket.status?.toUpperCase() !== statusFilter) return false;
+    if (priorityFilter !== "ALL" && ticket.priority?.toUpperCase() !== priorityFilter) return false;
     return true;
   });
 
-  const handleCreate = (data: any) => {
-    toast({
-      title: "Ticket created",
-      description: "Service ticket has been created successfully.",
-    });
-    setIsFormOpen(false);
+  const handleCreate = async (data: any) => {
+    try {
+      const response = await ticketsApiService.addTicket(data);
+      setIsFormOpen(false);
+      loadTickets();
+      toast({
+        title: "Ticket is created",
+        description: "Service ticket has been created successfully.",
+      });
+    } catch (error: any) {
+      toast({
+        title: "Error",
+        description: error?.message || "Failed to create ticket. Please try again.",
+        variant: "destructive",
+      });
+    }
   };
 
   const handleEdit = (ticket: any) => {
@@ -51,17 +73,19 @@ export default function Tickets() {
     setEditingTicket(null);
   };
 
-  const handleView = (ticketId: number) => {
+  const handleView = (ticketId: string | number) => {
     navigate(`/tickets/${ticketId}`);
   };
 
   const getStatusColor = (status: string) => {
-    switch (status) {
+    const statusUpper = status?.toUpperCase();
+    switch (statusUpper) {
       case 'OPEN':
         return 'bg-blue-100 text-blue-800';
       case 'ASSIGNED':
         return 'bg-purple-100 text-purple-800';
       case 'IN_PROGRESS':
+      case 'IN PROGRESS':
         return 'bg-yellow-100 text-yellow-800';
       case 'ESCALATED':
         return 'bg-red-100 text-red-800';
@@ -69,14 +93,19 @@ export default function Tickets() {
         return 'bg-green-100 text-green-800';
       case 'REOPENED':
         return 'bg-orange-100 text-orange-800';
+      case 'ON_HOLD':
+      case 'ON HOLD':
+        return 'bg-orange-100 text-orange-800';
       default:
         return 'bg-gray-100 text-gray-800';
     }
   };
 
   const getPriorityColor = (priority: string) => {
-    switch (priority) {
+    const priorityUpper = priority?.toUpperCase();
+    switch (priorityUpper) {
       case 'HIGH':
+      case 'URGENT':
         return 'bg-red-100 text-red-800';
       case 'MEDIUM':
         return 'bg-yellow-100 text-yellow-800';
@@ -91,21 +120,29 @@ export default function Tickets() {
     <SidebarProvider>
       <div className="flex min-h-screen w-full">
         <PropertySidebar />
-        <div className="flex-1">
-          <Navigation />
-          <main className="p-6">
-            <div className="flex justify-between items-center mb-6">
-              <div>
-                <h1 className="text-3xl font-bold">Service Tickets</h1>
-                <p className="text-muted-foreground mt-1">
-                  Track and manage all service tickets
-                </p>
-              </div>
-              <Button onClick={() => setIsFormOpen(true)}>
-                <Plus className="w-4 h-4 mr-2" />
-                Create Ticket
-              </Button>
+        <SidebarInset className="flex-1">
+          <header className="flex h-16 shrink-0 items-center gap-2 border-b border-sidebar-border px-4">
+            <SidebarTrigger className="-ml-1" />
+            <div className="flex items-center gap-2">
+              <AlertTriangle className="h-5 w-5 text-sidebar-primary" />
+              <h1 className="text-lg font-semibold text-sidebar-primary">Service Tickets</h1>
             </div>
+          </header>
+
+          <main className="flex-1 p-6">
+            <div className="space-y-6">
+              <div className="flex items-center justify-between">
+                <div>
+                  <h2 className="text-3xl font-bold text-sidebar-primary">All Tickets</h2>
+                  <p className="text-muted-foreground">
+                    Track and manage all service tickets
+                  </p>
+                </div>
+                <Button onClick={() => setIsFormOpen(true)} className="gap-2">
+                  <Plus className="h-4 w-4" />
+                  Create Ticket
+                </Button>
+              </div>
 
             <Card>
               <CardHeader>
@@ -155,11 +192,11 @@ export default function Tickets() {
                   </TableHeader>
                   <TableBody>
                     {filteredTickets.map((ticket) => (
-                      <TableRow key={ticket.ticket_id}>
-                        <TableCell className="font-medium">#{ticket.ticket_id}</TableCell>
+                      <TableRow key={ticket.id || ticket.ticket_id}>
+                        <TableCell className="font-medium">#{ticket.ticket_no}</TableCell>
                         <TableCell className="max-w-xs truncate">{ticket.title}</TableCell>
                         <TableCell>
-                          <Badge variant="outline">{ticket.category_name}</Badge>
+                          <Badge variant="outline">{ticket.category}</Badge>
                         </TableCell>
                         <TableCell>
                           <Badge className={getPriorityColor(ticket.priority)}>{ticket.priority}</Badge>
@@ -173,7 +210,7 @@ export default function Tickets() {
                         <TableCell>{new Date(ticket.created_at).toLocaleDateString()}</TableCell>
                         <TableCell className="text-right">
                           <div className="flex justify-end gap-2">
-                            <Button variant="ghost" size="sm" onClick={() => handleView(ticket.ticket_id)}>
+                            <Button variant="ghost" size="sm" onClick={() => handleView(ticket.id || ticket.ticket_id)}>
                               <Eye className="w-4 h-4" />
                             </Button>
                             <Button variant="ghost" size="sm" onClick={() => handleEdit(ticket)}>
@@ -187,8 +224,9 @@ export default function Tickets() {
                 </Table>
               </CardContent>
             </Card>
+            </div>
           </main>
-        </div>
+        </SidebarInset>
       </div>
 
       {/* Create Ticket Dialog */}

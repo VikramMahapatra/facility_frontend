@@ -289,8 +289,14 @@ export default function UsersManagement() {
             <UserForm
               user={editingUser}
               open={isFormOpen}
-              onOpenChange={setIsFormOpen}
+              onOpenChange={(open) => {
+                setIsFormOpen(open);
+                if (!open) {
+                  setEditingUser(undefined);
+                }
+              }}
               onSubmit={editingUser ? handleUpdateUser : handleCreateUser}
+              mode={editingUser ? "edit" : "create"}
             />
 
             {/* Delete Confirmation Dialog */}
