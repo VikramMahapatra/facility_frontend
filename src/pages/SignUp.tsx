@@ -27,23 +27,23 @@ const SignUp = () => {
 
   const accountTypes = [
     {
-      value: "Organization",
+      value: "organization",
       label: "Organization",
       description: "Property owners and facility managers",
       icon: <Building2 className="w-5 h-5" />
     },
-    {
-      value: "Tenant",
-      label: "Tenant",
-      description: "Renters and occupants of properties",
-      icon: <Users className="w-5 h-5" />
-    },
-    {
-      value: "Vendor",
-      label: "Vendor",
-      description: "Service providers and contractors",
-      icon: <Truck className="w-5 h-5" />
-    },
+    // {
+    //   value: "Tenant",
+    //   label: "Tenant",
+    //   description: "Renters and occupants of properties",
+    //   icon: <Users className="w-5 h-5" />
+    // },
+    // {
+    //   value: "Vendor",
+    //   label: "Vendor",
+    //   description: "Service providers and contractors",
+    //   icon: <Truck className="w-5 h-5" />
+    // },
   ];
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -66,7 +66,7 @@ const SignUp = () => {
       }));
 
       // Redirect based on account type
-      if (formData.accountType === 'Organization') {
+      if (formData.accountType === 'organization') {
         navigate('/dashboard');
       } else {
         // For demo purposes, all account types go to dashboard
