@@ -42,13 +42,19 @@ export default function Tickets() {
   });
 
   const handleCreate = async (data: any) => {
-    const response = await ticketsApiService.addTicket(data);
-    if (response?.success) {
+    try {
+      const response = await ticketsApiService.addTicket(data);
       setIsFormOpen(false);
       loadTickets();
       toast({
-        title: "Ticket created",
+        title: "Ticket is created",
         description: "Service ticket has been created successfully.",
+      });
+    } catch (error: any) {
+      toast({
+        title: "Error",
+        description: error?.message || "Failed to create ticket. Please try again.",
+        variant: "destructive",
       });
     }
   };
@@ -67,7 +73,7 @@ export default function Tickets() {
     setEditingTicket(null);
   };
 
-  const handleView = (ticketId: number) => {
+  const handleView = (ticketId: string | number) => {
     navigate(`/tickets/${ticketId}`);
   };
 
@@ -186,7 +192,7 @@ export default function Tickets() {
                   </TableHeader>
                   <TableBody>
                     {filteredTickets.map((ticket) => (
-                      <TableRow key={ticket.ticket_id}>
+                      <TableRow key={ticket.id || ticket.ticket_id}>
                         <TableCell className="font-medium">#{ticket.ticket_no}</TableCell>
                         <TableCell className="max-w-xs truncate">{ticket.title}</TableCell>
                         <TableCell>
@@ -204,7 +210,7 @@ export default function Tickets() {
                         <TableCell>{new Date(ticket.created_at).toLocaleDateString()}</TableCell>
                         <TableCell className="text-right">
                           <div className="flex justify-end gap-2">
-                            <Button variant="ghost" size="sm" onClick={() => handleView(ticket.ticket_id)}>
+                            <Button variant="ghost" size="sm" onClick={() => handleView(ticket.id || ticket.ticket_id)}>
                               <Eye className="w-4 h-4" />
                             </Button>
                             <Button variant="ghost" size="sm" onClick={() => handleEdit(ticket)}>

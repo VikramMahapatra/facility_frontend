@@ -265,7 +265,7 @@ export function UserForm({ user, open, onOpenChange, onSubmit, mode = "create" }
               {mode === "view" ? "Close" : "Cancel"}
             </Button>
             {mode !== "view" && (
-              <Button type="submit" disabled={!isValid || isSubmitting}>
+              <Button type="submit" disabled={mode === "create" ? (!isValid || isSubmitting) : isSubmitting}>
                 {isSubmitting ? "Saving..." : mode === "create" ? "Create User" : "Update User"}
               </Button>
             )}
