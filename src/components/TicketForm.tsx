@@ -19,7 +19,7 @@ import { ticketsApiService } from "@/services/ticketing_service/ticketsapi";
 import { useToast } from "@/hooks/use-toast";
 
 interface TicketFormProps {
-  onSubmit: (data: any) => void;
+  onSubmit: (data: any) => Promise<any>;
   onCancel: () => void;
   initialData?: any;
 }
@@ -34,7 +34,7 @@ export default function TicketForm({
     title: initialData?.title || "",
     description: initialData?.description || "",
     category_id: initialData?.category_id || "",
-    priority: initialData?.priority || "medium",
+    priority: initialData?.priority || "LOW",
     request_type: initialData?.request_type || "unit",
     site_id: initialData?.site_id || "",
     space_id: initialData?.space_id || "",
@@ -61,7 +61,7 @@ export default function TicketForm({
 
   useEffect(() => {
     loadSiteLookup();
-    loadCategoryLookup();
+    loadCategoryLookup(formData.site_id || "all");
     if (formData.site_id) {
       loadSpaceLookup(formData.site_id);
     }
@@ -70,8 +70,10 @@ export default function TicketForm({
   useEffect(() => {
     if (formData.site_id) {
       loadSpaceLookup(formData.site_id);
+      loadCategoryLookup(formData.site_id);
     } else {
       setSpaceList([]);
+      loadCategoryLookup("all");
     }
   }, [formData.site_id]);
 
@@ -90,8 +92,8 @@ export default function TicketForm({
     }
   };
 
-  const loadCategoryLookup = async () => {
-    const response = await ticketsApiService.getCategoryLookup();
+  const loadCategoryLookup = async (siteId?: string | null) => {
+    const response = await ticketsApiService.getCategoryLookup(siteId || "all");
     if (response.success) {
       setCategoryList(response.data || []);
     }
@@ -122,40 +124,39 @@ export default function TicketForm({
 
     setIsSubmitting(true);
 
-    try {
-      const selectedCategory = categoryList.find(
-        (cat: any) => cat.id === formData.category_id
-      );
-      const orgData = await organisationApiService.getOrg();
+    const selectedCategory = categoryList.find(
+      (cat: any) => cat.id === formData.category_id
+    );
+    const orgData = await organisationApiService.getOrg();
 
-      const ticketFormData = new FormData();
+    const ticketFormData = new FormData();
 
-      ticketFormData.append("title", formData.title);
-      ticketFormData.append("description", formData.description);
-      ticketFormData.append("category_id", formData.category_id);
-      ticketFormData.append(
-        "category",
-        selectedCategory?.category_name || selectedCategory?.name || ""
-      );
-      ticketFormData.append("priority", formData.priority);
-      ticketFormData.append("request_type", formData.request_type);
-      ticketFormData.append("site_id", formData.site_id);
-      ticketFormData.append("space_id", formData.space_id);
-      ticketFormData.append("tenant_id", formData.tenant_id);
-      ticketFormData.append("preferred_time", formData.preferred_time);
+    ticketFormData.append("title", formData.title);
+    ticketFormData.append("description", formData.description);
+    ticketFormData.append("category_id", formData.category_id);
+    ticketFormData.append(
+      "category",
+      selectedCategory?.category_name || selectedCategory?.name || ""
+    );
+    ticketFormData.append("priority", formData.priority);
+    ticketFormData.append("request_type", formData.request_type);
+    ticketFormData.append("site_id", formData.site_id);
+    ticketFormData.append("space_id", formData.space_id);
+    ticketFormData.append("tenant_id", formData.tenant_id);
+    ticketFormData.append("preferred_time", formData.preferred_time);
 
-      if (uploadedImages.length > 0) {
-        uploadedImages.forEach((file) => {
-          ticketFormData.append("file", file);
-        });
-      }
+    if (uploadedImages.length > 0) {
+      uploadedImages.forEach((file) => {
+        ticketFormData.append("file", file);
+      });
+    }
 
-      console.log("Ticket Form Data", ticketFormData);
+    console.log("Ticket Form Data", ticketFormData);
 
-      await onSubmit(ticketFormData);
-    } catch (error) {
-      console.error("Error submitting ticket:", error);
-    } finally {
+    const formResponse = await onSubmit(ticketFormData);
+    if (formResponse?.success) {
+      // Form will be closed by parent component
+    } else {
       setIsSubmitting(false);
     }
   };
@@ -231,7 +232,7 @@ export default function TicketForm({
       {/* 3. Tenant, Category */}
       <div className="grid grid-cols-2 gap-4">
         <div className="space-y-2">
-          <Label htmlFor="tenant_id">Tenant *</Label>
+          <Label htmlFor="tenant_id">Tenant</Label>
           <Select
             value={formData.tenant_id || ""}
             onValueChange={(value) =>
@@ -291,14 +292,14 @@ export default function TicketForm({
               <SelectValue placeholder="Select Request Type" />
             </SelectTrigger>
             <SelectContent>
-              <SelectItem value="unit">unit</SelectItem>
-              <SelectItem value="community">community</SelectItem>
+              <SelectItem value="unit">Unit</SelectItem>
+              <SelectItem value="community">Community</SelectItem>
             </SelectContent>
           </Select>
         </div>
 
         <div className="space-y-2">
-          <Label htmlFor="priority">Priority *</Label>
+          <Label htmlFor="priority">Priority </Label>
           <Select
             value={formData.priority}
             onValueChange={(value) =>

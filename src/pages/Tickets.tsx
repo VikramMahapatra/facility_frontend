@@ -47,14 +47,13 @@ export default function Tickets() {
   });
 
   const handleCreate = async (data: any) => {
-    try {
-      const response = await ticketsApiService.addTicket(data);
+    const response = await ticketsApiService.addTicket(data);
+    if (response.success) {
       setIsFormOpen(false);
       loadTickets();
       toast.success("Service ticket has been created successfully.");
-    } catch (error: any) {
-      toast.error(error?.message || "Failed to create ticket. Please try again.");
     }
+    return response;
   };
 
   const handleEdit = (ticket: any) => {
@@ -62,10 +61,15 @@ export default function Tickets() {
     setIsEditOpen(true);
   };
 
-  const handleEditSubmit = (data: any) => {
-    toast.success("Service ticket has been updated successfully.");
-    setIsEditOpen(false);
-    setEditingTicket(null);
+  const handleEditSubmit = async (data: any) => {
+    const response = await ticketsApiService.addTicket(data);
+    if (response.success) {
+      setIsEditOpen(false);
+      setEditingTicket(null);
+      loadTickets();
+      toast.success("Service ticket has been updated successfully.");
+    }
+    return response;
   };
 
   const handleView = (ticketId: string | number) => {

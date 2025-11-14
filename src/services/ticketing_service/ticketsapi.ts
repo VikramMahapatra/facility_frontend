@@ -54,8 +54,13 @@ class TicketsApiService {
     return await apiService.request(`/tickets/next-statuses/${ticketId}`);
   }
 
-  async getCategoryLookup() {
-    return await apiService.request(`/ticket-category/category-lookup`);
+  async getCategoryLookup(siteId?: string | null) {
+    const params = new URLSearchParams();
+    if (siteId) {
+      params.append("site_id", siteId);
+    }
+    const qs = params.toString() ? `?${params.toString()}` : "";
+    return await apiService.request(`/ticket-category/category-lookup${qs}`);
   }
 }
 
