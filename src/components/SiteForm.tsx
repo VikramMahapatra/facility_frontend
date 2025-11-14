@@ -111,8 +111,9 @@ export function SiteForm({ site, isOpen, onClose, onSave, mode }: SiteFormProps)
       reset(emptyFormData);
       onClose();
     } catch (error) {
+      setIsSubmitted(false);
       reset(undefined, { keepErrors: true, keepValues: true });
-      toast("Failed to save site");
+      
     }
   };
 

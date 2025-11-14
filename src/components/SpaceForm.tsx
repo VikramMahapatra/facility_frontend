@@ -50,7 +50,7 @@ const emptyFormData: SpaceFormValues = {
   name: "",
   kind: "room",
   site_id: "",
-  floor: "",
+  floor: undefined,
   building_block_id: "",
   area_sqft: undefined,
   beds: undefined,
@@ -103,7 +103,7 @@ export function SpaceForm({ space, isOpen, onClose, onSave, mode }: SpaceFormPro
         name: space.name || "",
         kind: space.kind || "room",
         site_id: space.site_id || "",
-        floor: space.floor || "",
+        floor: space.floor !== undefined && space.floor !== null ? Number(space.floor) : undefined,
         building_block_id: space.building_block_id || "",
         area_sqft: space.area_sqft,
         beds: space.beds,
@@ -225,6 +225,55 @@ export function SpaceForm({ space, isOpen, onClose, onSave, mode }: SpaceFormPro
               )}
             />
             <Controller
+              name="building_block_id"
+              control={control}
+              render={({ field }) => (
+                <div className="space-y-2">
+                  <Label htmlFor="building_block_id">Building Block</Label>
+                  <Select
+                    value={field.value || ""}
+                    onValueChange={field.onChange}
+                    disabled={isReadOnly}
+                  >
+                    <SelectTrigger className={errors.building_block_id ? 'border-red-500' : ''}>
+                      <SelectValue placeholder="Select building block" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {buildingList.length === 0 ? (
+                        <SelectItem value="none" disabled>No buildings available</SelectItem>
+                      ) : (
+                        buildingList.map((building_block) => (
+                          <SelectItem key={building_block.id} value={building_block.id}>
+                            {building_block.name}
+                          </SelectItem>
+                        ))
+                      )}
+                    </SelectContent>
+                  </Select>
+                  {errors.building_block_id && (
+                    <p className="text-sm text-red-500">{errors.building_block_id.message}</p>
+                  )}
+                </div>
+              )}
+            />
+          </div>
+
+          <div className="grid grid-cols-2 gap-4">
+            <div className="space-y-2">
+              <Label htmlFor="floor">Floor</Label>
+              <Input
+                id="floor"
+                type="number"
+                {...register("floor", { setValueAs: (v) => v === '' ? undefined : Number(v) })}
+                placeholder="0, 1, 2 , ..."
+                disabled={isReadOnly}
+                className={errors.floor ? 'border-red-500' : ''}
+              />
+              {errors.floor && (
+                <p className="text-sm text-red-500">{errors.floor.message}</p>
+              )}
+            </div>
+            <Controller
               name="kind"
               control={control}
               render={({ field }) => (
@@ -254,48 +303,7 @@ export function SpaceForm({ space, isOpen, onClose, onSave, mode }: SpaceFormPro
             />
           </div>
 
-          <div className="grid grid-cols-3 gap-4">
-            <div className="space-y-2">
-              <Label htmlFor="floor">Floor</Label>
-              <Input
-                id="floor"
-                {...register("floor")}
-                placeholder="e.g., Ground, 1st, B1"
-                disabled={isReadOnly}
-              />
-            </div>
-            <Controller
-              name="building_block_id"
-              control={control}
-              render={({ field }) => (
-                <div className="space-y-2">
-                  <Label htmlFor="building_block_id">Building Block *</Label>
-                  <Select
-                    value={field.value || ""}
-                    onValueChange={field.onChange}
-                    disabled={isReadOnly}
-                  >
-                    <SelectTrigger className={errors.building_block_id ? 'border-red-500' : ''}>
-                      <SelectValue placeholder="Select building block" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      {buildingList.length === 0 ? (
-                        <SelectItem value="none" disabled>No buildings available</SelectItem>
-                      ) : (
-                        buildingList.map((building_block) => (
-                          <SelectItem key={building_block.id} value={building_block.id}>
-                            {building_block.name}
-                          </SelectItem>
-                        ))
-                      )}
-                    </SelectContent>
-                  </Select>
-                  {errors.building_block_id && (
-                    <p className="text-sm text-red-500">{errors.building_block_id.message}</p>
-                  )}
-                </div>
-              )}
-            />
+          <div className="grid grid-cols-2 gap-4">
             <div className="space-y-2">
               <Label htmlFor="area_sqft">Area (sq ft)</Label>
               <Input
