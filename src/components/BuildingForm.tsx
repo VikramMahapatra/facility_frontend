@@ -34,6 +34,7 @@ const emptyFormData: BuildingFormValues = {
 };
 
 export function BuildingForm({ building, isOpen, onClose, onSave, mode }: BuildingFormProps) {
+  const [isSubmitted, setIsSubmitted] = useState(false);
   const {
     register,
     handleSubmit,
@@ -68,7 +69,8 @@ export function BuildingForm({ building, isOpen, onClose, onSave, mode }: Buildi
     } else {
       reset(emptyFormData);
     }
-  }, [building, mode, reset]);
+    setIsSubmitted(false);
+  }, [building, mode, reset, isOpen]);
 
   const isReadOnly = mode === "view";
 
@@ -83,6 +85,7 @@ export function BuildingForm({ building, isOpen, onClose, onSave, mode }: Buildi
   };
 
   const onSubmitForm = async (data: BuildingFormValues) => {
+    setIsSubmitted(true);
     try {
       await onSave({
         ...building,
@@ -250,7 +253,7 @@ export function BuildingForm({ building, isOpen, onClose, onSave, mode }: Buildi
               {mode === "view" ? "Close" : "Cancel"}
             </Button>
             {mode !== "view" && (
-              <Button type="submit" disabled={!isValid || isSubmitting}>
+              <Button type="submit" disabled={isSubmitting || isSubmitted}>
                 {isSubmitting ? "Saving..." : mode === "create" ? "Create" : "Update"}
               </Button>
             )}

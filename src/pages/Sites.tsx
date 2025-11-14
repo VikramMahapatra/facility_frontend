@@ -1,26 +1,52 @@
 import { useState, useEffect } from "react";
-import { Building2, MapPin, Calendar, Eye, Edit, Trash2, Plus } from "lucide-react";
+import {
+  Building2,
+  MapPin,
+  Calendar,
+  Eye,
+  Edit,
+  Trash2,
+  Plus,
+} from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { PropertySidebar } from "@/components/PropertySidebar";
-import { SidebarProvider, SidebarInset, SidebarTrigger } from "@/components/ui/sidebar";
-import { mockSites, getBuildingBlocks, getSpacesBySite } from "@/data/mockSpacesData";
+import {
+  SidebarProvider,
+  SidebarInset,
+  SidebarTrigger,
+} from "@/components/ui/sidebar";
+import {
+  mockSites,
+  getBuildingBlocks,
+  getSpacesBySite,
+} from "@/data/mockSpacesData";
 import { SiteForm } from "@/components/SiteForm";
-import { AlertDialog, AlertDialogContent, AlertDialogHeader, AlertDialogFooter, AlertDialogTitle, AlertDialogDescription, AlertDialogCancel, AlertDialogAction } from "@/components/ui/alert-dialog";
+import {
+  AlertDialog,
+  AlertDialogContent,
+  AlertDialogHeader,
+  AlertDialogFooter,
+  AlertDialogTitle,
+  AlertDialogDescription,
+  AlertDialogCancel,
+  AlertDialogAction,
+} from "@/components/ui/alert-dialog";
 import { useToast } from "@/hooks/use-toast";
 import { siteApiService } from "@/services/spaces_sites/sitesapi";
 import { Pagination } from "@/components/Pagination";
 import { useSkipFirstEffect } from "@/hooks/use-skipfirst-effect";
 import { useAuth } from "../context/AuthContext";
+import { toast } from "sonner";
 
 export interface Site {
   id: string;
   org_id: string;
   name: string;
   code: string;
-  kind: 'residential' | 'commercial' | 'hotel' | 'mall' | 'mixed' | 'campus';
+  kind: "residential" | "commercial" | "hotel" | "mall" | "mixed" | "campus";
   address: {
     line1: string;
     line2?: string;
@@ -31,7 +57,7 @@ export interface Site {
   };
   geo: { lat: number; lng: number };
   opened_on: string;
-  status: 'active' | 'inactive';
+  status: "active" | "inactive";
   total_spaces?: string;
   buildings?: string;
   occupied_percent?: string;
@@ -40,12 +66,14 @@ export interface Site {
 }
 
 export default function Sites() {
-  const { toast } = useToast();
+  // const { toast } = useToast();
   const [searchTerm, setSearchTerm] = useState("");
   const [selectedKind, setSelectedKind] = useState<string>("all");
   const [sites, setSites] = useState<Site[]>([]);
   const [selectedSite, setSelectedSite] = useState<Site | undefined>(undefined);
-  const [formMode, setFormMode] = useState<"create" | "edit" | "view">("create");
+  const [formMode, setFormMode] = useState<"create" | "edit" | "view">(
+    "create"
+  );
   const [showForm, setShowForm] = useState(false);
   const [deleteId, setDeleteId] = useState<string | null>(null);
   const [page, setPage] = useState(1); // current page
@@ -62,7 +90,7 @@ export default function Sites() {
     if (page === 1) {
       loadSites();
     } else {
-      setPage(1);    // triggers the page effect
+      setPage(1); // triggers the page effect
     }
   }, [searchTerm, selectedKind]);
 
@@ -81,8 +109,7 @@ export default function Sites() {
       setSites(response.data?.sites || []);
       setTotalItems(response.data?.total || 0);
     }
-
-  }
+  };
 
   const getKindColor = (kind: string) => {
     const colors = {
@@ -91,13 +118,15 @@ export default function Sites() {
       hotel: "bg-purple-500",
       mall: "bg-orange-500",
       mixed: "bg-indigo-500",
-      campus: "bg-teal-500"
+      campus: "bg-teal-500",
     };
     return colors[kind as keyof typeof colors] || "bg-gray-500";
   };
 
   const getStatusColor = (status: string) => {
-    return status === 'active' ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800';
+    return status === "active"
+      ? "bg-green-100 text-green-800"
+      : "bg-red-100 text-red-800";
   };
 
   // Handlers
@@ -128,19 +157,19 @@ export default function Sites() {
         ...selectedSite,
         ...siteData,
         updated_at: new Date().toISOString(),
-      }
+      };
       response = await siteApiService.update(updatedSite);
     }
 
     if (response.success) {
       setShowForm(false);
       loadSites();
-      toast({
-        title: formMode === "create" ? "Site Created" : "Site Updated",
-        description: `Site ${siteData.code} has been ${formMode === "create" ? "created" : "updated"} successfully.`,
-      });
+      toast.success(
+        `Site ${siteData.code} has been ${
+          formMode === "create" ? "created" : "updated"
+        } successfully.`
+      );
     }
-
   };
 
   const handleDelete = (id: string) => {
@@ -158,20 +187,14 @@ export default function Sites() {
           // Success - refresh data
           loadSites();
           setDeleteId(null);
-          toast({
-            title: "Site Deleted",
-            description: "The site has been removed successfully.",
-          });
+          toast.success("The site has been removed successfully.");
         } else {
           // Show error popup from backend
-          toast({
-            title: "Cannot Delete Site",
-            description: authResponse.message,
-            variant: "destructive",
+          toast.error(`Cannot Delete Site\n${authResponse.message}`, {
+            style: { whiteSpace: "pre-line" },
           });
         }
       }
-
     }
   };
 
@@ -184,7 +207,9 @@ export default function Sites() {
             <SidebarTrigger className="-ml-1" />
             <div className="flex items-center gap-2">
               <Building2 className="h-5 w-5 text-sidebar-primary" />
-              <h1 className="text-lg font-semibold text-sidebar-primary">Sites & Buildings</h1>
+              <h1 className="text-lg font-semibold text-sidebar-primary">
+                Sites & Buildings
+              </h1>
             </div>
           </header>
 
@@ -193,8 +218,12 @@ export default function Sites() {
               {/* Header Actions */}
               <div className="flex items-center justify-between">
                 <div>
-                  <h2 className="text-2xl font-bold text-sidebar-primary">All Sites</h2>
-                  <p className="text-muted-foreground">Manage your properties and locations</p>
+                  <h2 className="text-2xl font-bold text-sidebar-primary">
+                    All Sites
+                  </h2>
+                  <p className="text-muted-foreground">
+                    Manage your properties and locations
+                  </p>
                 </div>
                 <Button className="gap-2" onClick={handleCreate}>
                   <Plus className="h-4 w-4" />
@@ -229,16 +258,30 @@ export default function Sites() {
               <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
                 {sites.map((site) => {
                   return (
-                    <Card key={site.id} className="hover:shadow-lg transition-shadow">
+                    <Card
+                      key={site.id}
+                      className="hover:shadow-lg transition-shadow"
+                    >
                       <CardHeader className="pb-3">
                         <div className="flex items-start justify-between">
                           <div className="space-y-1">
-                            <CardTitle className="text-lg">{site.name}</CardTitle>
-                            <p className="text-sm text-muted-foreground">{site.code}</p>
+                            <CardTitle className="text-lg">
+                              {site.name}
+                            </CardTitle>
+                            <p className="text-sm text-muted-foreground">
+                              {site.code}
+                            </p>
                           </div>
                           <div className="flex items-center gap-1">
-                            <div className={`w-3 h-3 rounded-full ${getKindColor(site.kind)}`} />
-                            <Badge variant="secondary" className="text-xs capitalize">
+                            <div
+                              className={`w-3 h-3 rounded-full ${getKindColor(
+                                site.kind
+                              )}`}
+                            />
+                            <Badge
+                              variant="secondary"
+                              className="text-xs capitalize"
+                            >
                               {site.kind}
                             </Badge>
                           </div>
@@ -251,22 +294,31 @@ export default function Sites() {
                           <MapPin className="h-4 w-4 text-muted-foreground mt-0.5" />
                           <div className="text-sm text-muted-foreground">
                             <p>{site.address.line1}</p>
-                            <p>{site.address.city}, {site.address.state} {site.address.pincode}</p>
+                            <p>
+                              {site.address.city}, {site.address.state}{" "}
+                              {site.address.pincode}
+                            </p>
                           </div>
                         </div>
 
                         {/* Stats */}
                         <div className="grid grid-cols-3 gap-4 text-sm">
                           <div className="text-center">
-                            <p className="font-semibold text-sidebar-primary">{site.total_spaces}</p>
+                            <p className="font-semibold text-sidebar-primary">
+                              {site.total_spaces}
+                            </p>
                             <p className="text-muted-foreground">Spaces</p>
                           </div>
                           <div className="text-center">
-                            <p className="font-semibold text-sidebar-primary">{site.buildings}</p>
+                            <p className="font-semibold text-sidebar-primary">
+                              {site.buildings}
+                            </p>
                             <p className="text-muted-foreground">Buildings</p>
                           </div>
                           <div className="text-center">
-                            <p className="font-semibold text-sidebar-primary">{site.occupied_percent}%</p>
+                            <p className="font-semibold text-sidebar-primary">
+                              {site.occupied_percent}%
+                            </p>
                             <p className="text-muted-foreground">Occupied</p>
                           </div>
                         </div>
@@ -278,20 +330,30 @@ export default function Sites() {
                           </Badge>
                           <div className="flex items-center gap-1 text-muted-foreground">
                             <Calendar className="h-3 w-3" />
-                            Opened {new Date(site.opened_on).toLocaleDateString()}
+                            Opened{" "}
+                            {new Date(site.opened_on).toLocaleDateString()}
                           </div>
                         </div>
 
                         {/* Actions */}
                         <div className="flex items-center justify-end gap-2 pt-2">
-                          <Button size="sm" variant="outline" onClick={() => handleView(site)}>
+                          <Button
+                            size="sm"
+                            variant="outline"
+                            onClick={() => handleView(site)}
+                          >
                             <Eye className="h-3 w-3" />
                           </Button>
-                          {canWrite(resource) && <Button size="sm" variant="outline" onClick={() => handleEdit(site)}>
-                            <Edit className="h-3 w-3" />
-                          </Button>
-                          }
-                          {canDelete(resource) &&
+                          {canWrite(resource) && (
+                            <Button
+                              size="sm"
+                              variant="outline"
+                              onClick={() => handleEdit(site)}
+                            >
+                              <Edit className="h-3 w-3" />
+                            </Button>
+                          )}
+                          {canDelete(resource) && (
                             <Button
                               size="sm"
                               variant="outline"
@@ -300,7 +362,7 @@ export default function Sites() {
                             >
                               <Trash2 className="h-3 w-3" />
                             </Button>
-                          }
+                          )}
                         </div>
                       </CardContent>
                     </Card>
@@ -317,8 +379,12 @@ export default function Sites() {
               {sites.length === 0 && (
                 <div className="text-center py-12">
                   <Building2 className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
-                  <h3 className="text-lg font-semibold text-sidebar-primary mb-2">No sites found</h3>
-                  <p className="text-muted-foreground">Try adjusting your search criteria or add a new site.</p>
+                  <h3 className="text-lg font-semibold text-sidebar-primary mb-2">
+                    No sites found
+                  </h3>
+                  <p className="text-muted-foreground">
+                    Try adjusting your search criteria or add a new site.
+                  </p>
                 </div>
               )}
             </div>
@@ -341,12 +407,15 @@ export default function Sites() {
           <AlertDialogHeader>
             <AlertDialogTitle>Delete Site</AlertDialogTitle>
             <AlertDialogDescription>
-              Are you sure you want to delete this site? This action cannot be undone.
+              Are you sure you want to delete this site? This action cannot be
+              undone.
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
             <AlertDialogCancel>Cancel</AlertDialogCancel>
-            <AlertDialogAction onClick={confirmDelete}>Delete</AlertDialogAction>
+            <AlertDialogAction onClick={confirmDelete}>
+              Delete
+            </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
