@@ -1,30 +1,42 @@
-import { createContext, useContext, useState } from "react";
+import { createContext, useContext, useState, ReactNode } from "react";
 
-// ✅ Provide a safe default object to avoid createContext errors
-const LoaderContext = createContext({
+type LoaderContextType = {
+    loading: boolean;
+    showLoader: () => void;
+    hideLoader: () => void;
+    withLoader: <T>(callback: () => Promise<T>) => Promise<T>;
+};
+
+const LoaderContext = createContext<LoaderContextType>({
     loading: false,
     showLoader: () => { },
     hideLoader: () => { },
+    withLoader: async () => {
+        throw new Error("withLoader called outside LoaderProvider");
+    },
 });
 
-export const LoaderProvider = ({ children }) => {
+export const LoaderProvider = ({ children }: { children: ReactNode }) => {
     const [loading, setLoading] = useState(false);
 
     const showLoader = () => setLoading(true);
     const hideLoader = () => setLoading(false);
 
-    return (
-        <LoaderContext.Provider value={{ loading, showLoader, hideLoader }}>
-            {children}
+    // ⭐ Generic return type <T> fixes type errors
+    const withLoader = async <T,>(callback: () => Promise<T>): Promise<T> => {
+        showLoader();
+        try {
+            return await callback();
+        } finally {
+            hideLoader();
+        }
+    };
 
-            {loading && (
-                <div className="fixed inset-0 bg-black/50 backdrop-blur-sm z-[9999] flex items-center justify-center">
-                    <div className="flex flex-col items-center gap-3">
-                        <div className="animate-spin w-8 h-8 border-4 border-blue-500 border-t-transparent rounded-full"></div>
-                        <p className="text-white text-sm">Loading...</p>
-                    </div>
-                </div>
-            )}
+    return (
+        <LoaderContext.Provider
+            value={{ loading, showLoader, hideLoader, withLoader }}
+        >
+            {children}
         </LoaderContext.Provider>
     );
 };
