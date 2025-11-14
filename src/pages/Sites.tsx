@@ -39,6 +39,7 @@ import { siteApiService } from "@/services/spaces_sites/sitesapi";
 import { Pagination } from "@/components/Pagination";
 import { useSkipFirstEffect } from "@/hooks/use-skipfirst-effect";
 import { useAuth } from "../context/AuthContext";
+import { useLoader } from "@/context/LoaderContext";
 import { toast } from "sonner";
 
 export interface Site {
@@ -80,6 +81,7 @@ export default function Sites() {
   const [pageSize] = useState(3); // items per page
   const [totalItems, setTotalItems] = useState(0);
   const { canRead, canWrite, canDelete } = useAuth();
+  const { showLoader, hideLoader } = useLoader();
   const resource = "sites"; // must match resource name from backend policies
 
   useSkipFirstEffect(() => {
@@ -94,7 +96,8 @@ export default function Sites() {
     }
   }, [searchTerm, selectedKind]);
 
-  const loadSites = async () => {
+  const loadSites = () => {
+    showLoader();
     const skip = (page - 1) * pageSize;
     const limit = pageSize;
 
@@ -104,11 +107,20 @@ export default function Sites() {
     if (selectedKind) params.append("kind", selectedKind);
     params.append("skip", skip.toString());
     params.append("limit", limit.toString());
-    const response = await siteApiService.getSites(params);
-    if (response.success) {
-      setSites(response.data?.sites || []);
-      setTotalItems(response.data?.total || 0);
-    }
+    
+    siteApiService.getSites(params)
+      .then((response) => {
+        if (response.success) {
+          setSites(response.data?.sites || []);
+          setTotalItems(response.data?.total || 0);
+        }
+      })
+      .catch((error) => {
+        console.error("Failed to load sites:", error);
+      })
+      .finally(() => {
+        hideLoader();
+      });
   };
 
   const getKindColor = (kind: string) => {
