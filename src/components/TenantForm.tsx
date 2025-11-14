@@ -73,6 +73,7 @@ export function TenantForm({
     handleSubmit,
     control,
     reset,
+    setValue, // ✅ add this
     watch,
     formState: { errors, isSubmitting, isValid },
   } = useForm<TenantFormValues>({
@@ -89,6 +90,7 @@ export function TenantForm({
 
   useEffect(() => {
     if (tenant && mode !== "create") {
+      console.log("Hydrating tenant form with:", tenant);
       reset({
         name: tenant.name || "",
         email: tenant.email || "",
@@ -96,7 +98,7 @@ export function TenantForm({
         tenant_type: tenant.tenant_type || "individual",
         status: tenant.status || "active",
         site_id: tenant.site_id || "",
-        building_id: tenant.building_id || (tenant as any).building_id || "",
+        building_id: tenant.building_block_id || (tenant as any).building_block_id || "",
         space_id: tenant.space_id || "",
         type: tenant.type || "",
         legal_name: tenant.legal_name || "",
@@ -140,6 +142,7 @@ export function TenantForm({
     }
   }, [selectedSiteId]);
 
+  // ✅ Load spaces when building changes
   useEffect(() => {
     if (selectedSiteId && selectedBuildingId) {
       loadSpaceLookup(selectedSiteId, selectedBuildingId);
@@ -147,6 +150,23 @@ export function TenantForm({
       setSpaceList([]);
     }
   }, [selectedSiteId, selectedBuildingId]);
+
+   
+  useEffect(() => {
+    console.log("Building list updated:", buildingList);
+    console.log("Tenant's building ID:", tenant?.building_id);
+    if (tenant?.building_id && buildingList.length > 0) {
+      setValue("building_id", String(tenant.building_id));
+    }
+  }, [buildingList]);
+
+  // ✅ Set space_id when space list is loaded
+  useEffect(() => {
+    if (tenant && spaceList.length > 0) {
+      setValue("space_id", String(tenant.space_id));
+    }
+  }, [spaceList]);
+
 
   const loadSiteLookup = async () => {
     const lookup = await siteApiService.getSiteLookup();
