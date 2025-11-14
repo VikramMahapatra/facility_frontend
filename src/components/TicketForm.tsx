@@ -162,6 +162,7 @@ export default function TicketForm({
 
   return (
     <form onSubmit={handleSubmit} className="space-y-4">
+      {/* 1. Title */}
       <div className="space-y-2">
         <Label htmlFor="title">Title *</Label>
         <Input
@@ -173,81 +174,8 @@ export default function TicketForm({
         />
       </div>
 
-      <div className="space-y-2">
-        <Label htmlFor="description">Description *</Label>
-        <Textarea
-          id="description"
-          value={formData.description}
-          onChange={(e) =>
-            setFormData({ ...formData, description: e.target.value })
-          }
-          placeholder="Detailed description of the issue"
-          rows={4}
-          required
-        />
-      </div>
-
+      {/* 2. Site, Space */}
       <div className="grid grid-cols-2 gap-4">
-        <div className="space-y-2">
-          <Label htmlFor="category_id">Category *</Label>
-          <Select
-            value={formData.category_id || ""}
-            onValueChange={(value) =>
-              setFormData({ ...formData, category_id: value })
-            }
-          >
-            <SelectTrigger>
-              <SelectValue placeholder="Select Category" />
-            </SelectTrigger>
-            <SelectContent>
-              {categoryList.map((category: any) => (
-                <SelectItem key={category.id} value={category.id}>
-                  {category.category_name || category.name}
-                </SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
-        </div>
-
-        <div className="space-y-2">
-          <Label htmlFor="priority">Priority *</Label>
-          <Select
-            value={formData.priority}
-            onValueChange={(value) =>
-              setFormData({ ...formData, priority: value })
-            }
-          >
-            <SelectTrigger>
-              <SelectValue placeholder="Select Priority" />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="LOW">Low</SelectItem>
-              <SelectItem value="MEDIUM">Medium</SelectItem>
-              <SelectItem value="HIGH">High</SelectItem>
-            </SelectContent>
-          </Select>
-        </div>
-      </div>
-
-      <div className="grid grid-cols-2 gap-4">
-        <div className="space-y-2">
-          <Label htmlFor="request_type">Request Type *</Label>
-          <Select
-            value={formData.request_type}
-            onValueChange={(value) =>
-              setFormData({ ...formData, request_type: value })
-            }
-          >
-            <SelectTrigger>
-              <SelectValue placeholder="Select Request Type" />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="unit">unit</SelectItem>
-              <SelectItem value="community">community</SelectItem>
-            </SelectContent>
-          </Select>
-        </div>
-
         <div className="space-y-2">
           <Label htmlFor="site_id">Site *</Label>
           <Select
@@ -273,9 +201,7 @@ export default function TicketForm({
             </SelectContent>
           </Select>
         </div>
-      </div>
 
-      <div className="grid grid-cols-2 gap-4">
         <div className="space-y-2">
           <Label htmlFor="space_id">Space *</Label>
           <Select
@@ -300,7 +226,10 @@ export default function TicketForm({
             </SelectContent>
           </Select>
         </div>
+      </div>
 
+      {/* 3. Tenant, Category */}
+      <div className="grid grid-cols-2 gap-4">
         <div className="space-y-2">
           <Label htmlFor="tenant_id">Tenant *</Label>
           <Select
@@ -325,8 +254,70 @@ export default function TicketForm({
             </SelectContent>
           </Select>
         </div>
+
+        <div className="space-y-2">
+          <Label htmlFor="category_id">Category *</Label>
+          <Select
+            value={formData.category_id || ""}
+            onValueChange={(value) =>
+              setFormData({ ...formData, category_id: value })
+            }
+          >
+            <SelectTrigger>
+              <SelectValue placeholder="Select Category" />
+            </SelectTrigger>
+            <SelectContent>
+              {categoryList.map((category: any) => (
+                <SelectItem key={category.id} value={category.id}>
+                  {category.category_name || category.name}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+        </div>
       </div>
 
+      {/* 4. Request type, Priority */}
+      <div className="grid grid-cols-2 gap-4">
+        <div className="space-y-2">
+          <Label htmlFor="request_type">Request Type *</Label>
+          <Select
+            value={formData.request_type}
+            onValueChange={(value) =>
+              setFormData({ ...formData, request_type: value })
+            }
+          >
+            <SelectTrigger>
+              <SelectValue placeholder="Select Request Type" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="unit">unit</SelectItem>
+              <SelectItem value="community">community</SelectItem>
+            </SelectContent>
+          </Select>
+        </div>
+
+        <div className="space-y-2">
+          <Label htmlFor="priority">Priority *</Label>
+          <Select
+            value={formData.priority}
+            onValueChange={(value) =>
+              setFormData({ ...formData, priority: value })
+            }
+          >
+            <SelectTrigger>
+              <SelectValue placeholder="Select Priority" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="LOW">Low</SelectItem>
+              <SelectItem value="MEDIUM">Medium</SelectItem>
+              <SelectItem value="HIGH">High</SelectItem>
+            </SelectContent>
+          </Select>
+        </div>
+      </div>
+
+      {/* 5. Preferred time */}
       <div className="space-y-2">
         <Label htmlFor="preferred_time">Preferred Time</Label>
         <Select
@@ -348,8 +339,24 @@ export default function TicketForm({
         </Select>
       </div>
 
+      {/* 6. Description */}
       <div className="space-y-2">
-        <Label>Attach Images</Label>
+        <Label htmlFor="description">Description *</Label>
+        <Textarea
+          id="description"
+          value={formData.description}
+          onChange={(e) =>
+            setFormData({ ...formData, description: e.target.value })
+          }
+          placeholder="Detailed description of the issue"
+          rows={4}
+          required
+        />
+      </div>
+
+      {/* 7. Attach Image */}
+      <div className="space-y-2">
+        <Label>Attach Image</Label>
         <div className="space-y-2">
           <Button
             type="button"

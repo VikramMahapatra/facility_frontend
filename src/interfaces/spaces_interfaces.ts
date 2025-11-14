@@ -8,6 +8,7 @@ export const spaceKinds = [
     'hall',
     'common_area',
     'parking',
+    
 ] as const;
 
 export type SpaceKind = typeof spaceKinds[number];
