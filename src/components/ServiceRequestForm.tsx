@@ -122,7 +122,7 @@ export function ServiceRequestForm({
 
   useEffect(() => {
     const kind = serviceRequest?.requester_kind || emptyFormData.requester_kind;
-
+    console.log("Hydrating form with service request:", serviceRequest);
     if (serviceRequest && mode !== "create") {
       const validRequesterKind = (serviceRequest.requester_kind === "resident" || serviceRequest.requester_kind === "merchant") 
         ? serviceRequest.requester_kind 
@@ -186,6 +186,13 @@ export function ServiceRequestForm({
       setValue("requester_id", null);
     }
   }, [selectedRequesterKind, selectedSiteId, setValue]);
+  
+
+  
+
+ 
+
+
 
   const loadSiteLookup = async () => {
     try {

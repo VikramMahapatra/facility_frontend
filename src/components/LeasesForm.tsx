@@ -56,6 +56,7 @@ export function LeaseForm({ lease, isOpen, onClose, onSave, mode }: LeaseFormPro
     handleSubmit,
     control,
     reset,
+    setValue, // ✅ add this
     watch,
     formState: { errors, isSubmitting, isValid },
   } = useForm<LeaseFormValues>({
@@ -85,6 +86,7 @@ export function LeaseForm({ lease, isOpen, onClose, onSave, mode }: LeaseFormPro
   // hydrate form on open/change
   useEffect(() => {
     if (lease && mode !== "create") {
+      console.log("Hydrating lease form with:", lease);
       reset({
         kind: (lease.kind as any) || "commercial",
         site_id: lease.site_id || "",
@@ -128,11 +130,20 @@ export function LeaseForm({ lease, isOpen, onClose, onSave, mode }: LeaseFormPro
     if (selectedSiteId) {
       loadSpaces(selectedSiteId);
       if (selectedKind) loadLeasePartners(selectedKind, selectedSiteId);
-    } else {
-      setSpaceList([]);
-      setLeasePartnerList([]);
-    }
+    } 
   }, [selectedSiteId, selectedKind]);
+
+  useEffect(() => {
+    if (lease) {
+      if(lease.kind === "commercial") {      // When leasePartnerList loads, update partner_id in form
+      setValue("partner_id", String(lease.partner_id));
+    }
+    else if(lease.kind === "residential") {
+      setValue("tenant_id", String(lease.tenant_id));
+    }
+  }
+  }, [leasePartnerList]);
+
 
   const loadSpaces = async (siteId: string) => {
     const spaces = await spacesApiService.getSpaceLookup(siteId);
