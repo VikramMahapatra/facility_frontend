@@ -8,13 +8,16 @@ import { PropertySidebar } from "@/components/PropertySidebar";
 import { SidebarProvider, SidebarInset, SidebarTrigger } from "@/components/ui/sidebar";
 import { SpaceForm } from "@/components/SpaceForm";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
-import { useToast } from "@/hooks/use-toast";
 import { Pagination } from "@/components/Pagination";
 import { siteApiService } from "@/services/spaces_sites/sitesapi";
 import { spacesApiService } from "@/services/spaces_sites/spacesapi";
 import { SpaceKind, spaceKinds } from "@/interfaces/spaces_interfaces";
 import { useSkipFirstEffect } from "@/hooks/use-skipfirst-effect";
 import { useAuth } from "../context/AuthContext";
+import { useLoader } from "@/context/LoaderContext";
+import LoaderOverlay from "@/components/LoaderOverlay";
+import ContentContainer from "@/components/ContentContainer";
+import { toast } from "sonner";
 
 export interface Space {
   id: string;
@@ -43,7 +46,6 @@ interface SpaceOverview {
 }
 
 export default function Spaces() {
-  const { toast } = useToast();
   const [searchTerm, setSearchTerm] = useState("");
   const [selectedKind, setSelectedKind] = useState<string>("all");
   const [selectedStatus, setSelectedStatus] = useState<string>("all");
@@ -65,6 +67,7 @@ export default function Spaces() {
   const [pageSize] = useState(6); // items per page
   const [totalItems, setTotalItems] = useState(0);
   const { canRead, canWrite, canDelete } = useAuth();
+  const { withLoader } = useLoader();
   const resource = "spaces";
 
   useSkipFirstEffect(() => {
@@ -112,12 +115,16 @@ export default function Spaces() {
     if (selectedStatus) params.append("status", selectedStatus);
     params.append("skip", skip.toString());
     params.append("limit", limit.toString());
-    const response = await spacesApiService.getSpaces(params);
-    if (response.success) {
-    setSpaces(response.data?.spaces || []);
-    setTotalItems(response.data?.total || 0);
+    
+    const response = await withLoader(async () => {
+      return await spacesApiService.getSpaces(params);
+    });
+    
+    if (response?.success) {
+      setSpaces(response.data?.spaces || []);
+      setTotalItems(response.data?.total || 0);
+    }
   }
-}
   const loadSiteLookup = async () => {
     const lookup = await siteApiService.getSiteLookup();
     if (lookup.success) setSiteList(lookup.data || []);
@@ -153,16 +160,11 @@ export default function Spaces() {
       // Success case
       updateSpacePage();
       setDeleteSpaceId(null);
-      toast({
-        title: "Space Deleted",
-        description: "Space has been deleted successfully.",
-      });
+      toast.success("Space has been deleted successfully.");
     } else {
       // Error case - use the message from response.data
-      toast({
-        title: "Cannot Delete Space",
-        description: response.data?.message || "Cannot delete space that has ever had tenants or leases associated with it",
-        variant: "destructive",
+      toast.error(`Cannot Delete Space\n${response.data?.message || "Cannot delete space that has ever had tenants or leases associated with it"}`, {
+        style: { whiteSpace: "pre-line" },
       });
     }
   }
@@ -178,10 +180,7 @@ export default function Spaces() {
 
     if (response?.success) {
       setIsFormOpen(false);
-      toast({
-        title: formMode === 'create' ? "Space Created" : "Space Updated",
-        description: `Space ${spaceData.code} has been ${formMode === 'create' ? 'created' : 'updated'} successfully.`,
-      });
+      toast.success(`Space ${spaceData.code} has been ${formMode === 'create' ? 'created' : 'updated'} successfully.`);
       updateSpacePage();
     }
   };
@@ -303,7 +302,9 @@ export default function Spaces() {
                 </select>
               </div>
 
-              {/* Quick Stats */}
+              <ContentContainer>
+                <LoaderOverlay />
+                {/* Quick Stats */}
               <div className="grid gap-4 md:grid-cols-4">
                 <Card>
                   <CardContent className="p-4">
@@ -338,7 +339,7 @@ export default function Spaces() {
               </div>
 
               {/* Spaces Grid */}
-              <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
+              <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3 mt-6">
                 {spaces.map((space) => (
                   <Card key={space.id} className="hover:shadow-lg transition-shadow">
                     <CardHeader className="pb-3">
@@ -439,6 +440,7 @@ export default function Spaces() {
                   <p className="text-muted-foreground">Try adjusting your search criteria or add a new space.</p>
                 </div>
               )}
+              </ContentContainer>
             </div>
           </main>
         </SidebarInset>

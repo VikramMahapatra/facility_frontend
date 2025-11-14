@@ -65,6 +65,7 @@ const emptyFormData: SpaceFormValues = {
 };
 
 export function SpaceForm({ space, isOpen, onClose, onSave, mode }: SpaceFormProps) {
+  const [isSubmitted, setIsSubmitted] = useState(false);
   const {
     register,
     handleSubmit,
@@ -121,7 +122,8 @@ export function SpaceForm({ space, isOpen, onClose, onSave, mode }: SpaceFormPro
     } else {
       reset(emptyFormData);
     }
-  }, [space, mode, reset]);
+    setIsSubmitted(false);
+  }, [space, mode, reset, isOpen]);
 
   const loadSiteLookup = async () => {
     const response = await siteApiService.getSiteLookup();
@@ -134,6 +136,7 @@ export function SpaceForm({ space, isOpen, onClose, onSave, mode }: SpaceFormPro
   };
 
   const onSubmitForm = async (data: SpaceFormValues) => {
+    setIsSubmitted(true);
     try {
       await onSave({
         ...space,
@@ -436,7 +439,7 @@ export function SpaceForm({ space, isOpen, onClose, onSave, mode }: SpaceFormPro
               {mode === 'view' ? 'Close' : 'Cancel'}
             </Button>
             {mode !== 'view' && (
-              <Button type="submit" disabled={!isValid || isSubmitting}>
+              <Button type="submit" disabled={isSubmitting || isSubmitted}>
                 {isSubmitting ? "Saving..." : mode === 'create' ? 'Create Space' : 'Update Space'}
               </Button>
             )}
