@@ -48,7 +48,7 @@ const emptyFormData: SiteFormValues = {
   name: "",
   kind: "residential",
   status: "active",
-  opened_on: new Date().toISOString().split("T")[0],
+  opened_on: "",
   address: {
     line1: "",
     city: "",
@@ -58,6 +58,7 @@ const emptyFormData: SiteFormValues = {
 };
 
 export function SiteForm({ site, isOpen, onClose, onSave, mode }: SiteFormProps) {
+  const [isSubmitted, setIsSubmitted] = useState(false);
   const {
     register,
     handleSubmit,
@@ -79,7 +80,7 @@ export function SiteForm({ site, isOpen, onClose, onSave, mode }: SiteFormProps)
         name: site.name || "",
         kind: site.kind || "residential",
         status: site.status || "active",
-        opened_on: site.opened_on || new Date().toISOString().split("T")[0],
+        opened_on: site.opened_on || "",
         address: {
           line1: site.address?.line1 || "",
           line2: site.address?.line2,
@@ -96,9 +97,11 @@ export function SiteForm({ site, isOpen, onClose, onSave, mode }: SiteFormProps)
     } else {
       reset(emptyFormData);
     }
-  }, [site, mode, reset]);
+    setIsSubmitted(false);
+  }, [site, mode, reset, isOpen]);
 
   const onSubmitForm = async (data: SiteFormValues) => {
+    setIsSubmitted(true);
     try {
       await onSave({
         ...site,
@@ -127,31 +130,18 @@ export function SiteForm({ site, isOpen, onClose, onSave, mode }: SiteFormProps)
         </DialogHeader>
 
         <form onSubmit={isSubmitting ? undefined : handleSubmit(onSubmitForm)} className="space-y-4">
-          <div className="grid grid-cols-2 gap-4">
-            <div className="space-y-2">
-              <Label htmlFor="code">Code *</Label>
-              <Input
-                id="code"
-                {...register("code")}
-                disabled={isReadOnly}
-                className={errors.code ? 'border-red-500' : ''}
-              />
-              {errors.code && (
-                <p className="text-sm text-red-500">{errors.code.message}</p>
-              )}
-            </div>
-            <div className="space-y-2">
-              <Label htmlFor="name">Name *</Label>
-              <Input
-                id="name"
-                {...register("name")}
-                disabled={isReadOnly}
-                className={errors.name ? 'border-red-500' : ''}
-              />
-              {errors.name && (
-                <p className="text-sm text-red-500">{errors.name.message}</p>
-              )}
-            </div>
+          <div className="space-y-2">
+            <Label htmlFor="name">Site Name *</Label>
+            <Input
+              id="name"
+              {...register("name")}
+              disabled={isReadOnly}
+              className={errors.name ? 'border-red-500' : ''}
+              placeholder="Enter Site name"
+            />
+            {errors.name && (
+              <p className="text-sm text-red-500">{errors.name.message}</p>
+            )}
           </div>
 
           <div className="grid grid-cols-2 gap-4">
@@ -212,7 +202,7 @@ export function SiteForm({ site, isOpen, onClose, onSave, mode }: SiteFormProps)
 
           <div className="grid grid-cols-2 gap-4">
             <div className="space-y-2">
-              <Label htmlFor="opened_on">Opened On *</Label>
+              <Label htmlFor="opened_on">Launch Date</Label>
               <Input
                 id="opened_on"
                 type="date"
@@ -222,6 +212,19 @@ export function SiteForm({ site, isOpen, onClose, onSave, mode }: SiteFormProps)
               />
               {errors.opened_on && (
                 <p className="text-sm text-red-500">{errors.opened_on.message}</p>
+              )}
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="code"> Site Code</Label>
+              <Input
+                id="code"
+                {...register("code")}
+                disabled={isReadOnly}
+                className={errors.code ? 'border-red-500' : ''}
+                placeholder="e.g., SITE001, HQ-001, BLD-2024"
+              />
+              {errors.code && (
+                <p className="text-sm text-red-500">{errors.code.message}</p>
               )}
             </div>
           </div>
@@ -272,7 +275,7 @@ export function SiteForm({ site, isOpen, onClose, onSave, mode }: SiteFormProps)
               control={control}
               render={({ field }) => (
                 <div className="space-y-2">
-                  <Label htmlFor="pincode">Pincode *</Label>
+                  <Label htmlFor="pincode">Pincode</Label>
                   <Input
                     id="pincode"
                     {...field}
@@ -298,7 +301,7 @@ export function SiteForm({ site, isOpen, onClose, onSave, mode }: SiteFormProps)
               {mode === "view" ? "Close" : "Cancel"}
             </Button>
             {mode !== "view" && (
-              <Button type="submit" disabled={!isValid || isSubmitting}>
+              <Button type="submit" disabled={isSubmitting || isSubmitted}>
                 {isSubmitting ? "Saving..." : mode === "create" ? "Create Site" : "Update Site"}
               </Button>
             )}

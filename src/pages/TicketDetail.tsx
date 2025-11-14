@@ -75,6 +75,8 @@ export default function TicketDetail() {
   const [assignedTo, setAssignedTo] = useState<string>("");
   const [rating, setRating] = useState(0);
   const [feedback, setFeedback] = useState("");
+  const [isStatusUpdateDisabled, setIsStatusUpdateDisabled] = useState(false);
+  const [isAssignmentDisabled, setIsAssignmentDisabled] = useState(false);
 
   useEffect(() => {
     if (ticket) {
@@ -116,8 +118,9 @@ export default function TicketDetail() {
   };
 
   const handleStatusUpdate = async () => {
-    if (!ticketId || !selectedStatus || !user?.id) return;
+    if (!ticketId || !selectedStatus || !user?.id || isStatusUpdateDisabled) return;
 
+    setIsStatusUpdateDisabled(true);
     const response = await ticketsApiService.updateTicketStatus(ticketId, selectedStatus, user.id);
     if (response.success) {
       loadTicket();
@@ -129,8 +132,9 @@ export default function TicketDetail() {
   };
 
   const handleAssignment = async () => {
-    if (!ticketId || !assignedTo) return;
+    if (!ticketId || !assignedTo || isAssignmentDisabled) return;
 
+    setIsAssignmentDisabled(true);
     const response = await ticketsApiService.assignTicket(ticketId, assignedTo);
     if (response.success) {
       loadTicket();
@@ -211,7 +215,7 @@ export default function TicketDetail() {
                   Back
                 </Button>
                 <div className="flex-1">
-                  <h2 className="text-2xl font-bold text-sidebar-primary">Ticket #{ticket.ticket_no}</h2>
+                  <h2 className="text-2xl font-bold text-sidebar-primary"> #{ticket.ticket_no}</h2>
                   <p className="text-muted-foreground">{ticket.title}</p>
                 </div>
               </div>
@@ -466,7 +470,7 @@ export default function TicketDetail() {
                           ))}
                         </SelectContent>
                       </Select>
-                      <Button onClick={handleStatusUpdate} className="w-full" size="sm">
+                      <Button onClick={handleStatusUpdate} className="w-full" size="sm" disabled={isStatusUpdateDisabled}>
                         Update Status
                       </Button>
                     </div>
@@ -484,7 +488,7 @@ export default function TicketDetail() {
                           ))}
                         </SelectContent>
                       </Select>
-                      <Button onClick={handleAssignment} className="w-full" size="sm">
+                      <Button onClick={handleAssignment} className="w-full" size="sm" disabled={isAssignmentDisabled}>
                         Assign Ticket
                       </Button>
                     </div>
