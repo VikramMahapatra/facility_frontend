@@ -15,6 +15,13 @@ export const spaceSchema = z.object({
         'hall',
         'common_area',
         'parking',
+         'villa',
+        'row_house',
+        'bungalow',
+        'duplex',
+        'penthouse',
+        'studio_apartment',
+        'farm_house',
     ] as const, {
         required_error: "Kind is required",
     }),
