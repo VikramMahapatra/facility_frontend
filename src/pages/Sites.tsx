@@ -96,31 +96,27 @@ export default function Sites() {
     }
   }, [searchTerm, selectedKind]);
 
-  const loadSites = () => {
+  const loadSites = async () => {
     showLoader();
-    const skip = (page - 1) * pageSize;
-    const limit = pageSize;
+    try {
+      const skip = (page - 1) * pageSize;
+      const limit = pageSize;
 
-    // build query params
-    const params = new URLSearchParams();
-    if (searchTerm) params.append("search", searchTerm);
-    if (selectedKind) params.append("kind", selectedKind);
-    params.append("skip", skip.toString());
-    params.append("limit", limit.toString());
-    
-    siteApiService.getSites(params)
-      .then((response) => {
-        if (response.success) {
-          setSites(response.data?.sites || []);
-          setTotalItems(response.data?.total || 0);
-        }
-      })
-      .catch((error) => {
-        console.error("Failed to load sites:", error);
-      })
-      .finally(() => {
-        hideLoader();
-      });
+      // build query params
+      const params = new URLSearchParams();
+      if (searchTerm) params.append("search", searchTerm);
+      if (selectedKind) params.append("kind", selectedKind);
+      params.append("skip", skip.toString());
+      params.append("limit", limit.toString());
+      
+      const response = await siteApiService.getSites(params);
+      if (response.success) {
+        setSites(response.data?.sites || []);
+        setTotalItems(response.data?.total || 0);
+      }
+    } finally {
+      hideLoader();
+    }
   };
 
   const getKindColor = (kind: string) => {

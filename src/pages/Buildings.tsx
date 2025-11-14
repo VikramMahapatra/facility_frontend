@@ -25,6 +25,7 @@ export interface Building {
   floors: number;
   total_spaces?: number;
   occupied_spaces?: number;
+  occupancy_rate?: number;
   attributes: Record<string, any>;
 }
 
@@ -238,7 +239,6 @@ export default function Buildings() {
               {/* Buildings Grid */}
               <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
                 {buildings.map((building, index) => {
-                  const occupancyRate = parseFloat(getOccupancyRate(building));
 
                   return (
                     <Card
@@ -275,8 +275,8 @@ export default function Buildings() {
                             <p className="text-muted-foreground">Occupied</p>
                           </div>
                           <div className="text-center">
-                            <p className={`font-semibold ${getOccupancyColor(occupancyRate)}`}>
-                              {occupancyRate}%
+                            <p className={`font-semibold ${getOccupancyColor(building.occupancy_rate || 0)}`}>
+                              {building.occupancy_rate || 0}%
                             </p>
                             <p className="text-muted-foreground">Rate</p>
                           </div>
