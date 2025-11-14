@@ -2,74 +2,84 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { SidebarProvider, SidebarInset, SidebarTrigger } from "@/components/ui/sidebar";
 import { PropertySidebar } from "@/components/PropertySidebar";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { mockTickets } from "@/data/mockTicketData";
 import { AlertTriangle, CheckCircle, Clock, TrendingUp, TicketIcon, Zap, Users, Calendar, BarChart3 } from "lucide-react";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { useNavigate } from "react-router-dom";
+import { ticketDashboardApiService } from "@/services/ticketing_service/ticketdashboardapi";
+import { siteApiService } from "@/services/spaces_sites/sitesapi";
+import { useToast } from "@/hooks/use-toast";
 
 export default function TicketDashboard() {
-  const [selectedSiteId, setSelectedSiteId] = useState("1");
+  const { toast } = useToast();
   const navigate = useNavigate();
+  const [selectedSiteId, setSelectedSiteId] = useState("");
+  const [siteList, setSiteList] = useState<any[]>([]);
+  const [dashboardData, setDashboardData] = useState<any>(null);
+  const [loading, setLoading] = useState(true);
 
-  // Filter tickets by site
-  const filteredTickets = mockTickets.filter(
-    (ticket) => ticket.site_id === parseInt(selectedSiteId)
-  );
+  useEffect(() => {
+    loadSiteLookup();
+  }, []);
 
-  // Last 30 days filter
-  const thirtyDaysAgo = new Date();
-  thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
-  
-  const last30DaysTickets = filteredTickets.filter(
-    (ticket) => new Date(ticket.created_at) >= thirtyDaysAgo
-  );
+  useEffect(() => {
+    if (selectedSiteId) {
+      loadDashboard();
+    }
+  }, [selectedSiteId]);
 
-  // Calculate statistics
-  const totalTickets = filteredTickets.length;
-  const openTickets = filteredTickets.filter((t) => t.status === 'OPEN').length;
-  const escalatedTickets = filteredTickets.filter((t) => t.status === 'ESCALATED').length;
-  const inProgressTickets = filteredTickets.filter((t) => t.status === 'IN_PROGRESS').length;
-  const closedTickets = filteredTickets.filter((t) => t.status === 'CLOSED').length;
-  const highPriorityTickets = filteredTickets.filter((t) => t.priority === 'HIGH').length;
-
-  // Last 30 days statistics
-  const last30DaysPending = last30DaysTickets.filter(
-    (t) => t.status === 'OPEN' || t.status === 'ASSIGNED'
-  ).length;
-  const last30DaysResolved = last30DaysTickets.filter(
-    (t) => t.status === 'CLOSED'
-  ).length;
-  const last30DaysEscalated = last30DaysTickets.filter(
-    (t) => t.status === 'ESCALATED'
-  ).length;
-
-  // Workload distribution (assignee stats)
-  const assigneeWorkload = filteredTickets.reduce((acc, ticket) => {
-    if (ticket.assigned_to) {
-      const assigneeId = ticket.assigned_to.toString();
-      if (!acc[assigneeId]) {
-        acc[assigneeId] = {
-          total: 0,
-          open: 0,
-          inProgress: 0,
-          escalated: 0,
-        };
+  const loadSiteLookup = async () => {
+    const response = await siteApiService.getSiteLookup();
+    if (response.success) {
+      setSiteList(response.data || []);
+      if (response.data && response.data.length > 0) {
+        setSelectedSiteId(response.data[0].id);
       }
-      acc[assigneeId].total++;
-      if (ticket.status === 'OPEN' || ticket.status === 'ASSIGNED') acc[assigneeId].open++;
-      if (ticket.status === 'IN_PROGRESS') acc[assigneeId].inProgress++;
-      if (ticket.status === 'ESCALATED') acc[assigneeId].escalated++;
+    }
+  };
+
+  const loadDashboard = async () => {
+    if (!selectedSiteId) return;
+    setLoading(true);
+    const response = await ticketDashboardApiService.getCompleteDashboard(selectedSiteId);
+    if (response.success) {
+      setDashboardData(response.data);
+    } else {
+      toast({
+        title: "Error",
+        description: "Failed to load dashboard data",
+        variant: "destructive",
+      });
+    }
+    setLoading(false);
+  };
+
+  const overview = dashboardData?.overview || {};
+  const performance = dashboardData?.performance || {};
+  const workloadDistribution = dashboardData?.team_workload?.technicians_workload || [];
+  const categoryStatistics = dashboardData?.category_statistics?.statistics || [];
+  const recentTickets = dashboardData?.recent_tickets?.tickets || [];
+
+  const categoryDistribution = categoryStatistics.reduce((acc: any, category: any) => {
+    if (category.category_name) {
+      acc[category.category_name] = category.total_tickets || 0;
     }
     return acc;
-  }, {} as Record<string, { total: number; open: number; inProgress: number; escalated: number }>);
+  }, {});
 
-  // Category breakdown
-  const categoryStats = filteredTickets.reduce((acc, ticket) => {
-    const category = ticket.category_name || 'Unknown';
-    acc[category] = (acc[category] || 0) + 1;
-    return acc;
-  }, {} as Record<string, number>);
+  const totalTickets = overview.total_tickets || 0;
+  const openTickets = overview.new_tickets || 0;
+  const escalatedTickets = overview.escalated_tickets || 0;
+  const inProgressTickets = overview.in_progress_tickets || 0;
+  const closedTickets = overview.closed_tickets || 0;
+  const highPriorityTickets = overview.high_priority_tickets || 0;
+
+  const last30DaysPending = performance.pending_tickets || 0;
+  const last30DaysResolved = performance.resolved || 0;
+  const last30DaysEscalated = performance.escalated || 0;
+  const totalCreated = performance.total_created || 0;
+  const resolutionRate = performance.resolution_rate || 0;
+  const escalationRate = performance.escalation_rate || 0;
 
   return (
     <SidebarProvider>
@@ -99,9 +109,11 @@ export default function TicketDashboard() {
                     <SelectValue placeholder="Select Site" />
                   </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="1">Site 1 - Downtown</SelectItem>
-                    <SelectItem value="2">Site 2 - Uptown</SelectItem>
-                    <SelectItem value="3">Site 3 - Suburbs</SelectItem>
+                    {siteList.map((site: any) => (
+                      <SelectItem key={site.id} value={site.id}>
+                        {site.name}
+                      </SelectItem>
+                    ))}
                   </SelectContent>
                 </Select>
                 <Button onClick={() => navigate('/ticket-workload')}>
@@ -119,8 +131,16 @@ export default function TicketDashboard() {
                   <TicketIcon className="h-4 w-4 text-muted-foreground" />
                 </CardHeader>
                 <CardContent>
-                  <div className="text-2xl font-bold">{totalTickets}</div>
-                  <p className="text-xs text-muted-foreground mt-1">All tickets for this site</p>
+                  {loading ? (
+                    <div className="flex items-center justify-center py-4">
+                      <div className="animate-spin w-5 h-5 border-2 border-primary border-t-transparent rounded-full"></div>
+                    </div>
+                  ) : (
+                    <>
+                      <div className="text-2xl font-bold">{totalTickets}</div>
+                      <p className="text-xs text-muted-foreground mt-1">All tickets for this site</p>
+                    </>
+                  )}
                 </CardContent>
               </Card>
 
@@ -130,8 +150,16 @@ export default function TicketDashboard() {
                   <Clock className="h-4 w-4 text-blue-500" />
                 </CardHeader>
                 <CardContent>
-                  <div className="text-2xl font-bold">{openTickets}</div>
-                  <p className="text-xs text-muted-foreground mt-1">Awaiting assignment</p>
+                  {loading ? (
+                    <div className="flex items-center justify-center py-4">
+                      <div className="animate-spin w-5 h-5 border-2 border-primary border-t-transparent rounded-full"></div>
+                    </div>
+                  ) : (
+                    <>
+                      <div className="text-2xl font-bold">{openTickets}</div>
+                      <p className="text-xs text-muted-foreground mt-1">Awaiting assignment</p>
+                    </>
+                  )}
                 </CardContent>
               </Card>
 
@@ -141,8 +169,16 @@ export default function TicketDashboard() {
                   <AlertTriangle className="h-4 w-4 text-red-500" />
                 </CardHeader>
                 <CardContent>
-                  <div className="text-2xl font-bold">{escalatedTickets}</div>
-                  <p className="text-xs text-muted-foreground mt-1">SLA breached tickets</p>
+                  {loading ? (
+                    <div className="flex items-center justify-center py-4">
+                      <div className="animate-spin w-5 h-5 border-2 border-primary border-t-transparent rounded-full"></div>
+                    </div>
+                  ) : (
+                    <>
+                      <div className="text-2xl font-bold">{escalatedTickets}</div>
+                      <p className="text-xs text-muted-foreground mt-1">SLA breached tickets</p>
+                    </>
+                  )}
                 </CardContent>
               </Card>
 
@@ -152,8 +188,16 @@ export default function TicketDashboard() {
                   <TrendingUp className="h-4 w-4 text-yellow-500" />
                 </CardHeader>
                 <CardContent>
-                  <div className="text-2xl font-bold">{inProgressTickets}</div>
-                  <p className="text-xs text-muted-foreground mt-1">Being worked on</p>
+                  {loading ? (
+                    <div className="flex items-center justify-center py-4">
+                      <div className="animate-spin w-5 h-5 border-2 border-primary border-t-transparent rounded-full"></div>
+                    </div>
+                  ) : (
+                    <>
+                      <div className="text-2xl font-bold">{inProgressTickets}</div>
+                      <p className="text-xs text-muted-foreground mt-1">Being worked on</p>
+                    </>
+                  )}
                 </CardContent>
               </Card>
 
@@ -163,8 +207,16 @@ export default function TicketDashboard() {
                   <CheckCircle className="h-4 w-4 text-green-500" />
                 </CardHeader>
                 <CardContent>
-                  <div className="text-2xl font-bold">{closedTickets}</div>
-                  <p className="text-xs text-muted-foreground mt-1">Resolved tickets</p>
+                  {loading ? (
+                    <div className="flex items-center justify-center py-4">
+                      <div className="animate-spin w-5 h-5 border-2 border-primary border-t-transparent rounded-full"></div>
+                    </div>
+                  ) : (
+                    <>
+                      <div className="text-2xl font-bold">{closedTickets}</div>
+                      <p className="text-xs text-muted-foreground mt-1">Resolved tickets</p>
+                    </>
+                  )}
                 </CardContent>
               </Card>
 
@@ -174,8 +226,16 @@ export default function TicketDashboard() {
                   <Zap className="h-4 w-4 text-orange-500" />
                 </CardHeader>
                 <CardContent>
-                  <div className="text-2xl font-bold">{highPriorityTickets}</div>
-                  <p className="text-xs text-muted-foreground mt-1">Urgent attention needed</p>
+                  {loading ? (
+                    <div className="flex items-center justify-center py-4">
+                      <div className="animate-spin w-5 h-5 border-2 border-primary border-t-transparent rounded-full"></div>
+                    </div>
+                  ) : (
+                    <>
+                      <div className="text-2xl font-bold">{highPriorityTickets}</div>
+                      <p className="text-xs text-muted-foreground mt-1">Urgent attention needed</p>
+                    </>
+                  )}
                 </CardContent>
               </Card>
             </div>
@@ -189,33 +249,35 @@ export default function TicketDashboard() {
                 </CardTitle>
               </CardHeader>
               <CardContent>
-                <div className="grid gap-4 md:grid-cols-3">
-                  <div className="space-y-2">
-                    <p className="text-sm text-muted-foreground">Pending Tickets</p>
-                    <p className="text-3xl font-bold">{last30DaysPending}</p>
-                    <p className="text-xs text-muted-foreground">
-                      {last30DaysTickets.length} total created
-                    </p>
+                {loading ? (
+                  <div className="flex items-center justify-center py-8">
+                    <div className="animate-spin w-6 h-6 border-2 border-primary border-t-transparent rounded-full"></div>
                   </div>
-                  <div className="space-y-2">
-                    <p className="text-sm text-muted-foreground">Resolved</p>
-                    <p className="text-3xl font-bold text-green-600">{last30DaysResolved}</p>
-                    <p className="text-xs text-muted-foreground">
-                      {last30DaysTickets.length > 0 
-                        ? Math.round((last30DaysResolved / last30DaysTickets.length) * 100)
-                        : 0}% resolution rate
-                    </p>
+                ) : (
+                  <div className="grid gap-4 md:grid-cols-3">
+                    <div className="space-y-2">
+                      <p className="text-sm text-muted-foreground">Pending Tickets</p>
+                      <p className="text-3xl font-bold">{last30DaysPending}</p>
+                      <p className="text-xs text-muted-foreground">
+                        {totalCreated} total created
+                      </p>
+                    </div>
+                    <div className="space-y-2">
+                      <p className="text-sm text-muted-foreground">Resolved</p>
+                      <p className="text-3xl font-bold text-green-600">{last30DaysResolved}</p>
+                      <p className="text-xs text-muted-foreground">
+                        {resolutionRate.toFixed(2)}% resolution rate
+                      </p>
+                    </div>
+                    <div className="space-y-2">
+                      <p className="text-sm text-muted-foreground">Escalated</p>
+                      <p className="text-3xl font-bold text-red-600">{last30DaysEscalated}</p>
+                      <p className="text-xs text-muted-foreground">
+                        {escalationRate.toFixed(2)}% escalation rate
+                      </p>
+                    </div>
                   </div>
-                  <div className="space-y-2">
-                    <p className="text-sm text-muted-foreground">Escalated</p>
-                    <p className="text-3xl font-bold text-red-600">{last30DaysEscalated}</p>
-                    <p className="text-xs text-muted-foreground">
-                      {last30DaysTickets.length > 0
-                        ? Math.round((last30DaysEscalated / last30DaysTickets.length) * 100)
-                        : 0}% escalation rate
-                    </p>
-                  </div>
-                </div>
+                )}
               </CardContent>
             </Card>
 
@@ -228,31 +290,37 @@ export default function TicketDashboard() {
                 </CardTitle>
               </CardHeader>
               <CardContent>
-                <div className="space-y-4">
-                  {Object.entries(assigneeWorkload).map(([assigneeId, stats]) => (
-                    <div key={assigneeId} className="flex items-center justify-between border-b pb-3 last:border-0">
-                      <div className="space-y-1">
-                        <p className="text-sm font-medium">
-                          Technician #{assigneeId}
-                        </p>
-                        <div className="flex gap-4 text-xs text-muted-foreground">
-                          <span>Open: {stats.open}</span>
-                          <span>In Progress: {stats.inProgress}</span>
-                          <span className="text-red-600">Escalated: {stats.escalated}</span>
+                {loading ? (
+                  <div className="flex items-center justify-center py-8">
+                    <div className="animate-spin w-6 h-6 border-2 border-primary border-t-transparent rounded-full"></div>
+                  </div>
+                ) : (
+                  <div className="space-y-4">
+                    {workloadDistribution.map((workload: any) => (
+                      <div key={workload.technician_id} className="flex items-center justify-between border-b pb-3 last:border-0">
+                        <div className="space-y-1">
+                          <p className="text-sm font-medium">
+                            {workload.technician_name || `Technician ${workload.technician_id?.substring(0, 8) || 'N/A'}`}
+                          </p>
+                          <div className="flex gap-4 text-xs text-muted-foreground">
+                            <span>Open: {workload.open || 0}</span>
+                            <span>In Progress: {workload.in_progress || 0}</span>
+                            <span className="text-red-600">Escalated: {workload.escalated || 0}</span>
+                          </div>
+                        </div>
+                        <div className="text-right">
+                          <p className="text-2xl font-bold">{workload.total || 0}</p>
+                          <p className="text-xs text-muted-foreground">Total assigned</p>
                         </div>
                       </div>
-                      <div className="text-right">
-                        <p className="text-2xl font-bold">{stats.total}</p>
-                        <p className="text-xs text-muted-foreground">Total assigned</p>
-                      </div>
-                    </div>
-                  ))}
-                  {Object.keys(assigneeWorkload).length === 0 && (
-                    <p className="text-sm text-muted-foreground text-center py-4">
-                      No assigned tickets for this site
-                    </p>
-                  )}
-                </div>
+                    ))}
+                    {workloadDistribution.length === 0 && (
+                      <p className="text-sm text-muted-foreground text-center py-4">
+                        No assigned tickets for this site
+                      </p>
+                    )}
+                  </div>
+                )}
               </CardContent>
             </Card>
 
@@ -262,22 +330,33 @@ export default function TicketDashboard() {
                 <CardTitle>Tickets by Category</CardTitle>
               </CardHeader>
               <CardContent>
-                <div className="space-y-4">
-                  {Object.entries(categoryStats).map(([category, count]) => (
-                    <div key={category} className="flex items-center justify-between">
-                      <span className="text-sm font-medium">{category}</span>
-                      <div className="flex items-center gap-2">
-                        <div className="w-32 h-2 bg-muted rounded-full overflow-hidden">
-                          <div
-                            className="h-full bg-primary"
-                            style={{ width: `${(count / totalTickets) * 100}%` }}
-                          />
+                {loading ? (
+                  <div className="flex items-center justify-center py-8">
+                    <div className="animate-spin w-6 h-6 border-2 border-primary border-t-transparent rounded-full"></div>
+                  </div>
+                ) : (
+                  <div className="space-y-4">
+                    {Object.entries(categoryDistribution).map(([category_name, ticket_count]: [string, any]) => (
+                      <div key={category_name} className="flex items-center justify-between">
+                        <span className="text-sm font-medium">{category_name}</span>
+                        <div className="flex items-center gap-2">
+                          <div className="w-32 h-2 bg-muted rounded-full overflow-hidden">
+                            <div
+                              className="h-full bg-primary"
+                              style={{ width: `${totalTickets > 0 ? (ticket_count / totalTickets) * 100 : 0}%` }}
+                            />
+                          </div>
+                          <span className="text-sm text-muted-foreground w-8 text-right">{ticket_count}</span>
                         </div>
-                        <span className="text-sm text-muted-foreground w-8 text-right">{count}</span>
                       </div>
-                    </div>
-                  ))}
-                </div>
+                    ))}
+                    {Object.keys(categoryDistribution).length === 0 && (
+                      <p className="text-sm text-muted-foreground text-center py-4">
+                        No category data available
+                      </p>
+                    )}
+                  </div>
+                )}
               </CardContent>
             </Card>
 
@@ -287,42 +366,57 @@ export default function TicketDashboard() {
                 <CardTitle>Recent Tickets</CardTitle>
               </CardHeader>
               <CardContent>
-                <div className="space-y-4">
-                  {filteredTickets.slice(0, 5).map((ticket) => (
-                    <div key={ticket.ticket_id} className="flex items-center justify-between border-b pb-3 last:border-0">
-                      <div className="space-y-1">
-                        <p className="text-sm font-medium">{ticket.title}</p>
-                        <p className="text-xs text-muted-foreground">{ticket.category_name}</p>
+                {loading ? (
+                  <div className="flex items-center justify-center py-8">
+                    <div className="animate-spin w-6 h-6 border-2 border-primary border-t-transparent rounded-full"></div>
+                  </div>
+                ) : (
+                  <div className="space-y-4">
+                    {recentTickets.map((ticket: any) => (
+                      <div key={ticket.id || ticket.ticket_id} className="flex items-center justify-between border-b pb-3 last:border-0">
+                        <div className="space-y-1">
+                          <p className="text-sm font-medium">{ticket.title}</p>
+                          <p className="text-xs text-muted-foreground">{ticket.category_name || ticket.category}</p>
+                        </div>
+                        <div className="flex items-center gap-2">
+                          <span
+                            className={`text-xs px-2 py-1 rounded-full ${
+                              ticket.priority === 'HIGH' || ticket.priority === 'high'
+                                ? 'bg-red-100 text-red-800'
+                                : ticket.priority === 'MEDIUM' || ticket.priority === 'medium'
+                                ? 'bg-yellow-100 text-yellow-800'
+                                : 'bg-green-100 text-green-800'
+                            }`}
+                          >
+                            {ticket.priority}
+                          </span>
+                          <span
+                            className={`text-xs px-2 py-1 rounded-full ${
+                              ticket.status === 'ESCALATED' || ticket.status === 'escalated'
+                                ? 'bg-red-100 text-red-800'
+                                : ticket.status === 'IN_PROGRESS' || ticket.status === 'in_progress'
+                                ? 'bg-blue-100 text-blue-800'
+                                : ticket.status === 'CLOSED' || ticket.status === 'closed'
+                                ? 'bg-green-100 text-green-800'
+                                : ticket.status === 'ON_HOLD' || ticket.status === 'on_hold' || ticket.status === 'ON HOLD' || ticket.status === 'on hold'
+                                ? 'bg-orange-100 text-orange-800'
+                                : ticket.status === 'OPEN' || ticket.status === 'open'
+                                ? 'bg-blue-100 text-blue-800'
+                                : 'bg-gray-100 text-gray-800'
+                            }`}
+                          >
+                            {ticket.status}
+                          </span>
+                        </div>
                       </div>
-                      <div className="flex items-center gap-2">
-                        <span
-                          className={`text-xs px-2 py-1 rounded-full ${
-                            ticket.priority === 'HIGH'
-                              ? 'bg-red-100 text-red-800'
-                              : ticket.priority === 'MEDIUM'
-                              ? 'bg-yellow-100 text-yellow-800'
-                              : 'bg-green-100 text-green-800'
-                          }`}
-                        >
-                          {ticket.priority}
-                        </span>
-                        <span
-                          className={`text-xs px-2 py-1 rounded-full ${
-                            ticket.status === 'ESCALATED'
-                              ? 'bg-red-100 text-red-800'
-                              : ticket.status === 'IN_PROGRESS'
-                              ? 'bg-blue-100 text-blue-800'
-                              : ticket.status === 'CLOSED'
-                              ? 'bg-green-100 text-green-800'
-                              : 'bg-gray-100 text-gray-800'
-                          }`}
-                        >
-                          {ticket.status}
-                        </span>
-                      </div>
-                    </div>
-                  ))}
-                </div>
+                    ))}
+                    {recentTickets.length === 0 && (
+                      <p className="text-sm text-muted-foreground text-center py-4">
+                        No recent tickets
+                      </p>
+                    )}
+                  </div>
+                )}
               </CardContent>
             </Card>
             </div>

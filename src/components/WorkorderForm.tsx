@@ -167,12 +167,8 @@ export function WorkOrderForm({
   };
 
   const loadServiceRequestLookup = async () => {
-    try {
-      const rows = await serviceRequestApiService.getServiceRequestLookup();
-      setServiceRequestList(Array.isArray(rows) ? rows : []);
-    } catch {
-      setServiceRequestList([]);
-    }
+    const lookup = await serviceRequestApiService.getServiceRequestLookup();
+    if (lookup.success) setServiceRequestList(lookup.data || []);
   };
 
   const onSubmitForm = async (data: WorkOrderFormValues) => {

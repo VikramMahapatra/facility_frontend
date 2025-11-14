@@ -23,16 +23,19 @@ export default function Tickets() {
   const [tickets, setTickets] = useState<any[]>([]);
   const [statusFilter, setStatusFilter] = useState("ALL");
   const [priorityFilter, setPriorityFilter] = useState("ALL");
+  const [loading, setLoading] = useState(true);
 
   useEffect(() => {
     loadTickets();
   }, []);
 
   const loadTickets = async () => {
+    setLoading(true);
     const response = await ticketsApiService.getTickets();
     if (response.success) {
       setTickets(response.data?.tickets);
     }
+    setLoading(false);
   };
 
   const filteredTickets = tickets.filter((ticket) => {
@@ -115,6 +118,24 @@ export default function Tickets() {
         return 'bg-gray-100 text-gray-800';
     }
   };
+
+  if (loading) {
+    return (
+      <SidebarProvider>
+        <div className="flex min-h-screen w-full">
+          <PropertySidebar />
+          <SidebarInset className="flex-1">
+            <div className="flex items-center justify-center h-screen">
+              <div className="text-center">
+                <div className="animate-spin w-8 h-8 border-2 border-primary border-t-transparent rounded-full mx-auto mb-4"></div>
+                <p className="text-muted-foreground">Loading tickets...</p>
+              </div>
+            </div>
+          </SidebarInset>
+        </div>
+      </SidebarProvider>
+    );
+  }
 
   return (
     <SidebarProvider>
