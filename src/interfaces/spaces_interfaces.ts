@@ -15,6 +15,7 @@ export const spaceKinds = [
     'penthouse',
     'studio_apartment',
     'farm_house',
+    
 ] as const;
 
 export type SpaceKind = typeof spaceKinds[number];

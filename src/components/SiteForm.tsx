@@ -37,7 +37,7 @@ interface SiteFormProps {
   site?: Site;
   isOpen: boolean;
   onClose: () => void;
-  onSave: (site: Partial<Site>) => void;
+  onSave: (site: Partial<Site>) => Promise<any>;
   mode: "create" | "edit" | "view";
 }
 
@@ -102,17 +102,16 @@ export function SiteForm({ site, isOpen, onClose, onSave, mode }: SiteFormProps)
 
   const onSubmitForm = async (data: SiteFormValues) => {
     setIsSubmitted(true);
-    try {
-      await onSave({
-        ...site,
-        ...data,
-        updated_at: new Date().toISOString(),
-      } as Partial<Site>);
+    const formResponse = await onSave({
+      ...site,
+      ...data,
+      updated_at: new Date().toISOString(),
+    } as Partial<Site>);
+    if (formResponse.success) {
       reset(emptyFormData);
-      onClose();
-    } catch (error) {
+    } else {
+      setIsSubmitted(false);
       reset(undefined, { keepErrors: true, keepValues: true });
-      toast("Failed to save site");
     }
   };
 

@@ -82,9 +82,9 @@ export default function Sites() {
   const [page, setPage] = useState(1); // current page
   const [pageSize] = useState(6); // items per page
   const [totalItems, setTotalItems] = useState(0);
-  const { canRead, canWrite, canDelete } = useAuth(); 
+  const { canRead, canWrite, canDelete } = useAuth();
   const resource = "sites"; // must match resource name from backend policies
-  const {withLoader} = useLoader();
+  const { withLoader } = useLoader();
 
   useSkipFirstEffect(() => {
     loadSites();
@@ -99,24 +99,24 @@ export default function Sites() {
   }, [searchTerm, selectedKind]);
 
   const loadSites = async () => {
-      const skip = (page - 1) * pageSize;
-      const limit = pageSize;
+    const skip = (page - 1) * pageSize;
+    const limit = pageSize;
 
-      // build query params
-      const params = new URLSearchParams();
-      if (searchTerm) params.append("search", searchTerm);
-      if (selectedKind) params.append("kind", selectedKind);
-      params.append("skip", skip.toString());
-      params.append("limit", limit.toString());
+    // build query params
+    const params = new URLSearchParams();
+    if (searchTerm) params.append("search", searchTerm);
+    if (selectedKind) params.append("kind", selectedKind);
+    params.append("skip", skip.toString());
+    params.append("limit", limit.toString());
 
-        const response = await withLoader(async () => {
-        return await siteApiService.getSites(params);
-      });
+    const response = await withLoader(async () => {
+      return await siteApiService.getSites(params);
+    });
 
-      if (response?.success) {
-        setSites(response.data?.sites || []);
-        setTotalItems(response.data?.total || 0);
-      }
+    if (response?.success) {
+      setSites(response.data?.sites || []);
+      setTotalItems(response.data?.total || 0);
+    }
   };
 
   const getKindColor = (kind: string) => {
@@ -178,6 +178,7 @@ export default function Sites() {
         } successfully.`
       );
     }
+    return response;
   };
 
   const handleDelete = (id: string) => {
@@ -264,8 +265,8 @@ export default function Sites() {
 
               <ContentContainer>
                 <LoaderOverlay />
-                {/* Sites Grid */}
-                <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
+              {/* Sites Grid */}
+              <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
                 {sites.map((site) => {
                   return (
                     <Card

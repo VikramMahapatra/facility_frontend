@@ -8,34 +8,36 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { Badge } from "@/components/ui/badge";
 import { Edit, Eye, Plus, TicketIcon, AlertTriangle } from "lucide-react";
 import TicketForm from "@/components/TicketForm";
-import { useToast } from "@/hooks/use-toast";
+import { toast } from "sonner";
 import { useNavigate } from "react-router-dom";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { mockTickets } from "@/data/mockTicketData";
 import { ticketsApiService } from "@/services/ticketing_service/ticketsapi";
+import LoaderOverlay from "@/components/LoaderOverlay";
+import ContentContainer from "@/components/ContentContainer";
+import { useLoader } from "@/context/LoaderContext";
 
 export default function Tickets() {
-  const { toast } = useToast();
   const navigate = useNavigate();
+  const { withLoader } = useLoader();
   const [isFormOpen, setIsFormOpen] = useState(false);
   const [isEditOpen, setIsEditOpen] = useState(false);
   const [editingTicket, setEditingTicket] = useState<any>(null);
   const [tickets, setTickets] = useState<any[]>([]);
   const [statusFilter, setStatusFilter] = useState("ALL");
   const [priorityFilter, setPriorityFilter] = useState("ALL");
-  const [loading, setLoading] = useState(true);
 
   useEffect(() => {
     loadTickets();
   }, []);
 
   const loadTickets = async () => {
-    setLoading(true);
-    const response = await ticketsApiService.getTickets();
-    if (response.success) {
-      setTickets(response.data?.tickets);
+    const response = await withLoader(async () => {
+      return await ticketsApiService.getTickets();
+    });
+    if (response?.success) {
+      setTickets(response.data?.tickets || []);
     }
-    setLoading(false);
   };
 
   const filteredTickets = tickets.filter((ticket) => {
@@ -45,21 +47,13 @@ export default function Tickets() {
   });
 
   const handleCreate = async (data: any) => {
-    try {
-      const response = await ticketsApiService.addTicket(data);
+    const response = await ticketsApiService.addTicket(data);
+    if (response.success) {
       setIsFormOpen(false);
       loadTickets();
-      toast({
-        title: "Ticket is created",
-        description: "Service ticket has been created successfully.",
-      });
-    } catch (error: any) {
-      toast({
-        title: "Error",
-        description: error?.message || "Failed to create ticket. Please try again.",
-        variant: "destructive",
-      });
+      toast.success("Service ticket has been created successfully.");
     }
+    return response;
   };
 
   const handleEdit = (ticket: any) => {
@@ -67,13 +61,15 @@ export default function Tickets() {
     setIsEditOpen(true);
   };
 
-  const handleEditSubmit = (data: any) => {
-    toast({
-      title: "Ticket updated",
-      description: "Service ticket has been updated successfully.",
-    });
-    setIsEditOpen(false);
-    setEditingTicket(null);
+  const handleEditSubmit = async (data: any) => {
+    const response = await ticketsApiService.addTicket(data);
+    if (response.success) {
+      setIsEditOpen(false);
+      setEditingTicket(null);
+      loadTickets();
+      toast.success("Service ticket has been updated successfully.");
+    }
+    return response;
   };
 
   const handleView = (ticketId: string | number) => {
@@ -118,24 +114,6 @@ export default function Tickets() {
         return 'bg-gray-100 text-gray-800';
     }
   };
-
-  if (loading) {
-    return (
-      <SidebarProvider>
-        <div className="flex min-h-screen w-full">
-          <PropertySidebar />
-          <SidebarInset className="flex-1">
-            <div className="flex items-center justify-center h-screen">
-              <div className="text-center">
-                <div className="animate-spin w-8 h-8 border-2 border-primary border-t-transparent rounded-full mx-auto mb-4"></div>
-                <p className="text-muted-foreground">Loading tickets...</p>
-              </div>
-            </div>
-          </SidebarInset>
-        </div>
-      </SidebarProvider>
-    );
-  }
 
   return (
     <SidebarProvider>
@@ -198,51 +176,54 @@ export default function Tickets() {
                 </div>
               </CardHeader>
               <CardContent>
-                <Table>
-                  <TableHeader>
-                    <TableRow>
-                      <TableHead>ID</TableHead>
-                      <TableHead>Title</TableHead>
-                      <TableHead>Category</TableHead>
-                      <TableHead>Priority</TableHead>
-                      <TableHead>Status</TableHead>
-                      <TableHead>Type</TableHead>
-                      <TableHead>Created</TableHead>
-                      <TableHead className="text-right">Actions</TableHead>
-                    </TableRow>
-                  </TableHeader>
-                  <TableBody>
-                    {filteredTickets.map((ticket) => (
-                      <TableRow key={ticket.id || ticket.ticket_id}>
-                        <TableCell className="font-medium">#{ticket.ticket_no}</TableCell>
-                        <TableCell className="max-w-xs truncate">{ticket.title}</TableCell>
-                        <TableCell>
-                          <Badge variant="outline">{ticket.category}</Badge>
-                        </TableCell>
-                        <TableCell>
-                          <Badge className={getPriorityColor(ticket.priority)}>{ticket.priority}</Badge>
-                        </TableCell>
-                        <TableCell>
-                          <Badge className={getStatusColor(ticket.status)}>{ticket.status}</Badge>
-                        </TableCell>
-                        <TableCell>
-                          <Badge variant="secondary">{ticket.request_type}</Badge>
-                        </TableCell>
-                        <TableCell>{new Date(ticket.created_at).toLocaleDateString()}</TableCell>
-                        <TableCell className="text-right">
-                          <div className="flex justify-end gap-2">
-                            <Button variant="ghost" size="sm" onClick={() => handleView(ticket.id || ticket.ticket_id)}>
-                              <Eye className="w-4 h-4" />
-                            </Button>
-                            <Button variant="ghost" size="sm" onClick={() => handleEdit(ticket)}>
-                              <Edit className="w-4 h-4" />
-                            </Button>
-                          </div>
-                        </TableCell>
+                <ContentContainer>
+                  <LoaderOverlay />
+                  <Table>
+                    <TableHeader>
+                      <TableRow>
+                        <TableHead>ID</TableHead>
+                        <TableHead>Title</TableHead>
+                        <TableHead>Category</TableHead>
+                        <TableHead>Priority</TableHead>
+                        <TableHead>Status</TableHead>
+                        <TableHead>Type</TableHead>
+                        <TableHead>Created</TableHead>
+                        <TableHead className="text-right">Actions</TableHead>
                       </TableRow>
-                    ))}
-                  </TableBody>
-                </Table>
+                    </TableHeader>
+                    <TableBody>
+                      {filteredTickets.map((ticket) => (
+                        <TableRow key={ticket.id || ticket.ticket_id}>
+                          <TableCell className="font-medium">#{ticket.ticket_no}</TableCell>
+                          <TableCell className="max-w-xs truncate">{ticket.title}</TableCell>
+                          <TableCell>
+                            <Badge variant="outline">{ticket.category}</Badge>
+                          </TableCell>
+                          <TableCell>
+                            <Badge className={getPriorityColor(ticket.priority)}>{ticket.priority}</Badge>
+                          </TableCell>
+                          <TableCell>
+                            <Badge className={getStatusColor(ticket.status)}>{ticket.status}</Badge>
+                          </TableCell>
+                          <TableCell>
+                            <Badge variant="secondary">{ticket.request_type}</Badge>
+                          </TableCell>
+                          <TableCell>{new Date(ticket.created_at).toLocaleDateString()}</TableCell>
+                          <TableCell className="text-right">
+                            <div className="flex justify-end gap-2">
+                              <Button variant="ghost" size="sm" onClick={() => handleView(ticket.id || ticket.ticket_id)}>
+                                <Eye className="w-4 h-4" />
+                              </Button>
+                              {/* <Button variant="ghost" size="sm" onClick={() => handleEdit(ticket)}>
+                                <Edit className="w-4 h-4" />
+                              </Button> */}
+                            </div>
+                          </TableCell>
+                        </TableRow>
+                      ))}
+                    </TableBody>
+                  </Table>
+                </ContentContainer>
               </CardContent>
             </Card>
             </div>

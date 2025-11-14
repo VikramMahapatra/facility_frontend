@@ -25,8 +25,10 @@ export const spaceSchema = z.object({
     ] as const, {
         required_error: "Kind is required",
     }),
-    floor: z.string().optional(),
-    building_block_id: z.string().min(1, "Building block is required"),
+    floor: z.coerce.number({
+        invalid_type_error: "Expected number"
+    }).int("Floor must be a whole number").optional(),
+    building_block_id: z.string().optional(),
     area_sqft: z.coerce.number({
         invalid_type_error: "Expected number"
     }).min(0, "Area cannot be negative").optional(),
