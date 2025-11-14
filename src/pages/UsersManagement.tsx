@@ -10,14 +10,28 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
-import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
+import {
+  Card,
+  CardContent,
+  CardHeader,
+  CardTitle,
+  CardDescription,
+} from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { UserForm } from "@/components/UserForm";
 import { userManagementApiService } from "@/services/access_control/usermanagementapi";
 import { toast } from "sonner";
-import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
-
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
 
 // Define interfaces for API data
 interface User {
@@ -88,7 +102,10 @@ export default function UsersManagement() {
   const handleUpdateUser = async (values: any) => {
     if (!editingUser) return;
     const response = await withLoader(async () => {
-      return await userManagementApiService.updateUser({ ...editingUser, ...values });
+      return await userManagementApiService.updateUser({
+        ...editingUser,
+        ...values,
+      });
     });
     if (response?.success) {
       toast.success("User updated successfully");
@@ -106,7 +123,6 @@ export default function UsersManagement() {
     if (deleteUserId) {
       const response = await userManagementApiService.deleteUser(deleteUserId);
       if (response?.success) {
-
         const authResponse = response.data;
         if (authResponse?.success) {
           toast.success("User deleted successfully");
@@ -160,44 +176,46 @@ export default function UsersManagement() {
           </header>
 
           <main className="relative  flex-1 p-6 overflow-auto">
-            <LoaderOverlay />
-            <ContentContainer>
-              <div className="max-w-7xl mx-auto space-y-6">
-                <div className="flex items-center justify-between">
-                  <div>
-                    <h1 className="text-3xl font-bold text-foreground">Users Management</h1>
-                    <p className="text-muted-foreground mt-1">
-                      Create and manage users and assign roles
-                    </p>
-                  </div>
-                  <Button onClick={() => handleOpenForm()}>
-                    <Plus className="h-4 w-4 mr-2" />
-                    Create User
-                  </Button>
+            <div className="max-w-7xl mx-auto space-y-6">
+              <div className="flex items-center justify-between">
+                <div>
+                  <h1 className="text-3xl font-bold text-foreground">
+                    Users Management
+                  </h1>
+                  <p className="text-muted-foreground mt-1">
+                    Create and manage users and assign roles
+                  </p>
                 </div>
+                <Button onClick={() => handleOpenForm()}>
+                  <Plus className="h-4 w-4 mr-2" />
+                  Create User
+                </Button>
+              </div>
 
-                <Card>
-                  <CardHeader>
-                    <CardTitle>All Users</CardTitle>
-                    <CardDescription>
-                      Manage users and their role assignments
-                    </CardDescription>
-                  </CardHeader>
-                  <CardContent>
-                    <div className="mb-4">
-                      <div className="relative">
-                        <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-                        <Input
-                          type="text"
-                          placeholder="Search users..."
-                          value={searchQuery}
-                          onChange={(e) => setSearchQuery(e.target.value)}
-                          className="pl-10"
-                        />
-                      </div>
+              <Card>
+                <CardHeader>
+                  <CardTitle>All Users</CardTitle>
+                  <CardDescription>
+                    Manage users and their role assignments
+                  </CardDescription>
+                </CardHeader>
+                <CardContent>
+                  <div className="mb-4">
+                    <div className="relative">
+                      <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                      <Input
+                        type="text"
+                        placeholder="Search users..."
+                        value={searchQuery}
+                        onChange={(e) => setSearchQuery(e.target.value)}
+                        className="pl-10"
+                      />
                     </div>
+                  </div>
 
-                    <div className="rounded-md border">
+                  <div className="relative rounded-md border">
+                    <ContentContainer>
+                      <LoaderOverlay />
                       <Table>
                         <TableHeader>
                           <TableRow>
@@ -205,13 +223,18 @@ export default function UsersManagement() {
                             <TableHead>Contact</TableHead>
                             <TableHead>Roles</TableHead>
                             <TableHead>Status</TableHead>
-                            <TableHead className="text-right">Actions</TableHead>
+                            <TableHead className="text-right">
+                              Actions
+                            </TableHead>
                           </TableRow>
                         </TableHeader>
                         <TableBody>
                           {users.length === 0 ? (
                             <TableRow>
-                              <TableCell colSpan={5} className="text-center text-muted-foreground">
+                              <TableCell
+                                colSpan={5}
+                                className="text-center text-muted-foreground"
+                              >
                                 No users found
                               </TableCell>
                             </TableRow>
@@ -226,7 +249,9 @@ export default function UsersManagement() {
                                       </AvatarFallback>
                                     </Avatar>
                                     <div>
-                                      <div className="font-medium">{user.full_name}</div>
+                                      <div className="font-medium">
+                                        {user.full_name}
+                                      </div>
                                       <div className="text-xs text-muted-foreground">
                                         {user.email}
                                       </div>
@@ -251,11 +276,13 @@ export default function UsersManagement() {
                                       user.status === "active"
                                         ? "default"
                                         : user.status === "pending_approval"
-                                          ? "secondary"
-                                          : "outline"
+                                        ? "secondary"
+                                        : "outline"
                                     }
                                   >
-                                    {user.status === "pending_approval" ? "Pending" : user.status}
+                                    {user.status === "pending_approval"
+                                      ? "Pending"
+                                      : user.status}
                                   </Badge>
                                 </TableCell>
                                 <TableCell className="text-right">
@@ -281,21 +308,22 @@ export default function UsersManagement() {
                           )}
                         </TableBody>
                       </Table>
-                    </div>
+                    </ContentContainer>
+                  </div>
 
-                    {/* Pagination */}
-                    <div className="mt-4">
-                      <Pagination
-                        page={page}
-                        pageSize={pageSize}
-                        totalItems={totalItems}
-                        onPageChange={setPage}
-                      />
-                    </div>
-                  </CardContent>
-                </Card>
-              </div>
-            </ContentContainer>
+                  {/* Pagination */}
+                  <div className="mt-4">
+                    <Pagination
+                      page={page}
+                      pageSize={pageSize}
+                      totalItems={totalItems}
+                      onPageChange={setPage}
+                    />
+                  </div>
+                </CardContent>
+              </Card>
+            </div>
+
             <UserForm
               user={editingUser}
               open={isFormOpen}
@@ -310,17 +338,24 @@ export default function UsersManagement() {
             />
 
             {/* Delete Confirmation Dialog */}
-            <AlertDialog open={!!deleteUserId} onOpenChange={() => setDeleteUserId(null)}>
+            <AlertDialog
+              open={!!deleteUserId}
+              onOpenChange={() => setDeleteUserId(null)}
+            >
               <AlertDialogContent>
                 <AlertDialogHeader>
                   <AlertDialogTitle>Delete User</AlertDialogTitle>
                   <AlertDialogDescription>
-                    Are you sure you want to delete this user? This action cannot be undone.
+                    Are you sure you want to delete this user? This action
+                    cannot be undone.
                   </AlertDialogDescription>
                 </AlertDialogHeader>
                 <AlertDialogFooter>
                   <AlertDialogCancel>Cancel</AlertDialogCancel>
-                  <AlertDialogAction onClick={confirmDelete} className="bg-destructive text-destructive-foreground hover:bg-destructive/90">
+                  <AlertDialogAction
+                    onClick={confirmDelete}
+                    className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+                  >
                     Delete
                   </AlertDialogAction>
                 </AlertDialogFooter>

@@ -40,6 +40,8 @@ import { Pagination } from "@/components/Pagination";
 import { useSkipFirstEffect } from "@/hooks/use-skipfirst-effect";
 import { useAuth } from "../context/AuthContext";
 import { useLoader } from "@/context/LoaderContext";
+import LoaderOverlay from "@/components/LoaderOverlay";
+import ContentContainer from "@/components/ContentContainer";
 import { toast } from "sonner";
 
 export interface Site {
@@ -78,11 +80,11 @@ export default function Sites() {
   const [showForm, setShowForm] = useState(false);
   const [deleteId, setDeleteId] = useState<string | null>(null);
   const [page, setPage] = useState(1); // current page
-  const [pageSize] = useState(3); // items per page
+  const [pageSize] = useState(6); // items per page
   const [totalItems, setTotalItems] = useState(0);
-  const { canRead, canWrite, canDelete } = useAuth();
-  const { showLoader, hideLoader } = useLoader();
+  const { canRead, canWrite, canDelete } = useAuth(); 
   const resource = "sites"; // must match resource name from backend policies
+  const {withLoader} = useLoader();
 
   useSkipFirstEffect(() => {
     loadSites();
@@ -97,8 +99,6 @@ export default function Sites() {
   }, [searchTerm, selectedKind]);
 
   const loadSites = async () => {
-    showLoader();
-    try {
       const skip = (page - 1) * pageSize;
       const limit = pageSize;
 
@@ -108,15 +108,15 @@ export default function Sites() {
       if (selectedKind) params.append("kind", selectedKind);
       params.append("skip", skip.toString());
       params.append("limit", limit.toString());
-      
-      const response = await siteApiService.getSites(params);
-      if (response.success) {
+
+        const response = await withLoader(async () => {
+        return await siteApiService.getSites(params);
+      });
+
+      if (response?.success) {
         setSites(response.data?.sites || []);
         setTotalItems(response.data?.total || 0);
       }
-    } finally {
-      hideLoader();
-    }
   };
 
   const getKindColor = (kind: string) => {
@@ -262,8 +262,10 @@ export default function Sites() {
                 </select>
               </div>
 
-              {/* Sites Grid */}
-              <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
+              <ContentContainer>
+                <LoaderOverlay />
+                {/* Sites Grid */}
+                <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
                 {sites.map((site) => {
                   return (
                     <Card
@@ -395,6 +397,7 @@ export default function Sites() {
                   </p>
                 </div>
               )}
+              </ContentContainer>
             </div>
           </main>
         </SidebarInset>

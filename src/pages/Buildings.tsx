@@ -6,15 +6,18 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { PropertySidebar } from "@/components/PropertySidebar";
 import { SidebarProvider, SidebarInset, SidebarTrigger } from "@/components/ui/sidebar";
-import { mockSites, getBuildingBlocks, getSpacesBySite } from "@/data/mockSpacesData";
+//import { mockSites, getBuildingBlocks, getSpacesBySite } from "@/data/mockSpacesData";
 import { BuildingForm } from "@/components/BuildingForm";
 import { buildingApiService } from "@/services/spaces_sites/buildingsapi";
 import { Pagination } from "@/components/Pagination";
 import { siteApiService } from "@/services/spaces_sites/sitesapi";
-import { useToast } from "@/hooks/use-toast";
+import { toast } from "sonner";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
 import { useSkipFirstEffect } from "@/hooks/use-skipfirst-effect";
 import { useAuth } from "../context/AuthContext";
+import LoaderOverlay from "@/components/LoaderOverlay";
+import ContentContainer from "@/components/ContentContainer";
+import { useLoader } from "@/context/LoaderContext";
 
 export interface Building {
   id: string;
@@ -31,7 +34,6 @@ export interface Building {
 
 
 export default function Buildings() {
-  const { toast } = useToast();
   const [searchTerm, setSearchTerm] = useState("");
   const [selectedSite, setSelectedSite] = useState<string>("all");
   const [selectedBuilding, setSelectedBuilding] = useState<any | undefined>();
@@ -45,6 +47,7 @@ export default function Buildings() {
   const [deleteBuildingId, setDeleteBuildingId] = useState<string | null>(null);
   const { canRead, canWrite, canDelete } = useAuth();
   const resource = "buildings";
+  const {withLoader} = useLoader();
 
   useSkipFirstEffect(() => {
     loadBuildings();
@@ -72,8 +75,12 @@ export default function Buildings() {
     if (selectedSite) params.append("site_id", selectedSite);
     params.append("skip", skip.toString());
     params.append("limit", limit.toString());
-    const response = await buildingApiService.getBuildings(params);
-    if (response.success) {
+    
+    const response = await withLoader(async () => {
+      return await buildingApiService.getBuildings(params);
+    });
+    
+    if (response?.success) {
       setBuildings(response.data?.buildings || []);
       setTotalItems(response.data?.total || 0);
     }
@@ -107,8 +114,6 @@ export default function Buildings() {
     setDeleteBuildingId(buildingId);
   };
 
-  // In Building.tsx - Replace the confirmDelete function
-  // In Building.tsx - Update confirmDelete function
   const confirmDelete = async () => {
     if (deleteBuildingId) {
       const response = await buildingApiService.deleteBuilding(deleteBuildingId);
@@ -119,15 +124,10 @@ export default function Buildings() {
         if (deleteResponse.success) {
           loadBuildings();
           setDeleteBuildingId(null);
-          toast({
-            title: "Building Deleted",
-            description: "The building has been removed successfully.",
-          });
+          toast.success("The building has been removed successfully.");
         } else {
-          toast({
-            title: "Cannot Delete Building",
-            description: deleteResponse.message,
-            variant: "destructive",
+          toast.error(`Cannot Delete Building\n${deleteResponse.message}`, {
+            style: { whiteSpace: "pre-line" },
           });
         }
       }
@@ -151,10 +151,7 @@ export default function Buildings() {
     if (response.success) {
       setShowForm(false);
       loadBuildings();
-      toast({
-        title: formMode === "create" ? "Building Created" : "Building Updated",
-        description: `Building ${building.name} has been ${formMode === "create" ? "created" : "updated"} successfully.`,
-      });
+      toast.success(`Building ${building.name} has been ${formMode === "create" ? "created" : "updated"} successfully.`);
     }
 
   };
@@ -221,7 +218,7 @@ export default function Buildings() {
                   onChange={e => setSearchTerm(e.target.value)}
                   className="max-w-sm"
                 />
-
+                
                 <select
                   value={selectedSite}
                   onChange={e => setSelectedSite(e.target.value)}
@@ -236,9 +233,11 @@ export default function Buildings() {
                 </select>
               </div>
 
-              {/* Buildings Grid */}
+              <ContentContainer>
+                <LoaderOverlay />
+                {/* Buildings Grid */}
               <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
-                {buildings.map((building, index) => {
+                  {buildings.map((building, index) => {
 
                   return (
                     <Card
@@ -330,6 +329,7 @@ export default function Buildings() {
                   </p>
                 </div>
               )}
+              </ContentContainer>
             </div>
           </main>
         </SidebarInset>
