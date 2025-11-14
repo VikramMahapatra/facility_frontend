@@ -177,6 +177,8 @@ export default function Sites() {
           formMode === "create" ? "created" : "updated"
         } successfully.`
       );
+    } else {
+      throw new Error(response.message || "Failed to save site");
     }
   };
 
