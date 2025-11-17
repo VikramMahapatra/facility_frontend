@@ -13,7 +13,7 @@ import {
   AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent,
   AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle
 } from "@/components/ui/alert-dialog";
-import { useToast } from "@/hooks/use-toast";
+import { toast } from "sonner";
 import { leaseChargeApiService } from "@/services/Leasing_Tenants/leasechargeapi";
 import { LeaseChargeForm } from "@/components/LeaseChargeForm";
 import { useSkipFirstEffect } from "@/hooks/use-skipfirst-effect";
@@ -61,7 +61,6 @@ interface LeaseChargeOverview {
 
 
 export default function LeaseCharges() {
-  const { toast } = useToast();
 
   // filters
   const [searchTerm, setSearchTerm] = useState("");
@@ -255,10 +254,9 @@ export default function LeaseCharges() {
 
     if (response.success) {
       setIsFormOpen(false);
-      toast({
-        title: formMode === 'create' ? "Lease Charge Created" : "Lease Charge Updated",
-        description: `Lease Charge ${data.charge_code} has been ${formMode === 'create' ? 'created' : 'updated'} successfully.`,
-      });
+      toast.success(
+        `Lease Charge ${data.charge_code} has been ${formMode === 'create' ? 'created' : 'updated'} successfully.`
+      );
     }
     return response;
   };
@@ -268,10 +266,18 @@ export default function LeaseCharges() {
     if (deleteId) {
       const response = await leaseChargeApiService.deleteLeaseCharge(deleteId);
       if (response.success) {
-       
+        const authResponse = response.data;
+        if (authResponse?.success) {
+          // Success - refresh data
           updateLeaseChargePage();
           setDeleteId(null);
-          toast({ title: "Charge deleted" });
+          toast.success("The lease charge has been removed successfully.");
+        } else {
+          // Show error popup from backend
+          toast.error(`Cannot Delete Lease Charge\n${authResponse?.message || "Unknown error"}`, {
+            style: { whiteSpace: "pre-line" },
+          });
+        }
       }
     }
   };

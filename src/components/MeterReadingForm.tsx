@@ -93,7 +93,7 @@ export function MeterReadingForm({
       onClose();
     } catch (error) {
       reset(undefined, { keepErrors: true, keepValues: true });
-      toast("Failed to save meter reading");
+      toast.error("Failed to save meter reading");
     }
   };
 
@@ -266,16 +266,17 @@ export function MeterReadingForm({
                 type="button"
                 variant="outline"
                 onClick={onClose}
+                disabled={isSubmitting}
               >
                 Cancel
               </Button>
               <Button
                 type="submit"
                 className="min-w-[120px]"
-                disabled={!isValid || isSubmitting}
+                disabled={isSubmitting}
               >
                 <Plus className="mr-2 h-4 w-4" />
-                {mode === "create" ? "Add Reading" : "Update Reading"}
+                {isSubmitting ? "Saving..." : mode === "create" ? "Add Reading" : "Update Reading"}
               </Button>
             </DialogFooter>
           )}

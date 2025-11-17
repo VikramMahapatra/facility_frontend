@@ -27,6 +27,7 @@ import { rolePolicyApiService } from "@/services/access_control/rolepoliciesapi"
 import { navigationItems } from "@/data/navigationItems";
 import { useLoader } from "@/context/LoaderContext";
 import LoaderOverlay from "@/components/LoaderOverlay";
+import ContentContainer from "@/components/ContentContainer";
 
 export interface RolePolicy {
   role_id: string;
@@ -225,9 +226,10 @@ export default function RolePolicies() {
                         </div>
                       </div>
                     </CardHeader>
-                    <CardContent className="relative">
-                      <LoaderOverlay />
-                        <div className="rounded-md border">
+                    <CardContent>
+                      <div className="relative rounded-md border">
+                        <ContentContainer>
+                          <LoaderOverlay />
                           <Table>
                             <TableHeader>
                               <TableRow>
@@ -261,16 +263,17 @@ export default function RolePolicies() {
                               ))}
                             </TableBody>
                           </Table>
-                        </div>
+                        </ContentContainer>
+                      </div>
 
-                        <div className="mt-6 p-4 bg-muted rounded-lg">
-                          <h4 className="font-semibold mb-2">Summary</h4>
-                          <p className="text-sm text-muted-foreground">
-                            Total permissions for <strong>{selectedRole?.name}</strong>:{" "}
-                            <Badge variant="secondary">{policies.length}</Badge>
-                          </p>
-                        </div>
-                      </CardContent>
+                      <div className="mt-6 p-4 bg-muted rounded-lg">
+                        <h4 className="font-semibold mb-2">Summary</h4>
+                        <p className="text-sm text-muted-foreground">
+                          Total permissions for <strong>{selectedRole?.name}</strong>:{" "}
+                          <Badge variant="secondary">{policies.length}</Badge>
+                        </p>
+                      </div>
+                    </CardContent>
                     </Card>
                   )}
               </div>

@@ -20,7 +20,7 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
-import { useToast } from "@/hooks/use-toast";
+import { toast } from "sonner";
 import { Pagination } from "@/components/Pagination";
 import { serviceRequestApiService } from "@/services/maintenance_assets/servicerequestapi";
 import { useSkipFirstEffect } from "@/hooks/use-skipfirst-effect";
@@ -64,7 +64,6 @@ interface ServiceRequestOverview {
 }
 
 export default function ServiceRequest() {
-  const { toast } = useToast();
 
   // filters
   const [searchTerm, setSearchTerm] = useState("");
@@ -202,13 +201,19 @@ export default function ServiceRequest() {
     if (deleteServiceRequestId) {
       const response = await serviceRequestApiService.deleteServiceRequest(deleteServiceRequestId);
       if (response.success) {
-        setDeleteServiceRequestId(null);
-        await loadServiceRequest();
-        toast({
-          title: "Service Request Deleted",
-          description: "The service request has been removed successfully.",
-        });
-     }
+        const authResponse = response.data;
+        if (authResponse?.success) {
+          // Success - refresh data
+          setDeleteServiceRequestId(null);
+          await loadServiceRequest();
+          toast.success("The service request has been removed successfully.");
+        } else {
+          // Show error popup from backend
+          toast.error(`Cannot Delete Service Request\n${authResponse?.message || "Unknown error"}`, {
+            style: { whiteSpace: "pre-line" },
+          });
+        }
+      }
     }
   };
 
@@ -237,10 +242,9 @@ export default function ServiceRequest() {
 
     if (response.success) {
       setIsFormOpen(false);
-      toast({
-        title: formMode === 'create' ? "Service Request Created" : "Service Request Updated",
-        description: `Service Request (${serviceRequestData.category || ''}) has been ${formMode === 'create' ? 'created' : 'updated'} successfully.`,
-      });
+      toast.success(
+        `Service Request (${serviceRequestData.category || ''}) has been ${formMode === 'create' ? 'created' : 'updated'} successfully.`
+      );
     }
     return response;
   };

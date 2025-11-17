@@ -108,7 +108,7 @@ export function AssetForm({ isOpen, mode, asset, onClose, onSave }: Props) {
       onClose();
     } catch (error) {
       reset(undefined, { keepErrors: true, keepValues: true });
-      toast("Failed to save asset");
+      toast.error("Failed to save asset");
     }
   };
 
@@ -296,7 +296,7 @@ export function AssetForm({ isOpen, mode, asset, onClose, onSave }: Props) {
               {mode === 'view' ? 'Close' : 'Cancel'}
             </Button>
             {mode !== 'view' && (
-              <Button type="submit" disabled={!isValid || isSubmitting}>
+              <Button type="submit" disabled={isSubmitting}>
                 {isSubmitting ? "Saving..." : mode === 'create' ? 'Create Asset' : 'Update Asset'}
               </Button>
             )}

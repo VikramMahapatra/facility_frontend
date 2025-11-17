@@ -299,7 +299,7 @@ export function ServiceRequestForm({
       onClose();
     } catch (error) {
       reset(undefined, { keepErrors: true, keepValues: true });
-      toast("Failed to save service request");
+      toast.error("Failed to save service request");
     }
   };
 
@@ -738,7 +738,7 @@ export function ServiceRequestForm({
               {mode === "view" ? "Close" : "Cancel"}
             </Button>
             {mode !== "view" && (
-              <Button type="submit" disabled={!isValid || isSubmitting}>
+              <Button type="submit" disabled={isSubmitting}>
                 {isSubmitting ? "Saving..." : mode === "create" ? "Create Service Request" : "Update Service Request"}
               </Button>
             )}

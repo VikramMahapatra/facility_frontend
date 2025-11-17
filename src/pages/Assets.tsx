@@ -13,7 +13,7 @@ import { Separator } from "@/components/ui/separator";
 import { PropertySidebar } from "@/components/PropertySidebar";
 import { Asset, AssetOverview } from "@/interfaces/assets_interface";
 import { assetApiService } from "@/services/maintenance_assets/assetsapi";
-import { useToast } from "@/hooks/use-toast";
+import { toast } from "sonner";
 import { Pagination } from "@/components/Pagination";
 import { AssetForm } from "@/components/AssetForm";
 import { useSkipFirstEffect } from "@/hooks/use-skipfirst-effect";
@@ -23,7 +23,6 @@ import LoaderOverlay from "@/components/LoaderOverlay";
 import ContentContainer from "@/components/ContentContainer";
 
 export default function Assets() {
-  const { toast } = useToast();
   const [searchTerm, setSearchTerm] = useState("");
   const [categoryFilter, setCategoryFilter] = useState("all");
   const [statusFilter, setStatusFilter] = useState("all");
@@ -139,9 +138,19 @@ export default function Assets() {
     if (!deleteAssetId) return;
     const resp = await assetApiService.deleteAsset(deleteAssetId);
     if (resp.success) {
-      updateAssetPage();
-      loadAssetOverView();
-      toast({ title: "Asset Deleted", description: "Asset has been removed successfully." });
+      const authResponse = resp.data;
+      if (authResponse?.success) {
+        // Success - refresh data
+        updateAssetPage();
+        loadAssetOverView();
+        setDeleteAssetId(null);
+        toast.success("The asset has been removed successfully.");
+      } else {
+        // Show error popup from backend
+        toast.error(`Cannot Delete Asset\n${authResponse?.message || "Unknown error"}`, {
+          style: { whiteSpace: "pre-line" },
+        });
+      }
     }
   };
 
@@ -173,10 +182,9 @@ export default function Assets() {
 
     if (response.success) {
       setIsFormOpen(false);
-      toast({
-        title: formMode === 'create' ? "Asset Created" : "Asset Updated",
-        description: `Asset ${values.name || selectedAsset?.name || ''} saved successfully.`,
-      });
+      toast.success(
+        `Asset ${values.name || selectedAsset?.name || ''} has been ${formMode === 'create' ? 'created' : 'updated'} successfully.`
+      );
     }
     return response;
   };

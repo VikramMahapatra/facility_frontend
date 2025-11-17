@@ -57,7 +57,7 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
-import { useToast } from "@/hooks/use-toast";
+import { toast } from "sonner";
 import { Pagination } from "@/components/Pagination";
 import { preventiveMaintenanceApiService } from "@/services/maintenance_assets/preventive_maintenanceapi";
 import { useSkipFirstEffect } from "@/hooks/use-skipfirst-effect";
@@ -91,7 +91,6 @@ interface PMTemplateOverview {
 }
 
 export default function PreventiveMaintenance() {
-  const { toast } = useToast();
   const [searchTerm, setSearchTerm] = useState("");
   const [selectedStatus, setSelectedStatus] = useState<string>("all");
   const [selectedFrequency, setSelectedFrequency] = useState<string>("all");
@@ -238,12 +237,19 @@ export default function PreventiveMaintenance() {
   const confirmDelete = async () => {
     if (deleteTemplateId) {
       const response = await preventiveMaintenanceApiService.deletePreventiveMaintenance(deleteTemplateId);
-      
-        if (response.success) {
+      if (response.success) {
+        const authResponse = response.data;
+        if (authResponse?.success) {
+          // Success - refresh data
           updateTemplatePage();
           setDeleteTemplateId(null);
-          toast({ title: "PM Template Deleted", description: "PM template has been deleted successfully." });
-        
+          toast.success("The PM template has been removed successfully.");
+        } else {
+          // Show error popup from backend
+          toast.error(`Cannot Delete PM Template\n${authResponse?.message || "Unknown error"}`, {
+            style: { whiteSpace: "pre-line" },
+          });
+        }
       }
     }
   };
@@ -273,10 +279,9 @@ export default function PreventiveMaintenance() {
 
     if (response.success) {
       setIsFormOpen(false);
-      toast({
-        title: formMode === "create" ? "PM Template Created" : "PM Template Updated",
-        description: `PM template ${templateData.name} has been ${formMode === "create" ? "created" : "updated"} successfully.`,
-      });
+      toast.success(
+        `PM template ${templateData.name} has been ${formMode === "create" ? "created" : "updated"} successfully.`
+      );
     }
     return response;
   };
