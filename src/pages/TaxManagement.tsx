@@ -17,7 +17,10 @@ import { Pagination } from "@/components/Pagination";
 import { TaxCodeForm } from "@/components/TaxCodeForm";
 import { useToast } from "@/hooks/use-toast";
 import { useSkipFirstEffect } from "@/hooks/use-skipfirst-effect";
-import { useAuth } from "../context/AuthContext"; 
+import { useAuth } from "../context/AuthContext";
+import { useLoader } from "@/context/LoaderContext";
+import LoaderOverlay from "@/components/LoaderOverlay";
+import ContentContainer from "@/components/ContentContainer"; 
 
 export default function TaxManagement() {
   const { toast } = useToast();
@@ -30,6 +33,7 @@ export default function TaxManagement() {
   const [isFormOpen, setIsFormOpen] = useState(false);
   const [deleteTaxCodeId, setDeleteTaxCodeId] = useState<string | null>(null);
   const { canRead, canWrite, canDelete } = useAuth();
+  const { withLoader } = useLoader();
   const resource = "tax_codes";
   const [taxOverview, setTaxOverview] = useState<TaxOverview>({
     activeTaxCodes: 0,
@@ -71,8 +75,10 @@ export default function TaxManagement() {
   }
 
   const loadTaxOverView = async () => {
-    const response = await taxCodeApiService.getTaxOverview();
-    if (response.success) setTaxOverview(response.data || {});
+    const response = await withLoader(async () => {
+      return await taxCodeApiService.getTaxOverview();
+    });
+    if (response?.success) setTaxOverview(response.data || {});
   }
 
   const loadTaxCodes = async () => {
@@ -85,9 +91,15 @@ export default function TaxManagement() {
     if (jurisdictionFilter) params.append("jurisdiction", jurisdictionFilter);
     params.append("skip", skip.toString());
     params.append("limit", limit.toString());
-    const response = await taxCodeApiService.getTaxCodes(params);
-    if (response.success) setTaxCodes(response.data?.tax_codes || []);
-    setTotalItems(response.data?.total || 0);
+    
+    const response = await withLoader(async () => {
+      return await taxCodeApiService.getTaxCodes(params);
+    });
+    
+    if (response?.success) {
+      setTaxCodes(response.data?.tax_codes || []);
+      setTotalItems(response.data?.total || 0);
+    }
   }
 
   const loadTaxReturns = async () => {
@@ -98,9 +110,15 @@ export default function TaxManagement() {
     const params = new URLSearchParams();
     params.append("skip", skip.toString());
     params.append("limit", limit.toString());
-    const response = await taxCodeApiService.getTaxReturns(params);
-    if (response.success) setTaxReturns(response.data?.tax_returns || []);
-    setTotalReturnsItems(response.data?.total || 0);
+    
+    const response = await withLoader(async () => {
+      return await taxCodeApiService.getTaxReturns(params);
+    });
+    
+    if (response?.success) {
+      setTaxReturns(response.data?.tax_returns || []);
+      setTotalReturnsItems(response.data?.total || 0);
+    }
   }
 
   const handleCreate = () => {
@@ -188,9 +206,11 @@ export default function TaxManagement() {
               </Button>
             </div>
 
-            <div className="space-y-6">
+            <ContentContainer>
+              <LoaderOverlay />
+              <div className="space-y-6">
 
-              {/* Summary Cards */}
+                {/* Summary Cards */}
               <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
                 <Card>
                   <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
@@ -414,7 +434,8 @@ export default function TaxManagement() {
                 totalItems={totalReturnsItems}
                 onPageChange={(newPage) => setReturnsPage(newPage)}
               />
-            </div>
+              </div>
+            </ContentContainer>
           </div>
         </SidebarInset>
       </div>

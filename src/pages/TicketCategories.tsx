@@ -11,6 +11,11 @@ import TicketCategoryForm from "@/components/TicketCategoryForm";
 import { useToast } from "@/hooks/use-toast";
 import { ticketCategoriesApiService } from "@/services/ticketing_service/ticketcategoriesapi";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
+import { useLoader } from "@/context/LoaderContext";
+import LoaderOverlay from "@/components/LoaderOverlay";
+import ContentContainer from "@/components/ContentContainer";
+import { Pagination } from "@/components/Pagination";
+import { useSkipFirstEffect } from "@/hooks/use-skipfirst-effect";
 
 export default function TicketCategories() {
   const { toast } = useToast();
@@ -19,15 +24,41 @@ export default function TicketCategories() {
   const [editingCategory, setEditingCategory] = useState<any>(null);
   const [categories, setCategories] = useState<any[]>([]);
   const [deleteCategoryId, setDeleteCategoryId] = useState<string | number | null>(null);
+  const [page, setPage] = useState(1);
+  const [pageSize] = useState(6);
+  const [totalItems, setTotalItems] = useState(0);
+  const { withLoader } = useLoader();
 
   useEffect(() => {
     loadTicketCategories();
   }, []);
 
+  useSkipFirstEffect(() => {
+    loadTicketCategories();
+  }, [page]);
+
+  const updateTicketCategoriesPage = () => {
+    if (page === 1) {
+      loadTicketCategories();
+    } else {
+      setPage(1);
+    }
+  };
+
   const loadTicketCategories = async () => {
-    const response = await ticketCategoriesApiService.getTicketCategories();
-    if (response.success) {
-      setCategories(response.data?.ticket_categories);
+    const skip = (page - 1) * pageSize;
+    const limit = pageSize;
+    
+    const params = new URLSearchParams();
+    params.append("skip", skip.toString());
+    params.append("limit", limit.toString());
+    
+    const response = await withLoader(async () => {
+      return await ticketCategoriesApiService.getTicketCategories(params);
+    });
+    if (response?.success) {
+      setCategories(response.data?.ticket_categories || response.data?.items || []);
+      setTotalItems(response.data?.total || 0);
     }
   };
 
@@ -35,7 +66,7 @@ export default function TicketCategories() {
     const response = await ticketCategoriesApiService.addTicketCategory(data);
     if (response?.success) {
       setIsFormOpen(false);
-      loadTicketCategories();
+      updateTicketCategoriesPage();
       toast({
         title: "Category created",
         description: "Ticket category has been created successfully.",
@@ -57,7 +88,7 @@ export default function TicketCategories() {
     if (response?.success) {
       setIsEditOpen(false);
       setEditingCategory(null);
-      loadTicketCategories();
+      updateTicketCategoriesPage();
       toast({
         title: "Category updated",
         description: "Ticket category has been updated successfully.",
@@ -73,7 +104,7 @@ export default function TicketCategories() {
     if (deleteCategoryId) {
       const response = await ticketCategoriesApiService.deleteTicketCategory(deleteCategoryId);
       if (response.success) {
-        loadTicketCategories();
+        updateTicketCategoriesPage();
         setDeleteCategoryId(null);
         toast({
           title: "Category deleted",
@@ -112,11 +143,13 @@ export default function TicketCategories() {
               </Button>
             </div>
 
-            <Card>
-              <CardHeader>
-                <CardTitle>All Categories</CardTitle>
-              </CardHeader>
-              <CardContent>
+            <ContentContainer>
+              <LoaderOverlay />
+              <Card>
+                <CardHeader>
+                  <CardTitle>All Categories</CardTitle>
+                </CardHeader>
+                <CardContent>
                 <Table>
                   <TableHeader>
                     <TableRow>
@@ -154,8 +187,21 @@ export default function TicketCategories() {
                     ))}
                   </TableBody>
                 </Table>
-              </CardContent>
-            </Card>
+                </CardContent>
+              </Card>
+
+              {/* Pagination */}
+              {categories.length > 0 && (
+                <div className="mt-4">
+                  <Pagination
+                    page={page}
+                    pageSize={pageSize}
+                    totalItems={totalItems}
+                    onPageChange={setPage}
+                  />
+                </div>
+              )}
+            </ContentContainer>
             </div>
           </main>
         </SidebarInset>

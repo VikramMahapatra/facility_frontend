@@ -33,6 +33,9 @@ import { Label } from "@/components/ui/label";
 import { approvalRulesApiService } from "@/services/access_control/approvalrulesapi";
 import { rolePolicyApiService } from "@/services/access_control/rolepoliciesapi";
 import { ApprovalRule } from "@/interfaces/access_control_interface";
+import { useLoader } from "@/context/LoaderContext";
+import LoaderOverlay from "@/components/LoaderOverlay";
+import ContentContainer from "@/components/ContentContainer";
 
 export default function ApprovalRules() {
   const [rules, setRules] = useState<ApprovalRule[]>([]);
@@ -40,6 +43,7 @@ export default function ApprovalRules() {
   const [approverRoleId, setApproverRoleId] = useState<string>("");
   const [canApproveRoleId, setCanApproveRoleId] = useState<string>("");
   const [roles, setRoles] = useState<any[]>([]);
+  const { withLoader } = useLoader();
 
   useEffect(() => {
     loadApprovalRules();
@@ -47,13 +51,17 @@ export default function ApprovalRules() {
   }, []);
 
   const loadApprovalRules = async () => {
-    const response = await approvalRulesApiService.getRules();
-    if (response.success) setRules(response.data?.rules || []);
+    const response = await withLoader(async () => {
+      return await approvalRulesApiService.getRules();
+    });
+    if (response?.success) setRules(response.data?.rules || []);
   }
 
   const loadRoles = async () => {
-    const roleList = await rolePolicyApiService.getRoles()
-    if (roleList.success) setRoles(roleList.data || []);
+    const roleList = await withLoader(async () => {
+      return await rolePolicyApiService.getRoles();
+    });
+    if (roleList?.success) setRoles(roleList.data || []);
   }
 
   const handleCreateRule = async () => {
@@ -126,91 +134,96 @@ export default function ApprovalRules() {
 
           <main className="flex-1 p-6 overflow-auto">
             <div className="max-w-7xl mx-auto space-y-6">
-              <div className="flex items-center justify-between">
-                <div>
-                  <h1 className="text-3xl font-bold text-foreground">Approval Rules</h1>
-                  <p className="text-muted-foreground mt-1">
-                    Define which roles can approve user signups for other roles
-                  </p>
-                </div>
-                <Button onClick={() => setIsDialogOpen(true)}>
-                  <Plus className="h-4 w-4 mr-2" />
-                  Add Rule
-                </Button>
-              </div>
-
-              <Card>
-                <CardHeader>
-                  <CardTitle>Approval Hierarchy</CardTitle>
-                  <CardDescription>
-                    Configure role-based approval permissions for new user signups
-                  </CardDescription>
-                </CardHeader>
-                <CardContent className="space-y-6">
-                  {Object.entries(groupedRules).map(([approverRole, roleRules]) => (
-                    <div key={approverRole} className="space-y-3">
-                      <div className="flex items-center gap-2 pb-2 border-b">
-                        <Shield className="h-4 w-4 text-primary" />
-                        <h3 className="font-semibold text-foreground capitalize">
-                          {approverRole}
-                        </h3>
-                        <span className="text-xs text-muted-foreground">
-                          can approve:
-                        </span>
-                      </div>
-
-                      <div className="rounded-md border">
-                        <Table>
-                          <TableHeader>
-                            <TableRow>
-                              <TableHead>Can Approve Role</TableHead>
-                              <TableHead>Created Date</TableHead>
-                              <TableHead className="text-right">Actions</TableHead>
-                            </TableRow>
-                          </TableHeader>
-                          <TableBody>
-                            {roleRules.map((rule) => (
-                              <TableRow key={rule.id}>
-                                <TableCell className="font-medium capitalize">
-                                  {rule.can_approve_role_name}
-                                </TableCell>
-                                <TableCell className="text-muted-foreground text-sm">
-                                  {new Date(rule.created_at).toLocaleDateString()}
-                                </TableCell>
-                                <TableCell className="text-right">
-                                  <Button
-                                    variant="ghost"
-                                    size="icon"
-                                    onClick={() => handleDeleteRule(rule.id)}
-                                  >
-                                    <Trash2 className="h-4 w-4 text-destructive" />
-                                  </Button>
-                                </TableCell>
-                              </TableRow>
-                            ))}
-                          </TableBody>
-                        </Table>
-                      </div>
-                    </div>
-                  ))}
-
-                  {Object.keys(groupedRules).length === 0 && (
-                    <div className="text-center py-12">
-                      <Shield className="h-16 w-16 text-muted-foreground mx-auto mb-4" />
-                      <h3 className="text-lg font-medium text-foreground mb-2">
-                        No Approval Rules
-                      </h3>
-                      <p className="text-muted-foreground mb-4">
-                        Create rules to define approval permissions
+              <ContentContainer>
+                <LoaderOverlay />
+                <div className="space-y-6">
+                  <div className="flex items-center justify-between">
+                    <div>
+                      <h1 className="text-3xl font-bold text-foreground">Approval Rules</h1>
+                      <p className="text-muted-foreground mt-1">
+                        Define which roles can approve user signups for other roles
                       </p>
-                      <Button onClick={() => setIsDialogOpen(true)}>
-                        <Plus className="h-4 w-4 mr-2" />
-                        Add First Rule
-                      </Button>
                     </div>
-                  )}
-                </CardContent>
-              </Card>
+                    <Button onClick={() => setIsDialogOpen(true)}>
+                      <Plus className="h-4 w-4 mr-2" />
+                      Add Rule
+                    </Button>
+                  </div>
+
+                  <Card>
+                    <CardHeader>
+                      <CardTitle>Approval Hierarchy</CardTitle>
+                      <CardDescription>
+                        Configure role-based approval permissions for new user signups
+                      </CardDescription>
+                    </CardHeader>
+                    <CardContent className="space-y-6">
+                      {Object.entries(groupedRules).map(([approverRole, roleRules]) => (
+                        <div key={approverRole} className="space-y-3">
+                          <div className="flex items-center gap-2 pb-2 border-b">
+                            <Shield className="h-4 w-4 text-primary" />
+                            <h3 className="font-semibold text-foreground capitalize">
+                              {approverRole}
+                            </h3>
+                            <span className="text-xs text-muted-foreground">
+                              can approve:
+                            </span>
+                          </div>
+
+                          <div className="rounded-md border">
+                            <Table>
+                              <TableHeader>
+                                <TableRow>
+                                  <TableHead>Can Approve Role</TableHead>
+                                  <TableHead>Created Date</TableHead>
+                                  <TableHead className="text-right">Actions</TableHead>
+                                </TableRow>
+                              </TableHeader>
+                              <TableBody>
+                                {roleRules.map((rule) => (
+                                  <TableRow key={rule.id}>
+                                    <TableCell className="font-medium capitalize">
+                                      {rule.can_approve_role_name}
+                                    </TableCell>
+                                    <TableCell className="text-muted-foreground text-sm">
+                                      {new Date(rule.created_at).toLocaleDateString()}
+                                    </TableCell>
+                                    <TableCell className="text-right">
+                                      <Button
+                                        variant="ghost"
+                                        size="icon"
+                                        onClick={() => handleDeleteRule(rule.id)}
+                                      >
+                                        <Trash2 className="h-4 w-4 text-destructive" />
+                                      </Button>
+                                    </TableCell>
+                                  </TableRow>
+                                ))}
+                              </TableBody>
+                            </Table>
+                          </div>
+                      </div>
+                      ))}
+
+                      {Object.keys(groupedRules).length === 0 && (
+                        <div className="text-center py-12">
+                          <Shield className="h-16 w-16 text-muted-foreground mx-auto mb-4" />
+                          <h3 className="text-lg font-medium text-foreground mb-2">
+                            No Approval Rules
+                          </h3>
+                          <p className="text-muted-foreground mb-4">
+                            Create rules to define approval permissions
+                          </p>
+                          <Button onClick={() => setIsDialogOpen(true)}>
+                            <Plus className="h-4 w-4 mr-2" />
+                            Add First Rule
+                          </Button>
+                        </div>
+                      )}
+                    </CardContent>
+                  </Card>
+                </div>
+              </ContentContainer>
             </div>
           </main>
         </div>

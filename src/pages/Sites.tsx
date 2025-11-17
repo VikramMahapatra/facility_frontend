@@ -59,7 +59,7 @@ export interface Site {
     pincode: string;
   };
   geo: { lat: number; lng: number };
-  opened_on: string;
+  opened_on?: string | null;
   status: "active" | "inactive";
   total_spaces?: string;
   buildings?: string;
@@ -347,11 +347,13 @@ export default function Sites() {
                             <Badge className={getStatusColor(site.status)}>
                               {site.status}
                             </Badge>
-                            <div className="flex items-center gap-1 text-muted-foreground">
-                              <Calendar className="h-3 w-3" />
-                              Opened{" "}
-                              {new Date(site.opened_on).toLocaleDateString()}
-                            </div>
+                            {site.opened_on && (
+                              <div className="flex items-center gap-1 text-muted-foreground">
+                                <Calendar className="h-3 w-3" />
+                                Opened{" "}
+                                {new Date(site.opened_on).toLocaleDateString()}
+                              </div>
+                            )}
                           </div>
 
                           {/* Actions */}
@@ -414,7 +416,7 @@ export default function Sites() {
 
       {/* Site Form Modal */}
       <SiteForm
-        site={selectedSite}
+        site={selectedSite as any}
         isOpen={showForm}
         onClose={() => setShowForm(false)}
         onSave={handleSave}

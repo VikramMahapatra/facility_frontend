@@ -19,6 +19,9 @@ import { leasesApiService } from "@/services/Leasing_Tenants/leasesapi";
 import { strict } from "assert";
 import { Lease, LeaseOverview } from "@/interfaces/leasing_tenants_interface";
 import { useAuth } from "../context/AuthContext";
+import { useLoader } from "@/context/LoaderContext";
+import LoaderOverlay from "@/components/LoaderOverlay";
+import ContentContainer from "@/components/ContentContainer";
 
 export default function Leases() {
   const { toast } = useToast();
@@ -35,6 +38,7 @@ export default function Leases() {
   const [deleteLeaseId, setDeleteLeaseId] = useState<string | null>(null);
   const [siteList, setSiteList] = useState<any[]>([]);
   const { canRead, canWrite, canDelete } = useAuth();
+  const { withLoader } = useLoader();
   const resource = "leases"; // must match resource name from backend policies
 
   const [leaseOverview, setLeaseOverview] = useState<LeaseOverview>({
@@ -97,9 +101,14 @@ export default function Leases() {
     params.append("skip", String(skip));
     params.append("limit", String(limit));
 
-    const response = await leasesApiService.getLeases(params);
-    if (response.success) setLeases(response.data?.leases || []);
-    setTotalItems(response.data?.total || 0);
+    const response = await withLoader(async () => {
+      return await leasesApiService.getLeases(params);
+    });
+    
+    if (response?.success) {
+      setLeases(response.data?.leases || []);
+      setTotalItems(response.data?.total || 0);
+    }
   };
 
   const handleCreate = () => {
@@ -242,128 +251,131 @@ export default function Leases() {
                 </select>
               </div>
 
-              {/* Overview */}
-              <div className="grid gap-4 md:grid-cols-4">
-                <Card>
-                  <CardContent className="p-4">
-                    <div className="text-2xl font-bold text-sidebar-primary">{leaseOverview.activeLeases}</div>
-                    <p className="text-sm text-muted-foreground">Active Leases</p>
-                  </CardContent>
-                </Card>
-                <Card>
-                  <CardContent className="p-4">
-                    <div className="text-2xl font-bold text-green-600">{formatCurrency(leaseOverview.monthlyRentValue)}</div>
-                    <p className="text-sm text-muted-foreground">Monthly Rent Value</p>
-                  </CardContent>
-                </Card>
-                <Card>
-                  <CardContent className="p-4">
-                    <div className="text-2xl font-bold text-orange-600">{leaseOverview.expiringSoon}</div>
-                    <p className="text-sm text-muted-foreground">Expiring Soon</p>
-                  </CardContent>
-                </Card>
-                <Card>
-                  <CardContent className="p-4">
-                    <div className="text-2xl font-bold text-blue-600">
-                      {leaseOverview.avgLeaseTermMonths < 12
-                        ? `${leaseOverview.avgLeaseTermMonths.toFixed(0)} months`
-                        : `${(leaseOverview.avgLeaseTermMonths / 12).toFixed(1)} years`}
-                    </div>
-                    <p className="text-sm text-muted-foreground">Avg Lease Term</p>
-                  </CardContent>
-                </Card>
-              </div>
-
-              {/* Grid */}
-              <div className="grid gap-4">
-                {leases.map((lease) => (
-                  <Card key={lease.id} className="hover:shadow-lg transition-shadow">
-                    <CardHeader className="pb-3">
-                      <div className="flex items-start justify-between">
-                        <div className="space-y-1">
-                          <CardTitle className="text-lg">
-                            {lease.tenant_name}
-                          </CardTitle>
-                          <p className="text-sm text-muted-foreground">
-                            {lease.space_code} • {lease.site_name}
-                          </p>
-                        </div>
-                        <Badge className={getStatusColor(lease.status)}>{lease.status}</Badge>
-                      </div>
-                    </CardHeader>
-
-                    <CardContent className="space-y-4">
-                      <div className="grid grid-cols-2 gap-4 text-sm">
-                        <div>
-                          <div className="font-medium text-muted-foreground">Rent Amount</div>
-                          <div className="text-lg font-bold">{formatCurrency(lease.rent_amount)}</div>
-                          <div className="text-xs text-muted-foreground">per month</div>
-                        </div>
-                        <div>
-                          <div className="font-medium text-muted-foreground">Lease Term</div>
-                          <div className="text-sm">
-                            {lease.start_date} - {lease.end_date}
-                          </div>
-                        </div>
-                      </div>
-
-                      <div className="grid grid-cols-2 gap-4 text-sm">
-                        <div>
-                          <div className="font-medium text-muted-foreground">Deposit</div>
-                          <div>{formatCurrency(lease.deposit_amount as any)}</div>
-                        </div>
-                        <div>
-                          <div className="font-medium text-muted-foreground">CAM Rate</div>
-                          <div>{lease.cam_rate ? `₹${lease.cam_rate}/sq ft` : "-"}</div>
-                        </div>
-                      </div>
-
-                      {lease.utilities && (
-                        <div>
-                          <div className="font-medium text-muted-foreground">Utilities</div>
-                          <div className="text-sm">
-                            {Object.entries(lease.utilities).map(([k, v]) => (
-                              <span key={k} className="mr-4">
-                                {k}: {String(v)}
-                              </span>
-                            ))}
-                          </div>
-                        </div>
-                      )}
-
-                      <div className="flex items-center justify-end gap-2 pt-2">
-                        <Button size="sm" variant="outline" onClick={() => handleView(lease)}>
-                          <Eye className="h-3 w-3" />
-                        </Button>
-                        {canWrite(resource) && <Button size="sm" variant="outline" onClick={() => handleEdit(lease)}>
-                          <Edit className="h-3 w-3" />
-                        </Button>
-                         } 
-                         {canDelete(resource) &&
-                        <Button
-                          size="sm"
-                          variant="outline"
-                          className="text-destructive hover:text-destructive"
-                          onClick={() => handleDelete(lease.id)}
-                        >
-                          <Trash2 className="h-3 w-3" />
-                        </Button>
-                         }
-                      </div>
+              <ContentContainer>
+                <LoaderOverlay />
+                {/* Overview */}
+                <div className="grid gap-4 md:grid-cols-4">
+                  <Card>
+                    <CardContent className="p-4">
+                      <div className="text-2xl font-bold text-sidebar-primary">{leaseOverview.activeLeases}</div>
+                      <p className="text-sm text-muted-foreground">Active Leases</p>
                     </CardContent>
                   </Card>
-                ))}
-              </div>
-
-              <Pagination page={page} pageSize={pageSize} totalItems={totalItems} onPageChange={(newPage) => setPage(newPage)} />
-
-              {leases.length === 0 && (
-                <div className="text-center py-12">
-                  <Home className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
-                  <h3 className="text-lg font-semibold text-sidebar-primary mb-2">No leases found</h3>
-                  <p className="text-muted-foreground">Try adjusting your search criteria or add a new lease.</p>
+                  <Card>
+                    <CardContent className="p-4">
+                      <div className="text-2xl font-bold text-green-600">{formatCurrency(leaseOverview.monthlyRentValue)}</div>
+                      <p className="text-sm text-muted-foreground">Monthly Rent Value</p>
+                    </CardContent>
+                  </Card>
+                  <Card>
+                    <CardContent className="p-4">
+                      <div className="text-2xl font-bold text-orange-600">{leaseOverview.expiringSoon}</div>
+                      <p className="text-sm text-muted-foreground">Expiring Soon</p>
+                    </CardContent>
+                  </Card>
+                  <Card>
+                    <CardContent className="p-4">
+                      <div className="text-2xl font-bold text-blue-600">
+                        {leaseOverview.avgLeaseTermMonths < 12
+                          ? `${leaseOverview.avgLeaseTermMonths.toFixed(0)} months`
+                          : `${(leaseOverview.avgLeaseTermMonths / 12).toFixed(1)} years`}
+                      </div>
+                      <p className="text-sm text-muted-foreground">Avg Lease Term</p>
+                    </CardContent>
+                  </Card>
                 </div>
-              )}
+
+                {/* Grid */}
+                <div className="grid gap-4 mt-6">
+                  {leases.map((lease) => (
+                    <Card key={lease.id} className="hover:shadow-lg transition-shadow">
+                      <CardHeader className="pb-3">
+                        <div className="flex items-start justify-between">
+                          <div className="space-y-1">
+                            <CardTitle className="text-lg">
+                              {lease.tenant_name}
+                            </CardTitle>
+                            <p className="text-sm text-muted-foreground">
+                              {lease.space_code} • {lease.site_name}
+                            </p>
+                          </div>
+                          <Badge className={getStatusColor(lease.status)}>{lease.status}</Badge>
+                        </div>
+                      </CardHeader>
+
+                      <CardContent className="space-y-4">
+                        <div className="grid grid-cols-2 gap-4 text-sm">
+                          <div>
+                            <div className="font-medium text-muted-foreground">Rent Amount</div>
+                            <div className="text-lg font-bold">{formatCurrency(lease.rent_amount)}</div>
+                            <div className="text-xs text-muted-foreground">per month</div>
+                          </div>
+                          <div>
+                            <div className="font-medium text-muted-foreground">Lease Term</div>
+                            <div className="text-sm">
+                              {lease.start_date} - {lease.end_date}
+                            </div>
+                          </div>
+                        </div>
+
+                        <div className="grid grid-cols-2 gap-4 text-sm">
+                          <div>
+                            <div className="font-medium text-muted-foreground">Deposit</div>
+                            <div>{formatCurrency(lease.deposit_amount as any)}</div>
+                          </div>
+                          <div>
+                            <div className="font-medium text-muted-foreground">CAM Rate</div>
+                            <div>{lease.cam_rate ? `₹${lease.cam_rate}/sq ft` : "-"}</div>
+                          </div>
+                        </div>
+
+                        {lease.utilities && (
+                          <div>
+                            <div className="font-medium text-muted-foreground">Utilities</div>
+                            <div className="text-sm">
+                              {Object.entries(lease.utilities).map(([k, v]) => (
+                                <span key={k} className="mr-4">
+                                  {k}: {String(v)}
+                                </span>
+                              ))}
+                            </div>
+                          </div>
+                        )}
+
+                        <div className="flex items-center justify-end gap-2 pt-2">
+                          <Button size="sm" variant="outline" onClick={() => handleView(lease)}>
+                            <Eye className="h-3 w-3" />
+                          </Button>
+                          {canWrite(resource) && <Button size="sm" variant="outline" onClick={() => handleEdit(lease)}>
+                            <Edit className="h-3 w-3" />
+                          </Button>
+                           } 
+                           {canDelete(resource) &&
+                          <Button
+                            size="sm"
+                            variant="outline"
+                            className="text-destructive hover:text-destructive"
+                            onClick={() => handleDelete(lease.id)}
+                          >
+                            <Trash2 className="h-3 w-3" />
+                          </Button>
+                           }
+                        </div>
+                      </CardContent>
+                    </Card>
+                  ))}
+                </div>
+
+                <Pagination page={page} pageSize={pageSize} totalItems={totalItems} onPageChange={(newPage) => setPage(newPage)} />
+
+                {leases.length === 0 && (
+                  <div className="text-center py-12">
+                    <Home className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
+                    <h3 className="text-lg font-semibold text-sidebar-primary mb-2">No leases found</h3>
+                    <p className="text-muted-foreground">Try adjusting your search criteria or add a new lease.</p>
+                  </div>
+                )}
+              </ContentContainer>
             </div>
           </main>
         </SidebarInset>

@@ -18,6 +18,9 @@ import { Pagination } from "@/components/Pagination";
 import { AssetForm } from "@/components/AssetForm";
 import { useSkipFirstEffect } from "@/hooks/use-skipfirst-effect";
 import { useAuth } from "../context/AuthContext";
+import { useLoader } from "@/context/LoaderContext";
+import LoaderOverlay from "@/components/LoaderOverlay";
+import ContentContainer from "@/components/ContentContainer";
 
 export default function Assets() {
   const { toast } = useToast();
@@ -35,6 +38,7 @@ export default function Assets() {
   const [assets, setAssets] = useState<Asset[]>([]);
   const [selectedAsset, setSelectedAsset] = useState<Asset | undefined>();
   const [deleteAssetId, setDeleteAssetId] = useState<string | null>(null);
+  const { withLoader } = useLoader();
   const [assetOverview, setAssetOverview] = useState<AssetOverview>({
     totalAssets: 0,
     activeAssets: 0,
@@ -70,18 +74,24 @@ export default function Assets() {
   };
 
   const loadCategories = async () => {
-    const response = await assetApiService.getCategories();
-    if (response.success) setCategoryOptions(response.data);
+    const response = await withLoader(async () => {
+      return await assetApiService.getCategories();
+    });
+    if (response?.success) setCategoryOptions(response.data);
   }
 
   const loadStatuses = async () => {
-    const response = await assetApiService.getStatuses();
-    if (response.success) setStatusOptions(response.data);
+    const response = await withLoader(async () => {
+      return await assetApiService.getStatuses();
+    });
+    if (response?.success) setStatusOptions(response.data);
   }
 
   const loadAssetOverView = async () => {
-    const response = await assetApiService.getAssetOverview();
-    if (response.success) setAssetOverview(response.data);
+    const response = await withLoader(async () => {
+      return await assetApiService.getAssetOverview();
+    });
+    if (response?.success) setAssetOverview(response.data);
   };
 
   const loadAssets = async () => {
@@ -95,8 +105,11 @@ export default function Assets() {
     params.append("skip", String(skip));
     params.append("limit", String(limit));
 
-    const response = await assetApiService.getAssets(params);
-    if (response.success) {
+    const response = await withLoader(async () => {
+      return await assetApiService.getAssets(params);
+    });
+    
+    if (response?.success) {
       setAssets(response.data?.assets || []);
       setTotalItems(response.data?.total || 0);
     }
@@ -192,8 +205,10 @@ export default function Assets() {
               </Button>
             </div>
 
-            <div className="space-y-6">
-              {/* Summary Cards */}
+            <ContentContainer>
+              <LoaderOverlay />
+              <div className="space-y-6">
+                {/* Summary Cards */}
               <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
                 <Card>
                   <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
@@ -372,7 +387,8 @@ export default function Assets() {
                   />
                 </CardContent>
               </Card>
-            </div>
+              </div>
+            </ContentContainer>
           </div>
         </SidebarInset>
       </div>

@@ -20,6 +20,9 @@ import { useToast } from "@/hooks/use-toast";
 import { ContractForm } from "@/components/ContractsForm";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
 import { useAuth } from "../context/AuthContext";
+import { useLoader } from "@/context/LoaderContext";
+import LoaderOverlay from "@/components/LoaderOverlay";
+import ContentContainer from "@/components/ContentContainer";
 
 export default function Contracts() {
   const { toast } = useToast();
@@ -39,6 +42,7 @@ export default function Contracts() {
   const [selectedContract, setSelectedContract] = useState<any | undefined>();
   const [deleteContractId, setDeleteContractId] = useState<string | null>(null);
   const { canRead, canWrite, canDelete } = useAuth();
+  const { withLoader } = useLoader();
   const resource = "contracts"; // must match resource name from backend policies
 
   useEffect(() => {
@@ -77,14 +81,20 @@ export default function Contracts() {
     params.append("skip", skip.toString());
     params.append("limit", limit.toString());
 
-    const response = await contractApiService.getContracts(params);
-    const contractsList = response.data?.contracts || [];
-    setContracts(response.data?.contracts || []);
-    setTotalItems(response.data?.total || 0);
+    const response = await withLoader(async () => {
+      return await contractApiService.getContracts(params);
+    });
+    
+    if (response?.success) {
+      setContracts(response.data?.contracts || []);
+      setTotalItems(response.data?.total || 0);
+    }
   };
 
   const loadOverview = async () => {
-    const response = await contractApiService.getContractsOverview();
+    const response = await withLoader(async () => {
+      return await contractApiService.getContractsOverview();
+    });
     
     // Map API response to expected format
     const overviewData = {
@@ -98,18 +108,24 @@ export default function Contracts() {
   };
 
   const loadStatusLookup = async () => {
-    const lookup = await contractApiService.getStatusLookup();
-    if (lookup.success) setStatusList(lookup.data || []);
+    const lookup = await withLoader(async () => {
+      return await contractApiService.getStatusLookup();
+    });
+    if (lookup?.success) setStatusList(lookup.data || []);
   };
 
   const loadTypeLookup = async () => {
-    const lookup = await contractApiService.getTypeLookup();
-    if (lookup.success) setTypeList(lookup.data || []);
+    const lookup = await withLoader(async () => {
+      return await contractApiService.getTypeLookup();
+    });
+    if (lookup?.success) setTypeList(lookup.data || []);
   };
 
   const loadVendorLookup = async () => {
-    const response = await vendorsApiService.getVendorLookup();
-    if (response.success) setVendorList(response.data || []);
+    const response = await withLoader(async () => {
+      return await vendorsApiService.getVendorLookup();
+    });
+    if (response?.success) setVendorList(response.data || []);
     
   };
 
@@ -255,191 +271,194 @@ const confirmDelete = async () => {
               </Button>
             </div>
 
-            <div className="space-y-6">
-              {/* Filters */}
-              <div className="flex flex-col sm:flex-row gap-4">
-                <div className="relative flex-1">
-                  <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground w-4 h-4" />
-                  <Input
-                    placeholder="Search contracts..."
-                    value={searchTerm}
-                    onChange={(e) => setSearchTerm(e.target.value)}
-                    className="pl-10"
-                  />
-                </div>
-                <Select value={statusFilter} onValueChange={setStatusFilter}>
-                  <SelectTrigger className="w-[160px]">
-                    <Filter className="w-4 h-4 mr-2" />
-                    <SelectValue placeholder="Status" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="all">All Status</SelectItem>
-                    {statusList.map((status) => (
-                      <SelectItem key={status.id} value={status.id}>
-                        {status.name}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-                <Select value={typeFilter} onValueChange={setTypeFilter}>
-                  <SelectTrigger className="w-[160px]">
-                    <SelectValue placeholder="Type" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="all">All Types</SelectItem>
-                    {typeList.map((type) => (
-                      <SelectItem key={type.id} value={type.id}>
-                        {type.name}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-              </div>
-
-              {/* Stats Cards */}
-              <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
-                <Card>
-                  <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                    <CardTitle className="text-sm font-medium">Total Contracts</CardTitle>
-                    <FileText className="h-4 w-4 text-muted-foreground" />
-                  </CardHeader>
-                  <CardContent>
-                    <div className="text-2xl font-bold">{overview.total_contracts}</div>
-                  </CardContent>
-                </Card>
-                <Card>
-                  <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                    <CardTitle className="text-sm font-medium">Active Contracts</CardTitle>
-                    <CheckCircle className="h-4 w-4 text-muted-foreground" />
-                  </CardHeader>
-                  <CardContent>
-                    <div className="text-2xl font-bold">{overview.active_contracts}</div>
-                  </CardContent>
-                </Card>
-                <Card>
-                  <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                    <CardTitle className="text-sm font-medium">Expiring Soon</CardTitle>
-                    <AlertCircle className="h-4 w-4 text-muted-foreground" />
-                  </CardHeader>
-                  <CardContent>
-                    <div className="text-2xl font-bold">{overview.expiring_soon}</div>
-                  </CardContent>
-                </Card>
-                <Card>
-                  <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                    <CardTitle className="text-sm font-medium">Total Value</CardTitle>
-                    <Building className="h-4 w-4 text-muted-foreground" />
-                  </CardHeader>
-                  <CardContent>
-                    <div className="text-2xl font-bold">{formatCurrency(overview.total_value)}</div>
-                  </CardContent>
-                </Card>
-              </div>
-
-              {/* Contracts Table */}
-              <Card>
-                <CardHeader>
-                  <CardTitle>Contract Management</CardTitle>
-                  <CardDescription>
-                    Showing {contracts.length} contracts
-                  </CardDescription>
-                </CardHeader>
-                <CardContent>
-                  <Table>
-                    <TableHeader>
-                      <TableRow>
-                        <TableHead>Contract</TableHead>
-                        <TableHead>Vendor</TableHead>
-                        <TableHead>Type</TableHead>
-                        <TableHead>Duration</TableHead>
-                        <TableHead>Value</TableHead>
-                        <TableHead>Status</TableHead>
-                        <TableHead>Actions</TableHead>
-                      </TableRow>
-                    </TableHeader>
-                    <TableBody>
-                      {contracts.map((contract) => (
-                        <TableRow key={contract.id}>
-                          <TableCell>
-                            <div>
-                              <div className="font-medium">{contract.title}</div>
-                              <div className="text-sm text-muted-foreground flex items-center">
-                                <FileText className="w-3 h-3 mr-1" />
-                                {contract.documents?.length || 0} document(s)
-                              </div>
-                            </div>
-                          </TableCell>
-                          <TableCell>
-                            <div>
-                              <div className="font-medium">{getVendorName(contract.vendor_id || contract.vendor_name)}</div>
-                              <div className="text-sm text-muted-foreground">
-                                SLA: {contract.terms?.sla?.response_hrs || 'N/A'}h response
-                              </div>
-                            </div>
-                          </TableCell>
-                          <TableCell>
-                            <Badge variant="outline">{contract.type}</Badge>
-                          </TableCell>
-                          <TableCell>
-                            <div className="text-sm">
-                              <div>{formatDate(contract.start_date)}</div>
-                              <div className="text-muted-foreground">to {formatDate(contract.end_date)}</div>
-                              {contract.status === 'active' && (
-                                <div className="text-xs text-muted-foreground mt-1">
-                                  {getDaysUntilExpiry(contract.end_date)} days left
-                                </div>
-                              )}
-                            </div>
-                          </TableCell>
-                          <TableCell>
-                            <div className="font-medium">
-                              {formatCurrency(contract.value)}
-                            </div>
-                          </TableCell>
-                          <TableCell>
-                            <div className="flex items-center space-x-2">
-                              {getStatusIcon(contract.status)}
-                              {getStatusBadge(contract.status)}
-                            </div>
-                          </TableCell>
-                          <TableCell>
-                            <div className="flex space-x-2">
-                              <Button variant="ghost" size="sm" onClick={() => handleView(contract)}>
-                                <Eye className="w-4 h-4" />
-                              </Button>
-                              {canWrite(resource) &&<Button variant="ghost" size="sm" onClick={() => handleEdit(contract)}>
-                                <Edit className="w-4 h-4" />
-                              </Button>
-                               }
-                               {canDelete(resource) &&
-                              <Button
-                                variant="ghost"
-                                size="sm"
-                                className="text-destructive hover:text-destructive"
-                                onClick={() => handleDelete(contract.id)}
-                              >
-                                <Trash2 className="w-4 h-4" />
-                              </Button>
-                               }
-                            </div>
-                          </TableCell>
-                        </TableRow>
-                      ))}
-                    </TableBody>
-                  </Table>
-
-                  {/* Pagination */}
-                  <div className="mt-4">
-                    <Pagination
-                      page={page}
-                      pageSize={pageSize}
-                      totalItems={totalItems}
-                      onPageChange={setPage}
+            <ContentContainer>
+              <LoaderOverlay />
+              <div className="space-y-6">
+                {/* Filters */}
+                <div className="flex flex-col sm:flex-row gap-4">
+                  <div className="relative flex-1">
+                    <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground w-4 h-4" />
+                    <Input
+                      placeholder="Search contracts..."
+                      value={searchTerm}
+                      onChange={(e) => setSearchTerm(e.target.value)}
+                      className="pl-10"
                     />
                   </div>
-                </CardContent>
-              </Card>
-            </div>
+                  <Select value={statusFilter} onValueChange={setStatusFilter}>
+                    <SelectTrigger className="w-[160px]">
+                      <Filter className="w-4 h-4 mr-2" />
+                      <SelectValue placeholder="Status" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="all">All Status</SelectItem>
+                      {statusList.map((status) => (
+                        <SelectItem key={status.id} value={status.id}>
+                          {status.name}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                  <Select value={typeFilter} onValueChange={setTypeFilter}>
+                    <SelectTrigger className="w-[160px]">
+                      <SelectValue placeholder="Type" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="all">All Types</SelectItem>
+                      {typeList.map((type) => (
+                        <SelectItem key={type.id} value={type.id}>
+                          {type.name}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+
+                {/* Stats Cards */}
+                <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+                  <Card>
+                    <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                      <CardTitle className="text-sm font-medium">Total Contracts</CardTitle>
+                      <FileText className="h-4 w-4 text-muted-foreground" />
+                    </CardHeader>
+                    <CardContent>
+                      <div className="text-2xl font-bold">{overview.total_contracts}</div>
+                    </CardContent>
+                  </Card>
+                  <Card>
+                    <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                      <CardTitle className="text-sm font-medium">Active Contracts</CardTitle>
+                      <CheckCircle className="h-4 w-4 text-muted-foreground" />
+                    </CardHeader>
+                    <CardContent>
+                      <div className="text-2xl font-bold">{overview.active_contracts}</div>
+                    </CardContent>
+                  </Card>
+                  <Card>
+                    <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                      <CardTitle className="text-sm font-medium">Expiring Soon</CardTitle>
+                      <AlertCircle className="h-4 w-4 text-muted-foreground" />
+                    </CardHeader>
+                    <CardContent>
+                      <div className="text-2xl font-bold">{overview.expiring_soon}</div>
+                    </CardContent>
+                  </Card>
+                  <Card>
+                    <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                      <CardTitle className="text-sm font-medium">Total Value</CardTitle>
+                      <Building className="h-4 w-4 text-muted-foreground" />
+                    </CardHeader>
+                    <CardContent>
+                      <div className="text-2xl font-bold">{formatCurrency(overview.total_value)}</div>
+                    </CardContent>
+                  </Card>
+                </div>
+
+                {/* Contracts Table */}
+                <Card>
+                  <CardHeader>
+                    <CardTitle>Contract Management</CardTitle>
+                    <CardDescription>
+                      Showing {contracts.length} contracts
+                    </CardDescription>
+                  </CardHeader>
+                  <CardContent>
+                    <Table>
+                      <TableHeader>
+                        <TableRow>
+                          <TableHead>Contract</TableHead>
+                          <TableHead>Vendor</TableHead>
+                          <TableHead>Type</TableHead>
+                          <TableHead>Duration</TableHead>
+                          <TableHead>Value</TableHead>
+                          <TableHead>Status</TableHead>
+                          <TableHead>Actions</TableHead>
+                        </TableRow>
+                      </TableHeader>
+                      <TableBody>
+                        {contracts.map((contract) => (
+                          <TableRow key={contract.id}>
+                            <TableCell>
+                              <div>
+                                <div className="font-medium">{contract.title}</div>
+                                <div className="text-sm text-muted-foreground flex items-center">
+                                  <FileText className="w-3 h-3 mr-1" />
+                                  {contract.documents?.length || 0} document(s)
+                                </div>
+                              </div>
+                            </TableCell>
+                            <TableCell>
+                              <div>
+                                <div className="font-medium">{getVendorName(contract.vendor_id || contract.vendor_name)}</div>
+                                <div className="text-sm text-muted-foreground">
+                                  SLA: {contract.terms?.sla?.response_hrs || 'N/A'}h response
+                                </div>
+                              </div>
+                            </TableCell>
+                            <TableCell>
+                              <Badge variant="outline">{contract.type}</Badge>
+                            </TableCell>
+                            <TableCell>
+                              <div className="text-sm">
+                                <div>{formatDate(contract.start_date)}</div>
+                                <div className="text-muted-foreground">to {formatDate(contract.end_date)}</div>
+                                {contract.status === 'active' && (
+                                  <div className="text-xs text-muted-foreground mt-1">
+                                    {getDaysUntilExpiry(contract.end_date)} days left
+                                  </div>
+                                )}
+                              </div>
+                            </TableCell>
+                            <TableCell>
+                              <div className="font-medium">
+                                {formatCurrency(contract.value)}
+                              </div>
+                            </TableCell>
+                            <TableCell>
+                              <div className="flex items-center space-x-2">
+                                {getStatusIcon(contract.status)}
+                                {getStatusBadge(contract.status)}
+                              </div>
+                            </TableCell>
+                            <TableCell>
+                              <div className="flex space-x-2">
+                                <Button variant="ghost" size="sm" onClick={() => handleView(contract)}>
+                                  <Eye className="w-4 h-4" />
+                                </Button>
+                                {canWrite(resource) &&<Button variant="ghost" size="sm" onClick={() => handleEdit(contract)}>
+                                  <Edit className="w-4 h-4" />
+                                </Button>
+                                 }
+                                 {canDelete(resource) &&
+                                <Button
+                                  variant="ghost"
+                                  size="sm"
+                                  className="text-destructive hover:text-destructive"
+                                  onClick={() => handleDelete(contract.id)}
+                                >
+                                  <Trash2 className="w-4 h-4" />
+                                </Button>
+                                 }
+                              </div>
+                            </TableCell>
+                          </TableRow>
+                        ))}
+                      </TableBody>
+                    </Table>
+
+                    {/* Pagination */}
+                    <div className="mt-4">
+                      <Pagination
+                        page={page}
+                        pageSize={pageSize}
+                        totalItems={totalItems}
+                        onPageChange={setPage}
+                      />
+                    </div>
+                  </CardContent>
+                </Card>
+              </div>
+            </ContentContainer>
           </div>
         </SidebarInset>
       </div>

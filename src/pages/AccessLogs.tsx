@@ -12,6 +12,9 @@ import { useSkipFirstEffect } from "@/hooks/use-skipfirst-effect";
 import { siteApiService } from "@/services/spaces_sites/sitesapi";
 import { accessEventApiService } from "@/services/parking_access/accesseventsapi";
 import { Pagination } from "@/components/Pagination";
+import { useLoader } from "@/context/LoaderContext";
+import LoaderOverlay from "@/components/LoaderOverlay";
+import ContentContainer from "@/components/ContentContainer";
 
 export default function AccessLogs() {
   const [searchTerm, setSearchTerm] = useState("");
@@ -29,6 +32,7 @@ export default function AccessLogs() {
     totalExits: 0,
     totalUniqueIDs: 0,
   });
+  const { withLoader } = useLoader();
 
   useSkipFirstEffect(() => {
     loadEvents();
@@ -58,21 +62,27 @@ export default function AccessLogs() {
     if (selectedDirection) params.append("direction", selectedDirection);
     params.append("skip", skip.toString());
     params.append("limit", limit.toString());
-    const response = await accessEventApiService.getAccessEvents(params);
-    if (response.success) {
+    const response = await withLoader(async () => {
+      return await accessEventApiService.getAccessEvents(params);
+    });
+    if (response?.success) {
       setEvents(response.data?.events || []);
       setTotalItems(response.data?.total || 0);
     }
   }
 
   const loadEventOverView = async () => {
-    const response = await accessEventApiService.getAccessEventOverview();
-    if (response.success) setEventOverview(response.data || []);
+    const response = await withLoader(async () => {
+      return await accessEventApiService.getAccessEventOverview();
+    });
+    if (response?.success) setEventOverview(response.data || []);
   }
 
   const loadSiteLookup = async () => {
-    const lookup = await siteApiService.getSiteLookup();
-    if (lookup.success) setSiteList(lookup.data || []);
+    const lookup = await withLoader(async () => {
+      return await siteApiService.getSiteLookup();
+    });
+    if (lookup?.success) setSiteList(lookup.data || []);
   }
 
   const getDirectionIcon = (direction: 'in' | 'out') => {
@@ -118,136 +128,141 @@ export default function AccessLogs() {
                 </Button>
               </div>
 
-              {/* Stats */}
-              <div className="grid gap-4 md:grid-cols-4">
-                <Card>
-                  <CardContent className="p-4">
-                    <div className="text-2xl font-bold text-sidebar-primary">{eventOverview.todayEvents}</div>
-                    <p className="text-sm text-muted-foreground">Today's Events</p>
-                  </CardContent>
-                </Card>
-                <Card>
-                  <CardContent className="p-4">
-                    <div className="text-2xl font-bold text-green-600">{eventOverview.totalEntries}</div>
-                    <p className="text-sm text-muted-foreground">Total Entries</p>
-                  </CardContent>
-                </Card>
-                <Card>
-                  <CardContent className="p-4">
-                    <div className="text-2xl font-bold text-orange-600">{eventOverview.totalExits}</div>
-                    <p className="text-sm text-muted-foreground">Total Exits</p>
-                  </CardContent>
-                </Card>
-                <Card>
-                  <CardContent className="p-4">
-                    <div className="text-2xl font-bold text-blue-600">
-                      {eventOverview.totalUniqueIDs}
+              <ContentContainer>
+                <LoaderOverlay />
+                <div className="space-y-6">
+                  {/* Stats */}
+                  <div className="grid gap-4 md:grid-cols-4">
+                    <Card>
+                      <CardContent className="p-4">
+                        <div className="text-2xl font-bold text-sidebar-primary">{eventOverview.todayEvents}</div>
+                        <p className="text-sm text-muted-foreground">Today's Events</p>
+                      </CardContent>
+                    </Card>
+                    <Card>
+                      <CardContent className="p-4">
+                        <div className="text-2xl font-bold text-green-600">{eventOverview.totalEntries}</div>
+                        <p className="text-sm text-muted-foreground">Total Entries</p>
+                      </CardContent>
+                    </Card>
+                    <Card>
+                      <CardContent className="p-4">
+                        <div className="text-2xl font-bold text-orange-600">{eventOverview.totalExits}</div>
+                        <p className="text-sm text-muted-foreground">Total Exits</p>
+                      </CardContent>
+                    </Card>
+                    <Card>
+                      <CardContent className="p-4">
+                        <div className="text-2xl font-bold text-blue-600">
+                          {eventOverview.totalUniqueIDs}
+                        </div>
+                        <p className="text-sm text-muted-foreground">Unique IDs</p>
+                      </CardContent>
+                    </Card>
+                  </div>
+
+                  {/* Filters */}
+                  <div className="flex flex-wrap items-center gap-4">
+                    <div className="flex items-center gap-2">
+                      <Search className="h-4 w-4 text-muted-foreground" />
+                      <Input
+                        placeholder="Search by vehicle, card ID, or gate..."
+                        value={searchTerm}
+                        onChange={(e) => setSearchTerm(e.target.value)}
+                        className="w-80"
+                      />
                     </div>
-                    <p className="text-sm text-muted-foreground">Unique IDs</p>
-                  </CardContent>
-                </Card>
-              </div>
 
-              {/* Filters */}
-              <div className="flex flex-wrap items-center gap-4">
-                <div className="flex items-center gap-2">
-                  <Search className="h-4 w-4 text-muted-foreground" />
-                  <Input
-                    placeholder="Search by vehicle, card ID, or gate..."
-                    value={searchTerm}
-                    onChange={(e) => setSearchTerm(e.target.value)}
-                    className="w-80"
-                  />
-                </div>
-
-                <select
-                  value={selectedSite}
-                  onChange={(e) => setSelectedSite(e.target.value)}
-                  className="rounded-md border border-input bg-background px-3 py-2 text-sm"
-                >
-                  <option value="all">All Sites</option>
-                  {siteList.map(site => (
-                    <option key={site.id} value={site.id}>{site.name}</option>
-                  ))}
-                </select>
-
-                <select
-                  value={selectedDirection}
-                  onChange={(e) => setSelectedDirection(e.target.value)}
-                  className="rounded-md border border-input bg-background px-3 py-2 text-sm"
-                >
-                  <option value="all">All Directions</option>
-                  <option value="in">Entry</option>
-                  <option value="out">Exit</option>
-                </select>
-              </div>
-
-              {/* Table */}
-              <Card>
-                <CardHeader>
-                  <CardTitle>Access Events ({events?.length})</CardTitle>
-                </CardHeader>
-                <CardContent>
-                  <Table>
-                    <TableHeader>
-                      <TableRow>
-                        <TableHead>Date & Time</TableHead>
-                        <TableHead>Direction</TableHead>
-                        <TableHead>Gate</TableHead>
-                        <TableHead>Vehicle No.</TableHead>
-                        <TableHead>Card ID</TableHead>
-                        <TableHead>Site</TableHead>
-                      </TableRow>
-                    </TableHeader>
-                    <TableBody>
-                      {events.map((event) => (
-                        <TableRow key={event.id}>
-                          <TableCell className="font-medium">
-                            {formatDateTime(event.ts)}
-                          </TableCell>
-                          <TableCell>
-                            <div className="flex items-center gap-2">
-                              {getDirectionIcon(event.direction)}
-                              <Badge className={getDirectionColor(event.direction)}>
-                                {event.direction === 'in' ? 'Entry' : 'Exit'}
-                              </Badge>
-                            </div>
-                          </TableCell>
-                          <TableCell>{event.gate}</TableCell>
-                          <TableCell>
-                            {event.vehicle_no ? (
-                              <Badge variant="outline">{event.vehicle_no}</Badge>
-                            ) : (
-                              <span className="text-muted-foreground">-</span>
-                            )}
-                          </TableCell>
-                          <TableCell>
-                            {event.card_id ? (
-                              <Badge variant="outline">{event.card_id}</Badge>
-                            ) : (
-                              <span className="text-muted-foreground">-</span>
-                            )}
-                          </TableCell>
-                          <TableCell>{event.site_name}</TableCell>
-                        </TableRow>
+                    <select
+                      value={selectedSite}
+                      onChange={(e) => setSelectedSite(e.target.value)}
+                      className="rounded-md border border-input bg-background px-3 py-2 text-sm"
+                    >
+                      <option value="all">All Sites</option>
+                      {siteList.map(site => (
+                        <option key={site.id} value={site.id}>{site.name}</option>
                       ))}
-                    </TableBody>
-                  </Table>
-                  <Pagination
+                    </select>
+
+                    <select
+                      value={selectedDirection}
+                      onChange={(e) => setSelectedDirection(e.target.value)}
+                      className="rounded-md border border-input bg-background px-3 py-2 text-sm"
+                    >
+                      <option value="all">All Directions</option>
+                      <option value="in">Entry</option>
+                      <option value="out">Exit</option>
+                    </select>
+                  </div>
+
+                  {/* Table */}
+                  <Card>
+                    <CardHeader>
+                      <CardTitle>Access Events ({events?.length})</CardTitle>
+                    </CardHeader>
+                    <CardContent>
+                      <Table>
+                        <TableHeader>
+                          <TableRow>
+                            <TableHead>Date & Time</TableHead>
+                            <TableHead>Direction</TableHead>
+                            <TableHead>Gate</TableHead>
+                            <TableHead>Vehicle No.</TableHead>
+                            <TableHead>Card ID</TableHead>
+                            <TableHead>Site</TableHead>
+                          </TableRow>
+                        </TableHeader>
+                        <TableBody>
+                          {events.map((event) => (
+                            <TableRow key={event.id}>
+                              <TableCell className="font-medium">
+                                {formatDateTime(event.ts)}
+                              </TableCell>
+                              <TableCell>
+                                <div className="flex items-center gap-2">
+                                  {getDirectionIcon(event.direction)}
+                                  <Badge className={getDirectionColor(event.direction)}>
+                                    {event.direction === 'in' ? 'Entry' : 'Exit'}
+                                  </Badge>
+                                </div>
+                              </TableCell>
+                              <TableCell>{event.gate}</TableCell>
+                              <TableCell>
+                                {event.vehicle_no ? (
+                                  <Badge variant="outline">{event.vehicle_no}</Badge>
+                                ) : (
+                                  <span className="text-muted-foreground">-</span>
+                                )}
+                              </TableCell>
+                              <TableCell>
+                                {event.card_id ? (
+                                  <Badge variant="outline">{event.card_id}</Badge>
+                                ) : (
+                                  <span className="text-muted-foreground">-</span>
+                                )}
+                              </TableCell>
+                              <TableCell>{event.site_name}</TableCell>
+                            </TableRow>
+                          ))}
+                        </TableBody>
+                    </Table>
+                    <Pagination
                     page={page}
                     pageSize={pageSize}
                     totalItems={totalItems}
                     onPageChange={(newPage) => setPage(newPage)}
-                  />
-                  {events.length === 0 && (
-                    <div className="text-center py-8">
-                      <Key className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
-                      <h3 className="text-lg font-semibold text-sidebar-primary mb-2">No events found</h3>
-                      <p className="text-muted-foreground">Try adjusting your search criteria.</p>
-                    </div>
-                  )}
-                </CardContent>
-              </Card>
+                    />
+                    {events.length === 0 && (
+                      <div className="text-center py-8">
+                        <Key className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
+                        <h3 className="text-lg font-semibold text-sidebar-primary mb-2">No events found</h3>
+                        <p className="text-muted-foreground">Try adjusting your search criteria.</p>
+                      </div>
+                    )}
+                  </CardContent>
+                </Card>
+                </div>
+              </ContentContainer>
             </div>
           </main>
         </SidebarInset>

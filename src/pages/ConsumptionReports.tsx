@@ -10,6 +10,9 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, BarChart, Bar } from "recharts";
 //import { mockConsumptionReports, mockMeterReadings, type ConsumptionReport } from "@/data/mockEnergyData";
 import { consumptionApiService } from "@/services/energy_iot/consumptionapi";
+import { useLoader } from "@/context/LoaderContext";
+import LoaderOverlay from "@/components/LoaderOverlay";
+import ContentContainer from "@/components/ContentContainer";
 
 const getTrendIcon = (trend: string) => {
   switch (trend) {
@@ -48,6 +51,7 @@ export default function ConsumptionReports() {
   const [monthlyCostAnalysisData, setMonthlyCostAnalysisData] = useState<any[]>([]);
   const [utilityTypes, setUtilityTypes] = useState<any[]>([]);
   const [availableMonths, setAvailableMonths] = useState<any[]>([]);
+  const { withLoader } = useLoader();
 
   useEffect(() => {
     loadOverviewData();
@@ -58,27 +62,37 @@ export default function ConsumptionReports() {
   }, []);
   
   const loadUtilityTypes = async () => {
-    const types = await consumptionApiService.getAvailableMonths();
+    const types = await withLoader(async () => {
+      return await consumptionApiService.getAvailableMonths();
+    });
     if (types?.success) setUtilityTypes(types.data || []);
   };
 
   const loadAvailableMonths = async () => {
-    const months = await consumptionApiService.getUtilityTypes();
+    const months = await withLoader(async () => {
+      return await consumptionApiService.getUtilityTypes();
+    });
     if (months?.success) setAvailableMonths(months.data || []);
   };
 
   const loadOverviewData = async () => {
-    const data = await consumptionApiService.getOverview();
+    const data = await withLoader(async () => {
+      return await consumptionApiService.getOverview();
+    });
     if (data?.success) setOverviewData(data.data || null);
   };
 
   const loadWeeklyTrendData = async () => {
-    const data = await consumptionApiService.getWeeklyConsumptionTrend();
+    const data = await withLoader(async () => {
+      return await consumptionApiService.getWeeklyConsumptionTrend();
+    });
     if (data?.success) setWeeklyTrendData(data.data || []);
   };
 
   const loadMonthlyCostAnalysisData = async () => {
-    const data = await consumptionApiService.getMonthlyCostAnalysis();
+    const data = await withLoader(async () => {
+      return await consumptionApiService.getMonthlyCostAnalysis();
+    });
     if (data?.success) setMonthlyCostAnalysisData(data.data || []);
   };
 
@@ -156,68 +170,67 @@ export default function ConsumptionReports() {
           </header>
 
           <main className="flex-1 space-y-6 p-6">
-            {/* Stats Cards */}
-            <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
-                {overviewData?.map((overviewData: any, index: number) => (
-                <React.Fragment key={index}>
-                <Card>
-                  <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                    <CardTitle className="text-sm font-medium">Total Cost</CardTitle>
-                    <BarChart3 className="h-4 w-4" />
-                  </CardHeader>
-                  <CardContent>
-                    <div className="text-2xl font-bold">{overviewData.Totalcost}</div>
-                    <div className="flex items-center gap-1 text-xs text-muted-foreground mt-1">
-                      <TrendingUp className="h-4 w-4 text-green-500" />
-                   
-                    </div>
-                  </CardContent>
-                </Card>
-                
-                <Card>
-                  <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                    <CardTitle className="text-sm font-medium">Electricity</CardTitle>
-                    <TrendingUp className="h-4 w-4 text-yellow-500" />
-                  </CardHeader>
-                  <CardContent>
-                    <div className="text-2xl font-bold">{overviewData.Electricity} kWh</div>
-                    <div className="flex items-center gap-1 text-xs text-muted-foreground mt-1">
-                      <TrendingUp className="h-4 w-4 text-green-500" />
-                     
-                    </div>
-                  </CardContent>
-                </Card>
-                
-                <Card>
-                  <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                    <CardTitle className="text-sm font-medium">Water</CardTitle>
-                    <TrendingDown className="h-4 w-4 text-blue-500" />
-                  </CardHeader>
-                  <CardContent>
-                    <div className="text-2xl font-bold">{overviewData.Water} m³</div>
-                    <div className="flex items-center gap-1 text-xs text-muted-foreground mt-1">
-                      <TrendingDown className="h-4 w-4 text-red-500" />
-                     
-                    </div>
-                  </CardContent>
-                </Card>
-                
-                <Card>
-                  <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                    <CardTitle className="text-sm font-medium">Daily Average</CardTitle>
-                    <Minus className="h-4 w-4 text-gray-500" />
-                  </CardHeader>
-                  <CardContent>
-                    <div className="text-2xl font-bold">{overviewData.DailyAverage}</div>
-                    <div className="flex items-center gap-1 text-xs text-muted-foreground mt-1">
-                      <Minus className="h-4 w-4 text-gray-500" />
+            <ContentContainer>
+              <LoaderOverlay />
+              <div className="space-y-6">
+                {/* Stats Cards */}
+                <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
+                  {overviewData?.map((overviewData: any, index: number) => (
+                    <React.Fragment key={index}>
+                      <Card>
+                        <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                          <CardTitle className="text-sm font-medium">Total Cost</CardTitle>
+                          <BarChart3 className="h-4 w-4" />
+                        </CardHeader>
+                        <CardContent>
+                          <div className="text-2xl font-bold">{overviewData.Totalcost}</div>
+                          <div className="flex items-center gap-1 text-xs text-muted-foreground mt-1">
+                            <TrendingUp className="h-4 w-4 text-green-500" />
+                          </div>
+                        </CardContent>
+                      </Card>
                       
-                    </div>
-                  </CardContent>
-                </Card>
-                </React.Fragment>
-              ))}
-            </div>
+                      <Card>
+                        <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                          <CardTitle className="text-sm font-medium">Electricity</CardTitle>
+                          <TrendingUp className="h-4 w-4 text-yellow-500" />
+                        </CardHeader>
+                        <CardContent>
+                          <div className="text-2xl font-bold">{overviewData.Electricity} kWh</div>
+                          <div className="flex items-center gap-1 text-xs text-muted-foreground mt-1">
+                            <TrendingUp className="h-4 w-4 text-green-500" />
+                          </div>
+                        </CardContent>
+                      </Card>
+                      
+                      <Card>
+                        <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                          <CardTitle className="text-sm font-medium">Water</CardTitle>
+                          <TrendingDown className="h-4 w-4 text-blue-500" />
+                        </CardHeader>
+                        <CardContent>
+                          <div className="text-2xl font-bold">{overviewData.Water} m³</div>
+                          <div className="flex items-center gap-1 text-xs text-muted-foreground mt-1">
+                            <TrendingDown className="h-4 w-4 text-red-500" />
+                          </div>
+                        </CardContent>
+                      </Card>
+                      
+                      <Card>
+                        <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                          <CardTitle className="text-sm font-medium">Daily Average</CardTitle>
+                          <Minus className="h-4 w-4 text-gray-500" />
+                        </CardHeader>
+                        <CardContent>
+                          <div className="text-2xl font-bold">{overviewData.DailyAverage}</div>
+                          <div className="flex items-center gap-1 text-xs text-muted-foreground mt-1">
+                            <Minus className="h-4 w-4 text-gray-500" />
+                          </div>
+                        </CardContent>
+                      </Card>
+                    </React.Fragment>
+                  ))}
+                </div>
 
             {/* Charts */}
             <div className="grid gap-6 md:grid-cols-2">
@@ -354,6 +367,8 @@ export default function ConsumptionReports() {
                 </Table>
               </CardContent>
             </Card>
+              </div>
+            </ContentContainer>
           </main>
         </div>
       </div>

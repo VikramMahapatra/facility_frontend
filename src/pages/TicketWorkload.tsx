@@ -14,6 +14,9 @@ import { Badge } from "@/components/ui/badge";
 import { Pagination } from "@/components/Pagination";
 import { workloadManagementApiService } from "@/services/ticketing_service/workloadmanagementapi";
 import { siteApiService } from "@/services/spaces_sites/sitesapi";
+import { useLoader } from "@/context/LoaderContext";
+import LoaderOverlay from "@/components/LoaderOverlay";
+import ContentContainer from "@/components/ContentContainer";
 
 export default function TicketWorkload() {
   const { toast } = useToast();
@@ -21,7 +24,7 @@ export default function TicketWorkload() {
   const [selectedSiteId, setSelectedSiteId] = useState("");
   const [siteList, setSiteList] = useState<any[]>([]);
   const [workloadData, setWorkloadData] = useState<any>(null);
-  const [loading, setLoading] = useState(true);
+  const { withLoader } = useLoader();
   const [isReassignOpen, setIsReassignOpen] = useState(false);
   const [selectedTicket, setSelectedTicket] = useState<string | null>(null);
   const [newAssignee, setNewAssignee] = useState("");
@@ -42,8 +45,10 @@ export default function TicketWorkload() {
   }, [selectedSiteId]);
 
   const loadSiteLookup = async () => {
-    const response = await siteApiService.getSiteLookup();
-    if (response.success) {
+    const response = await withLoader(async () => {
+      return await siteApiService.getSiteLookup();
+    });
+    if (response?.success) {
       setSiteList(response.data || []);
       if (response.data && response.data.length > 0) {
         setSelectedSiteId(response.data[0].id);
@@ -53,9 +58,10 @@ export default function TicketWorkload() {
 
   const loadWorkloadData = async () => {
     if (!selectedSiteId) return;
-    setLoading(true);
-    const response = await workloadManagementApiService.getTeamWorkloadManagement(selectedSiteId);
-    if (response.success) {
+    const response = await withLoader(async () => {
+      return await workloadManagementApiService.getTeamWorkloadManagement(selectedSiteId);
+    });
+    if (response?.success) {
       setWorkloadData(response.data);
     } else {
       toast({
@@ -64,7 +70,6 @@ export default function TicketWorkload() {
         variant: "destructive",
       });
     }
-    setLoading(false);
   };
 
   const technicianWorkloads = workloadData?.technicians_workload || [];
@@ -220,8 +225,10 @@ export default function TicketWorkload() {
               </Select>
             </div>
 
-            {/* Assignee Overview */}
-            <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
+            <ContentContainer>
+              <LoaderOverlay />
+              {/* Assignee Overview */}
+              <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
               {technicianWorkloads.map((technician: any) => (
                 <Card key={technician.technician_id}>
                   <CardHeader className="pb-3">
@@ -394,6 +401,7 @@ export default function TicketWorkload() {
                 )}
               </CardContent>
             </Card>
+            </ContentContainer>
             </div>
           </main>
         </SidebarInset>
