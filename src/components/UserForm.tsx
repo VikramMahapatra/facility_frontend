@@ -126,6 +126,7 @@ export function UserForm({ user, open, onOpenChange, onSubmit, mode = "create" }
   const isReadOnly = mode === "view";
   const isTenant = accountType === "tenant";
   const isStaff = accountType === "staff";
+  const isOrganization = accountType === "organization";
 
   // Load lookup data when form opens 
   useEffect(() => {
@@ -285,71 +286,139 @@ export function UserForm({ user, open, onOpenChange, onSubmit, mode = "create" }
             />
           </div>
           
-          <div className="grid grid-cols-2 gap-4">
-            <Controller
-              name="status"
-              control={control}
-              render={({ field }) => (
-                <div className="space-y-2">
-                  <Label htmlFor="status">Status *</Label>
-                  <Select
-                    value={field.value || ""}
-                    onValueChange={field.onChange}
-                    disabled={isReadOnly}
-                  >
-                    <SelectTrigger className={errors.status ? 'border-red-500' : ''}>
-                      <SelectValue placeholder="Select status" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      {statusList.map((status) => (
-                        <SelectItem key={status.id} value={status.id}>
-                          {status.name}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                  {errors.status && (
-                    <p className="text-sm text-red-500">{errors.status.message}</p>
-                  )}
-                </div>
-              )}
-            />
+          {(isOrganization || isTenant || isStaff) ? (
+            <>
+              <Controller
+                name="status"
+                control={control}
+                render={({ field }) => (
+                  <div className="space-y-2">
+                    <Label htmlFor="status">Status *</Label>
+                    <Select
+                      value={field.value || ""}
+                      onValueChange={field.onChange}
+                      disabled={isReadOnly}
+                    >
+                      <SelectTrigger className={errors.status ? 'border-red-500' : ''}>
+                        <SelectValue placeholder="Select status" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {statusList.map((status) => (
+                          <SelectItem key={status.id} value={status.id}>
+                            {status.name}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                    {errors.status && (
+                      <p className="text-sm text-red-500">{errors.status.message}</p>
+                    )}
+                  </div>
+                )}
+              />
 
-            <Controller
-              name="account_type"
-              control={control}
-              render={({ field }) => (
-                <div className="space-y-2">
-                  <Label>Type *</Label>
-                  <Select
-                    value={field.value || ""}
-                    onValueChange={field.onChange}
-                    disabled={isReadOnly}
-                  >
-                    <SelectTrigger className="w-full">
-                      <SelectValue placeholder="Select your account type" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      {accountTypes.map((type) => (
-                        <SelectItem key={type.value} value={type.value}>
-                          <div className="flex items-center space-x-3">
-                            {type.icon}
-                            <div>
-                              <div className="font-medium">{type.label}</div>
-                              <div className="text-xs text-muted-foreground">{type.description}</div>
+              <Controller
+                name="account_type"
+                control={control}
+                render={({ field }) => (
+                  <div className="space-y-2">
+                    <Label>Type *</Label>
+                    <Select
+                      value={field.value || ""}
+                      onValueChange={field.onChange}
+                      disabled={isReadOnly}
+                    >
+                      <SelectTrigger className="w-full">
+                        <SelectValue placeholder="Select your account type" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {accountTypes.map((type) => (
+                          <SelectItem key={type.value} value={type.value}>
+                            <div className="flex items-center space-x-3">
+                              {type.icon}
+                              <div>
+                                <div className="font-medium">{type.label}</div>
+                                <div className="text-xs text-muted-foreground">{type.description}</div>
+                              </div>
                             </div>
-                          </div>
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                  {errors.account_type && (
-                    <p className="text-sm text-red-500">{errors.account_type.message}</p>
-                  )}
-                </div>
-              )}
-            />
-          </div>
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                    {errors.account_type && (
+                      <p className="text-sm text-red-500">{errors.account_type.message}</p>
+                    )}
+                  </div>
+                )}
+              />
+            </>
+          ) : (
+            <div className="grid grid-cols-2 gap-4">
+              <Controller
+                name="status"
+                control={control}
+                render={({ field }) => (
+                  <div className="space-y-2">
+                    <Label htmlFor="status">Status *</Label>
+                    <Select
+                      value={field.value || ""}
+                      onValueChange={field.onChange}
+                      disabled={isReadOnly}
+                    >
+                      <SelectTrigger className={errors.status ? 'border-red-500' : ''}>
+                        <SelectValue placeholder="Select status" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {statusList.map((status) => (
+                          <SelectItem key={status.id} value={status.id}>
+                            {status.name}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                    {errors.status && (
+                      <p className="text-sm text-red-500">{errors.status.message}</p>
+                    )}
+                  </div>
+                )}
+              />
+
+              <Controller
+                name="account_type"
+                control={control}
+                render={({ field }) => (
+                  <div className="space-y-2">
+                    <Label>Type *</Label>
+                    <Select
+                      value={field.value || ""}
+                      onValueChange={field.onChange}
+                      disabled={isReadOnly}
+                    >
+                      <SelectTrigger className="w-full">
+                        <SelectValue placeholder="Select your account type" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {accountTypes.map((type) => (
+                          <SelectItem key={type.value} value={type.value}>
+                            <div className="flex items-center space-x-3">
+                              {type.icon}
+                              <div>
+                                <div className="font-medium">{type.label}</div>
+                                <div className="text-xs text-muted-foreground">{type.description}</div>
+                              </div>
+                            </div>
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                    {errors.account_type && (
+                      <p className="text-sm text-red-500">{errors.account_type.message}</p>
+                    )}
+                  </div>
+                )}
+              />
+            </div>
+          )}
 
           {isTenant && (
             <>
