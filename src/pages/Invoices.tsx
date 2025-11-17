@@ -17,6 +17,9 @@ import { useToast } from "@/hooks/use-toast";
 import { InvoiceForm } from "@/components/InvoiceForm";
 import { useSkipFirstEffect } from "@/hooks/use-skipfirst-effect";
 import { useAuth } from "../context/AuthContext";
+import { useLoader } from "@/context/LoaderContext";
+import LoaderOverlay from "@/components/LoaderOverlay";
+import ContentContainer from "@/components/ContentContainer";
 
 
 
@@ -33,6 +36,7 @@ export default function Invoices() {
   const [isFormOpen, setIsFormOpen] = useState(false);
   const [deleteInvoiceId, setDeleteInvoiceId] = useState<string | null>(null);
   const { canRead, canWrite, canDelete } = useAuth();
+  const { withLoader } = useLoader();
   const resource = "invoices";
     const [invoiceOverview, setInvoiceOverview] = useState<InvoiceOverview>({
     totalInvoices: 0,
@@ -73,8 +77,10 @@ export default function Invoices() {
   }
 
   const loadInvoicesOverView = async () => {
-    const response = await invoiceApiService.getInvoiceOverview();
-    if (response.success) setInvoiceOverview(response.data || {});
+    const response = await withLoader(async () => {
+      return await invoiceApiService.getInvoiceOverview();
+    });
+    if (response?.success) setInvoiceOverview(response.data || {});
   }
 
   const loadInvoices = async () => {
@@ -88,9 +94,15 @@ export default function Invoices() {
     if (customerTypeFilter) params.append("kind", customerTypeFilter);
     params.append("skip", skip.toString());
     params.append("limit", limit.toString());
-    const response = await invoiceApiService.getInvoices(params);
-    if (response.success) setInvoices(response.data?.invoices || []);
-    setTotalItems(response.data?.total || 0);
+    
+    const response = await withLoader(async () => {
+      return await invoiceApiService.getInvoices(params);
+    });
+    
+    if (response?.success) {
+      setInvoices(response.data?.invoices || []);
+      setTotalItems(response.data?.total || 0);
+    }
   }
 
   const loadPayments = async () => {
@@ -101,15 +113,21 @@ export default function Invoices() {
     const params = new URLSearchParams();
     params.append("skip", skip.toString());
     params.append("limit", limit.toString());
-    const response = await invoiceApiService.getPayments(params);
-    if (response.success) setPayments(response.data?.payments || []);
-    const totalFromApi =
-      response.data?.totalpayments ??
-      response.data?.totalPayments ??
-      response.data?.total_payments ??
-      response.data?.total ??
-      (Array.isArray(response.data?.payments) ? response.data.payments.length : 0);
-    setTotalPaymentItems(totalFromApi || 0);
+    
+    const response = await withLoader(async () => {
+      return await invoiceApiService.getPayments(params);
+    });
+    
+    if (response?.success) {
+      setPayments(response.data?.payments || []);
+      const totalFromApi =
+        response.data?.totalpayments ??
+        response.data?.totalPayments ??
+        response.data?.total_payments ??
+        response.data?.total ??
+        (Array.isArray(response.data?.payments) ? response.data.payments.length : 0);
+      setTotalPaymentItems(totalFromApi || 0);
+    }
   }
 
 
@@ -227,10 +245,12 @@ export default function Invoices() {
               </div>
             </div>
 
-            <div className="space-y-6">
+            <ContentContainer>
+              <LoaderOverlay />
+              <div className="space-y-6">
 
-              {/* Summary Cards */}
-              <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+                {/* Summary Cards */}
+                <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
                 <Card>
                   <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
                     <CardTitle className="text-sm font-medium">Total Invoices</CardTitle>
@@ -441,7 +461,8 @@ export default function Invoices() {
                   />
                 </CardContent>
               </Card>
-            </div>
+              </div>
+            </ContentContainer>
           </div>
         </SidebarInset>
       </div>

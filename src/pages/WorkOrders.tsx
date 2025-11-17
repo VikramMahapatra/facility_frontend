@@ -58,6 +58,9 @@ import { siteApiService } from "@/services/spaces_sites/sitesapi";
 import { vendorsApiService } from "@/services/pocurments/vendorsapi";
 import { WorkOrder, WorkOrderOverview } from "@/interfaces/assets_interface";
 import { useAuth } from "../context/AuthContext";
+import { useLoader } from "@/context/LoaderContext";
+import LoaderOverlay from "@/components/LoaderOverlay";
+import ContentContainer from "@/components/ContentContainer";
   
 export default function WorkOrders() {
   const { toast } = useToast();
@@ -90,6 +93,7 @@ export default function WorkOrders() {
   const [spaceList, setSpaceList] = useState([]);
   const [vendorList, setVendorList] = useState([]);
   const { canRead, canWrite, canDelete } = useAuth();
+  const { withLoader } = useLoader();
   const resource = "work_orders"; 
   const [page, setPage] = useState(1);
   const [pageSize] = useState(6);
@@ -143,8 +147,12 @@ export default function WorkOrders() {
       params.append("status", selectedStatus);
     if (selectedPriority && selectedPriority !== "all")
       params.append("priority", selectedPriority);
-    const response = await workOrderApiService.getWorkOrderOverview(params);
-    if (response.success) setWorkOrderOverview(response.data || {});
+    
+    const response = await withLoader(async () => {
+      return await workOrderApiService.getWorkOrderOverview(params);
+    });
+    
+    if (response?.success) setWorkOrderOverview(response.data || {});
   };
 
   const loadStatusLookup = async () => {
@@ -201,10 +209,14 @@ export default function WorkOrders() {
     params.append("skip", skip.toString());
     params.append("limit", limit.toString());
 
-    const response = await workOrderApiService.getWorkOrders(params);
+    const response = await withLoader(async () => {
+      return await workOrderApiService.getWorkOrders(params);
+    });
 
-    setWorkOrders(response.data?.work_orders || []);
-    setTotalItems(response.data?.total || 0);
+    if (response?.success) {
+      setWorkOrders(response.data?.work_orders || []);
+      setTotalItems(response.data?.total || 0);
+    }
   };
 
   // Form handlers
@@ -299,225 +311,230 @@ export default function WorkOrders() {
               </Button>
             </div>
 
-            {/* Filters */}
-            <div className="flex flex-col sm:flex-row gap-4">
-              <div className="relative flex-1">
-                <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground w-4 h-4" />
-                <Input
-                  placeholder="Search work orders..."
-                  value={searchTerm}
-                  onChange={(e) => setSearchTerm(e.target.value)}
-                  className="pl-10"
+            <ContentContainer>
+              <LoaderOverlay />
+              <div className="space-y-6">
+                {/* Filters */}
+                <div className="flex flex-col sm:flex-row gap-4">
+                  <div className="relative flex-1">
+                    <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground w-4 h-4" />
+                    <Input
+                      placeholder="Search work orders..."
+                      value={searchTerm}
+                      onChange={(e) => setSearchTerm(e.target.value)}
+                      className="pl-10"
+                    />
+                  </div>
+                  <select
+                    value={selectedStatus}
+                    onChange={(e) => setSelectedStatus(e.target.value)}
+                    className="rounded-md border border-input bg-background px-3 py-2 text-sm w-[160px]"
+                  >
+                    <option value="all">All Status</option>
+                    {statusList.map((status) => (
+                      <option key={status.id} value={status.id}>
+                        {status.name}
+                      </option>
+                    ))}
+                  </select>
+                  <select
+                    value={selectedPriority}
+                    onChange={(e) => setSelectedPriority(e.target.value)}
+                    className="rounded-md border border-input bg-background px-3 py-2 text-sm w-[160px]"
+                  >
+                    <option value="all">All Priority</option>
+                    {priorityList.map((priority) => (
+                      <option key={priority.id} value={priority.id}>
+                        {priority.name}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+
+                {/* Stats Cards */}
+                <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+                  <Card>
+                    <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                      <CardTitle className="text-sm font-medium">
+                        Total Work Orders
+                      </CardTitle>
+                      <Wrench className="h-4 w-4 text-muted-foreground" />
+                    </CardHeader>
+                    <CardContent>
+                      <div className="text-2xl font-bold">
+                        {workOrderOverview.total}
+                      </div>
+                    </CardContent>
+                  </Card>
+                  <Card>
+                    <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                      <CardTitle className="text-sm font-medium">Open</CardTitle>
+                      <Clock className="h-4 w-4 text-muted-foreground" />
+                    </CardHeader>
+                    <CardContent>
+                      <div className="text-2xl font-bold">
+                        {workOrderOverview.open}
+                      </div>
+                    </CardContent>
+                  </Card>
+                  <Card>
+                    <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                      <CardTitle className="text-sm font-medium">
+                        In Progress
+                      </CardTitle>
+                      <Play className="h-4 w-4 text-muted-foreground" />
+                    </CardHeader>
+                    <CardContent>
+                      <div className="text-2xl font-bold">
+                        {workOrderOverview.in_progress}
+                      </div>
+                    </CardContent>
+                  </Card>
+                  <Card>
+                    <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                      <CardTitle className="text-sm font-medium">Overdue</CardTitle>
+                      <AlertTriangle className="h-4 w-4 text-muted-foreground" />
+                    </CardHeader>
+                    <CardContent>
+                      <div className="text-2xl font-bold">
+                        {workOrderOverview.overdue}
+                      </div>
+                    </CardContent>
+                  </Card>
+                </div>
+
+                {/* Work Orders Table */}
+                <Card>
+                  <CardHeader>
+                    <CardTitle>Work Orders</CardTitle>
+                    <CardDescription>
+                      Manage maintenance tasks and assignments
+                    </CardDescription>
+                  </CardHeader>
+                  <CardContent>
+                    <Table>
+                      <TableHeader>
+                        <TableRow>
+                          <TableHead>Work Order</TableHead>
+                          <TableHead>Asset/Location</TableHead>
+                          <TableHead>Type</TableHead>
+                          <TableHead>Priority</TableHead>
+                          <TableHead>Assigned To</TableHead>
+                          <TableHead>Due Date</TableHead>
+                          <TableHead>Status</TableHead>
+                          <TableHead>Actions</TableHead>
+                        </TableRow>
+                      </TableHeader>
+                      <TableBody>
+                        {workOrders.map((workOrder) => (
+                          <TableRow key={workOrder.id}>
+                            <TableCell>
+                              <div>
+                                <div className="font-medium">{workOrder.title}</div>
+                                <div className="text-sm text-muted-foreground">
+                                  #{workOrder.wo_no || workOrder.id}
+                                </div>
+                              </div>
+                            </TableCell>
+                            <TableCell>
+                              <div>
+                                <div className="font-medium">
+                                  {workOrder.asset_name || "No Asset"}
+                                </div>
+                                <div className="text-sm text-muted-foreground">
+                                  {getSpaceName(workOrder.space_id) || "No Location"}
+                                </div>
+                              </div>
+                            </TableCell>
+                            <TableCell>
+                              <Badge variant="outline">{workOrder.type}</Badge>
+                            </TableCell>
+                            <TableCell>
+                              <Badge
+                                variant={
+                                  workOrder.priority === "critical"
+                                    ? "destructive"
+                                    : workOrder.priority === "high"
+                                      ? "destructive"
+                                      : workOrder.priority === "medium"
+                                        ? "default"
+                                        : "secondary"
+                                }
+                              >
+                                {workOrder.priority}
+                              </Badge>
+                            </TableCell>
+                            <TableCell>
+                              <div className="flex items-center">
+                                <User className="w-4 h-4 mr-2" />
+                                {getVendorName(workOrder.assigned_to || "Unassigned")}
+                              </div>
+                            </TableCell>
+                            <TableCell>
+                              <div className="flex items-center">
+                                <Calendar className="w-4 h-4 mr-2" />
+                                {workOrder.due_at
+                                  ? new Date(workOrder.due_at).toLocaleDateString()
+                                  : "No Due Date"}
+                              </div>
+                            </TableCell>
+                            <TableCell>
+                              <Badge
+                                variant={
+                                  workOrder.status === "completed"
+                                    ? "default"
+                                    : workOrder.status === "in_progress"
+                                      ? "secondary"
+                                      : "outline"
+                                }
+                              >
+                                {workOrder.status.replace("_", " ")}
+                              </Badge>
+                            </TableCell>
+                            <TableCell>
+                              <div className="flex space-x-2">
+                                <Button
+                                  variant="ghost"
+                                  size="sm"
+                                  onClick={() => handleView(workOrder)}
+                                >
+                                  <Eye className="w-4 h-4" />
+                                </Button>
+                                {canWrite(resource) && <Button
+                                  variant="ghost"
+                                  size="sm"
+                                  onClick={() => handleEdit(workOrder)}
+                                >
+                                  <Edit className="w-4 h-4" />
+                                </Button>
+                                }
+                                {canDelete(resource) && <Button
+                                  variant="ghost"
+                                  size="sm"
+                                  className="text-destructive hover:text-destructive"
+                                  onClick={() => handleDelete(workOrder.id!)}
+                                >
+                                  <Trash2 className="w-4 h-4" />
+                                </Button>
+                                }
+                              </div>
+                            </TableCell>
+                          </TableRow>
+                        ))}
+                      </TableBody>
+                    </Table>
+                  </CardContent>
+                </Card>
+
+                {/* Pagination */}
+                <Pagination
+                  page={page}
+                  pageSize={pageSize}
+                  totalItems={totalItems}
+                  onPageChange={setPage}
                 />
               </div>
-              <select
-                value={selectedStatus}
-                onChange={(e) => setSelectedStatus(e.target.value)}
-                className="rounded-md border border-input bg-background px-3 py-2 text-sm w-[160px]"
-              >
-                <option value="all">All Status</option>
-                {statusList.map((status) => (
-                  <option key={status.id} value={status.id}>
-                    {status.name}
-                  </option>
-                ))}
-              </select>
-              <select
-                value={selectedPriority}
-                onChange={(e) => setSelectedPriority(e.target.value)}
-                className="rounded-md border border-input bg-background px-3 py-2 text-sm w-[160px]"
-              >
-                <option value="all">All Priority</option>
-                {priorityList.map((priority) => (
-                  <option key={priority.id} value={priority.id}>
-                    {priority.name}
-                  </option>
-                ))}
-              </select>
-            </div>
-
-            {/* Stats Cards */}
-            <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
-              <Card>
-                <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                  <CardTitle className="text-sm font-medium">
-                    Total Work Orders
-                  </CardTitle>
-                  <Wrench className="h-4 w-4 text-muted-foreground" />
-                </CardHeader>
-                <CardContent>
-                  <div className="text-2xl font-bold">
-                    {workOrderOverview.total}
-                  </div>
-                </CardContent>
-              </Card>
-              <Card>
-                <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                  <CardTitle className="text-sm font-medium">Open</CardTitle>
-                  <Clock className="h-4 w-4 text-muted-foreground" />
-                </CardHeader>
-                <CardContent>
-                  <div className="text-2xl font-bold">
-                    {workOrderOverview.open}
-                  </div>
-                </CardContent>
-              </Card>
-              <Card>
-                <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                  <CardTitle className="text-sm font-medium">
-                    In Progress
-                  </CardTitle>
-                  <Play className="h-4 w-4 text-muted-foreground" />
-                </CardHeader>
-                <CardContent>
-                  <div className="text-2xl font-bold">
-                    {workOrderOverview.in_progress}
-                  </div>
-                </CardContent>
-              </Card>
-              <Card>
-                <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                  <CardTitle className="text-sm font-medium">Overdue</CardTitle>
-                  <AlertTriangle className="h-4 w-4 text-muted-foreground" />
-                </CardHeader>
-                <CardContent>
-                  <div className="text-2xl font-bold">
-                    {workOrderOverview.overdue}
-                  </div>
-                </CardContent>
-              </Card>
-            </div>
-
-            {/* Work Orders Table */}
-            <Card>
-              <CardHeader>
-                <CardTitle>Work Orders</CardTitle>
-                <CardDescription>
-                  Manage maintenance tasks and assignments
-                </CardDescription>
-              </CardHeader>
-              <CardContent>
-                <Table>
-                  <TableHeader>
-                    <TableRow>
-                      <TableHead>Work Order</TableHead>
-                      <TableHead>Asset/Location</TableHead>
-                      <TableHead>Type</TableHead>
-                      <TableHead>Priority</TableHead>
-                      <TableHead>Assigned To</TableHead>
-                      <TableHead>Due Date</TableHead>
-                      <TableHead>Status</TableHead>
-                      <TableHead>Actions</TableHead>
-                    </TableRow>
-                  </TableHeader>
-                  <TableBody>
-                    {workOrders.map((workOrder) => (
-                      <TableRow key={workOrder.id}>
-                        <TableCell>
-                          <div>
-                            <div className="font-medium">{workOrder.title}</div>
-                            <div className="text-sm text-muted-foreground">
-                              #{workOrder.wo_no || workOrder.id}
-                            </div>
-                          </div>
-                        </TableCell>
-                        <TableCell>
-                          <div>
-                            <div className="font-medium">
-                              {workOrder.asset_name || "No Asset"}
-                            </div>
-                            <div className="text-sm text-muted-foreground">
-                              {getSpaceName(workOrder.space_id) || "No Location"}
-                            </div>
-                          </div>
-                        </TableCell>
-                        <TableCell>
-                          <Badge variant="outline">{workOrder.type}</Badge>
-                        </TableCell>
-                        <TableCell>
-                          <Badge
-                            variant={
-                              workOrder.priority === "critical"
-                                ? "destructive"
-                                : workOrder.priority === "high"
-                                  ? "destructive"
-                                  : workOrder.priority === "medium"
-                                    ? "default"
-                                    : "secondary"
-                            }
-                          >
-                            {workOrder.priority}
-                          </Badge>
-                        </TableCell>
-                        <TableCell>
-                          <div className="flex items-center">
-                            <User className="w-4 h-4 mr-2" />
-                            {getVendorName(workOrder.assigned_to || "Unassigned")}
-                          </div>
-                        </TableCell>
-                        <TableCell>
-                          <div className="flex items-center">
-                            <Calendar className="w-4 h-4 mr-2" />
-                            {workOrder.due_at
-                              ? new Date(workOrder.due_at).toLocaleDateString()
-                              : "No Due Date"}
-                          </div>
-                        </TableCell>
-                        <TableCell>
-                          <Badge
-                            variant={
-                              workOrder.status === "completed"
-                                ? "default"
-                                : workOrder.status === "in_progress"
-                                  ? "secondary"
-                                  : "outline"
-                            }
-                          >
-                            {workOrder.status.replace("_", " ")}
-                          </Badge>
-                        </TableCell>
-                        <TableCell>
-                          <div className="flex space-x-2">
-                            <Button
-                              variant="ghost"
-                              size="sm"
-                              onClick={() => handleView(workOrder)}
-                            >
-                              <Eye className="w-4 h-4" />
-                            </Button>
-                            {canWrite(resource) && <Button
-                              variant="ghost"
-                              size="sm"
-                              onClick={() => handleEdit(workOrder)}
-                            >
-                              <Edit className="w-4 h-4" />
-                            </Button>
-                            }
-                            {canDelete(resource) && <Button
-                              variant="ghost"
-                              size="sm"
-                              className="text-destructive hover:text-destructive"
-                              onClick={() => handleDelete(workOrder.id!)}
-                            >
-                              <Trash2 className="w-4 h-4" />
-                            </Button>
-                            }
-                          </div>
-                        </TableCell>
-                      </TableRow>
-                    ))}
-                  </TableBody>
-                </Table>
-              </CardContent>
-            </Card>
-
-            {/* Pagination */}
-            <Pagination
-              page={page}
-              pageSize={pageSize}
-              totalItems={totalItems}
-              onPageChange={setPage}
-            />
+            </ContentContainer>
           </div>
         </SidebarInset>
       </div>

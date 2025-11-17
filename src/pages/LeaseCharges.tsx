@@ -18,6 +18,10 @@ import { leaseChargeApiService } from "@/services/Leasing_Tenants/leasechargeapi
 import { LeaseChargeForm } from "@/components/LeaseChargeForm";
 import { useSkipFirstEffect } from "@/hooks/use-skipfirst-effect";
 import { useAuth } from "../context/AuthContext";
+import { useLoader } from "@/context/LoaderContext";
+import LoaderOverlay from "@/components/LoaderOverlay";
+import ContentContainer from "@/components/ContentContainer";
+import { Pagination } from "@/components/Pagination";
 
 type ChargeCode = "RENT" | "CAM" | "ELEC" | "WATER" | "PARK" | "PENALTY" | "MAINTENANCE" | string;
 
@@ -83,6 +87,7 @@ export default function LeaseCharges() {
   const [pageSize] = useState(6); // items per page
   const [totalItems, setTotalItems] = useState(0);
   const { canRead, canWrite, canDelete } = useAuth();
+  const { withLoader } = useLoader();
   const resource = "lease_charges"; // must match resource name from backend policies
 
 
@@ -137,8 +142,6 @@ export default function LeaseCharges() {
     const skip = (page - 1) * pageSize;
     const limit = pageSize;
 
-
-
     // build query params
     const params = new URLSearchParams();
     if (searchTerm) params.append("search", searchTerm);
@@ -147,9 +150,15 @@ export default function LeaseCharges() {
 
     params.append("skip", skip.toString());
     params.append("limit", limit.toString());
-    const response = await leaseChargeApiService.getLeaseCharges(params);
-    if (response.success) setLeaseCharges(response.data?.items || []);
-    setTotalItems(response.data?.total || 0);
+    
+    const response = await withLoader(async () => {
+      return await leaseChargeApiService.getLeaseCharges(params);
+    });
+    
+    if (response?.success) {
+      setLeaseCharges(response.data?.items || []);
+      setTotalItems(response.data?.total || 0);
+    }
   }
 
 
@@ -405,122 +414,137 @@ export default function LeaseCharges() {
               </div>
             </div>
 
-            {/* List */}
-            <div className="grid gap-6">
-              {
-                leaseCharges.length === 0 ? (
-                  <Card>
-                    <CardContent className="flex flex-col items-center justify-center py-16">
-                      <Receipt className="h-12 w-12 text-muted-foreground mb-4" />
-                      <h3 className="text-lg font-semibold mb-2">No charges found</h3>
-                      <p className="text-muted-foreground text-center mb-4">
-                        No charges match your current filters. Try adjusting your search criteria.
-                      </p>
-                      <Button onClick={handleCreate}>
-                        <Plus className="mr-2 h-4 w-4" />
-                        Add First Charge
-                      </Button>
-                    </CardContent>
-                  </Card>
-                ) : (
-                  leaseCharges.map((charge) => {
-                    const amount = Number(charge.amount) || 0;
-                    const taxPct = Number(charge.tax_pct) || 0;
-                    const taxAmount = amount * taxPct / 100;
-                    const totalAmount = amount + taxAmount;
+            <ContentContainer>
+              <LoaderOverlay />
+              {/* List */}
+              <div className="grid gap-6">
+                {
+                  leaseCharges.length === 0 ? (
+                    <Card>
+                      <CardContent className="flex flex-col items-center justify-center py-16">
+                        <Receipt className="h-12 w-12 text-muted-foreground mb-4" />
+                        <h3 className="text-lg font-semibold mb-2">No charges found</h3>
+                        <p className="text-muted-foreground text-center mb-4">
+                          No charges match your current filters. Try adjusting your search criteria.
+                        </p>
+                        <Button onClick={handleCreate}>
+                          <Plus className="mr-2 h-4 w-4" />
+                          Add First Charge
+                        </Button>
+                      </CardContent>
+                    </Card>
+                  ) : (
+                    leaseCharges.map((charge) => {
+                      const amount = Number(charge.amount) || 0;
+                      const taxPct = Number(charge.tax_pct) || 0;
+                      const taxAmount = amount * taxPct / 100;
+                      const totalAmount = amount + taxAmount;
 
-                    return (
-                      <Card key={charge.id} className="hover:shadow-md transition-shadow">
-                        <CardHeader>
-                          <div className="flex items-center justify-between">
-                            <div>
-                              <CardTitle className="text-lg flex items-center gap-2">
-                                <Badge className={getChargeCodeColor(charge.charge_code)}>
-                                  {charge.charge_code}
-                                </Badge>
-                                {getChargeCodeName(charge.charge_code)}
-                              </CardTitle>
-                              <CardDescription>
-                                Lease {charge.tenant_name} • {""}
-                                {new Date(charge.period_start).toLocaleDateString()} -{" "}
-                                {new Date(charge.period_end).toLocaleDateString()}
-                              </CardDescription>
-                            </div>
-                            <div className="flex items-center gap-2">
-                              <div className="text-right">
-                                <div className="text-lg font-bold">{formatCurrency(totalAmount)}</div>
-                                {charge.tax_pct > 0 && (
-                                  <div className="text-xs text-muted-foreground">+{charge.tax_pct}% tax</div>
-                                )}
-                              </div>
-                              <div className="flex gap-1">
-                                <Button variant="ghost" size="sm" onClick={() => { handleView(charge) }}>
-                                  <Eye className="h-4 w-4" />
-                                </Button>
-                                 {canWrite(resource) && <Button variant="ghost" size="sm" onClick={() => handleEdit(charge)}>
-                                  <Edit className="h-4 w-4" />
-                                </Button>
-                                  }
-                                {canDelete(resource) &&
-                                <Button variant="ghost" size="sm" onClick={() => setDeleteId(charge.id)}>
-                                  <Trash2 className="h-4 w-4" />
-                                </Button>
-                                 }
-                              </div>
-                            </div>
-                          </div>
-                        </CardHeader>
-                        <CardContent>
-                          <div className="grid gap-4 md:grid-cols-3">
-                            <div>
-                              <div className="text-sm font-medium text-muted-foreground">Base Amount</div>
-                              <div className="text-lg font-semibold">{formatCurrency(charge.amount)}</div>
-                            </div>
-
-                            {charge.tax_pct > 0 && (
+                      return (
+                        <Card key={charge.id} className="hover:shadow-md transition-shadow">
+                          <CardHeader>
+                            <div className="flex items-center justify-between">
                               <div>
-                                <div className="text-sm font-medium text-muted-foreground">Tax ({charge.tax_pct}%)</div>
-                                <div className="text-lg font-semibold">{formatCurrency(taxAmount)}</div>
+                                <CardTitle className="text-lg flex items-center gap-2">
+                                  <Badge className={getChargeCodeColor(charge.charge_code)}>
+                                    {charge.charge_code}
+                                  </Badge>
+                                  {getChargeCodeName(charge.charge_code)}
+                                </CardTitle>
+                                <CardDescription>
+                                  Lease {charge.tenant_name} • {""}
+                                  {new Date(charge.period_start).toLocaleDateString()} -{" "}
+                                  {new Date(charge.period_end).toLocaleDateString()}
+                                </CardDescription>
+                              </div>
+                              <div className="flex items-center gap-2">
+                                <div className="text-right">
+                                  <div className="text-lg font-bold">{formatCurrency(totalAmount)}</div>
+                                  {charge.tax_pct > 0 && (
+                                    <div className="text-xs text-muted-foreground">+{charge.tax_pct}% tax</div>
+                                  )}
+                                </div>
+                                <div className="flex gap-1">
+                                  <Button variant="ghost" size="sm" onClick={() => { handleView(charge) }}>
+                                    <Eye className="h-4 w-4" />
+                                  </Button>
+                                   {canWrite(resource) && <Button variant="ghost" size="sm" onClick={() => handleEdit(charge)}>
+                                    <Edit className="h-4 w-4" />
+                                  </Button>
+                                    }
+                                  {canDelete(resource) &&
+                                  <Button variant="ghost" size="sm" onClick={() => setDeleteId(charge.id)}>
+                                    <Trash2 className="h-4 w-4" />
+                                  </Button>
+                                   }
+                                </div>
+                              </div>
+                            </div>
+                          </CardHeader>
+                          <CardContent>
+                            <div className="grid gap-4 md:grid-cols-3">
+                              <div>
+                                <div className="text-sm font-medium text-muted-foreground">Base Amount</div>
+                                <div className="text-lg font-semibold">{formatCurrency(charge.amount)}</div>
+                              </div>
+
+                              {charge.tax_pct > 0 && (
+                                <div>
+                                  <div className="text-sm font-medium text-muted-foreground">Tax ({charge.tax_pct}%)</div>
+                                  <div className="text-lg font-semibold">{formatCurrency(taxAmount)}</div>
+                                </div>
+                              )}
+
+                              <div>
+                                <div className="text-sm font-medium text-muted-foreground">Period</div>
+                                <div className="text-sm">
+                                  {Math.ceil(
+                                    (new Date(charge.period_end).getTime() - new Date(charge.period_start).getTime()) /
+                                    (1000 * 60 * 60 * 24)
+                                  )}{" "}
+                                  days
+                                </div>
+                              </div>
+                            </div>
+
+                            {charge.metadata && (
+                              <div className="mt-4 p-3 bg-muted rounded-lg">
+                                <div className="text-sm font-medium mb-2">Details</div>
+                                {charge.metadata?.description && (
+                                  <div className="text-sm text-muted-foreground mb-1">{charge.metadata.description}</div>
+                                )}
+                                {charge.metadata?.units && charge.metadata?.rate && (
+                                  <div className="text-sm text-muted-foreground">
+                                    {charge.metadata.units} units × ₹{charge.metadata.rate} per unit
+                                  </div>
+                                )}
                               </div>
                             )}
 
-                            <div>
-                              <div className="text-sm font-medium text-muted-foreground">Period</div>
-                              <div className="text-sm">
-                                {Math.ceil(
-                                  (new Date(charge.period_end).getTime() - new Date(charge.period_start).getTime()) /
-                                  (1000 * 60 * 60 * 24)
-                                )}{" "}
-                                days
+                            {charge.created_at && (
+                              <div className="mt-4 text-xs text-muted-foreground">
+                                Generated on {new Date(charge.created_at).toLocaleDateString()}
                               </div>
-                            </div>
-                          </div>
+                            )}
+                          </CardContent>
+                        </Card>
+                      );
+                    })
+                  )}
+              </div>
 
-                          {charge.metadata && (
-                            <div className="mt-4 p-3 bg-muted rounded-lg">
-                              <div className="text-sm font-medium mb-2">Details</div>
-                              {charge.metadata?.description && (
-                                <div className="text-sm text-muted-foreground mb-1">{charge.metadata.description}</div>
-                              )}
-                              {charge.metadata?.units && charge.metadata?.rate && (
-                                <div className="text-sm text-muted-foreground">
-                                  {charge.metadata.units} units × ₹{charge.metadata.rate} per unit
-                                </div>
-                              )}
-                            </div>
-                          )}
-
-                          {charge.created_at && (
-                            <div className="mt-4 text-xs text-muted-foreground">
-                              Generated on {new Date(charge.created_at).toLocaleDateString()}
-                            </div>
-                          )}
-                        </CardContent>
-                      </Card>
-                    );
-                  })
-                )}
-            </div>
+              {/* Pagination */}
+              {leaseCharges.length > 0 && (
+                <div className="mt-4">
+                  <Pagination
+                    page={page}
+                    pageSize={pageSize}
+                    totalItems={totalItems}
+                    onPageChange={setPage}
+                  />
+                </div>
+              )}
+            </ContentContainer>
           </div>
         </SidebarInset>
       </div>

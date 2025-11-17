@@ -16,6 +16,9 @@ import { siteApiService } from "@/services/spaces_sites/sitesapi";
 import { parkingZoneApiService } from "@/services/parking_access/parkingzonesapi";
 import { useSkipFirstEffect } from "@/hooks/use-skipfirst-effect";
 import { useAuth } from "../context/AuthContext";
+import { useLoader } from "@/context/LoaderContext";
+import LoaderOverlay from "@/components/LoaderOverlay";
+import ContentContainer from "@/components/ContentContainer";
 export default function ParkingZones() {
   const { toast } = useToast();
   const [searchTerm, setSearchTerm] = useState("");
@@ -35,6 +38,7 @@ export default function ParkingZones() {
   const [pageSize] = useState(5); // items per page
   const [totalItems, setTotalItems] = useState(0);
   const { canRead, canWrite, canDelete } = useAuth();
+  const { withLoader } = useLoader();
   const resource = "parking_zones";
   useSkipFirstEffect(() => {
     loadParkingZone();
@@ -61,8 +65,10 @@ export default function ParkingZones() {
     const params = new URLSearchParams();
     if (searchTerm) params.append("search", searchTerm);
     if (selectedSite) params.append("site_id", selectedSite);
-    const response = await parkingZoneApiService.getParkingZoneOverview();
-    if (response.success) setParkingZoneOverview(response.data);
+    const response = await withLoader(async () => {
+      return await parkingZoneApiService.getParkingZoneOverview();
+    });
+    if (response?.success) setParkingZoneOverview(response.data);
   }
 
   const loadParkingZone = async () => {
@@ -75,14 +81,20 @@ export default function ParkingZones() {
     if (selectedSite) params.append("site_id", selectedSite);
     params.append("skip", skip.toString());
     params.append("limit", limit.toString());
-    const response = await parkingZoneApiService.getParkingZones(params);
-    setZones(response.data?.zones || []);
-    setTotalItems(response.data?.total || 0);
+    const response = await withLoader(async () => {
+      return await parkingZoneApiService.getParkingZones(params);
+    });
+    if (response?.success) {
+      setZones(response.data?.zones || []);
+      setTotalItems(response.data?.total || 0);
+    }
   }
 
   const loadSiteLookup = async () => {
-    const lookup = await siteApiService.getSiteLookup();
-    if (lookup.success) setSiteList(lookup.data || []);
+    const lookup = await withLoader(async () => {
+      return await siteApiService.getSiteLookup();
+    });
+    if (lookup?.success) setSiteList(lookup.data || []);
   }
 
   const handleCreate = () => {
@@ -180,118 +192,123 @@ const confirmDelete = async () => {
                 </Button>
               </div>
 
-              {/* Stats */}
-              <div className="grid gap-4 md:grid-cols-3">
-                <Card>
-                  <CardContent className="p-4">
-                    <div className="text-2xl font-bold text-sidebar-primary">{parkingZoneOverview.totalZones}</div>
-                    <p className="text-sm text-muted-foreground">Total Zones</p>
-                  </CardContent>
-                </Card>
-                <Card>
-                  <CardContent className="p-4">
-                    <div className="text-2xl font-bold text-blue-600">
-                      {parkingZoneOverview.totalCapacity}
+              <ContentContainer>
+                <LoaderOverlay />
+                <div className="space-y-6">
+                  {/* Stats */}
+                  <div className="grid gap-4 md:grid-cols-3">
+                    <Card>
+                      <CardContent className="p-4">
+                        <div className="text-2xl font-bold text-sidebar-primary">{parkingZoneOverview.totalZones}</div>
+                        <p className="text-sm text-muted-foreground">Total Zones</p>
+                      </CardContent>
+                    </Card>
+                    <Card>
+                      <CardContent className="p-4">
+                        <div className="text-2xl font-bold text-blue-600">
+                          {parkingZoneOverview.totalCapacity}
+                        </div>
+                        <p className="text-sm text-muted-foreground">Total Capacity</p>
+                      </CardContent>
+                    </Card>
+                    <Card>
+                      <CardContent className="p-4">
+                        <div className="text-2xl font-bold text-green-600">
+                          {parkingZoneOverview.avgCapacity}
+                        </div>
+                        <p className="text-sm text-muted-foreground">Avg. Capacity</p>
+                      </CardContent>
+                    </Card>
+                  </div>
+
+                  {/* Filters */}
+                  <div className="flex flex-wrap items-center gap-4">
+                    <div className="flex items-center gap-2">
+                      <Search className="h-4 w-4 text-muted-foreground" />
+                      <Input
+                        placeholder="Search zones..."
+                        value={searchTerm}
+                        onChange={(e) => setSearchTerm(e.target.value)}
+                        className="w-64"
+                      />
                     </div>
-                    <p className="text-sm text-muted-foreground">Total Capacity</p>
-                  </CardContent>
-                </Card>
-                <Card>
-                  <CardContent className="p-4">
-                    <div className="text-2xl font-bold text-green-600">
-                      {parkingZoneOverview.avgCapacity}
-                    </div>
-                    <p className="text-sm text-muted-foreground">Avg. Capacity</p>
-                  </CardContent>
-                </Card>
-              </div>
 
-              {/* Filters */}
-              <div className="flex flex-wrap items-center gap-4">
-                <div className="flex items-center gap-2">
-                  <Search className="h-4 w-4 text-muted-foreground" />
-                  <Input
-                    placeholder="Search zones..."
-                    value={searchTerm}
-                    onChange={(e) => setSearchTerm(e.target.value)}
-                    className="w-64"
-                  />
-                </div>
-
-                <select
-                  value={selectedSite}
-                  onChange={(e) => setSelectedSite(e.target.value)}
-                  className="rounded-md border border-input bg-background px-3 py-2 text-sm"
-                >
-                  <option value="all">All Sites</option>
-                  {siteList.map(site => (
-                    <option key={site.id} value={site.id}>{site.name}</option>
-                  ))}
-                </select>
-              </div>
-
-              {/* Table */}
-              <Card>
-                <CardHeader>
-                  <CardTitle>Parking Zones ({zones?.length || 0})</CardTitle>
-                </CardHeader>
-                <CardContent>
-                  <Table>
-                    <TableHeader>
-                      <TableRow>
-                        <TableHead>Zone Name</TableHead>
-                        <TableHead>Site</TableHead>
-                        <TableHead>Capacity</TableHead>
-                        <TableHead className="text-right">Actions</TableHead>
-                      </TableRow>
-                    </TableHeader>
-                    <TableBody>
-                      {zones.map((zone) => (
-                        <TableRow key={zone.id}>
-                          <TableCell className="font-medium">{zone.name}</TableCell>
-                          <TableCell>{zone.site_name}</TableCell>
-                          <TableCell>
-                            <Badge variant="outline">{zone.capacity} spots</Badge>
-                          </TableCell>
-                          <TableCell className="text-right">
-                            <div className="flex items-center justify-end gap-2">
-                              <Button size="sm" variant="outline" onClick={() => handleView(zone)}>
-                                <Eye className="h-3 w-3" />
-                              </Button>
-                              {canWrite(resource) && <Button size="sm" variant="outline" onClick={() => handleEdit(zone)}>
-                                <Edit className="h-3 w-3" />
-                              </Button>
-                              }
-                              {canDelete(resource) && <Button
-                                size="sm"
-                                variant="outline"
-                                className="text-destructive hover:text-destructive"
-                                onClick={() => handleDelete(zone.id)}
-                              >
-                                <Trash2 className="h-3 w-3" />
-                              </Button>
-                              }
-                            </div>
-                          </TableCell>
-                        </TableRow>
+                    <select
+                      value={selectedSite}
+                      onChange={(e) => setSelectedSite(e.target.value)}
+                      className="rounded-md border border-input bg-background px-3 py-2 text-sm"
+                    >
+                      <option value="all">All Sites</option>
+                      {siteList.map(site => (
+                        <option key={site.id} value={site.id}>{site.name}</option>
                       ))}
-                    </TableBody>
-                  </Table>
-                  <Pagination
+                    </select>
+                  </div>
+
+                  {/* Table */}
+                  <Card>
+                    <CardHeader>
+                      <CardTitle>Parking Zones ({zones?.length || 0})</CardTitle>
+                    </CardHeader>
+                    <CardContent>
+                      <Table>
+                        <TableHeader>
+                          <TableRow>
+                            <TableHead>Zone Name</TableHead>
+                            <TableHead>Site</TableHead>
+                            <TableHead>Capacity</TableHead>
+                            <TableHead className="text-right">Actions</TableHead>
+                          </TableRow>
+                        </TableHeader>
+                        <TableBody>
+                          {zones.map((zone) => (
+                            <TableRow key={zone.id}>
+                              <TableCell className="font-medium">{zone.name}</TableCell>
+                              <TableCell>{zone.site_name}</TableCell>
+                              <TableCell>
+                                <Badge variant="outline">{zone.capacity} spots</Badge>
+                              </TableCell>
+                              <TableCell className="text-right">
+                                <div className="flex items-center justify-end gap-2">
+                                  <Button size="sm" variant="outline" onClick={() => handleView(zone)}>
+                                    <Eye className="h-3 w-3" />
+                                  </Button>
+                                  {canWrite(resource) && <Button size="sm" variant="outline" onClick={() => handleEdit(zone)}>
+                                    <Edit className="h-3 w-3" />
+                                  </Button>
+                                  }
+                                  {canDelete(resource) && <Button
+                                    size="sm"
+                                    variant="outline"
+                                    className="text-destructive hover:text-destructive"
+                                    onClick={() => handleDelete(zone.id)}
+                                  >
+                                    <Trash2 className="h-3 w-3" />
+                                  </Button>
+                                  }
+                                </div>
+                              </TableCell>
+                            </TableRow>
+                          ))}
+                        </TableBody>
+                      </Table>
+                    <Pagination
                     page={page}
                     pageSize={pageSize}
                     totalItems={totalItems}
                     onPageChange={(newPage) => setPage(newPage)}
                   />
-                  {zones?.length === 0 && (
-                    <div className="text-center py-8">
-                      <Car className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
-                      <h3 className="text-lg font-semibold text-sidebar-primary mb-2">No zones found</h3>
-                      <p className="text-muted-foreground">Try adjusting your search criteria or add a new zone.</p>
-                    </div>
-                  )}
-                </CardContent>
-              </Card>
+                    {zones?.length === 0 && (
+                      <div className="text-center py-8">
+                        <Car className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
+                        <h3 className="text-lg font-semibold text-sidebar-primary mb-2">No zones found</h3>
+                        <p className="text-muted-foreground">Try adjusting your search criteria or add a new zone.</p>
+                      </div>
+                    )}
+                  </CardContent>
+                </Card>
+                </div>
+              </ContentContainer>
             </div>
           </main>
         </SidebarInset>
