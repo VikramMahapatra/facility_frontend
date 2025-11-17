@@ -481,7 +481,7 @@ export default function TicketForm({
 
       <div className="flex gap-2 pt-4">
         <Button type="submit" className="flex-1" disabled={isSubmitting}>
-          {isSubmitting ? "Submitting " : initialData ? "Update" : "Create"}
+          {isSubmitting ? "Submitting..." : initialData ? "Update Tenant" : "Create Tenant"}
         </Button>
         <Button
           type="button"

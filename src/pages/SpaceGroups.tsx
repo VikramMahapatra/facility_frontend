@@ -7,7 +7,7 @@ import { Input } from "@/components/ui/input";
 import { PropertySidebar } from "@/components/PropertySidebar";
 import { SidebarProvider, SidebarInset, SidebarTrigger } from "@/components/ui/sidebar";
 import { SpaceGroupForm } from "@/components/SpaceGroupForm";
-import { useToast } from "@/hooks/use-toast";
+import { toast } from "sonner";
 import { Pagination } from "@/components/Pagination";
 import { spaceGroupsApiService } from "@/services/spaces_sites/spacegroupsapi";
 import { siteApiService } from "@/services/spaces_sites/sitesapi";
@@ -33,7 +33,6 @@ export interface SpaceGroup {
 }
 
 export default function SpaceGroups() {
-  const { toast } = useToast();
   const [groups, setGroups] = useState<SpaceGroup[]>([]);
   const [searchTerm, setSearchTerm] = useState("");
   const [selectedKind, setSelectedKind] = useState<string>("all");
@@ -158,19 +157,21 @@ export default function SpaceGroups() {
     setDeleteSpaceGroupId(id);
   };
 
- // In SpaceGroup.tsx - Replace the confirmDelete function
-const confirmDelete = async () => {
-  if (deleteSpaceGroupId) {
-    let response;   
-      response = await spaceGroupsApiService.deleteSpaceGroup(deleteSpaceGroupId);
+  const confirmDelete = async () => {
+    if (deleteSpaceGroupId) {
+      const response = await spaceGroupsApiService.deleteSpaceGroup(deleteSpaceGroupId);
       if (response.success) {
         const authResponse = response.data;
         if (authResponse?.success) {
+          // Success - refresh data
           loadSpaceGroups();
           setDeleteSpaceGroupId(null);
-          toast({ title: "Group Deleted", description: "Space group removed successfully." });
+          toast.success("The space group has been removed successfully.");
         } else {
-          toast({ title: "Cannot delete group", description: authResponse?.message, variant: "destructive" });
+          // Show error popup from backend
+          toast.error(`Cannot Delete Space Group\n${authResponse?.message || "Unknown error"}`, {
+            style: { whiteSpace: "pre-line" },
+          });
         }
       }
     }
@@ -200,10 +201,9 @@ const confirmDelete = async () => {
 
     if (response.success) {
       setShowForm(false);
-      toast({
-        title: formMode === "create" ? "Group Created" : "Group Updated",
-        description: `Group ${data.name} has been ${formMode === "create" ? "created" : "updated"} successfully.`,
-      });
+      toast.success(
+        `Group ${data.name} has been ${formMode === "create" ? "created" : "updated"} successfully.`
+      );
     }
     return response;
   };

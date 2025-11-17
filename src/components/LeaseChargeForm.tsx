@@ -4,7 +4,7 @@ import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
 import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { useToast } from "@/hooks/use-toast";
+import { toast } from "sonner";
 import { leasesApiService } from "@/services/Leasing_Tenants/leasesapi";
 import { Controller, useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
@@ -54,7 +54,6 @@ const emptyFormData: Partial<LeaseCharge> = {
 };
 
 export function LeaseChargeForm({ charge, isOpen, onClose, onSave, mode }: LeaseChargeFormProps) {
-  const { toast } = useToast();
   const {
     register,
     handleSubmit,
@@ -121,9 +120,9 @@ export function LeaseChargeForm({ charge, isOpen, onClose, onSave, mode }: Lease
       updated_at: new Date().toISOString(),
     };
     try {
-      onSave(payload);
+      await onSave(payload);
     } catch (error) {
-      toast({ title: "Failed to save lease charge", variant: "destructive" });
+      toast.error("Failed to save lease charge");
     }
   };
 
@@ -248,7 +247,9 @@ export function LeaseChargeForm({ charge, isOpen, onClose, onSave, mode }: Lease
               {mode === "view" ? "Close" : "Cancel"}
             </Button>
             {mode !== "view" && (
-              <Button type="submit" disabled={!isValid || isSubmitting}>{mode === "create" ? "Create Charge" : "Update Charge"}</Button>
+              <Button type="submit" disabled={isSubmitting}>
+                {isSubmitting ? "Saving..." : mode === "create" ? "Create Charge" : "Update Charge"}
+              </Button>
             )}
           </DialogFooter>
         </form>

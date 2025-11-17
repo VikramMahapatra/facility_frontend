@@ -13,7 +13,7 @@ import { PropertySidebar } from "@/components/PropertySidebar";
 import { invoiceApiService } from "@/services/financials/invoicesapi";
 import { Invoice, Payment, InvoiceOverview } from "@/interfaces/invoices_interfaces";
 import { Pagination } from "@/components/Pagination";
-import { useToast } from "@/hooks/use-toast";
+import { toast } from "sonner";
 import { InvoiceForm } from "@/components/InvoiceForm";
 import { useSkipFirstEffect } from "@/hooks/use-skipfirst-effect";
 import { useAuth } from "../context/AuthContext";
@@ -25,7 +25,6 @@ import ContentContainer from "@/components/ContentContainer";
 
 
 export default function Invoices() {
-  const { toast } = useToast();
   const [searchTerm, setSearchTerm] = useState("");
   const [statusFilter, setStatusFilter] = useState("all");
   const [customerTypeFilter, setCustomerTypeFilter] = useState("all");
@@ -179,11 +178,20 @@ export default function Invoices() {
   const confirmDelete = async () => {
     if (deleteInvoiceId) {
       const response = await invoiceApiService.deleteInvoice(deleteInvoiceId);
-      if (response.success) { 
+      if (response.success) {
+        const authResponse = response.data;
+        if (authResponse?.success) {
+          // Success - refresh data
           updateInvoicesPage();
           loadInvoicesOverView();
           setDeleteInvoiceId(null);
-          toast({ title: "Invoice Deleted", description: "Invoice has been deleted successfully." });
+          toast.success("The invoice has been removed successfully.");
+        } else {
+          // Show error popup from backend
+          toast.error(`Cannot Delete Invoice\n${authResponse?.message || "Unknown error"}`, {
+            style: { whiteSpace: "pre-line" },
+          });
+        }
       }
     }
   };
@@ -216,10 +224,9 @@ export default function Invoices() {
 
     if (response.success) {
       setIsFormOpen(false);
-      toast({
-        title: formMode === 'create' ? "Invoice Created" : "Invoice Updated",
-        description: `Invoice ${invoiceData.invoice_no} has been ${formMode === 'create' ? 'created' : 'updated'} successfully.`,
-      });
+      toast.success(
+        `Invoice ${invoiceData.invoice_no} has been ${formMode === 'create' ? 'created' : 'updated'} successfully.`
+      );
     }
     return response;
   };

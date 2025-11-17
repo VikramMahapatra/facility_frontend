@@ -197,7 +197,7 @@ export function WorkOrderForm({
       onClose();
     } catch (error) {
       reset(undefined, { keepErrors: true, keepValues: true });
-      toast("Failed to save work order");
+      toast.error("Failed to save work order");
     }
   };
 
@@ -520,7 +520,7 @@ export function WorkOrderForm({
               {mode === "view" ? "Close" : "Cancel"}
             </Button>
             {mode !== "view" && (
-              <Button type="submit" disabled={!isValid || isSubmitting}>
+              <Button type="submit" disabled={isSubmitting}>
                 {isSubmitting ? "Saving..." : mode === "create" ? "Create Work Order" : "Update Work Order"}
               </Button>
             )}

@@ -201,7 +201,7 @@ export function PMTemplateForm({
       onClose();
     } catch (error) {
       reset(undefined, { keepErrors: true, keepValues: true });
-      toast("Failed to save PM template");
+      toast.error("Failed to save PM template");
     }
   };
 
@@ -512,7 +512,7 @@ export function PMTemplateForm({
               {mode === "view" ? "Close" : "Cancel"}
             </Button>
             {mode !== "view" && (
-              <Button type="submit" disabled={!isValid || isSubmitting}>
+              <Button type="submit" disabled={isSubmitting}>
                 {isSubmitting ? "Saving..." : mode === "create" ? "Create Template" : "Update Template"}
               </Button>
             )}

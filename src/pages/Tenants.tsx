@@ -12,7 +12,7 @@ import { Plus, Search, Filter, Edit, Eye, Trash2, Users, Building2, Mail, Phone,
 import { tenantsApiService } from "@/services/Leasing_Tenants/tenantsapi";
 import { Tenant, TenantOverview } from "@/interfaces/leasing_tenants_interface";
 import { useSkipFirstEffect } from "@/hooks/use-skipfirst-effect";
-import { useToast } from "@/hooks/use-toast";
+import { toast } from "sonner";
 import { Pagination } from "@/components/Pagination";
 import { TenantForm } from "@/components/TenantForm";
 import { useAuth } from "../context/AuthContext";
@@ -21,7 +21,6 @@ import LoaderOverlay from "@/components/LoaderOverlay";
 import ContentContainer from "@/components/ContentContainer";
 
 const Tenants = () => {
-  const { toast } = useToast();
   const [searchTerm, setSearchTerm] = useState("");
   const [selectedStatus, setSelectedStatus] = useState<string>("all");
   const [selectedType, setSelectedType] = useState<string>("all");
@@ -137,13 +136,22 @@ const Tenants = () => {
 
   const confirmDelete = async () => {
     if (deleteTenantId) {
-      const response = await tenantsApiService.deleteTenant(deleteTenantId);       
-        if (response.success) {
+      const response = await tenantsApiService.deleteTenant(deleteTenantId);
+      
+      if (response.success) {
+        const authResponse = response.data;
+        if (authResponse?.success) {
+          // Success - refresh data
           await loadTenants();
           await loadTenantOverview();
           setDeleteTenantId(null);
-          toast({ title: "Tenant Deleted", description: "The tenant has been removed successfully." });
-        
+          toast.success("The tenant has been removed successfully.");
+        } else {
+          // Show error popup from backend
+          toast.error(`Cannot Delete Tenant\n${authResponse?.message || "Unknown error"}`, {
+            style: { whiteSpace: "pre-line" },
+          });
+        }
       }
     }
   };
@@ -172,11 +180,9 @@ const Tenants = () => {
 
     if (response?.success) {
       setIsFormOpen(false);
-      toast({
-        title: formMode === "create" ? "Tenant Created" : "Tenant Updated",
-        description: `Tenant ${tenantData.name} has been ${formMode === "create" ? "created" : "updated"
-          } successfully.`,
-      });
+      toast.success(
+        `Tenant ${tenantData.name} has been ${formMode === "create" ? "created" : "updated"} successfully.`
+      );
     }
     return response;
   };

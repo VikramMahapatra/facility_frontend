@@ -366,12 +366,12 @@ export function InvoiceForm({ invoice, isOpen, onClose, onSave, mode }: InvoiceF
 
                     {/* Footer */}
                     <DialogFooter>
-                        <Button type="button" variant="outline" onClick={onClose}>
+                        <Button type="button" variant="outline" onClick={onClose} disabled={isSubmitting}>
                             {mode === "view" ? "Close" : "Cancel"}
                         </Button>
                         {mode !== "view" && (
-                            <Button type="submit" disabled={!isValid || isSubmitting}>
-                                {mode === "create" ? "Create Invoice" : "Update Invoice"}
+                            <Button type="submit" disabled={isSubmitting}>
+                                {isSubmitting ? "Saving..." : mode === "create" ? "Create Invoice" : "Update Invoice"}
                             </Button>
                         )}
                     </DialogFooter>
