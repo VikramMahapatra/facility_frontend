@@ -26,7 +26,7 @@ export default function TicketDetail() {
   const [employeeList, setEmployeeList] = useState<any[]>([]);
   const [attachments, setAttachments] = useState<any[]>([]);
   
-  const workflows = ticket?.workflows || []; 
+  const workflows = ticket?.logs || ticket?.workflows || []; 
   const comments = ticket?.comments || [];
   const workOrders = mockTicketWorkOrders.filter((w) => w.ticket_id === parseInt(ticketId || "0"));
 
