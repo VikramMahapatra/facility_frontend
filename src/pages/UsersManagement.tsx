@@ -41,6 +41,7 @@ interface User {
   email: string;
   phone?: string;
   status: string;
+  account_type: string;
   created_at: string;
   updated_at: string;
   roles?: Role[];
@@ -176,6 +177,19 @@ const handleUpdateUser = async (values: any) => {
       .slice(0, 2);
   };
 
+  const getTypeBadge = (status: string) => {
+    status = status.toLowerCase();
+    const variants = {
+      tenant: "default",
+      flatowner: "default",
+      vendor: "default",
+      staff: "secondary",
+      organization: "destructive"
+    } as const;
+
+    return <Badge variant={variants[status as keyof typeof variants] || "outline"}>{status}</Badge>;
+  };
+
   return (
     <SidebarProvider>
       <div className="min-h-screen flex w-full bg-background">
@@ -231,6 +245,7 @@ const handleUpdateUser = async (values: any) => {
                         <TableHeader>
                           <TableRow>
                             <TableHead>User</TableHead>
+                            <TableHead>Type</TableHead>
                             <TableHead>Contact</TableHead>
                             <TableHead>Roles</TableHead>
                             <TableHead>Status</TableHead>
@@ -269,6 +284,9 @@ const handleUpdateUser = async (values: any) => {
                                     </div>
                                   </div>
                                 </TableCell>
+                                <TableCell>
+                                  {getTypeBadge(user.account_type)}
+                                </TableCell>
                                 <TableCell className="text-muted-foreground">
                                   {user.phone}
                                 </TableCell>
@@ -287,8 +305,8 @@ const handleUpdateUser = async (values: any) => {
                                       user.status === "active"
                                         ? "default"
                                         : user.status === "pending_approval"
-                                        ? "secondary"
-                                        : "outline"
+                                          ? "secondary"
+                                          : "outline"
                                     }
                                   >
                                     {user.status === "pending_approval"

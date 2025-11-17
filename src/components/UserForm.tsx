@@ -21,6 +21,8 @@ import {
 import { Checkbox } from "@/components/ui/checkbox";
 import { userManagementApiService } from "@/services/access_control/usermanagementapi";
 import { UserFormValues, userSchema } from "@/schemas/user.schema";
+import { Building2, Truck, UserCog, Users } from "lucide-react";
+import PhoneInput from "react-phone-input-2";
 
 // Define interfaces for API data
 interface User {
@@ -29,6 +31,7 @@ interface User {
   full_name: string;
   email: string;
   phone?: string;
+  account_type: string;
   status: string;
   created_at: string;
   updated_at: string;
@@ -55,8 +58,36 @@ const emptyFormData: UserFormValues = {
   email: "",
   phone: "",
   status: "active",
+  account_type: "organization",
   role_ids: [],
 };
+
+const accountTypes = [
+  {
+    value: "organization",
+    label: "Organization",
+    description: "Property owners and facility managers",
+    icon: <Building2 className="w-5 h-5" />
+  },
+  {
+    value: "staff",
+    label: "Staff",
+    description: "manages the sites of properties",
+    icon: <UserCog className="w-5 h-5" />
+  },
+  {
+    value: "tenant",
+    label: "Tenant",
+    description: "Renters and occupants of properties",
+    icon: <Users className="w-5 h-5" />
+  },
+  {
+    value: "vendor",
+    label: "Vendor",
+    description: "Service providers and contractors",
+    icon: <Truck className="w-5 h-5" />
+  },
+];
 
 export function UserForm({ user, open, onOpenChange, onSubmit, mode = "create" }: UserFormProps) {
   const {
@@ -167,26 +198,68 @@ export function UserForm({ user, open, onOpenChange, onSubmit, mode = "create" }
               render={({ field }) => (
                 <div className="space-y-2">
                   <Label htmlFor="phone">Phone</Label>
-                  <Input
-                    id="phone"
+                  <PhoneInput
+                    country={'in'}
                     value={field.value || ""}
-                    onChange={(e) => {
-                      const value = e.target.value.replace(/\D/g, '').slice(0, 10);
-                      field.onChange(value);
+                    onChange={(value) => {
+                      const digits = value.replace(/\D/g, "");
+                      const finalValue = "+" + digits;
+                      console.log("cleaned no :", finalValue);
+                      field.onChange(finalValue);
                     }}
-                    placeholder="9876543210"
-                    maxLength={10}
                     disabled={isReadOnly}
-                    className={errors.phone ? 'border-red-500' : ''}
+                    inputProps={{
+                      name: 'phone',
+                      required: true,
+                    }}
+                    containerClass="w-full relative"
+                    inputClass="!w-full !h-10 !pl-12 !rounded-md !border !border-input !bg-background !px-3 !py-2 !text-base !ring-offset-background placeholder:!text-muted-foreground focus-visible:!outline-none focus-visible:!ring-2 focus-visible:!ring-ring focus-visible:!ring-offset-2 disabled:!cursor-not-allowed disabled:!opacity-50 md:!text-sm"
+                    buttonClass="!border-none !bg-transparent !absolute !left-2 !top-1/2 !-translate-y-1/2 z-10"
+                    dropdownClass="!absolute !z-50 !bg-white !border !border-gray-200 !rounded-md !shadow-lg max-h-60 overflow-y-auto"
+                    enableSearch={true}
                   />
                   {errors.phone && (
                     <p className="text-sm text-red-500">{errors.phone.message}</p>
                   )}
                 </div>
+
               )}
             />
           </div>
-
+          <Controller
+            name="account_type"
+            control={control}
+            render={({ field }) => (
+              <div className="space-y-2">
+                <Label>Type *</Label>
+                <Select
+                  value={field.value || ""}
+                  onValueChange={field.onChange}
+                  disabled={isReadOnly}
+                >
+                  <SelectTrigger>
+                    <SelectValue placeholder="Select your account type" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {accountTypes.map((type) => (
+                      <SelectItem key={type.value} value={type.value}>
+                        <div className="flex items-center space-x-3">
+                          {type.icon}
+                          <div>
+                            <div className="font-medium">{type.label}</div>
+                            <div className="text-xs text-muted-foreground">{type.description}</div>
+                          </div>
+                        </div>
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+                {errors.account_type && (
+                  <p className="text-sm text-red-500">{errors.account_type.message}</p>
+                )}
+              </div>
+            )}
+          />
           <Controller
             name="status"
             control={control}
@@ -215,6 +288,7 @@ export function UserForm({ user, open, onOpenChange, onSubmit, mode = "create" }
               </div>
             )}
           />
+
 
           <Controller
             name="role_ids"
