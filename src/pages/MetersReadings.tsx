@@ -37,7 +37,7 @@ import { mockMeters, mockMeterReadings } from "@/data/mockEnergyData";
 import { BulkUploadDialog } from "@/components/BulkUploadDialog";
 import { MeterForm } from "@/components/MeterForm";
 import { MeterReadingForm } from "@/components/MeterReadingForm";
-import { toast } from "@/hooks/use-toast";
+import { toast } from "sonner";
 import {
   Meter,
   MeterReading,
@@ -227,7 +227,7 @@ export default function MetersReadings() {
     setIsMeterFormOpen(true);
   };
 
-const onSaveMeter = async (meterData: Partial<Meter>) => {
+  const onSaveMeter = async (meterData: Partial<Meter>) => {
     let response;
     if (meterFormMode === 'create') {
       response = await meterReadingApiService.addMeter(meterData);
@@ -238,10 +238,7 @@ const onSaveMeter = async (meterData: Partial<Meter>) => {
     if (response?.success) {
       setIsMeterFormOpen(false);
       updateMeterTab();
-      toast({
-        title: "Success",
-        description: `Meter ${meterFormMode === "create" ? "created" : "updated"} successfully.`,
-      });
+      toast.success(`Meter has been ${meterFormMode === "create" ? "created" : "updated"} successfully.`);
     }
   };
 
@@ -288,12 +285,9 @@ const onSaveMeter = async (meterData: Partial<Meter>) => {
     }
   }
 
-  if (response.success) {
+  if (response?.success) {
     setIsMeterReadingFormOpen(false);
-    toast({
-      title: "Success",
-      description: `Meter reading ${meterReadingFormMode === "create" ? "added" : "updated"} successfully.`,
-    });
+    toast.success(`Meter reading has been ${meterReadingFormMode === "create" ? "added" : "updated"} successfully.`);
   }
   return response;
 };
@@ -305,12 +299,13 @@ const onSaveMeter = async (meterData: Partial<Meter>) => {
   const confirmDeleteReading = async () => {
     if (deleteReadingId) {
       const response = await meterReadingApiService.deleteMeterReading(deleteReadingId);
-      if (response.success) {
+      if (response?.success) {
         await loadMeterReadings();
         setDeleteReadingId(null);
-        toast({
-          title: "Deleted",
-          description: `Meter reading has been deleted successfully.`,
+        toast.success("The meter reading has been removed successfully.");
+      } else {
+        toast.error(`Cannot Delete Meter Reading\n${response?.message || "Unknown error"}`, {
+          style: { whiteSpace: "pre-line" },
         });
       }
     }

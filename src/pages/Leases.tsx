@@ -12,7 +12,7 @@ import {
   AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent,
   AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle
 } from "@/components/ui/alert-dialog";
-import { useToast } from "@/hooks/use-toast";
+import { toast } from "sonner";
 import { Pagination } from "@/components/Pagination";
 import { siteApiService } from "@/services/spaces_sites/sitesapi";
 import { leasesApiService } from "@/services/Leasing_Tenants/leasesapi";
@@ -24,7 +24,6 @@ import LoaderOverlay from "@/components/LoaderOverlay";
 import ContentContainer from "@/components/ContentContainer";
 
 export default function Leases() {
-  const { toast } = useToast();
 
   const [searchTerm, setSearchTerm] = useState("");
   const [selectedKind, setSelectedKind] = useState<string>("all");
@@ -138,11 +137,13 @@ export default function Leases() {
       const authResponse = response.data;
       if (authResponse?.success) {
         setLeases((prev) => prev.filter((l) => l.id !== deleteLeaseId));
-        toast({ title: "Lease Deleted", description: "Lease has been deleted successfully." });
+        toast.success("The lease has been removed successfully.");
         setDeleteLeaseId(null);
         updateLeasePage();
       } else {
-        toast({ title: "Cannot delete lease", description: authResponse?.message, variant: "destructive" });
+        toast.error(`Cannot Delete Lease\n${authResponse?.message || "Unknown error"}`, {
+          style: { whiteSpace: "pre-line" },
+        });
       }
     }
   };
@@ -172,7 +173,9 @@ export default function Leases() {
 
     if (response?.success) {
       setIsFormOpen(false);
-      toast({ title: formMode === "create" ? "Lease Created" : "Lease Updated" });
+      toast.success(
+        `Lease has been ${formMode === "create" ? "created" : "updated"} successfully.`
+      );
     }
     return response;
   };

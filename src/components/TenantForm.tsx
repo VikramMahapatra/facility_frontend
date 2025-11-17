@@ -17,7 +17,7 @@ import {
   DialogTitle,
   DialogFooter,
 } from "@/components/ui/dialog";
-import { useToast } from "@/hooks/use-toast";
+import { toast } from "sonner";
 import { Controller, useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { tenantSchema, TenantFormValues } from "@/schemas/tenant.schema";
@@ -67,7 +67,6 @@ export function TenantForm({
   onSave,
   mode,
 }: TenantFormProps) {
-  const { toast } = useToast();
   const {
     register,
     handleSubmit,
@@ -222,9 +221,9 @@ export function TenantForm({
       }),
     };
     try {
-      onSave(payload);
+      await onSave(payload);
     } catch (error) {
-      toast({ title: "Failed to save tenant", variant: "destructive" });
+      toast.error("Failed to save tenant");
     }
   };
 
@@ -541,8 +540,8 @@ export function TenantForm({
               {mode === "view" ? "Close" : "Cancel"}
             </Button>
             {mode !== "view" && (
-              <Button type="submit" disabled={(mode === "create" ? !canSubmitCreate : false) || isSubmitting}>
-                {mode === "create" ? "Create Tenant" : "Update Tenant"}
+              <Button type="submit" disabled={isSubmitting}>
+                {isSubmitting ? "Saving..." : mode === "create" ? "Create Tenant" : "Update Tenant"}
               </Button>
             )}
           </DialogFooter>

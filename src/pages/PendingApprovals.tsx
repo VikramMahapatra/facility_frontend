@@ -152,44 +152,43 @@ export default function PendingApprovals() {
             </div>
           </header>
 
-          <main className="flex-1 p-6 overflow-auto">
+          <main className="relative  flex-1 p-6 overflow-auto">
             <div className="max-w-7xl mx-auto space-y-6">
-              <ContentContainer>
-                <LoaderOverlay />
-                <div className="space-y-6">
-                  <div className="flex items-center justify-between">
-                    <div>
-                      <h1 className="text-3xl font-bold text-foreground">Pending Approvals</h1>
-                      <p className="text-muted-foreground mt-1">
-                        Review and approve new user registration requests
+              <div className="flex items-center justify-between">
+                <div>
+                  <h1 className="text-3xl font-bold text-foreground">Pending Approvals</h1>
+                  <p className="text-muted-foreground mt-1">
+                    Review and approve new user registration requests
+                  </p>
+                </div>
+                <Badge variant="secondary" className="text-lg px-4 py-2">
+                  {users.length} Pending
+                </Badge>
+              </div>
+
+              <Card>
+                <CardHeader>
+                  <CardTitle>User Approval Queue</CardTitle>
+                  <CardDescription>
+                    Users awaiting approval to access the system
+                  </CardDescription>
+                </CardHeader>
+                <CardContent>
+                  {users.length === 0 ? (
+                    <div className="text-center py-12">
+                      <Check className="h-16 w-16 text-muted-foreground mx-auto mb-4" />
+                      <h3 className="text-lg font-medium text-foreground mb-2">
+                        All Caught Up!
+                      </h3>
+                      <p className="text-muted-foreground">
+                        No pending user approvals at this time
                       </p>
                     </div>
-                    <Badge variant="secondary" className="text-lg px-4 py-2">
-                      {users.length} Pending
-                    </Badge>
-                  </div>
-
-                  <Card>
-                    <CardHeader>
-                      <CardTitle>User Approval Queue</CardTitle>
-                      <CardDescription>
-                        Users awaiting approval to access the system
-                      </CardDescription>
-                    </CardHeader>
-                    <CardContent>
-                      {users.length === 0 ? (
-                        <div className="text-center py-12">
-                          <Check className="h-16 w-16 text-muted-foreground mx-auto mb-4" />
-                          <h3 className="text-lg font-medium text-foreground mb-2">
-                            All Caught Up!
-                          </h3>
-                          <p className="text-muted-foreground">
-                            No pending user approvals at this time
-                          </p>
-                        </div>
-                      ) : (
-                        <div className="rounded-md border">
-                          <Table>
+                  ) : (
+                    <div className="relative rounded-md border">
+                      <ContentContainer>
+                        <LoaderOverlay />
+                        <Table>
                             <TableHeader>
                               <TableRow>
                                 <TableHead>User</TableHead>
@@ -267,18 +266,22 @@ export default function PendingApprovals() {
                               })}
                             </TableBody>
                           </Table>
-                        <Pagination
-                          page={page}
-                          pageSize={pageSize}
-                          totalItems={totalItems}
-                          onPageChange={setPage}
-                        />
-                      </div>
-                      )}
-                    </CardContent>
-                  </Card>
-                </div>
-              </ContentContainer>
+                      </ContentContainer>
+                    </div>
+                  )}
+
+                  {users.length > 0 && (
+                    <div className="mt-4">
+                      <Pagination
+                        page={page}
+                        pageSize={pageSize}
+                        totalItems={totalItems}
+                        onPageChange={setPage}
+                      />
+                    </div>
+                  )}
+                </CardContent>
+              </Card>
             </div>
           </main>
         </div>

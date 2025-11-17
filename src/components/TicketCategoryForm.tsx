@@ -221,7 +221,7 @@ export default function TicketCategoryForm({ onSubmit, onCancel, initialData }: 
 
       <div className="flex gap-2 pt-4">
         <Button type="submit" className="flex-1" disabled={isSubmitting}>
-          {isSubmitting ? "Submitting..." : initialData ? "Update" : "Create"}
+          {isSubmitting ? "Submitting..." : initialData ? "Update Ticket Category" : "Create Ticket Category"}
         </Button>
         <Button type="button" variant="outline" onClick={onCancel} className="flex-1" disabled={isSubmitting}>
           Cancel

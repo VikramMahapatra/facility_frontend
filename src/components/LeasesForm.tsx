@@ -17,7 +17,7 @@ import {
   DialogTitle,
   DialogFooter,
 } from "@/components/ui/dialog";
-import { useToast } from "@/hooks/use-toast";
+import { toast } from "sonner";
 import { Controller, useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { leaseSchema, LeaseFormValues } from "@/schemas/lease.schema";
@@ -50,7 +50,6 @@ const EMPTY: Partial<Lease> = {
 };
 
 export function LeaseForm({ lease, isOpen, onClose, onSave, mode }: LeaseFormProps) {
-  const { toast } = useToast();
   const {
     register,
     handleSubmit,
@@ -182,9 +181,9 @@ export function LeaseForm({ lease, isOpen, onClose, onSave, mode }: LeaseFormPro
       updated_at: new Date().toISOString(),
     };
     try {
-      onSave(payload);
+      await onSave(payload);
     } catch (error) {
-      toast({ title: "Failed to save lease", variant: "destructive" });
+      toast.error("Failed to save lease");
     }
   };
 

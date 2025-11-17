@@ -83,7 +83,7 @@ export function SpaceGroupForm({ group, isOpen, onClose, onSave, mode }: Props) 
       onClose();
     } catch (error) {
       reset(undefined, { keepErrors: true, keepValues: true });
-      toast("Failed to save space group");
+      toast.error("Failed to save space group");
     }
   };
 
@@ -223,8 +223,8 @@ export function SpaceGroupForm({ group, isOpen, onClose, onSave, mode }: Props) 
               {isView ? "Close" : "Cancel"}
             </Button>
             {!isView && (
-              <Button type="submit" disabled={!isValid || isSubmitting}>
-                {isSubmitting ? "Saving..." : mode === "create" ? "Create" : "Save"}
+              <Button type="submit" disabled={isSubmitting}>
+                {isSubmitting ? "Saving..." : mode === "create" ? "Create Space Group " : "Update Space Group"}
               </Button>
             )}
           </DialogFooter>

@@ -120,47 +120,46 @@ export default function RolesManagement() {
             <SidebarTrigger />
           </header>
 
-          <main className="flex-1 p-6 overflow-auto">
+          <main className="relative  flex-1 p-6 overflow-auto">
             <div className="max-w-7xl mx-auto space-y-6">
-              <ContentContainer>
-                <LoaderOverlay />
-                <div className="space-y-6">
-                  <div className="flex items-center justify-between">
-                    <div>
-                      <h1 className="text-3xl font-bold text-foreground">Roles Management</h1>
-                      <p className="text-muted-foreground mt-1">
-                        Create and manage user roles for your organization
-                      </p>
+              <div className="flex items-center justify-between">
+                <div>
+                  <h1 className="text-3xl font-bold text-foreground">Roles Management</h1>
+                  <p className="text-muted-foreground mt-1">
+                    Create and manage user roles for your organization
+                  </p>
+                </div>
+                <Button onClick={() => handleCreate()}>
+                  <Plus className="h-4 w-4 mr-2" />
+                  Create Role
+                </Button>
+              </div>
+
+              <Card>
+                <CardHeader>
+                  <CardTitle>All Roles</CardTitle>
+                  <CardDescription>
+                    Define roles that can be assigned to users
+                  </CardDescription>
+                </CardHeader>
+                <CardContent>
+                  <div className="mb-4">
+                    <div className="relative">
+                      <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                      <Input
+                        type="text"
+                        placeholder="Search roles..."
+                        value={searchTerm}
+                        onChange={(e) => setSearchTerm(e.target.value)}
+                        className="pl-10"
+                      />
                     </div>
-                    <Button onClick={() => handleCreate()}>
-                      <Plus className="h-4 w-4 mr-2" />
-                      Create Role
-                    </Button>
                   </div>
 
-                  <Card>
-                    <CardHeader>
-                      <CardTitle>All Roles</CardTitle>
-                      <CardDescription>
-                        Define roles that can be assigned to users
-                      </CardDescription>
-                    </CardHeader>
-                    <CardContent>
-                      <div className="mb-4">
-                        <div className="relative">
-                          <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-                          <Input
-                            type="text"
-                            placeholder="Search roles..."
-                            value={searchTerm}
-                            onChange={(e) => setSearchTerm(e.target.value)}
-                            className="pl-10"
-                          />
-                        </div>
-                      </div>
-
-                      <div className="rounded-md border">
-                        <Table>
+                  <div className="relative rounded-md border">
+                    <ContentContainer>
+                      <LoaderOverlay />
+                      <Table>
                           <TableHeader>
                             <TableRow>
                               <TableHead>Role Name</TableHead>
@@ -209,21 +208,20 @@ export default function RolesManagement() {
                             )}
                           </TableBody>
                         </Table>
-                      </div>
+                    </ContentContainer>
+                  </div>
 
-                      {/* Pagination */}
-                      <div className="mt-4">
-                        <Pagination
-                          page={page}
-                          pageSize={pageSize}
-                          totalItems={totalItems}
-                          onPageChange={setPage}
-                        />
-                      </div>
-                    </CardContent>
-                  </Card>
-                </div>
-              </ContentContainer>
+                  {/* Pagination */}
+                  <div className="mt-4">
+                    <Pagination
+                      page={page}
+                      pageSize={pageSize}
+                      totalItems={totalItems}
+                      onPageChange={setPage}
+                    />
+                  </div>
+                </CardContent>
+              </Card>
             </div>
             
             <RoleForm

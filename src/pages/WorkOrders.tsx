@@ -49,7 +49,7 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
-import { useToast } from "@/hooks/use-toast";
+import { toast } from "sonner";
 import { Pagination } from "@/components/Pagination";
 import { workOrderApiService } from "@/services/maintenance_assets/workorderapi";
 import { spacesApiService } from "@/services/spaces_sites/spacesapi";
@@ -63,7 +63,6 @@ import LoaderOverlay from "@/components/LoaderOverlay";
 import ContentContainer from "@/components/ContentContainer";
   
 export default function WorkOrders() {
-  const { toast } = useToast();
   const [searchTerm, setSearchTerm] = useState("");
   const [selectedStatus, setSelectedStatus] = useState<string>("all");
   const [selectedPriority, setSelectedPriority] = useState<string>("all");
@@ -248,14 +247,15 @@ export default function WorkOrders() {
       if (response?.success) {
         const authResponse = response.data;
         if (authResponse?.success) {
+          // Success - refresh data
           updateWorkOrderPage();
           setDeleteWorkOrderId(null);
-          toast({
-            title: "Work Order Deleted",
-            description: "Work order has been deleted successfully.",
-          });
+          toast.success("The work order has been removed successfully.");
         } else {
-          toast({ title: "Cannot Delete Work Order", description: authResponse?.message, variant: "destructive" });
+          // Show error popup from backend
+          toast.error(`Cannot Delete Work Order\n${authResponse?.message || "Unknown error"}`, {
+            style: { whiteSpace: "pre-line" },
+          });
         }
       }
     }
@@ -286,10 +286,9 @@ export default function WorkOrders() {
 
     if (response.success) {
       setIsFormOpen(false);
-      toast({
-        title: formMode === "create" ? "Work Order Created" : "Work Order Updated",
-        description: `Work order ${workOrderData.title} has been ${formMode === "create" ? "created" : "updated"} successfully.`,
-      });
+      toast.success(
+        `Work order ${workOrderData.title} has been ${formMode === "create" ? "created" : "updated"} successfully.`
+      );
     }
     return response;
   };

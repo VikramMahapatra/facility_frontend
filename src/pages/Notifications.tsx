@@ -160,32 +160,29 @@ export default function Notifications() {
       <div className="flex min-h-screen w-full">
         <PropertySidebar />
         
-        <main className="flex-1 p-6 bg-background">
+        <main className="relative  flex-1 p-6 bg-background">
           <div className="max-w-6xl mx-auto space-y-6">
-            <ContentContainer>
-              <LoaderOverlay />
-              <div className="space-y-6">
-                <div className="flex items-center justify-between">
-                  <div>
-                    <h1 className="text-3xl font-bold text-foreground">Notifications</h1>
-                    <p className="text-muted-foreground mt-2">
-                      Manage your system notifications and preferences
-                    </p>
-                  </div>
-                  <div className="flex items-center gap-2">
-                    {unreadCount > 0 && (
-                      <Badge variant="secondary" className="mr-2">
-                        {unreadCount} unread
-                      </Badge>
-                    )}
-                    <Button variant="outline" onClick={markAllAsRead} disabled={unreadCount === 0}>
-                      Mark All Read
-                    </Button>
-                    <Button variant="destructive" onClick={clearAllNotifications} disabled={notifications.length === 0}>
-                      Clear All
-                    </Button>
-                  </div>
-                </div>
+            <div className="flex items-center justify-between">
+              <div>
+                <h1 className="text-3xl font-bold text-foreground">Notifications</h1>
+                <p className="text-muted-foreground mt-2">
+                  Manage your system notifications and preferences
+                </p>
+              </div>
+              <div className="flex items-center gap-2">
+                {unreadCount > 0 && (
+                  <Badge variant="secondary" className="mr-2">
+                    {unreadCount} unread
+                  </Badge>
+                )}
+                <Button variant="outline" onClick={markAllAsRead} disabled={unreadCount === 0}>
+                  Mark All Read
+                </Button>
+                <Button variant="destructive" onClick={clearAllNotifications} disabled={notifications.length === 0}>
+                  Clear All
+                </Button>
+              </div>
+            </div>
 
             <Tabs defaultValue="notifications" className="space-y-6">
               <TabsList className="grid w-full grid-cols-2">
@@ -205,69 +202,74 @@ export default function Notifications() {
                   />
                 </div>
 
-                {notifications.length === 0 ? (
-                  <Card>
-                    <CardContent className="flex flex-col items-center justify-center py-12">
-                      <Bell className="h-12 w-12 text-muted-foreground mb-4" />
-                      <h3 className="text-lg font-medium text-foreground mb-2">No notifications</h3>
-                      <p className="text-muted-foreground text-center max-w-sm">
-                        You're all caught up! New notifications will appear here when they arrive.
-                      </p>
-                    </CardContent>
-                  </Card>
-                ) : (
-                  <div className="space-y-3">
-                    {notifications.map((notification) => (
-                      <Card key={notification.id} className={`transition-all hover:shadow-md ${!notification.read ? 'border-l-4 border-l-primary bg-muted/30' : ''}`}>
-                        <CardContent className="p-4">
-                          <div className="flex items-start gap-4">
-                            <div className="flex-shrink-0 mt-1">
-                              {getNotificationIcon(notification.type)}
-                            </div>
-                            
-                            <div className="flex-1 min-w-0">
-                              <div className="flex items-center gap-2 mb-1">
-                                <h4 className={`font-medium ${!notification.read ? 'text-foreground' : 'text-muted-foreground'}`}>
-                                  {notification.title}
-                                </h4>
-                                {getPriorityBadge(notification.priority)}
-                              </div>
-                              
-                              <p className="text-sm text-muted-foreground mb-2">
-                                {notification.message}
-                              </p>
-                              
-                              <p className="text-xs text-muted-foreground">
-                                {notification.timestamp}
-                              </p>
-                            </div>
-                            
-                            <div className="flex items-center gap-2">
-                              {!notification.read && (
-                                <Button
-                                  variant="ghost"
-                                  size="sm"
-                                  onClick={() => markAsRead(notification.id)}
-                                  className="text-xs"
-                                >
-                                  Mark Read
-                                </Button>
-                              )}
-                              <Button
-                                variant="ghost"
-                                size="sm"
-                                onClick={() => deleteNotification(notification.id)}
-                                className="text-destructive hover:text-destructive"
-                              >
-                                <Trash2 className="h-4 w-4" />
-                              </Button>
-                            </div>
-                          </div>
+                <div className="relative rounded-md border">
+                  <ContentContainer>
+                    <LoaderOverlay />
+                    {notifications.length === 0 ? (
+                      <Card>
+                        <CardContent className="flex flex-col items-center justify-center py-12">
+                          <Bell className="h-12 w-12 text-muted-foreground mb-4" />
+                          <h3 className="text-lg font-medium text-foreground mb-2">No notifications</h3>
+                          <p className="text-muted-foreground text-center max-w-sm">
+                            You're all caught up! New notifications will appear here when they arrive.
+                          </p>
                         </CardContent>
                       </Card>
-                    ))}
-                  </div>
-                )}
+                    ) : (
+                      <div className="space-y-3 p-4">
+                        {notifications.map((notification) => (
+                          <Card key={notification.id} className={`transition-all hover:shadow-md ${!notification.read ? 'border-l-4 border-l-primary bg-muted/30' : ''}`}>
+                            <CardContent className="p-4">
+                              <div className="flex items-start gap-4">
+                                <div className="flex-shrink-0 mt-1">
+                                  {getNotificationIcon(notification.type)}
+                                </div>
+                                
+                                <div className="flex-1 min-w-0">
+                                  <div className="flex items-center gap-2 mb-1">
+                                    <h4 className={`font-medium ${!notification.read ? 'text-foreground' : 'text-muted-foreground'}`}>
+                                      {notification.title}
+                                    </h4>
+                                    {getPriorityBadge(notification.priority)}
+                                  </div>
+                                  
+                                  <p className="text-sm text-muted-foreground mb-2">
+                                    {notification.message}
+                                  </p>
+                                  
+                                  <p className="text-xs text-muted-foreground">
+                                    {notification.timestamp}
+                                  </p>
+                                </div>
+                                
+                                <div className="flex items-center gap-2">
+                                  {!notification.read && (
+                                    <Button
+                                      variant="ghost"
+                                      size="sm"
+                                      onClick={() => markAsRead(notification.id)}
+                                      className="text-xs"
+                                    >
+                                      Mark Read
+                                    </Button>
+                                  )}
+                                  <Button
+                                    variant="ghost"
+                                    size="sm"
+                                    onClick={() => deleteNotification(notification.id)}
+                                    className="text-destructive hover:text-destructive"
+                                  >
+                                    <Trash2 className="h-4 w-4" />
+                                  </Button>
+                                </div>
+                              </div>
+                            </CardContent>
+                          </Card>
+                        ))}
+                      </div>
+                    )}
+                  </ContentContainer>
+                </div>
 
                 {/* Pagination */}
                 {notifications.length > 0 && (
@@ -307,8 +309,6 @@ export default function Notifications() {
                 </Card>
               </TabsContent>
             </Tabs>
-              </div>
-            </ContentContainer>
           </div>
         </main>
       </div>
