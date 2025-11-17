@@ -216,19 +216,33 @@ export default function ServiceRequest() {
     let response;
     if (formMode === 'create') {
       response = await serviceRequestApiService.addServiceRequest(serviceRequestData);
+
+      if (response.success)
+        updateServiceRequestPage();
     } else if (formMode === 'edit' && selectedServiceRequest) {
-      const updatedServiceRequest = { ...selectedServiceRequest, ...serviceRequestData };
+      const updatedServiceRequest = {
+        ...selectedServiceRequest,
+        ...serviceRequestData,
+        updated_at: new Date().toISOString(),
+      };
       response = await serviceRequestApiService.updateServiceRequest(updatedServiceRequest);
+
+      if (response.success) {
+        // Update the edited service request in local state
+        setServiceRequest((prev) =>
+          prev.map((sr) => (sr.id === updatedServiceRequest.id ? updatedServiceRequest : sr))
+        );
+      }
     }
 
-    if (response?.success) {
+    if (response.success) {
       setIsFormOpen(false);
       toast({
         title: formMode === 'create' ? "Service Request Created" : "Service Request Updated",
         description: `Service Request (${serviceRequestData.category || ''}) has been ${formMode === 'create' ? 'created' : 'updated'} successfully.`,
       });
-      updateServiceRequestPage();
     }
+    return response;
   };
 
   return (
