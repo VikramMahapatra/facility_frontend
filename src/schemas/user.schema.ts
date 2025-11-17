@@ -7,7 +7,10 @@ export const userSchema = z.object({
   status: z.string().min(1, "Status is required"),
   account_type: z.string().min(1, "Type is required"),
   role_ids: z.array(z.string()).min(1, "At least one role must be selected"),
+  site_id: z.string().optional(),
+  building_id: z.string().optional(),
+  space_id: z.string().optional(),
+  site_ids: z.array(z.string()).optional(),
 });
 
 export type UserFormValues = z.infer<typeof userSchema>;
-
