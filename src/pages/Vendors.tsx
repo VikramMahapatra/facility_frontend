@@ -148,22 +148,33 @@ const confirmDelete = async () => {
   let response;
   if (formMode === "create") {
     response = await vendorsApiService.addVendor(vendorData);
+
+    if (response.success)
+      updateVendorsPage();
   } else if (formMode === "edit" && selectedVendor) {
     const updatedVendor = {
       ...selectedVendor,
-      ...vendorData
+      ...vendorData,
+      updated_at: new Date().toISOString(),
     };
     response = await vendorsApiService.updateVendor(updatedVendor);
+
+    if (response.success) {
+      // Update the edited vendor in local state
+      setVendors((prev) =>
+        prev.map((v) => (v.id === updatedVendor.id ? updatedVendor : v))
+      );
+    }
   }
 
-  if (response?.success) {
+  if (response.success) {
     setIsCreateDialogOpen(false);
-    updateVendorsPage();
     toast({
       title: formMode === "create" ? "Vendor Created" : "Vendor Updated",
       description: `Vendor ${vendorData.name || ""} has been ${formMode === "create" ? "created" : "updated"} successfully.`,
     });
   }
+  return response;
 };
 
   const getStatusBadge = (status: string) => {

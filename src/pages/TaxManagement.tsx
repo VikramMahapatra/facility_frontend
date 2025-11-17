@@ -141,20 +141,36 @@ export default function TaxManagement() {
     let response;
     if (formMode === 'create') {
       response = await taxCodeApiService.addTaxCode(taxCodeData);
+
+      if (response.success) {
+        updateTaxPage();
+        loadTaxOverView();
+      }
     } else if (formMode === 'edit' && selectedTaxCode) {
-      const updatedSpace = { ...selectedTaxCode, ...taxCodeData };
-      response = await taxCodeApiService.updateTaxCode(updatedSpace);
+      const updatedTaxCode = {
+        ...selectedTaxCode,
+        ...taxCodeData,
+        updated_at: new Date().toISOString(),
+      };
+      response = await taxCodeApiService.updateTaxCode(updatedTaxCode);
+
+      if (response.success) {
+        // Update the edited tax code in local state
+        setTaxCodes((prev) =>
+          prev.map((tc) => (tc.id === updatedTaxCode.id ? updatedTaxCode : tc))
+        );
+        loadTaxOverView();
+      }
     }
 
-    if (response?.success) {
+    if (response.success) {
       setIsFormOpen(false);
       toast({
-        title: formMode === 'create' ? "Space Created" : "Space Updated",
+        title: formMode === 'create' ? "Tax Code Created" : "Tax Code Updated",
         description: `Tax code ${taxCodeData.code} has been ${formMode === 'create' ? 'created' : 'updated'} successfully.`,
       });
-      updateTaxPage();
-      loadTaxOverView();
     }
+    return response;
   };
 
   return (

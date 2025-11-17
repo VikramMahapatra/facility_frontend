@@ -132,12 +132,30 @@ export default function Assets() {
     }
   };
 
-  const handleSave = async (values: Partial<Asset>) => {
+ const handleSave = async (values: Partial<Asset>) => {
     let response;
     if (formMode === 'create') {
       response = await assetApiService.addAsset(values);
+
+      if (response.success) {
+        updateAssetPage();
+        loadAssetOverView();
+      }
     } else if (formMode === 'edit' && selectedAsset) {
-      response = await assetApiService.updateAsset({ ...selectedAsset, ...values });
+      const updatedAsset = {
+        ...selectedAsset,
+        ...values,
+        updated_at: new Date().toISOString(),
+      };
+      response = await assetApiService.updateAsset(updatedAsset);
+
+      if (response.success) {
+        // Update the edited asset in local state
+        setAssets((prev) =>
+          prev.map((a) => (a.id === updatedAsset.id ? updatedAsset : a))
+        );
+        loadAssetOverView();
+      }
     }
 
     if (response.success) {
@@ -146,9 +164,8 @@ export default function Assets() {
         title: formMode === 'create' ? "Asset Created" : "Asset Updated",
         description: `Asset ${values.name || selectedAsset?.name || ''} saved successfully.`,
       });
-      updateAssetPage();
-      loadAssetOverView();
     }
+    return response;
   };
 
   const getStatusBadge = (status: string) => {

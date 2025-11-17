@@ -146,24 +146,36 @@ const confirmDelete = async () => {
   let response;
   if (formMode === "create") {
     response = await visitorApiService.addVisitor(visitorData);
+
+    if (response.success) {
+      updateVisitorPage();
+      loadVisitorOverView();
+    }
   } else if (formMode === "edit" && selectedVisitor) {
     const updatedLog = {
       ...selectedVisitor,
       ...visitorData,
       updated_at: new Date().toISOString(),
-    }
+    };
     response = await visitorApiService.updateVisitor(updatedLog);
+
+    if (response.success) {
+      // Update the edited visitor in local state
+      setVisitors((prev) =>
+        prev.map((v) => (v.id === updatedLog.id ? updatedLog : v))
+      );
+      loadVisitorOverView();
+    }
   }
 
-  if (response?.success) {
+  if (response.success) {
     setIsFormOpen(false);
-    updateVisitorPage();
-    loadVisitorOverView();
     toast({
       title: formMode === "create" ? "Visitor Added" : "Visitor Updated",
       description: `Visitor "${visitorData.name}" has been ${formMode === "create" ? "added" : "updated"} successfully.`,
     });
   }
+  return response;
 };
 
   return (

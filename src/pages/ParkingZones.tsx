@@ -133,24 +133,36 @@ const confirmDelete = async () => {
   let response;
   if (formMode === "create") {
     response = await parkingZoneApiService.addParkingZone(zoneData);
+
+    if (response.success) {
+      updateParkingZonePage();
+      loadParkingZoneOverView();
+    }
   } else if (formMode === "edit" && selectedZone) {
     const updatedZone = {
       ...selectedZone,
       ...zoneData,
       updated_at: new Date().toISOString(),
-    }
+    };
     response = await parkingZoneApiService.updateParkingZone(updatedZone);
+
+    if (response.success) {
+      // Update the edited zone in local state
+      setZones((prev) =>
+        prev.map((z) => (z.id === updatedZone.id ? updatedZone : z))
+      );
+      loadParkingZoneOverView();
+    }
   }
 
-  if (response?.success) {
+  if (response.success) {
     setIsFormOpen(false);
-    updateParkingZonePage();
-    loadParkingZoneOverView();
     toast({
       title: formMode === "create" ? "Zone Created" : "Zone Updated",
       description: `Parking zone "${zoneData.name}" has been ${formMode === "create" ? "created" : "updated"} successfully.`,
     });
   }
+  return response;
 };
 
   return (

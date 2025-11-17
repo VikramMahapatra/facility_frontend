@@ -138,20 +138,34 @@ export default function Leases() {
     }
   };
 
-  const handleSave = async (leaseData: Partial<Lease>) => {
+ const handleSave = async (leaseData: Partial<Lease>) => {
     let response;
     if (formMode === "create") {
       response = await leasesApiService.addLease(leaseData);
+
+      if (response.success)
+        updateLeasePage();
     } else if (formMode === "edit" && selectedLease) {
-      const updated = { ...selectedLease, ...leaseData };
+      const updated = {
+        ...selectedLease,
+        ...leaseData,
+        updated_at: new Date().toISOString(),
+      };
       response = await leasesApiService.updateLease(updated);
+
+      if (response.success) {
+        // Update the edited lease in local state
+        setLeases((prev) =>
+          prev.map((l) => (l.id === updated.id ? updated : l))
+        );
+      }
     }
 
     if (response?.success) {
       setIsFormOpen(false);
       toast({ title: formMode === "create" ? "Lease Created" : "Lease Updated" });
-      updateLeasePage();
     }
+    return response;
   };
 
   const getStatusColor = (status?: string) => {

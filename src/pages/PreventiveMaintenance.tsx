@@ -240,19 +240,33 @@ export default function PreventiveMaintenance() {
     let response;
     if (formMode === "create") {
       response = await preventiveMaintenanceApiService.addPreventiveMaintenance(templateData);
+
+      if (response.success)
+        updateTemplatePage();
     } else if (formMode === "edit" && selectedTemplate) {
-      const updatedTemplate = { ...selectedTemplate, ...templateData };
+      const updatedTemplate = {
+        ...selectedTemplate,
+        ...templateData,
+        updated_at: new Date().toISOString(),
+      };
       response = await preventiveMaintenanceApiService.updatePreventiveMaintenance(updatedTemplate);
+
+      if (response.success) {
+        // Update the edited template in local state
+        setTemplates((prev) =>
+          prev.map((t) => (t.id === updatedTemplate.id ? updatedTemplate : t))
+        );
+      }
     }
 
-    if (response?.success) {
+    if (response.success) {
       setIsFormOpen(false);
       toast({
         title: formMode === "create" ? "PM Template Created" : "PM Template Updated",
         description: `PM template ${templateData.name} has been ${formMode === "create" ? "created" : "updated"} successfully.`,
       });
-      updateTemplatePage();
     }
+    return response;
   };
 
   const getStatusColor = (status: string) => {

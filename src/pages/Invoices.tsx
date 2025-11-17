@@ -174,20 +174,36 @@ export default function Invoices() {
     let response;
     if (formMode === 'create') {
       response = await invoiceApiService.addInvoice(invoiceData);
+
+      if (response.success) {
+        updateInvoicesPage();
+        loadInvoicesOverView();
+      }
     } else if (formMode === 'edit' && selectedInvoice) {
-      const updatedInvoice = { ...selectedInvoice, ...invoiceData };
+      const updatedInvoice = {
+        ...selectedInvoice,
+        ...invoiceData,
+        updated_at: new Date().toISOString(),
+      };
       response = await invoiceApiService.updateInvoice(updatedInvoice);
+
+      if (response.success) {
+        // Update the edited invoice in local state
+        setInvoices((prev) =>
+          prev.map((inv) => (inv.id === updatedInvoice.id ? updatedInvoice : inv))
+        );
+        loadInvoicesOverView();
+      }
     }
 
-    if (response?.success) {
+    if (response.success) {
       setIsFormOpen(false);
       toast({
         title: formMode === 'create' ? "Invoice Created" : "Invoice Updated",
         description: `Invoice ${invoiceData.invoice_no} has been ${formMode === 'create' ? 'created' : 'updated'} successfully.`,
       });
-      updateInvoicesPage();
-      loadInvoicesOverView();
     }
+    return response;
   };
 
   return (

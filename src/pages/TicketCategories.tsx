@@ -32,38 +32,46 @@ export default function TicketCategories() {
   };
 
   const handleCreate = async (data: any) => {
-    const response = await ticketCategoriesApiService.addTicketCategory(data);
-    if (response?.success) {
-      setIsFormOpen(false);
-      loadTicketCategories();
-      toast({
-        title: "Category created",
-        description: "Ticket category has been created successfully.",
-      });
-    }
-  };
+  const response = await ticketCategoriesApiService.addTicketCategory(data);
+  
+  if (response.success) {
+    setIsFormOpen(false);
+    loadTicketCategories();
+    toast({
+      title: "Category created",
+      description: "Ticket category has been created successfully.",
+    });
+  }
+  return response;
+};
 
-  const handleEdit = (category: any) => {
-    setEditingCategory(category);
-    setIsEditOpen(true);
-  };
+const handleEdit = (category: any) => {
+  setEditingCategory(category);
+  setIsEditOpen(true);
+};
 
-  const handleEditSubmit = async (data: any) => {
-    const updatedCategory = {
-      ...editingCategory,
-      ...data,
-    };
-    const response = await ticketCategoriesApiService.updateTicketCategory(updatedCategory);
-    if (response?.success) {
-      setIsEditOpen(false);
-      setEditingCategory(null);
-      loadTicketCategories();
-      toast({
-        title: "Category updated",
-        description: "Ticket category has been updated successfully.",
-      });
-    }
+const handleEditSubmit = async (data: any) => {
+  const updatedCategory = {
+    ...editingCategory,
+    ...data,
+    updated_at: new Date().toISOString(),
   };
+  const response = await ticketCategoriesApiService.updateTicketCategory(updatedCategory);
+  
+  if (response.success) {
+    // Update the edited category in local state
+    setCategories((prev) =>
+      prev.map((cat) => (cat.id === updatedCategory.id ? updatedCategory : cat))
+    );
+    setIsEditOpen(false);
+    setEditingCategory(null);
+    toast({
+      title: "Category updated",
+      description: "Ticket category has been updated successfully.",
+    });
+  }
+  return response;
+};
 
   const handleDelete = (categoryId: string | number) => {
     setDeleteCategoryId(categoryId);
