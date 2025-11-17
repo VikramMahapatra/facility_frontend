@@ -49,6 +49,9 @@ import { Pagination } from "@/components/Pagination";
 import { exportToExcel } from "@/helpers/exportToExcelHelper";
 import { useAuth } from "../context/AuthContext";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
+import { useLoader } from "@/context/LoaderContext";
+import LoaderOverlay from "@/components/LoaderOverlay";
+import ContentContainer from "@/components/ContentContainer";
 
 const getMeterIcon = (kind: string) => {
   switch (kind) {
@@ -113,6 +116,7 @@ export default function MetersReadings() {
   const [readingsPageSize] = useState(5); // items per page
   const [totalReadingsItems, setTotalReadingsItems] = useState(0);
   const [deleteReadingId, setDeleteReadingId] = useState<string | null>(null);
+  const { withLoader } = useLoader();
 
   useEffect(() => {
     loadReadingOverView();
@@ -151,8 +155,10 @@ export default function MetersReadings() {
   };
 
   const loadReadingOverView = async () => {
-    const response = await meterReadingApiService.getReadingOverview();
-    if (response.success) setMeterReadingOverview(response.data || {});
+    const response = await withLoader(async () => {
+      return await meterReadingApiService.getReadingOverview();
+    });
+    if (response?.success) setMeterReadingOverview(response.data || {});
   };
 
   const loadMeters = async () => {
@@ -164,9 +170,13 @@ export default function MetersReadings() {
     if (searchTerm) params.append("search", searchTerm);
     params.append("skip", skip.toString());
     params.append("limit", limit.toString());
-    const response = await meterReadingApiService.getMeters(params);
-    setMeters(response.data?.meters || []);
-    setTotalItems(response.data?.total || 0);
+    const response = await withLoader(async () => {
+      return await meterReadingApiService.getMeters(params);
+    });
+    if (response?.success) {
+      setMeters(response.data?.meters || []);
+      setTotalItems(response.data?.total || 0);
+    }
   };
 
   const loadMeterReadings = async () => {
@@ -177,9 +187,13 @@ export default function MetersReadings() {
     const params = new URLSearchParams();
     params.append("skip", skip.toString());
     params.append("limit", limit.toString());
-    const response = await meterReadingApiService.getMeterReadings(params);
-    setMeterReadings(response.data?.readings || []);
-    setTotalReadingsItems(response.data?.total || 0);
+    const response = await withLoader(async () => {
+      return await meterReadingApiService.getMeterReadings(params);
+    });
+    if (response?.success) {
+      setMeterReadings(response.data?.readings || []);
+      setTotalReadingsItems(response.data?.total || 0);
+    }
   };
 
   const filteredMeters = mockMeters.filter(
@@ -363,61 +377,64 @@ const onSaveMeter = async (meterData: Partial<Meter>) => {
           </header>
 
           <main className="flex-1 space-y-6 p-6">
-            {/* Stats Cards */}
-            <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
-              <Card>
-                <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                  <CardTitle className="text-sm font-medium">
-                    Total Meters
-                  </CardTitle>
-                  <Gauge className="h-4 w-4" />
-                </CardHeader>
-                <CardContent>
-                  <div className="text-2xl font-bold">
-                    {meterReadingOverview.totalMeters}
-                  </div>
-                </CardContent>
-              </Card>
-              <Card>
-                <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                  <CardTitle className="text-sm font-medium">
-                    Active Meters
-                  </CardTitle>
-                  <Zap className="h-4 w-4 text-green-500" />
-                </CardHeader>
-                <CardContent>
-                  <div className="text-2xl font-bold">
-                    {meterReadingOverview.activeMeters}
-                  </div>
-                </CardContent>
-              </Card>
-              <Card>
-                <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                  <CardTitle className="text-sm font-medium">
-                    Latest Readings
-                  </CardTitle>
-                  <Eye className="h-4 w-4" />
-                </CardHeader>
-                <CardContent>
-                  <div className="text-2xl font-bold">
-                    {meterReadingOverview.latestReadings}
-                  </div>
-                </CardContent>
-              </Card>
-              <Card>
-                <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                  <CardTitle className="text-sm font-medium">
-                    IoT Connected
-                  </CardTitle>
-                  <Users className="h-4 w-4 text-blue-500" />
-                </CardHeader>
-                <CardContent>
-                  <div className="text-2xl font-bold">
-                    {meterReadingOverview.iotConnected}
-                  </div>
-                </CardContent>
-              </Card>
-            </div>
+            <ContentContainer>
+              <LoaderOverlay />
+              <div className="space-y-6">
+                {/* Stats Cards */}
+                <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
+                  <Card>
+                    <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                      <CardTitle className="text-sm font-medium">
+                        Total Meters
+                      </CardTitle>
+                      <Gauge className="h-4 w-4" />
+                    </CardHeader>
+                    <CardContent>
+                      <div className="text-2xl font-bold">
+                        {meterReadingOverview.totalMeters}
+                      </div>
+                    </CardContent>
+                  </Card>
+                  <Card>
+                    <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                      <CardTitle className="text-sm font-medium">
+                        Active Meters
+                      </CardTitle>
+                      <Zap className="h-4 w-4 text-green-500" />
+                    </CardHeader>
+                    <CardContent>
+                      <div className="text-2xl font-bold">
+                        {meterReadingOverview.activeMeters}
+                      </div>
+                    </CardContent>
+                  </Card>
+                  <Card>
+                    <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                      <CardTitle className="text-sm font-medium">
+                        Latest Readings
+                      </CardTitle>
+                      <Eye className="h-4 w-4" />
+                    </CardHeader>
+                    <CardContent>
+                      <div className="text-2xl font-bold">
+                        {meterReadingOverview.latestReadings}
+                      </div>
+                    </CardContent>
+                  </Card>
+                  <Card>
+                    <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                      <CardTitle className="text-sm font-medium">
+                        IoT Connected
+                      </CardTitle>
+                      <Users className="h-4 w-4 text-blue-500" />
+                    </CardHeader>
+                    <CardContent>
+                      <div className="text-2xl font-bold">
+                        {meterReadingOverview.iotConnected}
+                      </div>
+                    </CardContent>
+                  </Card>
+                </div>
 
             {/* Main Content */}
             <Card>
@@ -677,6 +694,8 @@ const onSaveMeter = async (meterData: Partial<Meter>) => {
 
               </CardContent>
             </Card>
+              </div>
+            </ContentContainer>
           </main>
         </div>
       </div>

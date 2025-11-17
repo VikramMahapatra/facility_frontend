@@ -16,6 +16,9 @@ import { visitorApiService } from "@/services/parking_access/visitorsapi";
 import { Visitor, VisitorOverview } from "@/interfaces/parking_access_interface";
 import { Pagination } from "@/components/Pagination";
 import { useAuth } from "../context/AuthContext";
+import { useLoader } from "@/context/LoaderContext";
+import LoaderOverlay from "@/components/LoaderOverlay";
+import ContentContainer from "@/components/ContentContainer";
 export default function Visitors() {
   const { toast } = useToast();
   const [searchTerm, setSearchTerm] = useState("");
@@ -37,6 +40,7 @@ export default function Visitors() {
     totalVisitorsWithVehicle: 0,
   });
   const { canRead, canWrite, canDelete } = useAuth();
+  const { withLoader } = useLoader();
   const resource = "visitors";
   useEffect(() => {
     loadSiteLookup();
@@ -60,13 +64,17 @@ export default function Visitors() {
   }
 
   const loadSiteLookup = async () => {
-    const lookup = await siteApiService.getSiteLookup();
-    if (lookup.success) setSiteList(lookup.data || []);
+    const lookup = await withLoader(async () => {
+      return await siteApiService.getSiteLookup();
+    });
+    if (lookup?.success) setSiteList(lookup.data || []);
   }
 
   const loadVisitorOverView = async () => {
-    const response = await visitorApiService.getVisitorOverview();
-    if (response.success) {setVisitorOverview(response.data || {});
+    const response = await withLoader(async () => {
+      return await visitorApiService.getVisitorOverview();
+    });
+    if (response?.success) {setVisitorOverview(response.data || {});
     }
   }
 
@@ -82,9 +90,13 @@ export default function Visitors() {
 
     params.append("skip", skip.toString());
     params.append("limit", limit.toString());
-    const response = await visitorApiService.getVisitors(params);
-    setVisitors(response.data?.visitors || []);
-    setTotalItems(response.data?.total || 0);
+    const response = await withLoader(async () => {
+      return await visitorApiService.getVisitors(params);
+    });
+    if (response?.success) {
+      setVisitors(response.data?.visitors || []);
+      setTotalItems(response.data?.total || 0);
+    }
   }
 
   const getStatusColor = (status: string) => {
@@ -205,157 +217,162 @@ const confirmDelete = async () => {
                 </Button>
               </div>
 
-              {/* Stats */}
-              <div className="grid gap-4 md:grid-cols-4">
-                <Card>
-                  <CardContent className="p-4">
-                    <div className="text-2xl font-bold text-green-600">{visitorOverview.checkedInToday}</div>
-                    <p className="text-sm text-muted-foreground">Checked In Today</p>
-                  </CardContent>
-                </Card>
-                <Card>
-                  <CardContent className="p-4">
-                    <div className="text-2xl font-bold text-blue-600">{visitorOverview.expectedToday}</div>
-                    <p className="text-sm text-muted-foreground">Expected Today</p>
-                  </CardContent>
-                </Card>
-                <Card>
-                  <CardContent className="p-4">
-                    <div className="text-2xl font-bold text-sidebar-primary">{visitorOverview.totalVisitors}</div>
-                    <p className="text-sm text-muted-foreground">Total Records</p>
-                  </CardContent>
-                </Card>
-                <Card>
-                  <CardContent className="p-4">
-                    <div className="text-2xl font-bold text-orange-600">
-                      {visitorOverview.totalVisitorsWithVehicle}
+              <ContentContainer>
+                <LoaderOverlay />
+                <div className="space-y-6">
+                  {/* Stats */}
+                  <div className="grid gap-4 md:grid-cols-4">
+                    <Card>
+                      <CardContent className="p-4">
+                        <div className="text-2xl font-bold text-green-600">{visitorOverview.checkedInToday}</div>
+                        <p className="text-sm text-muted-foreground">Checked In Today</p>
+                      </CardContent>
+                    </Card>
+                    <Card>
+                      <CardContent className="p-4">
+                        <div className="text-2xl font-bold text-blue-600">{visitorOverview.expectedToday}</div>
+                        <p className="text-sm text-muted-foreground">Expected Today</p>
+                      </CardContent>
+                    </Card>
+                    <Card>
+                      <CardContent className="p-4">
+                        <div className="text-2xl font-bold text-sidebar-primary">{visitorOverview.totalVisitors}</div>
+                        <p className="text-sm text-muted-foreground">Total Records</p>
+                      </CardContent>
+                    </Card>
+                    <Card>
+                      <CardContent className="p-4">
+                        <div className="text-2xl font-bold text-orange-600">
+                          {visitorOverview.totalVisitorsWithVehicle}
+                        </div>
+                        <p className="text-sm text-muted-foreground">With Vehicles</p>
+                      </CardContent>
+                    </Card>
+                  </div>
+
+                  {/* Filters */}
+                  <div className="flex flex-wrap items-center gap-4">
+                    <div className="flex items-center gap-2">
+                      <Search className="h-4 w-4 text-muted-foreground" />
+                      <Input
+                        placeholder="Search visitors..."
+                        value={searchTerm}
+                        onChange={(e) => setSearchTerm(e.target.value)}
+                        className="w-64"
+                      />
                     </div>
-                    <p className="text-sm text-muted-foreground">With Vehicles</p>
-                  </CardContent>
-                </Card>
-              </div>
 
-              {/* Filters */}
-              <div className="flex flex-wrap items-center gap-4">
-                <div className="flex items-center gap-2">
-                  <Search className="h-4 w-4 text-muted-foreground" />
-                  <Input
-                    placeholder="Search visitors..."
-                    value={searchTerm}
-                    onChange={(e) => setSearchTerm(e.target.value)}
-                    className="w-64"
-                  />
-                </div>
-
-                <select
-                  value={selectedSite}
-                  onChange={(e) => setSelectedSite(e.target.value)}
-                  className="rounded-md border border-input bg-background px-3 py-2 text-sm"
-                >
-                  <option value="all">All Sites</option>
-                  {siteList.map(site => (
-                    <option key={site.id} value={site.id}>{site.name}</option>
-                  ))}
-                </select>
-
-                <select
-                  value={selectedStatus}
-                  onChange={(e) => setSelectedStatus(e.target.value)}
-                  className="rounded-md border border-input bg-background px-3 py-2 text-sm"
-                >
-                  <option value="all">All Status</option>
-                  <option value="checked_in">Checked In</option>
-                  <option value="checked_out">Checked Out</option>
-                  <option value="expected">Expected</option>
-                </select>
-              </div>
-
-              {/* Table */}
-              <Card>
-                <CardHeader>
-                  <CardTitle>Visitors ({visitors.length})</CardTitle>
-                </CardHeader>
-                <CardContent>
-                  <Table>
-                    <TableHeader>
-                      <TableRow>
-                        <TableHead>Visitor</TableHead>
-                        <TableHead>Visiting</TableHead>
-                        <TableHead>Purpose</TableHead>
-                        <TableHead>Entry Time</TableHead>
-                        <TableHead>Status</TableHead>
-                        <TableHead>Vehicle</TableHead>
-                        <TableHead className="text-right">Actions</TableHead>
-                      </TableRow>
-                    </TableHeader>
-                    <TableBody>
-                      {visitors.map((visitor) => (
-                        <TableRow key={visitor.id}>
-                          <TableCell>
-                            <div>
-                              <div className="font-medium">{visitor.name}</div>
-                              <div className="text-sm text-muted-foreground">{visitor.phone}</div>
-                            </div>
-                          </TableCell>
-                          <TableCell>{visitor.visiting}</TableCell>
-                          <TableCell>{visitor.purpose}</TableCell>
-                          <TableCell>
-                            <div className="flex items-center gap-2">
-                              <Clock className="h-3 w-3 text-muted-foreground" />
-                              {formatDateTime(visitor.entry_time)}
-                            </div>
-                          </TableCell>
-                          <TableCell>
-                            <Badge className={getStatusColor(visitor.status)}>
-                              {visitor.status.replace('_', ' ')}
-                            </Badge>
-                          </TableCell>
-                          <TableCell>
-                            {visitor.vehicle_no ? (
-                              <Badge variant="outline">{visitor.vehicle_no}</Badge>
-                            ) : (
-                              <span className="text-muted-foreground">-</span>
-                            )}
-                          </TableCell>
-                          <TableCell className="text-right">
-                            <div className="flex items-center justify-end gap-2">
-                              <Button size="sm" variant="outline" onClick={() => handleView(visitor)}>
-                                <Eye className="h-3 w-3" />
-                              </Button>
-                              {canWrite(resource) && <Button size="sm" variant="outline" onClick={() => handleEdit(visitor)}>
-                                <Edit className="h-3 w-3" />
-                              </Button>
-                              }
-                              {canDelete(resource) && <Button
-                                size="sm"
-                                variant="outline"
-                                className="text-destructive hover:text-destructive"
-                                onClick={() => handleDelete(visitor.id)}
-                              >
-                                <Trash2 className="h-3 w-3" />
-                              </Button>
-                              }
-                            </div>
-                          </TableCell>
-                        </TableRow>
+                    <select
+                      value={selectedSite}
+                      onChange={(e) => setSelectedSite(e.target.value)}
+                      className="rounded-md border border-input bg-background px-3 py-2 text-sm"
+                    >
+                      <option value="all">All Sites</option>
+                      {siteList.map(site => (
+                        <option key={site.id} value={site.id}>{site.name}</option>
                       ))}
-                    </TableBody>
-                  </Table>
-                  <Pagination
+                    </select>
+
+                    <select
+                      value={selectedStatus}
+                      onChange={(e) => setSelectedStatus(e.target.value)}
+                      className="rounded-md border border-input bg-background px-3 py-2 text-sm"
+                    >
+                      <option value="all">All Status</option>
+                      <option value="checked_in">Checked In</option>
+                      <option value="checked_out">Checked Out</option>
+                      <option value="expected">Expected</option>
+                    </select>
+                  </div>
+
+                  {/* Table */}
+                  <Card>
+                    <CardHeader>
+                      <CardTitle>Visitors ({visitors.length})</CardTitle>
+                    </CardHeader>
+                    <CardContent>
+                      <Table>
+                        <TableHeader>
+                          <TableRow>
+                            <TableHead>Visitor</TableHead>
+                            <TableHead>Visiting</TableHead>
+                            <TableHead>Purpose</TableHead>
+                            <TableHead>Entry Time</TableHead>
+                            <TableHead>Status</TableHead>
+                            <TableHead>Vehicle</TableHead>
+                            <TableHead className="text-right">Actions</TableHead>
+                          </TableRow>
+                        </TableHeader>
+                        <TableBody>
+                          {visitors.map((visitor) => (
+                            <TableRow key={visitor.id}>
+                              <TableCell>
+                                <div>
+                                  <div className="font-medium">{visitor.name}</div>
+                                  <div className="text-sm text-muted-foreground">{visitor.phone}</div>
+                                </div>
+                              </TableCell>
+                              <TableCell>{visitor.visiting}</TableCell>
+                              <TableCell>{visitor.purpose}</TableCell>
+                              <TableCell>
+                                <div className="flex items-center gap-2">
+                                  <Clock className="h-3 w-3 text-muted-foreground" />
+                                  {formatDateTime(visitor.entry_time)}
+                                </div>
+                              </TableCell>
+                              <TableCell>
+                                <Badge className={getStatusColor(visitor.status)}>
+                                  {visitor.status.replace('_', ' ')}
+                                </Badge>
+                              </TableCell>
+                              <TableCell>
+                                {visitor.vehicle_no ? (
+                                  <Badge variant="outline">{visitor.vehicle_no}</Badge>
+                                ) : (
+                                  <span className="text-muted-foreground">-</span>
+                                )}
+                              </TableCell>
+                              <TableCell className="text-right">
+                                <div className="flex items-center justify-end gap-2">
+                                  <Button size="sm" variant="outline" onClick={() => handleView(visitor)}>
+                                    <Eye className="h-3 w-3" />
+                                  </Button>
+                                  {canWrite(resource) && <Button size="sm" variant="outline" onClick={() => handleEdit(visitor)}>
+                                    <Edit className="h-3 w-3" />
+                                  </Button>
+                                  }
+                                  {canDelete(resource) && <Button
+                                    size="sm"
+                                    variant="outline"
+                                    className="text-destructive hover:text-destructive"
+                                    onClick={() => handleDelete(visitor.id)}
+                                  >
+                                    <Trash2 className="h-3 w-3" />
+                                  </Button>
+                                  }
+                                </div>
+                              </TableCell>
+                            </TableRow>
+                          ))}
+                        </TableBody>
+                    </Table>
+                    <Pagination
                     page={page}
                     pageSize={pageSize}
                     totalItems={totalItems}
                     onPageChange={(newPage) => setPage(newPage)}
-                  />
-                  {visitors.length === 0 && (
-                    <div className="text-center py-8">
-                      <UserCheck className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
-                      <h3 className="text-lg font-semibold text-sidebar-primary mb-2">No visitors found</h3>
-                      <p className="text-muted-foreground">Try adjusting your search criteria or add a new visitor.</p>
-                    </div>
-                  )}
-                </CardContent>
-              </Card>
+                    />
+                    {visitors.length === 0 && (
+                      <div className="text-center py-8">
+                        <UserCheck className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
+                        <h3 className="text-lg font-semibold text-sidebar-primary mb-2">No visitors found</h3>
+                        <p className="text-muted-foreground">Try adjusting your search criteria or add a new visitor.</p>
+                      </div>
+                    )}
+                  </CardContent>
+                </Card>
+                </div>
+              </ContentContainer>
             </div>
           </main>
         </SidebarInset>

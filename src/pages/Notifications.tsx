@@ -13,6 +13,9 @@ import { notificationSettingsApiService } from "@/services/system/notificationse
 import { useSkipFirstEffect } from "@/hooks/use-skipfirst-effect";
 import { Pagination } from "@/components/Pagination";
 import { useToast } from "@/hooks/use-toast";
+import { useLoader } from "@/context/LoaderContext";
+import LoaderOverlay from "@/components/LoaderOverlay";
+import ContentContainer from "@/components/ContentContainer";
 
 /*const notificationSettings = [
   { id: "system_alerts", label: "System Alerts", description: "Critical system failures and issues", enabled: true},
@@ -33,6 +36,7 @@ export default function Notifications() {
   const [page, setPage] = useState(1);
   const [pageSize] = useState(10);
   const [totalItems, setTotalItems] = useState(0);
+  const { withLoader } = useLoader();
 
   useEffect(() => {
     loadNotificationSettings();
@@ -60,8 +64,10 @@ export default function Notifications() {
     const requestData: { search?: string; skip: number; limit: number } = { skip, limit };
     if (searchTerm) requestData.search = searchTerm;
 
-    const response = await notificationsApiService.getNotifications(requestData);
-    if (response.success) {
+    const response = await withLoader(async () => {
+      return await notificationsApiService.getNotifications(requestData);
+    });
+    if (response?.success) {
       setNotifications(response.data?.notifications || response.data || []);
       setTotalItems(response.data?.total || 0);
     }
@@ -100,8 +106,10 @@ export default function Notifications() {
   };
 
   const loadNotificationSettings = async () => {
-    const response = await notificationSettingsApiService.getNotificationSettings();
-    if (response.success) {
+    const response = await withLoader(async () => {
+      return await notificationSettingsApiService.getNotificationSettings();
+    });
+    if (response?.success) {
       setSettings(response.data?.settings || response.data || []);
     }
   };
@@ -154,27 +162,30 @@ export default function Notifications() {
         
         <main className="flex-1 p-6 bg-background">
           <div className="max-w-6xl mx-auto space-y-6">
-            <div className="flex items-center justify-between">
-              <div>
-                <h1 className="text-3xl font-bold text-foreground">Notifications</h1>
-                <p className="text-muted-foreground mt-2">
-                  Manage your system notifications and preferences
-                </p>
-              </div>
-              <div className="flex items-center gap-2">
-                {unreadCount > 0 && (
-                  <Badge variant="secondary" className="mr-2">
-                    {unreadCount} unread
-                  </Badge>
-                )}
-                <Button variant="outline" onClick={markAllAsRead} disabled={unreadCount === 0}>
-                  Mark All Read
-                </Button>
-                <Button variant="destructive" onClick={clearAllNotifications} disabled={notifications.length === 0}>
-                  Clear All
-                </Button>
-              </div>
-            </div>
+            <ContentContainer>
+              <LoaderOverlay />
+              <div className="space-y-6">
+                <div className="flex items-center justify-between">
+                  <div>
+                    <h1 className="text-3xl font-bold text-foreground">Notifications</h1>
+                    <p className="text-muted-foreground mt-2">
+                      Manage your system notifications and preferences
+                    </p>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    {unreadCount > 0 && (
+                      <Badge variant="secondary" className="mr-2">
+                        {unreadCount} unread
+                      </Badge>
+                    )}
+                    <Button variant="outline" onClick={markAllAsRead} disabled={unreadCount === 0}>
+                      Mark All Read
+                    </Button>
+                    <Button variant="destructive" onClick={clearAllNotifications} disabled={notifications.length === 0}>
+                      Clear All
+                    </Button>
+                  </div>
+                </div>
 
             <Tabs defaultValue="notifications" className="space-y-6">
               <TabsList className="grid w-full grid-cols-2">
@@ -296,6 +307,8 @@ export default function Notifications() {
                 </Card>
               </TabsContent>
             </Tabs>
+              </div>
+            </ContentContainer>
           </div>
         </main>
       </div>

@@ -21,6 +21,9 @@ import { useSkipFirstEffect } from "@/hooks/use-skipfirst-effect";
 import { Pagination } from "@/components/Pagination";
 import { Role } from "@/interfaces/role_management";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
+import { useLoader } from "@/context/LoaderContext";
+import LoaderOverlay from "@/components/LoaderOverlay";
+import ContentContainer from "@/components/ContentContainer";
 
 export default function RolesManagement() {
   const [roles, setRoles] = useState<Role[]>([]);
@@ -31,6 +34,7 @@ export default function RolesManagement() {
   const [page, setPage] = useState(1);
   const [pageSize] = useState(5);
   const [totalItems, setTotalItems] = useState(0);
+  const { withLoader } = useLoader();
 
   useSkipFirstEffect(() => {
     loadRoleManagement();
@@ -57,9 +61,13 @@ export default function RolesManagement() {
     params.append("skip", skip.toString());
     params.append("limit", limit.toString());
     
-    const response = await roleManagementApiService.getRoleManagement(params);
-    if (response?.success) setRoles(response?.data?.roles || []);
-    setTotalItems(response?.data?.total || 0);
+    const response = await withLoader(async () => {
+      return await roleManagementApiService.getRoleManagement(params);
+    });
+    if (response?.success) {
+      setRoles(response?.data?.roles || []);
+      setTotalItems(response?.data?.total || 0);
+    }
   };
 
   const handleCreate = () => {
@@ -114,103 +122,108 @@ export default function RolesManagement() {
 
           <main className="flex-1 p-6 overflow-auto">
             <div className="max-w-7xl mx-auto space-y-6">
-              <div className="flex items-center justify-between">
-                <div>
-                  <h1 className="text-3xl font-bold text-foreground">Roles Management</h1>
-                  <p className="text-muted-foreground mt-1">
-                    Create and manage user roles for your organization
-                  </p>
-                </div>
-                <Button onClick={() => handleCreate()}>
-                  <Plus className="h-4 w-4 mr-2" />
-                  Create Role
-                </Button>
-              </div>
-
-              <Card>
-                <CardHeader>
-                  <CardTitle>All Roles</CardTitle>
-                  <CardDescription>
-                    Define roles that can be assigned to users
-                  </CardDescription>
-                </CardHeader>
-                <CardContent>
-                  <div className="mb-4">
-                    <div className="relative">
-                      <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-                      <Input
-                        type="text"
-                        placeholder="Search roles..."
-                        value={searchTerm}
-                        onChange={(e) => setSearchTerm(e.target.value)}
-                        className="pl-10"
-                      />
+              <ContentContainer>
+                <LoaderOverlay />
+                <div className="space-y-6">
+                  <div className="flex items-center justify-between">
+                    <div>
+                      <h1 className="text-3xl font-bold text-foreground">Roles Management</h1>
+                      <p className="text-muted-foreground mt-1">
+                        Create and manage user roles for your organization
+                      </p>
                     </div>
+                    <Button onClick={() => handleCreate()}>
+                      <Plus className="h-4 w-4 mr-2" />
+                      Create Role
+                    </Button>
                   </div>
 
-                  <div className="rounded-md border">
-                    <Table>
-                      <TableHeader>
-                        <TableRow>
-                          <TableHead>Role Name</TableHead>
-                          <TableHead>Description</TableHead>
-                          <TableHead className="text-right">Actions</TableHead>
-                        </TableRow>
-                      </TableHeader>
-                      <TableBody>
-                        {roles.length === 0 ? (
-                          <TableRow>
-                            <TableCell colSpan={3} className="text-center text-muted-foreground">
-                              No roles found
-                            </TableCell>
-                          </TableRow>
-                        ) : (
-                          roles.map((role) => (
-                            <TableRow key={role.id}>
-                              <TableCell>
-                                <Badge variant="outline" className="font-medium">
-                                  {role.name}
-                                </Badge>
-                              </TableCell>
-                              <TableCell className="text-muted-foreground">
-                                {role.description || "No description"}
-                              </TableCell>
-                              <TableCell className="text-right">
-                                <div className="flex justify-end gap-2">
-                                  <Button
-                                    variant="ghost"
-                                    size="icon"
-                                    onClick={() => handleEdit(role)}
-                                  >
-                                    <Pencil className="h-4 w-4" />
-                                  </Button>
-                                  <Button
-                                    variant="ghost"
-                                    size="icon"
-                                    onClick={() => handleDelete(role.id)}
-                                  >
-                                    <Trash2 className="h-4 w-4 text-destructive" />
-                                  </Button>
-                                </div>
-                              </TableCell>
+                  <Card>
+                    <CardHeader>
+                      <CardTitle>All Roles</CardTitle>
+                      <CardDescription>
+                        Define roles that can be assigned to users
+                      </CardDescription>
+                    </CardHeader>
+                    <CardContent>
+                      <div className="mb-4">
+                        <div className="relative">
+                          <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                          <Input
+                            type="text"
+                            placeholder="Search roles..."
+                            value={searchTerm}
+                            onChange={(e) => setSearchTerm(e.target.value)}
+                            className="pl-10"
+                          />
+                        </div>
+                      </div>
+
+                      <div className="rounded-md border">
+                        <Table>
+                          <TableHeader>
+                            <TableRow>
+                              <TableHead>Role Name</TableHead>
+                              <TableHead>Description</TableHead>
+                              <TableHead className="text-right">Actions</TableHead>
                             </TableRow>
-                          ))
-                        )}
-                      </TableBody>
-                    </Table>
-                  </div>
+                          </TableHeader>
+                          <TableBody>
+                            {roles.length === 0 ? (
+                              <TableRow>
+                                <TableCell colSpan={3} className="text-center text-muted-foreground">
+                                  No roles found
+                                </TableCell>
+                              </TableRow>
+                            ) : (
+                              roles.map((role) => (
+                                <TableRow key={role.id}>
+                                  <TableCell>
+                                    <Badge variant="outline" className="font-medium">
+                                      {role.name}
+                                    </Badge>
+                                  </TableCell>
+                                  <TableCell className="text-muted-foreground">
+                                    {role.description || "No description"}
+                                  </TableCell>
+                                  <TableCell className="text-right">
+                                    <div className="flex justify-end gap-2">
+                                      <Button
+                                        variant="ghost"
+                                        size="icon"
+                                        onClick={() => handleEdit(role)}
+                                      >
+                                        <Pencil className="h-4 w-4" />
+                                      </Button>
+                                      <Button
+                                        variant="ghost"
+                                        size="icon"
+                                        onClick={() => handleDelete(role.id)}
+                                      >
+                                        <Trash2 className="h-4 w-4 text-destructive" />
+                                      </Button>
+                                    </div>
+                                  </TableCell>
+                                </TableRow>
+                              ))
+                            )}
+                          </TableBody>
+                        </Table>
+                      </div>
 
-                  {/* Pagination */}
-                  <div className="mt-4">
-                    <Pagination
-                      page={page}
-                      pageSize={pageSize}
-                      totalItems={totalItems}
-                      onPageChange={setPage}
-                    />
-                  </div>
-                </CardContent>
-              </Card>
+                      {/* Pagination */}
+                      <div className="mt-4">
+                        <Pagination
+                          page={page}
+                          pageSize={pageSize}
+                          totalItems={totalItems}
+                          onPageChange={setPage}
+                        />
+                      </div>
+                    </CardContent>
+                  </Card>
+                </div>
+              </ContentContainer>
             </div>
             
             <RoleForm
