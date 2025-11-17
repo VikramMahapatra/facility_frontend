@@ -11,6 +11,7 @@ export const userSchema = z.object({
   building_id: z.string().optional(),
   space_id: z.string().optional(),
   site_ids: z.array(z.string()).optional(),
+  tenant_type: z.string().optional(),
 });
 
 export type UserFormValues = z.infer<typeof userSchema>;

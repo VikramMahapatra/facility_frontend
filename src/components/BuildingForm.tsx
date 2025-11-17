@@ -254,7 +254,7 @@ export function BuildingForm({ building, isOpen, onClose, onSave, mode }: Buildi
             </Button>
             {mode !== "view" && (
               <Button type="submit" disabled={isSubmitting || isSubmitted}>
-                {isSubmitting ? "Saving..." : mode === "create" ? "Create" : "Update"}
+                {isSubmitting ? "Saving..." : mode === "create" ? "Create Building" : "Update Building"}
               </Button>
             )}
           </DialogFooter>

@@ -224,7 +224,7 @@ export function SpaceGroupForm({ group, isOpen, onClose, onSave, mode }: Props) 
             </Button>
             {!isView && (
               <Button type="submit" disabled={!isValid || isSubmitting}>
-                {isSubmitting ? "Saving..." : mode === "create" ? "Create" : "Save"}
+                {isSubmitting ? "Saving..." : mode === "create" ? "Create Space Group" : "Update Space Group"}
               </Button>
             )}
           </DialogFooter>
