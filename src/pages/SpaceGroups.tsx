@@ -15,6 +15,9 @@ import { SpaceKind, spaceKinds } from "@/interfaces/spaces_interfaces";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
 import { useSkipFirstEffect } from "@/hooks/use-skipfirst-effect";
 import { useAuth } from "../context/AuthContext";
+import { useLoader } from "@/context/LoaderContext";
+import LoaderOverlay from "@/components/LoaderOverlay";
+import ContentContainer from "@/components/ContentContainer";
 
 
 export interface SpaceGroup {
@@ -44,6 +47,7 @@ export default function SpaceGroups() {
   const [totalItems, setTotalItems] = useState(0);
   const [deleteSpaceGroupId, setDeleteSpaceGroupId] = useState<string | null>(null);
   const { canRead, canWrite, canDelete } = useAuth();
+  const { withLoader } = useLoader();
   const resource = "space_groups";
 
   const getKindIcon = (kind: SpaceKind) => {
@@ -88,8 +92,11 @@ export default function SpaceGroups() {
     if (selectedKind) params.append("kind", selectedKind);
     params.append("skip", skip.toString());
     params.append("limit", limit.toString());
-    const response = await spaceGroupsApiService.getSpaceGroups(params);
-    if (response.success) {
+    
+    const response = await withLoader(async () => {
+      return await spaceGroupsApiService.getSpaceGroups(params);
+    });
+    if (response?.success) {
       setGroups(response.data?.spaceGroups || []);
       setTotalItems(response.data?.total || 0);
     }
@@ -261,76 +268,79 @@ const confirmDelete = async () => {
                 </select>
               </div>
 
-              {/* Groups Grid */}
-              <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
-                {groups.map((group) => {
-                  return (
-                    <Card key={group.id} className="hover:shadow-lg transition-shadow">
-                      <CardHeader className="pb-3">
-                        <div className="flex items-start justify-between">
-                          <div className="space-y-1">
-                            <CardTitle className="text-lg flex items-center gap-2">
-                              <span className="text-xl">{getKindIcon(group.kind)}</span>
-                              {group.name}
-                            </CardTitle>
-                            <p className="text-sm text-muted-foreground">{getSiteName(group.site_id)}</p>
+              <ContentContainer>
+                <LoaderOverlay />
+                {/* Groups Grid */}
+                <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
+                  {groups.map((group) => {
+                    return (
+                      <Card key={group.id} className="hover:shadow-lg transition-shadow">
+                        <CardHeader className="pb-3">
+                          <div className="flex items-start justify-between">
+                            <div className="space-y-1">
+                              <CardTitle className="text-lg flex items-center gap-2">
+                                <span className="text-xl">{getKindIcon(group.kind)}</span>
+                                {group.name}
+                              </CardTitle>
+                              <p className="text-sm text-muted-foreground">{getSiteName(group.site_id)}</p>
+                            </div>
+                            <Badge className={getKindColor(group.kind)}>
+                              {group.kind.replace('_', ' ')}
+                            </Badge>
                           </div>
-                          <Badge className={getKindColor(group.kind)}>
-                            {group.kind.replace('_', ' ')}
-                          </Badge>
-                        </div>
-                      </CardHeader>
+                        </CardHeader>
 
-                      <CardContent className="space-y-4">
-                        {/* Member Count */}
-                        <div className="flex items-center gap-2">
-                          <Users className="h-4 w-4 text-muted-foreground" />
-                          <span className="text-sm font-medium">{group.group_members} spaces in this group</span>
-                        </div>
-
-                        {/* Base Rate */}
-                        {group.specs.base_rate && (
+                        <CardContent className="space-y-4">
+                          {/* Member Count */}
                           <div className="flex items-center gap-2">
-                            <DollarSign className="h-4 w-4 text-muted-foreground" />
-                            <span className="text-sm font-medium">
-                              Base Rate: {formatCurrency(group.specs.base_rate)}/month
-                            </span>
+                            <Users className="h-4 w-4 text-muted-foreground" />
+                            <span className="text-sm font-medium">{group.group_members} spaces in this group</span>
                           </div>
-                        )}
 
-                        {/* Actions */}
-                        <div className="flex items-center justify-end gap-2 pt-2">
-                          <Button size="sm" variant="outline" onClick={() => handleView(group)}>
-                            <Eye className="h-3 w-3" />
-                          </Button>
-                          {canWrite(resource) && <Button size="sm" variant="outline" onClick={() => handleEdit(group)}>
-                            <Edit className="h-3 w-3" />
-                          </Button>
-                          }
-                          {canDelete(resource) && <Button size="sm" variant="outline" className="text-destructive hover:text-destructive" onClick={() => handleDelete(group.id)}>
+                          {/* Base Rate */}
+                          {group.specs.base_rate && (
+                            <div className="flex items-center gap-2">
+                              <DollarSign className="h-4 w-4 text-muted-foreground" />
+                              <span className="text-sm font-medium">
+                                Base Rate: {formatCurrency(group.specs.base_rate)}/month
+                              </span>
+                            </div>
+                          )}
 
-                            <Trash2 className="h-3 w-3" />
-                          </Button>
-                          }
-                        </div>
-                      </CardContent>
-                    </Card>
-                  );
-                })}
-              </div>
-              <Pagination
-                page={page}
-                pageSize={pageSize}
-                totalItems={totalItems}
-                onPageChange={(newPage) => setPage(newPage)}
-              />
-              {groups.length === 0 && (
-                <div className="text-center py-12">
-                  <Package className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
-                  <h3 className="text-lg font-semibold text-sidebar-primary mb-2">No space groups found</h3>
-                  <p className="text-muted-foreground">Try adjusting your search criteria or create a new group.</p>
+                          {/* Actions */}
+                          <div className="flex items-center justify-end gap-2 pt-2">
+                            <Button size="sm" variant="outline" onClick={() => handleView(group)}>
+                              <Eye className="h-3 w-3" />
+                            </Button>
+                            {canWrite(resource) && <Button size="sm" variant="outline" onClick={() => handleEdit(group)}>
+                              <Edit className="h-3 w-3" />
+                            </Button>
+                            }
+                            {canDelete(resource) && <Button size="sm" variant="outline" className="text-destructive hover:text-destructive" onClick={() => handleDelete(group.id)}>
+
+                              <Trash2 className="h-3 w-3" />
+                            </Button>
+                            }
+                          </div>
+                        </CardContent>
+                      </Card>
+                    );
+                  })}
                 </div>
-              )}
+                <Pagination
+                  page={page}
+                  pageSize={pageSize}
+                  totalItems={totalItems}
+                  onPageChange={(newPage) => setPage(newPage)}
+                />
+                {groups.length === 0 && (
+                  <div className="text-center py-12">
+                    <Package className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
+                    <h3 className="text-lg font-semibold text-sidebar-primary mb-2">No space groups found</h3>
+                    <p className="text-muted-foreground">Try adjusting your search criteria or create a new group.</p>
+                  </div>
+                )}
+              </ContentContainer>
             </div>
           </main>
         </SidebarInset>

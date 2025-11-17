@@ -5,7 +5,7 @@ import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Plus, Search, Eye, Edit, FileText, Clock, AlertTriangle, TrendingUp } from "lucide-react";
+import { Plus, Search, Eye, Edit, FileText, Clock, AlertTriangle, TrendingUp, Trash2 } from "lucide-react";
 
 import { SidebarProvider, SidebarTrigger, SidebarInset } from "@/components/ui/sidebar";
 import { Separator } from "@/components/ui/separator";
@@ -27,6 +27,9 @@ import { useSkipFirstEffect } from "@/hooks/use-skipfirst-effect";
 import { ServiceRequestForm } from "@/components/ServiceRequestForm";
 import { set } from "date-fns";
 import { useAuth } from "../context/AuthContext";
+import { useLoader } from "@/context/LoaderContext";
+import LoaderOverlay from "@/components/LoaderOverlay";
+import ContentContainer from "@/components/ContentContainer";
 
 export type ServiceRequestPriority = "low" | "medium" | "high" | "urgent";
 export type ServiceRequestStatus   = "open" | "in_progress" | "on_hold" | "resolved" | "close";
@@ -92,6 +95,7 @@ export default function ServiceRequest() {
   const [pageSize] = useState(6);
   const [totalItems, setTotalItems] = useState(0);
   const { canRead, canWrite, canDelete } = useAuth();
+  const { withLoader } = useLoader();
   const resource = "service_requests";
 
   useSkipFirstEffect(() => {
@@ -122,8 +126,12 @@ export default function ServiceRequest() {
    if (searchTerm) params.append("search", searchTerm);
    if (selectedCategory && selectedCategory !== "all") params.append("category", selectedCategory);
    if (selectedStatus && selectedStatus !== "all") params.append("status", selectedStatus);
-   const response = await serviceRequestApiService.getServiceRequestOverview(params);
-   if (response.success) setServiceRequestOverview(response.data || {});
+   
+   const response = await withLoader(async () => {
+     return await serviceRequestApiService.getServiceRequestOverview(params);
+   });
+   
+   if (response?.success) setServiceRequestOverview(response.data || {});
    };
   
 
@@ -139,9 +147,15 @@ export default function ServiceRequest() {
    if (selectedStatus && selectedStatus !== "all") params.append("status", selectedStatus);
     params.append("skip", skip.toString());
     params.append("limit",limit.toString());
-    const response = await serviceRequestApiService.getServiceRequests(params);
-    setServiceRequest(response.data?.requests || []);
-    setTotalItems(response.data?.total || 0);
+    
+    const response = await withLoader(async () => {
+      return await serviceRequestApiService.getServiceRequests(params);
+    });
+    
+    if (response?.success) {
+      setServiceRequest(response.data?.requests || []);
+      setTotalItems(response.data?.total || 0);
+    }
   };
 
 
@@ -262,8 +276,10 @@ export default function ServiceRequest() {
               </Button>
             </div>
 
-            <div className="space-y-6">
-              {/* Filters */}
+            <ContentContainer>
+              <LoaderOverlay />
+              <div className="space-y-6">
+                {/* Filters */}
               <div className="flex flex-col sm:flex-row gap-4">
                 <div className="relative flex-1">
                   <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground w-4 h-4" />
@@ -419,8 +435,8 @@ export default function ServiceRequest() {
                                 <Edit className="w-4 h-4" />
                               </Button>
                               }
-                              {canDelete(resource) && <Button variant="ghost" size="sm" onClick={() => handleDelete(request.id!)}>
-                                Delete
+                              {canDelete(resource) && <Button variant="ghost" size="sm" className="text-destructive hover:text-destructive" onClick={() => handleDelete(request.id!)}>
+                                <Trash2 className="w-4 h-4" />
                               </Button>
                               }
                             </div>
@@ -435,7 +451,8 @@ export default function ServiceRequest() {
                   </div>
                 </CardContent>
               </Card>
-            </div>
+              </div>
+            </ContentContainer>
           </div>
         </SidebarInset>
       </div>

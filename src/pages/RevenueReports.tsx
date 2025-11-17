@@ -12,6 +12,9 @@ import { SidebarProvider, SidebarTrigger, SidebarInset } from "@/components/ui/s
 import { Separator } from "@/components/ui/separator";
 import { PropertySidebar } from "@/components/PropertySidebar";
 import { revenueReportsApiService } from "@/services/financials/revenuereportsapi";
+import { useLoader } from "@/context/LoaderContext";
+import LoaderOverlay from "@/components/LoaderOverlay";
+import ContentContainer from "@/components/ContentContainer";
 
 
 
@@ -24,6 +27,7 @@ interface RevenueReportsOverview {
   
   export default function RevenueReports() {
   const { toast } = useToast();
+  const { withLoader } = useLoader();
   const [selectedPeriod, setSelectedPeriod] = useState<string>("all");
   const [selectedSite, setSelectedSite] = useState<string>("all");
   const [siteList, setSiteList] = useState<any[]>([]);
@@ -46,8 +50,10 @@ interface RevenueReportsOverview {
 
 
   const loadSiteLookup = async () => {
-    const lookup = await siteApiService.getSiteLookup();
-    if (lookup.success) setSiteList(lookup.data || []);
+    const lookup = await withLoader(async () => {
+      return await siteApiService.getSiteLookup();
+    });
+    if (lookup?.success) setSiteList(lookup.data || []);
   }
 
    
@@ -62,28 +68,38 @@ interface RevenueReportsOverview {
   
 
    const loadRevenueReportsMonthLookup= async () => {
-      const selectedPeriod = await revenueReportsApiService.getRevenueReportsMonthLookup();
-      if (selectedPeriod.success) setSelectedPeriod(selectedPeriod.data || "");
+      const selectedPeriod = await withLoader(async () => {
+        return await revenueReportsApiService.getRevenueReportsMonthLookup();
+      });
+      if (selectedPeriod?.success) setSelectedPeriod(selectedPeriod.data || "");
     }
 
     const loadRevenueReportsByTrend= async () => {
-      const trendData = await revenueReportsApiService.getRevenueReportsByTrend();
-      if (trendData.success) setTrendData(trendData.data || []);
+      const trendData = await withLoader(async () => {
+        return await revenueReportsApiService.getRevenueReportsByTrend();
+      });
+      if (trendData?.success) setTrendData(trendData.data || []);
     }
    
    
     const loadRevenueReportsBySource= async () => {
-      const sourceData = await revenueReportsApiService.getRevenueReportsBySource();
-      if (sourceData.success) setSourceData(sourceData.data || []);
+      const sourceData = await withLoader(async () => {
+        return await revenueReportsApiService.getRevenueReportsBySource();
+      });
+      if (sourceData?.success) setSourceData(sourceData.data || []);
     }
     
     const loadRevenueReportsByOutstandingReceivables= async () => {
-      const outstandingReceivablesData = await revenueReportsApiService.getRevenueReportsByOutstandingReceivables();
-      if (outstandingReceivablesData.success) setOutstandingReceivablesData(outstandingReceivablesData.data || []);
+      const outstandingReceivablesData = await withLoader(async () => {
+        return await revenueReportsApiService.getRevenueReportsByOutstandingReceivables();
+      });
+      if (outstandingReceivablesData?.success) setOutstandingReceivablesData(outstandingReceivablesData.data || []);
     }
     const loadRevenueReportsOverview= async () => {
-      const revenueReportsOverview = await revenueReportsApiService.getRevenueReportsOverview();
-      if (revenueReportsOverview.success) setRevenueReportsOverview(revenueReportsOverview.data || {});
+      const revenueReportsOverview = await withLoader(async () => {
+        return await revenueReportsApiService.getRevenueReportsOverview();
+      });
+      if (revenueReportsOverview?.success) setRevenueReportsOverview(revenueReportsOverview.data || {});
     }
   
   return (
@@ -117,8 +133,10 @@ interface RevenueReportsOverview {
               </Button>
             </div>
 
-            <div className="space-y-6">
-              {/* Filters */}
+            <ContentContainer>
+              <LoaderOverlay />
+              <div className="space-y-6">
+                {/* Filters */}
               <div className="flex flex-col sm:flex-row gap-4">
                <select
                   value={selectedPeriod}
@@ -290,7 +308,8 @@ interface RevenueReportsOverview {
                   </ResponsiveContainer>
                 </CardContent>
               </Card>
-            </div>
+              </div>
+            </ContentContainer>
           </div>
         </SidebarInset>
       </div>

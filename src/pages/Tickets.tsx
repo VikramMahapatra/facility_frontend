@@ -13,9 +13,12 @@ import { useNavigate } from "react-router-dom";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { mockTickets } from "@/data/mockTicketData";
 import { ticketsApiService } from "@/services/ticketing_service/ticketsapi";
+import { siteApiService } from "@/services/spaces_sites/sitesapi";
 import LoaderOverlay from "@/components/LoaderOverlay";
 import ContentContainer from "@/components/ContentContainer";
 import { useLoader } from "@/context/LoaderContext";
+import { Pagination } from "@/components/Pagination";
+import { useSkipFirstEffect } from "@/hooks/use-skipfirst-effect";
 
 export default function Tickets() {
   const navigate = useNavigate();
@@ -26,25 +29,53 @@ export default function Tickets() {
   const [tickets, setTickets] = useState<any[]>([]);
   const [statusFilter, setStatusFilter] = useState("ALL");
   const [priorityFilter, setPriorityFilter] = useState("ALL");
+  const [selectedSite, setSelectedSite] = useState<string>("all");
+  const [siteList, setSiteList] = useState<any[]>([]);
+  const [page, setPage] = useState(1); // current page
+  const [pageSize] = useState(10); // items per page
+  const [totalItems, setTotalItems] = useState(0);
+
+  useSkipFirstEffect(() => {
+    loadTickets();
+  }, [page]);
 
   useEffect(() => {
-    loadTickets();
+    loadSiteLookup();
   }, []);
 
+  useEffect(() => {
+    if (page === 1) {
+      loadTickets();
+    } else {
+      setPage(1); // triggers the page effect
+    }
+  }, [statusFilter, priorityFilter, selectedSite]);
+
+  const loadSiteLookup = async () => {
+    const lookup = await siteApiService.getSiteLookup();
+    if (lookup.success) setSiteList(lookup.data || []);
+  };
+
   const loadTickets = async () => {
+    const skip = (page - 1) * pageSize;
+    const limit = pageSize;
+
+    // build query params
+    const params = new URLSearchParams();
+    if (statusFilter !== "ALL") params.append("status", statusFilter);
+    if (priorityFilter !== "ALL") params.append("priority", priorityFilter);
+    if (selectedSite && selectedSite !== "all") params.append("site_id", selectedSite);
+    params.append("skip", skip.toString());
+    params.append("limit", limit.toString());
+
     const response = await withLoader(async () => {
-      return await ticketsApiService.getTickets();
+      return await ticketsApiService.getTickets(params);
     });
     if (response?.success) {
       setTickets(response.data?.tickets || []);
+      setTotalItems(response.data?.total || 0);
     }
   };
-
-  const filteredTickets = tickets.filter((ticket) => {
-    if (statusFilter !== "ALL" && ticket.status?.toUpperCase() !== statusFilter) return false;
-    if (priorityFilter !== "ALL" && ticket.priority?.toUpperCase() !== priorityFilter) return false;
-    return true;
-  });
 
   const handleCreate = async (data: any) => {
     const response = await ticketsApiService.addTicket(data);
@@ -148,6 +179,19 @@ export default function Tickets() {
                 <div className="flex justify-between items-center">
                   <CardTitle>All Tickets</CardTitle>
                   <div className="flex gap-2">
+                    <Select value={selectedSite} onValueChange={setSelectedSite}>
+                      <SelectTrigger className="w-[150px]">
+                        <SelectValue placeholder="Site" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="all">All Sites</SelectItem>
+                        {siteList.map((site: any) => (
+                          <SelectItem key={site.id} value={site.id}>
+                            {site.name}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
                     <Select value={statusFilter} onValueChange={setStatusFilter}>
                       <SelectTrigger className="w-[150px]">
                         <SelectValue placeholder="Status" />
@@ -192,7 +236,7 @@ export default function Tickets() {
                       </TableRow>
                     </TableHeader>
                     <TableBody>
-                      {filteredTickets.map((ticket) => (
+                      {tickets.map((ticket) => (
                         <TableRow key={ticket.id || ticket.ticket_id}>
                           <TableCell className="font-medium">#{ticket.ticket_no}</TableCell>
                           <TableCell className="max-w-xs truncate">{ticket.title}</TableCell>
@@ -223,6 +267,12 @@ export default function Tickets() {
                       ))}
                     </TableBody>
                   </Table>
+                  <Pagination
+                    page={page}
+                    pageSize={pageSize}
+                    totalItems={totalItems}
+                    onPageChange={(newPage) => setPage(newPage)}
+                  />
                 </ContentContainer>
               </CardContent>
             </Card>

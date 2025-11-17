@@ -24,7 +24,7 @@ export interface Site {
     pincode: string;
   };
   geo: { lat: number; lng: number };
-  opened_on: string;
+  opened_on?: string | null;
   status: 'active' | 'inactive';
   total_spaces?: string;
   buildings?: string;
