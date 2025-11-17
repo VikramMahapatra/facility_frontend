@@ -40,7 +40,7 @@ class TicketsApiService {
   }
 
   async postComment(ticketId: string, comment: string) {
-    return await apiService.requestWithForm(`/tickets/post-comment`, {
+    return await apiService.request(`/tickets/post-comment`, {
       method: "POST",
       body: JSON.stringify({ ticket_id: ticketId, comment: comment }),
     });
