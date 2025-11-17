@@ -41,6 +41,7 @@ interface User {
   email: string;
   phone?: string;
   status: string;
+  account_type: string;
   created_at: string;
   updated_at: string;
   roles?: Role[];
@@ -91,29 +92,40 @@ export default function UsersManagement() {
   // Remove client-side filtering since we're using server-side pagination
 
   const handleCreateUser = async (values: any) => {
-    const response = await userManagementApiService.addUser(values);
-    if (response?.success) {
-      setIsFormOpen(false);
-      toast.success("User created successfully");
-      loadUsers();
-    }
-  };
+  const response = await userManagementApiService.addUser(values);
+  
+  if (response.success) {
+    setIsFormOpen(false);
+    toast.success("User created successfully");
+    loadUsers();
+  }
+  return response;
+};
 
-  const handleUpdateUser = async (values: any) => {
-    if (!editingUser) return;
-    const response = await withLoader(async () => {
-      return await userManagementApiService.updateUser({
-        ...editingUser,
-        ...values,
-      });
-    });
-    if (response?.success) {
-      toast.success("User updated successfully");
-      setIsFormOpen(false);
-      setEditingUser(undefined);
-      loadUsers();
-    }
+const handleUpdateUser = async (values: any) => {
+  if (!editingUser) return;
+  
+  const updatedUser = {
+    ...editingUser,
+    ...values,
+    updated_at: new Date().toISOString(),
   };
+  
+  const response = await withLoader(async () => {
+    return await userManagementApiService.updateUser(updatedUser);
+  });
+  
+  if (response.success) {
+    // Update the edited user in local state
+    setUsers((prev) =>
+      prev.map((u) => (u.id === updatedUser.id ? updatedUser : u))
+    );
+    toast.success("User updated successfully");
+    setIsFormOpen(false);
+    setEditingUser(undefined);
+  }
+  return response;
+};
 
   const handleDeleteUser = (userId: string) => {
     setDeleteUserId(userId);
@@ -163,6 +175,19 @@ export default function UsersManagement() {
       .join("")
       .toUpperCase()
       .slice(0, 2);
+  };
+
+  const getTypeBadge = (status: string) => {
+    status = status.toLowerCase();
+    const variants = {
+      tenant: "default",
+      flatowner: "default",
+      vendor: "default",
+      staff: "secondary",
+      organization: "destructive"
+    } as const;
+
+    return <Badge variant={variants[status as keyof typeof variants] || "outline"}>{status}</Badge>;
   };
 
   return (
@@ -220,6 +245,7 @@ export default function UsersManagement() {
                         <TableHeader>
                           <TableRow>
                             <TableHead>User</TableHead>
+                            <TableHead>Type</TableHead>
                             <TableHead>Contact</TableHead>
                             <TableHead>Roles</TableHead>
                             <TableHead>Status</TableHead>
@@ -258,6 +284,9 @@ export default function UsersManagement() {
                                     </div>
                                   </div>
                                 </TableCell>
+                                <TableCell>
+                                  {getTypeBadge(user.account_type)}
+                                </TableCell>
                                 <TableCell className="text-muted-foreground">
                                   {user.phone}
                                 </TableCell>
@@ -276,8 +305,8 @@ export default function UsersManagement() {
                                       user.status === "active"
                                         ? "default"
                                         : user.status === "pending_approval"
-                                        ? "secondary"
-                                        : "outline"
+                                          ? "secondary"
+                                          : "outline"
                                     }
                                   >
                                     {user.status === "pending_approval"

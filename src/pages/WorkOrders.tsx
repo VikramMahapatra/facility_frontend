@@ -265,19 +265,33 @@ export default function WorkOrders() {
     let response;
     if (formMode === "create") {
       response = await workOrderApiService.addWorkOrder(workOrderData);
+
+      if (response.success)
+        updateWorkOrderPage();
     } else if (formMode === "edit" && selectedWorkOrder) {
-      const updatedWorkOrder = { ...selectedWorkOrder, ...workOrderData };
+      const updatedWorkOrder = {
+        ...selectedWorkOrder,
+        ...workOrderData,
+        updated_at: new Date().toISOString(),
+      };
       response = await workOrderApiService.updateWorkOrder(selectedWorkOrder.id, updatedWorkOrder);
+
+      if (response.success) {
+        // Update the edited work order in local state
+        setWorkOrders((prev) =>
+          prev.map((wo) => (wo.id === updatedWorkOrder.id ? updatedWorkOrder : wo))
+        );
+      }
     }
 
-    if (response?.success) {
+    if (response.success) {
       setIsFormOpen(false);
       toast({
         title: formMode === "create" ? "Work Order Created" : "Work Order Updated",
         description: `Work order ${workOrderData.title} has been ${formMode === "create" ? "created" : "updated"} successfully.`,
       });
-      updateWorkOrderPage();
     }
+    return response;
   };
 
   return (

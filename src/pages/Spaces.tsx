@@ -161,28 +161,37 @@ export default function Spaces() {
       updateSpacePage();
       setDeleteSpaceId(null);
       toast.success("Space has been deleted successfully.");
-    } else {
-      // Error case - use the message from response.data
-      toast.error(`Cannot Delete Space\n${response.data?.message || "Cannot delete space that has ever had tenants or leases associated with it"}`, {
-        style: { whiteSpace: "pre-line" },
-      });
-    }
+    } 
   }
 };
   const handleSave = async (spaceData: Partial<Space>) => {
     let response;
     if (formMode === 'create') {
       response = await spacesApiService.addSpace(spaceData);
+
+      if (response.success)
+        updateSpacePage();
     } else if (formMode === 'edit' && selectedSpace) {
-      const updatedSpace = { ...selectedSpace, ...spaceData };
+      const updatedSpace = {
+        ...selectedSpace,
+        ...spaceData,
+        updated_at: new Date().toISOString(),
+      };
       response = await spacesApiService.updateSpace(updatedSpace);
+
+      if (response.success) {
+        // Update the edited space in local state
+        setSpaces((prev) =>
+          prev.map((s) => (s.id === updatedSpace.id ? updatedSpace : s))
+        );
+      }
     }
 
     if (response?.success) {
       setIsFormOpen(false);
       toast.success(`Space ${spaceData.code} has been ${formMode === 'create' ? 'created' : 'updated'} successfully.`);
-      updateSpacePage();
     }
+    return response;
   };
 
   const getKindIcon = (kind: SpaceKind) => {

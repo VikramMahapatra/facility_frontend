@@ -181,23 +181,33 @@ const confirmDelete = async () => {
   let response;
   if (formMode === "create") {
     response = await contractApiService.addContract(contractData);
+
+    if (response.success)
+      updateContractsPage();
   } else if (formMode === "edit" && selectedContract) {
     const updatedContract = {
       ...selectedContract,
       ...contractData,
       updated_at: new Date().toISOString(),
-    }
+    };
     response = await contractApiService.updateContract(updatedContract);
+
+    if (response.success) {
+      // Update the edited contract in local state
+      setContracts((prev) =>
+        prev.map((c) => (c.id === updatedContract.id ? updatedContract : c))
+      );
+    }
   }
 
-  if (response?.success) {
+  if (response.success) {
     setIsCreateDialogOpen(false);
-    updateContractsPage();
     toast({
       title: formMode === "create" ? "Contract Created" : "Contract Updated",
       description: `Contract ${contractData.code || contractData.contract_number || ""} has been ${formMode === "create" ? "created" : "updated"} successfully.`,
     });
   }
+  return response;
 };
 
   const getStatusBadge = (status: string) => {
