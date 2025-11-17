@@ -62,6 +62,14 @@ class TicketsApiService {
     const qs = params.toString() ? `?${params.toString()}` : "";
     return await apiService.request(`/ticket-category/category-lookup${qs}`);
   }
+
+  async getPriorityLookup() {
+    return await apiService.request(`/tickets/filter-priority-lookup`);
+  }
+
+  async getStatusLookup() {
+    return await apiService.request(`/tickets/filter-status-lookup`);
+  }
 }
 
 export const ticketsApiService = new TicketsApiService();

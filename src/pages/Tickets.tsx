@@ -6,11 +6,12 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
-import { Edit, Eye, Plus, TicketIcon, AlertTriangle } from "lucide-react";
+import { Edit, Eye, Plus, TicketIcon, AlertTriangle, Search } from "lucide-react";
 import TicketForm from "@/components/TicketForm";
 import { toast } from "sonner";
 import { useNavigate } from "react-router-dom";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Input } from "@/components/ui/input";
 import { mockTickets } from "@/data/mockTicketData";
 import { ticketsApiService } from "@/services/ticketing_service/ticketsapi";
 import { siteApiService } from "@/services/spaces_sites/sitesapi";
@@ -30,7 +31,10 @@ export default function Tickets() {
   const [statusFilter, setStatusFilter] = useState("ALL");
   const [priorityFilter, setPriorityFilter] = useState("ALL");
   const [selectedSite, setSelectedSite] = useState<string>("all");
+  const [searchTerm, setSearchTerm] = useState("");
   const [siteList, setSiteList] = useState<any[]>([]);
+  const [priorityList, setPriorityList] = useState<any[]>([]);
+  const [statusList, setStatusList] = useState<any[]>([]);
   const [page, setPage] = useState(1); // current page
   const [pageSize] = useState(10); // items per page
   const [totalItems, setTotalItems] = useState(0);
@@ -41,19 +45,31 @@ export default function Tickets() {
 
   useEffect(() => {
     loadSiteLookup();
+    loadPriorityLookup();
+    loadStatusLookup();
   }, []);
 
   useEffect(() => {
     if (page === 1) {
       loadTickets();
     } else {
-      setPage(1); // triggers the page effect
+      setPage(1); 
     }
-  }, [statusFilter, priorityFilter, selectedSite]);
+  }, [statusFilter, priorityFilter, selectedSite, searchTerm]);
 
   const loadSiteLookup = async () => {
     const lookup = await siteApiService.getSiteLookup();
     if (lookup.success) setSiteList(lookup.data || []);
+  };
+
+  const loadPriorityLookup = async () => {
+    const lookup = await ticketsApiService.getPriorityLookup();
+    if (lookup.success) setPriorityList(lookup.data || []);
+  };
+
+  const loadStatusLookup = async () => {
+    const lookup = await ticketsApiService.getStatusLookup();
+    if (lookup.success) setStatusList(lookup.data || []);
   };
 
   const loadTickets = async () => {
@@ -65,6 +81,7 @@ export default function Tickets() {
     if (statusFilter !== "ALL") params.append("status", statusFilter);
     if (priorityFilter !== "ALL") params.append("priority", priorityFilter);
     if (selectedSite && selectedSite !== "all") params.append("site_id", selectedSite);
+    if (searchTerm) params.append("search", searchTerm);
     params.append("skip", skip.toString());
     params.append("limit", limit.toString());
 
@@ -78,13 +95,16 @@ export default function Tickets() {
   };
 
   const handleCreate = async (data: any) => {
-    const response = await ticketsApiService.addTicket(data);
-    if (response.success) {
+    const response = await withLoader(async () => {
+      return await ticketsApiService.addTicket(data);
+    });
+    if (response) {
       setIsFormOpen(false);
       loadTickets();
       toast.success("Service ticket has been created successfully.");
+      return { success: true, data: response };
     }
-    return response;
+    return { success: false };
   };
 
   const handleEdit = (ticket: any) => {
@@ -132,14 +152,14 @@ export default function Tickets() {
   };
 
   const getPriorityColor = (priority: string) => {
-    const priorityUpper = priority?.toUpperCase();
-    switch (priorityUpper) {
-      case 'HIGH':
-      case 'URGENT':
+    const priorityLower = priority?.toLowerCase();
+    switch (priorityLower) {
+      case 'high':
+      case 'urgent':
         return 'bg-red-100 text-red-800';
-      case 'MEDIUM':
+      case 'medium':
         return 'bg-yellow-100 text-yellow-800';
-      case 'LOW':
+      case 'low':
         return 'bg-green-100 text-green-800';
       default:
         return 'bg-gray-100 text-gray-800';
@@ -177,7 +197,15 @@ export default function Tickets() {
             <Card>
               <CardHeader>
                 <div className="flex justify-between items-center">
-                  <CardTitle>All Tickets</CardTitle>
+                  <div className="relative flex-1 max-w-sm">
+                    <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground h-4 w-4" />
+                    <Input
+                      placeholder="Search tickets..."
+                      value={searchTerm}
+                      onChange={(e) => setSearchTerm(e.target.value)}
+                      className="pl-10"
+                    />
+                  </div>
                   <div className="flex gap-2">
                     <Select value={selectedSite} onValueChange={setSelectedSite}>
                       <SelectTrigger className="w-[150px]">
@@ -198,11 +226,11 @@ export default function Tickets() {
                       </SelectTrigger>
                       <SelectContent>
                         <SelectItem value="ALL">All Status</SelectItem>
-                        <SelectItem value="OPEN">Open</SelectItem>
-                        <SelectItem value="ASSIGNED">Assigned</SelectItem>
-                        <SelectItem value="IN_PROGRESS">In Progress</SelectItem>
-                        <SelectItem value="ESCALATED">Escalated</SelectItem>
-                        <SelectItem value="CLOSED">Closed</SelectItem>
+                        {statusList.map((status: any) => (
+                          <SelectItem key={status.id} value={status.id}>
+                            {status.name}
+                          </SelectItem>
+                        ))}
                       </SelectContent>
                     </Select>
                     <Select value={priorityFilter} onValueChange={setPriorityFilter}>
@@ -211,9 +239,11 @@ export default function Tickets() {
                       </SelectTrigger>
                       <SelectContent>
                         <SelectItem value="ALL">All Priority</SelectItem>
-                        <SelectItem value="HIGH">High</SelectItem>
-                        <SelectItem value="MEDIUM">Medium</SelectItem>
-                        <SelectItem value="LOW">Low</SelectItem>
+                        {priorityList.map((priority: any) => (
+                          <SelectItem key={priority.id} value={priority.id}>
+                            {priority.name}
+                          </SelectItem>
+                        ))}
                       </SelectContent>
                     </Select>
                   </div>

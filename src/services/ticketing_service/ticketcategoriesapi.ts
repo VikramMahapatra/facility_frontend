@@ -36,8 +36,10 @@ class TicketCategoriesApiService {
     return await apiService.request(`/ticket-category/status-lookup`);
   }
 
-  async getSlaPolicyLookup() {
-    return await apiService.request(`/ticket-category/sla-policy-lookup`);
+  async getSlaPolicyLookup(siteId: string) {
+    const params = new URLSearchParams();
+    params.append("site_id", siteId);
+    return await apiService.request(`/ticket-category/sla-policy-lookup?${params.toString()}`);
   }
 }
 

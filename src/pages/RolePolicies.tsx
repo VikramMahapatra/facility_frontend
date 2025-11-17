@@ -27,7 +27,6 @@ import { rolePolicyApiService } from "@/services/access_control/rolepoliciesapi"
 import { navigationItems } from "@/data/navigationItems";
 import { useLoader } from "@/context/LoaderContext";
 import LoaderOverlay from "@/components/LoaderOverlay";
-import ContentContainer from "@/components/ContentContainer";
 
 export interface RolePolicy {
   role_id: string;
@@ -123,6 +122,31 @@ export default function RolePolicies() {
     }
   };
 
+  const areAllPoliciesSelected = () => {
+    const totalPolicies = availableResources.length * availableActions.length;
+    return policies.length === totalPolicies;
+  };
+
+  const toggleAllPolicies = () => {
+    if (areAllPoliciesSelected()) {
+      // Uncheck all - clear all policies
+      setPolicies([]);
+    } else {
+      // Check all - create policies for all resource-action combinations
+      const allPolicies: RolePolicy[] = [];
+      availableResources.forEach((resource) => {
+        availableActions.forEach((action) => {
+          allPolicies.push({
+            role_id: selectedRoleId,
+            resource: resource.id,
+            action: action.id,
+          });
+        });
+      });
+      setPolicies(allPolicies);
+    }
+  };
+
   return (
     <SidebarProvider>
       <div className="min-h-screen flex w-full bg-background">
@@ -135,58 +159,74 @@ export default function RolePolicies() {
 
           <main className="flex-1 p-6 overflow-auto">
             <div className="max-w-7xl mx-auto space-y-6">
-              <ContentContainer>
-                <LoaderOverlay />
-                <div className="space-y-6">
-                  <div className="flex items-center justify-between">
-                    <div>
-                      <h1 className="text-3xl font-bold text-foreground">Role Policies</h1>
-                      <p className="text-muted-foreground mt-1">
-                        Configure menu visibility and action permissions for each role
-                      </p>
-                    </div>
-                    <Button onClick={handleSavePolicies}>
-                      <Save className="h-4 w-4 mr-2" />
-                      Save Policies
-                    </Button>
+              <div className="space-y-6">
+                <div className="flex items-center justify-between">
+                  <div>
+                    <h1 className="text-3xl font-bold text-foreground">Role Policies</h1>
+                    <p className="text-muted-foreground mt-1">
+                      Configure menu visibility and action permissions for each role
+                    </p>
                   </div>
+                  <Button onClick={handleSavePolicies}>
+                    <Save className="h-4 w-4 mr-2" />
+                    Save Policies
+                  </Button>
+                </div>
 
+                <Card>
+                  <CardHeader>
+                    <CardTitle>Select Role</CardTitle>
+                    <CardDescription>Choose a role to configure its permissions</CardDescription>
+                  </CardHeader>
+                  <CardContent>
+                    <div className="flex items-center gap-4">
+                      <Shield className="h-5 w-5 text-primary" />
+                      <Select value={selectedRoleId} onValueChange={setSelectedRoleId}>
+                        <SelectTrigger className="w-80">
+                          <SelectValue placeholder="Select a role" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          {roles.map((role) => (
+                            <SelectItem key={role.id} value={role.id}>
+                              {role.name}
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                      {selectedRole && (
+                        <Badge variant="outline">{selectedRole.description}</Badge>
+                      )}
+                    </div>
+                  </CardContent>
+                </Card>
+
+                {selectedRoleId && (
                   <Card>
                     <CardHeader>
-                      <CardTitle>Select Role</CardTitle>
-                      <CardDescription>Choose a role to configure its permissions</CardDescription>
-                    </CardHeader>
-                    <CardContent>
-                      <div className="flex items-center gap-4">
-                        <Shield className="h-5 w-5 text-primary" />
-                        <Select value={selectedRoleId} onValueChange={setSelectedRoleId}>
-                          <SelectTrigger className="w-80">
-                            <SelectValue placeholder="Select a role" />
-                          </SelectTrigger>
-                          <SelectContent>
-                            {roles.map((role) => (
-                              <SelectItem key={role.id} value={role.id}>
-                                {role.name}
-                              </SelectItem>
-                            ))}
-                          </SelectContent>
-                        </Select>
-                        {selectedRole && (
-                          <Badge variant="outline">{selectedRole.description}</Badge>
-                        )}
+                      <div className="flex items-center justify-between">
+                        <div>
+                          <CardTitle>Permissions Matrix</CardTitle>
+                          <CardDescription>
+                            Check the boxes to grant permissions for resources and actions
+                          </CardDescription>
+                        </div>
+                        <div className="flex items-center gap-2">
+                          <Checkbox
+                            checked={areAllPoliciesSelected()}
+                            onCheckedChange={toggleAllPolicies}
+                            id="assign-all"
+                          />
+                          <Label
+                            htmlFor="assign-all"
+                            className="cursor-pointer text-sm font-medium"
+                          >
+                            Assign All
+                          </Label>
+                        </div>
                       </div>
-                    </CardContent>
-                  </Card>
-
-                  {selectedRoleId && (
-                    <Card>
-                      <CardHeader>
-                        <CardTitle>Permissions Matrix</CardTitle>
-                        <CardDescription>
-                          Check the boxes to grant permissions for resources and actions
-                        </CardDescription>
-                      </CardHeader>
-                      <CardContent>
+                    </CardHeader>
+                    <CardContent className="relative">
+                      <LoaderOverlay />
                         <div className="rounded-md border">
                           <Table>
                             <TableHeader>
@@ -233,8 +273,7 @@ export default function RolePolicies() {
                       </CardContent>
                     </Card>
                   )}
-                </div>
-              </ContentContainer>
+              </div>
             </div>
           </main>
         </div>

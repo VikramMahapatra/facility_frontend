@@ -9,17 +9,19 @@ import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { ArrowLeft, MessageSquare, User, Clock, TrendingUp, FileText, Star, TicketIcon, Paperclip, Download } from "lucide-react";
 import { mockTicketWorkOrders } from "@/data/mockTicketData";
-import { useToast } from "@/hooks/use-toast";
+import { toast } from "sonner";
 import { ticketsApiService } from "@/services/ticketing_service/ticketsapi";
 import { useAuth } from "@/context/AuthContext";
+import { useLoader } from "@/context/LoaderContext";
+import LoaderOverlay from "@/components/LoaderOverlay";
+import ContentContainer from "@/components/ContentContainer";
 
 export default function TicketDetail() {
   const { ticketId } = useParams();
   const navigate = useNavigate();
-  const { toast } = useToast();
   const { user } = useAuth();
+  const { withLoader } = useLoader();
   const [ticket, setTicket] = useState<any>(null);
-  const [loading, setLoading] = useState(true);
   const [statusList, setStatusList] = useState<any[]>([]);
   const [employeeList, setEmployeeList] = useState<any[]>([]);
   const [attachments, setAttachments] = useState<any[]>([]);
@@ -35,39 +37,39 @@ export default function TicketDetail() {
   }, [ticketId]);
 
   const loadTicket = async () => {
-    setLoading(true);
-    const response = await ticketsApiService.getTicketById(ticketId!);
-    if (response.success) {
-      setTicket(response.data);
-      setAttachments(response.data?.attachments || response.data?.data?.attachments || []);
-      if (ticketId) {
-        loadEmployeesForTicket();
-        loadNextStatuses();
+    await withLoader(async () => {
+      const response = await ticketsApiService.getTicketById(ticketId!);
+      if (response.success) {
+        setTicket(response.data);
+        setAttachments(response.data?.attachments || response.data?.data?.attachments || []);
+        if (ticketId) {
+          loadEmployeesForTicket();
+          loadNextStatuses();
+        }
+      } else {
+        toast.error("Failed to load ticket details");
       }
-    } else {
-      toast({
-        title: "Error",
-        description: "Failed to load ticket details",
-        variant: "destructive",
-      });
-    }
-    setLoading(false);
+    });
   };
 
   const loadEmployeesForTicket = async () => {
     if (!ticketId) return;
-    const response = await ticketsApiService.getEmployeesForTicket(ticketId);
-    if (response.success) {
-      setEmployeeList(Array.isArray(response.data) ? response.data : response.data?.employees);
-    }
+    await withLoader(async () => {
+      const response = await ticketsApiService.getEmployeesForTicket(ticketId);
+      if (response.success) {
+        setEmployeeList(Array.isArray(response.data) ? response.data : response.data?.employees);
+      }
+    });
   };
 
   const loadNextStatuses = async () => {
     if (!ticketId) return;
-    const response = await ticketsApiService.getNextStatuses(ticketId);
-    if (response.success) {
-      setStatusList(response.data || []);
-    }
+    await withLoader(async () => {
+      const response = await ticketsApiService.getNextStatuses(ticketId);
+      if (response.success) {
+        setStatusList(response.data || []);
+      }
+    });
   };
 
   const [newComment, setNewComment] = useState("");
@@ -80,91 +82,62 @@ export default function TicketDetail() {
 
   useEffect(() => {
     if (ticket) {
-      setSelectedStatus(ticket.status);
+      setSelectedStatus(ticket?.status);
       setAssignedTo(ticket?.assigned_to);
     }
   }, [ticket]);
-
-  if (loading) {
-    return (
-      <SidebarProvider>
-        <div className="flex min-h-screen w-full">
-          <PropertySidebar />
-          <SidebarInset className="flex-1">
-            <div className="flex items-center justify-center h-screen">
-              <div className="text-center">
-                <div className="animate-spin w-8 h-8 border-2 border-primary border-t-transparent rounded-full mx-auto mb-4"></div>
-                <p className="text-muted-foreground">Loading ticket details...</p>
-              </div>
-            </div>
-          </SidebarInset>
-        </div>
-      </SidebarProvider>
-    );
-  }
   
   const handleAddComment = async () => {
     if (!newComment.trim() || !ticketId) return;
 
-    const response = await ticketsApiService.postComment(ticketId, newComment);
-    if (response.success) {
-      loadTicket();
-      toast({
-        title: "Comment added",
-        description: "Your comment has been posted successfully.",
-      });
-      setNewComment("");
-    }
+    await withLoader(async () => {
+      const response = await ticketsApiService.postComment(ticketId, newComment);
+      if (response.success) {
+        loadTicket();
+        toast.success("Your comment has been posted successfully.");
+        setNewComment("");
+      }
+    });
   };
 
   const handleStatusUpdate = async () => {
     if (!ticketId || !selectedStatus || !user?.id || isStatusUpdateDisabled) return;
 
     setIsStatusUpdateDisabled(true);
-    const response = await ticketsApiService.updateTicketStatus(ticketId, selectedStatus, user.id);
-    if (response.success) {
-      loadTicket();
-      toast({
-        title: "Status updated",
-        description: `Ticket status changed to ${selectedStatus}`,
-      });
-    }
+    await withLoader(async () => {
+      const response = await ticketsApiService.updateTicketStatus(ticketId, selectedStatus, user.id);
+      if (response.success) {
+        loadTicket();
+        toast.success(`Ticket status changed to ${selectedStatus}`);
+      }
+    });
+    setIsStatusUpdateDisabled(false);
   };
 
   const handleAssignment = async () => {
     if (!ticketId || !assignedTo || isAssignmentDisabled) return;
 
     setIsAssignmentDisabled(true);
-    const response = await ticketsApiService.assignTicket(ticketId, assignedTo);
-    if (response.success) {
-      loadTicket();
-      toast({
-        title: "Assignment updated",
-        description: "Ticket has been assigned successfully.",
-      });
-    }
+    await withLoader(async () => {
+      const response = await ticketsApiService.assignTicket(ticketId, assignedTo);
+      if (response.success) {
+        loadTicket();
+        toast.success("Ticket has been assigned successfully.");
+      }
+    });
+    setIsAssignmentDisabled(false);
   };
 
   const handleReopen = () => {
-    toast({
-      title: "Ticket reopened",
-      description: "The ticket has been reopened for further action.",
-    });
+    toast.success("The ticket has been reopened for further action.");
   };
 
   const handleFeedbackSubmit = () => {
     if (rating === 0) {
-      toast({
-        title: "Rating required",
-        description: "Please provide a rating before submitting feedback.",
-        variant: "destructive",
-      });
+      toast.error("Please provide a rating before submitting feedback.");
       return;
     }
-    toast({
-      title: "Feedback submitted",
-      description: "Thank you for your feedback!",
-    });
+    toast.success("Thank you for your feedback!");
     setRating(0);
     setFeedback("");
   };
@@ -208,15 +181,17 @@ export default function TicketDetail() {
           </header>
 
           <main className="flex-1 p-6">
-            <div className="space-y-6">
+            <ContentContainer>
+              <LoaderOverlay />
+              <div className="space-y-6">
               <div className="flex items-center gap-4">
                 <Button variant="ghost" size="sm" onClick={() => navigate("/tickets")}>
                   <ArrowLeft className="w-4 h-4 mr-2" />
                   Back
                 </Button>
                 <div className="flex-1">
-                  <h2 className="text-2xl font-bold text-sidebar-primary"> #{ticket.ticket_no}</h2>
-                  <p className="text-muted-foreground">{ticket.title}</p>
+                  <h2 className="text-2xl font-bold text-sidebar-primary"> #{ticket?.ticket_no}</h2>
+                  <p className="text-muted-foreground">{ticket?.title}</p>
                 </div>
               </div>
 
@@ -231,26 +206,26 @@ export default function TicketDetail() {
                   <CardContent className="space-y-4">
                     <div>
                       <h3 className="font-medium mb-2">Description</h3>
-                      <p className="text-sm text-muted-foreground">{ticket.description}</p>
+                      <p className="text-sm text-muted-foreground">{ticket?.description}</p>
                     </div>
                     <div className="grid grid-cols-2 gap-4 pt-4 border-t">
                       <div>
                         <p className="text-sm text-muted-foreground">Category</p>
-                        <p className="font-medium">{ticket.category || ticket.category_name}</p>
+                        <p className="font-medium">{ticket?.category || ticket?.category_name}</p>
                       </div>
                       <div>
                         <p className="text-sm text-muted-foreground">Priority</p>
-                        <Badge className={ticket.priority === 'HIGH' ? 'bg-red-100 text-red-800' : ticket.priority === 'MEDIUM' ? 'bg-yellow-100 text-yellow-800' : 'bg-green-100 text-green-800'}>
-                          {ticket.priority}
+                        <Badge className={ticket?.priority === 'HIGH' ? 'bg-red-100 text-red-800' : ticket?.priority === 'MEDIUM' ? 'bg-yellow-100 text-yellow-800' : 'bg-green-100 text-green-800'}>
+                          {ticket?.priority}
                         </Badge>
                       </div>
                       <div>
                         <p className="text-sm text-muted-foreground">Request Type</p>
-                        <p className="font-medium">{ticket.request_type}</p>
+                        <p className="font-medium">{ticket?.request_type}</p>
                       </div>
                       <div>
                         <p className="text-sm text-muted-foreground">Created</p>
-                        <p className="font-medium">{new Date(ticket.created_at).toLocaleString()}</p>
+                        <p className="font-medium">{ticket?.created_at ? new Date(ticket.created_at).toLocaleString() : ''}</p>
                       </div>
                     </div>
                     
@@ -261,7 +236,7 @@ export default function TicketDetail() {
                         <p className="text-sm font-medium">Attachments</p>
                       </div>
                       <div className="border-2 border-dashed border-muted-foreground/30 rounded-lg p-4">
-                        {ticket.attachments && ticket.attachments.length > 0 ? (
+                        {ticket?.attachments && ticket.attachments.length > 0 ? (
                           <div className="grid grid-cols-3 gap-3">
                             {ticket.attachments.map((attachment: any, index: number) => (
                               <div key={index} className="relative group border rounded-lg overflow-hidden">
@@ -410,7 +385,7 @@ export default function TicketDetail() {
                 </Card>
 
                 {/* Feedback Section (if closed) */}
-                {ticket.status === 'CLOSED' && (
+                {ticket?.status === 'CLOSED' && (
                   <Card>
                     <CardHeader>
                       <CardTitle className="flex items-center gap-2">
@@ -492,7 +467,7 @@ export default function TicketDetail() {
                         Assign Ticket
                       </Button>
                     </div>
-                    {ticket.status === 'CLOSED' && (
+                    {ticket?.status === 'CLOSED' && (
                       <Button onClick={handleReopen} variant="outline" className="w-full">
                         Reopen Ticket
                       </Button>
@@ -530,7 +505,8 @@ export default function TicketDetail() {
                 </Card>
               </div>
             </div>
-            </div>
+              </div>
+            </ContentContainer>
           </main>
         </SidebarInset>
       </div>

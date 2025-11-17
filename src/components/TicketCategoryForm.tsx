@@ -8,7 +8,7 @@ import { ticketCategoriesApiService } from "@/services/ticketing_service/ticketc
 import { siteApiService } from "@/services/spaces_sites/sitesapi";
 
 interface TicketCategoryFormProps {
-  onSubmit: (data: any) => void;
+  onSubmit: (data: any) => Promise<any>;
   onCancel: () => void;
   initialData?: any;
 }
@@ -27,13 +27,24 @@ export default function TicketCategoryForm({ onSubmit, onCancel, initialData }: 
   const [slaPolicyList, setSlaPolicyList] = useState<any[]>([]);
   const [statusList, setStatusList] = useState<any[]>([]);
   const [siteList, setSiteList] = useState<any[]>([]);
+  const [isSubmitting, setIsSubmitting] = useState(false);
 
   useEffect(() => {
     loadAutoAssignRoleLookup();
-    loadSlaPolicyLookup();
     loadStatusLookup();
     loadSiteLookup();
+    if (formData.site_id) {
+      loadSlaPolicyLookup(formData.site_id);
+    }
   }, []);
+
+  useEffect(() => {
+    if (formData.site_id) {
+      loadSlaPolicyLookup(formData.site_id);
+    } else {
+      setSlaPolicyList([]);
+    }
+  }, [formData.site_id]);
 
   const loadAutoAssignRoleLookup = async () => {
     const response = await ticketCategoriesApiService.getAutoAssignRoleLookup();
@@ -42,10 +53,12 @@ export default function TicketCategoryForm({ onSubmit, onCancel, initialData }: 
     }
   };
 
-  const loadSlaPolicyLookup = async () => {
-    const response = await ticketCategoriesApiService.getSlaPolicyLookup();
+  const loadSlaPolicyLookup = async (siteId: string) => {
+    const response = await ticketCategoriesApiService.getSlaPolicyLookup(siteId);
     if (response.success) {
-      setSlaPolicyList(response.data);
+      setSlaPolicyList(response.data || []);
+    } else {
+      setSlaPolicyList([]);
     }
   };
 
@@ -94,9 +107,25 @@ export default function TicketCategoryForm({ onSubmit, onCancel, initialData }: 
     }
   };
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    onSubmit(formData);
+    if (isSubmitting) {
+      return;
+    }
+
+    setIsSubmitting(true);
+
+    try {
+      const formResponse = await onSubmit(formData);
+      if (formResponse?.success) {
+        // Form will be closed by parent component
+      } else {
+        setIsSubmitting(false);
+      }
+    } catch (error) {
+      // Re-enable buttons on any error
+      setIsSubmitting(false);
+    }
   };
 
   return (
@@ -191,10 +220,10 @@ export default function TicketCategoryForm({ onSubmit, onCancel, initialData }: 
       </div>
 
       <div className="flex gap-2 pt-4">
-        <Button type="submit" className="flex-1">
-          {initialData ? "Update" : "Create"} Category
+        <Button type="submit" className="flex-1" disabled={isSubmitting}>
+          {isSubmitting ? "Submitting..." : initialData ? "Update" : "Create"}
         </Button>
-        <Button type="button" variant="outline" onClick={onCancel} className="flex-1">
+        <Button type="button" variant="outline" onClick={onCancel} className="flex-1" disabled={isSubmitting}>
           Cancel
         </Button>
       </div>
