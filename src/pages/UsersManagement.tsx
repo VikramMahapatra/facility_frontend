@@ -91,29 +91,40 @@ export default function UsersManagement() {
   // Remove client-side filtering since we're using server-side pagination
 
   const handleCreateUser = async (values: any) => {
-    const response = await userManagementApiService.addUser(values);
-    if (response?.success) {
-      setIsFormOpen(false);
-      toast.success("User created successfully");
-      loadUsers();
-    }
-  };
+  const response = await userManagementApiService.addUser(values);
+  
+  if (response.success) {
+    setIsFormOpen(false);
+    toast.success("User created successfully");
+    loadUsers();
+  }
+  return response;
+};
 
-  const handleUpdateUser = async (values: any) => {
-    if (!editingUser) return;
-    const response = await withLoader(async () => {
-      return await userManagementApiService.updateUser({
-        ...editingUser,
-        ...values,
-      });
-    });
-    if (response?.success) {
-      toast.success("User updated successfully");
-      setIsFormOpen(false);
-      setEditingUser(undefined);
-      loadUsers();
-    }
+const handleUpdateUser = async (values: any) => {
+  if (!editingUser) return;
+  
+  const updatedUser = {
+    ...editingUser,
+    ...values,
+    updated_at: new Date().toISOString(),
   };
+  
+  const response = await withLoader(async () => {
+    return await userManagementApiService.updateUser(updatedUser);
+  });
+  
+  if (response.success) {
+    // Update the edited user in local state
+    setUsers((prev) =>
+      prev.map((u) => (u.id === updatedUser.id ? updatedUser : u))
+    );
+    toast.success("User updated successfully");
+    setIsFormOpen(false);
+    setEditingUser(undefined);
+  }
+  return response;
+};
 
   const handleDeleteUser = (userId: string) => {
     setDeleteUserId(userId);

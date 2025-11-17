@@ -264,24 +264,39 @@ const onSaveMeter = async (meterData: Partial<Meter>) => {
   };
 
   const onSaveMeterReading = async (
-    meterReadingData: Partial<MeterReading>
-  ) => {
-    let response;
-    if (meterReadingFormMode === 'create') {
-      response = await meterReadingApiService.addMeterReading(meterReadingData);
-    } else if (meterReadingFormMode === 'edit') {
-      response = await meterReadingApiService.updateMeterReading({ ...selectedMeterReading, ...meterReadingData });
-    }
+  meterReadingData: Partial<MeterReading>
+) => {
+  let response;
+  if (meterReadingFormMode === 'create') {
+    response = await meterReadingApiService.addMeterReading(meterReadingData);
 
-    if (response?.success) {
-      setIsMeterReadingFormOpen(false);
+    if (response.success)
       await loadMeterReadings();
-      toast({
-        title: "Success",
-        description: `Meter reading ${meterReadingFormMode === "create" ? "added" : "updated"} successfully.`,
-      });
+  } else if (meterReadingFormMode === 'edit' && selectedMeterReading) {
+    const updatedMeterReading = {
+      ...selectedMeterReading,
+      ...meterReadingData,
+      updated_at: new Date().toISOString(),
+    };
+    response = await meterReadingApiService.updateMeterReading(updatedMeterReading);
+
+    if (response.success) {
+      // Update the edited meter reading in local state
+      setMeterReadings((prev) =>
+        prev.map((mr) => (mr.id === updatedMeterReading.id ? updatedMeterReading : mr))
+      );
     }
-  };
+  }
+
+  if (response.success) {
+    setIsMeterReadingFormOpen(false);
+    toast({
+      title: "Success",
+      description: `Meter reading ${meterReadingFormMode === "create" ? "added" : "updated"} successfully.`,
+    });
+  }
+  return response;
+};
 
   const onDeleteMeterReading = async (reading: MeterReading) => {
     setDeleteReadingId(reading.id);

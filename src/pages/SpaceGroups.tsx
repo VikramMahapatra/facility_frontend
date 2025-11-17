@@ -179,20 +179,33 @@ const confirmDelete = async () => {
     let response;
     if (formMode === "create") {
       response = await spaceGroupsApiService.addSpaceGroup(data);
+
+      if (response.success)
+        loadSpaceGroups();
     } else if (formMode === "edit" && selectedGroup) {
-      const updatedGroup = { ...selectedGroup, ...data };
+      const updatedGroup = {
+        ...selectedGroup,
+        ...data,
+        updated_at: new Date().toISOString(),
+      };
       response = await spaceGroupsApiService.updateSpaceGroup(updatedGroup);
+
+      if (response.success) {
+        // Update the edited group in local state
+        setGroups((prev) =>
+          prev.map((g) => (g.id === updatedGroup.id ? updatedGroup : g))
+        );
+      }
     }
 
     if (response.success) {
       setShowForm(false);
-      loadSpaceGroups();
       toast({
         title: formMode === "create" ? "Group Created" : "Group Updated",
         description: `Group ${data.name} has been ${formMode === "create" ? "created" : "updated"} successfully.`,
       });
     }
-
+    return response;
   };
 
 

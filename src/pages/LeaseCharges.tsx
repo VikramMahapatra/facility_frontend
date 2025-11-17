@@ -232,21 +232,35 @@ export default function LeaseCharges() {
 
   const handleSave = async (data: Partial<LeaseCharge>) => {
     let response;
-      if (formMode === 'create') {
-        response = await leaseChargeApiService.addLeaseCharge(data);
-      } else if (formMode === 'edit' && selectedCharge) {
-        const updatedLeaseCharge = { ...selectedCharge, ...data };
-        response = await leaseChargeApiService.updateLeaseCharge(updatedLeaseCharge);
-      }
+    if (formMode === 'create') {
+      response = await leaseChargeApiService.addLeaseCharge(data);
 
-    if (response?.success) {
+      if (response.success)
+        updateLeaseChargePage();
+    } else if (formMode === 'edit' && selectedCharge) {
+      const updatedLeaseCharge = {
+        ...selectedCharge,
+        ...data,
+        updated_at: new Date().toISOString(),
+      };
+      response = await leaseChargeApiService.updateLeaseCharge(updatedLeaseCharge);
+
+      if (response.success) {
+        // Update the edited lease charge in local state
+        setLeaseCharges((prev) =>
+          prev.map((lc) => (lc.id === updatedLeaseCharge.id ? updatedLeaseCharge : lc))
+        );
+      }
+    }
+
+    if (response.success) {
       setIsFormOpen(false);
       toast({
         title: formMode === 'create' ? "Lease Charge Created" : "Lease Charge Updated",
         description: `Lease Charge ${data.charge_code} has been ${formMode === 'create' ? 'created' : 'updated'} successfully.`,
       });
-      updateLeaseChargePage();
     }
+    return response;
   };
 
   // delete

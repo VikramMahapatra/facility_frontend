@@ -136,24 +136,37 @@ export default function Buildings() {
     }
   };
 
-  const handleSave = async (building: any) => {
+  const handleSave = async (building: Partial<Building>) => {
     let response;
     if (formMode === "create") {
       response = await buildingApiService.addBuilding(building);
-    } else if (formMode === "edit") {
+
+      if (response.success)
+        loadBuildings();
+    } else if (formMode === "edit" && selectedBuilding) {
       const updatedBuilding = {
         ...selectedBuilding,
-        ...building
+        ...building,
+        updated_at: new Date().toISOString(),
       };
       response = await buildingApiService.updateBuilding(updatedBuilding);
+
+      if (response.success) {
+        // Update the edited building in local state
+        setBuildings((prev) =>
+          prev.map((b) => (b.id === updatedBuilding.id ? updatedBuilding : b))
+        );
+      }
     }
 
     if (response.success) {
       setShowForm(false);
-      loadBuildings();
-      toast.success(`Building ${building.name} has been ${formMode === "create" ? "created" : "updated"} successfully.`);
+      toast.success(
+        `Building ${building.name} has been ${formMode === "create" ? "created" : "updated"
+        } successfully.`
+      );
     }
-
+    return response;
   };
 
   // --- UI Helpers ---
