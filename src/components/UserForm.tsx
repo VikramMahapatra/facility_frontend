@@ -23,6 +23,9 @@ import { userManagementApiService } from "@/services/access_control/usermanageme
 import { UserFormValues, userSchema } from "@/schemas/user.schema";
 import { Building2, Truck, UserCog, Users } from "lucide-react";
 import PhoneInput from "react-phone-input-2";
+import { siteApiService } from "@/services/spaces_sites/sitesapi";
+import { buildingApiService } from "@/services/spaces_sites/buildingsapi";
+import { spacesApiService } from "@/services/spaces_sites/spacesapi";
 
 // Define interfaces for API data
 interface User {
@@ -60,6 +63,10 @@ const emptyFormData: UserFormValues = {
   status: "active",
   account_type: "organization",
   role_ids: [],
+  site_id: "",
+  building_id: "",
+  space_id: "",
+  site_ids: [],
 };
 
 const accountTypes = [
@@ -106,17 +113,46 @@ export function UserForm({ user, open, onOpenChange, onSubmit, mode = "create" }
 
   const [statusList, setStatusList] = useState([]);
   const [roleList, setRoleList] = useState([]);
+  const [siteList, setSiteList] = useState<any[]>([]);
+  const [buildingList, setBuildingList] = useState<any[]>([]);
+  const [spaceList, setSpaceList] = useState<any[]>([]);
 
   const selectedRoleIds = watch("role_ids") || [];
+  const selectedSiteIds = watch("site_ids") || [];
+  const accountType = watch("account_type");
+  const selectedSiteId = watch("site_id");
+  const selectedBuildingId = watch("building_id");
   const isReadOnly = mode === "view";
+  const isTenant = accountType === "tenant";
+  const isStaff = accountType === "staff";
 
   // Load lookup data when form opens 
   useEffect(() => {
     if (open) {
       loadStatusLookup();
       loadRolesLookup();
+      loadSiteLookup();
     }
   }, [open]);
+
+  // Load buildings when site changes
+  useEffect(() => {
+    if (selectedSiteId) {
+      loadBuildingLookup(selectedSiteId);
+    } else {
+      setBuildingList([]);
+      setSpaceList([]);
+    }
+  }, [selectedSiteId]);
+
+  // Load spaces when building changes
+  useEffect(() => {
+    if (selectedSiteId && selectedBuildingId) {
+      loadSpaceLookup(selectedSiteId, selectedBuildingId);
+    } else {
+      setSpaceList([]);
+    }
+  }, [selectedSiteId, selectedBuildingId]);
 
   useEffect(() => {
     if (user && mode !== "create") {
@@ -126,6 +162,10 @@ export function UserForm({ user, open, onOpenChange, onSubmit, mode = "create" }
         phone: user.phone || "",
         status: user.status || "active",
         role_ids: user.roles?.map(r => r.id) || [],
+        site_id: (user as any).site_id || "",
+        building_id: (user as any).building_id || "",
+        space_id: (user as any).space_id || "",
+        site_ids: (user as any).site_ids || [],
       });
     } else {
       reset(emptyFormData);
@@ -142,6 +182,21 @@ export function UserForm({ user, open, onOpenChange, onSubmit, mode = "create" }
     if (lookup?.success) setRoleList(lookup.data || []);
   };
 
+  const loadSiteLookup = async () => {
+    const lookup = await siteApiService.getSiteLookup();
+    if (lookup.success) setSiteList(lookup.data || []);
+  };
+
+  const loadBuildingLookup = async (siteId: string) => {
+    const lookup = await buildingApiService.getBuildingLookup(siteId);
+    if (lookup.success) setBuildingList(lookup.data || []);
+  };
+
+  const loadSpaceLookup = async (siteId: string, buildingId: string) => {
+    const lookup = await spacesApiService.getSpaceLookup(siteId, buildingId);
+    if (lookup.success) setSpaceList(lookup.data || []);
+  };
+
   const onSubmitForm = async (data: UserFormValues) => {
     try {
       await onSubmit(data);
@@ -154,7 +209,7 @@ export function UserForm({ user, open, onOpenChange, onSubmit, mode = "create" }
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="sm:max-w-[600px]">
+      <DialogContent className="sm:max-w-[600px] max-h-[90vh] flex flex-col">
         <DialogHeader>
           <DialogTitle>
             {mode === "create" && "Create New User"}
@@ -162,7 +217,8 @@ export function UserForm({ user, open, onOpenChange, onSubmit, mode = "create" }
             {mode === "view" && "User Details"}
           </DialogTitle>
         </DialogHeader>
-        <form onSubmit={handleSubmit(onSubmitForm)} className="space-y-4">
+        <div className="overflow-y-auto flex-1 pr-2 -mr-2">
+          <form onSubmit={handleSubmit(onSubmitForm)} className="space-y-4" id="user-form">
           <div className="space-y-2">
             <Label htmlFor="full_name">Full Name *</Label>
             <Input
@@ -226,68 +282,231 @@ export function UserForm({ user, open, onOpenChange, onSubmit, mode = "create" }
               )}
             />
           </div>
-          <Controller
-            name="account_type"
-            control={control}
-            render={({ field }) => (
-              <div className="space-y-2">
-                <Label>Type *</Label>
-                <Select
-                  value={field.value || ""}
-                  onValueChange={field.onChange}
-                  disabled={isReadOnly}
-                >
-                  <SelectTrigger>
-                    <SelectValue placeholder="Select your account type" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {accountTypes.map((type) => (
-                      <SelectItem key={type.value} value={type.value}>
-                        <div className="flex items-center space-x-3">
-                          {type.icon}
-                          <div>
-                            <div className="font-medium">{type.label}</div>
-                            <div className="text-xs text-muted-foreground">{type.description}</div>
+          <div className={(isTenant || isStaff) ? "grid grid-cols-2 gap-4" : ""}>
+            <Controller
+              name="account_type"
+              control={control}
+              render={({ field }) => (
+                <div className="space-y-2">
+                  <Label>Type *</Label>
+                  <Select
+                    value={field.value || ""}
+                    onValueChange={field.onChange}
+                    disabled={isReadOnly}
+                  >
+                    <SelectTrigger className={(isTenant || isStaff) ? "w-full" : "w-full max-w-xs"}>
+                      <SelectValue placeholder="Select your account type" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {accountTypes.map((type) => (
+                        <SelectItem key={type.value} value={type.value}>
+                          <div className="flex items-center space-x-3">
+                            {type.icon}
+                            <div>
+                              <div className="font-medium">{type.label}</div>
+                              <div className="text-xs text-muted-foreground">{type.description}</div>
+                            </div>
+                          </div>
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                  {errors.account_type && (
+                    <p className="text-sm text-red-500">{errors.account_type.message}</p>
+                  )}
+                </div>
+              )}
+            />
+
+            {(isTenant || isStaff) && (
+              <Controller
+                name="status"
+                control={control}
+                render={({ field }) => (
+                  <div className="space-y-2">
+                    <Label htmlFor="status">Status *</Label>
+                    <Select
+                      value={field.value || ""}
+                      onValueChange={field.onChange}
+                      disabled={isReadOnly}
+                    >
+                      <SelectTrigger className={errors.status ? 'border-red-500' : ''}>
+                        <SelectValue placeholder="Select status" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {statusList.map((status) => (
+                          <SelectItem key={status.id} value={status.id}>
+                            {status.name}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                    {errors.status && (
+                      <p className="text-sm text-red-500">{errors.status.message}</p>
+                    )}
+                  </div>
+                )}
+              />
+            )}
+          </div>
+
+          {isStaff && (
+            <Controller
+              name="site_ids"
+              control={control}
+              render={({ field }) => (
+                <div className="space-y-2">
+                  <Label>Select Sites *</Label>
+                  <div className="space-y-2 border rounded-md p-4 max-h-48 overflow-y-auto">
+                    {siteList.map((site: any) => {
+                      const isChecked = selectedSiteIds.includes(site.id);
+                      return (
+                        <div key={site.id} className="flex items-center space-x-3">
+                          <Checkbox
+                            checked={isChecked}
+                            onCheckedChange={(checked) => {
+                              const currentValues = field.value || [];
+                              if (checked) {
+                                field.onChange([...currentValues, site.id]);
+                              } else {
+                                field.onChange(
+                                  currentValues.filter((value) => value !== site.id)
+                                );
+                              }
+                            }}
+                            disabled={isReadOnly}
+                          />
+                          <div className="space-y-0">
+                            <Label className="font-medium cursor-pointer">
+                              {site.name}
+                            </Label>
+                            {site.code && (
+                              <p className="text-xs text-muted-foreground">
+                                {site.code}
+                              </p>
+                            )}
                           </div>
                         </div>
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-                {errors.account_type && (
-                  <p className="text-sm text-red-500">{errors.account_type.message}</p>
-                )}
+                      );
+                    })}
+                  </div>
+                  {errors.site_ids && (
+                    <p className="text-sm text-red-500">{errors.site_ids.message}</p>
+                  )}
+                </div>
+              )}
+            />
+          )}
+
+          {isTenant && (
+            <>
+              <div className="grid grid-cols-2 gap-4">
+                <Controller
+                  name="site_id"
+                  control={control}
+                  render={({ field }) => (
+                    <div className="space-y-2">
+                      <Label htmlFor="site_id">Site *</Label>
+                      <Select
+                        value={field.value || ""}
+                        onValueChange={(value) => {
+                          field.onChange(value);
+                          // Reset building and space when site changes
+                          reset({
+                            ...watch(),
+                            site_id: value,
+                            building_id: "",
+                            space_id: "",
+                          });
+                        }}
+                        disabled={isReadOnly}
+                      >
+                        <SelectTrigger className={errors.site_id ? 'border-red-500' : ''}>
+                          <SelectValue placeholder="Select site" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          {siteList.map((site: any) => (
+                            <SelectItem key={site.id} value={site.id}>
+                              {site.name}
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                      {errors.site_id && (
+                        <p className="text-sm text-red-500">{errors.site_id.message}</p>
+                      )}
+                    </div>
+                  )}
+                />
+
+                <Controller
+                  name="building_id"
+                  control={control}
+                  render={({ field }) => (
+                    <div className="space-y-2">
+                      <Label htmlFor="building_id">Building *</Label>
+                      <Select
+                        value={field.value || ""}
+                        onValueChange={(value) => {
+                          field.onChange(value);
+                          // Reset space when building changes
+                          reset({
+                            ...watch(),
+                            building_id: value,
+                            space_id: "",
+                          });
+                        }}
+                        disabled={isReadOnly || !selectedSiteId}
+                      >
+                        <SelectTrigger className={errors.building_id ? 'border-red-500' : ''}>
+                          <SelectValue placeholder="Select building" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          {buildingList.map((building: any) => (
+                            <SelectItem key={building.id} value={building.id}>
+                              {building.name}
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                      {errors.building_id && (
+                        <p className="text-sm text-red-500">{errors.building_id.message}</p>
+                      )}
+                    </div>
+                  )}
+                />
               </div>
-            )}
-          />
-          <Controller
-            name="status"
-            control={control}
-            render={({ field }) => (
-              <div className="space-y-2">
-                <Label htmlFor="status">Status *</Label>
-                <Select
-                  value={field.value || ""}
-                  onValueChange={field.onChange}
-                  disabled={isReadOnly}
-                >
-                  <SelectTrigger className={errors.status ? 'border-red-500' : ''}>
-                    <SelectValue placeholder="Select status" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {statusList.map((status) => (
-                      <SelectItem key={status.id} value={status.id}>
-                        {status.name}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-                {errors.status && (
-                  <p className="text-sm text-red-500">{errors.status.message}</p>
+
+              <Controller
+                name="space_id"
+                control={control}
+                render={({ field }) => (
+                  <div className="space-y-2">
+                    <Label htmlFor="space_id">Space *</Label>
+                    <Select
+                      value={field.value || ""}
+                      onValueChange={field.onChange}
+                      disabled={isReadOnly || !selectedSiteId || !selectedBuildingId}
+                    >
+                      <SelectTrigger className={errors.space_id ? 'border-red-500' : ''}>
+                        <SelectValue placeholder="Select space" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {spaceList.map((space: any) => (
+                          <SelectItem key={space.id} value={space.id}>
+                            {space.name || space.code}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                    {errors.space_id && (
+                      <p className="text-sm text-red-500">{errors.space_id.message}</p>
+                    )}
+                  </div>
                 )}
-              </div>
-            )}
-          />
+              />
+            </>
+          )}
 
 
           <Controller
@@ -333,18 +552,18 @@ export function UserForm({ user, open, onOpenChange, onSubmit, mode = "create" }
               </div>
             )}
           />
-
-          <DialogFooter>
+          </form>
+        </div>
+        <DialogFooter>
             <Button type="button" variant="outline" onClick={() => onOpenChange(false)} disabled={isSubmitting}>
               {mode === "view" ? "Close" : "Cancel"}
             </Button>
             {mode !== "view" && (
-              <Button type="submit" disabled={mode === "create" ? (!isValid || isSubmitting) : isSubmitting}>
-                {isSubmitting ? "Saving..." : mode === "create" ? "Create User" : "Update User"}
-              </Button>
+            <Button type="submit" form="user-form" disabled={isSubmitting}>
+              {isSubmitting ? "Saving..." : mode === "create" ? "Create" : "Update"}
+            </Button>
             )}
-          </DialogFooter>
-        </form>
+        </DialogFooter>
       </DialogContent>
     </Dialog>
   );
