@@ -2,23 +2,25 @@ import { useState, useEffect } from "react";
 import { SidebarProvider, SidebarInset, SidebarTrigger } from "@/components/ui/sidebar";
 import { PropertySidebar } from "@/components/PropertySidebar";
 import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
-import { Edit, Plus, Trash2, FileText, Archive } from "lucide-react";
+import { Edit, Plus, Trash2, FileText, Archive, Search } from "lucide-react";
 import TicketCategoryForm from "@/components/TicketCategoryForm";
-import { useToast } from "@/hooks/use-toast";
+import { toast } from "sonner";
 import { ticketCategoriesApiService } from "@/services/ticketing_service/ticketcategoriesapi";
+import { siteApiService } from "@/services/spaces_sites/sitesapi";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
 import { useLoader } from "@/context/LoaderContext";
 import LoaderOverlay from "@/components/LoaderOverlay";
 import ContentContainer from "@/components/ContentContainer";
 import { Pagination } from "@/components/Pagination";
 import { useSkipFirstEffect } from "@/hooks/use-skipfirst-effect";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 
 export default function TicketCategories() {
-  const { toast } = useToast();
   const [isFormOpen, setIsFormOpen] = useState(false);
   const [isEditOpen, setIsEditOpen] = useState(false);
   const [editingCategory, setEditingCategory] = useState<any>(null);
@@ -27,7 +29,14 @@ export default function TicketCategories() {
   const [page, setPage] = useState(1);
   const [pageSize] = useState(6);
   const [totalItems, setTotalItems] = useState(0);
+  const [selectedSite, setSelectedSite] = useState<string>("all");
+  const [siteList, setSiteList] = useState<any[]>([]);
+  const [searchTerm, setSearchTerm] = useState("");
   const { withLoader } = useLoader();
+
+  useEffect(() => {
+    loadSiteLookup();
+  }, []);
 
   useEffect(() => {
     loadTicketCategories();
@@ -36,6 +45,15 @@ export default function TicketCategories() {
   useSkipFirstEffect(() => {
     loadTicketCategories();
   }, [page]);
+
+  useEffect(() => {
+    updateTicketCategoriesPage();
+  }, [selectedSite, searchTerm]);
+
+  const loadSiteLookup = async () => {
+    const lookup = await siteApiService.getSiteLookup();
+    if (lookup.success) setSiteList(lookup.data || []);
+  };
 
   const updateTicketCategoriesPage = () => {
     if (page === 1) {
@@ -50,6 +68,8 @@ export default function TicketCategories() {
     const limit = pageSize;
     
     const params = new URLSearchParams();
+    if (searchTerm) params.append("search", searchTerm);
+    if (selectedSite && selectedSite !== "all") params.append("site_id", selectedSite);
     params.append("skip", skip.toString());
     params.append("limit", limit.toString());
     
@@ -67,11 +87,9 @@ export default function TicketCategories() {
     if (response?.success) {
       setIsFormOpen(false);
       updateTicketCategoriesPage();
-      toast({
-        title: "Category created",
-        description: "Ticket category has been created successfully.",
-      });
+      toast.success("Ticket category has been created successfully.");
     }
+    return response;
   };
 
   const handleEdit = (category: any) => {
@@ -89,11 +107,9 @@ export default function TicketCategories() {
       setIsEditOpen(false);
       setEditingCategory(null);
       updateTicketCategoriesPage();
-      toast({
-        title: "Category updated",
-        description: "Ticket category has been updated successfully.",
-      });
+      toast.success("Ticket category has been updated successfully.");
     }
+    return response;
   };
 
   const handleDelete = (categoryId: string | number) => {
@@ -104,12 +120,16 @@ export default function TicketCategories() {
     if (deleteCategoryId) {
       const response = await ticketCategoriesApiService.deleteTicketCategory(deleteCategoryId);
       if (response.success) {
-        updateTicketCategoriesPage();
-        setDeleteCategoryId(null);
-        toast({
-          title: "Category deleted",
-          description: "Ticket category has been deleted successfully.",
-        });
+        const deleteResponse = response.data;
+        if (deleteResponse?.success) {
+          updateTicketCategoriesPage();
+          setDeleteCategoryId(null);
+          toast.success(deleteResponse.message || "Ticket category has been deleted successfully.");
+        } else {
+          if (deleteResponse?.message) {
+            toast.error(deleteResponse.message || "Error : Cannot delete category with associated tickets.");
+          }
+        }
       }
       setDeleteCategoryId(null);
     }
@@ -144,16 +164,40 @@ export default function TicketCategories() {
             </div>
 
             <ContentContainer>
-              <LoaderOverlay />
               <Card>
                 <CardHeader>
-                  <CardTitle>All Categories</CardTitle>
+                  <div className="flex items-center justify-between">
+                    <div className="relative flex-1 max-w-sm">
+                      <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground h-4 w-4" />
+                      <Input
+                        placeholder="Search categories..."
+                        value={searchTerm}
+                        onChange={(e) => setSearchTerm(e.target.value)}
+                        className="pl-10"
+                      />
+                    </div>
+                    <Select value={selectedSite} onValueChange={setSelectedSite}>
+                      <SelectTrigger className="w-[200px]">
+                        <SelectValue placeholder="All Sites" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="all">All Sites</SelectItem>
+                        {siteList.map((site: any) => (
+                          <SelectItem key={site.id} value={site.id}>
+                            {site.name}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  </div>
                 </CardHeader>
-                <CardContent>
+                <CardContent className="relative">
+                  <LoaderOverlay />
                 <Table>
                   <TableHeader>
                     <TableRow>
                       <TableHead>Category Name</TableHead>
+                      <TableHead>Site</TableHead>
                       <TableHead>Auto-Assign Role</TableHead>
                       <TableHead>SLA Hours</TableHead>
                       <TableHead>Status</TableHead>
@@ -161,30 +205,36 @@ export default function TicketCategories() {
                     </TableRow>
                   </TableHeader>
                   <TableBody>
-                    {categories.map((category) => (
-                      <TableRow key={category.id || category.category_id}>
-                        <TableCell className="font-medium">{category.category_name}</TableCell>
-                        <TableCell>
-                          <Badge variant="outline">{category.auto_assign_role}</Badge>
-                        </TableCell>
-                        <TableCell>{category.sla_hours}h</TableCell>
-                        <TableCell>
-                          <Badge variant={category.is_active ? "default" : "secondary"}>
-                            {category.is_active ? "Active" : "Inactive"}
-                          </Badge>
-                        </TableCell>
-                        <TableCell className="text-right">
-                          <div className="flex justify-end gap-2">
-                            <Button variant="ghost" size="sm" onClick={() => handleEdit(category)}>
-                              <Edit className="w-4 h-4" />
-                            </Button>
-                            <Button variant="ghost" size="sm" onClick={() => handleDelete(category.id || category.category_id)}>
-                              <Trash2 className="w-4 h-4" />
-                            </Button>
-                          </div>
-                        </TableCell>
-                      </TableRow>
-                    ))}
+                    {categories.map((category) => {
+                      const site = siteList.find((s: any) => s.id === category.site_id);
+                      return (
+                        <TableRow key={category.id || category.category_id}>
+                          <TableCell className="font-medium">{category.category_name}</TableCell>
+                          <TableCell>
+                            {site ? site.name : category.site_id || "-"}
+                          </TableCell>
+                          <TableCell>
+                            <Badge variant="outline">{category.auto_assign_role}</Badge>
+                          </TableCell>
+                          <TableCell>{category.sla_hours}h</TableCell>
+                          <TableCell>
+                            <Badge variant={category.is_active ? "default" : "secondary"}>
+                              {category.is_active ? "Active" : "Inactive"}
+                            </Badge>
+                          </TableCell>
+                          <TableCell className="text-right">
+                            <div className="flex justify-end gap-2">
+                              <Button variant="ghost" size="sm" onClick={() => handleEdit(category)}>
+                                <Edit className="w-4 h-4" />
+                              </Button>
+                              <Button variant="ghost" size="sm" onClick={() => handleDelete(category.id || category.category_id)}>
+                                <Trash2 className="w-4 h-4" />
+                              </Button>
+                            </div>
+                          </TableCell>
+                        </TableRow>
+                      );
+                    })}
                   </TableBody>
                 </Table>
                 </CardContent>

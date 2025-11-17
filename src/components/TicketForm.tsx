@@ -34,7 +34,7 @@ export default function TicketForm({
     title: initialData?.title || "",
     description: initialData?.description || "",
     category_id: initialData?.category_id || "",
-    priority: initialData?.priority || "LOW",
+    priority: initialData?.priority || "low",
     request_type: initialData?.request_type || "unit",
     site_id: initialData?.site_id || "",
     space_id: initialData?.space_id || "",
@@ -142,8 +142,12 @@ export default function TicketForm({
     ticketFormData.append("request_type", formData.request_type);
     ticketFormData.append("site_id", formData.site_id);
     ticketFormData.append("space_id", formData.space_id);
-    ticketFormData.append("tenant_id", formData.tenant_id);
-    ticketFormData.append("preferred_time", formData.preferred_time);
+    if (formData.tenant_id) {
+      ticketFormData.append("tenant_id", formData.tenant_id);
+    }
+    if (formData.preferred_time) {
+      ticketFormData.append("preferred_time", formData.preferred_time);
+    }
 
     if (uploadedImages.length > 0) {
       uploadedImages.forEach((file) => {
@@ -155,7 +159,7 @@ export default function TicketForm({
 
     const formResponse = await onSubmit(ticketFormData);
     if (formResponse?.success) {
-      // Form will be closed by parent component
+      setIsSubmitting(false);
     } else {
       setIsSubmitting(false);
     }
@@ -310,9 +314,9 @@ export default function TicketForm({
               <SelectValue placeholder="Select Priority" />
             </SelectTrigger>
             <SelectContent>
-              <SelectItem value="LOW">Low</SelectItem>
-              <SelectItem value="MEDIUM">Medium</SelectItem>
-              <SelectItem value="HIGH">High</SelectItem>
+              <SelectItem value="low">Low</SelectItem>
+              <SelectItem value="medium">Medium</SelectItem>
+              <SelectItem value="high">High</SelectItem>
             </SelectContent>
           </Select>
         </div>
@@ -477,7 +481,7 @@ export default function TicketForm({
 
       <div className="flex gap-2 pt-4">
         <Button type="submit" className="flex-1" disabled={isSubmitting}>
-          {isSubmitting ? "Submitting " : initialData ? "Update" : "Create"} Ticket
+          {isSubmitting ? "Submitting " : initialData ? "Update" : "Create"}
         </Button>
         <Button
           type="button"
