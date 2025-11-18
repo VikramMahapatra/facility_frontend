@@ -26,6 +26,7 @@ import { spacesApiService } from "@/services/spaces_sites/spacesapi";
 import { buildingApiService } from "@/services/spaces_sites/buildingsapi";
 import { tenantsApiService } from "@/services/Leasing_Tenants/tenantsapi";
 import { Tenant } from "@/interfaces/leasing_tenants_interface";
+import PhoneInput from "react-phone-input-2";
 
 interface TenantFormProps {
   tenant?: Tenant;
@@ -343,22 +344,30 @@ export function TenantForm({
                 name="phone"
                 control={control}
                 render={({ field }) => (
-                  <Input
-                    id="phone"
-                    type="tel"
-                    value={field.value || ""}
-                    onChange={(e) => {
-                      const numeric = e.target.value.replace(/\D/g, "").slice(0, 10);
-                      field.onChange(numeric);
-                    }}
-                    placeholder="e.g., 9876543210"
-                    disabled={isReadOnly}
-                    className={errors.phone ? 'border-red-500' : ''}
-                    maxLength={10}
-                  />
+                  <div className="space-y-2">
+                    <PhoneInput
+                      country={'in'}
+                      value={field.value || ""}
+                      onChange={(value) => {
+                        const digits = value.replace(/\D/g, "");
+                        const finalValue = "+" + digits;
+                        field.onChange(finalValue);
+                      }}
+                      disabled={isReadOnly}
+                      inputProps={{
+                        name: 'phone',
+                        required: true,
+                      }}
+                      containerClass="w-full relative"
+                      inputClass={`!w-full !h-10 !pl-12 !rounded-md !border !border-input !bg-background !px-3 !py-2 !text-base !ring-offset-background placeholder:!text-muted-foreground focus-visible:!outline-none focus-visible:!ring-2 focus-visible:!ring-ring focus-visible:!ring-offset-2 disabled:!cursor-not-allowed disabled:!opacity-50 md:!text-sm ${errors.phone ? '!border-red-500' : ''}`}
+                      buttonClass="!border-none !bg-transparent !absolute !left-2 !top-1/2 !-translate-y-1/2 z-10"
+                      dropdownClass="!absolute !z-50 !bg-white !border !border-gray-200 !rounded-md !shadow-lg max-h-60 overflow-y-auto"
+                      enableSearch={true}
+                    />
+                    {errors.phone && (<p className="text-sm text-red-500">{errors.phone.message as any}</p>)}
+                  </div>
                 )}
               />
-              {errors.phone && (<p className="text-sm text-red-500">{errors.phone.message as any}</p>)}
             </div>
           </div>
 
@@ -469,12 +478,30 @@ export function TenantForm({
                 </div>
                 <div>
                   <Label htmlFor="contact_phone">Contact Phone</Label>
-                  <Input
-                    id="contact_phone"
-                    type="tel"
-                    {...register("contact_info.phone")}
-                    placeholder="e.g., +91-9876543210"
-                    disabled={isReadOnly}
+                  <Controller
+                    name="contact_info.phone"
+                    control={control}
+                    render={({ field }) => (
+                      <PhoneInput
+                        country={'in'}
+                        value={field.value || ""}
+                        onChange={(value) => {
+                          const digits = value.replace(/\D/g, "");
+                          const finalValue = "+" + digits;
+                          field.onChange(finalValue);
+                        }}
+                        disabled={isReadOnly}
+                        inputProps={{
+                          name: 'contact_info.phone',
+                          required: false,
+                        }}
+                        containerClass="w-full relative"
+                        inputClass="!w-full !h-10 !pl-12 !rounded-md !border !border-input !bg-background !px-3 !py-2 !text-base !ring-offset-background placeholder:!text-muted-foreground focus-visible:!outline-none focus-visible:!ring-2 focus-visible:!ring-ring focus-visible:!ring-offset-2 disabled:!cursor-not-allowed disabled:!opacity-50 md:!text-sm"
+                        buttonClass="!border-none !bg-transparent !absolute !left-2 !top-1/2 !-translate-y-1/2 z-10"
+                        dropdownClass="!absolute !z-50 !bg-white !border !border-gray-200 !rounded-md !shadow-lg max-h-60 overflow-y-auto"
+                        enableSearch={true}
+                      />
+                    )}
                   />
                 </div>
               </div>

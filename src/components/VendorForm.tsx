@@ -15,6 +15,7 @@ import { toast } from "sonner";
 import { vendorsApiService } from "@/services/pocurments/vendorsapi";
 import { organisationApiService } from "@/services/spaces_sites/organisationapi";
 import { ChevronsUpDown, X } from "lucide-react";
+import PhoneInput from "react-phone-input-2";
 
 interface VendorFormProps {
   vendor?: any;
@@ -134,9 +135,10 @@ const loadCategoriesLookup = async () => {
       await onSave(payload);
       reset(emptyFormData);
       onClose();
-    } catch (error) {
+    } catch (error: any) {
       reset(undefined, { keepErrors: true, keepValues: true });
-      toast("Failed to save vendor");
+      const errorMessage = error?.response?.data?.message || error?.message || "Failed to save vendor";
+      toast.error(errorMessage);
     }
   };
 
@@ -323,16 +325,24 @@ const loadCategoriesLookup = async () => {
                 render={({ field }) => (
                   <div className="space-y-2">
                     <Label htmlFor="contact.phone">Phone</Label>
-                    <Input
-                      id="contact.phone"
+                    <PhoneInput
+                      country={'in'}
                       value={field.value || ""}
-                      onChange={(e) => {
-                        const value = e.target.value.replace(/\D/g, '').slice(0, 10);
-                        field.onChange(value);
+                      onChange={(value) => {
+                        const digits = value.replace(/\D/g, "");
+                        const finalValue = "+" + digits;
+                        field.onChange(finalValue);
                       }}
-                      maxLength={10}
                       disabled={isReadOnly}
-                      className={errors.contact?.phone ? 'border-red-500' : ''}
+                      inputProps={{
+                        name: 'contact.phone',
+                        required: false,
+                      }}
+                      containerClass="w-full relative"
+                      inputClass={`!w-full !h-10 !pl-12 !rounded-md !border !border-input !bg-background !px-3 !py-2 !text-base !ring-offset-background placeholder:!text-muted-foreground focus-visible:!outline-none focus-visible:!ring-2 focus-visible:!ring-ring focus-visible:!ring-offset-2 disabled:!cursor-not-allowed disabled:!opacity-50 md:!text-sm ${errors.contact?.phone ? '!border-red-500' : ''}`}
+                      buttonClass="!border-none !bg-transparent !absolute !left-2 !top-1/2 !-translate-y-1/2 z-10"
+                      dropdownClass="!absolute !z-50 !bg-white !border !border-gray-200 !rounded-md !shadow-lg max-h-60 overflow-y-auto"
+                      enableSearch={true}
                     />
                     {errors.contact?.phone && (
                       <p className="text-sm text-red-500">{errors.contact.phone.message}</p>
@@ -356,7 +366,7 @@ const loadCategoriesLookup = async () => {
               {mode === "view" ? "Close" : "Cancel"}
             </Button>
             {mode !== "view" && (
-              <Button type="submit" disabled={(mode === "create" && !isValid) || isSubmitting}>
+              <Button type="submit" disabled={isSubmitting}>
                 {isSubmitting ? "Saving..." : mode === "create" ? "Create Vendor" : "Update Vendor"}
               </Button>
             )}

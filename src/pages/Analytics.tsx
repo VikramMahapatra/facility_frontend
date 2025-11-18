@@ -241,8 +241,13 @@ export default function Analytics() {
   };
 
   const loadSiteComparison = async () => {
-    const siteCompObj = await analyticsApiService.getSiteComparison();
-    if (siteCompObj.success) setSiteComparison(siteCompObj.data || []);
+    try {
+      const siteCompObj = await analyticsApiService.getSiteComparison();
+      if (siteCompObj?.success) setSiteComparison(siteCompObj.data || []);
+    } catch (error) {
+      console.error("Failed to load site comparison:", error);
+      setSiteComparison([]); // Set empty array on error
+    }
   };
 
   const loadMaintenanceEfficiency = async () => {
@@ -297,7 +302,7 @@ export default function Analytics() {
   
   const handleRefresh = async () => {
     setRefreshing(true);
-    await Promise.all([
+    await Promise.allSettled([
       loadAdvanceAnalytics(),
       loadRevenueAnalytics(),
       loadSiteProfitability(),
@@ -409,7 +414,7 @@ export default function Analytics() {
                     </SelectTrigger>
                     <SelectContent>
                     <SelectItem value="all">Months</SelectItem>
-                      {monthlyData.map((item, index) => (
+                      {monthlyData.filter(item => item.id && item.id !== "").map((item, index) => (
                         <SelectItem key={index} value={item.id}>
                           {item.name}
                         </SelectItem>
@@ -422,7 +427,7 @@ export default function Analytics() {
                     </SelectTrigger>
                     <SelectContent>
                       <SelectItem value="all">All Properties</SelectItem>
-                      {siteOptions.map((site, index) => (
+                      {siteOptions.filter(site => site.id && site.id !== "").map((site, index) => (
                         <SelectItem key={index} value={site.id}>
                           {site.name}
                         </SelectItem>
@@ -647,30 +652,36 @@ export default function Analytics() {
                       <CardDescription>Performance across properties</CardDescription>
                     </CardHeader>
                     <CardContent>
-                      <div className="space-y-4">
-                        {siteComparison?.map((site, index) => (
-                          <div key={index} className="p-3 border rounded-lg">
-                            <h4 className="font-medium mb-2">{site.site}</h4>
-                            <div className="grid grid-cols-2 gap-2 text-xs">
-                              <div>
-                                <span className="text-muted-foreground">Occupancy:</span>
-                                <span className="font-medium ml-1">{site.metrics.occupancy}%</span>
-                              </div>
-                              <div>
-                                <span className="text-muted-foreground">Revenue:</span>
-                                <span className="font-medium ml-1">₹{site.metrics.revenue.toLocaleString()}</span>
-                              </div>
-                              <div>
-                                <span className="text-muted-foreground">Satisfaction:</span>
-                                <span className="font-medium ml-1">{site.metrics.satisfaction}/5</span>
-                              </div>
-                              <div>
-                                <span className="text-muted-foreground">Efficiency:</span>
-                                <span className="font-medium ml-1">{site.metrics.efficiency}%</span>
+                      <div className="max-h-[400px] overflow-y-auto pr-2 space-y-4">
+                        {siteComparison && siteComparison.length > 0 ? (
+                          siteComparison.map((site, index) => (
+                            <div key={index} className="p-3 border rounded-lg">
+                              <h4 className="font-medium mb-2">{site.site}</h4>
+                              <div className="grid grid-cols-2 gap-2 text-xs">
+                                <div>
+                                  <span className="text-muted-foreground">Occupancy:</span>
+                                  <span className="font-medium ml-1">{site.metrics.occupancy}%</span>
+                                </div>
+                                <div>
+                                  <span className="text-muted-foreground">Revenue:</span>
+                                  <span className="font-medium ml-1">₹{site.metrics.revenue.toLocaleString()}</span>
+                                </div>
+                                <div>
+                                  <span className="text-muted-foreground">Satisfaction:</span>
+                                  <span className="font-medium ml-1">{site.metrics.satisfaction}/5</span>
+                                </div>
+                                <div>
+                                  <span className="text-muted-foreground">Efficiency:</span>
+                                  <span className="font-medium ml-1">{site.metrics.efficiency}%</span>
+                                </div>
                               </div>
                             </div>
+                          ))
+                        ) : (
+                          <div className="text-center text-muted-foreground py-8">
+                            No site comparison data available
                           </div>
-                        ))}
+                        )}
                       </div>
                     </CardContent>
                   </Card>
