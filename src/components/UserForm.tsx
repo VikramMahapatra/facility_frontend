@@ -158,18 +158,31 @@ export function UserForm({ user, open, onOpenChange, onSubmit, mode = "create" }
 
   useEffect(() => {
     if (user && mode !== "create") {
+      const userSiteId = (user as any).site_id || "";
+      const userBuildingId = (user as any).building_id || "";
+      
       reset({
         full_name: user.full_name || "",
         email: user.email || "",
         phone: user.phone || "",
         status: user.status || "active",
+        account_type: user.account_type || "organization",
         role_ids: user.roles?.map(r => r.id) || [],
-        site_id: (user as any).site_id || "",
-        building_id: (user as any).building_id || "",
+        site_id: userSiteId,
+        building_id: userBuildingId,
         space_id: (user as any).space_id || "",
         site_ids: (user as any).site_ids || [],
         tenant_type: (user as any).tenant_type || "individual",
       });
+      
+      // Load dependent lookups after reset
+      if (userSiteId) {
+        loadBuildingLookup(userSiteId).then(() => {
+          if (userBuildingId) {
+            loadSpaceLookup(userSiteId, userBuildingId);
+          }
+        });
+      }
     } else {
       reset(emptyFormData);
     }
