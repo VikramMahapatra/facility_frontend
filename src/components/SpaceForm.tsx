@@ -309,6 +309,7 @@ export function SpaceForm({ space, isOpen, onClose, onSave, mode }: SpaceFormPro
               <Input
                 id="area_sqft"
                 type="number"
+                step="any"
                 {...register("area_sqft", { setValueAs: (v) => v === '' ? undefined : Number(v) })}
                 disabled={isReadOnly}
                 className={errors.area_sqft ? 'border-red-500' : ''}
