@@ -1,23 +1,25 @@
 import { apiService } from "../api";
 
 class UserManagementApiService {
-  async getUsers(params) {
-    return await apiService.request(`/users/all?${params.toString()}`);
+  async getUsers(params?: URLSearchParams) {
+    const qs = params?.toString() ? `?${params.toString()}` : "";
+    return await apiService.request(`/users/all${qs}`);
   }
 
+ 
   async getUserStatusOverview() {
     return await apiService.request("/users/status-lookup");
   }
 
   async addUser(userData: any) {
-    return await apiService.request("/users", {
+    return await apiService.request("/users/", {
       method: "POST",
       body: JSON.stringify(userData),
     });
   }
 
   async updateUser(userData: any) {
-    return await apiService.request('/users', {
+    return await apiService.request('/users/', {
       method: "PUT",
       body: JSON.stringify(userData),
     });
@@ -30,7 +32,7 @@ class UserManagementApiService {
   }
 
   async getUserRolesLookup() {
-    return await apiService.request("/roles/role-lookup");
+    return await apiService.request("/users/roles-lookup");
   }
 }
 

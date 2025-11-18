@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import { Plus, Pencil, Trash2, Search, UserCircle } from "lucide-react";
+import { Plus, Pencil, Trash2, Search, UserCircle, Eye } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import {
@@ -66,6 +66,7 @@ export default function UsersManagement() {
   const [searchQuery, setSearchQuery] = useState("");
   const [isFormOpen, setIsFormOpen] = useState(false);
   const [editingUser, setEditingUser] = useState<User | undefined>();
+  const [formMode, setFormMode] = useState<'create' | 'edit' | 'view'>('create');
   const [deleteUserId, setDeleteUserId] = useState<string | null>(null);
   const [page, setPage] = useState(1);
   const [pageSize] = useState(10);
@@ -98,6 +99,9 @@ export default function UsersManagement() {
       setIsFormOpen(false);
       toast.success("User created successfully");
       loadUsers();
+    } else {
+      const errorMessage = response?.data?.message || response?.message || "Failed to create user";
+      toast.error(errorMessage);
     }
     return response;
   };
@@ -123,6 +127,10 @@ export default function UsersManagement() {
       toast.success("User updated successfully");
       setIsFormOpen(false);
       setEditingUser(undefined);
+      loadUsers();
+    } else {
+      const errorMessage = response?.data?.message || response?.message || "Failed to update user";
+      toast.error(errorMessage);
     }
     return response;
   };
@@ -135,14 +143,12 @@ export default function UsersManagement() {
     if (deleteUserId) {
       const response = await userManagementApiService.deleteUser(deleteUserId);
       if (response?.success) {
-        const authResponse = response.data;
-        if (authResponse?.success) {
-          toast.success("User deleted successfully");
-          loadUsers();
-          setDeleteUserId(null);
-        } else {
-          toast.error(authResponse?.message || "Failed to delete user");
-        }
+        toast.success("User deleted successfully");
+        loadUsers();
+        setDeleteUserId(null);
+      } else {
+        const errorMessage = response?.data?.message || response?.message || "Failed to delete user";
+        toast.error(errorMessage);
       }
     }
   };
@@ -165,6 +171,13 @@ export default function UsersManagement() {
 
   const handleOpenForm = (user?: User) => {
     setEditingUser(user);
+    setFormMode(user ? 'edit' : 'create');
+    setIsFormOpen(true);
+  };
+
+  const handleView = (user: User) => {
+    setEditingUser(user);
+    setFormMode('view');
     setIsFormOpen(true);
   };
 
@@ -323,6 +336,13 @@ export default function UsersManagement() {
                                     <Button
                                       variant="ghost"
                                       size="icon"
+                                      onClick={() => handleView(user)}
+                                    >
+                                      <Eye className="h-4 w-4" />
+                                    </Button>
+                                    <Button
+                                      variant="ghost"
+                                      size="icon"
                                       onClick={() => handleOpenForm(user)}
                                     >
                                       <Pencil className="h-4 w-4" />
@@ -364,10 +384,11 @@ export default function UsersManagement() {
                 setIsFormOpen(open);
                 if (!open) {
                   setEditingUser(undefined);
+                  setFormMode('create');
                 }
               }}
               onSubmit={editingUser ? handleUpdateUser : handleCreateUser}
-              mode={editingUser ? "edit" : "create"}
+              mode={formMode}
             />
 
             {/* Delete Confirmation Dialog */}
