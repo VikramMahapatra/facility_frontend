@@ -372,133 +372,134 @@ export default function MetersReadings() {
           </header>
 
           <main className="flex-1 space-y-6 p-6">
-            <ContentContainer>
-              <LoaderOverlay />
-              <div className="space-y-6">
-                {/* Stats Cards */}
-                <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
-                  <Card>
-                    <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                      <CardTitle className="text-sm font-medium">
-                        Total Meters
-                      </CardTitle>
-                      <Gauge className="h-4 w-4" />
-                    </CardHeader>
-                    <CardContent>
-                      <div className="text-2xl font-bold">
-                        {meterReadingOverview.totalMeters}
-                      </div>
-                    </CardContent>
-                  </Card>
-                  <Card>
-                    <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                      <CardTitle className="text-sm font-medium">
-                        Active Meters
-                      </CardTitle>
-                      <Zap className="h-4 w-4 text-green-500" />
-                    </CardHeader>
-                    <CardContent>
-                      <div className="text-2xl font-bold">
-                        {meterReadingOverview.activeMeters}
-                      </div>
-                    </CardContent>
-                  </Card>
-                  <Card>
-                    <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                      <CardTitle className="text-sm font-medium">
-                        Latest Readings
-                      </CardTitle>
-                      <Eye className="h-4 w-4" />
-                    </CardHeader>
-                    <CardContent>
-                      <div className="text-2xl font-bold">
-                        {meterReadingOverview.latestReadings}
-                      </div>
-                    </CardContent>
-                  </Card>
-                  <Card>
-                    <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                      <CardTitle className="text-sm font-medium">
-                        IoT Connected
-                      </CardTitle>
-                      <Users className="h-4 w-4 text-blue-500" />
-                    </CardHeader>
-                    <CardContent>
-                      <div className="text-2xl font-bold">
-                        {meterReadingOverview.iotConnected}
-                      </div>
-                    </CardContent>
-                  </Card>
-                </div>
+            <div className="space-y-6">
+              {/* Stats Cards */}
+              <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
+                <Card>
+                  <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                    <CardTitle className="text-sm font-medium">
+                      Total Meters
+                    </CardTitle>
+                    <Gauge className="h-4 w-4" />
+                  </CardHeader>
+                  <CardContent>
+                    <div className="text-2xl font-bold">
+                      {meterReadingOverview.totalMeters}
+                    </div>
+                  </CardContent>
+                </Card>
+                <Card>
+                  <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                    <CardTitle className="text-sm font-medium">
+                      Active Meters
+                    </CardTitle>
+                    <Zap className="h-4 w-4 text-green-500" />
+                  </CardHeader>
+                  <CardContent>
+                    <div className="text-2xl font-bold">
+                      {meterReadingOverview.activeMeters}
+                    </div>
+                  </CardContent>
+                </Card>
+                <Card>
+                  <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                    <CardTitle className="text-sm font-medium">
+                      Latest Readings
+                    </CardTitle>
+                    <Eye className="h-4 w-4" />
+                  </CardHeader>
+                  <CardContent>
+                    <div className="text-2xl font-bold">
+                      {meterReadingOverview.latestReadings}
+                    </div>
+                  </CardContent>
+                </Card>
+                <Card>
+                  <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                    <CardTitle className="text-sm font-medium">
+                      IoT Connected
+                    </CardTitle>
+                    <Users className="h-4 w-4 text-blue-500" />
+                  </CardHeader>
+                  <CardContent>
+                    <div className="text-2xl font-bold">
+                      {meterReadingOverview.iotConnected}
+                    </div>
+                  </CardContent>
+                </Card>
+              </div>
 
-            {/* Main Content */}
-            <Card>
-              <CardHeader>
-                <div className="flex items-center justify-between">
-                  <div className="space-y-1">
-                    <CardTitle>Energy & Utility Management</CardTitle>
-                    <CardDescription>
-                      Manage meters and track consumption readings
-                    </CardDescription>
-                  </div>
-                  <div className="flex gap-2">
-                    <Button
-                      variant={activeTab === "meters" ? "default" : "outline"}
-                      onClick={() => setActiveTab("meters")}
-                    >
-                      Meters
-                    </Button>
-                    <Button
-                      variant={activeTab === "readings" ? "default" : "outline"}
-                      onClick={() => setActiveTab("readings")}
-                    >
-                      Readings
-                    </Button>
-                  </div>
-                </div>
-              </CardHeader>
-              <CardContent>
-                {/* Search and Actions */}
-                <div className="flex items-center justify-between space-y-2 mb-6">
-                  <div className="flex flex-1 items-center space-x-2 max-w-sm">
-                    <Search className="h-4 w-4 text-muted-foreground" />
-                    <Input
-                      placeholder={`Search ${activeTab}...`}
-                      value={searchTerm}
-                      onChange={(e) => setSearchTerm(e.target.value)}
-                    />
-                  </div>
-                  <div className="flex items-center space-x-2">
-                    <Button variant="outline" size="sm">
-                      <Filter className="h-4 w-4 mr-2" />
-                      Filter
-                    </Button>
-                    <Button variant="outline" size="sm" onClick={() => onExport()}>
-                      <Download className="h-4 w-4 mr-2" />
-                      Export
-                    </Button>
-                    <BulkUploadDialog
-                      type={activeTab}
-                      onImport={handleBulkImport}
-                    />
-                    {activeTab === "meters" ? (
-                      <Button size="sm" onClick={onCreateMeter}>
-                        <Plus className="h-4 w-4 mr-2" />
-                        Add Meter
+              {/* Main Content */}
+              <Card>
+                <CardHeader>
+                  <div className="flex items-center justify-between">
+                    <div className="space-y-1">
+                      <CardTitle>Energy & Utility Management</CardTitle>
+                      <CardDescription>
+                        Manage meters and track consumption readings
+                      </CardDescription>
+                    </div>
+                    <div className="flex gap-2">
+                      <Button
+                        variant={activeTab === "meters" ? "default" : "outline"}
+                        onClick={() => setActiveTab("meters")}
+                      >
+                        Meters
                       </Button>
-                    ) : (
-                      <Button size="sm" onClick={onCreateMeterReading}>
-                        <Plus className="h-4 w-4 mr-2" />
-                        Add Reading
+                      <Button
+                        variant={activeTab === "readings" ? "default" : "outline"}
+                        onClick={() => setActiveTab("readings")}
+                      >
+                        Readings
                       </Button>
-                    )}
+                    </div>
                   </div>
-                </div>
+                </CardHeader>
+                <CardContent>
+                  {/* Search and Actions */}
+                  <div className="flex items-center justify-between space-y-2 mb-6">
+                    <div className="flex flex-1 items-center space-x-2 max-w-sm">
+                      <Search className="h-4 w-4 text-muted-foreground" />
+                      <Input
+                        placeholder={`Search ${activeTab}...`}
+                        value={searchTerm}
+                        onChange={(e) => setSearchTerm(e.target.value)}
+                      />
+                    </div>
+                    <div className="flex items-center space-x-2">
+                      <Button variant="outline" size="sm">
+                        <Filter className="h-4 w-4 mr-2" />
+                        Filter
+                      </Button>
+                      <Button variant="outline" size="sm" onClick={() => onExport()}>
+                        <Download className="h-4 w-4 mr-2" />
+                        Export
+                      </Button>
+                      <BulkUploadDialog
+                        type={activeTab}
+                        onImport={handleBulkImport}
+                      />
+                      {activeTab === "meters" ? (
+                        <Button size="sm" onClick={onCreateMeter}>
+                          <Plus className="h-4 w-4 mr-2" />
+                          Add Meter
+                        </Button>
+                      ) : (
+                        <Button size="sm" onClick={onCreateMeterReading}>
+                          <Plus className="h-4 w-4 mr-2" />
+                          Add Reading
+                        </Button>
+                      )}
+                    </div>
+                  </div>
 
-                {/* Content Tables */}
-                {activeTab === "meters" ? (
-                  <div>
-                    <Table>
+                  <div className="relative rounded-md border">
+                    <ContentContainer>
+                      <LoaderOverlay />
+                      {/* Content Tables */}
+                      {activeTab === "meters" ? (
+                        <div>
+                          <Table>
                       <TableHeader>
                         <TableRow>
                           <TableHead>Type</TableHead>
@@ -570,18 +571,18 @@ export default function MetersReadings() {
                             </TableCell>
                           </TableRow>
                         ))}
-                      </TableBody>
-                    </Table>
-                    <Pagination
-                      page={page}
-                      pageSize={pageSize}
-                      totalItems={totalItems}
-                      onPageChange={(newPage) => setPage(newPage)}
-                    />
-                  </div>
-                ) : (
-                  <div>
-                    <Table>
+                          </TableBody>
+                          </Table>
+                          <Pagination
+                            page={page}
+                            pageSize={pageSize}
+                            totalItems={totalItems}
+                            onPageChange={(newPage) => setPage(newPage)}
+                          />
+                        </div>
+                      ) : (
+                        <div>
+                          <Table>
                       <TableHeader>
                         <TableRow>
                           <TableHead>Meter</TableHead>
@@ -675,22 +676,21 @@ export default function MetersReadings() {
                             </TableCell>
                           </TableRow>
                         ))}
-                      </TableBody>
-                    </Table>
-                    <Pagination
-                      page={readingsPage}
-                      pageSize={readingsPageSize}
-                      totalItems={totalReadingsItems}
-                      onPageChange={(newPage) => setReadingsPage(newPage)}
-                    />
+                          </TableBody>
+                          </Table>
+                          <Pagination
+                            page={readingsPage}
+                            pageSize={readingsPageSize}
+                            totalItems={totalReadingsItems}
+                            onPageChange={(newPage) => setReadingsPage(newPage)}
+                          />
+                        </div>
+                      )}
+                    </ContentContainer>
                   </div>
-
-                )}
-
-              </CardContent>
-            </Card>
-              </div>
-            </ContentContainer>
+                </CardContent>
+              </Card>
+            </div>
           </main>
         </div>
       </div>

@@ -222,40 +222,41 @@ export default function TicketCategories() {
                 </Button>
               </div>
 
-              <ContentContainer>
-                <Card>
-                  <CardHeader>
-                    <div className="flex items-center justify-between">
-                      <div className="relative flex-1 max-w-sm">
-                        <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground h-4 w-4" />
-                        <Input
-                          placeholder="Search categories..."
-                          value={searchTerm}
-                          onChange={(e) => setSearchTerm(e.target.value)}
-                          className="pl-10"
-                        />
-                      </div>
-                      <Select
-                        value={selectedSite}
-                        onValueChange={setSelectedSite}
-                      >
-                        <SelectTrigger className="w-[200px]">
-                          <SelectValue placeholder="All Sites" />
-                        </SelectTrigger>
-                        <SelectContent>
-                          <SelectItem value="all">All Sites</SelectItem>
-                          {siteList.map((site: any) => (
-                            <SelectItem key={site.id} value={site.id}>
-                              {site.name}
-                            </SelectItem>
-                          ))}
-                        </SelectContent>
-                      </Select>
+              <Card>
+                <CardHeader>
+                  <div className="flex items-center justify-between">
+                    <div className="relative flex-1 max-w-sm">
+                      <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground h-4 w-4" />
+                      <Input
+                        placeholder="Search categories..."
+                        value={searchTerm}
+                        onChange={(e) => setSearchTerm(e.target.value)}
+                        className="pl-10"
+                      />
                     </div>
-                  </CardHeader>
-                  <CardContent className="relative">
-                    <LoaderOverlay />
-                    <Table>
+                    <Select
+                      value={selectedSite}
+                      onValueChange={setSelectedSite}
+                    >
+                      <SelectTrigger className="w-[200px]">
+                        <SelectValue placeholder="All Sites" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="all">All Sites</SelectItem>
+                        {siteList.map((site: any) => (
+                          <SelectItem key={site.id} value={site.id}>
+                            {site.name}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  </div>
+                </CardHeader>
+                <CardContent>
+                  <div className="relative rounded-md border">
+                    <ContentContainer>
+                      <LoaderOverlay />
+                      <Table>
                       <TableHeader>
                         <TableRow>
                           <TableHead>Category Name</TableHead>
@@ -319,23 +320,24 @@ export default function TicketCategories() {
                             </TableRow>
                           );
                         })}
-                      </TableBody>
-                    </Table>
-                  </CardContent>
-                </Card>
-
-                {/* Pagination */}
-                {categories.length > 0 && (
-                  <div className="mt-4">
-                    <Pagination
-                      page={page}
-                      pageSize={pageSize}
-                      totalItems={totalItems}
-                      onPageChange={setPage}
-                    />
+                        </TableBody>
+                      </Table>
+                    </ContentContainer>
                   </div>
-                )}
-              </ContentContainer>
+
+                  {/* Pagination */}
+                  {categories.length > 0 && (
+                    <div className="mt-4">
+                      <Pagination
+                        page={page}
+                        pageSize={pageSize}
+                        totalItems={totalItems}
+                        onPageChange={setPage}
+                      />
+                    </div>
+                  )}
+                </CardContent>
+              </Card>
             </div>
           </main>
         </SidebarInset>

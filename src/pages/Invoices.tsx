@@ -44,11 +44,11 @@ export default function Invoices() {
     outstandingAmount: 0
   });
   const [page, setPage] = useState(1); // current page
-  const [pageSize] = useState(5); // items per page
+  const [pageSize] = useState(6); // items per page
   const [totalItems, setTotalItems] = useState(0);
 
   const [paymentPage, setPaymentPage] = useState(1); // current page
-  const [paymentPageSize] = useState(5); // items per page
+  const [paymentPageSize] = useState(6); // items per page
   const [totalPaymentItems, setTotalPaymentItems] = useState(0);
 
   useEffect(() => {
@@ -268,12 +268,9 @@ export default function Invoices() {
               </div>
             </div>
 
-            <ContentContainer>
-              <LoaderOverlay />
-              <div className="space-y-6">
-
-                {/* Summary Cards */}
-                <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+            <div className="space-y-6">
+              {/* Summary Cards */}
+              <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
                 <Card>
                   <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
                     <CardTitle className="text-sm font-medium">Total Invoices</CardTitle>
@@ -367,7 +364,11 @@ export default function Invoices() {
                 </CardContent>
               </Card>
 
-              {/* Invoices Table */}
+              <div className="relative rounded-md border">
+                <ContentContainer>
+                  <LoaderOverlay />
+                  <div className="space-y-6">
+                    {/* Invoices Table */}
               <Card>
                 <CardHeader>
                   <CardTitle>Invoices</CardTitle>
@@ -431,61 +432,63 @@ export default function Invoices() {
                         </TableRow>
                       ))}
                     </TableBody>
-                  </Table>
-                  <Pagination
-                    page={page}
-                    pageSize={pageSize}
-                    totalItems={totalItems}
-                    onPageChange={(newPage) => setPage(newPage)}
-                  />
-                </CardContent>
-              </Card>
+                    </Table>
+                    <Pagination
+                      page={page}
+                      pageSize={pageSize}
+                      totalItems={totalItems}
+                      onPageChange={(newPage) => setPage(newPage)}
+                    />
+                  </CardContent>
+                </Card>
 
-              {/* Recent Payments */}
-              <Card>
-                <CardHeader>
-                  <CardTitle>Payments</CardTitle>
-                  <CardDescription>
-                    {totalPaymentItems} payment(s) found
-                  </CardDescription>
-                </CardHeader>
-                <CardContent>
-                  <Table>
-                    <TableHeader>
-                      <TableRow>
-                        <TableHead>Invoice No.</TableHead>
-                        <TableHead>Customer</TableHead>
-                        <TableHead>Method</TableHead>
-                        <TableHead>Reference</TableHead>
-                        <TableHead>Amount</TableHead>
-                        <TableHead>Date</TableHead>
-                      </TableRow>
-                    </TableHeader>
-                    <TableBody>
-                      {payments.map((payment) => (
-                        <TableRow key={payment.id}>
-                          <TableCell className="font-medium">{payment.invoice_no}</TableCell>
-                          <TableCell>{payment.customer_name}</TableCell>
-                          <TableCell>
-                            <Badge variant="outline">{payment.method.toUpperCase()}</Badge>
-                          </TableCell>
-                          <TableCell className="font-mono text-sm">{payment.ref_no}</TableCell>
-                          <TableCell>₹{payment.amount.toLocaleString()}</TableCell>
-                          <TableCell>{new Date(payment.paid_at).toLocaleDateString()}</TableCell>
+                {/* Recent Payments */}
+                <Card>
+                  <CardHeader>
+                    <CardTitle>Payments</CardTitle>
+                    <CardDescription>
+                      {totalPaymentItems} payment(s) found
+                    </CardDescription>
+                  </CardHeader>
+                  <CardContent>
+                    <Table>
+                      <TableHeader>
+                        <TableRow>
+                          <TableHead>Invoice No.</TableHead>
+                          <TableHead>Customer</TableHead>
+                          <TableHead>Method</TableHead>
+                          <TableHead>Reference</TableHead>
+                          <TableHead>Amount</TableHead>
+                          <TableHead>Date</TableHead>
                         </TableRow>
-                      ))}
-                    </TableBody>
-                  </Table>
-                  <Pagination
-                    page={paymentPage}
-                    pageSize={paymentPageSize}
-                    totalItems={totalPaymentItems}
-                    onPageChange={(newPage) => setPaymentPage(newPage)}
-                  />
-                </CardContent>
-              </Card>
+                      </TableHeader>
+                      <TableBody>
+                        {payments.map((payment) => (
+                          <TableRow key={payment.id}>
+                            <TableCell className="font-medium">{payment.invoice_no}</TableCell>
+                            <TableCell>{payment.customer_name}</TableCell>
+                            <TableCell>
+                              <Badge variant="outline">{payment.method.toUpperCase()}</Badge>
+                            </TableCell>
+                            <TableCell className="font-mono text-sm">{payment.ref_no}</TableCell>
+                            <TableCell>₹{payment.amount.toLocaleString()}</TableCell>
+                            <TableCell>{new Date(payment.paid_at).toLocaleDateString()}</TableCell>
+                          </TableRow>
+                        ))}
+                      </TableBody>
+                    </Table>
+                    <Pagination
+                      page={paymentPage}
+                      pageSize={paymentPageSize}
+                      totalItems={totalPaymentItems}
+                      onPageChange={(newPage) => setPaymentPage(newPage)}
+                    />
+                  </CardContent>
+                </Card>
+                  </div>
+                </ContentContainer>
               </div>
-            </ContentContainer>
+            </div>
           </div>
         </SidebarInset>
       </div>

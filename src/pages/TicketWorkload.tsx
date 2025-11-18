@@ -227,6 +227,7 @@ export default function TicketWorkload() {
 
             <ContentContainer>
               <LoaderOverlay />
+              <div className="space-y-6">
               {/* Assignee Overview */}
               <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
               {technicianWorkloads.map((technician: any) => (
@@ -401,6 +402,7 @@ export default function TicketWorkload() {
                 )}
               </CardContent>
             </Card>
+              </div>
             </ContentContainer>
             </div>
           </main>

@@ -217,76 +217,77 @@ const confirmDelete = async () => {
                 </Button>
               </div>
 
-              <ContentContainer>
-                <LoaderOverlay />
-                <div className="space-y-6">
-                  {/* Stats */}
-                  <div className="grid gap-4 md:grid-cols-4">
-                    <Card>
-                      <CardContent className="p-4">
-                        <div className="text-2xl font-bold text-green-600">{visitorOverview.checkedInToday}</div>
-                        <p className="text-sm text-muted-foreground">Checked In Today</p>
-                      </CardContent>
-                    </Card>
-                    <Card>
-                      <CardContent className="p-4">
-                        <div className="text-2xl font-bold text-blue-600">{visitorOverview.expectedToday}</div>
-                        <p className="text-sm text-muted-foreground">Expected Today</p>
-                      </CardContent>
-                    </Card>
-                    <Card>
-                      <CardContent className="p-4">
-                        <div className="text-2xl font-bold text-sidebar-primary">{visitorOverview.totalVisitors}</div>
-                        <p className="text-sm text-muted-foreground">Total Records</p>
-                      </CardContent>
-                    </Card>
-                    <Card>
-                      <CardContent className="p-4">
-                        <div className="text-2xl font-bold text-orange-600">
-                          {visitorOverview.totalVisitorsWithVehicle}
-                        </div>
-                        <p className="text-sm text-muted-foreground">With Vehicles</p>
-                      </CardContent>
-                    </Card>
-                  </div>
-
-                  {/* Filters */}
-                  <div className="flex flex-wrap items-center gap-4">
-                    <div className="flex items-center gap-2">
-                      <Search className="h-4 w-4 text-muted-foreground" />
-                      <Input
-                        placeholder="Search visitors..."
-                        value={searchTerm}
-                        onChange={(e) => setSearchTerm(e.target.value)}
-                        className="w-64"
-                      />
-                    </div>
-
-                    <select
-                      value={selectedSite}
-                      onChange={(e) => setSelectedSite(e.target.value)}
-                      className="rounded-md border border-input bg-background px-3 py-2 text-sm"
-                    >
-                      <option value="all">All Sites</option>
-                      {siteList.map(site => (
-                        <option key={site.id} value={site.id}>{site.name}</option>
-                      ))}
-                    </select>
-
-                    <select
-                      value={selectedStatus}
-                      onChange={(e) => setSelectedStatus(e.target.value)}
-                      className="rounded-md border border-input bg-background px-3 py-2 text-sm"
-                    >
-                      <option value="all">All Status</option>
-                      <option value="checked_in">Checked In</option>
-                      <option value="checked_out">Checked Out</option>
-                      <option value="expected">Expected</option>
-                    </select>
-                  </div>
-
-                  {/* Table */}
+              <div className="space-y-6">
+                {/* Stats */}
+                <div className="grid gap-4 md:grid-cols-4">
                   <Card>
+                    <CardContent className="p-4">
+                      <div className="text-2xl font-bold text-green-600">{visitorOverview.checkedInToday}</div>
+                      <p className="text-sm text-muted-foreground">Checked In Today</p>
+                    </CardContent>
+                  </Card>
+                  <Card>
+                    <CardContent className="p-4">
+                      <div className="text-2xl font-bold text-blue-600">{visitorOverview.expectedToday}</div>
+                      <p className="text-sm text-muted-foreground">Expected Today</p>
+                    </CardContent>
+                  </Card>
+                  <Card>
+                    <CardContent className="p-4">
+                      <div className="text-2xl font-bold text-sidebar-primary">{visitorOverview.totalVisitors}</div>
+                      <p className="text-sm text-muted-foreground">Total Records</p>
+                    </CardContent>
+                  </Card>
+                  <Card>
+                    <CardContent className="p-4">
+                      <div className="text-2xl font-bold text-orange-600">
+                        {visitorOverview.totalVisitorsWithVehicle}
+                      </div>
+                      <p className="text-sm text-muted-foreground">With Vehicles</p>
+                    </CardContent>
+                  </Card>
+                </div>
+
+                {/* Filters */}
+                <div className="flex flex-wrap items-center gap-4">
+                  <div className="flex items-center gap-2">
+                    <Search className="h-4 w-4 text-muted-foreground" />
+                    <Input
+                      placeholder="Search visitors..."
+                      value={searchTerm}
+                      onChange={(e) => setSearchTerm(e.target.value)}
+                      className="w-64"
+                    />
+                  </div>
+
+                  <select
+                    value={selectedSite}
+                    onChange={(e) => setSelectedSite(e.target.value)}
+                    className="rounded-md border border-input bg-background px-3 py-2 text-sm"
+                  >
+                    <option value="all">All Sites</option>
+                    {siteList.map(site => (
+                      <option key={site.id} value={site.id}>{site.name}</option>
+                    ))}
+                  </select>
+
+                  <select
+                    value={selectedStatus}
+                    onChange={(e) => setSelectedStatus(e.target.value)}
+                    className="rounded-md border border-input bg-background px-3 py-2 text-sm"
+                  >
+                    <option value="all">All Status</option>
+                    <option value="checked_in">Checked In</option>
+                    <option value="checked_out">Checked Out</option>
+                    <option value="expected">Expected</option>
+                  </select>
+                </div>
+
+                <div className="relative rounded-md border">
+                  <ContentContainer>
+                    <LoaderOverlay />
+                    {/* Table */}
+                    <Card>
                     <CardHeader>
                       <CardTitle>Visitors ({visitors.length})</CardTitle>
                     </CardHeader>
@@ -370,9 +371,10 @@ const confirmDelete = async () => {
                       </div>
                     )}
                   </CardContent>
-                </Card>
+                    </Card>
+                  </ContentContainer>
                 </div>
-              </ContentContainer>
+              </div>
             </div>
           </main>
         </SidebarInset>
