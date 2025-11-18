@@ -40,14 +40,14 @@ import ContentContainer from "@/components/ContentContainer";
 export default function ApprovalRules() {
   const [rules, setRules] = useState<ApprovalRule[]>([]);
   const [isDialogOpen, setIsDialogOpen] = useState(false);
-  const [approverRoleId, setApproverRoleId] = useState<string>("");
-  const [canApproveRoleId, setCanApproveRoleId] = useState<string>("");
+  const [approverTypeId, setApproverTypeId] = useState<string>("");
+  const [canApproveTypeId, setCanApproveTypeId] = useState<string>("");
   const [roles, setRoles] = useState<any[]>([]);
   const { withLoader } = useLoader();
 
   useEffect(() => {
     loadApprovalRules();
-    loadRoles();
+    loadTypes();
   }, []);
 
   const loadApprovalRules = async () => {
@@ -57,7 +57,7 @@ export default function ApprovalRules() {
     if (response?.success) setRules(response.data?.rules || []);
   }
 
-  const loadRoles = async () => {
+  const loadTypes = async () => {
     const roleList = await withLoader(async () => {
       return await rolePolicyApiService.getRoles();
     });
@@ -65,21 +65,21 @@ export default function ApprovalRules() {
   }
 
   const handleCreateRule = async () => {
-    if (!approverRoleId || !canApproveRoleId) {
-      toast.error("Please select both roles");
+    if (!approverTypeId || !canApproveTypeId) {
+      toast.error("Please select both types");
       return;
     }
 
-    if (approverRoleId == canApproveRoleId) {
-      toast.error("Please select different roles");
+    if (approverTypeId == canApproveTypeId) {
+      toast.error("Please select different types");
       return;
     }
 
     // Check if rule already exists
     const ruleExists = rules.some(
       (r) =>
-        r.approver_role_id === approverRoleId &&
-        r.can_approve_role_id === canApproveRoleId
+        r.approver_role_id === approverTypeId &&
+        r.can_approve_role_id === canApproveTypeId
     );
 
     if (ruleExists) {
@@ -88,8 +88,8 @@ export default function ApprovalRules() {
     }
 
     const newRule = {
-      approver_role_id: approverRoleId,
-      can_approve_role_id: canApproveRoleId,
+      approver_role_id: approverTypeId,
+      can_approve_role_id: canApproveTypeId,
     };
 
     const resp = await approvalRulesApiService.createRule(newRule);
@@ -98,8 +98,8 @@ export default function ApprovalRules() {
       loadApprovalRules();
       toast.success("Approval rule created successfully");
       setIsDialogOpen(false);
-      setApproverRoleId("");
-      setCanApproveRoleId("");
+      setApproverTypeId("");
+      setCanApproveTypeId("");
     }
 
   };
@@ -109,13 +109,13 @@ export default function ApprovalRules() {
     toast.success("Approval rule deleted successfully");
   };
 
-  // Group rules by approver role
+  // Group rules by approver type
   const groupedRules = rules.reduce((acc, rule) => {
-    const approverRole = rule.approver_role_name;
-    if (!acc[approverRole]) {
-      acc[approverRole] = [];
+    const approverType = rule.approver_role_name;
+    if (!acc[approverType]) {
+      acc[approverType] = [];
     }
-    acc[approverRole].push(rule);
+    acc[approverType].push(rule);
     return acc;
   }, {} as Record<string, ApprovalRule[]>);
 
@@ -141,7 +141,7 @@ export default function ApprovalRules() {
                     <div>
                       <h1 className="text-3xl font-bold text-foreground">Approval Rules</h1>
                       <p className="text-muted-foreground mt-1">
-                        Define which roles can approve user signups for other roles
+                        Define which types can approve user signups for other types
                       </p>
                     </div>
                     <Button onClick={() => setIsDialogOpen(true)}>
@@ -154,16 +154,16 @@ export default function ApprovalRules() {
                     <CardHeader>
                       <CardTitle>Approval Hierarchy</CardTitle>
                       <CardDescription>
-                        Configure role-based approval permissions for new user signups
+                        Configure type-based approval permissions for new user signups
                       </CardDescription>
                     </CardHeader>
                     <CardContent className="space-y-6">
-                      {Object.entries(groupedRules).map(([approverRole, roleRules]) => (
-                        <div key={approverRole} className="space-y-3">
+                      {Object.entries(groupedRules).map(([approverType, typeRules]) => (
+                        <div key={approverType} className="space-y-3">
                           <div className="flex items-center gap-2 pb-2 border-b">
                             <Shield className="h-4 w-4 text-primary" />
                             <h3 className="font-semibold text-foreground capitalize">
-                              {approverRole}
+                              {approverType}
                             </h3>
                             <span className="text-xs text-muted-foreground">
                               can approve:
@@ -174,13 +174,13 @@ export default function ApprovalRules() {
                             <Table>
                               <TableHeader>
                                 <TableRow>
-                                  <TableHead>Can Approve Role</TableHead>
+                                  <TableHead>Can Approve Type</TableHead>
                                   <TableHead>Created Date</TableHead>
                                   <TableHead className="text-right">Actions</TableHead>
                                 </TableRow>
                               </TableHeader>
                               <TableBody>
-                                {roleRules.map((rule) => (
+                                {typeRules.map((rule) => (
                                   <TableRow key={rule.id}>
                                     <TableCell className="font-medium capitalize">
                                       {rule.can_approve_role_name}
@@ -234,16 +234,16 @@ export default function ApprovalRules() {
           <DialogHeader>
             <DialogTitle>Create Approval Rule</DialogTitle>
             <DialogDescription>
-              Define which role can approve signups for another role
+              Define which type can approve signups for another type
             </DialogDescription>
           </DialogHeader>
 
           <div className="space-y-4 py-4">
             <div className="space-y-2">
-              <Label htmlFor="approver-role">Approver Role</Label>
-              <Select value={approverRoleId} onValueChange={setApproverRoleId}>
-                <SelectTrigger id="approver-role">
-                  <SelectValue placeholder="Select role that can approve" />
+              <Label htmlFor="approver-type">Approver Type</Label>
+              <Select value={approverTypeId} onValueChange={setApproverTypeId}>
+                <SelectTrigger id="approver-type">
+                  <SelectValue placeholder="Select type that can approve" />
                 </SelectTrigger>
                 <SelectContent>
                   {roles.map((role) => (
@@ -256,10 +256,10 @@ export default function ApprovalRules() {
             </div>
 
             <div className="space-y-2">
-              <Label htmlFor="can-approve-role">Can Approve Role</Label>
-              <Select value={canApproveRoleId} onValueChange={setCanApproveRoleId}>
-                <SelectTrigger id="can-approve-role">
-                  <SelectValue placeholder="Select role to be approved" />
+              <Label htmlFor="can-approve-type">Can Approve Type</Label>
+              <Select value={canApproveTypeId} onValueChange={setCanApproveTypeId}>
+                <SelectTrigger id="can-approve-type">
+                  <SelectValue placeholder="Select type to be approved" />
                 </SelectTrigger>
                 <SelectContent>
                   {roles.map((role) => (

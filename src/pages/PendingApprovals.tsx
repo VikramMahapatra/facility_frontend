@@ -25,11 +25,21 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogFooter,
+} from "@/components/ui/dialog";
+import { Checkbox } from "@/components/ui/checkbox";
+import { Label } from "@/components/ui/label";
 import { useSkipFirstEffect } from "@/hooks/use-skipfirst-effect";
 import { pendingApprovalApiService } from "@/services/access_control/pendingapprovalapi";
 import { Pagination } from "@/components/Pagination";
 import { ApprovalRule, User } from "@/interfaces/access_control_interface";
 import { approvalRulesApiService } from "@/services/access_control/approvalrulesapi";
+import { userManagementApiService } from "@/services/access_control/usermanagementapi";
 import { useLoader } from "@/context/LoaderContext";
 import LoaderOverlay from "@/components/LoaderOverlay";
 import ContentContainer from "@/components/ContentContainer";
@@ -40,6 +50,11 @@ export default function PendingApprovals() {
   const [selectedUser, setSelectedUser] = useState<User | null>(null);
   const [actionType, setActionType] = useState<'approve' | 'reject' | null>(null);
   const [approvalRules, setApprovalRules] = useState<ApprovalRule[]>([]);
+  const [roleList, setRoleList] = useState<any[]>([]);
+  const [selectedRoleIds, setSelectedRoleIds] = useState<string[]>([]);
+  const [isApproveDialogOpen, setIsApproveDialogOpen] = useState(false);
+  const [roleValidationError, setRoleValidationError] = useState<string>("");
+  const [isSubmitting, setIsSubmitting] = useState(false);
   const [page, setPage] = useState(1); // current page
   const [pageSize] = useState(5); // items per page
   const [totalItems, setTotalItems] = useState(0);
@@ -59,6 +74,11 @@ export default function PendingApprovals() {
       return await approvalRulesApiService.getRules();
     });
     if (response?.success) setApprovalRules(response.data?.rules || []);
+  }
+
+  const loadRolesLookup = async () => {
+    const lookup = await userManagementApiService.getUserRolesLookup();
+    if (lookup?.success) setRoleList(lookup.data || []);
   }
 
   const loadUsersForApproval = async () => {
@@ -102,9 +122,12 @@ export default function PendingApprovals() {
     );
   };
 
-  const handleApprove = (user: User) => {
+  const handleApprove = async (user: User) => {
     setSelectedUser(user);
     setActionType('approve');
+    setSelectedRoleIds(user.roles?.map(r => r.id) || []);
+    setIsApproveDialogOpen(true);
+    await loadRolesLookup();
   };
 
   const handleReject = (user: User) => {
@@ -112,21 +135,52 @@ export default function PendingApprovals() {
     setActionType('reject');
   };
 
-  const confirmAction = async () => {
+  const confirmApprove = async () => {
+    if (!selectedUser || isSubmitting) return;
+
+    // Validate that at least one role is selected
+    if (selectedRoleIds.length === 0) {
+      setRoleValidationError("At least one role must be selected");
+      return;
+    }
+
+    setRoleValidationError("");
+    setIsSubmitting(true);
+
+    const resp = await pendingApprovalApiService.updateUser({ 
+      user_id: selectedUser.id, 
+      status: 'approve',
+      role_ids: selectedRoleIds
+    })
+
+    if (resp?.success) {
+      toast.success("User has been approved successfully.");
+      setIsApproveDialogOpen(false);
+      setSelectedUser(null);
+      setActionType(null);
+      setSelectedRoleIds([]);
+      setRoleValidationError("");
+      loadUsersForApproval();
+    } else {
+      const errorMessage = resp?.data?.message || resp?.message || "Failed to approve user";
+      toast.error(errorMessage);
+    }
+    setIsSubmitting(false);
+  };
+
+  const confirmReject = async () => {
     if (!selectedUser) return;
 
-    const resp = await pendingApprovalApiService.updateUser({ user_id: selectedUser.id, status: actionType })
+    const resp = await pendingApprovalApiService.updateUser({ user_id: selectedUser.id, status: 'reject' })
 
-    if (resp.success) {
-      if (actionType === 'approve') {
-        toast.success(`User ${selectedUser.full_name} has been approved`);
-      } else {
-        toast.success(`User ${selectedUser.full_name} has been rejected`);
-      }
-
+    if (resp?.success) {
+      toast.success("User has been rejected successfully.");
       setSelectedUser(null);
       setActionType(null);
       loadUsersForApproval();
+    } else {
+      const errorMessage = resp?.data?.message || resp?.message || "Failed to reject user";
+      toast.error(errorMessage);
     }
   };
 
@@ -193,14 +247,14 @@ export default function PendingApprovals() {
                               <TableRow>
                                 <TableHead>User</TableHead>
                                 <TableHead>Contact</TableHead>
-                                <TableHead>Requested Roles</TableHead>
+                                <TableHead>Requested Type</TableHead>
                                 <TableHead>Requested Date</TableHead>
                                 <TableHead className="text-right">Actions</TableHead>
                               </TableRow>
                             </TableHeader>
                             <TableBody>
                               {users.map((user) => {
-                                const userCanApprove = canApprove(user);
+                                const userCanApprove = true;
                                 return (
                                   <TableRow key={user.id}>
                                     <TableCell>
@@ -235,30 +289,24 @@ export default function PendingApprovals() {
                                     </TableCell>
                                     <TableCell className="text-right">
                                       <div className="flex justify-end gap-2">
-                                        {userCanApprove ? (
-                                          <>
-                                            <Button
-                                              variant="default"
-                                              size="sm"
-                                              onClick={() => handleApprove(user)}
-                                            >
-                                              <Check className="h-4 w-4 mr-1" />
-                                              Approve
-                                            </Button>
-                                            <Button
-                                              variant="destructive"
-                                              size="sm"
-                                              onClick={() => handleReject(user)}
-                                            >
-                                              <X className="h-4 w-4 mr-1" />
-                                              Reject
-                                            </Button>
-                                          </>
-                                        ) : (
-                                          <Badge variant="secondary">
-                                            No Permission
-                                          </Badge>
-                                        )}
+                                        <Button
+                                          variant="default"
+                                          size="sm"
+                                          onClick={() => handleApprove(user)}
+                                          disabled={!userCanApprove}
+                                        >
+                                          <Check className="h-4 w-4 mr-1" />
+                                          Approve
+                                        </Button>
+                                        <Button
+                                          variant="destructive"
+                                          size="sm"
+                                          onClick={() => handleReject(user)}
+                                          disabled={!userCanApprove}
+                                        >
+                                          <X className="h-4 w-4 mr-1" />
+                                          Reject
+                                        </Button>
                                       </div>
                                     </TableCell>
                                   </TableRow>
@@ -287,26 +335,105 @@ export default function PendingApprovals() {
         </div>
       </div>
 
-      <AlertDialog open={!!selectedUser && !!actionType} onOpenChange={() => {
+      {/* Approve Dialog with Role Selection */}
+      <Dialog open={isApproveDialogOpen} onOpenChange={(open) => {
+        setIsApproveDialogOpen(open);
+        if (!open) {
+          setSelectedUser(null);
+          setActionType(null);
+          setSelectedRoleIds([]);
+          setRoleValidationError("");
+          setIsSubmitting(false);
+        }
+      }}>
+        <DialogContent className="max-w-2xl">
+          <DialogHeader>
+            <DialogTitle>Approve User - {selectedUser?.full_name}</DialogTitle>
+          </DialogHeader>
+          <div className="space-y-4 py-4">
+            <div className="space-y-2">
+              <Label>Assign Roles *</Label>
+              <div className="space-y-2 border rounded-md p-4 max-h-48 overflow-y-auto">
+                {roleList.map((role) => {
+                  const isChecked = selectedRoleIds.includes(role.id);
+                  return (
+                    <div key={role.id} className="flex items-center space-x-3">
+                      <Checkbox
+                        checked={isChecked}
+                        onCheckedChange={(checked) => {
+                          if (checked) {
+                            setSelectedRoleIds([...selectedRoleIds, role.id]);
+                            setRoleValidationError(""); // Clear error when role is selected
+                          } else {
+                            const newSelectedIds = selectedRoleIds.filter((id) => id !== role.id);
+                            setSelectedRoleIds(newSelectedIds);
+                            // Show validation error if no roles are selected after unchecking
+                            if (newSelectedIds.length === 0) {
+                              setRoleValidationError("At least one role must be selected");
+                            } else {
+                              setRoleValidationError(""); // Clear error if roles still selected
+                            }
+                          }
+                        }}
+                      />
+                      <div className="space-y-0">
+                        <Label className="font-medium cursor-pointer">
+                          {role.name}
+                        </Label>
+                        <p className="text-xs text-muted-foreground">
+                          {role.description || "no description"}
+                        </p>
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+              {roleValidationError && (
+                <p className="text-sm text-red-500">{roleValidationError}</p>
+              )}
+            </div>
+          </div>
+          <DialogFooter>
+            <Button
+              variant="outline"
+              onClick={() => {
+                setIsApproveDialogOpen(false);
+                setSelectedUser(null);
+                setActionType(null);
+                setSelectedRoleIds([]);
+                setRoleValidationError("");
+                setIsSubmitting(false);
+              }}
+              disabled={isSubmitting}
+            >
+              Cancel
+            </Button>
+            <Button
+              onClick={confirmApprove}
+              disabled={isSubmitting}
+            >
+              {isSubmitting ? "Submitting..." : "Approve"}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Reject Alert Dialog */}
+      <AlertDialog open={!!selectedUser && actionType === 'reject'} onOpenChange={() => {
         setSelectedUser(null);
         setActionType(null);
       }}>
         <AlertDialogContent>
           <AlertDialogHeader>
-            <AlertDialogTitle>
-              {actionType === 'approve' ? 'Approve User' : 'Reject User'}
-            </AlertDialogTitle>
+            <AlertDialogTitle>Reject User</AlertDialogTitle>
             <AlertDialogDescription>
-              {actionType === 'approve'
-                ? `Are you sure you want to approve ${selectedUser?.full_name}? They will gain access to the system with their assigned roles.`
-                : `Are you sure you want to reject ${selectedUser?.full_name}? Their registration request will be permanently deleted.`
-              }
+              Are you sure you want to reject {selectedUser?.full_name}? Their registration request will be permanently deleted.
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
             <AlertDialogCancel>Cancel</AlertDialogCancel>
-            <AlertDialogAction onClick={confirmAction}>
-              {actionType === 'approve' ? 'Approve' : 'Reject'}
+            <AlertDialogAction onClick={confirmReject}>
+              Reject
             </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>
