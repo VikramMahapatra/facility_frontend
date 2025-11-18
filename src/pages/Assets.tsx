@@ -230,10 +230,8 @@ export default function Assets() {
               </Button>
             </div>
 
-            <ContentContainer>
-              <LoaderOverlay />
-              <div className="space-y-6">
-                {/* Summary Cards */}
+            <div className="space-y-6">
+              {/* Summary Cards */}
               <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
                 <Card>
                   <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
@@ -333,8 +331,10 @@ export default function Assets() {
                     </Select>
                   </div>
 
-                  {/* Table */}
-                  <Table>
+                  <div className="relative rounded-md border">
+                    <ContentContainer>
+                      <LoaderOverlay />
+                      <Table>
                     <TableHeader>
                       <TableRow>
                         <TableHead>Asset Tag</TableHead>
@@ -402,18 +402,19 @@ export default function Assets() {
                         );
                       })}
                     </TableBody>
-                  </Table>
+                      </Table>
 
-                  <Pagination
-                    page={page}
-                    pageSize={pageSize}
-                    totalItems={totalItems}
-                    onPageChange={(newPage) => setPage(newPage)}
-                  />
+                      <Pagination
+                        page={page}
+                        pageSize={pageSize}
+                        totalItems={totalItems}
+                        onPageChange={(newPage) => setPage(newPage)}
+                      />
+                    </ContentContainer>
+                  </div>
                 </CardContent>
               </Card>
-              </div>
-            </ContentContainer>
+            </div>
           </div>
         </SidebarInset>
       </div>

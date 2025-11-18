@@ -201,61 +201,62 @@ const confirmDelete = async () => {
                 </Button>
               </div>
 
-              <ContentContainer>
-                <LoaderOverlay />
-                <div className="space-y-6">
-                  {/* Stats */}
-                  <div className="grid gap-4 md:grid-cols-3">
-                    <Card>
-                      <CardContent className="p-4">
-                        <div className="text-2xl font-bold text-sidebar-primary">{parkingZoneOverview.totalZones}</div>
-                        <p className="text-sm text-muted-foreground">Total Zones</p>
-                      </CardContent>
-                    </Card>
-                    <Card>
-                      <CardContent className="p-4">
-                        <div className="text-2xl font-bold text-blue-600">
-                          {parkingZoneOverview.totalCapacity}
-                        </div>
-                        <p className="text-sm text-muted-foreground">Total Capacity</p>
-                      </CardContent>
-                    </Card>
-                    <Card>
-                      <CardContent className="p-4">
-                        <div className="text-2xl font-bold text-green-600">
-                          {parkingZoneOverview.avgCapacity}
-                        </div>
-                        <p className="text-sm text-muted-foreground">Avg. Capacity</p>
-                      </CardContent>
-                    </Card>
-                  </div>
-
-                  {/* Filters */}
-                  <div className="flex flex-wrap items-center gap-4">
-                    <div className="flex items-center gap-2">
-                      <Search className="h-4 w-4 text-muted-foreground" />
-                      <Input
-                        placeholder="Search zones..."
-                        value={searchTerm}
-                        onChange={(e) => setSearchTerm(e.target.value)}
-                        className="w-64"
-                      />
-                    </div>
-
-                    <select
-                      value={selectedSite}
-                      onChange={(e) => setSelectedSite(e.target.value)}
-                      className="rounded-md border border-input bg-background px-3 py-2 text-sm"
-                    >
-                      <option value="all">All Sites</option>
-                      {siteList.map(site => (
-                        <option key={site.id} value={site.id}>{site.name}</option>
-                      ))}
-                    </select>
-                  </div>
-
-                  {/* Table */}
+              <div className="space-y-6">
+                {/* Stats */}
+                <div className="grid gap-4 md:grid-cols-3">
                   <Card>
+                    <CardContent className="p-4">
+                      <div className="text-2xl font-bold text-sidebar-primary">{parkingZoneOverview.totalZones}</div>
+                      <p className="text-sm text-muted-foreground">Total Zones</p>
+                    </CardContent>
+                  </Card>
+                  <Card>
+                    <CardContent className="p-4">
+                      <div className="text-2xl font-bold text-blue-600">
+                        {parkingZoneOverview.totalCapacity}
+                      </div>
+                      <p className="text-sm text-muted-foreground">Total Capacity</p>
+                    </CardContent>
+                  </Card>
+                  <Card>
+                    <CardContent className="p-4">
+                      <div className="text-2xl font-bold text-green-600">
+                        {parkingZoneOverview.avgCapacity}
+                      </div>
+                      <p className="text-sm text-muted-foreground">Avg. Capacity</p>
+                    </CardContent>
+                  </Card>
+                </div>
+
+                {/* Filters */}
+                <div className="flex flex-wrap items-center gap-4">
+                  <div className="flex items-center gap-2">
+                    <Search className="h-4 w-4 text-muted-foreground" />
+                    <Input
+                      placeholder="Search zones..."
+                      value={searchTerm}
+                      onChange={(e) => setSearchTerm(e.target.value)}
+                      className="w-64"
+                    />
+                  </div>
+
+                  <select
+                    value={selectedSite}
+                    onChange={(e) => setSelectedSite(e.target.value)}
+                    className="rounded-md border border-input bg-background px-3 py-2 text-sm"
+                  >
+                    <option value="all">All Sites</option>
+                    {siteList.map(site => (
+                      <option key={site.id} value={site.id}>{site.name}</option>
+                    ))}
+                  </select>
+                </div>
+
+                <div className="relative rounded-md border">
+                  <ContentContainer>
+                    <LoaderOverlay />
+                    {/* Table */}
+                    <Card>
                     <CardHeader>
                       <CardTitle>Parking Zones ({zones?.length || 0})</CardTitle>
                     </CardHeader>
@@ -315,9 +316,10 @@ const confirmDelete = async () => {
                       </div>
                     )}
                   </CardContent>
-                </Card>
+                    </Card>
+                  </ContentContainer>
                 </div>
-              </ContentContainer>
+              </div>
             </div>
           </main>
         </SidebarInset>

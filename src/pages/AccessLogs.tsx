@@ -128,40 +128,39 @@ export default function AccessLogs() {
                 </Button>
               </div>
 
-              <ContentContainer>
-                <LoaderOverlay />
-                <div className="space-y-6">
-                  {/* Stats */}
-                  <div className="grid gap-4 md:grid-cols-4">
-                    <Card>
-                      <CardContent className="p-4">
-                        <div className="text-2xl font-bold text-sidebar-primary">{eventOverview.todayEvents}</div>
-                        <p className="text-sm text-muted-foreground">Today's Events</p>
-                      </CardContent>
-                    </Card>
-                    <Card>
-                      <CardContent className="p-4">
-                        <div className="text-2xl font-bold text-green-600">{eventOverview.totalEntries}</div>
-                        <p className="text-sm text-muted-foreground">Total Entries</p>
-                      </CardContent>
-                    </Card>
-                    <Card>
-                      <CardContent className="p-4">
-                        <div className="text-2xl font-bold text-orange-600">{eventOverview.totalExits}</div>
-                        <p className="text-sm text-muted-foreground">Total Exits</p>
-                      </CardContent>
-                    </Card>
-                    <Card>
-                      <CardContent className="p-4">
-                        <div className="text-2xl font-bold text-blue-600">
-                          {eventOverview.totalUniqueIDs}
-                        </div>
-                        <p className="text-sm text-muted-foreground">Unique IDs</p>
-                      </CardContent>
-                    </Card>
-                  </div>
+              {/* Stats */}
+              <div className="grid gap-4 md:grid-cols-4">
+                <Card>
+                  <CardContent className="p-4">
+                    <div className="text-2xl font-bold text-sidebar-primary">{eventOverview.todayEvents}</div>
+                    <p className="text-sm text-muted-foreground">Today's Events</p>
+                  </CardContent>
+                </Card>
+                <Card>
+                  <CardContent className="p-4">
+                    <div className="text-2xl font-bold text-green-600">{eventOverview.totalEntries}</div>
+                    <p className="text-sm text-muted-foreground">Total Entries</p>
+                  </CardContent>
+                </Card>
+                <Card>
+                  <CardContent className="p-4">
+                    <div className="text-2xl font-bold text-orange-600">{eventOverview.totalExits}</div>
+                    <p className="text-sm text-muted-foreground">Total Exits</p>
+                  </CardContent>
+                </Card>
+                <Card>
+                  <CardContent className="p-4">
+                    <div className="text-2xl font-bold text-blue-600">
+                      {eventOverview.totalUniqueIDs}
+                    </div>
+                    <p className="text-sm text-muted-foreground">Unique IDs</p>
+                  </CardContent>
+                </Card>
+              </div>
 
-                  {/* Filters */}
+              {/* Filters */}
+              <Card>
+                <CardHeader>
                   <div className="flex flex-wrap items-center gap-4">
                     <div className="flex items-center gap-2">
                       <Search className="h-4 w-4 text-muted-foreground" />
@@ -194,8 +193,13 @@ export default function AccessLogs() {
                       <option value="out">Exit</option>
                     </select>
                   </div>
+                </CardHeader>
+              </Card>
 
-                  {/* Table */}
+              {/* Table */}
+              <div className="relative rounded-md border">
+                <ContentContainer>
+                  <LoaderOverlay />
                   <Card>
                     <CardHeader>
                       <CardTitle>Access Events ({events?.length})</CardTitle>
@@ -245,24 +249,24 @@ export default function AccessLogs() {
                             </TableRow>
                           ))}
                         </TableBody>
-                    </Table>
-                    <Pagination
+                      </Table>
+                      {events.length === 0 && (
+                        <div className="text-center py-8">
+                          <Key className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
+                          <h3 className="text-lg font-semibold text-sidebar-primary mb-2">No events found</h3>
+                          <p className="text-muted-foreground">Try adjusting your search criteria.</p>
+                        </div>
+                      )}
+                    </CardContent>
+                  </Card>
+                  <Pagination
                     page={page}
                     pageSize={pageSize}
                     totalItems={totalItems}
                     onPageChange={(newPage) => setPage(newPage)}
-                    />
-                    {events.length === 0 && (
-                      <div className="text-center py-8">
-                        <Key className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
-                        <h3 className="text-lg font-semibold text-sidebar-primary mb-2">No events found</h3>
-                        <p className="text-muted-foreground">Try adjusting your search criteria.</p>
-                      </div>
-                    )}
-                  </CardContent>
-                </Card>
-                </div>
-              </ContentContainer>
+                  />
+                </ContentContainer>
+              </div>
             </div>
           </main>
         </SidebarInset>

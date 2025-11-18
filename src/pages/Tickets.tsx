@@ -250,9 +250,10 @@ export default function Tickets() {
                 </div>
               </CardHeader>
               <CardContent>
-                <ContentContainer>
-                  <LoaderOverlay />
-                  <Table>
+                <div className="relative rounded-md border">
+                  <ContentContainer>
+                    <LoaderOverlay />
+                    <Table>
                     <TableHeader>
                       <TableRow>
                         <TableHead>ID</TableHead>
@@ -296,14 +297,15 @@ export default function Tickets() {
                         </TableRow>
                       ))}
                     </TableBody>
-                  </Table>
-                  <Pagination
-                    page={page}
-                    pageSize={pageSize}
-                    totalItems={totalItems}
-                    onPageChange={(newPage) => setPage(newPage)}
-                  />
-                </ContentContainer>
+                    </Table>
+                    <Pagination
+                      page={page}
+                      pageSize={pageSize}
+                      totalItems={totalItems}
+                      onPageChange={(newPage) => setPage(newPage)}
+                    />
+                  </ContentContainer>
+                </div>
               </CardContent>
             </Card>
             </div>

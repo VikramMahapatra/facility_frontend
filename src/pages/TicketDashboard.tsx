@@ -100,14 +100,13 @@ export default function TicketDashboard() {
           </header>
 
           <main className="flex-1 p-6">
-            <div className="space-y-6">
-              <div className="flex items-center justify-between">
-                <div>
-                  <h2 className="text-3xl font-bold text-sidebar-primary">Dashboard Overview</h2>
-                  <p className="text-muted-foreground">
-                    Monitor ticket status and performance metrics
-                  </p>
-                </div>
+            <div className="flex items-center justify-between mb-6">
+              <div>
+                <h2 className="text-3xl font-bold text-sidebar-primary">Dashboard Overview</h2>
+                <p className="text-muted-foreground">
+                  Monitor ticket status and performance metrics
+                </p>
+              </div>
               <div className="flex gap-3">
                 <Select value={selectedSiteId} onValueChange={setSelectedSiteId}>
                   <SelectTrigger className="w-[200px]">
@@ -128,86 +127,105 @@ export default function TicketDashboard() {
               </div>
             </div>
 
-              <ContentContainer>
-                <LoaderOverlay />
+            <div className="space-y-6">
             {/* Statistics Cards */}
             <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
-              <Card>
-                <CardHeader className="flex flex-row items-center justify-between pb-2">
-                  <CardTitle className="text-sm font-medium">Total Tickets</CardTitle>
-                  <TicketIcon className="h-4 w-4 text-muted-foreground" />
-                </CardHeader>
-                <CardContent>
-                      <div className="text-2xl font-bold">{totalTickets}</div>
-                      <p className="text-xs text-muted-foreground mt-1">All tickets for this site</p>
-                </CardContent>
+              <Card className="relative">
+                <ContentContainer>
+                  <LoaderOverlay />
+                  <CardHeader className="flex flex-row items-center justify-between pb-2">
+                    <CardTitle className="text-sm font-medium">Total Tickets</CardTitle>
+                    <TicketIcon className="h-4 w-4 text-muted-foreground" />
+                  </CardHeader>
+                  <CardContent>
+                    <div className="text-2xl font-bold">{totalTickets}</div>
+                    <p className="text-xs text-muted-foreground mt-1">All tickets for this site</p>
+                  </CardContent>
+                </ContentContainer>
               </Card>
 
-              <Card>
-                <CardHeader className="flex flex-row items-center justify-between pb-2">
-                  <CardTitle className="text-sm font-medium">New Tickets</CardTitle>
-                  <Clock className="h-4 w-4 text-blue-500" />
-                </CardHeader>
-                <CardContent>
-                      <div className="text-2xl font-bold">{openTickets}</div>
-                      <p className="text-xs text-muted-foreground mt-1">Awaiting assignment</p>
-                </CardContent>
+              <Card className="relative">
+                <ContentContainer>
+                  <LoaderOverlay />
+                  <CardHeader className="flex flex-row items-center justify-between pb-2">
+                    <CardTitle className="text-sm font-medium">New Tickets</CardTitle>
+                    <Clock className="h-4 w-4 text-blue-500" />
+                  </CardHeader>
+                  <CardContent>
+                    <div className="text-2xl font-bold">{openTickets}</div>
+                    <p className="text-xs text-muted-foreground mt-1">Awaiting assignment</p>
+                  </CardContent>
+                </ContentContainer>
               </Card>
 
-              <Card>
-                <CardHeader className="flex flex-row items-center justify-between pb-2">
-                  <CardTitle className="text-sm font-medium">Escalated</CardTitle>
-                  <AlertTriangle className="h-4 w-4 text-red-500" />
-                </CardHeader>
-                <CardContent>
-                      <div className="text-2xl font-bold">{escalatedTickets}</div>
-                      <p className="text-xs text-muted-foreground mt-1">SLA breached tickets</p>
-                </CardContent>
+              <Card className="relative">
+                <ContentContainer>
+                  <LoaderOverlay />
+                  <CardHeader className="flex flex-row items-center justify-between pb-2">
+                    <CardTitle className="text-sm font-medium">Escalated</CardTitle>
+                    <AlertTriangle className="h-4 w-4 text-red-500" />
+                  </CardHeader>
+                  <CardContent>
+                    <div className="text-2xl font-bold">{escalatedTickets}</div>
+                    <p className="text-xs text-muted-foreground mt-1">SLA breached tickets</p>
+                  </CardContent>
+                </ContentContainer>
               </Card>
 
-              <Card>
-                <CardHeader className="flex flex-row items-center justify-between pb-2">
-                  <CardTitle className="text-sm font-medium">In Progress</CardTitle>
-                  <TrendingUp className="h-4 w-4 text-yellow-500" />
-                </CardHeader>
-                <CardContent>
-                      <div className="text-2xl font-bold">{inProgressTickets}</div>
-                      <p className="text-xs text-muted-foreground mt-1">Being worked on</p>
-                </CardContent>
+              <Card className="relative">
+                <ContentContainer>
+                  <LoaderOverlay />
+                  <CardHeader className="flex flex-row items-center justify-between pb-2">
+                    <CardTitle className="text-sm font-medium">In Progress</CardTitle>
+                    <TrendingUp className="h-4 w-4 text-yellow-500" />
+                  </CardHeader>
+                  <CardContent>
+                    <div className="text-2xl font-bold">{inProgressTickets}</div>
+                    <p className="text-xs text-muted-foreground mt-1">Being worked on</p>
+                  </CardContent>
+                </ContentContainer>
               </Card>
 
-              <Card>
-                <CardHeader className="flex flex-row items-center justify-between pb-2">
-                  <CardTitle className="text-sm font-medium">Closed</CardTitle>
-                  <CheckCircle className="h-4 w-4 text-green-500" />
-                </CardHeader>
-                <CardContent>
-                      <div className="text-2xl font-bold">{closedTickets}</div>
-                      <p className="text-xs text-muted-foreground mt-1">Resolved tickets</p>
-                </CardContent>
+              <Card className="relative">
+                <ContentContainer>
+                  <LoaderOverlay />
+                  <CardHeader className="flex flex-row items-center justify-between pb-2">
+                    <CardTitle className="text-sm font-medium">Closed</CardTitle>
+                    <CheckCircle className="h-4 w-4 text-green-500" />
+                  </CardHeader>
+                  <CardContent>
+                    <div className="text-2xl font-bold">{closedTickets}</div>
+                    <p className="text-xs text-muted-foreground mt-1">Resolved tickets</p>
+                  </CardContent>
+                </ContentContainer>
               </Card>
 
-              <Card>
-                <CardHeader className="flex flex-row items-center justify-between pb-2">
-                  <CardTitle className="text-sm font-medium">High Priority</CardTitle>
-                  <Zap className="h-4 w-4 text-orange-500" />
-                </CardHeader>
-                <CardContent>
-                      <div className="text-2xl font-bold">{highPriorityTickets}</div>
-                      <p className="text-xs text-muted-foreground mt-1">Urgent attention needed</p>
-                </CardContent>
+              <Card className="relative">
+                <ContentContainer>
+                  <LoaderOverlay />
+                  <CardHeader className="flex flex-row items-center justify-between pb-2">
+                    <CardTitle className="text-sm font-medium">High Priority</CardTitle>
+                    <Zap className="h-4 w-4 text-orange-500" />
+                  </CardHeader>
+                  <CardContent>
+                    <div className="text-2xl font-bold">{highPriorityTickets}</div>
+                    <p className="text-xs text-muted-foreground mt-1">Urgent attention needed</p>
+                  </CardContent>
+                </ContentContainer>
               </Card>
             </div>
 
             {/* Last 30 Days Analytics */}
-            <Card>
+            <Card className="relative">
               <CardHeader>
                 <CardTitle className="flex items-center gap-2">
                   <Calendar className="h-5 w-5" />
                   Last 30 Days Performance
                 </CardTitle>
               </CardHeader>
-              <CardContent>
+              <ContentContainer>
+                <LoaderOverlay />
+                <CardContent>
                   <div className="grid gap-4 md:grid-cols-3">
                     <div className="space-y-2">
                       <p className="text-sm text-muted-foreground">Pending Tickets</p>
@@ -231,18 +249,21 @@ export default function TicketDashboard() {
                       </p>
                     </div>
                   </div>
-              </CardContent>
+                </CardContent>
+              </ContentContainer>
             </Card>
 
             {/* Assignee Workload Summary */}
-            <Card>
+            <Card className="relative">
               <CardHeader>
                 <CardTitle className="flex items-center gap-2">
                   <Users className="h-5 w-5" />
                   Team Workload Distribution
                 </CardTitle>
               </CardHeader>
-              <CardContent>
+              <ContentContainer>
+                <LoaderOverlay />
+                <CardContent>
                   <div className="space-y-4">
                     {workloadDistribution.map((workload: any) => (
                       <div key={workload.technician_id} className="flex items-center justify-between border-b pb-3 last:border-0">
@@ -268,15 +289,18 @@ export default function TicketDashboard() {
                       </p>
                     )}
                   </div>
-              </CardContent>
+                </CardContent>
+              </ContentContainer>
             </Card>
 
             {/* Category Breakdown */}
-            <Card>
+            <Card className="relative">
               <CardHeader>
                 <CardTitle>Tickets by Category</CardTitle>
               </CardHeader>
-              <CardContent>
+              <ContentContainer>
+                <LoaderOverlay />
+                <CardContent>
                   <div className="space-y-4">
                     {Object.entries(categoryDistribution).map(([category_name, ticket_count]: [string, any]) => (
                       <div key={category_name} className="flex items-center justify-between">
@@ -298,15 +322,18 @@ export default function TicketDashboard() {
                       </p>
                     )}
                   </div>
-              </CardContent>
+                </CardContent>
+              </ContentContainer>
             </Card>
 
             {/* Recent Tickets */}
-            <Card>
+            <Card className="relative">
               <CardHeader>
                 <CardTitle>Recent Tickets</CardTitle>
               </CardHeader>
-              <CardContent>
+              <ContentContainer>
+                <LoaderOverlay />
+                <CardContent>
                   <div className="space-y-4">
                     {recentTickets.map((ticket: any) => (
                       <div key={ticket.id || ticket.ticket_id} className="flex items-center justify-between border-b pb-3 last:border-0">
@@ -352,9 +379,9 @@ export default function TicketDashboard() {
                       </p>
                     )}
                   </div>
-              </CardContent>
-            </Card>
+                </CardContent>
               </ContentContainer>
+            </Card>
             </div>
           </main>
         </SidebarInset>

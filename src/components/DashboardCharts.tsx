@@ -19,11 +19,15 @@ import {
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 //import {  occupancyData, leasingData , financialData , dashboardStats } from "@/data/mockPropertyData";
 import { dashboardApiService } from '@/services/dashboardapi';
+import { useLoader } from '@/context/LoaderContext';
+import ContentContainer from '@/components/ContentContainer';
+import LoaderOverlay from '@/components/LoaderOverlay';
 
 const COLORS = ['hsl(215 100% 25%)', 'hsl(156 73% 59%)', 'hsl(0 84.2% 60.2%)', 'hsl(45 93% 47%)'];
 
 export function RevenueChart() {
   const [revenueData, setRevenueData] = useState<any[]>([]);
+  const { withLoader } = useLoader();
 
   useEffect(() => {
     loadRevenueData();
@@ -31,8 +35,10 @@ export function RevenueChart() {
 
   const loadRevenueData = async () => {
     try {
-      const resp = await dashboardApiService.getMonthlyRevenueTrend();
-      if (resp.success) setRevenueData(resp.data);
+      const resp = await withLoader(async () => {
+        return await dashboardApiService.getMonthlyRevenueTrend();
+      });
+      if (resp?.success) setRevenueData(resp.data);
     } catch (error) {
       console.error('Failed to load revenue data:', error);
       setRevenueData([]);
@@ -40,11 +46,13 @@ export function RevenueChart() {
   };
 
   return (
-    <Card className="col-span-2">
+    <Card className="col-span-2 relative">
       <CardHeader>
         <CardTitle>Monthly Revenue Trend</CardTitle>
       </CardHeader>
-      <CardContent>
+      <ContentContainer>
+        <LoaderOverlay />
+        <CardContent>
         <ResponsiveContainer width="100%" height={300}>
           <AreaChart data={revenueData}>
             <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" />
@@ -83,7 +91,8 @@ export function RevenueChart() {
             />
           </AreaChart>
         </ResponsiveContainer>
-      </CardContent>
+        </CardContent>
+      </ContentContainer>
     </Card>
   );
 }
@@ -91,6 +100,7 @@ export function RevenueChart() {
 export function OccupancyChart() {
   const [pieData, setPieData] = useState<any[]>([]);
   const [meta, setMeta] = useState<{ total: number; occupancyRate: number } | null>(null);
+  const { withLoader } = useLoader();
 
   useEffect(() => {
     loadOccupancy();
@@ -98,8 +108,10 @@ export function OccupancyChart() {
 
   const loadOccupancy = async () => {
     try {
-      const resp = await dashboardApiService.getSpaceOccupancy();
-      if (resp.success) {
+      const resp = await withLoader(async () => {
+        return await dashboardApiService.getSpaceOccupancy();
+      });
+      if (resp?.success) {
         const chartData = [
           { name: 'Occupied', value: resp.data.occupied, color: 'hsl(var(--accent))' },
           { name: 'Available', value: resp.data.available, color: 'hsl(var(--primary))' },
@@ -119,11 +131,13 @@ export function OccupancyChart() {
   const hasData = pieData.length > 0;
 
   return (
-    <Card>
+    <Card className="relative">
       <CardHeader>
         <CardTitle>Space Occupancy</CardTitle>
       </CardHeader>
-      <CardContent>
+      <ContentContainer>
+        <LoaderOverlay />
+        <CardContent>
         <ResponsiveContainer width="100%" height={250}>
           <PieChart>
             <Pie
@@ -165,13 +179,15 @@ export function OccupancyChart() {
             ))}
           </div>
         )}
-      </CardContent>
+        </CardContent>
+      </ContentContainer>
     </Card>
   );
 }
 
 export function MaintenanceChart() {
   const [priorityData, setPriorityData] = useState<any[]>([]);
+  const { withLoader } = useLoader();
 
   useEffect(() => {
     loadPriority();
@@ -179,19 +195,23 @@ export function MaintenanceChart() {
 
   const loadPriority = async () => {
     try {
-      const resp = await dashboardApiService.getWorkOrdersPriority();
-      if (resp.success) setPriorityData(resp.data);
+      const resp = await withLoader(async () => {
+        return await dashboardApiService.getWorkOrdersPriority();
+      });
+      if (resp?.success) setPriorityData(resp.data);
     } catch (error) {
       console.error('Failed to load work orders priority:', error);
       setPriorityData([]);
     }
   }
   return (
-    <Card>
+    <Card className="relative">
       <CardHeader>
         <CardTitle>Work Orders by Priority</CardTitle>
       </CardHeader>
-      <CardContent>
+      <ContentContainer>
+        <LoaderOverlay />
+        <CardContent>
         <ResponsiveContainer width="100%" height={250}>
           <BarChart data={priorityData}>
             <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" />
@@ -211,13 +231,15 @@ export function MaintenanceChart() {
             </Bar>
           </BarChart>
         </ResponsiveContainer>
-      </CardContent>
+        </CardContent>
+      </ContentContainer>
     </Card>
   );
 }
 
 export function EnergyChart() {
   const [energyTrend, setEnergyTrend] = useState<any[]>([]);
+  const { withLoader } = useLoader();
 
   useEffect(() => {
     loadEnergy();
@@ -225,8 +247,10 @@ export function EnergyChart() {
 
   const loadEnergy = async () => {
     try {
-      const resp = await dashboardApiService.getEnergyConsumptionTrend();
-      if (resp.success) setEnergyTrend(resp.data);
+      const resp = await withLoader(async () => {
+        return await dashboardApiService.getEnergyConsumptionTrend();
+      });
+      if (resp?.success) setEnergyTrend(resp.data);
     } catch (error) {
       console.error('Failed to load energy trend:', error);
       setEnergyTrend([]);
@@ -234,11 +258,13 @@ export function EnergyChart() {
   };
 
   return (
-    <Card className="col-span-2">
+    <Card className="col-span-2 relative">
       <CardHeader>
         <CardTitle>Energy Consumption Trend</CardTitle>
       </CardHeader>
-      <CardContent>
+      <ContentContainer>
+        <LoaderOverlay />
+        <CardContent>
         <ResponsiveContainer width="100%" height={300}>
           <LineChart data={energyTrend}>
             <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" />
@@ -274,29 +300,35 @@ export function EnergyChart() {
             />
           </LineChart>
         </ResponsiveContainer>
-      </CardContent>
+        </CardContent>
+      </ContentContainer>
     </Card>
   );
 }
 
 export function FloorOccupancyChart() {
   const [occupancyData, setOccupancyData] = useState<any[]>([]);
+  const { withLoader } = useLoader();
 
   useEffect(() => {
     loadOccupancyData();
   }, []);
 
   const loadOccupancyData = async () => {
-    const resp = await dashboardApiService.getOccupancyByFloor();
-    if (resp.success) setOccupancyData(resp.data);
+    const resp = await withLoader(async () => {
+      return await dashboardApiService.getOccupancyByFloor();
+    });
+    if (resp?.success) setOccupancyData(resp.data);
   };
 
   return (
-    <Card className="col-span-3">
+    <Card className="col-span-3 relative">
       <CardHeader>
         <CardTitle>Occupancy by Floor</CardTitle>
       </CardHeader>
-      <CardContent>
+      <ContentContainer>
+        <LoaderOverlay />
+        <CardContent>
         <ResponsiveContainer width="100%" height={300}>
           <BarChart data={occupancyData}>
             <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" />
@@ -315,7 +347,8 @@ export function FloorOccupancyChart() {
             <Bar dataKey="total" stackId="a" fill="hsl(var(--muted-foreground))" name="Total" />
           </BarChart>
         </ResponsiveContainer>
-      </CardContent>
+        </CardContent>
+      </ContentContainer>
     </Card>
   );
 }

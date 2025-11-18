@@ -12,7 +12,7 @@ import { notificationsApiService } from "@/services/system/notificationsapi";
 import { notificationSettingsApiService } from "@/services/system/notificationsettingsapi";
 import { useSkipFirstEffect } from "@/hooks/use-skipfirst-effect";
 import { Pagination } from "@/components/Pagination";
-import { useToast } from "@/hooks/use-toast";
+import { toast } from "sonner";
 import { useLoader } from "@/context/LoaderContext";
 import LoaderOverlay from "@/components/LoaderOverlay";
 import ContentContainer from "@/components/ContentContainer";
@@ -29,7 +29,6 @@ import ContentContainer from "@/components/ContentContainer";
 ];*/
 
 export default function Notifications() {
-  const { toast } = useToast();
   const [notifications, setNotifications] = useState<any[]>([]);
   const [settings, setSettings] = useState<any[]>([]);
   const [searchTerm, setSearchTerm] = useState("");
@@ -77,7 +76,10 @@ export default function Notifications() {
     const data = await notificationsApiService.markAsRead(String(id));
     if (data?.success) {
       await loadNotifications();
-      toast({ title: "Marked as read", description: "Notification updated successfully." });
+      toast.success("Notification has been marked as read successfully.");
+    } else {
+      const errorMessage = data?.message || "Failed to mark notification as read.";
+      toast.error(errorMessage);
     }
   };
 
@@ -85,7 +87,10 @@ export default function Notifications() {
     const response = await notificationsApiService.deleteNotification(String(id));
     if (response?.success) {
       await loadNotifications();
-      toast({ title: "Notification Deleted", description: "Notification has been removed successfully." });
+      toast.success("Notification has been deleted successfully.");
+    } else {
+      const errorMessage = response?.message || "Failed to delete notification.";
+      toast.error(errorMessage);
     }
   };
 
@@ -93,7 +98,10 @@ export default function Notifications() {
     const data = await notificationsApiService.markAllAsRead();
     if (data?.success) {
       await loadNotifications();
-      toast({ title: "All Marked as Read", description: "All notifications have been marked as read." });
+      toast.success("All notifications have been marked as read successfully.");
+    } else {
+      const errorMessage = data?.message || "Failed to mark all notifications as read.";
+      toast.error(errorMessage);
     }
   };
 
@@ -101,7 +109,10 @@ export default function Notifications() {
     const data = await notificationsApiService.clearAllNotifications();
     if (data?.success) {
       await loadNotifications();
-      toast({ title: "All Notifications Cleared", description: "All notifications have been cleared." });
+      toast.success("All notifications have been cleared successfully.");
+    } else {
+      const errorMessage = data?.message || "Failed to clear all notifications.";
+      toast.error(errorMessage);
     }
   };
 
@@ -125,10 +136,10 @@ export default function Notifications() {
       setSettings(prev =>
         prev.map(s => s.id === id ? { ...s, enabled: updatedEnabled } : s)
       );
-      toast({ 
-        title: "Setting Updated", 
-        description: `${setting.label || 'Setting'} has been ${updatedEnabled ? 'enabled' : 'disabled'}.` 
-      });
+      toast.success(`${setting.label || 'Setting'} has been ${updatedEnabled ? 'enabled' : 'disabled'} successfully.`);
+    } else {
+      const errorMessage = response?.message || "Failed to update notification setting.";
+      toast.error(errorMessage);
     }
   };
 
