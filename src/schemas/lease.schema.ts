@@ -11,21 +11,9 @@ export const leaseSchema = z
     tenant_id: z.string().optional(),
     start_date: z.string().min(1, "Start Date is required"),
     end_date: z.string().min(1, "End Date is required"),
-    rent_amount: z
-      .string()
-      .regex(/^\d+$/, "Only digits allowed")
-      .transform((v) => Number(v))
-      .optional(),
-    deposit_amount: z
-      .string()
-      .regex(/^\d+$/, "Only digits allowed")
-      .transform((v) => Number(v))
-      .optional(),
-    cam_rate: z
-      .string()
-      .regex(/^\d+$/, "Only digits allowed")
-      .transform((v) => Number(v))
-      .optional(),
+    rent_amount: z.coerce.number().optional(),
+    deposit_amount: z.coerce.number().optional(),
+    cam_rate: z.coerce.number().optional(),
     utilities: z
       .object({
         electricity: z.enum(["submeter", "fixed", "na"]).optional(),

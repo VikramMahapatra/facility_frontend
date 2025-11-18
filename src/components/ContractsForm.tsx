@@ -338,6 +338,7 @@ export function ContractForm({ contract, isOpen, onClose, onSave, mode }: Contra
               <Input
                 id="value"
                 type="number"
+                step="any"
                 {...register("value", { setValueAs: (v) => (v === "" ? undefined : Number(v)) })}
                 disabled={isReadOnly}
                 placeholder="500000"
@@ -356,6 +357,7 @@ export function ContractForm({ contract, isOpen, onClose, onSave, mode }: Contra
                 <Input
                   id="response_hrs"
                   type="number"
+                  step="any"
                   {...register("terms.sla.response_hrs", { setValueAs: (v) => (v === "" ? undefined : Number(v)) })}
                   disabled={isReadOnly}
                   placeholder="4"
@@ -371,6 +373,7 @@ export function ContractForm({ contract, isOpen, onClose, onSave, mode }: Contra
                 <Input
                   id="penalty_per_day"
                   type="number"
+                  step="any"
                   {...register("terms.penalty.per_day", { setValueAs: (v) => (v === "" ? undefined : Number(v)) })}
                   disabled={isReadOnly}
                   placeholder="1000"

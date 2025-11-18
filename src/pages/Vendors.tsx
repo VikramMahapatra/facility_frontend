@@ -388,12 +388,12 @@ const confirmDelete = async () => {
                             </TableCell>
                             <TableCell>
                               <div className="flex flex-wrap gap-1">
-                                {vendor.categories.slice(0, 2).map((category) => (
+                                {Array.isArray(vendor.categories) && vendor.categories.slice(0, 2).map((category) => (
                                   <Badge key={category} variant="outline" className="text-xs">
                                     {category}
                                   </Badge>
                                 ))}
-                                {vendor.categories.length > 2 && (
+                                {Array.isArray(vendor.categories) && vendor.categories.length > 2 && (
                                   <Badge variant="outline" className="text-xs">
                                     +{vendor.categories.length - 2}
                                   </Badge>

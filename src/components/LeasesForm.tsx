@@ -343,6 +343,7 @@ export function LeaseForm({ lease, isOpen, onClose, onSave, mode }: LeaseFormPro
               <Label>Rent Amount</Label>
               <Input
                 type="number"
+                step="any"
                 disabled={isReadOnly}
                 {...register("rent_amount")}
                 className={errors.rent_amount ? 'border-red-500' : ''}
@@ -358,6 +359,7 @@ export function LeaseForm({ lease, isOpen, onClose, onSave, mode }: LeaseFormPro
               <Label>Deposit Amount</Label>
               <Input
                 type="number"
+                step="any"
                 disabled={isReadOnly}
                 {...register("deposit_amount")}
                 className={errors.deposit_amount ? 'border-red-500' : ''}
@@ -370,6 +372,7 @@ export function LeaseForm({ lease, isOpen, onClose, onSave, mode }: LeaseFormPro
               <Label>CAM Rate (per sq ft)</Label>
               <Input
                 type="number"
+                step="any"
                 disabled={isReadOnly}
                 {...register("cam_rate")}
                 className={errors.cam_rate ? 'border-red-500' : ''}
