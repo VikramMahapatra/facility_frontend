@@ -64,9 +64,10 @@ export function ParkingZoneForm({ zone, isOpen, onClose, onSave, mode }: Parking
       await onSave(data);
       reset(emptyFormData);
       onClose();
-    } catch (error) {
+    } catch (error: any) {
       reset(undefined, { keepErrors: true, keepValues: true });
-      toast("Failed to save parking zone");
+      const errorMessage = error?.response?.data?.message || error?.message || "Failed to save parking zone";
+      toast.error(errorMessage);
     }
   };
 
@@ -150,7 +151,7 @@ export function ParkingZoneForm({ zone, isOpen, onClose, onSave, mode }: Parking
               {mode === 'view' ? 'Close' : 'Cancel'}
             </Button>
             {mode !== 'view' && (
-              <Button type="submit" disabled={!isValid || isSubmitting}>
+              <Button type="submit" disabled={isSubmitting}>
                 {isSubmitting ? "Saving..." : mode === 'create' ? 'Create Zone' : 'Update Zone'}
               </Button>
             )}

@@ -16,7 +16,7 @@ import { SidebarProvider, SidebarTrigger, SidebarInset } from "@/components/ui/s
 import { Separator } from "@/components/ui/separator";
 import { PropertySidebar } from "@/components/PropertySidebar";
 import { Pagination } from "@/components/Pagination";
-import { useToast } from "@/hooks/use-toast";
+import { toast } from "sonner";
 import { ContractForm } from "@/components/ContractsForm";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
 import { useAuth } from "../context/AuthContext";
@@ -25,7 +25,6 @@ import LoaderOverlay from "@/components/LoaderOverlay";
 import ContentContainer from "@/components/ContentContainer";
 
 export default function Contracts() {
-  const { toast } = useToast();
   const [searchTerm, setSearchTerm] = useState("");
   const [statusFilter, setStatusFilter] = useState("all");
   const [typeFilter, setTypeFilter] = useState("all");
@@ -162,15 +161,13 @@ const confirmDelete = async () => {
     const response = await contractApiService.deleteContract(deleteContractId);
 
     if (response.success) {
-       
-        // Success - refresh data
-        updateContractsPage();
-        setDeleteContractId(null);
-        toast({
-          title: "Contract Deleted",
-          description: "Contract has been deleted successfully.",
-        });
-      
+      // Success - refresh data
+      updateContractsPage();
+      setDeleteContractId(null);
+      toast.success("Contract has been deleted successfully.");
+    } else {
+      const errorMessage = response?.data?.message || "Failed to delete contract";
+      toast.error(errorMessage);
     }
 
     setDeleteContractId(null);
@@ -202,10 +199,12 @@ const confirmDelete = async () => {
 
   if (response.success) {
     setIsCreateDialogOpen(false);
-    toast({
-      title: formMode === "create" ? "Contract Created" : "Contract Updated",
-      description: `Contract ${contractData.code || contractData.contract_number || ""} has been ${formMode === "create" ? "created" : "updated"} successfully.`,
-    });
+    toast.success(
+      `Contract ${contractData.title || contractData.code || contractData.contract_number || ""} has been ${formMode === "create" ? "created" : "updated"} successfully.`
+    );
+  } else {
+    const errorMessage = response?.data?.message || `Failed to ${formMode === "create" ? "create" : "update"} contract`;
+    toast.error(errorMessage);
   }
   return response;
 };

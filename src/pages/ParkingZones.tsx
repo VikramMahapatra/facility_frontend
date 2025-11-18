@@ -9,7 +9,7 @@ import { PropertySidebar } from "@/components/PropertySidebar";
 import { SidebarProvider, SidebarInset, SidebarTrigger } from "@/components/ui/sidebar";
 import { ParkingZoneForm } from "@/components/ParkingZoneForm";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
-import { useToast } from "@/hooks/use-toast";
+import { toast } from "sonner";
 import { ParkingZone, ParkingZoneOverview } from "@/interfaces/parking_access_interface";
 import { Pagination } from "@/components/Pagination";
 import { siteApiService } from "@/services/spaces_sites/sitesapi";
@@ -20,7 +20,6 @@ import { useLoader } from "@/context/LoaderContext";
 import LoaderOverlay from "@/components/LoaderOverlay";
 import ContentContainer from "@/components/ContentContainer";
 export default function ParkingZones() {
-  const { toast } = useToast();
   const [searchTerm, setSearchTerm] = useState("");
   const [selectedSite, setSelectedSite] = useState<string>("all");
   const [zones, setZones] = useState<ParkingZone[]>([]);
@@ -124,19 +123,15 @@ const confirmDelete = async () => {
     const response = await parkingZoneApiService.deleteParkingZone(deleteZoneId);
 
     if (response.success) {
-     
-        // Success - refresh data
-        updateParkingZonePage();
-        loadParkingZoneOverView();
-        setDeleteZoneId(null);
-        toast({
-          title: "Zone Deleted",
-          description: "Parking zone has been deleted successfully.",
-        });
-     
-        
-      }
-    
+      // Success - refresh data
+      updateParkingZonePage();
+      loadParkingZoneOverView();
+      setDeleteZoneId(null);
+      toast.success("Parking zone has been deleted successfully.");
+    } else {
+      const errorMessage = response?.data?.message || "Failed to delete parking zone";
+      toast.error(errorMessage);
+    }
 
     setDeleteZoneId(null);
   }
@@ -169,10 +164,12 @@ const confirmDelete = async () => {
 
   if (response.success) {
     setIsFormOpen(false);
-    toast({
-      title: formMode === "create" ? "Zone Created" : "Zone Updated",
-      description: `Parking zone "${zoneData.name}" has been ${formMode === "create" ? "created" : "updated"} successfully.`,
-    });
+    toast.success(
+      `Parking zone "${zoneData.name}" has been ${formMode === "create" ? "created" : "updated"} successfully.`
+    );
+  } else {
+    const errorMessage = response?.data?.message || `Failed to ${formMode === "create" ? "create" : "update"} parking zone`;
+    toast.error(errorMessage);
   }
   return response;
 };

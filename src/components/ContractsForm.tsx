@@ -179,9 +179,10 @@ export function ContractForm({ contract, isOpen, onClose, onSave, mode }: Contra
       await onSave(payload);
       reset(emptyFormData);
       onClose();
-    } catch {
+    } catch (error: any) {
       reset(undefined, { keepErrors: true, keepValues: true });
-      toast("Failed to save contract");
+      const errorMessage = error?.response?.data?.message || error?.message || "Failed to save contract";
+      toast.error(errorMessage);
     }
   };
 
@@ -466,7 +467,7 @@ export function ContractForm({ contract, isOpen, onClose, onSave, mode }: Contra
               {mode === "view" ? "Close" : "Cancel"}
             </Button>
             {mode !== "view" && (
-              <Button type="submit" disabled={!isValid || isSubmitting}>
+              <Button type="submit" disabled={isSubmitting}>
                 {isSubmitting ? "Saving..." : mode === "create" ? "Create Contract" : "Update Contract"}
               </Button>
             )}
