@@ -12,6 +12,17 @@ export const userSchema = z.object({
   space_id: z.string().optional(),
   site_ids: z.array(z.string()).optional(),
   tenant_type: z.string().optional(),
+}).superRefine((data, ctx) => {
+  // Make site_ids required when account_type is "staff"
+  if (data.account_type === "staff") {
+    if (!data.site_ids || data.site_ids.length === 0) {
+      ctx.addIssue({
+        code: z.ZodIssueCode.custom,
+        path: ["site_ids"],
+        message: "At least one site must be selected for staff",
+      });
+    }
+  }
 });
 
 export type UserFormValues = z.infer<typeof userSchema>;
