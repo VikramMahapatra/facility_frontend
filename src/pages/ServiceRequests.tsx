@@ -280,10 +280,8 @@ export default function ServiceRequest() {
               </Button>
             </div>
 
-            <ContentContainer>
-              <LoaderOverlay />
-              <div className="space-y-6">
-                {/* Filters */}
+            <div className="space-y-6">
+              {/* Filters */}
               <div className="flex flex-col sm:flex-row gap-4">
                 <div className="relative flex-1">
                   <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground w-4 h-4" />
@@ -321,142 +319,149 @@ export default function ServiceRequest() {
                   </SelectContent>
                 </Select>
               </div>
-               
 
-              {/* Stats Cards */}
-              <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
-                <Card>
-                  <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                    <CardTitle className="text-sm font-medium">Total Requests</CardTitle>
-                    <FileText className="h-4 w-4 text-muted-foreground" />
-                  </CardHeader>
-                  <CardContent>
-                    <div className="text-2xl font-bold">{serviceRequestOverview.total_requests}</div>
-                  </CardContent>
-                </Card>
-                <Card>
-                  <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                    <CardTitle className="text-sm font-medium">Open</CardTitle>
-                    <Clock className="h-4 w-4 text-muted-foreground" />
-                  </CardHeader>
-                  <CardContent>
-                    <div className="text-2xl font-bold">{serviceRequestOverview.open_requests}</div>
-                  </CardContent>
-                </Card>
-                <Card>
-                  <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                    <CardTitle className="text-sm font-medium">In Progress</CardTitle>
-                    <AlertTriangle className="h-4 w-4 text-muted-foreground" />
-                  </CardHeader>
-                  <CardContent>
-                    <div className="text-2xl font-bold">{serviceRequestOverview.in_progress_requests}</div>
-                  </CardContent>
-                </Card>
-                <Card>
-                  <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                    <CardTitle className="text-sm font-medium">Avg Resolution</CardTitle>
-                    <TrendingUp className="h-4 w-4 text-muted-foreground" />
-                  </CardHeader>
-                  <CardContent>
-                    <div className="text-2xl font-bold">{serviceRequestOverview.avg_resolution_hours}</div>
-                  </CardContent>
-                </Card>
-              </div>
+              {/* Content with Loader - Stats Cards and Table */}
+              <ContentContainer>
+                <LoaderOverlay />
+                <div className="space-y-6">
+                  {/* Stats Cards */}
+                  <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+                    <Card>
+                      <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                        <CardTitle className="text-sm font-medium">Total Requests</CardTitle>
+                        <FileText className="h-4 w-4 text-muted-foreground" />
+                      </CardHeader>
+                      <CardContent>
+                        <div className="text-2xl font-bold">{serviceRequestOverview.total_requests}</div>
+                      </CardContent>
+                    </Card>
+                    <Card>
+                      <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                        <CardTitle className="text-sm font-medium">Open</CardTitle>
+                        <Clock className="h-4 w-4 text-muted-foreground" />
+                      </CardHeader>
+                      <CardContent>
+                        <div className="text-2xl font-bold">{serviceRequestOverview.open_requests}</div>
+                      </CardContent>
+                    </Card>
+                    <Card>
+                      <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                        <CardTitle className="text-sm font-medium">In Progress</CardTitle>
+                        <AlertTriangle className="h-4 w-4 text-muted-foreground" />
+                      </CardHeader>
+                      <CardContent>
+                        <div className="text-2xl font-bold">{serviceRequestOverview.in_progress_requests}</div>
+                      </CardContent>
+                    </Card>
+                    <Card>
+                      <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                        <CardTitle className="text-sm font-medium">Avg Resolution</CardTitle>
+                        <TrendingUp className="h-4 w-4 text-muted-foreground" />
+                      </CardHeader>
+                      <CardContent>
+                        <div className="text-2xl font-bold">{serviceRequestOverview.avg_resolution_hours}</div>
+                      </CardContent>
+                    </Card>
+                  </div>
 
-              {/* Service Requests Table */}
-              <Card>
-                <CardHeader>
-                  <CardTitle>Service Requests</CardTitle>
-                  <CardDescription>Track and manage customer service requests</CardDescription>
-                </CardHeader>
-                <CardContent>
-                  <Table>
-                    <TableHeader>
-                      <TableRow>
-                        <TableHead>Request ID</TableHead>
-                        <TableHead>Requester</TableHead>
-                        <TableHead>Category</TableHead>
-                        <TableHead>Description</TableHead>
-                        <TableHead>Priority</TableHead>
-                        <TableHead>Created</TableHead>
-                        <TableHead>Status</TableHead>
-                        <TableHead>Actions</TableHead>
-                      </TableRow>
-                    </TableHeader>
-                    <TableBody>
-                      {(serviceRequest || []).map((request) => (
-                        <TableRow key={request.id}>
-                          <TableCell>
-                            <div className="font-medium">#{(request as any).sr_no || request.id}</div>
-                          </TableCell>
-                          <TableCell>
-                            <div>
-                              <div className="font-medium">{(request as any).requester_name || "-"}</div>
-                              {(request as any).location && (
-                                <div className="text-sm text-muted-foreground">{(request as any).location}</div>
-                              )}
-                            </div>
-                          </TableCell>
-                          <TableCell>
-                            <Badge variant="outline">{request.category}</Badge>
-                          </TableCell>
-                          <TableCell>
-                            <div className="max-w-xs truncate">{request.description}</div>
-                          </TableCell>
-                          <TableCell>
-                            <Badge
-                              variant={
-                                request.priority?.toLowerCase() === "high"
-                                  ? "destructive"
-                                  : request.priority?.toLowerCase() === "medium"
-                                  ? "default"
-                                  : "secondary"
-                              }
-                            >
-                              {request.priority}
-                            </Badge>
-                          </TableCell>
-                          <TableCell>{request.created_at ? new Date(request.created_at).toLocaleDateString() : "-"}</TableCell>
-                          <TableCell>
-                            <Badge
-                              variant={
-                                request.status?.toLowerCase().includes("resolved")
-                                  ? "default"
-                                  : request.status?.toLowerCase().includes("progress")
-                                  ? "secondary"
-                                  : "outline"
-                              }
-                            >
-                              {String(request.status).replace("_", " ")}
-                            </Badge>
-                          </TableCell>
-                          <TableCell>
-                            <div className="flex space-x-2">
-                              <Button variant="ghost" size="sm" onClick={() => handleView(request)}>
-                                <Eye className="w-4 h-4" />
-                              </Button>
-                              {canWrite(resource) && <Button variant="ghost" size="sm" onClick={() => handleEdit(request)}>
-                                <Edit className="w-4 h-4" />
-                              </Button>
-                              }
-                              {canDelete(resource) && <Button variant="ghost" size="sm" className="text-destructive hover:text-destructive" onClick={() => handleDelete(request.id!)}>
-                                <Trash2 className="w-4 h-4" />
-                              </Button>
-                              }
-                            </div>
-                          </TableCell>
-                        </TableRow>
-                      ))}
-                    </TableBody>
-                  </Table>
+                  {/* Service Requests Table */}
+                  <div className="relative rounded-md border min-h-[200px]">
+                    <Card className="border-0 shadow-none">
+                      <CardHeader>
+                        <CardTitle>Service Requests</CardTitle>
+                        <CardDescription>Track and manage customer service requests</CardDescription>
+                      </CardHeader>
+                      <CardContent>
+                        <Table>
+                          <TableHeader>
+                            <TableRow>
+                              <TableHead>Request ID</TableHead>
+                              <TableHead>Requester</TableHead>
+                              <TableHead>Category</TableHead>
+                              <TableHead>Description</TableHead>
+                              <TableHead>Priority</TableHead>
+                              <TableHead>Created</TableHead>
+                              <TableHead>Status</TableHead>
+                              <TableHead>Actions</TableHead>
+                            </TableRow>
+                          </TableHeader>
+                          <TableBody>
+                            {(serviceRequest || []).map((request) => (
+                              <TableRow key={request.id}>
+                                <TableCell>
+                                  <div className="font-medium">#{(request as any).sr_no || request.id}</div>
+                                </TableCell>
+                                <TableCell>
+                                  <div>
+                                    <div className="font-medium">{(request as any).requester_name || "-"}</div>
+                                    {(request as any).location && (
+                                      <div className="text-sm text-muted-foreground">{(request as any).location}</div>
+                                    )}
+                                  </div>
+                                </TableCell>
+                                <TableCell>
+                                  <Badge variant="outline">{request.category}</Badge>
+                                </TableCell>
+                                <TableCell>
+                                  <div className="max-w-xs truncate">{request.description}</div>
+                                </TableCell>
+                                <TableCell>
+                                  <Badge
+                                    variant={
+                                      request.priority?.toLowerCase() === "high"
+                                        ? "destructive"
+                                        : request.priority?.toLowerCase() === "medium"
+                                        ? "default"
+                                        : "secondary"
+                                    }
+                                  >
+                                    {request.priority}
+                                  </Badge>
+                                </TableCell>
+                                <TableCell>{request.created_at ? new Date(request.created_at).toLocaleDateString() : "-"}</TableCell>
+                                <TableCell>
+                                  <Badge
+                                    variant={
+                                      request.status?.toLowerCase().includes("resolved")
+                                        ? "default"
+                                        : request.status?.toLowerCase().includes("progress")
+                                        ? "secondary"
+                                        : "outline"
+                                    }
+                                  >
+                                    {String(request.status).replace("_", " ")}
+                                  </Badge>
+                                </TableCell>
+                                <TableCell>
+                                  <div className="flex space-x-2">
+                                    <Button variant="ghost" size="sm" onClick={() => handleView(request)}>
+                                      <Eye className="w-4 h-4" />
+                                    </Button>
+                                    {canWrite(resource) && <Button variant="ghost" size="sm" onClick={() => handleEdit(request)}>
+                                      <Edit className="w-4 h-4" />
+                                    </Button>
+                                    }
+                                    {canDelete(resource) && <Button variant="ghost" size="sm" className="text-destructive hover:text-destructive" onClick={() => handleDelete(request.id!)}>
+                                      <Trash2 className="w-4 h-4" />
+                                    </Button>
+                                    }
+                                  </div>
+                                </TableCell>
+                              </TableRow>
+                            ))}
+                          </TableBody>
+                        </Table>
+                      </CardContent>
+                    </Card>
+                  </div>
 
+                  {/* Pagination */}
                   <div className="mt-4">
                     <Pagination page={page} pageSize={pageSize} totalItems={totalItems} onPageChange={setPage} />
                   </div>
-                </CardContent>
-              </Card>
-              </div>
-            </ContentContainer>
+                </div>
+              </ContentContainer>
+            </div>
           </div>
         </SidebarInset>
       </div>
