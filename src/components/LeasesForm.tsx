@@ -55,7 +55,9 @@ export function LeaseForm({ lease, isOpen, onClose, onSave, mode }: LeaseFormPro
     handleSubmit,
     control,
     reset,
-    setValue, // ✅ add this
+    setValue,
+    clearErrors,
+    trigger,
     watch,
     formState: { errors, isSubmitting, isValid },
   } = useForm<LeaseFormValues>({
@@ -102,7 +104,13 @@ export function LeaseForm({ lease, isOpen, onClose, onSave, mode }: LeaseFormPro
           water: lease.utilities?.water as any,
         },
         status: (lease.status as any) || "draft",
-      });
+      }, { keepErrors: false });
+      // Clear any existing errors for partner_id/tenant_id
+      clearErrors(["partner_id", "tenant_id"]);
+      // Load lease partners immediately if we have site_id and kind
+      if (lease.site_id && lease.kind) {
+        loadLeasePartners(lease.kind, lease.site_id);
+      }
     } else {
       reset({
         kind: "commercial",
@@ -120,7 +128,7 @@ export function LeaseForm({ lease, isOpen, onClose, onSave, mode }: LeaseFormPro
       });
     }
     loadSites();
-  }, [lease, mode, reset]);
+  }, [lease, mode, reset, clearErrors]);
 
   const selectedSiteId = watch("site_id");
   const selectedKind = watch("kind");
@@ -133,15 +141,21 @@ export function LeaseForm({ lease, isOpen, onClose, onSave, mode }: LeaseFormPro
   }, [selectedSiteId, selectedKind]);
 
   useEffect(() => {
-    if (lease) {
-      if(lease.kind === "commercial") {      // When leasePartnerList loads, update partner_id in form
-      setValue("partner_id", String(lease.partner_id));
+    if (lease && leasePartnerList.length > 0) {
+      if(lease.kind === "commercial" && lease.partner_id) {
+        const partnerIdStr = String(lease.partner_id);
+        clearErrors("partner_id");
+        setValue("partner_id", partnerIdStr, { shouldValidate: true });
+        trigger("partner_id");
+      }
+      else if(lease.kind === "residential" && lease.tenant_id) {
+        const tenantIdStr = String(lease.tenant_id);
+        clearErrors("tenant_id");
+        setValue("tenant_id", tenantIdStr, { shouldValidate: true });
+        trigger("tenant_id");
+      }
     }
-    else if(lease.kind === "residential") {
-      setValue("tenant_id", String(lease.tenant_id));
-    }
-  }
-  }, [leasePartnerList]);
+  }, [leasePartnerList, lease, setValue, clearErrors, trigger]);
 
 
   const loadSpaces = async (siteId: string) => {
