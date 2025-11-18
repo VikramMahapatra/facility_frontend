@@ -13,7 +13,7 @@ import { Separator } from "@/components/ui/separator";
 import { PropertySidebar } from "@/components/PropertySidebar";
 import { VendorForm } from "@/components/VendorForm";
 import { Pagination } from "@/components/Pagination";
-import { useToast } from "@/hooks/use-toast";
+import { toast } from "sonner";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
 import { useAuth } from "../context/AuthContext";
 import { useLoader } from "@/context/LoaderContext";
@@ -21,7 +21,6 @@ import LoaderOverlay from "@/components/LoaderOverlay";
 import ContentContainer from "@/components/ContentContainer";
 
 export default function Vendors() {
-  const { toast } = useToast();
   const [searchTerm, setSearchTerm] = useState("");
   const [statusFilter, setStatusFilter] = useState("all");
   const [categoryFilter, setCategoryFilter] = useState("all");
@@ -147,10 +146,10 @@ const confirmDelete = async () => {
       // Success - refresh data
       updateVendorsPage();
       setDeleteVendorId(null);
-      toast({
-        title: "Vendor Deleted",
-        description: "Vendor has been deleted successfully.",
-      });
+      toast.success("Vendor has been deleted successfully.");
+    } else {
+      const errorMessage = response?.data?.message || "Failed to delete vendor";
+      toast.error(errorMessage);
     }
 
     setDeleteVendorId(null);
@@ -182,10 +181,12 @@ const confirmDelete = async () => {
 
   if (response.success) {
     setIsCreateDialogOpen(false);
-    toast({
-      title: formMode === "create" ? "Vendor Created" : "Vendor Updated",
-      description: `Vendor ${vendorData.name || ""} has been ${formMode === "create" ? "created" : "updated"} successfully.`,
-    });
+    toast.success(
+      `Vendor ${vendorData.name || ""} has been ${formMode === "create" ? "created" : "updated"} successfully.`
+    );
+  } else {
+    const errorMessage = response?.data?.message || `Failed to ${formMode === "create" ? "create" : "update"} vendor`;
+    toast.error(errorMessage);
   }
   return response;
 };

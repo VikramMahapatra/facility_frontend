@@ -9,7 +9,7 @@ import { PropertySidebar } from "@/components/PropertySidebar";
 import { SidebarProvider, SidebarInset, SidebarTrigger } from "@/components/ui/sidebar";
 import { VisitorForm } from "@/components/VisitorForm";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
-import { useToast } from "@/hooks/use-toast";
+import { toast } from "sonner";
 import { useSkipFirstEffect } from "@/hooks/use-skipfirst-effect";
 import { siteApiService } from "@/services/spaces_sites/sitesapi";
 import { visitorApiService } from "@/services/parking_access/visitorsapi";
@@ -20,7 +20,6 @@ import { useLoader } from "@/context/LoaderContext";
 import LoaderOverlay from "@/components/LoaderOverlay";
 import ContentContainer from "@/components/ContentContainer";
 export default function Visitors() {
-  const { toast } = useToast();
   const [searchTerm, setSearchTerm] = useState("");
   const [selectedSite, setSelectedSite] = useState<string>("all");
   const [selectedStatus, setSelectedStatus] = useState<string>("all");
@@ -139,15 +138,14 @@ const confirmDelete = async () => {
     const response = await visitorApiService.deleteVisitor(deleteVisitorId);
 
     if (response.success) {
-     
-        // Success - refresh data
-        setVisitors(visitors.filter(visitor => visitor.id !== deleteVisitorId));
-        setDeleteVisitorId(null);
-        toast({
-          title: "Visitor Removed",
-          description: "Visitor record has been removed successfully.",
-        });
-      
+      // Success - refresh data
+      updateVisitorPage();
+      loadVisitorOverView();
+      setDeleteVisitorId(null);
+      toast.success("Visitor record has been removed successfully.");
+    } else {
+      const errorMessage = response?.data?.message || "Failed to delete visitor";
+      toast.error(errorMessage);
     }
 
     setDeleteVisitorId(null);
@@ -182,10 +180,12 @@ const confirmDelete = async () => {
 
   if (response.success) {
     setIsFormOpen(false);
-    toast({
-      title: formMode === "create" ? "Visitor Added" : "Visitor Updated",
-      description: `Visitor "${visitorData.name}" has been ${formMode === "create" ? "added" : "updated"} successfully.`,
-    });
+    toast.success(
+      `Visitor "${visitorData.name}" has been ${formMode === "create" ? "added" : "updated"} successfully.`
+    );
+  } else {
+    const errorMessage = response?.data?.message || `Failed to ${formMode === "create" ? "add" : "update"} visitor`;
+    toast.error(errorMessage);
   }
   return response;
 };
