@@ -242,10 +242,12 @@ export default function Sites() {
                     Manage your properties and locations
                   </p>
                 </div>
-                <Button className="gap-2" onClick={handleCreate}>
-                  <Plus className="h-4 w-4" />
-                  Add New Site
-                </Button>
+                {canWrite(resource) && (
+                  <Button className="gap-2" onClick={handleCreate}>
+                    <Plus className="h-4 w-4" />
+                    Add New Site
+                  </Button>
+                )}
               </div>
 
               {/* Filters */}

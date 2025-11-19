@@ -44,6 +44,7 @@ import LoaderOverlay from "@/components/LoaderOverlay";
 import ContentContainer from "@/components/ContentContainer";
 import { Pagination } from "@/components/Pagination";
 import { useSkipFirstEffect } from "@/hooks/use-skipfirst-effect";
+import { useAuth } from "../context/AuthContext";
 import {
   Select,
   SelectContent,
@@ -67,6 +68,8 @@ export default function TicketCategories() {
   const [siteList, setSiteList] = useState<any[]>([]);
   const [searchTerm, setSearchTerm] = useState("");
   const { withLoader } = useLoader();
+  const { canRead, canWrite, canDelete } = useAuth();
+  const resource = "ticket_categories"; // must match resource name from backend policies
 
   useEffect(() => {
     loadSiteLookup();
@@ -146,7 +149,6 @@ export default function TicketCategories() {
     );
 
     if (response.success) {
-      // Update the edited category in local state
       setCategories((prev) =>
         prev.map((cat) =>
           cat.id === updatedCategory.id ? updatedCategory : cat
@@ -171,23 +173,22 @@ export default function TicketCategories() {
       if (response.success) {
         const deleteResponse = response.data;
         if (deleteResponse?.success) {
-          updateTicketCategoriesPage();
+          // Update local state instead of reloading
+          setCategories((prev) =>
+            prev.filter(
+              (cat) => (cat.id || cat.category_id) !== deleteCategoryId
+            )
+          );
+          setTotalItems((prev) => prev - 1);
           setDeleteCategoryId(null);
           toast.success(
             deleteResponse.message ||
               "Ticket category has been deleted successfully."
           );
-        } else {
-          if (deleteResponse?.message) {
-            toast.error(
-              deleteResponse.message ||
-                "Error : Cannot delete category with associated tickets."
-            );
-          }
         }
       }
-      setDeleteCategoryId(null);
     }
+    setDeleteCategoryId(null);
   };
 
   return (
@@ -216,10 +217,12 @@ export default function TicketCategories() {
                     Manage service ticket categories and SLA policies
                   </p>
                 </div>
-                <Button onClick={() => setIsFormOpen(true)} className="gap-2">
-                  <Plus className="h-4 w-4" />
-                  Add Category
-                </Button>
+                {canWrite(resource) && (
+                  <Button onClick={() => setIsFormOpen(true)} className="gap-2">
+                    <Plus className="h-4 w-4" />
+                    Add Category
+                  </Button>
+                )}
               </div>
 
               <Card>
@@ -257,69 +260,79 @@ export default function TicketCategories() {
                     <ContentContainer>
                       <LoaderOverlay />
                       <Table>
-                      <TableHeader>
-                        <TableRow>
-                          <TableHead>Category Name</TableHead>
-                          <TableHead>Site</TableHead>
-                          <TableHead>Auto-Assign Role</TableHead>
-                          <TableHead>SLA Hours</TableHead>
-                          <TableHead>Status</TableHead>
-                          <TableHead className="text-right">Actions</TableHead>
-                        </TableRow>
-                      </TableHeader>
-                      <TableBody>
-                        {categories.map((category) => {
-                          const site = siteList.find(
-                            (s: any) => s.id === category.site_id
-                          );
-                          return (
-                            <TableRow key={category.id || category.category_id}>
-                              <TableCell className="font-medium">
-                                {category.category_name}
-                              </TableCell>
-                              <TableCell>
-                                {site ? site.name : category.site_id || "-"}
-                              </TableCell>
-                              <TableCell>
-                                <Badge variant="outline">
-                                  {category.auto_assign_role}
-                                </Badge>
-                              </TableCell>
-                              <TableCell>{category.sla_hours}h</TableCell>
-                              <TableCell>
-                                <Badge
-                                  variant={
-                                    category.is_active ? "default" : "secondary"
-                                  }
-                                >
-                                  {category.is_active ? "Active" : "Inactive"}
-                                </Badge>
-                              </TableCell>
-                              <TableCell className="text-right">
-                                <div className="flex justify-end gap-2">
-                                  <Button
-                                    variant="ghost"
-                                    size="sm"
-                                    onClick={() => handleEdit(category)}
-                                  >
-                                    <Edit className="w-4 h-4" />
-                                  </Button>
-                                  <Button
-                                    variant="ghost"
-                                    size="sm"
-                                    onClick={() =>
-                                      handleDelete(
-                                        category.id || category.category_id
-                                      )
+                        <TableHeader>
+                          <TableRow>
+                            <TableHead>Category Name</TableHead>
+                            <TableHead>Site</TableHead>
+                            <TableHead>Auto-Assign Role</TableHead>
+                            <TableHead>SLA Hours</TableHead>
+                            <TableHead>Status</TableHead>
+                            <TableHead className="text-right">
+                              Actions
+                            </TableHead>
+                          </TableRow>
+                        </TableHeader>
+                        <TableBody>
+                          {categories.map((category) => {
+                            const site = siteList.find(
+                              (s: any) => s.id === category.site_id
+                            );
+                            return (
+                              <TableRow
+                                key={category.id || category.category_id}
+                              >
+                                <TableCell className="font-medium">
+                                  {category.category_name}
+                                </TableCell>
+                                <TableCell>
+                                  {site ? site.name : category.site_id || "-"}
+                                </TableCell>
+                                <TableCell>
+                                  <Badge variant="outline">
+                                    {category.auto_assign_role}
+                                  </Badge>
+                                </TableCell>
+                                <TableCell>{category.sla_hours}h</TableCell>
+                                <TableCell>
+                                  <Badge
+                                    variant={
+                                      category.is_active
+                                        ? "default"
+                                        : "secondary"
                                     }
                                   >
-                                    <Trash2 className="w-4 h-4" />
-                                  </Button>
-                                </div>
-                              </TableCell>
-                            </TableRow>
-                          );
-                        })}
+                                    {category.is_active ? "Active" : "Inactive"}
+                                  </Badge>
+                                </TableCell>
+                                <TableCell className="text-right">
+                                  <div className="flex justify-end gap-2">
+                                    {canWrite(resource) && (
+                                      <Button
+                                        variant="ghost"
+                                        size="sm"
+                                        onClick={() => handleEdit(category)}
+                                      >
+                                        <Edit className="w-4 h-4" />
+                                      </Button>
+                                    )}
+                                    {canDelete(resource) && (
+                                      <Button
+                                        variant="ghost"
+                                        size="sm"
+                                        onClick={() =>
+                                          handleDelete(
+                                            category.id || category.category_id
+                                          )
+                                        }
+                                      >
+                                        <Trash2 className="w-4 h-4" />
+                                      </Button>
+                                    )}
+                                  </div>
+                                </TableCell>
+                              </TableRow>
+                            );
+                          })}
                         </TableBody>
                       </Table>
                     </ContentContainer>

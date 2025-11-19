@@ -276,10 +276,12 @@ export default function Spaces() {
                   <h2 className="text-2xl font-bold text-sidebar-primary">All Spaces</h2>
                   <p className="text-muted-foreground">Manage all spaces across your properties</p>
                 </div>
-                <Button onClick={handleCreate} className="gap-2">
-                  <Plus className="h-4 w-4" />
-                  Add New Space
-                </Button>
+                {canWrite(resource) && (
+                  <Button onClick={handleCreate} className="gap-2">
+                    <Plus className="h-4 w-4" />
+                    Add New Space
+                  </Button>
+                )}
               </div>
 
               {/* Filters */}

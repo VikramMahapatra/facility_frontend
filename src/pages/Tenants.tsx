@@ -319,10 +319,12 @@ const Tenants = () => {
                   <Filter className="mr-2 h-4 w-4" />
                   More Filters
                 </Button>
-                <Button size="sm" onClick={() => handleCreate()}>
-                  <Plus className="mr-2 h-4 w-4" />
-                  Add Tenant
-                </Button>
+                {canWrite(resource) && (
+                  <Button size="sm" onClick={() => handleCreate()}>
+                    <Plus className="mr-2 h-4 w-4" />
+                    Add Tenant
+                  </Button>
+                )}
               </div>
             </div>
 
@@ -338,10 +340,12 @@ const Tenants = () => {
                       <p className="text-muted-foreground text-center mb-4">
                         No tenants match your current filters. Try adjusting your search criteria.
                       </p>
-                      <Button onClick={() => handleCreate()}>
-                        <Plus className="mr-2 h-4 w-4" />
-                        Add First Tenant
-                      </Button>
+                      {canWrite(resource) && (
+                        <Button onClick={() => handleCreate()}>
+                          <Plus className="mr-2 h-4 w-4" />
+                          Add First Tenant
+                        </Button>
+                      )}
                     </CardContent>
                   </Card>
                 ) : (

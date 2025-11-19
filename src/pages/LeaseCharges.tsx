@@ -427,10 +427,12 @@ export default function LeaseCharges() {
                   <Filter className="mr-2 h-4 w-4" />
                   More Filters
                 </Button>
-                <Button size="sm" onClick={handleCreate}>
-                  <Plus className="mr-2 h-4 w-4" />
-                  Add Charge
-                </Button>
+                {canWrite(resource) && (
+                  <Button size="sm" onClick={handleCreate}>
+                    <Plus className="mr-2 h-4 w-4" />
+                    Add Charge
+                  </Button>
+                )}
               </div>
             </div>
 
@@ -447,10 +449,12 @@ export default function LeaseCharges() {
                         <p className="text-muted-foreground text-center mb-4">
                           No charges match your current filters. Try adjusting your search criteria.
                         </p>
-                        <Button onClick={handleCreate}>
-                          <Plus className="mr-2 h-4 w-4" />
-                          Add First Charge
-                        </Button>
+                        {canWrite(resource) && (
+                          <Button onClick={handleCreate}>
+                            <Plus className="mr-2 h-4 w-4" />
+                            Add First Charge
+                          </Button>
+                        )}
                       </CardContent>
                     </Card>
                   ) : (

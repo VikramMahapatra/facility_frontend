@@ -149,7 +149,7 @@ export function SiteForm({ site, isOpen, onClose, onSave, mode }: SiteFormProps)
               control={control}
               render={({ field }) => (
                 <div className="space-y-2">
-                  <Label htmlFor="kind">Type</Label>
+                  <Label htmlFor="kind">Type *</Label>
                   <Select
                     value={field.value}
                     onValueChange={field.onChange}
@@ -177,7 +177,7 @@ export function SiteForm({ site, isOpen, onClose, onSave, mode }: SiteFormProps)
               control={control}
               render={({ field }) => (
                 <div className="space-y-2">
-                  <Label htmlFor="status">Status</Label>
+                  <Label htmlFor="status">Status *</Label>
                   <Select
                     value={field.value}
                     onValueChange={field.onChange}
