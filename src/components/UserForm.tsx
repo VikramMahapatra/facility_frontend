@@ -38,7 +38,13 @@ interface User {
   status: string;
   created_at: string;
   updated_at: string;
-  roles?: Role[];
+  roles?: Role[]; 
+  // Additional fields that might come from API
+  site_id?: string;
+  building_block_id?: string;
+  space_id?: string;
+  site_ids?: string[];
+  tenant_type?: string;
 }
 
 interface Role {
@@ -157,36 +163,46 @@ export function UserForm({ user, open, onOpenChange, onSubmit, mode = "create" }
   }, [selectedSiteId, selectedBuildingId]);
 
   useEffect(() => {
-    if (user && mode !== "create") {
-      const userSiteId = (user as any).site_id || "";
-      const userBuildingId = (user as any).building_id || "";
-      
-      reset({
-        full_name: user.full_name || "",
-        email: user.email || "",
-        phone: user.phone || "",
-        status: user.status || "active",
-        account_type: user.account_type || "organization",
-        role_ids: user.roles?.map(r => r.id) || [],
-        site_id: userSiteId,
-        building_id: userBuildingId,
-        space_id: (user as any).space_id || "",
-        site_ids: (user as any).site_ids || [],
-        tenant_type: (user as any).tenant_type || "individual",
-      });
-      
-      // Load dependent lookups after reset
+  if (user && mode !== "create") {
+    const userSiteId = (user as any).site_id || "";
+    const userBuildingId = (user as any).building_block_id || ""; // Changed from building_id to building_block_id
+    const userSpaceId = (user as any).space_id || "";
+    
+    
+    
+    const resetData = {
+      full_name: user.full_name || "",
+      email: user.email || "",
+      phone: user.phone || "",
+      status: user.status || "active",
+      account_type: user.account_type || "organization",
+      role_ids: user.roles?.map(r => r.id) || [],
+      site_id: userSiteId,
+      building_id: userBuildingId, // This will now get the correct building_block_id
+      space_id: userSpaceId,
+      site_ids: (user as any).site_ids || [],
+      tenant_type: (user as any).tenant_type || "individual",
+    };
+
+   
+    
+    reset(resetData);
+    
+    // Load dependent lookups after reset
+    const loadDependentData = async () => {
       if (userSiteId) {
-        loadBuildingLookup(userSiteId).then(() => {
-          if (userBuildingId) {
-            loadSpaceLookup(userSiteId, userBuildingId);
-          }
-        });
+        await loadBuildingLookup(userSiteId);
+        if (userBuildingId) {
+          await loadSpaceLookup(userSiteId, userBuildingId);
+        }
       }
-    } else {
-      reset(emptyFormData);
-    }
-  }, [user, mode, reset]);
+    };
+    
+    loadDependentData();
+  } else {
+    reset(emptyFormData);
+  }
+}, [user, mode, reset]);
 
   const loadStatusLookup = async () => {
     const lookup = await userManagementApiService.getUserStatusOverview();
