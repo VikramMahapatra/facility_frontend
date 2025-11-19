@@ -34,17 +34,24 @@ import {
 } from "@/components/ui/alert-dialog";
 
 // Define interfaces for API data
+
 interface User {
   id: string;
   org_id: string;
   full_name: string;
   email: string;
   phone?: string;
-  status: string;
   account_type: string;
+  status: string;
   created_at: string;
   updated_at: string;
   roles?: Role[];
+  // Additional fields that might come from API
+  site_id?: string;
+  building_block_id?: string;
+  space_id?: string;
+  site_ids?: string[];
+  tenant_type?: string;
 }
 
 interface Role {
@@ -99,10 +106,7 @@ export default function UsersManagement() {
       setIsFormOpen(false);
       toast.success("User created successfully");
       loadUsers();
-    } else {
-      const errorMessage = response?.data?.message || response?.message || "Failed to create user";
-      toast.error(errorMessage);
-    }
+    } 
     return response;
   };
 
@@ -128,10 +132,7 @@ export default function UsersManagement() {
       setIsFormOpen(false);
       setEditingUser(undefined);
       loadUsers();
-    } else {
-      const errorMessage = response?.data?.message || response?.message || "Failed to update user";
-      toast.error(errorMessage);
-    }
+    } 
     return response;
   };
 
