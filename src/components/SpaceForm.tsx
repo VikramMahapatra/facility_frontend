@@ -28,7 +28,7 @@ interface Space {
   baths?: number;
   attributes?: {
     view?: string;
-    smoking?: boolean;
+    //smoking?: boolean;
     furnished?: string;
     star_rating?: string;
   };
@@ -58,7 +58,7 @@ const emptyFormData: SpaceFormValues = {
   status: "available",
   attributes: {
     view: "",
-    smoking: false,
+    //smoking: false,
     furnished: undefined,
     star_rating: "",
   }
@@ -111,7 +111,7 @@ export function SpaceForm({ space, isOpen, onClose, onSave, mode }: SpaceFormPro
         status: space.status || "available",
         attributes: {
           view: space.attributes?.view || "",
-          smoking: space.attributes?.smoking ?? false,
+          //smoking: space.attributes?.smoking ?? false,
           furnished: space.attributes?.furnished as "unfurnished" | "semi" | "fully" | undefined,
           star_rating: space.attributes?.star_rating || "",
         }
@@ -141,7 +141,7 @@ export function SpaceForm({ space, isOpen, onClose, onSave, mode }: SpaceFormPro
       await onSave({
         ...space,
         ...data,
-        updated_at: new Date().toISOString(),
+        floor: data.floor !== undefined && data.floor !== null ? String(data.floor) : (mode === "create" ? "0" : space?.floor),
       } as Partial<Space>);
       reset(emptyFormData);
       onClose();

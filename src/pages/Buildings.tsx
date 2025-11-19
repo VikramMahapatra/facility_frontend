@@ -149,10 +149,16 @@ export default function Buildings() {
         ...building,
         updated_at: new Date().toISOString(),
       };
+      
+      const siteId = updatedBuilding.site_id;
+      const site = siteList.find((s: any) => s.id === siteId);
+      if (site) {
+        updatedBuilding.site_name = site.name;
+      }
+      
       response = await buildingApiService.updateBuilding(updatedBuilding);
 
       if (response.success) {
-        // Update the edited building in local state
         setBuildings((prev) =>
           prev.map((b) => (b.id === updatedBuilding.id ? updatedBuilding : b))
         );
