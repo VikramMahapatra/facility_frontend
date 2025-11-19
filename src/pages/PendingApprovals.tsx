@@ -105,20 +105,16 @@ export default function PendingApprovals() {
     const userData = localStorage.getItem('loggedInUser');
     const currentUser = JSON.parse(userData);
 
-    if (!user.roles?.length) return false;
-    if (!currentUser.roles?.length) return false;
+    console.log("user data", userData);
+    console.log("current user", currentUser);
 
-    const currentUserRoleIds = currentUser.roles.map(r => r.id);
+    if (!user.account_type?.length) return false;
+    if (!currentUser.account_type?.length) return false;
 
     // Check if at least one logged-in role can approve all target user's roles
-    return currentUserRoleIds.some(currentRoleId =>
-      user.roles.every(userRole =>
-        approvalRules.some(
-          rule =>
-            rule.approver_role_id === currentRoleId &&
-            rule.can_approve_role_id === userRole.id
-        )
-      )
+    return approvalRules.some(rule =>
+      currentUser.account_type.includes(rule.approver_type) &&
+      user.account_type.includes(rule.can_approve_type)
     );
   };
 
@@ -147,8 +143,8 @@ export default function PendingApprovals() {
     setRoleValidationError("");
     setIsSubmitting(true);
 
-    const resp = await pendingApprovalApiService.updateUser({ 
-      user_id: selectedUser.id, 
+    const resp = await pendingApprovalApiService.updateUser({
+      user_id: selectedUser.id,
       status: 'approve',
       role_ids: selectedRoleIds
     })
@@ -243,77 +239,81 @@ export default function PendingApprovals() {
                       <ContentContainer>
                         <LoaderOverlay />
                         <Table>
-                            <TableHeader>
-                              <TableRow>
-                                <TableHead>User</TableHead>
-                                <TableHead>Contact</TableHead>
-                                <TableHead>Requested Type</TableHead>
-                                <TableHead>Requested Date</TableHead>
-                                <TableHead className="text-right">Actions</TableHead>
-                              </TableRow>
-                            </TableHeader>
-                            <TableBody>
-                              {users.map((user) => {
-                                const userCanApprove = true;
-                                return (
-                                  <TableRow key={user.id}>
-                                    <TableCell>
-                                      <div className="flex items-center gap-3">
-                                        <Avatar>
-                                          <AvatarFallback>
-                                            {getInitials(user.full_name)}
-                                          </AvatarFallback>
-                                        </Avatar>
-                                        <div>
-                                          <div className="font-medium">{user.full_name}</div>
-                                          <div className="text-xs text-muted-foreground">
-                                            {user.email}
-                                          </div>
+                          <TableHeader>
+                            <TableRow>
+                              <TableHead>User</TableHead>
+                              <TableHead>Contact</TableHead>
+                              <TableHead>Requested Type</TableHead>
+                              <TableHead>Requested Date</TableHead>
+                              <TableHead className="text-right">Actions</TableHead>
+                            </TableRow>
+                          </TableHeader>
+                          <TableBody>
+                            {users.map((user) => {
+                              const userCanApprove = canApprove(user);
+                              return (
+                                <TableRow key={user.id}>
+                                  <TableCell>
+                                    <div className="flex items-center gap-3">
+                                      <Avatar>
+                                        <AvatarFallback>
+                                          {getInitials(user.full_name)}
+                                        </AvatarFallback>
+                                      </Avatar>
+                                      <div>
+                                        <div className="font-medium">{user.full_name}</div>
+                                        <div className="text-xs text-muted-foreground">
+                                          {user.email}
                                         </div>
                                       </div>
-                                    </TableCell>
-                                    <TableCell className="text-muted-foreground">
-                                      {user.phone || "—"}
-                                    </TableCell>
-                                    <TableCell>
-                                      <div className="flex flex-wrap gap-1">
-                                        {user.roles?.map((role) => (
-                                          <Badge key={role.id} variant="outline">
-                                            {role.name}
-                                          </Badge>
-                                        ))}
-                                      </div>
-                                    </TableCell>
-                                    <TableCell className="text-muted-foreground text-sm">
-                                      {new Date(user.created_at).toLocaleDateString()}
-                                    </TableCell>
-                                    <TableCell className="text-right">
-                                      <div className="flex justify-end gap-2">
-                                        <Button
-                                          variant="default"
-                                          size="sm"
-                                          onClick={() => handleApprove(user)}
-                                          disabled={!userCanApprove}
-                                        >
-                                          <Check className="h-4 w-4 mr-1" />
-                                          Approve
-                                        </Button>
-                                        <Button
-                                          variant="destructive"
-                                          size="sm"
-                                          onClick={() => handleReject(user)}
-                                          disabled={!userCanApprove}
-                                        >
-                                          <X className="h-4 w-4 mr-1" />
-                                          Reject
-                                        </Button>
-                                      </div>
-                                    </TableCell>
-                                  </TableRow>
-                                );
-                              })}
-                            </TableBody>
-                          </Table>
+                                    </div>
+                                  </TableCell>
+                                  <TableCell className="text-muted-foreground">
+                                    {user.phone || "—"}
+                                  </TableCell>
+                                  <TableCell>
+                                    <div className="flex flex-wrap gap-1">
+                                      <Badge variant="outline">
+                                        {user.account_type}
+                                      </Badge>
+                                    </div>
+                                  </TableCell>
+                                  <TableCell className="text-muted-foreground text-sm">
+                                    {new Date(user.created_at).toLocaleDateString()}
+                                  </TableCell>
+                                  <TableCell className="text-right">
+                                    <div className="flex justify-end gap-2">
+                                      {userCanApprove ? (
+                                        <>
+                                          <Button
+                                            variant="default"
+                                            size="sm"
+                                            onClick={() => handleApprove(user)}
+                                          >
+                                            <Check className="h-4 w-4 mr-1" />
+                                            Approve
+                                          </Button>
+                                          <Button
+                                            variant="destructive"
+                                            size="sm"
+                                            onClick={() => handleReject(user)}
+                                          >
+                                            <X className="h-4 w-4 mr-1" />
+                                            Reject
+                                          </Button>
+                                        </>
+                                      ) : (
+                                        <Badge variant="secondary">
+                                          No Permission
+                                        </Badge>
+                                      )}
+                                    </div>
+                                  </TableCell>
+                                </TableRow>
+                              );
+                            })}
+                          </TableBody>
+                        </Table>
                       </ContentContainer>
                     </div>
                   )}

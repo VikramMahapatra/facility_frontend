@@ -5,6 +5,7 @@ export interface User {
     email: string;
     phone?: string;
     picture_url?: string;
+    account_type: string;
     status: 'active' | 'inactive' | 'pending_approval';
     created_at: string;
     updated_at: string;
@@ -21,9 +22,7 @@ export interface Role {
 export interface ApprovalRule {
     id: string;
     org_id: string;
-    approver_role_id: string;
-    approver_role_name: string;
-    can_approve_role_id: string;
-    can_approve_role_name: string;
+    approver_type: string;
+    can_approve_type: string;
     created_at: string;
 }

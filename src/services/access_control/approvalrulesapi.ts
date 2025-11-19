@@ -6,6 +6,10 @@ class ApprovalRulesApiService {
         return await apiService.request('/role-approval-rules/all');
     }
 
+    async getUserTypes() {
+        return await apiService.request('/role-approval-rules/user_type_lookup');
+    }
+
     async createRule(data: any) {
         return await apiService.request('/role-approval-rules', {
             method: "POST",
