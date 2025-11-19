@@ -61,7 +61,7 @@ export default function TicketCategories() {
     string | number | null
   >(null);
   const [page, setPage] = useState(1);
-  const [pageSize] = useState(6);
+  const [pageSize] = useState(10);
   const [totalItems, setTotalItems] = useState(0);
   const [selectedSite, setSelectedSite] = useState<string>("all");
   const [siteList, setSiteList] = useState<any[]>([]);

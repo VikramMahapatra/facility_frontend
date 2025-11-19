@@ -479,18 +479,17 @@ export default function TicketForm({
         </div>
       </div>
 
-      <div className="flex gap-2 pt-4">
-        <Button type="submit" className="flex-1" disabled={isSubmitting}>
-          {isSubmitting ? "Submitting..." : initialData ? "Update Tenant" : "Create Tenant"}
-        </Button>
+      <div className="flex justify-end gap-2 pt-4">
         <Button
           type="button"
           variant="outline"
           onClick={onCancel}
-          className="flex-1"
           disabled={isSubmitting}
         >
           Cancel
+        </Button>
+        <Button type="submit" disabled={isSubmitting}>
+          {isSubmitting ? "Submitting..." : initialData ? "Update Ticket" : "Create Ticket"}
         </Button>
       </div>
     </form>

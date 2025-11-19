@@ -167,14 +167,31 @@ export default function Spaces() {
   const handleSave = async (spaceData: Partial<Space>) => {
     let response;
     if (formMode === 'create') {
-      response = await spacesApiService.addSpace(spaceData);
+      // Remove star_rating from attributes if it's empty or "0"
+      const attributes = spaceData.attributes ? { ...spaceData.attributes } : {};
+      if (attributes.star_rating === '' || attributes.star_rating === '0' || !attributes.star_rating) {
+        delete attributes.star_rating;
+      }
+      
+      const spaceToCreate = {
+        ...spaceData,
+        attributes: Object.keys(attributes).length > 0 ? attributes : undefined,
+      };
+      
+      response = await spacesApiService.addSpace(spaceToCreate);
 
       if (response.success)
         updateSpacePage();
     } else if (formMode === 'edit' && selectedSpace) {
+      const attributes = spaceData.attributes ? { ...spaceData.attributes } : (selectedSpace.attributes || {});
+      if (attributes.star_rating === '' || attributes.star_rating === '0' || !attributes.star_rating) {
+        delete attributes.star_rating;
+      }
+      
       const updatedSpace = {
         ...selectedSpace,
         ...spaceData,
+        attributes: Object.keys(attributes).length > 0 ? attributes : undefined,
         updated_at: new Date().toISOString(),
       };
       response = await spacesApiService.updateSpace(updatedSpace);
@@ -404,7 +421,15 @@ export default function Spaces() {
                       {/* Key Attributes */}
                     {space.attributes && Object.keys(space.attributes || {}).length > 0 && (
                       <div className="flex flex-wrap gap-1">
-                     {Object.entries(space.attributes || {}).slice(0, 3).map(([key, value]) => (
+                     {Object.entries(space.attributes || {})
+                       .filter(([key, value]) => {
+                         if (key === 'star_rating' && (!value || value === '' || value === '0')) {
+                           return false;
+                         }
+                         return value !== undefined && value !== null && value !== '';
+                       })
+                       .slice(0, 3)
+                       .map(([key, value]) => (
                      <Badge key={key} variant="outline" className="text-xs">
                      {key}: {String(value)}
                       </Badge>

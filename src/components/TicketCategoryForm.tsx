@@ -219,12 +219,12 @@ export default function TicketCategoryForm({ onSubmit, onCancel, initialData }: 
         <Label htmlFor="is_active">Active</Label>
       </div>
 
-      <div className="flex gap-2 pt-4">
-        <Button type="submit" className="flex-1" disabled={isSubmitting}>
-          {isSubmitting ? "Submitting..." : initialData ? "Update Ticket Category" : "Create Ticket Category"}
-        </Button>
-        <Button type="button" variant="outline" onClick={onCancel} className="flex-1" disabled={isSubmitting}>
+      <div className="flex justify-end gap-2 pt-4">
+        <Button type="button" variant="outline" onClick={onCancel} disabled={isSubmitting}>
           Cancel
+        </Button>
+        <Button type="submit" disabled={isSubmitting}>
+          {isSubmitting ? "Submitting..." : initialData ? "Update Ticket Category" : "Create Ticket Category"}
         </Button>
       </div>
     </form>
