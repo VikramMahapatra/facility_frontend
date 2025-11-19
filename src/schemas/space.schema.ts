@@ -43,7 +43,7 @@ export const spaceSchema = z.object({
     }),
     attributes: z.object({
         view: z.string().optional(),
-        smoking: z.boolean().optional(),
+        //smoking: z.boolean().optional(),
         furnished: z.enum(['unfurnished', 'semi', 'fully']).optional(),
         star_rating: z.string().optional(),
     }).optional(),

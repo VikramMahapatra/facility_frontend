@@ -80,17 +80,31 @@ export function SpaceAssignmentForm({ assignment, isOpen, onClose, onSave, mode 
 
   const loadSiteLookup = async () => {
     const lookup = await siteApiService.getSiteLookup();
-    setSiteList(lookup);
+    if (lookup?.success) {
+      setSiteList(lookup.data || []);
+    } else {
+      setSiteList([]);
+    }
   }
 
   const loadSpaceLookup = async () => {
-    const lookup = await spacesApiService.getSpaceLookup(selectedSite);
-    setSpaceList(lookup);
+    const siteId = selectedSite === "all" ? undefined : selectedSite;
+    const lookup = await spacesApiService.getSpaceLookup(siteId);
+    if (lookup?.success) {
+      setSpaceList(lookup.data || []);
+    } else {
+      setSpaceList([]);
+    }
   }
 
   const loadSpaceGroupLookup = async () => {
-    const lookup = await spaceGroupsApiService.getSpaceGroupLookup(selectedSite, formData.space_id);
-    setSpaceGroupList(lookup);
+    const siteId = selectedSite === "all" ? undefined : selectedSite;
+    const lookup = await spaceGroupsApiService.getSpaceGroupLookup(siteId, formData.space_id);
+    if (lookup?.success) {
+      setSpaceGroupList(lookup.data || []);
+    } else {
+      setSpaceGroupList([]);
+    }
   }
 
   const loadAssignmentPreview = async () => {
@@ -157,7 +171,7 @@ export function SpaceAssignmentForm({ assignment, isOpen, onClose, onSave, mode 
               </SelectTrigger>
               <SelectContent>
                 <SelectItem value="all">All Sites</SelectItem>
-                {siteList.map((site) => (
+                {Array.isArray(siteList) && siteList.map((site) => (
                   <SelectItem key={site.id} value={site.id}>
                     {site.name}
                   </SelectItem>
@@ -180,7 +194,7 @@ export function SpaceAssignmentForm({ assignment, isOpen, onClose, onSave, mode 
                 <SelectValue placeholder="Select space" />
               </SelectTrigger>
               <SelectContent>
-                {spaceList.map((space) => (
+                {Array.isArray(spaceList) && spaceList.map((space) => (
                   <SelectItem key={space.id} value={space.id}>
                     {space.name}
                   </SelectItem>
@@ -201,12 +215,12 @@ export function SpaceAssignmentForm({ assignment, isOpen, onClose, onSave, mode 
                 <SelectValue placeholder={formData.space_id ? "Select group" : "Select space first"} />
               </SelectTrigger>
               <SelectContent>
-                {spaceGroupList.map((group) => (
+                {Array.isArray(spaceGroupList) && spaceGroupList.map((group) => (
                   <SelectItem key={group.id} value={group.id}>{group.name}</SelectItem>
                 ))}
               </SelectContent>
             </Select>
-            {formData.space_id && spaceGroupList.length === 0 && (
+            {formData.space_id && Array.isArray(spaceGroupList) && spaceGroupList.length === 0 && (
               <p className="text-sm text-muted-foreground mt-1">
                 No matching groups found for this space type
               </p>

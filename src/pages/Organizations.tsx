@@ -8,7 +8,7 @@ import { PropertySidebar } from "@/components/PropertySidebar";
 import { SidebarProvider, SidebarInset, SidebarTrigger } from "@/components/ui/sidebar";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from "@/components/ui/alert-dialog";
 import { OrganizationForm } from "@/components/OrganizationForm";
-import { useToast } from "@/hooks/use-toast";
+import { toast } from "sonner";
 import { organisationApiService } from "@/services/spaces_sites/organisationapi";
 import LoaderOverlay from "@/components/LoaderOverlay";
 import ContentContainer from "@/components/ContentContainer";
@@ -30,13 +30,13 @@ interface Organization {
 }
 
 export default function Organizations() {
-  const { toast } = useToast();
   const [searchTerm, setSearchTerm] = useState("");
   const [selectedPlan, setSelectedPlan] = useState<string>("all");
   const [organizations, setOrganizations] = useState<Organization[]>([]);
   const [selectedOrg, setSelectedOrg] = useState<Organization | undefined>();
   const [formMode, setFormMode] = useState<'create' | 'edit' | 'view'>('create');
   const [showForm, setShowForm] = useState(false);
+  const [isSubmitting, setIsSubmitting] = useState(false);
   const { withLoader } = useLoader();
 
   useEffect(() => {
@@ -95,38 +95,50 @@ export default function Organizations() {
   };
 
   const handleSave = async (orgData: Partial<Organization>) => {
+    setIsSubmitting(true);
+    let response;
     try {
-      if (formMode === 'edit' && selectedOrg) {
+      if (formMode === 'create') {
+        toast.error("Create functionality is not yet available.");
+        setIsSubmitting(false);
+        return;
+      } else if (formMode === 'edit' && selectedOrg) {
         const updatedOrg = {
           ...selectedOrg,
           ...orgData,
           updated_at: new Date().toISOString()
         }
-        const resp = await organisationApiService.update(updatedOrg);
-        if (resp.success) {
+        response = await organisationApiService.update(updatedOrg);
+        if (response.success) {
           setOrganizations(organizations.map(org =>
             org.id === selectedOrg.id ? updatedOrg : org
           ));
         }
       }
-      setShowForm(false);
 
-      toast({
-        title: formMode === 'create' ? "Organization Created" : "Organization Updated",
-        description: `Organization ${orgData.name} has been ${formMode === 'create' ? 'created' : 'updated'} successfully.`,
-      });
+      if (response?.success) {
+        setShowForm(false);
+        toast.success(
+          `Organization ${orgData.name} has been updated successfully.`
+        );
+      } else if (response) {
+        const errorMessage = response?.data?.message || response?.message || "Failed to update organization";
+        toast.error(errorMessage);
+      }
     }
     catch (error) {
       console.error('Error saving org:', error);
+      toast.error("Failed to save organization. Please try again.");
     }
+    finally {
+      setIsSubmitting(false);
+    }
+    return response;
   };
 
   const handleDelete = (orgId: string) => {
     setOrganizations(organizations.filter(org => org.id !== orgId));
-    toast({
-      title: "Organization Deleted",
-      description: "Organization has been removed successfully.",
-    });
+    toast.success("Organization has been removed successfully.");
   };
 
   return (
@@ -287,6 +299,7 @@ export default function Organizations() {
         onClose={() => setShowForm(false)}
         onSave={handleSave}
         mode={formMode}
+        isSubmitting={isSubmitting}
       />
     </SidebarProvider>
   );
