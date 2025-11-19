@@ -1,4 +1,6 @@
 import { useState, useEffect } from "react";
+import { useForm, Controller } from "react-hook-form";
+import { zodResolver } from "@hookform/resolvers/zod";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -6,6 +8,8 @@ import { Switch } from "@/components/ui/switch";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { ticketCategoriesApiService } from "@/services/ticketing_service/ticketcategoriesapi";
 import { siteApiService } from "@/services/spaces_sites/sitesapi";
+import { ticketCategorySchema, TicketCategoryFormValues } from "@/schemas/ticketCategory.schema";
+import { toast } from "sonner";
 
 interface TicketCategoryFormProps {
   onSubmit: (data: any) => Promise<any>;
@@ -13,38 +17,83 @@ interface TicketCategoryFormProps {
   initialData?: any;
 }
 
+const emptyFormData: TicketCategoryFormValues = {
+  category_name: "",
+  site_id: "",
+  auto_assign_role: "",
+  sla_hours: 24,
+  is_active: true,
+  sla_id: "",
+  status: "",
+};
+
 export default function TicketCategoryForm({ onSubmit, onCancel, initialData }: TicketCategoryFormProps) {
-  const [formData, setFormData] = useState({
-    category_name: initialData?.category_name || "",
-    site_id: initialData?.site_id || "",
-    auto_assign_role: initialData?.auto_assign_role || "",
-    sla_hours: initialData?.sla_hours || 24,
-    is_active: initialData?.is_active ?? true,
-    sla_id: initialData?.sla_id || "",
-    status: initialData?.status || "",
+  const {
+    register,
+    handleSubmit,
+    control,
+    setValue,
+    watch,
+    reset,
+    formState: { errors, isSubmitting },
+  } = useForm<TicketCategoryFormValues>({
+    resolver: zodResolver(ticketCategorySchema),
+    defaultValues: initialData ? {
+      category_name: initialData.category_name || "",
+      site_id: initialData.site_id || "",
+      auto_assign_role: initialData.auto_assign_role || "",
+      sla_hours: initialData.sla_hours || 24,
+      is_active: initialData.is_active ?? true,
+      sla_id: initialData.sla_id || "",
+      status: initialData.status || "",
+    } : emptyFormData,
+    mode: "onChange",
+    reValidateMode: "onChange",
   });
+
   const [autoAssignRoleList, setAutoAssignRoleList] = useState<any[]>([]);
   const [slaPolicyList, setSlaPolicyList] = useState<any[]>([]);
   const [statusList, setStatusList] = useState<any[]>([]);
   const [siteList, setSiteList] = useState<any[]>([]);
-  const [isSubmitting, setIsSubmitting] = useState(false);
+
+  const selectedSiteId = watch("site_id");
+  const isActive = watch("is_active");
 
   useEffect(() => {
     loadAutoAssignRoleLookup();
     loadStatusLookup();
     loadSiteLookup();
-    if (formData.site_id) {
-      loadSlaPolicyLookup(formData.site_id);
+    if (initialData?.site_id) {
+      loadSlaPolicyLookup(initialData.site_id);
     }
   }, []);
 
   useEffect(() => {
-    if (formData.site_id) {
-      loadSlaPolicyLookup(formData.site_id);
+    if (selectedSiteId) {
+      loadSlaPolicyLookup(selectedSiteId);
     } else {
       setSlaPolicyList([]);
     }
-  }, [formData.site_id]);
+  }, [selectedSiteId]);
+
+  useEffect(() => {
+    if (initialData) {
+      reset({
+        category_name: initialData.category_name || "",
+        site_id: initialData.site_id || "",
+        auto_assign_role: initialData.auto_assign_role || "",
+        sla_hours: initialData.sla_hours || 24,
+        is_active: initialData.is_active ?? true,
+        sla_id: initialData.sla_id || "",
+        status: initialData.status || "",
+      });
+      if (initialData.site_id) {
+        loadSlaPolicyLookup(initialData.site_id);
+      }
+    } else {
+      reset(emptyFormData);
+    }
+  }, [initialData, reset]);
 
   const loadAutoAssignRoleLookup = async () => {
     const response = await ticketCategoriesApiService.getAutoAssignRoleLookup();
@@ -66,19 +115,6 @@ export default function TicketCategoryForm({ onSubmit, onCancel, initialData }: 
     const response = await ticketCategoriesApiService.getStatusLookup();
     if (response.success) {
       setStatusList(response.data);
-    
-      setFormData(prev => {
-        if (prev.status && response.data?.length > 0) {
-          const activeStatus = response.data.find((s: any) => s.name?.toLowerCase() === 'active');
-          if (activeStatus) {
-            return {
-              ...prev,
-              is_active: prev.status === activeStatus.id
-            };
-          }
-        }
-        return prev;
-      });
     }
   };
 
@@ -93,11 +129,8 @@ export default function TicketCategoryForm({ onSubmit, onCancel, initialData }: 
   const handleActiveToggle = (checked: boolean) => {
     const activeId = getActiveStatusId();
     const inactiveId = getInactiveStatusId();
-    setFormData({ 
-      ...formData, 
-      is_active: checked,
-      status: checked ? activeId : inactiveId 
-    });
+    setValue("is_active", checked);
+    setValue("status", checked ? activeId : inactiveId);
   };
 
   const loadSiteLookup = async () => {
@@ -107,114 +140,141 @@ export default function TicketCategoryForm({ onSubmit, onCancel, initialData }: 
     }
   };
 
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-    if (isSubmitting) {
-      return;
-    }
-
-    setIsSubmitting(true);
-
+  const onSubmitForm = async (data: TicketCategoryFormValues) => {
     try {
-      const formResponse = await onSubmit(formData);
+      const formResponse = await onSubmit(data);
       if (formResponse?.success) {
         // Form will be closed by parent component
       } else {
-        setIsSubmitting(false);
+        reset(undefined, { keepErrors: true, keepValues: true });
       }
     } catch (error) {
-      // Re-enable buttons on any error
-      setIsSubmitting(false);
+      reset(undefined, { keepErrors: true, keepValues: true });
+      toast.error("Failed to save ticket category");
     }
   };
 
   return (
-    <form onSubmit={handleSubmit} className="space-y-4">
+    <form onSubmit={isSubmitting ? undefined : handleSubmit(onSubmitForm)} className="space-y-4">
       <div className="space-y-2">
         <Label htmlFor="category_name">Category Name *</Label>
         <Input
           id="category_name"
-          value={formData.category_name}
-          onChange={(e) => setFormData({ ...formData, category_name: e.target.value })}
+          {...register("category_name")}
           placeholder="e.g., Electrical Issues"
-          required
+          className={errors.category_name ? 'border-red-500' : ''}
         />
+        {errors.category_name && (
+          <p className="text-sm text-red-500">{errors.category_name.message}</p>
+        )}
       </div>
 
-      <div className="space-y-2">
-        <Label htmlFor="site_id">Site *</Label>
-        <Select
-          value={formData.site_id || ""}
-          onValueChange={(value) => setFormData({ ...formData, site_id: value })}
-        >
-          <SelectTrigger>
-            <SelectValue placeholder="Select site " />
-          </SelectTrigger>
-          <SelectContent>
-            {siteList.map((site: any) => (
-              <SelectItem key={site.id} value={site.id}>
-                {site.name}
-              </SelectItem>
-            ))}
-          </SelectContent>
-        </Select>
-      </div>
+      <Controller
+        name="site_id"
+        control={control}
+        render={({ field }) => (
+          <div className="space-y-2">
+            <Label htmlFor="site_id">Site *</Label>
+            <Select
+              value={field.value || ""}
+              onValueChange={field.onChange}
+            >
+              <SelectTrigger className={errors.site_id ? 'border-red-500' : ''}>
+                <SelectValue placeholder="Select site" />
+              </SelectTrigger>
+              <SelectContent>
+                {siteList.map((site: any) => (
+                  <SelectItem key={site.id} value={site.id}>
+                    {site.name}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+            {errors.site_id && (
+              <p className="text-sm text-red-500">{errors.site_id.message}</p>
+            )}
+          </div>
+        )}
+      />
+
+      <Controller
+        name="auto_assign_role"
+        control={control}
+        render={({ field }) => (
+          <div className="space-y-2">
+            <Label htmlFor="auto_assign_role">Auto-Assign Role</Label>
+            <Select
+              value={field.value || ""}
+              onValueChange={field.onChange}
+            >
+              <SelectTrigger>
+                <SelectValue placeholder="Select auto-assign role" />
+              </SelectTrigger>
+              <SelectContent>
+                {autoAssignRoleList.map((role: any) => (
+                  <SelectItem key={role.id} value={role.id}>
+                    {role.name}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
+        )}
+      />
 
       <div className="space-y-2">
-        <Label htmlFor="auto_assign_role">Auto-Assign Role</Label>
-        <Select
-          value={formData.auto_assign_role || ""}
-          onValueChange={(value) => setFormData({ ...formData, auto_assign_role: value })}
-        >
-          <SelectTrigger>
-            <SelectValue placeholder="Select auto-assign role" />
-          </SelectTrigger>
-          <SelectContent>
-            {autoAssignRoleList.map((role: any) => (
-              <SelectItem key={role.id } value={role.id}>
-                {role.name}
-              </SelectItem>
-            ))}
-          </SelectContent>
-        </Select>
-      </div>
-
-      <div className="space-y-2">
-        <Label htmlFor="sla_hours">SLA Hours *</Label>
+        <Label htmlFor="sla_hours">SLA Hours</Label>
         <Input
           id="sla_hours"
           type="number"
-          value={formData.sla_hours}
-          onChange={(e) => setFormData({ ...formData, sla_hours: parseInt(e.target.value) })}
+          {...register("sla_hours", { valueAsNumber: true })}
           min="1"
-          required
+          className={errors.sla_hours ? 'border-red-500' : ''}
         />
+        {errors.sla_hours && (
+          <p className="text-sm text-red-500">{errors.sla_hours.message}</p>
+        )}
       </div>
 
-      <div className="space-y-2">
-        <Label htmlFor="sla_id">SLA Policy</Label>
-        <Select
-          value={formData.sla_id?.toString() || ""}
-          onValueChange={(value) => setFormData({ ...formData, sla_id: value })}
-        >
-          <SelectTrigger>
-            <SelectValue placeholder="Select SLA Policy" />
-          </SelectTrigger>
-          <SelectContent>
-            {slaPolicyList.map((policy: any) => (
-              <SelectItem key={policy.id} value={policy.id}>
-                {policy.name}
-              </SelectItem>
-            ))}
-          </SelectContent>
-        </Select>
-      </div>
+      <Controller
+        name="sla_id"
+        control={control}
+        render={({ field }) => (
+          <div className="space-y-2">
+            <Label htmlFor="sla_id">SLA Policy *</Label>
+            <Select
+              value={field.value?.toString() || ""}
+              onValueChange={field.onChange}
+            >
+              <SelectTrigger className={errors.sla_id ? 'border-red-500' : ''}>
+                <SelectValue placeholder="Select SLA Policy" />
+              </SelectTrigger>
+              <SelectContent>
+                {slaPolicyList.map((policy: any) => (
+                  <SelectItem key={policy.id} value={policy.id}>
+                    {policy.name}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+            {errors.sla_id && (
+              <p className="text-sm text-red-500">{errors.sla_id.message}</p>
+            )}
+          </div>
+        )}
+      />
 
       <div className="flex items-center space-x-2">
-        <Switch
-          id="is_active"
-          checked={formData.is_active}
-          onCheckedChange={handleActiveToggle}
+        <Controller
+          name="is_active"
+          control={control}
+          render={({ field }) => (
+            <Switch
+              id="is_active"
+              checked={field.value}
+              onCheckedChange={handleActiveToggle}
+            />
+          )}
         />
         <Label htmlFor="is_active">Active</Label>
       </div>
@@ -224,7 +284,7 @@ export default function TicketCategoryForm({ onSubmit, onCancel, initialData }: 
           Cancel
         </Button>
         <Button type="submit" disabled={isSubmitting}>
-          {isSubmitting ? "Submitting..." : initialData ? "Update Ticket Category" : "Create Ticket Category"}
+          {isSubmitting ? "Saving..." : initialData ? "Update Ticket Category" : "Create Ticket Category"}
         </Button>
       </div>
     </form>

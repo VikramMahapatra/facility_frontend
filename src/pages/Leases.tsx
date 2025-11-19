@@ -215,9 +215,11 @@ export default function Leases() {
                   <h2 className="text-2xl font-bold text-sidebar-primary">All Leases</h2>
                   <p className="text-muted-foreground">Manage lease agreements</p>
                 </div>
-                <Button onClick={handleCreate} className="gap-2">
-                  <Plus className="h-4 w-4" /> Add Lease
-                </Button>
+                {canWrite(resource) && (
+                  <Button onClick={handleCreate} className="gap-2">
+                    <Plus className="h-4 w-4" /> Add Lease
+                  </Button>
+                )}
               </div>
 
               {/* Filters */}

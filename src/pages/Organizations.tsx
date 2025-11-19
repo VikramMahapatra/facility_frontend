@@ -13,6 +13,7 @@ import { organisationApiService } from "@/services/spaces_sites/organisationapi"
 import LoaderOverlay from "@/components/LoaderOverlay";
 import ContentContainer from "@/components/ContentContainer";
 import { useLoader } from "@/context/LoaderContext";
+import { useAuth } from "../context/AuthContext";
 
 interface Organization {
   id: string;
@@ -38,6 +39,8 @@ export default function Organizations() {
   const [showForm, setShowForm] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const { withLoader } = useLoader();
+  const { canRead, canWrite, canDelete } = useAuth();
+  const resource = "organizations"; 
 
   useEffect(() => {
     loadOrganisation();
@@ -162,10 +165,12 @@ export default function Organizations() {
                   <h2 className="text-2xl font-bold text-sidebar-primary">Organizations</h2>
                   <p className="text-muted-foreground">Manage hotel chains and property companies</p>
                 </div>
-                <Button onClick={handleCreate} className="gap-2" disabled>
-                  <Plus className="h-4 w-4" />
-                  Add New Organization
-                </Button>
+                {canWrite(resource) && (
+                  <Button onClick={handleCreate} className="gap-2" disabled>
+                    <Plus className="h-4 w-4" />
+                    Add New Organization
+                  </Button>
+                )}
               </div>
 
               {/* Filters */}
@@ -273,9 +278,11 @@ export default function Organizations() {
                           <span>Created: {new Date(filteredOrganizations[0].created_at).toLocaleDateString()}</span>
                         </div>
                         <div className="flex items-center justify-end gap-2 pt-2">
-                          <Button size="sm" variant="outline" onClick={() => handleEdit(filteredOrganizations[0])}>
-                            <Edit className="h-3 w-3" /> Edit
-                          </Button>
+                          {canWrite(resource) && (
+                            <Button size="sm" variant="outline" onClick={() => handleEdit(filteredOrganizations[0])}>
+                              <Edit className="h-3 w-3" /> Edit
+                            </Button>
+                          )}
                         </div>
                       </CardContent>
                     </Card>
