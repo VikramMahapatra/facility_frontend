@@ -78,14 +78,25 @@ export default function SpaceAssignments() {
   const loadSpaceAsignmentOverView = async () => {
     const params = new URLSearchParams();
     if (searchTerm) params.append("search", searchTerm);
-    if (selectedSite) params.append("site_id", selectedSite);
+    if (selectedSite && selectedSite !== "all") params.append("site_id", selectedSite);
     const response = await spaceAssignmentApiService.getAssignmentOverview(params);
-    setMemberOverview(response);
+    if (response?.success) {
+      setMemberOverview(response.data || {
+        totalAssignments: 0,
+        groupUsed: 0,
+        spaceAssigned: 0,
+        assignmentRate: 0
+      });
+    }
   }
 
   const loadSiteLookup = async () => {
     const lookup = await siteApiService.getSiteLookup();
-    setSiteList(lookup);
+    if (lookup?.success) {
+      setSiteList(lookup.data || []);
+    } else {
+      setSiteList([]);
+    }
   }
 
   const loadSpaceAssignments = async () => {
@@ -95,12 +106,17 @@ export default function SpaceAssignments() {
     // build query params
     const params = new URLSearchParams();
     if (searchTerm) params.append("search", searchTerm);
-    if (selectedSite) params.append("site_id", selectedSite);
+    if (selectedSite && selectedSite !== "all") params.append("site_id", selectedSite);
     params.append("skip", skip.toString());
     params.append("limit", limit.toString());
     const response = await spaceAssignmentApiService.getAssignments(params);
-    setAssignments(response.assignments);
-    setTotalItems(response.total);
+    if (response?.success) {
+      setAssignments(response.data?.assignments || response.data || []);
+      setTotalItems(response.data?.total || 0);
+    } else {
+      setAssignments([]);
+      setTotalItems(0);
+    }
   }
 
   // Get assignment details
@@ -169,11 +185,13 @@ export default function SpaceAssignments() {
   };
 
   const handleDelete = (assignmentId: string) => {
-    setAssignments(assignments.filter(assignment => assignment.id !== assignmentId));
-    toast({
-      title: "Assignment Deleted",
-      description: "Space assignment has been removed successfully.",
-    });
+    if (Array.isArray(assignments)) {
+      setAssignments(assignments.filter(assignment => assignment.id !== assignmentId));
+      toast({
+        title: "Assignment Deleted",
+        description: "Space assignment has been removed successfully.",
+      });
+    }
   };
 
 
@@ -219,7 +237,7 @@ export default function SpaceAssignments() {
                   className="rounded-md border border-input bg-background px-3 py-2 text-sm"
                 >
                   <option value="all">All Sites</option>
-                  {siteList.map(site => (
+                  {Array.isArray(siteList) && siteList.map(site => (
                     <option key={site.id} value={site.id}>{site.name}</option>
                   ))}
                 </select>
@@ -229,7 +247,7 @@ export default function SpaceAssignments() {
               <div className="grid gap-4 md:grid-cols-4">
                 <Card>
                   <CardContent className="p-4">
-                    <div className="text-2xl font-bold text-sidebar-primary">{assignments.length}</div>
+                    <div className="text-2xl font-bold text-sidebar-primary">{Array.isArray(assignments) ? assignments.length : 0}</div>
                     <p className="text-sm text-muted-foreground">Total Assignments</p>
                   </CardContent>
                 </Card>
@@ -257,7 +275,7 @@ export default function SpaceAssignments() {
 
               {/* Assignments Grid */}
               <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
-                {assignments.map((assignment) => {
+                {Array.isArray(assignments) && assignments.map((assignment) => {
                   const { space, group } = getAssignmentDetails(assignment);
 
                   if (!space || !group) return null;
@@ -376,7 +394,7 @@ export default function SpaceAssignments() {
                 totalItems={totalItems}
                 onPageChange={(newPage) => setPage(newPage)}
               />
-              {assignments.length === 0 && (
+              {(!Array.isArray(assignments) || assignments.length === 0) && (
                 <div className="text-center py-12">
                   <Link2 className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
                   <h3 className="text-lg font-semibold text-sidebar-primary mb-2">No assignments found</h3>

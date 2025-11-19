@@ -4,7 +4,8 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
-import { useToast } from "@/hooks/use-toast";
+import { toast } from "sonner";
+import PhoneInput from "react-phone-input-2";
 
 interface Organization {
   id: string;
@@ -27,10 +28,10 @@ interface OrganizationFormProps {
   onClose: () => void;
   onSave: (organization: Partial<Organization>) => void;
   mode: 'create' | 'edit' | 'view';
+  isSubmitting?: boolean;
 }
 
-export function OrganizationForm({ organization, isOpen, onClose, onSave, mode }: OrganizationFormProps) {
-  const { toast } = useToast();
+export function OrganizationForm({ organization, isOpen, onClose, onSave, mode, isSubmitting = false }: OrganizationFormProps) {
   const [formData, setFormData] = useState({
     name: organization?.name || "",
     legal_name: organization?.legal_name || "",
@@ -63,11 +64,7 @@ export function OrganizationForm({ organization, isOpen, onClose, onSave, mode }
     e.preventDefault();
 
     if (!formData.name || !formData.legal_name || !formData.billing_email) {
-      toast({
-        title: "Validation Error",
-        description: "Name, Legal Name, and Billing Email are required fields",
-        variant: "destructive",
-      });
+      toast.error("Name, Legal Name, and Billing Email are required fields");
       return;
     }
 
@@ -125,13 +122,27 @@ export function OrganizationForm({ organization, isOpen, onClose, onSave, mode }
             </div>
             <div>
               <Label htmlFor="contact_phone">Contact Phone</Label>
-              <Input
-                id="contact_phone"
-                value={formData.contact_phone}
-                onChange={(e) => setFormData({ ...formData, contact_phone: e.target.value })}
-                placeholder="+91-1234567890"
-                disabled={isReadOnly}
-              />
+              <div className="space-y-2">
+                <PhoneInput
+                  country={'in'}
+                  value={formData.contact_phone || ""}
+                  onChange={(value) => {
+                    const digits = value.replace(/\D/g, "");
+                    const finalValue = "+" + digits;
+                    setFormData({ ...formData, contact_phone: finalValue });
+                  }}
+                  disabled={isReadOnly}
+                  inputProps={{
+                    name: 'contact_phone',
+                    required: false,
+                  }}
+                  containerClass="w-full relative"
+                  inputClass="!w-full !h-10 !pl-12 !rounded-md !border !border-input !bg-background !px-3 !py-2 !text-base !ring-offset-background placeholder:!text-muted-foreground focus-visible:!outline-none focus-visible:!ring-2 focus-visible:!ring-ring focus-visible:!ring-offset-2 disabled:!cursor-not-allowed disabled:!opacity-50 md:!text-sm"
+                  buttonClass="!border-none !bg-transparent !absolute !left-2 !top-1/2 !-translate-y-1/2 z-10"
+                  dropdownClass="!absolute !z-50 !bg-white !border !border-gray-200 !rounded-md !shadow-lg max-h-60 overflow-y-auto"
+                  enableSearch={true}
+                />
+              </div>
             </div>
           </div>
 
@@ -222,12 +233,12 @@ export function OrganizationForm({ organization, isOpen, onClose, onSave, mode }
           </div>
 
           <DialogFooter>
-            <Button type="button" variant="outline" onClick={onClose}>
+            <Button type="button" variant="outline" onClick={onClose} disabled={isSubmitting}>
               {mode === 'view' ? 'Close' : 'Cancel'}
             </Button>
             {mode !== 'view' && (
-              <Button type="submit">
-                {mode === 'create' ? 'Create Organization' : 'Update Organization'}
+              <Button type="submit" disabled={isSubmitting}>
+                {isSubmitting ? "Saving..." : mode === 'create' ? 'Create Organization' : 'Update Organization'}
               </Button>
             )}
           </DialogFooter>
