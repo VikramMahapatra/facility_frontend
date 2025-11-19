@@ -274,10 +274,12 @@ const confirmDelete = async () => {
                   Manage vendor contracts and agreements
                 </p>
               </div>
-              <Button onClick={handleCreate} className="gap-2">
-                <Plus className="h-4 w-4" />
-                Add Contract
-              </Button>
+              {canWrite(resource) && (
+                <Button onClick={handleCreate} className="gap-2">
+                  <Plus className="h-4 w-4" />
+                  Add Contract
+                </Button>
+              )}
             </div>
 
             <div className="space-y-6">

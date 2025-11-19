@@ -1,4 +1,6 @@
 import { useState, useEffect, useRef } from "react";
+import { useForm, Controller } from "react-hook-form";
+import { zodResolver } from "@hookform/resolvers/zod";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -17,6 +19,8 @@ import { tenantsApiService } from "@/services/Leasing_Tenants/tenantsapi";
 import { organisationApiService } from "@/services/spaces_sites/organisationapi";
 import { ticketsApiService } from "@/services/ticketing_service/ticketsapi";
 import { useToast } from "@/hooks/use-toast";
+import { ticketSchema, TicketFormValues } from "@/schemas/ticket.schema";
+import { toast as sonnerToast } from "sonner";
 
 interface TicketFormProps {
   onSubmit: (data: any) => Promise<any>;
@@ -24,24 +28,49 @@ interface TicketFormProps {
   initialData?: any;
 }
 
+const emptyFormData: TicketFormValues = {
+  title: "",
+  description: "",
+  category_id: "",
+  priority: "low",
+  request_type: "unit",
+  site_id: "",
+  space_id: "",
+  tenant_id: "",
+  preferred_time: "",
+};
+
 export default function TicketForm({
   onSubmit,
   onCancel,
   initialData,
 }: TicketFormProps) {
   const { toast } = useToast();
-  const [formData, setFormData] = useState({
-    title: initialData?.title || "",
-    description: initialData?.description || "",
-    category_id: initialData?.category_id || "",
-    priority: initialData?.priority || "low",
-    request_type: initialData?.request_type || "unit",
-    site_id: initialData?.site_id || "",
-    space_id: initialData?.space_id || "",
-    tenant_id: initialData?.tenant_id || "",
-    preferred_time: initialData?.preferred_time || "",
-    
+  const {
+    register,
+    handleSubmit,
+    control,
+    setValue,
+    watch,
+    reset,
+    formState: { errors, isSubmitting },
+  } = useForm<TicketFormValues>({
+    resolver: zodResolver(ticketSchema),
+    defaultValues: initialData ? {
+      title: initialData.title || "",
+      description: initialData.description || "",
+      category_id: initialData.category_id || "",
+      priority: initialData.priority || "low",
+      request_type: initialData.request_type || "unit",
+      site_id: initialData.site_id || "",
+      space_id: initialData.space_id || "",
+      tenant_id: initialData.tenant_id || "",
+      preferred_time: initialData.preferred_time || "",
+    } : emptyFormData,
+    mode: "onChange",
+    reValidateMode: "onChange",
   });
+
   const [uploadedImages, setUploadedImages] = useState<File[]>([]);
   const [imagePreviews, setImagePreviews] = useState<string[]>([]);
   const fileInputRef = useRef<HTMLInputElement>(null);
@@ -49,7 +78,9 @@ export default function TicketForm({
   const [tenantList, setTenantList] = useState<any[]>([]);
   const [siteList, setSiteList] = useState<any[]>([]);
   const [categoryList, setCategoryList] = useState<any[]>([]);
-  const [isSubmitting, setIsSubmitting] = useState(false);
+
+  const selectedSiteId = watch("site_id");
+  const selectedSpaceId = watch("space_id");
 
   // Mock preferred time slots
   const preferredTimeSlots = [
@@ -61,29 +92,58 @@ export default function TicketForm({
 
   useEffect(() => {
     loadSiteLookup();
-    loadCategoryLookup(formData.site_id || "all");
-    if (formData.site_id) {
-      loadSpaceLookup(formData.site_id);
+    loadCategoryLookup(initialData?.site_id || "all");
+    if (initialData?.site_id) {
+      loadSpaceLookup(initialData.site_id);
     }
   }, []);
 
   useEffect(() => {
-    if (formData.site_id) {
-      loadSpaceLookup(formData.site_id);
-      loadCategoryLookup(formData.site_id);
+    if (selectedSiteId) {
+      loadSpaceLookup(selectedSiteId);
+      loadCategoryLookup(selectedSiteId);
+      setValue("space_id", "");
+      setValue("tenant_id", "");
     } else {
       setSpaceList([]);
+      setTenantList([]);
       loadCategoryLookup("all");
     }
-  }, [formData.site_id]);
+  }, [selectedSiteId, setValue]);
 
   useEffect(() => {
-    if (formData.site_id && formData.space_id) {
-      loadTenantLookup(formData.site_id, formData.space_id);
+    if (selectedSiteId && selectedSpaceId) {
+      loadTenantLookup(selectedSiteId, selectedSpaceId);
+      setValue("tenant_id", "");
     } else {
       setTenantList([]);
     }
-  }, [formData.site_id, formData.space_id]);
+  }, [selectedSiteId, selectedSpaceId, setValue]);
+
+  useEffect(() => {
+    if (initialData) {
+      reset({
+        title: initialData.title || "",
+        description: initialData.description || "",
+        category_id: initialData.category_id || "",
+        priority: initialData.priority || "low",
+        request_type: initialData.request_type || "unit",
+        site_id: initialData.site_id || "",
+        space_id: initialData.space_id || "",
+        tenant_id: initialData.tenant_id || "",
+        preferred_time: initialData.preferred_time || "",
+      });
+      if (initialData.site_id) {
+        loadSpaceLookup(initialData.site_id);
+        loadCategoryLookup(initialData.site_id);
+        if (initialData.space_id) {
+          loadTenantLookup(initialData.site_id, initialData.space_id);
+        }
+      }
+    } else {
+      reset(emptyFormData);
+    }
+  }, [initialData, reset]);
 
   const loadSiteLookup = async () => {
     const response = await siteApiService.getSiteLookup();
@@ -116,247 +176,281 @@ export default function TicketForm({
     }
   };
 
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-    if (isSubmitting) {
-      return;
-    }
+  const onSubmitForm = async (data: TicketFormValues) => {
+    try {
+      const selectedCategory = categoryList.find(
+        (cat: any) => cat.id === data.category_id
+      );
 
-    setIsSubmitting(true);
+      const ticketFormData = new FormData();
 
-    const selectedCategory = categoryList.find(
-      (cat: any) => cat.id === formData.category_id
-    );
-    const orgData = await organisationApiService.getOrg();
+      ticketFormData.append("title", data.title);
+      ticketFormData.append("description", data.description);
+      ticketFormData.append("category_id", data.category_id);
+      ticketFormData.append(
+        "category",
+        selectedCategory?.category_name || selectedCategory?.name || ""
+      );
+      ticketFormData.append("priority", data.priority);
+      ticketFormData.append("request_type", data.request_type);
+      ticketFormData.append("site_id", data.site_id);
+      ticketFormData.append("space_id", data.space_id);
+      if (data.tenant_id) {
+        ticketFormData.append("tenant_id", data.tenant_id);
+      }
+      if (data.preferred_time) {
+        ticketFormData.append("preferred_time", data.preferred_time);
+      }
 
-    const ticketFormData = new FormData();
+      if (uploadedImages.length > 0) {
+        uploadedImages.forEach((file) => {
+          ticketFormData.append("file", file);
+        });
+      }
 
-    ticketFormData.append("title", formData.title);
-    ticketFormData.append("description", formData.description);
-    ticketFormData.append("category_id", formData.category_id);
-    ticketFormData.append(
-      "category",
-      selectedCategory?.category_name || selectedCategory?.name || ""
-    );
-    ticketFormData.append("priority", formData.priority);
-    ticketFormData.append("request_type", formData.request_type);
-    ticketFormData.append("site_id", formData.site_id);
-    ticketFormData.append("space_id", formData.space_id);
-    if (formData.tenant_id) {
-      ticketFormData.append("tenant_id", formData.tenant_id);
-    }
-    if (formData.preferred_time) {
-      ticketFormData.append("preferred_time", formData.preferred_time);
-    }
-
-    if (uploadedImages.length > 0) {
-      uploadedImages.forEach((file) => {
-        ticketFormData.append("file", file);
-      });
-    }
-
-    console.log("Ticket Form Data", ticketFormData);
-
-    const formResponse = await onSubmit(ticketFormData);
-    if (formResponse?.success) {
-      setIsSubmitting(false);
-    } else {
-      setIsSubmitting(false);
+      const formResponse = await onSubmit(ticketFormData);
+      if (formResponse?.success) {
+        // Form will be closed by parent component
+      } else {
+        reset(undefined, { keepErrors: true, keepValues: true });
+      }
+    } catch (error) {
+      reset(undefined, { keepErrors: true, keepValues: true });
+      sonnerToast.error("Failed to save ticket");
     }
   };
 
   return (
-    <form onSubmit={handleSubmit} className="space-y-4">
+    <form onSubmit={isSubmitting ? undefined : handleSubmit(onSubmitForm)} className="space-y-4">
       {/* 1. Title */}
       <div className="space-y-2">
         <Label htmlFor="title">Title *</Label>
         <Input
           id="title"
-          value={formData.title}
-          onChange={(e) => setFormData({ ...formData, title: e.target.value })}
+          {...register("title")}
           placeholder="Brief description of the issue"
-          required
+          className={errors.title ? 'border-red-500' : ''}
         />
+        {errors.title && (
+          <p className="text-sm text-red-500">{errors.title.message}</p>
+        )}
       </div>
 
       {/* 2. Site, Space */}
       <div className="grid grid-cols-2 gap-4">
-        <div className="space-y-2">
-          <Label htmlFor="site_id">Site *</Label>
-          <Select
-            value={formData.site_id}
-            onValueChange={(value) =>
-              setFormData({
-                ...formData,
-                site_id: value,
-                space_id: "",
-                tenant_id: "",
-              })
-            }
-          >
-            <SelectTrigger>
-              <SelectValue placeholder="Select site" />
-            </SelectTrigger>
-            <SelectContent>
-              {siteList.map((site: any) => (
-                <SelectItem key={site.id} value={site.id}>
-                  {site.name}
-                </SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
-        </div>
+        <Controller
+          name="site_id"
+          control={control}
+          render={({ field }) => (
+            <div className="space-y-2">
+              <Label htmlFor="site_id">Site *</Label>
+              <Select
+                value={field.value || ""}
+                onValueChange={field.onChange}
+              >
+                <SelectTrigger className={errors.site_id ? 'border-red-500' : ''}>
+                  <SelectValue placeholder="Select site" />
+                </SelectTrigger>
+                <SelectContent>
+                  {siteList.map((site: any) => (
+                    <SelectItem key={site.id} value={site.id}>
+                      {site.name}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+              {errors.site_id && (
+                <p className="text-sm text-red-500">{errors.site_id.message}</p>
+              )}
+            </div>
+          )}
+        />
 
-        <div className="space-y-2">
-          <Label htmlFor="space_id">Space *</Label>
-          <Select
-            value={formData.space_id || ""}
-            onValueChange={(value) =>
-              setFormData({ ...formData, space_id: value, tenant_id: "" })
-            }
-          >
-            <SelectTrigger>
-              <SelectValue
-                placeholder={
-                  formData.site_id ? "Select space" : "Select site first"
-                }
-              />
-            </SelectTrigger>
-            <SelectContent>
-              {spaceList.map((space: any) => (
-                <SelectItem key={space.id} value={space.id}>
-                  {space.name}
-                </SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
-        </div>
+        <Controller
+          name="space_id"
+          control={control}
+          render={({ field }) => (
+            <div className="space-y-2">
+              <Label htmlFor="space_id">Space *</Label>
+              <Select
+                value={field.value || ""}
+                onValueChange={field.onChange}
+                disabled={!selectedSiteId}
+              >
+                <SelectTrigger className={errors.space_id ? 'border-red-500' : ''}>
+                  <SelectValue
+                    placeholder={
+                      selectedSiteId ? "Select space" : "Select site first"
+                    }
+                  />
+                </SelectTrigger>
+                <SelectContent>
+                  {spaceList.map((space: any) => (
+                    <SelectItem key={space.id} value={space.id}>
+                      {space.name}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+              {errors.space_id && (
+                <p className="text-sm text-red-500">{errors.space_id.message}</p>
+              )}
+            </div>
+          )}
+        />
       </div>
 
       {/* 3. Tenant, Category */}
       <div className="grid grid-cols-2 gap-4">
-        <div className="space-y-2">
-          <Label htmlFor="tenant_id">Tenant</Label>
-          <Select
-            value={formData.tenant_id || ""}
-            onValueChange={(value) =>
-              setFormData({ ...formData, tenant_id: value })
-            }
-          >
-            <SelectTrigger>
-              <SelectValue
-                placeholder={
-                  formData.space_id ? "Select tenant" : "Select space first"
-                }
-              />
-            </SelectTrigger>
-            <SelectContent>
-              {tenantList.map((tenant: any) => (
-                <SelectItem key={tenant.id} value={tenant.id}>
-                  {tenant.name}
-                </SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
-        </div>
+        <Controller
+          name="tenant_id"
+          control={control}
+          render={({ field }) => (
+            <div className="space-y-2">
+              <Label htmlFor="tenant_id">Tenant</Label>
+              <Select
+                value={field.value || ""}
+                onValueChange={field.onChange}
+                disabled={!selectedSpaceId}
+              >
+                <SelectTrigger>
+                  <SelectValue
+                    placeholder={
+                      selectedSpaceId ? "Select tenant" : "Select space first"
+                    }
+                  />
+                </SelectTrigger>
+                <SelectContent>
+                  {tenantList.map((tenant: any) => (
+                    <SelectItem key={tenant.id} value={tenant.id}>
+                      {tenant.name}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+          )}
+        />
 
-        <div className="space-y-2">
-          <Label htmlFor="category_id">Category *</Label>
-          <Select
-            value={formData.category_id || ""}
-            onValueChange={(value) =>
-              setFormData({ ...formData, category_id: value })
-            }
-          >
-            <SelectTrigger>
-              <SelectValue placeholder="Select Category" />
-            </SelectTrigger>
-            <SelectContent>
-              {categoryList.map((category: any) => (
-                <SelectItem key={category.id} value={category.id}>
-                  {category.category_name || category.name}
-                </SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
-        </div>
+        <Controller
+          name="category_id"
+          control={control}
+          render={({ field }) => (
+            <div className="space-y-2">
+              <Label htmlFor="category_id">Category *</Label>
+              <Select
+                value={field.value || ""}
+                onValueChange={field.onChange}
+              >
+                <SelectTrigger className={errors.category_id ? 'border-red-500' : ''}>
+                  <SelectValue placeholder="Select Category" />
+                </SelectTrigger>
+                <SelectContent>
+                  {categoryList.map((category: any) => (
+                    <SelectItem key={category.id} value={category.id}>
+                      {category.category_name || category.name}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+              {errors.category_id && (
+                <p className="text-sm text-red-500">{errors.category_id.message}</p>
+              )}
+            </div>
+          )}
+        />
       </div>
 
       {/* 4. Request type, Priority */}
       <div className="grid grid-cols-2 gap-4">
-        <div className="space-y-2">
-          <Label htmlFor="request_type">Request Type *</Label>
-          <Select
-            value={formData.request_type}
-            onValueChange={(value) =>
-              setFormData({ ...formData, request_type: value })
-            }
-          >
-            <SelectTrigger>
-              <SelectValue placeholder="Select Request Type" />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="unit">Unit</SelectItem>
-              <SelectItem value="community">Community</SelectItem>
-            </SelectContent>
-          </Select>
-        </div>
+        <Controller
+          name="request_type"
+          control={control}
+          render={({ field }) => (
+            <div className="space-y-2">
+              <Label htmlFor="request_type">Request Type *</Label>
+              <Select
+                value={field.value}
+                onValueChange={field.onChange}
+              >
+                <SelectTrigger className={errors.request_type ? 'border-red-500' : ''}>
+                  <SelectValue placeholder="Select Request Type" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="unit">Unit</SelectItem>
+                  <SelectItem value="community">Community</SelectItem>
+                </SelectContent>
+              </Select>
+              {errors.request_type && (
+                <p className="text-sm text-red-500">{errors.request_type.message}</p>
+              )}
+            </div>
+          )}
+        />
 
-        <div className="space-y-2">
-          <Label htmlFor="priority">Priority </Label>
-          <Select
-            value={formData.priority}
-            onValueChange={(value) =>
-              setFormData({ ...formData, priority: value })
-            }
-          >
-            <SelectTrigger>
-              <SelectValue placeholder="Select Priority" />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="low">Low</SelectItem>
-              <SelectItem value="medium">Medium</SelectItem>
-              <SelectItem value="high">High</SelectItem>
-            </SelectContent>
-          </Select>
-        </div>
+        <Controller
+          name="priority"
+          control={control}
+          render={({ field }) => (
+            <div className="space-y-2">
+              <Label htmlFor="priority">Priority</Label>
+              <Select
+                value={field.value}
+                onValueChange={field.onChange}
+              >
+                <SelectTrigger>
+                  <SelectValue placeholder="Select Priority" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="low">Low</SelectItem>
+                  <SelectItem value="medium">Medium</SelectItem>
+                  <SelectItem value="high">High</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+          )}
+        />
       </div>
 
       {/* 5. Preferred time */}
-      <div className="space-y-2">
-        <Label htmlFor="preferred_time">Preferred Time</Label>
-        <Select
-          value={formData.preferred_time || ""}
-          onValueChange={(value) =>
-            setFormData({ ...formData, preferred_time: value })
-          }
-        >
-          <SelectTrigger>
-            <SelectValue placeholder="Select preferred time" />
-          </SelectTrigger>
-          <SelectContent>
-            {preferredTimeSlots.map((slot) => (
-              <SelectItem key={slot.value} value={slot.value}>
-                {slot.label}
-              </SelectItem>
-            ))}
-          </SelectContent>
-        </Select>
-      </div>
+      <Controller
+        name="preferred_time"
+        control={control}
+        render={({ field }) => (
+          <div className="space-y-2">
+            <Label htmlFor="preferred_time">Preferred Time</Label>
+            <Select
+              value={field.value || ""}
+              onValueChange={field.onChange}
+            >
+              <SelectTrigger>
+                <SelectValue placeholder="Select preferred time" />
+              </SelectTrigger>
+              <SelectContent>
+                {preferredTimeSlots.map((slot) => (
+                  <SelectItem key={slot.value} value={slot.value}>
+                    {slot.label}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
+        )}
+      />
 
       {/* 6. Description */}
       <div className="space-y-2">
         <Label htmlFor="description">Description *</Label>
         <Textarea
           id="description"
-          value={formData.description}
-          onChange={(e) =>
-            setFormData({ ...formData, description: e.target.value })
-          }
+          {...register("description")}
           placeholder="Detailed description of the issue"
           rows={4}
-          required
+          className={errors.description ? 'border-red-500' : ''}
         />
+        {errors.description && (
+          <p className="text-sm text-red-500">{errors.description.message}</p>
+        )}
       </div>
 
       {/* 7. Attach Image */}
@@ -489,7 +583,7 @@ export default function TicketForm({
           Cancel
         </Button>
         <Button type="submit" disabled={isSubmitting}>
-          {isSubmitting ? "Submitting..." : initialData ? "Update Ticket" : "Create Ticket"}
+          {isSubmitting ? "Saving..." : initialData ? "Update Ticket" : "Create Ticket"}
         </Button>
       </div>
     </form>

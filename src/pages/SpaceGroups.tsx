@@ -230,10 +230,12 @@ export default function SpaceGroups() {
                   <h2 className="text-2xl font-bold text-sidebar-primary">Space Groups</h2>
                   <p className="text-muted-foreground">Manage space categories and pricing groups</p>
                 </div>
-                <Button className="gap-2" onClick={handleCreate}>
-                  <Plus className="h-4 w-4" />
-                  Create New Group
-                </Button>
+                {canWrite(resource) && (
+                  <Button className="gap-2" onClick={handleCreate}>
+                    <Plus className="h-4 w-4" />
+                    Create New Group
+                  </Button>
+                )}
               </div>
 
               {/* Filters */}

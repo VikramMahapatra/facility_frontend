@@ -184,7 +184,7 @@ export function MeterReadingForm({
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             {/* Timestamp */}
             <div className="space-y-2">
-              <Label htmlFor="ts">Timestamp *</Label>
+              <Label htmlFor="ts">Timestamp </Label>
               <Controller
                 name="ts"
                 control={control}
@@ -206,7 +206,7 @@ export function MeterReadingForm({
 
             {/* Reading Value */}
             <div className="space-y-2">
-              <Label htmlFor="reading">Reading Value *</Label>
+              <Label htmlFor="reading">Reading Value </Label>
               <Controller
                 name="ts"
                 control={control}
@@ -233,7 +233,7 @@ export function MeterReadingForm({
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             {/* Delta */}
             <div className="space-y-2">
-              <Label htmlFor="delta">Delta (Optional)</Label>
+              <Label htmlFor="delta">Delta</Label>
               <Controller
                 name="delta"
                 control={control}

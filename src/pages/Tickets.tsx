@@ -20,10 +20,13 @@ import ContentContainer from "@/components/ContentContainer";
 import { useLoader } from "@/context/LoaderContext";
 import { Pagination } from "@/components/Pagination";
 import { useSkipFirstEffect } from "@/hooks/use-skipfirst-effect";
+import { useAuth } from "../context/AuthContext";
 
 export default function Tickets() {
   const navigate = useNavigate();
   const { withLoader } = useLoader();
+  const { canRead, canWrite, canDelete } = useAuth();
+  const resource = "tickets"; // must match resource name from backend policies
   const [isFormOpen, setIsFormOpen] = useState(false);
   const [isEditOpen, setIsEditOpen] = useState(false);
   const [editingTicket, setEditingTicket] = useState<any>(null);
@@ -188,10 +191,12 @@ export default function Tickets() {
                     Track and manage all service tickets
                   </p>
                 </div>
-                <Button onClick={() => setIsFormOpen(true)} className="gap-2">
-                  <Plus className="h-4 w-4" />
-                  Create Ticket
-                </Button>
+                {canWrite(resource) && (
+                  <Button onClick={() => setIsFormOpen(true)} className="gap-2">
+                    <Plus className="h-4 w-4" />
+                    Create Ticket
+                  </Button>
+                )}
               </div>
 
             <Card>
