@@ -91,8 +91,13 @@ export default function Contracts() {
   };
 
   const loadOverview = async () => {
+    const params = new URLSearchParams();
+    if (searchTerm) params.append("search", searchTerm);
+    if (statusFilter !== "all") params.append("status", statusFilter);
+    if (typeFilter !== "all") params.append("type", typeFilter);
+
     const response = await withLoader(async () => {
-      return await contractApiService.getContractsOverview();
+      return await contractApiService.getContractsOverview(params);
     });
     
     // Map API response to expected format
