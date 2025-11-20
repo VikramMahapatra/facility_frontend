@@ -32,7 +32,7 @@ interface TenantFormProps {
   tenant?: Tenant;
   isOpen: boolean;
   onClose: () => void;
-  onSave: (tenant: Partial<Tenant>) => void;
+  onSave: (tenant: any) => Promise<any>;
   mode: "create" | "edit" | "view";
 }
 
@@ -194,38 +194,7 @@ export function TenantForm({
   };
 
   const onSubmitForm = async (data: TenantFormValues) => {
-    const payload: Partial<Tenant> = {
-      ...(tenant?.id && { id: tenant.id }),
-      name: data.name.trim(),
-      email: data.email.trim(),
-      phone: data.phone.trim(),
-      tenant_type: data.tenant_type,
-      status: data.status as any,
-      site_id: data.site_id,
-      space_id: data.space_id || undefined,
-      building_block_id: (data as any).building_id || undefined,
-      contact_info: data.contact_info ? {
-        name: data.contact_info.name || undefined,
-        email: data.contact_info.email || undefined,
-        phone: data.contact_info.phone || undefined,
-        address: data.contact_info.address ? {
-          line1: data.contact_info.address.line1 || "",
-          line2: data.contact_info.address.line2 || "",
-          city: data.contact_info.address.city || "",
-          state: data.contact_info.address.state || "",
-          pincode: data.contact_info.address.pincode || "",
-        } : undefined,
-      } : undefined,
-      ...(data.tenant_type === "commercial" && {
-        type: data.type || undefined,
-        legal_name: data.legal_name?.trim() || undefined,
-      }),
-    };
-    try {
-      await onSave(payload);
-    } catch (error) {
-      toast.error("Failed to save tenant");
-    }
+    const formResponse = await onSave(data);
   };
 
 

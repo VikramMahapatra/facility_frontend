@@ -12,9 +12,11 @@ import { ticketCategorySchema, TicketCategoryFormValues } from "@/schemas/ticket
 import { toast } from "sonner";
 
 interface TicketCategoryFormProps {
-  onSubmit: (data: any) => Promise<any>;
-  onCancel: () => void;
-  initialData?: any;
+  category?: any;
+  isOpen: boolean;
+  onClose: () => void;
+  onSave: (category: any) => Promise<any>;
+  mode: "create" | "edit" | "view";
 }
 
 const emptyFormData: TicketCategoryFormValues = {
@@ -27,7 +29,7 @@ const emptyFormData: TicketCategoryFormValues = {
   status: "",
 };
 
-export default function TicketCategoryForm({ onSubmit, onCancel, initialData }: TicketCategoryFormProps) {
+export default function TicketCategoryForm({ category, isOpen, onClose, onSave, mode }: TicketCategoryFormProps) {
   const {
     register,
     handleSubmit,
@@ -38,15 +40,7 @@ export default function TicketCategoryForm({ onSubmit, onCancel, initialData }: 
     formState: { errors, isSubmitting },
   } = useForm<TicketCategoryFormValues>({
     resolver: zodResolver(ticketCategorySchema),
-    defaultValues: initialData ? {
-      category_name: initialData.category_name || "",
-      site_id: initialData.site_id || "",
-      auto_assign_role: initialData.auto_assign_role || "",
-      sla_hours: initialData.sla_hours || 24,
-      is_active: initialData.is_active ?? true,
-      sla_id: initialData.sla_id || "",
-      status: initialData.status || "",
-    } : emptyFormData,
+    defaultValues: emptyFormData,
     mode: "onChange",
     reValidateMode: "onChange",
   });
@@ -63,8 +57,8 @@ export default function TicketCategoryForm({ onSubmit, onCancel, initialData }: 
     loadAutoAssignRoleLookup();
     loadStatusLookup();
     loadSiteLookup();
-    if (initialData?.site_id) {
-      loadSlaPolicyLookup(initialData.site_id);
+    if (category?.site_id) {
+      loadSlaPolicyLookup(category.site_id);
     }
   }, []);
 
@@ -77,23 +71,23 @@ export default function TicketCategoryForm({ onSubmit, onCancel, initialData }: 
   }, [selectedSiteId]);
 
   useEffect(() => {
-    if (initialData) {
+    if (category && mode !== "create") {
       reset({
-        category_name: initialData.category_name || "",
-        site_id: initialData.site_id || "",
-        auto_assign_role: initialData.auto_assign_role || "",
-        sla_hours: initialData.sla_hours || 24,
-        is_active: initialData.is_active ?? true,
-        sla_id: initialData.sla_id || "",
-        status: initialData.status || "",
+        category_name: category.category_name || "",
+        site_id: category.site_id || "",
+        auto_assign_role: category.auto_assign_role || "",
+        sla_hours: category.sla_hours || 24,
+        is_active: category.is_active ?? true,
+        sla_id: category.sla_id || "",
+        status: category.status || "",
       });
-      if (initialData.site_id) {
-        loadSlaPolicyLookup(initialData.site_id);
+      if (category.site_id) {
+        loadSlaPolicyLookup(category.site_id);
       }
     } else {
       reset(emptyFormData);
     }
-  }, [initialData, reset]);
+  }, [category, mode, reset]);
 
   const loadAutoAssignRoleLookup = async () => {
     const response = await ticketCategoriesApiService.getAutoAssignRoleLookup();
@@ -141,18 +135,13 @@ export default function TicketCategoryForm({ onSubmit, onCancel, initialData }: 
   };
 
   const onSubmitForm = async (data: TicketCategoryFormValues) => {
-    try {
-      const formResponse = await onSubmit(data);
-      if (formResponse?.success) {
-        // Form will be closed by parent component
-      } else {
-        reset(undefined, { keepErrors: true, keepValues: true });
-      }
-    } catch (error) {
-      reset(undefined, { keepErrors: true, keepValues: true });
-      toast.error("Failed to save ticket category");
-    }
+    const formResponse = await onSave({
+      ...category,
+      ...data,
+    });
   };
+
+  const isReadOnly = mode === "view";
 
   return (
     <form onSubmit={isSubmitting ? undefined : handleSubmit(onSubmitForm)} className="space-y-4">
@@ -163,6 +152,7 @@ export default function TicketCategoryForm({ onSubmit, onCancel, initialData }: 
           {...register("category_name")}
           placeholder="e.g., Electrical Issues"
           className={errors.category_name ? 'border-red-500' : ''}
+          disabled={isReadOnly}
         />
         {errors.category_name && (
           <p className="text-sm text-red-500">{errors.category_name.message}</p>
@@ -178,6 +168,7 @@ export default function TicketCategoryForm({ onSubmit, onCancel, initialData }: 
             <Select
               value={field.value || ""}
               onValueChange={field.onChange}
+              disabled={isReadOnly}
             >
               <SelectTrigger className={errors.site_id ? 'border-red-500' : ''}>
                 <SelectValue placeholder="Select site" />
@@ -206,6 +197,7 @@ export default function TicketCategoryForm({ onSubmit, onCancel, initialData }: 
             <Select
               value={field.value || ""}
               onValueChange={field.onChange}
+              disabled={isReadOnly}
             >
               <SelectTrigger>
                 <SelectValue placeholder="Select auto-assign role" />
@@ -230,6 +222,7 @@ export default function TicketCategoryForm({ onSubmit, onCancel, initialData }: 
           {...register("sla_hours", { valueAsNumber: true })}
           min="1"
           className={errors.sla_hours ? 'border-red-500' : ''}
+          disabled={isReadOnly}
         />
         {errors.sla_hours && (
           <p className="text-sm text-red-500">{errors.sla_hours.message}</p>
@@ -245,6 +238,7 @@ export default function TicketCategoryForm({ onSubmit, onCancel, initialData }: 
             <Select
               value={field.value?.toString() || ""}
               onValueChange={field.onChange}
+              disabled={isReadOnly}
             >
               <SelectTrigger className={errors.sla_id ? 'border-red-500' : ''}>
                 <SelectValue placeholder="Select SLA Policy" />
@@ -273,6 +267,7 @@ export default function TicketCategoryForm({ onSubmit, onCancel, initialData }: 
               id="is_active"
               checked={field.value}
               onCheckedChange={handleActiveToggle}
+              disabled={isReadOnly}
             />
           )}
         />
@@ -280,12 +275,19 @@ export default function TicketCategoryForm({ onSubmit, onCancel, initialData }: 
       </div>
 
       <div className="flex justify-end gap-2 pt-4">
-        <Button type="button" variant="outline" onClick={onCancel} disabled={isSubmitting}>
-          Cancel
+        <Button 
+          type="button" 
+          variant="outline" 
+          onClick={onClose} 
+          disabled={isSubmitting}
+        >
+          {mode === "view" ? "Close" : "Cancel"}
         </Button>
-        <Button type="submit" disabled={isSubmitting}>
-          {isSubmitting ? "Saving..." : initialData ? "Update Ticket Category" : "Create Ticket Category"}
-        </Button>
+        {mode !== "view" && (
+          <Button type="submit" disabled={isSubmitting}>
+            {isSubmitting ? "Saving..." : mode === "create" ? "Create Ticket Category" : "Update Ticket Category"}
+          </Button>
+        )}
       </div>
     </form>
   );

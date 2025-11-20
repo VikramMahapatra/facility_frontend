@@ -19,7 +19,7 @@ interface ContractFormProps {
   contract?: any;
   isOpen: boolean;
   onClose: () => void;
-  onSave: (contract: any) => void;
+  onSave: (contract: any) => Promise<any>;
   mode: "create" | "edit" | "view";
 }
 
@@ -158,33 +158,14 @@ export function ContractForm({ contract, isOpen, onClose, onSave, mode }: Contra
   };
 
   const onSubmitForm = async (data: ContractFormValues) => {
-    try {
-      const orgData = await organisationApiService.getOrg();
-      const payload: any = {
-        title: data.title,
-        type: data.type || null,
-        status: data.status || null,
-        vendor_id: data.vendor_id,
-        site_id: data.site_id || null,
-        start_date: data.start_date,
-        end_date: data.end_date,
-        value: data.value || null,
-        terms: data.terms,
-        documents: data.documents,
-        org_id: orgData?.data?.id,
-      };
-
-      if (mode === "edit" && contract?.id) payload.id = contract.id;
-
-      await onSave(payload);
-      reset(emptyFormData);
-      onClose();
-    } catch (error: any) {
-      reset(undefined, { keepErrors: true, keepValues: true });
-      const errorMessage = error?.response?.data?.message || error?.message || "Failed to save contract";
-      toast.error(errorMessage);
-    }
+    const formResponse = await onSave({
+      ...contract,
+      ...data,
+    });
   };
+     
+
+
 
   const isReadOnly = mode === "view";
 

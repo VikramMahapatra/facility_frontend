@@ -13,7 +13,6 @@ import { zodResolver } from "@hookform/resolvers/zod";
 import { VendorFormValues, vendorSchema } from "@/schemas/vendor.schema";
 import { toast } from "sonner";
 import { vendorsApiService } from "@/services/pocurments/vendorsapi";
-import { organisationApiService } from "@/services/spaces_sites/organisationapi";
 import { ChevronsUpDown, X } from "lucide-react";
 import PhoneInput from "react-phone-input-2";
 
@@ -21,7 +20,7 @@ interface VendorFormProps {
   vendor?: any;
   isOpen: boolean;
   onClose: () => void;
-  onSave: (vendor: any) => void;
+  onSave: (vendor: any) => Promise<any>;
   mode: "create" | "edit" | "view";
 }
 
@@ -117,29 +116,10 @@ const loadCategoriesLookup = async () => {
   };
 
   const onSubmitForm = async (data: VendorFormValues) => {
-    try {
-      const orgData = await organisationApiService.getOrg();
-      const payload: any = {
-        name: data.name,
-        gst_vat_id: data.gst_vat_id,
-        status: data.status,
-        categories: data.categories,
-        contact: data.contact,
-        org_id: orgData?.data?.id,
-      };
-      
-      if (mode === "edit" && vendor?.id) {
-        payload.id = vendor.id;
-      }
-      
-      await onSave(payload);
-      reset(emptyFormData);
-      onClose();
-    } catch (error: any) {
-      reset(undefined, { keepErrors: true, keepValues: true });
-      const errorMessage = error?.response?.data?.message || error?.message || "Failed to save vendor";
-      toast.error(errorMessage);
-    }
+    const formResponse = await onSave({
+      ...vendor,
+      ...data,
+    });
   };
 
   const isReadOnly = mode === "view";

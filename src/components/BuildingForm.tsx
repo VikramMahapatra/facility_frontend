@@ -18,7 +18,7 @@ interface BuildingFormProps {
   building?: any;
   isOpen: boolean;
   onClose: () => void;
-  onSave: (building: any) => void;
+  onSave: (building: any) => Promise<any>;
   mode: "create" | "edit" | "view";
 }
 
@@ -85,21 +85,12 @@ export function BuildingForm({ building, isOpen, onClose, onSave, mode }: Buildi
   };
 
   const onSubmitForm = async (data: BuildingFormValues) => {
-    setIsSubmitted(true);
-    try {
-      await onSave({
-        ...building,
-        ...data,
-        updated_at: new Date().toISOString(),
-        created_at: building?.created_at || new Date().toISOString(),
-      });
-      reset(emptyFormData);
-      onClose();
-    } catch (error) {
-      reset(undefined, { keepErrors: true, keepValues: true });
-      toast("Failed to save building");
-    }
-  };
+    const formResponse = await onSave({
+      ...building,
+      ...data,
+    });
+  }
+  
 
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>

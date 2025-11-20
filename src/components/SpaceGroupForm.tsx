@@ -16,7 +16,7 @@ interface Props {
   group?: SpaceGroup;
   isOpen: boolean;
   onClose: () => void;
-  onSave: (data: Partial<SpaceGroup>) => void;
+  onSave: (group: any) => Promise<any>;
   mode: "create" | "edit" | "view";
 }
 
@@ -74,17 +74,10 @@ export function SpaceGroupForm({ group, isOpen, onClose, onSave, mode }: Props) 
   };
 
   const onSubmitForm = async (data: SpaceGroupFormValues) => {
-    try {
-      await onSave({
-        ...group,
-        ...data,
-      } as Partial<SpaceGroup>);
-      reset(emptyFormData);
-      onClose();
-    } catch (error) {
-      reset(undefined, { keepErrors: true, keepValues: true });
-      toast.error("Failed to save space group");
-    }
+    const formResponse = await onSave({
+      ...group,
+      ...data,
+    });
   };
 
   const isView = mode === "view";

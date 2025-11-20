@@ -161,8 +161,7 @@ export default function Sites() {
     if (formMode === "create") {
       response = await siteApiService.addSite(siteData);
 
-      if (response.success)
-        loadSites();
+      if (response.success) loadSites();
     } else if (formMode === "edit" && selectedSite) {
       const updatedSite = {
         ...selectedSite,
@@ -172,7 +171,6 @@ export default function Sites() {
       response = await siteApiService.update(updatedSite);
 
       if (response.success) {
-        // Update the edited site in local state
         setSites((prev) =>
           prev.map((s) => (s.id === updatedSite.id ? response.data : s))
         );
@@ -182,7 +180,8 @@ export default function Sites() {
     if (response.success) {
       setShowForm(false);
       toast.success(
-        `Site ${siteData.code} has been ${formMode === "create" ? "created" : "updated"
+        `Site ${siteData.code} has been ${
+          formMode === "create" ? "created" : "updated"
         } successfully.`
       );
     }

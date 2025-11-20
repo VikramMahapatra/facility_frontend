@@ -17,7 +17,7 @@ interface MeterReadingFormProps {
   meterReading?: MeterReading;
   isOpen: boolean;
   onClose: () => void;
-  onSave: (meterReading: Partial<MeterReading>) => void;
+  onSave: (meterReading:any) => Promise<any>;
   mode: "create" | "edit" | "view";
 }
 
@@ -87,15 +87,12 @@ export function MeterReadingForm({
 
 
   const onSubmitForm = async (data: MeterReadingFormValues) => {
-    try {
-      await onSave(data);
-      reset(emptyFormData); // ✅ reset after save
-      onClose();
-    } catch (error) {
-      reset(undefined, { keepErrors: true, keepValues: true });
-      toast.error("Failed to save meter reading");
-    }
+    const formResponse = await onSave({
+      ...meterReading,
+      ...data,
+    });
   };
+
 
   const handleInputChange = (field: any, value: any) => {
     setValue(field, value)
