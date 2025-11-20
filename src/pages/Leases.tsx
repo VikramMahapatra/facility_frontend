@@ -159,16 +159,10 @@ export default function Leases() {
       const updated = {
         ...selectedLease,
         ...leaseData,
-        updated_at: new Date().toISOString(),
+        partner_id: leaseData.kind === "commercial" ? leaseData.partner_id : undefined,
+        tenant_id: leaseData.kind === "residential" ? leaseData.tenant_id : undefined,
       };
       response = await leasesApiService.updateLease(updated);
-
-      if (response.success) {
-        // Update the edited lease in local state
-        setLeases((prev) =>
-          prev.map((l) => (l.id === updated.id ? updated : l))
-        );
-      }
     }
 
     if (response?.success) {

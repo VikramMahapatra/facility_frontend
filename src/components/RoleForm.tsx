@@ -32,7 +32,7 @@ interface RoleFormProps {
   role?: Role;
   isOpen: boolean;
   onClose: () => void;
-  onSave: (role: Partial<Role>) => void;
+  onSave: (role: any) => Promise<any>;
   mode: "create" | "edit" | "view";
 }
 
@@ -53,11 +53,20 @@ export function RoleForm({ role, isOpen, onClose, onSave, mode  }: RoleFormProps
     });
   }, [role, form]);
 
-  const handleSubmit = (values: RoleFormValues) => {
-    onSave(values);
-    form.reset();
-    onClose();
+  const onSubmitForm = async (data: RoleFormValues) => {
+    const formResponse = await onSave({
+      ...role,
+      ...data,
+    });
   };
+
+  const handleSubmit = async (data: RoleFormValues) => {
+    const formResponse = await onSave({
+      ...role,
+      ...data,
+    });
+  };
+
 
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>

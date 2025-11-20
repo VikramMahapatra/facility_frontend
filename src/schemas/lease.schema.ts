@@ -11,8 +11,14 @@ export const leaseSchema = z
     tenant_id: z.string().optional(),
     start_date: z.string().min(1, "Start Date is required"),
     end_date: z.string().min(1, "End Date is required"),
-    rent_amount: z.coerce.number().optional(),
-    deposit_amount: z.coerce.number().optional(),
+    rent_amount: z.coerce.number({
+      required_error: "Rent Amount is required",
+      invalid_type_error: "Rent Amount must be a number",
+    }).min(0.01, "Rent Amount is required"),
+    deposit_amount: z.coerce.number({
+      required_error: "Deposit Amount is required",
+      invalid_type_error: "Deposit Amount must be a number",
+    }).min(0.01, "Deposit Amount is required"),
     cam_rate: z.coerce.number().optional(),
     utilities: z
       .object({

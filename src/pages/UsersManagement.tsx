@@ -97,7 +97,6 @@ export default function UsersManagement() {
     }
   };
 
-  // Remove client-side filtering since we're using server-side pagination
 
   const handleCreateUser = async (values: any) => {
     const response = await userManagementApiService.addUser(values);
@@ -119,12 +118,11 @@ export default function UsersManagement() {
       updated_at: new Date().toISOString(),
     };
 
-    const response = await withLoader(async () => {
-      return await userManagementApiService.updateUser(updatedUser);
-    });
+    const response = await  userManagementApiService.updateUser(updatedUser);
+  
 
     if (response.success) {
-      // Update the edited user in local state
+
       setUsers((prev) =>
         prev.map((u) => (u.id === updatedUser.id ? updatedUser : u))
       );

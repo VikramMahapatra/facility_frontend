@@ -30,7 +30,7 @@ interface LeaseFormProps {
   lease?: Lease;
   isOpen: boolean;
   onClose: () => void;
-  onSave: (lease: Partial<Lease>) => void;
+  onSave: (lease: Partial<Lease>) => Promise<any>;
   mode: "create" | "edit" | "view";
 }
 
@@ -87,7 +87,6 @@ export function LeaseForm({ lease, isOpen, onClose, onSave, mode }: LeaseFormPro
   // hydrate form on open/change
   useEffect(() => {
     if (lease && mode !== "create") {
-      console.log("Hydrating lease form with:", lease);
       reset({
         kind: (lease.kind as any) || "commercial",
         site_id: lease.site_id || "",
@@ -105,9 +104,7 @@ export function LeaseForm({ lease, isOpen, onClose, onSave, mode }: LeaseFormPro
         },
         status: (lease.status as any) || "draft",
       }, { keepErrors: false });
-      // Clear any existing errors for partner_id/tenant_id
       clearErrors(["partner_id", "tenant_id"]);
-      // Load lease partners immediately if we have site_id and kind
       if (lease.site_id && lease.kind) {
         loadLeasePartners(lease.kind, lease.site_id);
       }
@@ -175,30 +172,7 @@ export function LeaseForm({ lease, isOpen, onClose, onSave, mode }: LeaseFormPro
   }
 
   const onSubmitForm = async (data: LeaseFormValues) => {
-    const payload: Partial<Lease> = {
-      id: lease?.id,
-      kind: data.kind,
-      site_id: data.site_id,
-      space_id: data.space_id,
-      partner_id: data.kind === "commercial" ? data.partner_id : undefined,
-      tenant_id: data.kind === "residential" ? data.tenant_id : undefined,
-      start_date: data.start_date,
-      end_date: data.end_date,
-      rent_amount: data.rent_amount as any,
-      deposit_amount: data.deposit_amount as any,
-      cam_rate: data.cam_rate as any,
-      utilities: {
-        electricity: data.utilities?.electricity,
-        water: data.utilities?.water,
-      },
-      status: data.status as any,
-      updated_at: new Date().toISOString(),
-    };
-    try {
-      await onSave(payload);
-    } catch (error) {
-      toast.error("Failed to save lease");
-    }
+    const formResponse = await onSave(data);
   };
 
   return (
@@ -354,7 +328,7 @@ export function LeaseForm({ lease, isOpen, onClose, onSave, mode }: LeaseFormPro
               )}
             </div>
             <div>
-              <Label>Rent Amount</Label>
+              <Label>Rent Amount *</Label>
               <Input
                 type="number"
                 step="any"
@@ -370,7 +344,7 @@ export function LeaseForm({ lease, isOpen, onClose, onSave, mode }: LeaseFormPro
 
           <div className="grid grid-cols-3 gap-4">
             <div>
-              <Label>Deposit Amount</Label>
+              <Label>Deposit Amount *</Label>
               <Input
                 type="number"
                 step="any"
@@ -474,3 +448,4 @@ export function LeaseForm({ lease, isOpen, onClose, onSave, mode }: LeaseFormPro
     </Dialog>
   );
 }
+

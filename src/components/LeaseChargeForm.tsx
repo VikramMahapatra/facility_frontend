@@ -36,8 +36,7 @@ interface LeaseChargeFormProps {
   charge?: Partial<LeaseCharge>;
   isOpen: boolean;
   onClose: () => void;
-  // Keep the same signature pattern as SpaceForm
-  onSave: (leasecharge: Partial<LeaseCharge>) => void;
+  onSave: (leasecharge: any) => Promise<any>;
   mode: "create" | "edit" | "view";
 }
 
@@ -101,29 +100,13 @@ export function LeaseChargeForm({ charge, isOpen, onClose, onSave, mode }: Lease
     loadLeaseLookup();
   }, [charge, isOpen, mode, reset]);
 
-  // ---- Lookups ----
   const loadLeaseLookup = async () => {
     const lookup = await leasesApiService.getLeaseLookup();
     if (lookup.success) setLeaseList(lookup.data || []);
   }
 
-  // ---- Submit ----
   const onSubmitForm = async (data: LeaseChargeFormValues) => {
-    const payload: Partial<LeaseCharge> = {
-      ...charge,
-      lease_id: data.lease_id,
-      charge_code: data.charge_code,
-      period_start: data.period_start,
-      period_end: data.period_end,
-      amount: Number(data.amount),
-      tax_pct: Number(data.tax_pct || 0),
-      updated_at: new Date().toISOString(),
-    };
-    try {
-      await onSave(payload);
-    } catch (error) {
-      toast.error("Failed to save lease charge");
-    }
+    const formResponse = await onSave(data);
   };
 
   return (

@@ -41,7 +41,7 @@ interface SpaceFormProps {
   space?: Space;
   isOpen: boolean;
   onClose: () => void;
-  onSave: (space: Partial<Space>) => void;
+  onSave: (space: Partial<Space>) => Promise<any>;
   mode: 'create' | 'edit' | 'view';
 }
 
@@ -65,7 +65,6 @@ const emptyFormData: SpaceFormValues = {
 };
 
 export function SpaceForm({ space, isOpen, onClose, onSave, mode }: SpaceFormProps) {
-  const [isSubmitted, setIsSubmitted] = useState(false);
   const {
     register,
     handleSubmit,
@@ -122,7 +121,6 @@ export function SpaceForm({ space, isOpen, onClose, onSave, mode }: SpaceFormPro
     } else {
       reset(emptyFormData);
     }
-    setIsSubmitted(false);
   }, [space, mode, reset, isOpen]);
 
   const loadSiteLookup = async () => {
@@ -136,19 +134,11 @@ export function SpaceForm({ space, isOpen, onClose, onSave, mode }: SpaceFormPro
   };
 
   const onSubmitForm = async (data: SpaceFormValues) => {
-    setIsSubmitted(true);
-    try {
-      await onSave({
-        ...space,
-        ...data,
-        floor: data.floor !== undefined && data.floor !== null ? String(data.floor) : (mode === "create" ? "0" : space?.floor),
-      } as Partial<Space>);
-      reset(emptyFormData);
-      onClose();
-    } catch (error) {
-      reset(undefined, { keepErrors: true, keepValues: true });
-      toast("Failed to save space");
-    }
+    const formResponse = await onSave({
+      ...space,
+      ...data,
+      floor: data.floor !== undefined && data.floor !== null ? String(data.floor) : (mode === "create" ? "0" : space?.floor),
+    } as Partial<Space>);
   };
 
   const isReadOnly = mode === 'view';
@@ -449,7 +439,7 @@ export function SpaceForm({ space, isOpen, onClose, onSave, mode }: SpaceFormPro
               {mode === 'view' ? 'Close' : 'Cancel'}
             </Button>
             {mode !== 'view' && (
-              <Button type="submit" disabled={isSubmitting || isSubmitted}>
+              <Button type="submit" disabled={isSubmitting}>
                 {isSubmitting ? "Saving..." : mode === 'create' ? 'Create Space' : 'Update Space'}
               </Button>
             )}

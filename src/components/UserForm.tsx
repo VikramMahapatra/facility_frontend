@@ -38,7 +38,7 @@ interface User {
   status: string;
   created_at: string;
   updated_at: string;
-  roles?: Role[]; 
+  roles?: Role[];
   // Additional fields that might come from API
   site_id?: string;
   building_block_id?: string;
@@ -81,29 +81,35 @@ const accountTypes = [
     value: "organization",
     label: "Organization",
     description: "Property owners and facility managers",
-    icon: <Building2 className="w-5 h-5" />
+    icon: <Building2 className="w-5 h-5" />,
   },
   {
     value: "staff",
     label: "Staff",
     description: "manages the sites of properties",
-    icon: <UserCog className="w-5 h-5" />
+    icon: <UserCog className="w-5 h-5" />,
   },
   {
     value: "tenant",
     label: "Tenant",
     description: "Renters and occupants of properties",
-    icon: <Users className="w-5 h-5" />
+    icon: <Users className="w-5 h-5" />,
   },
   {
     value: "vendor",
     label: "Vendor",
     description: "Service providers and contractors",
-    icon: <Truck className="w-5 h-5" />
+    icon: <Truck className="w-5 h-5" />,
   },
 ];
 
-export function UserForm({ user, open, onOpenChange, onSubmit, mode = "create" }: UserFormProps) {
+export function UserForm({
+  user,
+  open,
+  onOpenChange,
+  onSubmit,
+  mode = "create",
+}: UserFormProps) {
   const {
     register,
     handleSubmit,
@@ -134,7 +140,7 @@ export function UserForm({ user, open, onOpenChange, onSubmit, mode = "create" }
   const isStaff = accountType === "staff";
   const isOrganization = accountType === "organization";
 
-  // Load lookup data when form opens 
+  // Load lookup data when form opens
   useEffect(() => {
     if (open) {
       loadStatusLookup();
@@ -153,7 +159,7 @@ export function UserForm({ user, open, onOpenChange, onSubmit, mode = "create" }
     }
   }, [selectedSiteId]);
 
-  // Load spaces when building changes
+
   useEffect(() => {
     if (selectedSiteId && selectedBuildingId) {
       loadSpaceLookup(selectedSiteId, selectedBuildingId);
@@ -163,46 +169,41 @@ export function UserForm({ user, open, onOpenChange, onSubmit, mode = "create" }
   }, [selectedSiteId, selectedBuildingId]);
 
   useEffect(() => {
-  if (user && mode !== "create") {
-    const userSiteId = (user as any).site_id || "";
-    const userBuildingId = (user as any).building_block_id || ""; // Changed from building_id to building_block_id
-    const userSpaceId = (user as any).space_id || "";
-    
-    
-    
-    const resetData = {
-      full_name: user.full_name || "",
-      email: user.email || "",
-      phone: user.phone || "",
-      status: user.status || "active",
-      account_type: user.account_type || "organization",
-      role_ids: user.roles?.map(r => r.id) || [],
-      site_id: userSiteId,
-      building_id: userBuildingId, // This will now get the correct building_block_id
-      space_id: userSpaceId,
-      site_ids: (user as any).site_ids || [],
-      tenant_type: (user as any).tenant_type || "individual",
-    };
+    if (user && mode !== "create") {
+      const userSiteId = (user as any).site_id || "";
+      const userBuildingId = (user as any).building_block_id || "";
+      const userSpaceId = (user as any).space_id || "";
 
-   
-    
-    reset(resetData);
-    
-    // Load dependent lookups after reset
-    const loadDependentData = async () => {
-      if (userSiteId) {
-        await loadBuildingLookup(userSiteId);
-        if (userBuildingId) {
-          await loadSpaceLookup(userSiteId, userBuildingId);
+      const resetData = {
+        full_name: user.full_name || "",
+        email: user.email || "",
+        phone: user.phone || "",
+        status: user.status || "active",
+        account_type: user.account_type || "organization",
+        role_ids: user.roles?.map((r) => r.id) || [],
+        site_id: userSiteId,
+        building_id: userBuildingId, 
+        space_id: userSpaceId,
+        site_ids: (user as any).site_ids || [],
+        tenant_type: (user as any).tenant_type || "individual",
+      };
+
+      reset(resetData);
+
+      const loadDependentData = async () => {
+        if (userSiteId) {
+          await loadBuildingLookup(userSiteId);
+          if (userBuildingId) {
+            await loadSpaceLookup(userSiteId, userBuildingId);
+          }
         }
-      }
-    };
-    
-    loadDependentData();
-  } else {
-    reset(emptyFormData);
-  }
-}, [user, mode, reset]);
+      };
+
+      loadDependentData();
+    } else {
+      reset(emptyFormData);
+    }
+  }, [user, mode, reset]);
 
   const loadStatusLookup = async () => {
     const lookup = await userManagementApiService.getUserStatusOverview();
@@ -230,13 +231,7 @@ export function UserForm({ user, open, onOpenChange, onSubmit, mode = "create" }
   };
 
   const onSubmitForm = async (data: UserFormValues) => {
-    try {
-      await onSubmit(data);
-      reset(emptyFormData);
-      onOpenChange(false);
-    } catch (error) {
-      // Error handling is done by parent component
-    }
+    await onSubmit(data);
   };
 
   return (
@@ -250,364 +245,476 @@ export function UserForm({ user, open, onOpenChange, onSubmit, mode = "create" }
           </DialogTitle>
         </DialogHeader>
         <div className="overflow-y-auto flex-1 pr-2 -mr-2">
-          <form onSubmit={handleSubmit(onSubmitForm)} className="space-y-4" id="user-form">
-          <div className="space-y-2">
-            <Label htmlFor="full_name">Full Name *</Label>
-            <Input
-              id="full_name"
-              {...register("full_name")}
-              placeholder="John Doe"
-              disabled={isReadOnly}
-              className={errors.full_name ? 'border-red-500' : ''}
-            />
-            {errors.full_name && (
-              <p className="text-sm text-red-500">{errors.full_name.message}</p>
-            )}
-          </div>
-
-          <div className="grid grid-cols-2 gap-4">
+          <form
+            onSubmit={handleSubmit(onSubmitForm)}
+            className="space-y-4"
+            id="user-form"
+          >
             <div className="space-y-2">
-              <Label htmlFor="email">Email *</Label>
+              <Label htmlFor="full_name">Full Name *</Label>
               <Input
-                id="email"
-                type="email"
-                {...register("email")}
-                placeholder="john@example.com"
+                id="full_name"
+                {...register("full_name")}
+                placeholder="John Doe"
                 disabled={isReadOnly}
-                className={errors.email ? 'border-red-500' : ''}
+                className={errors.full_name ? "border-red-500" : ""}
               />
-              {errors.email && (
-                <p className="text-sm text-red-500">{errors.email.message}</p>
+              {errors.full_name && (
+                <p className="text-sm text-red-500">
+                  {errors.full_name.message}
+                </p>
               )}
             </div>
-            <Controller
-              name="phone"
-              control={control}
-              render={({ field }) => (
-                <div className="space-y-2">
-                  <Label htmlFor="phone">Phone</Label>
-                  <PhoneInput
-                    country={'in'}
-                    value={field.value || ""}
-                    onChange={(value) => {
-                      const digits = value.replace(/\D/g, "");
-                      const finalValue = "+" + digits;
-                      console.log("cleaned no :", finalValue);
-                      field.onChange(finalValue);
-                    }}
-                    disabled={isReadOnly}
-                    inputProps={{
-                      name: 'phone',
-                      required: true,
-                    }}
-                    containerClass="w-full relative"
-                    inputClass="!w-full !h-10 !pl-12 !rounded-md !border !border-input !bg-background !px-3 !py-2 !text-base !ring-offset-background placeholder:!text-muted-foreground focus-visible:!outline-none focus-visible:!ring-2 focus-visible:!ring-ring focus-visible:!ring-offset-2 disabled:!cursor-not-allowed disabled:!opacity-50 md:!text-sm"
-                    buttonClass="!border-none !bg-transparent !absolute !left-2 !top-1/2 !-translate-y-1/2 z-10"
-                    dropdownClass="!absolute !z-50 !bg-white !border !border-gray-200 !rounded-md !shadow-lg max-h-60 overflow-y-auto"
-                    enableSearch={true}
-                  />
-                  {errors.phone && (
-                    <p className="text-sm text-red-500">{errors.phone.message}</p>
+
+            <div className="grid grid-cols-2 gap-4">
+              <div className="space-y-2">
+                <Label htmlFor="email">Email *</Label>
+                <Input
+                  id="email"
+                  type="email"
+                  {...register("email")}
+                  placeholder="john@example.com"
+                  disabled={isReadOnly}
+                  className={errors.email ? "border-red-500" : ""}
+                />
+                {errors.email && (
+                  <p className="text-sm text-red-500">{errors.email.message}</p>
+                )}
+              </div>
+              <Controller
+                name="phone"
+                control={control}
+                render={({ field }) => (
+                  <div className="space-y-2">
+                    <Label htmlFor="phone">Phone</Label>
+                    <PhoneInput
+                      country={"in"}
+                      value={field.value || ""}
+                      onChange={(value) => {
+                        const digits = value.replace(/\D/g, "");
+                        const finalValue = "+" + digits;
+                        console.log("cleaned no :", finalValue);
+                        field.onChange(finalValue);
+                      }}
+                      disabled={isReadOnly}
+                      inputProps={{
+                        name: "phone",
+                        required: true,
+                      }}
+                      containerClass="w-full relative"
+                      inputClass="!w-full !h-10 !pl-12 !rounded-md !border !border-input !bg-background !px-3 !py-2 !text-base !ring-offset-background placeholder:!text-muted-foreground focus-visible:!outline-none focus-visible:!ring-2 focus-visible:!ring-ring focus-visible:!ring-offset-2 disabled:!cursor-not-allowed disabled:!opacity-50 md:!text-sm"
+                      buttonClass="!border-none !bg-transparent !absolute !left-2 !top-1/2 !-translate-y-1/2 z-10"
+                      dropdownClass="!absolute !z-50 !bg-white !border !border-gray-200 !rounded-md !shadow-lg max-h-60 overflow-y-auto"
+                      enableSearch={true}
+                    />
+                    {errors.phone && (
+                      <p className="text-sm text-red-500">
+                        {errors.phone.message}
+                      </p>
+                    )}
+                  </div>
+                )}
+              />
+            </div>
+
+            {isOrganization || isTenant || isStaff ? (
+              <>
+                <Controller
+                  name="status"
+                  control={control}
+                  render={({ field }) => (
+                    <div className="space-y-2">
+                      <Label htmlFor="status">Status *</Label>
+                      <Select
+                        value={field.value || ""}
+                        onValueChange={field.onChange}
+                        disabled={isReadOnly}
+                      >
+                        <SelectTrigger
+                          className={errors.status ? "border-red-500" : ""}
+                        >
+                          <SelectValue placeholder="Select status" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          {statusList.map((status) => (
+                            <SelectItem key={status.id} value={status.id}>
+                              {status.name}
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                      {errors.status && (
+                        <p className="text-sm text-red-500">
+                          {errors.status.message}
+                        </p>
+                      )}
+                    </div>
                   )}
+                />
+
+                <Controller
+                  name="account_type"
+                  control={control}
+                  render={({ field }) => (
+                    <div className="space-y-2">
+                      <Label>Type *</Label>
+                      <Select
+                        value={field.value || ""}
+                        onValueChange={field.onChange}
+                        disabled={isReadOnly}
+                      >
+                        <SelectTrigger className="w-full">
+                          <SelectValue placeholder="Select your account type" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          {accountTypes.map((type) => (
+                            <SelectItem key={type.value} value={type.value}>
+                              <div className="flex items-center space-x-3">
+                                {type.icon}
+                                <div>
+                                  <div className="font-medium">
+                                    {type.label}
+                                  </div>
+                                  <div className="text-xs text-muted-foreground">
+                                    {type.description}
+                                  </div>
+                                </div>
+                              </div>
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                      {errors.account_type && (
+                        <p className="text-sm text-red-500">
+                          {errors.account_type.message}
+                        </p>
+                      )}
+                    </div>
+                  )}
+                />
+              </>
+            ) : (
+              <div className="grid grid-cols-2 gap-4">
+                <Controller
+                  name="status"
+                  control={control}
+                  render={({ field }) => (
+                    <div className="space-y-2">
+                      <Label htmlFor="status">Status *</Label>
+                      <Select
+                        value={field.value || ""}
+                        onValueChange={field.onChange}
+                        disabled={isReadOnly}
+                      >
+                        <SelectTrigger
+                          className={errors.status ? "border-red-500" : ""}
+                        >
+                          <SelectValue placeholder="Select status" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          {statusList.map((status) => (
+                            <SelectItem key={status.id} value={status.id}>
+                              {status.name}
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                      {errors.status && (
+                        <p className="text-sm text-red-500">
+                          {errors.status.message}
+                        </p>
+                      )}
+                    </div>
+                  )}
+                />
+
+                <Controller
+                  name="account_type"
+                  control={control}
+                  render={({ field }) => (
+                    <div className="space-y-2">
+                      <Label>Type *</Label>
+                      <Select
+                        value={field.value || ""}
+                        onValueChange={field.onChange}
+                        disabled={isReadOnly}
+                      >
+                        <SelectTrigger className="w-full">
+                          <SelectValue placeholder="Select your account type" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          {accountTypes.map((type) => (
+                            <SelectItem key={type.value} value={type.value}>
+                              <div className="flex items-center space-x-3">
+                                {type.icon}
+                                <div>
+                                  <div className="font-medium">
+                                    {type.label}
+                                  </div>
+                                  <div className="text-xs text-muted-foreground">
+                                    {type.description}
+                                  </div>
+                                </div>
+                              </div>
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                      {errors.account_type && (
+                        <p className="text-sm text-red-500">
+                          {errors.account_type.message}
+                        </p>
+                      )}
+                    </div>
+                  )}
+                />
+              </div>
+            )}
+
+            {isTenant && (
+              <>
+                <div className="grid grid-cols-2 gap-4">
+                  <Controller
+                    name="tenant_type"
+                    control={control}
+                    render={({ field }) => (
+                      <div className="space-y-2">
+                        <Label htmlFor="tenant_type">Tenant Type</Label>
+                        <Select
+                          value={field.value || "individual"}
+                          onValueChange={field.onChange}
+                          disabled={isReadOnly}
+                        >
+                          <SelectTrigger
+                            className={
+                              errors.tenant_type ? "border-red-500" : ""
+                            }
+                          >
+                            <SelectValue placeholder="Select tenant type" />
+                          </SelectTrigger>
+                          <SelectContent>
+                            <SelectItem value="individual">
+                              Individual
+                            </SelectItem>
+                            <SelectItem value="commercial">
+                              Commercial
+                            </SelectItem>
+                          </SelectContent>
+                        </Select>
+                        {errors.tenant_type && (
+                          <p className="text-sm text-red-500">
+                            {errors.tenant_type.message}
+                          </p>
+                        )}
+                      </div>
+                    )}
+                  />
+
+                  <Controller
+                    name="site_id"
+                    control={control}
+                    render={({ field }) => (
+                      <div className="space-y-2">
+                        <Label htmlFor="site_id">Site *</Label>
+                        <Select
+                          value={field.value || ""}
+                          onValueChange={(value) => {
+                            field.onChange(value);
+                            // Reset building and space when site changes
+                            reset({
+                              ...watch(),
+                              site_id: value,
+                              building_id: "",
+                              space_id: "",
+                            });
+                          }}
+                          disabled={isReadOnly}
+                        >
+                          <SelectTrigger
+                            className={errors.site_id ? "border-red-500" : ""}
+                          >
+                            <SelectValue placeholder="Select site" />
+                          </SelectTrigger>
+                          <SelectContent>
+                            {siteList.map((site: any) => (
+                              <SelectItem key={site.id} value={site.id}>
+                                {site.name}
+                              </SelectItem>
+                            ))}
+                          </SelectContent>
+                        </Select>
+                        {errors.site_id && (
+                          <p className="text-sm text-red-500">
+                            {errors.site_id.message}
+                          </p>
+                        )}
+                      </div>
+                    )}
+                  />
                 </div>
 
-              )}
-            />
-          </div>
-          
-          {(isOrganization || isTenant || isStaff) ? (
-            <>
-              <Controller
-                name="status"
-                control={control}
-                render={({ field }) => (
-                  <div className="space-y-2">
-                    <Label htmlFor="status">Status *</Label>
-                    <Select
-                      value={field.value || ""}
-                      onValueChange={field.onChange}
-                      disabled={isReadOnly}
-                    >
-                      <SelectTrigger className={errors.status ? 'border-red-500' : ''}>
-                        <SelectValue placeholder="Select status" />
-                      </SelectTrigger>
-                      <SelectContent>
-                        {statusList.map((status) => (
-                          <SelectItem key={status.id} value={status.id}>
-                            {status.name}
-                          </SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
-                    {errors.status && (
-                      <p className="text-sm text-red-500">{errors.status.message}</p>
+                <div className="grid grid-cols-2 gap-4">
+                  <Controller
+                    name="building_id"
+                    control={control}
+                    render={({ field }) => (
+                      <div className="space-y-2">
+                        <Label htmlFor="building_id">Building *</Label>
+                        <Select
+                          value={field.value || ""}
+                          onValueChange={(value) => {
+                            field.onChange(value);
+                            // Reset space when building changes
+                            reset({
+                              ...watch(),
+                              building_id: value,
+                              space_id: "",
+                            });
+                          }}
+                          disabled={isReadOnly || !selectedSiteId}
+                        >
+                          <SelectTrigger
+                            className={
+                              errors.building_id ? "border-red-500" : ""
+                            }
+                          >
+                            <SelectValue placeholder="Select building" />
+                          </SelectTrigger>
+                          <SelectContent>
+                            {buildingList.map((building: any) => (
+                              <SelectItem key={building.id} value={building.id}>
+                                {building.name}
+                              </SelectItem>
+                            ))}
+                          </SelectContent>
+                        </Select>
+                        {errors.building_id && (
+                          <p className="text-sm text-red-500">
+                            {errors.building_id.message}
+                          </p>
+                        )}
+                      </div>
                     )}
-                  </div>
-                )}
-              />
+                  />
 
+                  <Controller
+                    name="space_id"
+                    control={control}
+                    render={({ field }) => (
+                      <div className="space-y-2">
+                        <Label htmlFor="space_id">Space *</Label>
+                        <Select
+                          value={field.value || ""}
+                          onValueChange={field.onChange}
+                          disabled={
+                            isReadOnly || !selectedSiteId || !selectedBuildingId
+                          }
+                        >
+                          <SelectTrigger
+                            className={errors.space_id ? "border-red-500" : ""}
+                          >
+                            <SelectValue placeholder="Select space" />
+                          </SelectTrigger>
+                          <SelectContent>
+                            {spaceList.map((space: any) => (
+                              <SelectItem key={space.id} value={space.id}>
+                                {space.name || space.code}
+                              </SelectItem>
+                            ))}
+                          </SelectContent>
+                        </Select>
+                        {errors.space_id && (
+                          <p className="text-sm text-red-500">
+                            {errors.space_id.message}
+                          </p>
+                        )}
+                      </div>
+                    )}
+                  />
+                </div>
+              </>
+            )}
+
+            {isStaff && (
               <Controller
-                name="account_type"
+                name="site_ids"
                 control={control}
                 render={({ field }) => (
                   <div className="space-y-2">
-                    <Label>Type *</Label>
-                    <Select
-                      value={field.value || ""}
-                      onValueChange={field.onChange}
-                      disabled={isReadOnly}
-                    >
-                      <SelectTrigger className="w-full">
-                        <SelectValue placeholder="Select your account type" />
-                      </SelectTrigger>
-                      <SelectContent>
-                        {accountTypes.map((type) => (
-                          <SelectItem key={type.value} value={type.value}>
-                            <div className="flex items-center space-x-3">
-                              {type.icon}
-                              <div>
-                                <div className="font-medium">{type.label}</div>
-                                <div className="text-xs text-muted-foreground">{type.description}</div>
-                              </div>
+                    <Label>Select Sites *</Label>
+                    <div className="space-y-2 border rounded-md p-4 max-h-48 overflow-y-auto">
+                      {siteList.map((site: any) => {
+                        const isChecked = selectedSiteIds.includes(site.id);
+                        return (
+                          <div
+                            key={site.id}
+                            className="flex items-center space-x-3"
+                          >
+                            <Checkbox
+                              checked={isChecked}
+                              onCheckedChange={(checked) => {
+                                const currentValues = field.value || [];
+                                if (checked) {
+                                  field.onChange([...currentValues, site.id]);
+                                } else {
+                                  field.onChange(
+                                    currentValues.filter(
+                                      (value) => value !== site.id
+                                    )
+                                  );
+                                }
+                              }}
+                              disabled={isReadOnly}
+                            />
+                            <div className="space-y-0">
+                              <Label className="font-medium cursor-pointer">
+                                {site.name}
+                              </Label>
+                              {site.code && (
+                                <p className="text-xs text-muted-foreground">
+                                  {site.code}
+                                </p>
+                              )}
                             </div>
-                          </SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
-                    {errors.account_type && (
-                      <p className="text-sm text-red-500">{errors.account_type.message}</p>
+                          </div>
+                        );
+                      })}
+                    </div>
+                    {errors.site_ids && (
+                      <p className="text-sm text-red-500">
+                        {errors.site_ids.message}
+                      </p>
                     )}
                   </div>
                 )}
               />
-            </>
-          ) : (
-            <div className="grid grid-cols-2 gap-4">
-              <Controller
-                name="status"
-                control={control}
-                render={({ field }) => (
-                  <div className="space-y-2">
-                    <Label htmlFor="status">Status *</Label>
-                    <Select
-                      value={field.value || ""}
-                      onValueChange={field.onChange}
-                      disabled={isReadOnly}
-                    >
-                      <SelectTrigger className={errors.status ? 'border-red-500' : ''}>
-                        <SelectValue placeholder="Select status" />
-                      </SelectTrigger>
-                      <SelectContent>
-                        {statusList.map((status) => (
-                          <SelectItem key={status.id} value={status.id}>
-                            {status.name}
-                          </SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
-                    {errors.status && (
-                      <p className="text-sm text-red-500">{errors.status.message}</p>
-                    )}
-                  </div>
-                )}
-              />
+            )}
 
-              <Controller
-                name="account_type"
-                control={control}
-                render={({ field }) => (
-                  <div className="space-y-2">
-                    <Label>Type *</Label>
-                    <Select
-                      value={field.value || ""}
-                      onValueChange={field.onChange}
-                      disabled={isReadOnly}
-                    >
-                      <SelectTrigger className="w-full">
-                        <SelectValue placeholder="Select your account type" />
-                      </SelectTrigger>
-                      <SelectContent>
-                        {accountTypes.map((type) => (
-                          <SelectItem key={type.value} value={type.value}>
-                            <div className="flex items-center space-x-3">
-                              {type.icon}
-                              <div>
-                                <div className="font-medium">{type.label}</div>
-                                <div className="text-xs text-muted-foreground">{type.description}</div>
-                              </div>
-                            </div>
-                          </SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
-                    {errors.account_type && (
-                      <p className="text-sm text-red-500">{errors.account_type.message}</p>
-                    )}
-                  </div>
-                )}
-              />
-            </div>
-          )}
-
-          {isTenant && (
-            <>
-              <div className="grid grid-cols-2 gap-4">
-                <Controller
-                  name="tenant_type"
-                  control={control}
-                  render={({ field }) => (
-                    <div className="space-y-2">
-                      <Label htmlFor="tenant_type">Tenant Type</Label>
-                      <Select
-                        value={field.value || "individual"}
-                        onValueChange={field.onChange}
-                        disabled={isReadOnly}
-                      >
-                        <SelectTrigger className={errors.tenant_type ? 'border-red-500' : ''}>
-                          <SelectValue placeholder="Select tenant type" />
-                        </SelectTrigger>
-                        <SelectContent>
-                          <SelectItem value="individual">Individual</SelectItem>
-                          <SelectItem value="commercial">Commercial</SelectItem>
-                        </SelectContent>
-                      </Select>
-                      {errors.tenant_type && (
-                        <p className="text-sm text-red-500">{errors.tenant_type.message}</p>
-                      )}
-                    </div>
-                  )}
-                />
-
-                <Controller
-                  name="site_id"
-                  control={control}
-                  render={({ field }) => (
-                    <div className="space-y-2">
-                      <Label htmlFor="site_id">Site *</Label>
-                      <Select
-                        value={field.value || ""}
-                        onValueChange={(value) => {
-                          field.onChange(value);
-                          // Reset building and space when site changes
-                          reset({
-                            ...watch(),
-                            site_id: value,
-                            building_id: "",
-                            space_id: "",
-                          });
-                        }}
-                        disabled={isReadOnly}
-                      >
-                        <SelectTrigger className={errors.site_id ? 'border-red-500' : ''}>
-                          <SelectValue placeholder="Select site" />
-                        </SelectTrigger>
-                        <SelectContent>
-                          {siteList.map((site: any) => (
-                            <SelectItem key={site.id} value={site.id}>
-                              {site.name}
-                            </SelectItem>
-                          ))}
-                        </SelectContent>
-                      </Select>
-                      {errors.site_id && (
-                        <p className="text-sm text-red-500">{errors.site_id.message}</p>
-                      )}
-                    </div>
-                  )}
-                />
-              </div>
-
-              <div className="grid grid-cols-2 gap-4">
-                <Controller
-                  name="building_id"
-                  control={control}
-                  render={({ field }) => (
-                    <div className="space-y-2">
-                      <Label htmlFor="building_id">Building *</Label>
-                      <Select
-                        value={field.value || ""}
-                        onValueChange={(value) => {
-                          field.onChange(value);
-                          // Reset space when building changes
-                          reset({
-                            ...watch(),
-                            building_id: value,
-                            space_id: "",
-                          });
-                        }}
-                        disabled={isReadOnly || !selectedSiteId}
-                      >
-                        <SelectTrigger className={errors.building_id ? 'border-red-500' : ''}>
-                          <SelectValue placeholder="Select building" />
-                        </SelectTrigger>
-                        <SelectContent>
-                          {buildingList.map((building: any) => (
-                            <SelectItem key={building.id} value={building.id}>
-                              {building.name}
-                            </SelectItem>
-                          ))}
-                        </SelectContent>
-                      </Select>
-                      {errors.building_id && (
-                        <p className="text-sm text-red-500">{errors.building_id.message}</p>
-                      )}
-                    </div>
-                  )}
-                />
-
-                <Controller
-                  name="space_id"
-                  control={control}
-                  render={({ field }) => (
-                    <div className="space-y-2">
-                      <Label htmlFor="space_id">Space *</Label>
-                      <Select
-                        value={field.value || ""}
-                        onValueChange={field.onChange}
-                        disabled={isReadOnly || !selectedSiteId || !selectedBuildingId}
-                      >
-                        <SelectTrigger className={errors.space_id ? 'border-red-500' : ''}>
-                          <SelectValue placeholder="Select space" />
-                        </SelectTrigger>
-                        <SelectContent>
-                          {spaceList.map((space: any) => (
-                            <SelectItem key={space.id} value={space.id}>
-                              {space.name || space.code}
-                            </SelectItem>
-                          ))}
-                        </SelectContent>
-                      </Select>
-                      {errors.space_id && (
-                        <p className="text-sm text-red-500">{errors.space_id.message}</p>
-                      )}
-                    </div>
-                  )}
-                />
-              </div>
-            </>
-          )}
-
-          {isStaff && (
             <Controller
-              name="site_ids"
+              name="role_ids"
               control={control}
               render={({ field }) => (
                 <div className="space-y-2">
-                  <Label>Select Sites *</Label>
+                  <Label>Assign Roles *</Label>
                   <div className="space-y-2 border rounded-md p-4 max-h-48 overflow-y-auto">
-                    {siteList.map((site: any) => {
-                      const isChecked = selectedSiteIds.includes(site.id);
+                    {roleList.map((role) => {
+                      const isChecked = selectedRoleIds.includes(role.id);
                       return (
-                        <div key={site.id} className="flex items-center space-x-3">
+                        <div
+                          key={role.id}
+                          className="flex items-center space-x-3"
+                        >
                           <Checkbox
                             checked={isChecked}
                             onCheckedChange={(checked) => {
                               const currentValues = field.value || [];
                               if (checked) {
-                                field.onChange([...currentValues, site.id]);
+                                field.onChange([...currentValues, role.id]);
                               } else {
                                 field.onChange(
-                                  currentValues.filter((value) => value !== site.id)
+                                  currentValues.filter(
+                                    (value) => value !== role.id
+                                  )
                                 );
                               }
                             }}
@@ -615,80 +722,44 @@ export function UserForm({ user, open, onOpenChange, onSubmit, mode = "create" }
                           />
                           <div className="space-y-0">
                             <Label className="font-medium cursor-pointer">
-                              {site.name}
+                              {role.name}
                             </Label>
-                            {site.code && (
-                              <p className="text-xs text-muted-foreground">
-                                {site.code}
-                              </p>
-                            )}
+                            <p className="text-xs text-muted-foreground">
+                              {role.description || "no description"}
+                            </p>
                           </div>
                         </div>
                       );
                     })}
                   </div>
-                  {errors.site_ids && (
-                    <p className="text-sm text-red-500">{errors.site_ids.message}</p>
+                  {errors.role_ids && (
+                    <p className="text-sm text-red-500">
+                      {errors.role_ids.message}
+                    </p>
                   )}
                 </div>
               )}
             />
-          )}
-
-          <Controller
-            name="role_ids"
-            control={control}
-            render={({ field }) => (
-              <div className="space-y-2">
-                <Label>Assign Roles *</Label>
-                <div className="space-y-2 border rounded-md p-4 max-h-48 overflow-y-auto">
-                  {roleList.map((role) => {
-                    const isChecked = selectedRoleIds.includes(role.id);
-                    return (
-                      <div key={role.id} className="flex items-center space-x-3">
-                        <Checkbox
-                          checked={isChecked}
-                          onCheckedChange={(checked) => {
-                            const currentValues = field.value || [];
-                            if (checked) {
-                              field.onChange([...currentValues, role.id]);
-                            } else {
-                              field.onChange(
-                                currentValues.filter((value) => value !== role.id)
-                              );
-                            }
-                          }}
-                          disabled={isReadOnly}
-                        />
-                        <div className="space-y-0">
-                          <Label className="font-medium cursor-pointer">
-                            {role.name}
-                          </Label>
-                          <p className="text-xs text-muted-foreground">
-                            {role.description || "no description"}
-                          </p>
-                        </div>
-                      </div>
-                    );
-                  })}
-                </div>
-                {errors.role_ids && (
-                  <p className="text-sm text-red-500">{errors.role_ids.message}</p>
-                )}
-              </div>
-            )}
-          />
           </form>
         </div>
         <DialogFooter>
-            <Button type="button" variant="outline" onClick={() => onOpenChange(false)} disabled={isSubmitting}>
-              {mode === "view" ? "Close" : "Cancel"}
-            </Button>
-            {mode !== "view" && (
+          <Button
+            type="button"
+            variant="outline"
+            onClick={() => onOpenChange(false)}
+            disabled={isSubmitting}
+          >
+            {mode === "view" ? "Close" : "Cancel"}
+          </Button>
+          {mode !== "view" && (
             <Button type="submit" form="user-form" disabled={isSubmitting}>
-              {isSubmitting ? "Saving..." : mode === "create" ? "Create User" : "Update User"}
+              {isSubmitting
+                ? "Saving..."
+                : mode === "create"
+                ? "Create User"
+                : "Update User"}
             </Button>
-            )}
+          )}
         </DialogFooter>
       </DialogContent>
     </Dialog>

@@ -55,8 +55,8 @@ import {
 
 export default function TicketCategories() {
   const [isFormOpen, setIsFormOpen] = useState(false);
-  const [isEditOpen, setIsEditOpen] = useState(false);
-  const [editingCategory, setEditingCategory] = useState<any>(null);
+  const [formMode, setFormMode] = useState<"create" | "edit" | "view">("create");
+  const [selectedCategory, setSelectedCategory] = useState<any>(null);
   const [categories, setCategories] = useState<any[]>([]);
   const [deleteCategoryId, setDeleteCategoryId] = useState<
     string | number | null
@@ -122,41 +122,49 @@ export default function TicketCategories() {
     }
   };
 
-  const handleCreate = async (data: any) => {
-    const response = await ticketCategoriesApiService.addTicketCategory(data);
-
-    if (response.success) {
-      setIsFormOpen(false);
-      loadTicketCategories();
-      toast.success("Ticket category has been created successfully.");
-    }
-    return response;
+  const handleCreate = () => {
+    setSelectedCategory(null);
+    setFormMode("create");
+    setIsFormOpen(true);
   };
 
   const handleEdit = (category: any) => {
-    setEditingCategory(category);
-    setIsEditOpen(true);
+    setSelectedCategory(category);
+    setFormMode("edit");
+    setIsFormOpen(true);
   };
 
-  const handleEditSubmit = async (data: any) => {
-    const updatedCategory = {
-      ...editingCategory,
-      ...data,
-      updated_at: new Date().toISOString(),
-    };
-    const response = await ticketCategoriesApiService.updateTicketCategory(
-      updatedCategory
-    );
+  const handleSave = async (categoryData: any) => {
+    let response;
+    if (formMode === "create") {
+      response = await ticketCategoriesApiService.addTicketCategory(categoryData);
 
-    if (response.success) {
-      setCategories((prev) =>
-        prev.map((cat) =>
-          cat.id === updatedCategory.id ? updatedCategory : cat
-        )
+      if (response.success)
+        loadTicketCategories();
+    } else if (formMode === "edit" && selectedCategory) {
+      const updatedCategory = {
+        ...selectedCategory,
+        ...categoryData,
+        updated_at: new Date().toISOString(),
+      };
+      response = await ticketCategoriesApiService.updateTicketCategory(
+        updatedCategory
       );
-      setIsEditOpen(false);
-      setEditingCategory(null);
-      toast.success("Ticket category has been updated successfully.");
+
+      if (response.success) {
+        setCategories((prev) =>
+          prev.map((cat) =>
+            cat.id === updatedCategory.id ? updatedCategory : cat
+          )
+        );
+      }
+    }
+
+    if (response?.success) {
+      setIsFormOpen(false);
+      toast.success(
+        `Ticket category has been ${formMode === "create" ? "created" : "updated"} successfully.`
+      );
     }
     return response;
   };
@@ -218,7 +226,7 @@ export default function TicketCategories() {
                   </p>
                 </div>
                 {canWrite(resource) && (
-                  <Button onClick={() => setIsFormOpen(true)} className="gap-2">
+                  <Button onClick={handleCreate} className="gap-2">
                     <Plus className="h-4 w-4" />
                     Add Category
                   </Button>
@@ -360,34 +368,26 @@ export default function TicketCategories() {
       <Dialog open={isFormOpen} onOpenChange={setIsFormOpen}>
         <DialogContent className="max-w-2xl">
           <DialogHeader>
-            <DialogTitle>Create Ticket Category</DialogTitle>
+            <DialogTitle>
+              {formMode === "create" ? "Create Ticket Category" : formMode === "edit" ? "Edit Ticket Category" : "Ticket Category Details"}
+            </DialogTitle>
             <DialogDescription>
-              Add a new ticket category for service requests.
+              {formMode === "create" 
+                ? "Add a new ticket category for service requests."
+                : formMode === "edit"
+                ? "Update ticket category details."
+                : "View ticket category details."}
             </DialogDescription>
           </DialogHeader>
           <TicketCategoryForm
-            onSubmit={handleCreate}
-            onCancel={() => setIsFormOpen(false)}
-          />
-        </DialogContent>
-      </Dialog>
-
-      {/* Edit Category Dialog */}
-      <Dialog open={isEditOpen} onOpenChange={setIsEditOpen}>
-        <DialogContent className="max-w-2xl">
-          <DialogHeader>
-            <DialogTitle>Edit Ticket Category</DialogTitle>
-            <DialogDescription>
-              Update ticket category details.
-            </DialogDescription>
-          </DialogHeader>
-          <TicketCategoryForm
-            onSubmit={handleEditSubmit}
-            onCancel={() => {
-              setIsEditOpen(false);
-              setEditingCategory(null);
+            category={selectedCategory}
+            isOpen={isFormOpen}
+            onClose={() => {
+              setIsFormOpen(false);
+              setSelectedCategory(null);
             }}
-            initialData={editingCategory}
+            onSave={handleSave}
+            mode={formMode}
           />
         </DialogContent>
       </Dialog>
