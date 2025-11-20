@@ -1,7 +1,7 @@
 import {
     Building2, Users, FileText, BarChart3, Wrench, Car, Zap, UserCheck,
     Hotel, ShoppingCart, Settings, Bell, Shield, Home, Calendar, CreditCard,
-    Briefcase, Package, MapPin, AlertTriangle, TrendingUp, Archive, Key, Receipt, Bot, Search, UserCog
+    Briefcase, Package, MapPin, AlertTriangle, TrendingUp, Archive, Key, Receipt, Bot, Search, UserCog, ShieldCheck
 } from "lucide-react";
 
 export const navigationItems = [
@@ -55,6 +55,7 @@ export const navigationItems = [
             { title: "Ticket Dashboard", url: "/ticket-dashboard", icon: BarChart3, resource: "ticket_dashboard" },
             { title: "Tickets", url: "/tickets", icon: AlertTriangle, resource: "tickets" },
             { title: "Ticket Categories", url: "/ticket-categories", icon: Archive, resource: "ticket_categories" },
+            { title: "Ticket Category SLA", url: "/sla-policies", icon: ShieldCheck, resource: "sla_policies" },
             { title: "Workload Management", url: "/ticket-workload", icon: Users, resource: "workload_management" },
         ]
     },
@@ -109,10 +110,9 @@ export const navigationItems = [
     {
         title: "System",
         items: [
-            { title: "Notifications", url: "/notifications", icon: Bell, resource: "notifications" },
+            { title: "Notifications", url: "/notifications", icon: Bell, resource: "settings" },
             { title: "Settings", url: "/settings", icon: Settings, resource: "settings" },
             { title: "Documentation", url: "/documentation", icon: FileText, resource: "documentation" },
         ]
     }
 ];
-
