@@ -149,30 +149,36 @@ export default function Leases() {
   };
 
  const handleSave = async (leaseData: Partial<Lease>) => {
-    let response;
-    if (formMode === "create") {
-      response = await leasesApiService.addLease(leaseData);
+  let response;
+  if (formMode === "create") {
+    response = await leasesApiService.addLease(leaseData);
 
-      if (response.success)
-        updateLeasePage();
-    } else if (formMode === "edit" && selectedLease) {
-      const updated = {
-        ...selectedLease,
-        ...leaseData,
-        partner_id: leaseData.kind === "commercial" ? leaseData.partner_id : undefined,
-        tenant_id: leaseData.kind === "residential" ? leaseData.tenant_id : undefined,
-      };
-      response = await leasesApiService.updateLease(updated);
-    }
+    if (response.success)
+      updateLeasePage();
+  } else if (formMode === "edit" && selectedLease) {
+    const updated = {
+      ...selectedLease,
+      ...leaseData,
+      
+    };
+    response = await leasesApiService.updateLease(updated);
 
-    if (response?.success) {
-      setIsFormOpen(false);
-      toast.success(
-        `Lease has been ${formMode === "create" ? "created" : "updated"} successfully.`
+    if (response.success) {
+      // FIX: Update the local state with the response data
+      setLeases(prev => 
+        prev.map(lease => lease.id === selectedLease.id ? response.data : lease)
       );
     }
-    return response;
-  };
+  }
+
+  if (response?.success) {
+    setIsFormOpen(false);
+    toast.success(
+      `Lease has been ${formMode === "create" ? "created" : "updated"} successfully.`
+    );
+  }
+  return response;
+};
 
   const getStatusColor = (status?: string) => {
     const colors: Record<string, string> = {
