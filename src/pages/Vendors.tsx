@@ -159,7 +159,11 @@ const confirmDelete = async () => {
   const handleSave = async (vendorData: any) => {
   let response;
   if (formMode === "create") {
-    response = await vendorsApiService.addVendor(vendorData);
+    const vendorPayload = {
+      ...vendorData,
+      rating: undefined,
+    };
+    response = await vendorsApiService.addVendor(vendorPayload);
 
     if (response.success)
       updateVendorsPage();
@@ -167,12 +171,12 @@ const confirmDelete = async () => {
     const updatedVendor = {
       ...selectedVendor,
       ...vendorData,
+      rating: undefined,
       updated_at: new Date().toISOString(),
     };
     response = await vendorsApiService.updateVendor(updatedVendor);
 
     if (response.success) {
-      // Update the edited vendor in local state
       setVendors((prev) =>
         prev.map((v) => (v.id === updatedVendor.id ? updatedVendor : v))
       );
