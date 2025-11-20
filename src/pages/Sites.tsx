@@ -174,7 +174,7 @@ export default function Sites() {
       if (response.success) {
         // Update the edited site in local state
         setSites((prev) =>
-          prev.map((s) => (s.id === updatedSite.id ? updatedSite : s))
+          prev.map((s) => (s.id === updatedSite.id ? response.data : s))
         );
       }
     }
