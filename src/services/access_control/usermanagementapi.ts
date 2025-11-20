@@ -32,7 +32,7 @@ class UserManagementApiService {
   }
 
   async getUserRolesLookup() {
-    return await apiService.request("/users/roles-lookup");
+    return await apiService.request("/roles/role-lookup");
   }
 }
 

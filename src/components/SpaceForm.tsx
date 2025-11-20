@@ -181,12 +181,13 @@ export function SpaceForm({ space, isOpen, onClose, onSave, mode }: SpaceFormPro
               )}
             </div>
             <div className="space-y-2">
-              <Label htmlFor="name">Name</Label>
+              <Label htmlFor="name">Name *</Label>
               <Input
                 id="name"
                 {...register("name")}
                 placeholder="Space name"
                 disabled={isReadOnly}
+                className={errors.name ? 'border-red-500' : ''}
               />
             </div>
           </div>

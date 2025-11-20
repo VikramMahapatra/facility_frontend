@@ -186,7 +186,7 @@ const loadCategoriesLookup = async () => {
               control={control}
               render={({ field }) => (
                 <div className="space-y-2">
-                  <Label>Status</Label>
+                  <Label>Status *</Label>
                   <Select
                     value={field.value || ""}
                     onValueChange={field.onChange}
@@ -214,7 +214,7 @@ const loadCategoriesLookup = async () => {
               control={control}
               render={({ field }) => (
                 <div className="space-y-2">
-                  <Label>Category</Label>
+                  <Label>Category *</Label>
                   <Popover open={categoryPopoverOpen} onOpenChange={setCategoryPopoverOpen}>
                     <PopoverTrigger asChild>
                       <Button

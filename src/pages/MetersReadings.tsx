@@ -480,15 +480,19 @@ export default function MetersReadings() {
                         onImport={handleBulkImport}
                       />
                       {activeTab === "meters" ? (
-                        <Button size="sm" onClick={onCreateMeter}>
-                          <Plus className="h-4 w-4 mr-2" />
-                          Add Meter
-                        </Button>
+                        canWrite(resource) && (
+                          <Button size="sm" onClick={onCreateMeter}>
+                            <Plus className="h-4 w-4 mr-2" />
+                            Add Meter
+                          </Button>
+                        )
                       ) : (
-                        <Button size="sm" onClick={onCreateMeterReading}>
-                          <Plus className="h-4 w-4 mr-2" />
-                          Add Reading
-                        </Button>
+                        canWrite(resourceReadings) && (
+                          <Button size="sm" onClick={onCreateMeterReading}>
+                            <Plus className="h-4 w-4 mr-2" />
+                            Add Reading
+                          </Button>
+                        )
                       )}
                     </div>
                   </div>

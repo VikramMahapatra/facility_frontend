@@ -88,8 +88,9 @@ export default function RolesManagement() {
     if (deleteRoleId) {
       const response = await roleManagementApiService.deleteRoleManagement(deleteRoleId);
       if (response?.success) {
+        setRoles((prev) => prev.filter((role) => role.id !== deleteRoleId));
+        setTotalItems((prev) => prev - 1);
         toast.success("Role deleted successfully");
-        loadRoleManagement();
         setDeleteRoleId(null);
       }
     }
@@ -98,16 +99,49 @@ export default function RolesManagement() {
   const handleSave = async (roleData: any) => {
     let response;
     if (selectedRole) {
-      response = await roleManagementApiService.updateRoleManagement({ ...selectedRole, ...roleData });
+      const updatedRole = {
+        ...selectedRole,
+        ...roleData,
+        updated_at: new Date().toISOString(),
+      };
+      response = await roleManagementApiService.updateRoleManagement(updatedRole);
+
+      if (response?.success) {
+        setRoles((prev) =>
+          prev.map((r) => (r.id === updatedRole.id ? updatedRole : r))
+        );
+        setIsFormOpen(false);
+        toast.success("Role updated successfully");
+      }
     } else {
       response = await roleManagementApiService.addRoleManagement(roleData);
+
+      if (response?.success) {
+        const newRole = response?.data?.role || response?.data || {
+          id: response?.data?.id || Date.now().toString(),
+          ...roleData,
+          created_at: new Date().toISOString(),
+          updated_at: new Date().toISOString(),
+        };
+        if (page === 1 && roles.length < pageSize) {
+          setRoles((prev) => [newRole as Role, ...prev]);
+          setTotalItems((prev) => prev + 1);
+        } else if (page === 1) {
+          setRoles((prev) => [newRole as Role, ...prev.slice(0, pageSize - 1)]);
+          setTotalItems((prev) => prev + 1);
+        } else {
+          setTotalItems((prev) => prev + 1);
+        }
+        setIsFormOpen(false);
+        toast.success("Role created successfully");
+      }
     }
 
-    if (response?.success) {
-      toast.success(selectedRole ? "Role updated successfully" : "Role created successfully");
-      setIsFormOpen(false);
-      loadRoleManagement();
+    if (!response?.success && response) {
+      const errorMessage = response?.data?.message || response?.message || "Failed to save role";
+      toast.error(errorMessage);
     }
+    return response;
   };
 
   return (

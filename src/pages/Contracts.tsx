@@ -91,8 +91,13 @@ export default function Contracts() {
   };
 
   const loadOverview = async () => {
+    const params = new URLSearchParams();
+    if (searchTerm) params.append("search", searchTerm);
+    if (statusFilter !== "all") params.append("status", statusFilter);
+    if (typeFilter !== "all") params.append("type", typeFilter);
+
     const response = await withLoader(async () => {
-      return await contractApiService.getContractsOverview();
+      return await contractApiService.getContractsOverview(params);
     });
     
     // Map API response to expected format
@@ -274,10 +279,12 @@ const confirmDelete = async () => {
                   Manage vendor contracts and agreements
                 </p>
               </div>
-              <Button onClick={handleCreate} className="gap-2">
-                <Plus className="h-4 w-4" />
-                Add Contract
-              </Button>
+              {canWrite(resource) && (
+                <Button onClick={handleCreate} className="gap-2">
+                  <Plus className="h-4 w-4" />
+                  Add Contract
+                </Button>
+              )}
             </div>
 
             <div className="space-y-6">
