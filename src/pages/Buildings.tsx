@@ -137,44 +137,37 @@ export default function Buildings() {
   };
 
   const handleSave = async (building: Partial<Building>) => {
-    let response;
-    if (formMode === "create") {
-      response = await buildingApiService.addBuilding(building);
+  let response;
+  if (formMode === "create") {
+    response = await buildingApiService.addBuilding(building);
 
-      if (response.success)
-        loadBuildings();
-    } else if (formMode === "edit" && selectedBuilding) {
-      const updatedBuilding = {
-        ...selectedBuilding,
-        ...building,
-        updated_at: new Date().toISOString(),
-      };
-      
-      const siteId = updatedBuilding.site_id;
-      const site = siteList.find((s: any) => s.id === siteId);
-      if (site) {
-        updatedBuilding.site_name = site.name;
-      }
-      
-      response = await buildingApiService.updateBuilding(updatedBuilding);
-
-      if (response.success) {
-        setBuildings((prev) =>
-          prev.map((b) => (b.id === updatedBuilding.id ? updatedBuilding : b))
-        );
-      }
-    }
+    if (response.success)
+      loadBuildings();
+  } else if (formMode === "edit" && selectedBuilding) {
+    const updatedBuilding = {
+      ...selectedBuilding,
+      ...building,
+      updated_at: new Date().toISOString(),
+    };
+    
+    response = await buildingApiService.updateBuilding(updatedBuilding);
 
     if (response.success) {
-      setShowForm(false);
-      toast.success(
-        `Building ${building.name} has been ${formMode === "create" ? "created" : "updated"
-        } successfully.`
+      setBuildings((prev) =>
+        prev.map((b) => (b.id === updatedBuilding.id ? response.data : b))
       );
     }
-    return response;
-  };
+  }
 
+  if (response.success) {
+    setShowForm(false);
+    toast.success(
+      `Building ${building.name} has been ${formMode === "create" ? "created" : "updated"
+      } successfully.`
+    );
+  }
+  return response;
+};
   // --- UI Helpers ---
   const getSiteKindColor = (kind: string) => {
     const colors = {

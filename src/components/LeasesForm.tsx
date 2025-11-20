@@ -172,7 +172,13 @@ export function LeaseForm({ lease, isOpen, onClose, onSave, mode }: LeaseFormPro
   }
 
   const onSubmitForm = async (data: LeaseFormValues) => {
-    const formResponse = await onSave(data);
+    const updated = {
+      ...data,
+      partner_id: data.kind === "commercial" ? data.partner_id : null,
+      tenant_id: data.kind === "residential" ? data.tenant_id : null,
+    };
+    const formResponse = await onSave(updated);
+
   };
 
   return (
