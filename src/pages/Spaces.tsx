@@ -115,11 +115,11 @@ export default function Spaces() {
     if (selectedStatus) params.append("status", selectedStatus);
     params.append("skip", skip.toString());
     params.append("limit", limit.toString());
-    
+
     const response = await withLoader(async () => {
       return await spacesApiService.getSpaces(params);
     });
-    
+
     if (response?.success) {
       setSpaces(response.data?.spaces || []);
       setTotalItems(response.data?.total || 0);
@@ -152,18 +152,18 @@ export default function Spaces() {
     setDeleteSpaceId(spaceId);
   };
 
- const confirmDelete = async () => {
-  if (deleteSpaceId) {
-    const response = await spacesApiService.deleteSpace(deleteSpaceId);
+  const confirmDelete = async () => {
+    if (deleteSpaceId) {
+      const response = await spacesApiService.deleteSpace(deleteSpaceId);
 
-    if (response.success) {
-      // Success case
-      updateSpacePage();
-      setDeleteSpaceId(null);
-      toast.success("Space has been deleted successfully.");
-    } 
-  }
-};
+      if (response.success) {
+        // Success case
+        updateSpacePage();
+        setDeleteSpaceId(null);
+        toast.success("Space has been deleted successfully.");
+      }
+    }
+  };
   const handleSave = async (spaceData: Partial<Space>) => {
     let response;
     if (formMode === 'create') {
@@ -172,12 +172,12 @@ export default function Spaces() {
       if (attributes.star_rating === '' || attributes.star_rating === '0' || !attributes.star_rating) {
         delete attributes.star_rating;
       }
-      
+
       const spaceToCreate = {
         ...spaceData,
         attributes: Object.keys(attributes).length > 0 ? attributes : undefined,
       };
-      
+
       response = await spacesApiService.addSpace(spaceToCreate);
 
       if (response.success)
@@ -187,7 +187,7 @@ export default function Spaces() {
       if (attributes.star_rating === '' || attributes.star_rating === '0' || !attributes.star_rating) {
         delete attributes.star_rating;
       }
-      
+
       const updatedSpace = {
         ...selectedSpace,
         ...spaceData,
@@ -199,7 +199,7 @@ export default function Spaces() {
       if (response.success) {
         // Update the edited space in local state
         setSpaces((prev) =>
-          prev.map((s) => (s.id === updatedSpace.id ? updatedSpace : s))
+          prev.map((s) => (s.id === updatedSpace.id ? response.data : s))
         );
       }
     }
@@ -333,149 +333,149 @@ export default function Spaces() {
               <ContentContainer>
                 <LoaderOverlay />
                 {/* Quick Stats */}
-              <div className="grid gap-4 md:grid-cols-4">
-                <Card>
-                  <CardContent className="p-4">
-                    <div className="text-2xl font-bold text-sidebar-primary">{spaceOverview.totalSpaces}</div>
-                    <p className="text-sm text-muted-foreground">Total Spaces</p>
-                  </CardContent>
-                </Card>
-                <Card>
-                  <CardContent className="p-4">
-                    <div className="text-2xl font-bold text-green-600">
-                      {spaceOverview.availableSpaces}
-                    </div>
-                    <p className="text-sm text-muted-foreground">Available</p>
-                  </CardContent>
-                </Card>
-                <Card>
-                  <CardContent className="p-4">
-                    <div className="text-2xl font-bold text-blue-600">
-                      {spaceOverview.occupiedSpaces}
-                    </div>
-                    <p className="text-sm text-muted-foreground">Occupied</p>
-                  </CardContent>
-                </Card>
-                <Card>
-                  <CardContent className="p-4">
-                    <div className="text-2xl font-bold text-red-600">
-                      {spaceOverview.outOfServices}
-                    </div>
-                    <p className="text-sm text-muted-foreground">Out of Service</p>
-                  </CardContent>
-                </Card>
-              </div>
-
-              {/* Spaces Grid */}
-              <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3 mt-6">
-                {spaces.map((space) => (
-                  <Card key={space.id} className="hover:shadow-lg transition-shadow">
-                    <CardHeader className="pb-3">
-                      <div className="flex items-start justify-between">
-                        <div className="space-y-1">
-                          <CardTitle className="text-lg flex items-center gap-2">
-                            <span className="text-xl">{getKindIcon(space.kind)}</span>
-                            {space.name || space.code}
-                          </CardTitle>
-                          <p className="text-sm text-muted-foreground">{space.code}</p>
-                        </div>
-                        <Badge className={getStatusColor(space.status)}>
-                          {space.status.replace('_', ' ')}
-                        </Badge>
+                <div className="grid gap-4 md:grid-cols-4">
+                  <Card>
+                    <CardContent className="p-4">
+                      <div className="text-2xl font-bold text-sidebar-primary">{spaceOverview.totalSpaces}</div>
+                      <p className="text-sm text-muted-foreground">Total Spaces</p>
+                    </CardContent>
+                  </Card>
+                  <Card>
+                    <CardContent className="p-4">
+                      <div className="text-2xl font-bold text-green-600">
+                        {spaceOverview.availableSpaces}
                       </div>
-                    </CardHeader>
-
-                    <CardContent className="space-y-4">
-                      {/* Kind and Location */}
-                      <div className="flex items-center justify-between">
-                        <Badge className={getKindColor(space.kind)}>
-                          {space.kind.replace('_', ' ')}
-                        </Badge>
-                        <div className="text-sm text-muted-foreground">
-                          {space.area_sqft} sq ft
-                        </div>
+                      <p className="text-sm text-muted-foreground">Available</p>
+                    </CardContent>
+                  </Card>
+                  <Card>
+                    <CardContent className="p-4">
+                      <div className="text-2xl font-bold text-blue-600">
+                        {spaceOverview.occupiedSpaces}
                       </div>
+                      <p className="text-sm text-muted-foreground">Occupied</p>
+                    </CardContent>
+                  </Card>
+                  <Card>
+                    <CardContent className="p-4">
+                      <div className="text-2xl font-bold text-red-600">
+                        {spaceOverview.outOfServices}
+                      </div>
+                      <p className="text-sm text-muted-foreground">Out of Service</p>
+                    </CardContent>
+                  </Card>
+                </div>
 
-                      {/* Location Details */}
-                      <div className="space-y-2 text-sm">
-                        <div className="flex items-center gap-2">
-                          <MapPin className="h-3 w-3 text-muted-foreground" />
-                          <span className="text-muted-foreground">{getSiteName(space.site_id)}</span>
+                {/* Spaces Grid */}
+                <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3 mt-6">
+                  {spaces.map((space) => (
+                    <Card key={space.id} className="hover:shadow-lg transition-shadow">
+                      <CardHeader className="pb-3">
+                        <div className="flex items-start justify-between">
+                          <div className="space-y-1">
+                            <CardTitle className="text-lg flex items-center gap-2">
+                              <span className="text-xl">{getKindIcon(space.kind)}</span>
+                              {space.name || space.code}
+                            </CardTitle>
+                            <p className="text-sm text-muted-foreground">{space.code}</p>
+                          </div>
+                          <Badge className={getStatusColor(space.status)}>
+                            {space.status.replace('_', ' ')}
+                          </Badge>
                         </div>
+                      </CardHeader>
+
+                      <CardContent className="space-y-4">
+                        {/* Kind and Location */}
                         <div className="flex items-center justify-between">
-                          <span className="text-muted-foreground">Block: {space.building_block}</span>
-                          <span className="text-muted-foreground">Floor: {space.floor}</span>
+                          <Badge className={getKindColor(space.kind)}>
+                            {space.kind.replace('_', ' ')}
+                          </Badge>
+                          <div className="text-sm text-muted-foreground">
+                            {space.area_sqft} sq ft
+                          </div>
                         </div>
-                      </div>
 
-                      {/* Bed/Bath info for residential */}
-                      {(space.beds || space.baths) && (
-                        <div className="flex items-center gap-4 text-sm">
-                          {space.beds && (
-                            <span className="text-muted-foreground">🛏️ {space.beds} beds</span>
-                          )}
-                          {space.baths && (
-                            <span className="text-muted-foreground">🚿 {space.baths} baths</span>
-                          )}
+                        {/* Location Details */}
+                        <div className="space-y-2 text-sm">
+                          <div className="flex items-center gap-2">
+                            <MapPin className="h-3 w-3 text-muted-foreground" />
+                            <span className="text-muted-foreground">{getSiteName(space.site_id)}</span>
+                          </div>
+                          <div className="flex items-center justify-between">
+                            <span className="text-muted-foreground">Block: {space.building_block}</span>
+                            <span className="text-muted-foreground">Floor: {space.floor}</span>
+                          </div>
                         </div>
-                      )}
 
-                      {/* Key Attributes */}
-                    {space.attributes && Object.keys(space.attributes || {}).length > 0 && (
-                      <div className="flex flex-wrap gap-1">
-                     {Object.entries(space.attributes || {})
-                       .filter(([key, value]) => {
-                         if (key === 'star_rating' && (!value || value === '' || value === '0')) {
-                           return false;
-                         }
-                         return value !== undefined && value !== null && value !== '';
-                       })
-                       .slice(0, 3)
-                       .map(([key, value]) => (
-                     <Badge key={key} variant="outline" className="text-xs">
-                     {key}: {String(value)}
-                      </Badge>
-                      ))}
-                       </div>
+                        {/* Bed/Bath info for residential */}
+                        {(space.beds || space.baths) && (
+                          <div className="flex items-center gap-4 text-sm">
+                            {space.beds && (
+                              <span className="text-muted-foreground">🛏️ {space.beds} beds</span>
+                            )}
+                            {space.baths && (
+                              <span className="text-muted-foreground">🚿 {space.baths} baths</span>
+                            )}
+                          </div>
+                        )}
+
+                        {/* Key Attributes */}
+                        {space.attributes && Object.keys(space.attributes || {}).length > 0 && (
+                          <div className="flex flex-wrap gap-1">
+                            {Object.entries(space.attributes || {})
+                              .filter(([key, value]) => {
+                                if (key === 'star_rating' && (!value || value === '' || value === '0')) {
+                                  return false;
+                                }
+                                return value !== undefined && value !== null && value !== '';
+                              })
+                              .slice(0, 3)
+                              .map(([key, value]) => (
+                                <Badge key={key} variant="outline" className="text-xs">
+                                  {key}: {String(value)}
+                                </Badge>
+                              ))}
+                          </div>
                         )}
 
 
-                      {/* Actions */}
-                      <div className="flex items-center justify-end gap-2 pt-2">
-                        <Button size="sm" variant="outline" onClick={() => handleView(space)}>
-                          <Eye className="h-3 w-3" />
-                        </Button>
-                        {canWrite(resource) && <Button size="sm" variant="outline" onClick={() => handleEdit(space)}>
-                          <Edit className="h-3 w-3" />
-                        </Button>
-                        }
-                        {canDelete(resource) && <Button
-                          size="sm"
-                          variant="outline"
-                          className="text-destructive hover:text-destructive"
-                          onClick={() => handleDelete(space.id)}
-                        >
-                          <Trash2 className="h-3 w-3" />
-                        </Button>
-                        }
-                      </div>
-                    </CardContent>
-                  </Card>
-                ))}
-              </div>
-              <Pagination
-                page={page}
-                pageSize={pageSize}
-                totalItems={totalItems}
-                onPageChange={(newPage) => setPage(newPage)}
-              />
-              {spaces.length === 0 && (
-                <div className="text-center py-12">
-                  <Home className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
-                  <h3 className="text-lg font-semibold text-sidebar-primary mb-2">No spaces found</h3>
-                  <p className="text-muted-foreground">Try adjusting your search criteria or add a new space.</p>
+                        {/* Actions */}
+                        <div className="flex items-center justify-end gap-2 pt-2">
+                          <Button size="sm" variant="outline" onClick={() => handleView(space)}>
+                            <Eye className="h-3 w-3" />
+                          </Button>
+                          {canWrite(resource) && <Button size="sm" variant="outline" onClick={() => handleEdit(space)}>
+                            <Edit className="h-3 w-3" />
+                          </Button>
+                          }
+                          {canDelete(resource) && <Button
+                            size="sm"
+                            variant="outline"
+                            className="text-destructive hover:text-destructive"
+                            onClick={() => handleDelete(space.id)}
+                          >
+                            <Trash2 className="h-3 w-3" />
+                          </Button>
+                          }
+                        </div>
+                      </CardContent>
+                    </Card>
+                  ))}
                 </div>
-              )}
+                <Pagination
+                  page={page}
+                  pageSize={pageSize}
+                  totalItems={totalItems}
+                  onPageChange={(newPage) => setPage(newPage)}
+                />
+                {spaces.length === 0 && (
+                  <div className="text-center py-12">
+                    <Home className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
+                    <h3 className="text-lg font-semibold text-sidebar-primary mb-2">No spaces found</h3>
+                    <p className="text-muted-foreground">Try adjusting your search criteria or add a new space.</p>
+                  </div>
+                )}
               </ContentContainer>
             </div>
           </main>

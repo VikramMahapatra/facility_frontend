@@ -38,10 +38,10 @@ import LoaderOverlay from "@/components/LoaderOverlay";
 import ContentContainer from "@/components/ContentContainer";
 
 export default function ApprovalRules() {
-  const [rules, setRules] = useState<ApprovalRule[]>([]);
+  const [types, setTypes] = useState<ApprovalRule[]>([]);
   const [isDialogOpen, setIsDialogOpen] = useState(false);
-  const [approverTypeId, setApproverTypeId] = useState<string>("");
-  const [canApproveTypeId, setCanApproveTypeId] = useState<string>("");
+  const [approverType, setApproverType] = useState<string>("");
+  const [canApproveType, setCanApproveType] = useState<string>("");
   const [roles, setRoles] = useState<any[]>([]);
   const { withLoader } = useLoader();
 
@@ -54,32 +54,32 @@ export default function ApprovalRules() {
     const response = await withLoader(async () => {
       return await approvalRulesApiService.getRules();
     });
-    if (response?.success) setRules(response.data?.rules || []);
+    if (response?.success) setTypes(response.data?.rules || []);
   }
 
   const loadTypes = async () => {
     const roleList = await withLoader(async () => {
-      return await rolePolicyApiService.getRoles();
+      return await approvalRulesApiService.getUserTypes();
     });
     if (roleList?.success) setRoles(roleList.data || []);
   }
 
   const handleCreateRule = async () => {
-    if (!approverTypeId || !canApproveTypeId) {
+    if (!approverType || !canApproveType) {
       toast.error("Please select both types");
       return;
     }
 
-    if (approverTypeId == canApproveTypeId) {
+    if (approverType == canApproveType) {
       toast.error("Please select different types");
       return;
     }
 
     // Check if rule already exists
-    const ruleExists = rules.some(
+    const ruleExists = types.some(
       (r) =>
-        r.approver_role_id === approverTypeId &&
-        r.can_approve_role_id === canApproveTypeId
+        r.approver_type === approverType &&
+        r.can_approve_type === canApproveType
     );
 
     if (ruleExists) {
@@ -88,8 +88,8 @@ export default function ApprovalRules() {
     }
 
     const newRule = {
-      approver_role_id: approverTypeId,
-      can_approve_role_id: canApproveTypeId,
+      approver_type: approverType,
+      can_approve_type: canApproveType,
     };
 
     const resp = await approvalRulesApiService.createRule(newRule);
@@ -98,20 +98,20 @@ export default function ApprovalRules() {
       loadApprovalRules();
       toast.success("Approval rule created successfully");
       setIsDialogOpen(false);
-      setApproverTypeId("");
-      setCanApproveTypeId("");
+      setApproverType("");
+      setCanApproveType("");
     }
 
   };
 
   const handleDeleteRule = (ruleId: string) => {
-    setRules(rules.filter((r) => r.id !== ruleId));
+    setTypes(types.filter((r) => r.id !== ruleId));
     toast.success("Approval rule deleted successfully");
   };
 
   // Group rules by approver type
-  const groupedRules = rules.reduce((acc, rule) => {
-    const approverType = rule.approver_role_name;
+  const groupedRules = types.reduce((acc, rule) => {
+    const approverType = rule.approver_type;
     if (!acc[approverType]) {
       acc[approverType] = [];
     }
@@ -183,7 +183,7 @@ export default function ApprovalRules() {
                                 {typeRules.map((rule) => (
                                   <TableRow key={rule.id}>
                                     <TableCell className="font-medium capitalize">
-                                      {rule.can_approve_role_name}
+                                      {rule.can_approve_type}
                                     </TableCell>
                                     <TableCell className="text-muted-foreground text-sm">
                                       {new Date(rule.created_at).toLocaleDateString()}
@@ -202,7 +202,7 @@ export default function ApprovalRules() {
                               </TableBody>
                             </Table>
                           </div>
-                      </div>
+                        </div>
                       ))}
 
                       {Object.keys(groupedRules).length === 0 && (
@@ -241,7 +241,7 @@ export default function ApprovalRules() {
           <div className="space-y-4 py-4">
             <div className="space-y-2">
               <Label htmlFor="approver-type">Approver Type</Label>
-              <Select value={approverTypeId} onValueChange={setApproverTypeId}>
+              <Select value={approverType} onValueChange={setApproverType}>
                 <SelectTrigger id="approver-type">
                   <SelectValue placeholder="Select type that can approve" />
                 </SelectTrigger>
@@ -257,7 +257,9 @@ export default function ApprovalRules() {
 
             <div className="space-y-2">
               <Label htmlFor="can-approve-type">Can Approve Type</Label>
-              <Select value={canApproveTypeId} onValueChange={setCanApproveTypeId}>
+              <Select value={canApproveType} onValueChange={setCanApproveType
+
+              }>
                 <SelectTrigger id="can-approve-type">
                   <SelectValue placeholder="Select type to be approved" />
                 </SelectTrigger>
