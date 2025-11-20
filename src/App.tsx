@@ -57,6 +57,7 @@ import PendingApprovals from "./pages/PendingApprovals";
 import TicketDashboard from "./pages/TicketDashboard";
 import Tickets from "./pages/Tickets";
 import ApprovalRules from "./pages/ApprovalRules";
+import SLAPolicies from "./pages/SLAPolicies";
 import { GoogleOAuthProvider } from "@react-oauth/google";
 import ProtectedLayout from "./components/ProtectedLayout";
 import ProtectedRoute from "./components/ProtectedRoute";
@@ -125,10 +126,10 @@ const App = () => {
                   <Route path="/users-management" element={<UsersManagement />} />
                   <Route path="/pending-approvals" element={<PendingApprovals />} />
                   <Route path="/ticket-dashboard" element={<TicketDashboard />} />
-
                   <Route path="/tickets" element={<Tickets />} />
                   <Route path="/tickets/:ticketId" element={<TicketDetail />} />
                   <Route path="/ticket-categories" element={<TicketCategories />} />
+                  <Route path="/sla-policies" element={<SLAPolicies />} />
                   <Route path="/ticket-workload" element={<TicketWorkload />} />
                   <Route path="/approval-rules" element={<ApprovalRules />} />
                 </Route>
