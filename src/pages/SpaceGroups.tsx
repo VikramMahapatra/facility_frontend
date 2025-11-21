@@ -194,7 +194,7 @@ export default function SpaceGroups() {
       if (response.success) {
         // Update the edited group in local state
         setGroups((prev) =>
-          prev.map((g) => (g.id === updatedGroup.id ? updatedGroup : g))
+          prev.map((g) => (g.id === updatedGroup.id ? response.data : g))
         );
       }
     }

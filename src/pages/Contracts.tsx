@@ -197,7 +197,7 @@ const confirmDelete = async () => {
     if (response.success) {
       // Update the edited contract in local state
       setContracts((prev) =>
-        prev.map((c) => (c.id === updatedContract.id ? updatedContract : c))
+        prev.map((c) => (c.id === updatedContract.id ? response.data : c))
       );
     }
   }

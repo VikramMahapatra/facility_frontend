@@ -154,7 +154,7 @@ export default function TicketCategories() {
       if (response.success) {
         setCategories((prev) =>
           prev.map((cat) =>
-            cat.id === updatedCategory.id ? updatedCategory : cat
+            cat.id === updatedCategory.id ? response.data : cat
           )
         );
       }

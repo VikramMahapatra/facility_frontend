@@ -173,7 +173,7 @@ const Tenants = () => {
       if (response.success) {
         // Update the edited tenant in local state
         setTenants((prev) =>
-          prev.map((t) => (t.id === updatedTenant.id ? updatedTenant : t))
+          prev.map((t) => (t.id === updatedTenant.id ? response.data : t))
         );
       }
     }
