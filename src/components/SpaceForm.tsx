@@ -233,11 +233,14 @@ export function SpaceForm({ space, isOpen, onClose, onSave, mode }: SpaceFormPro
                       {buildingList.length === 0 ? (
                         <SelectItem value="none" disabled>No buildings available</SelectItem>
                       ) : (
-                        buildingList.map((building_block) => (
-                          <SelectItem key={building_block.id} value={building_block.id}>
-                            {building_block.name}
-                          </SelectItem>
-                        ))
+                        <>
+                          <SelectItem value="">Select building</SelectItem>
+                          {buildingList.map((building_block) => (
+                            <SelectItem key={building_block.id} value={building_block.id}>
+                              {building_block.name}
+                            </SelectItem>
+                          ))}
+                        </>
                       )}
                     </SelectContent>
                   </Select>

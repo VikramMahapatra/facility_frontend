@@ -4,7 +4,7 @@ import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
 import { mockSpaces, mockSpaceGroups, mockSites } from "@/data/mockSpacesData";
-import { useToast } from "@/hooks/use-toast";
+import { toast } from "sonner";
 import { Input } from "@/components/ui/input";
 import { siteApiService } from "@/services/spaces_sites/sitesapi";
 import { spacesApiService } from "@/services/spaces_sites/spacesapi";
@@ -24,7 +24,7 @@ interface SpaceAssignmentFormProps {
   assignment?: SpaceAssignment;
   isOpen: boolean;
   onClose: () => void;
-  onSave: (assignment: Partial<SpaceAssignment>) => void;
+  onSave: (assignment: Partial<SpaceAssignment>) => Promise<any>;
   mode: 'create' | 'edit' | 'view';
 }
 
@@ -36,7 +36,7 @@ const emptyFormData = {
 }
 
 export function SpaceAssignmentForm({ assignment, isOpen, onClose, onSave, mode }: SpaceAssignmentFormProps) {
-  const { toast } = useToast();
+  const [isSubmitting, setIsSubmitting] = useState(false);
   const [formData, setFormData] = useState<Partial<SpaceAssignment>>(emptyFormData);
   const [selectedSite, setSelectedSite] = useState<string>("all");
   const [siteList, setSiteList] = useState([]);
@@ -61,8 +61,9 @@ export function SpaceAssignmentForm({ assignment, isOpen, onClose, onSave, mode 
       setFormData(emptyFormData);
       setSelectedSite("all");
     }
+    setIsSubmitting(false);
     loadSiteLookup();
-  }, [assignment]);
+  }, [assignment, isOpen]);
 
   useEffect(() => {
     loadSpaceLookup();
@@ -112,15 +113,11 @@ export function SpaceAssignmentForm({ assignment, isOpen, onClose, onSave, mode 
     setAssignmentPreview(preview);
   }
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
 
     if (!formData.group_id || !formData.space_id) {
-      toast({
-        title: "Validation Error",
-        description: "Both Space and Group must be selected",
-        variant: "destructive",
-      });
+      toast.error("Both Space and Group must be selected");
       return;
     }
 
@@ -128,16 +125,20 @@ export function SpaceAssignmentForm({ assignment, isOpen, onClose, onSave, mode 
     const group = mockSpaceGroups.find(g => g.id === formData.group_id);
 
     if (space && group && space.kind !== group.kind) {
-      toast({
-        title: "Type Mismatch",
-        description: "Space type must match the group type",
-        variant: "destructive",
-      });
+      toast.error("Space type must match the group type");
       return;
     }
 
-    onSave(formData);
-
+    setIsSubmitting(true);
+    const formResponse = await onSave(formData);
+    if (formResponse?.success) {
+    } else {
+      setIsSubmitting(false);
+      if (formResponse) {
+        const errorMessage = formResponse?.data?.message || formResponse?.message || "Failed to save assignment";
+        toast.error(errorMessage);
+      }
+    }
   };
 
   const isReadOnly = mode === 'view';
@@ -246,7 +247,7 @@ export function SpaceAssignmentForm({ assignment, isOpen, onClose, onSave, mode 
                 <div><strong>Space:</strong> {`${assignmentPreview.space_code} - ${assignmentPreview.space_name} (${assignmentPreview.kind})`}</div>
                 <div><strong>Group:</strong> {assignmentPreview.group_name}</div>
                 <div><strong>Site:</strong> {assignmentPreview.site_name}</div>
-                {assignmentPreview.specs.base_rate && (
+                {assignmentPreview.specs?.base_rate && (
                   <div><strong>Base Rate:</strong> ₹{assignmentPreview.specs.base_rate.toLocaleString()}</div>
                 )}
               </div>
@@ -264,12 +265,12 @@ export function SpaceAssignmentForm({ assignment, isOpen, onClose, onSave, mode 
           )}
 
           <DialogFooter>
-            <Button type="button" variant="outline" onClick={onClose}>
+            <Button type="button" variant="outline" onClick={onClose} disabled={isSubmitting}>
               {mode === 'view' ? 'Close' : 'Cancel'}
             </Button>
             {mode !== 'view' && (
-              <Button type="submit">
-                {mode === 'create' ? 'Create Assignment' : 'Update Assignment'}
+              <Button type="submit" disabled={isSubmitting}>
+                {isSubmitting ? "Saving..." : mode === 'create' ? 'Create Assignment' : 'Update Assignment'}
               </Button>
             )}
           </DialogFooter>

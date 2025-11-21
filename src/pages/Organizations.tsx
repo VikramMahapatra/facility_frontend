@@ -40,7 +40,7 @@ export default function Organizations() {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const { withLoader } = useLoader();
   const { canRead, canWrite, canDelete } = useAuth();
-  const resource = "organizations";
+  const resource = "organizations"; 
 
   useEffect(() => {
     loadOrganisation();
@@ -306,6 +306,7 @@ export default function Organizations() {
         onClose={() => setShowForm(false)}
         onSave={handleSave}
         mode={formMode}
+        isSubmitting={isSubmitting}
       />
     </SidebarProvider>
   );
