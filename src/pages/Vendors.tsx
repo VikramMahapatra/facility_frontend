@@ -178,7 +178,7 @@ const confirmDelete = async () => {
 
     if (response.success) {
       setVendors((prev) =>
-        prev.map((v) => (v.id === updatedVendor.id ? updatedVendor : v))
+        prev.map((v) => (v.id === updatedVendor.id ? response.data : v))
       );
     }
   }

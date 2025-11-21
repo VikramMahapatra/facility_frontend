@@ -108,7 +108,7 @@ export default function RolesManagement() {
 
       if (response?.success) {
         setRoles((prev) =>
-          prev.map((r) => (r.id === updatedRole.id ? updatedRole : r))
+          prev.map((r) => (r.id === updatedRole.id ? response.data : r))
         );
         setIsFormOpen(false);
         toast.success("Role updated successfully");

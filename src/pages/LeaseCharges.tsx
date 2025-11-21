@@ -247,7 +247,7 @@ export default function LeaseCharges() {
       if (response.success) {
         // Update the edited lease charge in local state
         setLeaseCharges((prev) =>
-          prev.map((lc) => (lc.id === updatedLeaseCharge.id ? updatedLeaseCharge : lc))
+          prev.map((lc) => (lc.id === updatedLeaseCharge.id ? response.data : lc))
         );
       }
     }

@@ -5,14 +5,27 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { PropertySidebar } from "@/components/PropertySidebar";
-import { SidebarProvider, SidebarInset, SidebarTrigger } from "@/components/ui/sidebar";
+import {
+  SidebarProvider,
+  SidebarInset,
+  SidebarTrigger,
+} from "@/components/ui/sidebar";
 //import { mockSites, getBuildingBlocks, getSpacesBySite } from "@/data/mockSpacesData";
 import { BuildingForm } from "@/components/BuildingForm";
 import { buildingApiService } from "@/services/spaces_sites/buildingsapi";
 import { Pagination } from "@/components/Pagination";
 import { siteApiService } from "@/services/spaces_sites/sitesapi";
 import { toast } from "sonner";
-import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
 import { useSkipFirstEffect } from "@/hooks/use-skipfirst-effect";
 import { useAuth } from "../context/AuthContext";
 import LoaderOverlay from "@/components/LoaderOverlay";
@@ -32,14 +45,15 @@ export interface Building {
   attributes: Record<string, any>;
 }
 
-
 export default function Buildings() {
   const [searchTerm, setSearchTerm] = useState("");
   const [selectedSite, setSelectedSite] = useState<string>("all");
   const [selectedBuilding, setSelectedBuilding] = useState<any | undefined>();
-  const [formMode, setFormMode] = useState<"create" | "edit" | "view">("create");
+  const [formMode, setFormMode] = useState<"create" | "edit" | "view">(
+    "create"
+  );
   const [showForm, setShowForm] = useState(false);
-  const [buildings, setBuildings] = useState<Building[]>([])
+  const [buildings, setBuildings] = useState<Building[]>([]);
   const [page, setPage] = useState(1); // current page
   const [pageSize] = useState(6); // items per page
   const [totalItems, setTotalItems] = useState(0);
@@ -47,7 +61,7 @@ export default function Buildings() {
   const [deleteBuildingId, setDeleteBuildingId] = useState<string | null>(null);
   const { canRead, canWrite, canDelete } = useAuth();
   const resource = "buildings";
-  const {withLoader} = useLoader();
+  const { withLoader } = useLoader();
 
   useSkipFirstEffect(() => {
     loadBuildings();
@@ -57,7 +71,7 @@ export default function Buildings() {
     if (page === 1) {
       loadBuildings();
     } else {
-      setPage(1);    // triggers the page effect
+      setPage(1); // triggers the page effect
     }
   }, [searchTerm, selectedSite]);
 
@@ -75,21 +89,21 @@ export default function Buildings() {
     if (selectedSite) params.append("site_id", selectedSite);
     params.append("skip", skip.toString());
     params.append("limit", limit.toString());
-    
+
     const response = await withLoader(async () => {
       return await buildingApiService.getBuildings(params);
     });
-    
+
     if (response?.success) {
       setBuildings(response.data?.buildings || []);
       setTotalItems(response.data?.total || 0);
     }
-  }
+  };
 
   const loadSiteLookup = async () => {
     const lookup = await siteApiService.getSiteLookup();
     if (lookup.success) setSiteList(lookup.data || []);
-  }
+  };
 
   // --- CRUD Handlers ---
   const handleCreate = () => {
@@ -116,8 +130,10 @@ export default function Buildings() {
 
   const confirmDelete = async () => {
     if (deleteBuildingId) {
-      const response = await buildingApiService.deleteBuilding(deleteBuildingId);
-      console.log('Building Delete Response:', response);
+      const response = await buildingApiService.deleteBuilding(
+        deleteBuildingId
+      );
+      console.log("Building Delete Response:", response);
 
       if (response.success) {
         const deleteResponse = response.data;
@@ -137,37 +153,37 @@ export default function Buildings() {
   };
 
   const handleSave = async (building: Partial<Building>) => {
-  let response;
-  if (formMode === "create") {
-    response = await buildingApiService.addBuilding(building);
+    let response;
+    if (formMode === "create") {
+      response = await buildingApiService.addBuilding(building);
 
-    if (response.success)
-      loadBuildings();
-  } else if (formMode === "edit" && selectedBuilding) {
-    const updatedBuilding = {
-      ...selectedBuilding,
-      ...building,
-      updated_at: new Date().toISOString(),
-    };
-    
-    response = await buildingApiService.updateBuilding(updatedBuilding);
+      if (response.success) loadBuildings();
+    } else if (formMode === "edit" && selectedBuilding) {
+      const updatedBuilding = {
+        ...selectedBuilding,
+        ...building,
+        updated_at: new Date().toISOString(),
+      };
+
+      response = await buildingApiService.updateBuilding(updatedBuilding);
+
+      if (response.success) {
+        setBuildings((prev) =>
+          prev.map((b) => (b.id === updatedBuilding.id ? response.data : b))
+        );
+      }
+    }
 
     if (response.success) {
-      setBuildings((prev) =>
-        prev.map((b) => (b.id === updatedBuilding.id ? response.data : b))
+      setShowForm(false);
+      toast.success(
+        `Building ${building.name} has been ${
+          formMode === "create" ? "created" : "updated"
+        } successfully.`
       );
     }
-  }
-
-  if (response.success) {
-    setShowForm(false);
-    toast.success(
-      `Building ${building.name} has been ${formMode === "create" ? "created" : "updated"
-      } successfully.`
-    );
-  }
-  return response;
-};
+    return response;
+  };
   // --- UI Helpers ---
   const getSiteKindColor = (kind: string) => {
     const colors = {
@@ -183,7 +199,9 @@ export default function Buildings() {
 
   const getOccupancyRate = (building: any) => {
     const rate =
-      building.totalSpaces > 0 ? (building.occupiedSpaces / building.totalSpaces) * 100 : 0;
+      building.totalSpaces > 0
+        ? (building.occupiedSpaces / building.totalSpaces) * 100
+        : 0;
     return rate.toFixed(1);
   };
 
@@ -202,7 +220,9 @@ export default function Buildings() {
             <SidebarTrigger className="-ml-1" />
             <div className="flex items-center gap-2">
               <Building className="h-5 w-5 text-sidebar-primary" />
-              <h1 className="text-lg font-semibold text-sidebar-primary">Buildings & Blocks</h1>
+              <h1 className="text-lg font-semibold text-sidebar-primary">
+                Buildings & Blocks
+              </h1>
             </div>
           </header>
 
@@ -211,7 +231,9 @@ export default function Buildings() {
               {/* Header Actions */}
               <div className="flex items-center justify-between">
                 <div>
-                  <h2 className="text-2xl font-bold text-sidebar-primary">Buildings & Blocks</h2>
+                  <h2 className="text-2xl font-bold text-sidebar-primary">
+                    Buildings & Blocks
+                  </h2>
                   <p className="text-muted-foreground">
                     Manage building structures and floor layouts
                   </p>
@@ -229,17 +251,17 @@ export default function Buildings() {
                 <Input
                   placeholder="Search buildings..."
                   value={searchTerm}
-                  onChange={e => setSearchTerm(e.target.value)}
+                  onChange={(e) => setSearchTerm(e.target.value)}
                   className="max-w-sm"
                 />
-                
+
                 <select
                   value={selectedSite}
-                  onChange={e => setSelectedSite(e.target.value)}
+                  onChange={(e) => setSelectedSite(e.target.value)}
                   className="rounded-md border border-input bg-background px-3 py-2 text-sm"
                 >
                   <option value="all">All Sites</option>
-                  {siteList.map(site => (
+                  {siteList.map((site) => (
                     <option key={site.id} value={site.id}>
                       {site.name}
                     </option>
@@ -250,99 +272,118 @@ export default function Buildings() {
               <ContentContainer>
                 <LoaderOverlay />
                 {/* Buildings Grid */}
-              <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
+                <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
                   {buildings.map((building, index) => {
+                    return (
+                      <Card
+                        key={`${building.site_id}-${building.name}-${index}`}
+                        className="hover:shadow-lg transition-shadow"
+                      >
+                        <CardHeader className="pb-3">
+                          <div className="flex items-start justify-between">
+                            <div className="space-y-1">
+                              <CardTitle className="text-lg flex items-center gap-2">
+                                <Building className="h-5 w-5 text-sidebar-primary" />
+                                {building.name}
+                              </CardTitle>
+                              <div className="flex items-center gap-1 text-sm text-muted-foreground">
+                                <MapPin className="h-3 w-3" />
+                                {building.site_name}
+                              </div>
+                            </div>
+                            <Badge
+                              className={getSiteKindColor(building.site_kind)}
+                            >
+                              {building.site_kind}
+                            </Badge>
+                          </div>
+                        </CardHeader>
 
-                  return (
-                    <Card
-                      key={`${building.site_id}-${building.name}-${index}`}
-                      className="hover:shadow-lg transition-shadow"
-                    >
-                      <CardHeader className="pb-3">
-                        <div className="flex items-start justify-between">
-                          <div className="space-y-1">
-                            <CardTitle className="text-lg flex items-center gap-2">
-                              <Building className="h-5 w-5 text-sidebar-primary" />
-                              {building.name}
-                            </CardTitle>
-                            <div className="flex items-center gap-1 text-sm text-muted-foreground">
-                              <MapPin className="h-3 w-3" />
-                              {building.site_name}
+                        <CardContent className="space-y-4">
+                          {/* Stats */}
+                          <div className="grid grid-cols-3 gap-4 text-sm">
+                            <div className="text-center">
+                              <p className="font-semibold text-sidebar-primary">
+                                {building.total_spaces}
+                              </p>
+                              <p className="text-muted-foreground">Total</p>
+                            </div>
+                            <div className="text-center">
+                              <p className="font-semibold text-green-600">
+                                {building.occupied_spaces}
+                              </p>
+                              <p className="text-muted-foreground">Occupied</p>
+                            </div>
+                            <div className="text-center">
+                              <p
+                                className={`font-semibold ${getOccupancyColor(
+                                  building.occupancy_rate || 0
+                                )}`}
+                              >
+                                {building.occupancy_rate || 0}%
+                              </p>
+                              <p className="text-muted-foreground">Rate</p>
                             </div>
                           </div>
-                          <Badge className={getSiteKindColor(building.site_kind)}>
-                            {building.site_kind}
-                          </Badge>
-                        </div>
-                      </CardHeader>
 
-                      <CardContent className="space-y-4">
-                        {/* Stats */}
-                        <div className="grid grid-cols-3 gap-4 text-sm">
-                          <div className="text-center">
-                            <p className="font-semibold text-sidebar-primary">{building.total_spaces}</p>
-                            <p className="text-muted-foreground">Total</p>
-                          </div>
-                          <div className="text-center">
-                            <p className="font-semibold text-green-600">{building.occupied_spaces}</p>
-                            <p className="text-muted-foreground">Occupied</p>
-                          </div>
-                          <div className="text-center">
-                            <p className={`font-semibold ${getOccupancyColor(building.occupancy_rate || 0)}`}>
-                              {building.occupancy_rate || 0}%
+                          {/* Floors */}
+                          <div>
+                            <p className="text-sm font-medium text-sidebar-primary mb-2">
+                              Floors ({building.floors})
                             </p>
-                            <p className="text-muted-foreground">Rate</p>
                           </div>
-                        </div>
 
-                        {/* Floors */}
-                        <div>
-                          <p className="text-sm font-medium text-sidebar-primary mb-2">
-                            Floors ({building.floors})
-                          </p>
-                        </div>
-
-                        {/* Actions */}
-                        <div className="flex items-center justify-end gap-2 pt-2">
-                          <Button size="sm" variant="outline" onClick={() => handleView(building)}>
-                            <Eye className="h-3 w-3" />
-                          </Button>
-                          {canWrite(resource) && <Button size="sm" variant="outline" onClick={() => handleEdit(building)}>
-                            <Edit className="h-3 w-3" />
-                          </Button>
-                          }
-                          {canDelete(resource) && <Button
-                            size="sm"
-                            variant="outline"
-                            className="text-destructive hover:text-destructive"
-                            onClick={() => handleDelete(building.id)}
-                          >
-                            <Trash2 className="h-3 w-3" />
-                          </Button>
-                          }
-                        </div>
-                      </CardContent>
-                    </Card>
-                  );
-                })}
-              </div>
-              <Pagination
-                page={page}
-                pageSize={pageSize}
-                totalItems={totalItems}
-                onPageChange={(newPage) => setPage(newPage)}
-              />
-              {buildings.length === 0 && (
-                <div className="text-center py-12">
-                  <Building className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
-                  <h3 className="text-lg font-semibold text-sidebar-primary mb-2">
-                    No buildings found
-                  </h3>
-                  <p className="text-muted-foreground">
-                    Try adjusting your search criteria or add a new building.
-                  </p>
+                          {/* Actions */}
+                          <div className="flex items-center justify-end gap-2 pt-2">
+                            <Button
+                              size="sm"
+                              variant="outline"
+                              onClick={() => handleView(building)}
+                            >
+                              <Eye className="h-3 w-3" />
+                            </Button>
+                            {canWrite(resource) && (
+                              <Button
+                                size="sm"
+                                variant="outline"
+                                onClick={() => handleEdit(building)}
+                              >
+                                <Edit className="h-3 w-3" />
+                              </Button>
+                            )}
+                            {canDelete(resource) && (
+                              <Button
+                                size="sm"
+                                variant="outline"
+                                className="text-destructive hover:text-destructive"
+                                onClick={() => handleDelete(building.id)}
+                              >
+                                <Trash2 className="h-3 w-3" />
+                              </Button>
+                            )}
+                          </div>
+                        </CardContent>
+                      </Card>
+                    );
+                  })}
                 </div>
-              )}
+                <Pagination
+                  page={page}
+                  pageSize={pageSize}
+                  totalItems={totalItems}
+                  onPageChange={(newPage) => setPage(newPage)}
+                />
+                {buildings.length === 0 && (
+                  <div className="text-center py-12">
+                    <Building className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
+                    <h3 className="text-lg font-semibold text-sidebar-primary mb-2">
+                      No buildings found
+                    </h3>
+                    <p className="text-muted-foreground">
+                      Try adjusting your search criteria or add a new building.
+                    </p>
+                  </div>
+                )}
               </ContentContainer>
             </div>
           </main>
@@ -358,17 +399,24 @@ export default function Buildings() {
         mode={formMode}
       />
 
-      <AlertDialog open={!!deleteBuildingId} onOpenChange={() => setDeleteBuildingId(null)}>
+      <AlertDialog
+        open={!!deleteBuildingId}
+        onOpenChange={() => setDeleteBuildingId(null)}
+      >
         <AlertDialogContent>
           <AlertDialogHeader>
             <AlertDialogTitle>Delete Space</AlertDialogTitle>
             <AlertDialogDescription>
-              Are you sure you want to delete this building block? This action cannot be undone.
+              Are you sure you want to delete this building block? This action
+              cannot be undone.
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
             <AlertDialogCancel>Cancel</AlertDialogCancel>
-            <AlertDialogAction onClick={confirmDelete} className="bg-destructive text-destructive-foreground">
+            <AlertDialogAction
+              onClick={confirmDelete}
+              className="bg-destructive text-destructive-foreground"
+            >
               Delete
             </AlertDialogAction>
           </AlertDialogFooter>
