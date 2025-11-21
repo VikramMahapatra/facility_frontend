@@ -160,7 +160,7 @@ export default function Buildings() {
 
       if (response.success) {
         setBuildings((prev) =>
-          prev.map((b) => (b.id === updatedBuilding.id ? updatedBuilding : b))
+          prev.map((b) => (b.id === updatedBuilding.id ? response.data : b))
         );
       }
     }

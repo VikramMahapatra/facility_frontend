@@ -172,7 +172,7 @@ const confirmDelete = async () => {
     if (response.success) {
       // Update the edited visitor in local state
       setVisitors((prev) =>
-        prev.map((v) => (v.id === updatedLog.id ? updatedLog : v))
+        prev.map((v) => (v.id === updatedLog.id ? response.data : v))
       );
       loadVisitorOverView();
     }

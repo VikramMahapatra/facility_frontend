@@ -124,7 +124,7 @@ export default function UsersManagement() {
     if (response.success) {
 
       setUsers((prev) =>
-        prev.map((u) => (u.id === updatedUser.id ? updatedUser : u))
+        prev.map((u) => (u.id === updatedUser.id ? response.data : u))
       );
       toast.success("User updated successfully");
       setIsFormOpen(false);
