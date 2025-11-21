@@ -11,6 +11,7 @@ import { siteApiService } from "@/services/spaces_sites/sitesapi";
 import { ticketCategorySchema, TicketCategoryFormValues } from "@/schemas/ticketCategory.schema";
 import { toast } from "sonner";
 
+
 interface TicketCategoryFormProps {
   category?: any;
   isOpen: boolean;
@@ -44,7 +45,7 @@ export default function TicketCategoryForm({ category, isOpen, onClose, onSave, 
     mode: "onChange",
     reValidateMode: "onChange",
   });
-
+  const [formLoading, setFormLoading] = useState(true);
   const [autoAssignRoleList, setAutoAssignRoleList] = useState<any[]>([]);
   const [slaPolicyList, setSlaPolicyList] = useState<any[]>([]);
   const [statusList, setStatusList] = useState<any[]>([]);
@@ -53,14 +54,24 @@ export default function TicketCategoryForm({ category, isOpen, onClose, onSave, 
   const selectedSiteId = watch("site_id");
   const isActive = watch("is_active");
 
+  const loadAll = async () => {
+    await Promise.all([
+      loadAutoAssignRoleLookup(),
+      loadStatusLookup(),
+      loadSiteLookup()
+    ]);
+    setFormLoading(false);
+    reset(category ? {
+      ...category,
+      sla_hours: category.sla_hours || 24,
+      is_active: category.is_active ?? true,
+    } : emptyFormData);
+  }
+
   useEffect(() => {
-    loadAutoAssignRoleLookup();
-    loadStatusLookup();
-    loadSiteLookup();
-    if (category?.site_id) {
-      loadSlaPolicyLookup(category.site_id);
-    }
-  }, []);
+    console.log("category data :", category)
+    loadAll();
+  }, [category, mode, reset]);
 
   useEffect(() => {
     if (selectedSiteId) {
@@ -71,23 +82,18 @@ export default function TicketCategoryForm({ category, isOpen, onClose, onSave, 
   }, [selectedSiteId]);
 
   useEffect(() => {
-    if (category && mode !== "create") {
-      reset({
-        category_name: category.category_name || "",
-        site_id: category.site_id || "",
-        auto_assign_role: category.auto_assign_role || "",
-        sla_hours: category.sla_hours || 24,
-        is_active: category.is_active ?? true,
-        sla_id: category.sla_id || "",
-        status: category.status || "",
-      });
-      if (category.site_id) {
-        loadSlaPolicyLookup(category.site_id);
-      }
-    } else {
-      reset(emptyFormData);
+    if (category && siteList.length > 0) {
+      setValue("site_id", category.site_id, { shouldValidate: true });
     }
-  }, [category, mode, reset]);
+  }, [siteList]);
+
+  useEffect(() => {
+    if (category && slaPolicyList.length > 0) {
+      setValue("sla_id", category.sla_id, { shouldValidate: true });
+    }
+  }, [slaPolicyList]);
+
+
 
   const loadAutoAssignRoleLookup = async () => {
     const response = await ticketCategoriesApiService.getAutoAssignRoleLookup();
@@ -145,150 +151,150 @@ export default function TicketCategoryForm({ category, isOpen, onClose, onSave, 
 
   return (
     <form onSubmit={isSubmitting ? undefined : handleSubmit(onSubmitForm)} className="space-y-4">
-      <div className="space-y-2">
-        <Label htmlFor="category_name">Category Name *</Label>
-        <Input
-          id="category_name"
-          {...register("category_name")}
-          placeholder="e.g., Electrical Issues"
-          className={errors.category_name ? 'border-red-500' : ''}
-          disabled={isReadOnly}
-        />
-        {errors.category_name && (
-          <p className="text-sm text-red-500">{errors.category_name.message}</p>
-        )}
-      </div>
-
-      <Controller
-        name="site_id"
-        control={control}
-        render={({ field }) => (
+      {formLoading ? (
+        <p className="text-center">Loading...</p>
+      ) : (
+        <div>
           <div className="space-y-2">
-            <Label htmlFor="site_id">Site *</Label>
-            <Select
-              value={field.value || ""}
-              onValueChange={field.onChange}
-              disabled={isReadOnly}
-            >
-              <SelectTrigger className={errors.site_id ? 'border-red-500' : ''}>
-                <SelectValue placeholder="Select site" />
-              </SelectTrigger>
-              <SelectContent>
-                {siteList.map((site: any) => (
-                  <SelectItem key={site.id} value={site.id}>
-                    {site.name}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-            {errors.site_id && (
-              <p className="text-sm text-red-500">{errors.site_id.message}</p>
-            )}
-          </div>
-        )}
-      />
-
-      <Controller
-        name="auto_assign_role"
-        control={control}
-        render={({ field }) => (
-          <div className="space-y-2">
-            <Label htmlFor="auto_assign_role">Auto-Assign Role</Label>
-            <Select
-              value={field.value || ""}
-              onValueChange={field.onChange}
-              disabled={isReadOnly}
-            >
-              <SelectTrigger>
-                <SelectValue placeholder="Select auto-assign role" />
-              </SelectTrigger>
-              <SelectContent>
-                {autoAssignRoleList.map((role: any) => (
-                  <SelectItem key={role.id} value={role.id}>
-                    {role.name}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-          </div>
-        )}
-      />
-
-      <div className="space-y-2">
-        <Label htmlFor="sla_hours">SLA Hours</Label>
-        <Input
-          id="sla_hours"
-          type="number"
-          {...register("sla_hours", { valueAsNumber: true })}
-          min="1"
-          className={errors.sla_hours ? 'border-red-500' : ''}
-          disabled={isReadOnly}
-        />
-        {errors.sla_hours && (
-          <p className="text-sm text-red-500">{errors.sla_hours.message}</p>
-        )}
-      </div>
-
-      <Controller
-        name="sla_id"
-        control={control}
-        render={({ field }) => (
-          <div className="space-y-2">
-            <Label htmlFor="sla_id">SLA Policy *</Label>
-            <Select
-              value={field.value?.toString() || ""}
-              onValueChange={field.onChange}
-              disabled={isReadOnly}
-            >
-              <SelectTrigger className={errors.sla_id ? 'border-red-500' : ''}>
-                <SelectValue placeholder="Select SLA Policy" />
-              </SelectTrigger>
-              <SelectContent>
-                {slaPolicyList.map((policy: any) => (
-                  <SelectItem key={policy.id} value={policy.id}>
-                    {policy.name}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-            {errors.sla_id && (
-              <p className="text-sm text-red-500">{errors.sla_id.message}</p>
-            )}
-          </div>
-        )}
-      />
-
-      <div className="flex items-center space-x-2">
-        <Controller
-          name="is_active"
-          control={control}
-          render={({ field }) => (
-            <Switch
-              id="is_active"
-              checked={field.value}
-              onCheckedChange={handleActiveToggle}
+            <Label htmlFor="category_name">Category Name *</Label>
+            <Input
+              id="category_name"
+              {...register("category_name")}
+              placeholder="e.g., Electrical Issues"
+              className={errors.category_name ? 'border-red-500' : ''}
               disabled={isReadOnly}
             />
-          )}
-        />
-        <Label htmlFor="is_active">Active</Label>
-      </div>
-
-      <div className="flex justify-end gap-2 pt-4">
-        <Button 
-          type="button" 
-          variant="outline" 
-          onClick={onClose} 
-          disabled={isSubmitting}
-        >
-          {mode === "view" ? "Close" : "Cancel"}
-        </Button>
-        {mode !== "view" && (
-          <Button type="submit" disabled={isSubmitting}>
-            {isSubmitting ? "Saving..." : mode === "create" ? "Create Ticket Category" : "Update Ticket Category"}
-          </Button>
-        )}
-      </div>
+            {errors.category_name && (
+              <p className="text-sm text-red-500">{errors.category_name.message}</p>
+            )}
+          </div>
+          <Controller
+            name="site_id"
+            control={control}
+            render={({ field }) => (
+              <div className="space-y-2">
+                <Label htmlFor="site_id">Site *</Label>
+                <Select
+                  value={field.value || ""}
+                  onValueChange={field.onChange}
+                  disabled={isReadOnly}
+                >
+                  <SelectTrigger className={errors.site_id ? 'border-red-500' : ''}>
+                    <SelectValue placeholder="Select site" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {siteList.map((site: any) => (
+                      <SelectItem key={site.id} value={site.id}>
+                        {site.name}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+                {errors.site_id && (
+                  <p className="text-sm text-red-500">{errors.site_id.message}</p>
+                )}
+              </div>
+            )}
+          />
+          <Controller
+            name="auto_assign_role"
+            control={control}
+            render={({ field }) => (
+              <div className="space-y-2">
+                <Label htmlFor="auto_assign_role">Auto-Assign Role</Label>
+                <Select
+                  value={field.value || ""}
+                  onValueChange={field.onChange}
+                  disabled={isReadOnly}
+                >
+                  <SelectTrigger>
+                    <SelectValue placeholder="Select auto-assign role" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {autoAssignRoleList.map((role: any) => (
+                      <SelectItem key={role.id} value={role.id}>
+                        {role.name}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+            )}
+          />
+          <div className="space-y-2">
+            <Label htmlFor="sla_hours">SLA Hours</Label>
+            <Input
+              id="sla_hours"
+              type="number"
+              {...register("sla_hours", { valueAsNumber: true })}
+              min="1"
+              className={errors.sla_hours ? 'border-red-500' : ''}
+              disabled={isReadOnly}
+            />
+            {errors.sla_hours && (
+              <p className="text-sm text-red-500">{errors.sla_hours.message}</p>
+            )}
+          </div>
+          <Controller
+            name="sla_id"
+            control={control}
+            render={({ field }) => (
+              <div className="space-y-2">
+                <Label htmlFor="sla_id">SLA Policy *</Label>
+                <Select
+                  value={field.value?.toString() || ""}
+                  onValueChange={field.onChange}
+                  disabled={isReadOnly}
+                >
+                  <SelectTrigger className={errors.sla_id ? 'border-red-500' : ''}>
+                    <SelectValue placeholder="Select SLA Policy" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {slaPolicyList.map((policy: any) => (
+                      <SelectItem key={policy.id} value={policy.id}>
+                        {policy.name}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+                {errors.sla_id && (
+                  <p className="text-sm text-red-500">{errors.sla_id.message}</p>
+                )}
+              </div>
+            )}
+          />
+          <div className="flex items-center space-x-2">
+            <Controller
+              name="is_active"
+              control={control}
+              render={({ field }) => (
+                <Switch
+                  id="is_active"
+                  checked={field.value}
+                  onCheckedChange={handleActiveToggle}
+                  disabled={isReadOnly}
+                />
+              )}
+            />
+            <Label htmlFor="is_active">Active</Label>
+          </div>
+          <div className="flex justify-end gap-2 pt-4">
+            <Button
+              type="button"
+              variant="outline"
+              onClick={onClose}
+              disabled={isSubmitting}
+            >
+              {mode === "view" ? "Close" : "Cancel"}
+            </Button>
+            {mode !== "view" && (
+              <Button type="submit" disabled={isSubmitting}>
+                {isSubmitting ? "Saving..." : mode === "create" ? "Create Ticket Category" : "Update Ticket Category"}
+              </Button>
+            )}
+          </div>
+        </div>
+      )}
     </form>
   );
 }

@@ -105,7 +105,7 @@ export default function UsersManagement() {
       setIsFormOpen(false);
       toast.success("User created successfully");
       loadUsers();
-    } 
+    }
     return response;
   };
 
@@ -117,20 +117,16 @@ export default function UsersManagement() {
       ...values,
       updated_at: new Date().toISOString(),
     };
-
-    const response = await  userManagementApiService.updateUser(updatedUser);
-  
-
+    const response = await userManagementApiService.updateUser(updatedUser);
     if (response.success) {
-
+      console.log("updated user with details :", response.data);
       setUsers((prev) =>
         prev.map((u) => (u.id === updatedUser.id ? response.data : u))
       );
       toast.success("User updated successfully");
       setIsFormOpen(false);
       setEditingUser(undefined);
-      loadUsers();
-    } 
+    }
     return response;
   };
 
@@ -321,8 +317,8 @@ export default function UsersManagement() {
                                       user.status === "active"
                                         ? "default"
                                         : user.status === "pending_approval"
-                                        ? "secondary"
-                                        : "outline"
+                                          ? "secondary"
+                                          : "outline"
                                     }
                                   >
                                     {user.status === "pending_approval"
