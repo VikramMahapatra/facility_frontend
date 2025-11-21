@@ -9,12 +9,15 @@ import { SidebarProvider, SidebarInset, SidebarTrigger } from "@/components/ui/s
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from "@/components/ui/alert-dialog";
 import { SpaceAssignmentForm } from "@/components/SpaceAssignmentForm";
 import { Space } from "@/pages/Spaces";
-import { useToast } from "@/hooks/use-toast";
+import { toast } from "sonner";
 import { spaceAssignmentApiService } from "@/services/spaces_sites/spaceassignmentsapi";
 import { siteApiService } from "@/services/spaces_sites/sitesapi";
 import { SpaceGroup } from "./SpaceGroups";
 import { Pagination } from "@/components/Pagination";
 import { useSkipFirstEffect } from "@/hooks/use-skipfirst-effect";
+import { useLoader } from "@/context/LoaderContext";
+import LoaderOverlay from "@/components/LoaderOverlay";
+import ContentContainer from "@/components/ContentContainer";
 
 interface SpaceAssignment {
   id: string;
@@ -35,7 +38,7 @@ interface MemberOverview {
 }
 
 export default function SpaceAssignments() {
-  const { toast } = useToast();
+  const { withLoader } = useLoader();
   const [searchTerm, setSearchTerm] = useState("");
   const [selectedSite, setSelectedSite] = useState<string>("all");
   const [assignments, setAssignments] = useState<SpaceAssignment[]>([]);
@@ -79,7 +82,9 @@ export default function SpaceAssignments() {
     const params = new URLSearchParams();
     if (searchTerm) params.append("search", searchTerm);
     if (selectedSite && selectedSite !== "all") params.append("site_id", selectedSite);
-    const response = await spaceAssignmentApiService.getAssignmentOverview(params);
+    const response = await withLoader(async () => {
+      return await spaceAssignmentApiService.getAssignmentOverview(params);
+    });
     if (response?.success) {
       setMemberOverview(response.data || {
         totalAssignments: 0,
@@ -109,7 +114,9 @@ export default function SpaceAssignments() {
     if (selectedSite && selectedSite !== "all") params.append("site_id", selectedSite);
     params.append("skip", skip.toString());
     params.append("limit", limit.toString());
-    const response = await spaceAssignmentApiService.getAssignments(params);
+    const response = await withLoader(async () => {
+      return await spaceAssignmentApiService.getAssignments(params);
+    });
     if (response?.success) {
       setAssignments(response.data?.assignments || response.data || []);
       setTotalItems(response.data?.total || 0);
@@ -158,39 +165,41 @@ export default function SpaceAssignments() {
   };
 
   const handleSave = async (assignmentData: Partial<SpaceAssignment>) => {
-    try {
+    let response;
       const request = {
         space_id: assignmentData.space_id,
         group_id: assignmentData.group_id,
         assigned_by: assignmentData.assigned_by
       }
+    
       if (formMode === 'create') {
-        await spaceAssignmentApiService.addAssignment(request);
-      } else if (formMode === 'edit' && selectedAssignment) {
-        await spaceAssignmentApiService.updateAssignment(request);
+      response = await spaceAssignmentApiService.addAssignment(request);
+      if (response.success) {
+        updateSpaceAssignmentPage();
       }
-      setShowForm(false);
-      updateSpaceAssignmentPage();
-      toast({
-        title: formMode === 'create' ? "Assignment Created" : "Assignment Updated",
-        description: `Space has been ${formMode === 'create' ? 'assigned' : 'updated'} successfully.`,
-      });
-    } catch (error) {
-      toast({
-        title: "Techical Error!",
-        variant: "destructive",
-      });
+      } else if (formMode === 'edit' && selectedAssignment) {
+      response = await spaceAssignmentApiService.updateAssignment(request);
+      if (response.success) {
+        setAssignments((prev) =>
+          prev.map((a) => (a.id === selectedAssignment.id ? response.data : a))
+        );
+      }
     }
 
+    if (response?.success) {
+      setShowForm(false);
+      toast.success(`Space assignment has been ${formMode === 'create' ? 'created' : 'updated'} successfully.`);
+    } else if (response) {
+      const errorMessage = response?.data?.message || response?.message || `Failed to ${formMode === 'create' ? 'create' : 'update'} assignment`;
+      toast.error(errorMessage);
+    }
+    return response;
   };
 
   const handleDelete = (assignmentId: string) => {
     if (Array.isArray(assignments)) {
-      setAssignments(assignments.filter(assignment => assignment.id !== assignmentId));
-      toast({
-        title: "Assignment Deleted",
-        description: "Space assignment has been removed successfully.",
-      });
+    setAssignments(assignments.filter(assignment => assignment.id !== assignmentId));
+      toast.success("Space assignment has been removed successfully.");
     }
   };
 
@@ -274,6 +283,8 @@ export default function SpaceAssignments() {
               </div>
 
               {/* Assignments Grid */}
+              <ContentContainer>
+                <LoaderOverlay />
               <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
                 {Array.isArray(assignments) && assignments.map((assignment) => {
                   const { space, group } = getAssignmentDetails(assignment);
@@ -334,7 +345,7 @@ export default function SpaceAssignments() {
                         </div>
 
                         {/* Group Pricing */}
-                        {group.specs.base_rate && (
+                        {group.specs.base_rate > 0 && (
                           <div className="text-sm">
                             <span className="text-muted-foreground">Base Rate: </span>
                             <span className="font-medium">
@@ -388,6 +399,7 @@ export default function SpaceAssignments() {
                   );
                 })}
               </div>
+              </ContentContainer>
               <Pagination
                 page={page}
                 pageSize={pageSize}

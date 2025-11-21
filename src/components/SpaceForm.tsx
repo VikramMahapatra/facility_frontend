@@ -3,8 +3,20 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogFooter,
+} from "@/components/ui/dialog";
 import { Controller, useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { SpaceFormValues, spaceSchema } from "@/schemas/space.schema";
@@ -32,7 +44,7 @@ interface Space {
     furnished?: string;
     star_rating?: string;
   };
-  status: 'available' | 'occupied' | 'out_of_service';
+  status: "available" | "occupied" | "out_of_service";
   created_at: string;
   updated_at: string;
 }
@@ -42,7 +54,7 @@ interface SpaceFormProps {
   isOpen: boolean;
   onClose: () => void;
   onSave: (space: Partial<Space>) => Promise<any>;
-  mode: 'create' | 'edit' | 'view';
+  mode: "create" | "edit" | "view";
 }
 
 const emptyFormData: SpaceFormValues = {
@@ -61,10 +73,16 @@ const emptyFormData: SpaceFormValues = {
     //smoking: false,
     furnished: undefined,
     star_rating: "",
-  }
+  },
 };
 
-export function SpaceForm({ space, isOpen, onClose, onSave, mode }: SpaceFormProps) {
+export function SpaceForm({
+  space,
+  isOpen,
+  onClose,
+  onSave,
+  mode,
+}: SpaceFormProps) {
   const {
     register,
     handleSubmit,
@@ -86,35 +104,43 @@ export function SpaceForm({ space, isOpen, onClose, onSave, mode }: SpaceFormPro
   const loadAll = async () => {
     setFormLoading(true);
 
-    await Promise.all([
-      loadSiteLookup(),
-      loadBuildingLookup()
-    ]);
+    await Promise.all([loadSiteLookup(), loadBuildingLookup()]);
 
-    reset(space ? {
-      code: space.code || "",
-      name: space.name || "",
-      kind: space.kind || "room",
-      site_id: space.site_id || "",
-      floor: space.floor !== undefined && space.floor !== null ? Number(space.floor) : undefined,
-      building_block_id: space.building_block_id || "",
-      area_sqft: space.area_sqft,
-      beds: space.beds,
-      baths: space.baths,
-      status: space.status || "available",
-      attributes: {
-        view: space.attributes?.view || "",
-        //smoking: space.attributes?.smoking ?? false,
-        furnished: space.attributes?.furnished as "unfurnished" | "semi" | "fully" | undefined,
-        star_rating: space.attributes?.star_rating || "",
-      }
-    } : emptyFormData);
+    reset(
+      space
+        ? {
+            code: space.code || "",
+            name: space.name || "",
+            kind: space.kind || "room",
+            site_id: space.site_id || "",
+            floor:
+              space.floor !== undefined && space.floor !== null
+                ? Number(space.floor)
+                : undefined,
+            building_block_id: space.building_block_id || "",
+            area_sqft: space.area_sqft,
+            beds: space.beds,
+            baths: space.baths,
+            status: space.status || "available",
+            attributes: {
+              view: space.attributes?.view || "",
+              //smoking: space.attributes?.smoking ?? false,
+              furnished: space.attributes?.furnished as
+                | "unfurnished"
+                | "semi"
+                | "fully"
+                | undefined,
+              star_rating: space.attributes?.star_rating || "",
+            },
+          }
+        : emptyFormData
+    );
 
     setFormLoading(false);
-  }
+  };
 
   useEffect(() => {
-    loadAll()
+    loadAll();
   }, [space, mode, reset]);
 
   useEffect(() => {
@@ -132,7 +158,9 @@ export function SpaceForm({ space, isOpen, onClose, onSave, mode }: SpaceFormPro
 
   const loadBuildingLookup = async () => {
     if (selectedSiteId) {
-      const response = await buildingApiService.getBuildingLookup(selectedSiteId);
+      const response = await buildingApiService.getBuildingLookup(
+        selectedSiteId
+      );
       if (response.success) setBuildingList(response.data || []);
     }
   };
@@ -141,11 +169,16 @@ export function SpaceForm({ space, isOpen, onClose, onSave, mode }: SpaceFormPro
     const formResponse = await onSave({
       ...space,
       ...data,
-      floor: data.floor !== undefined && data.floor !== null ? String(data.floor) : (mode === "create" ? "0" : space?.floor),
+      floor:
+        data.floor !== undefined && data.floor !== null
+          ? String(data.floor)
+          : mode === "create"
+          ? "0"
+          : space?.floor,
     } as Partial<Space>);
   };
 
-  const isReadOnly = mode === 'view';
+  const isReadOnly = mode === "view";
   const selectedKind = watch("kind");
 
   return (
@@ -153,13 +186,16 @@ export function SpaceForm({ space, isOpen, onClose, onSave, mode }: SpaceFormPro
       <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
         <DialogHeader>
           <DialogTitle>
-            {mode === 'create' && "Create New Space"}
-            {mode === 'edit' && "Edit Space"}
-            {mode === 'view' && "Space Details"}
+            {mode === "create" && "Create New Space"}
+            {mode === "edit" && "Edit Space"}
+            {mode === "view" && "Space Details"}
           </DialogTitle>
         </DialogHeader>
 
-        <form onSubmit={isSubmitting ? undefined : handleSubmit(onSubmitForm)} className="space-y-4">
+        <form
+          onSubmit={isSubmitting ? undefined : handleSubmit(onSubmitForm)}
+          className="space-y-4"
+        >
           {formLoading ? (
             <p className="text-center">Loading...</p>
           ) : (
@@ -172,10 +208,12 @@ export function SpaceForm({ space, isOpen, onClose, onSave, mode }: SpaceFormPro
                     {...register("code")}
                     placeholder="e.g., 101, A-1203, SH-12"
                     disabled={isReadOnly}
-                    className={errors.code ? 'border-red-500' : ''}
+                    className={errors.code ? "border-red-500" : ""}
                   />
                   {errors.code && (
-                    <p className="text-sm text-red-500">{errors.code.message}</p>
+                    <p className="text-sm text-red-500">
+                      {errors.code.message}
+                    </p>
                   )}
                 </div>
                 <div className="space-y-2">
@@ -185,7 +223,7 @@ export function SpaceForm({ space, isOpen, onClose, onSave, mode }: SpaceFormPro
                     {...register("name")}
                     placeholder="Space name"
                     disabled={isReadOnly}
-                    className={errors.name ? 'border-red-500' : ''}
+                    className={errors.name ? "border-red-500" : ""}
                   />
                 </div>
               </div>
@@ -202,12 +240,16 @@ export function SpaceForm({ space, isOpen, onClose, onSave, mode }: SpaceFormPro
                         onValueChange={field.onChange}
                         disabled={isReadOnly}
                       >
-                        <SelectTrigger className={errors.site_id ? 'border-red-500' : ''}>
+                        <SelectTrigger
+                          className={errors.site_id ? "border-red-500" : ""}
+                        >
                           <SelectValue placeholder="Select site" />
                         </SelectTrigger>
                         <SelectContent>
                           {siteList.length === 0 ? (
-                            <SelectItem value="none" disabled>No sites available</SelectItem>
+                            <SelectItem value="none" disabled>
+                              No sites available
+                            </SelectItem>
                           ) : (
                             siteList.map((site) => (
                               <SelectItem key={site.id} value={site.id}>
@@ -218,7 +260,9 @@ export function SpaceForm({ space, isOpen, onClose, onSave, mode }: SpaceFormPro
                         </SelectContent>
                       </Select>
                       {errors.site_id && (
-                        <p className="text-sm text-red-500">{errors.site_id.message}</p>
+                        <p className="text-sm text-red-500">
+                          {errors.site_id.message}
+                        </p>
                       )}
                     </div>
                   )}
@@ -234,20 +278,29 @@ export function SpaceForm({ space, isOpen, onClose, onSave, mode }: SpaceFormPro
                         onValueChange={field.onChange}
                         disabled={isReadOnly}
                       >
-                        <SelectTrigger className={errors.building_block_id ? 'border-red-500' : ''}>
+                        <SelectTrigger
+                          className={
+                            errors.building_block_id ? "border-red-500" : ""
+                          }
+                        >
                           <SelectValue placeholder="Select building block" />
                         </SelectTrigger>
                         <SelectContent>
                           <SelectItem value="none">Select building</SelectItem>
                           {buildingList.map((building_block) => (
-                            <SelectItem key={building_block.id} value={building_block.id}>
+                            <SelectItem
+                              key={building_block.id}
+                              value={building_block.id}
+                            >
                               {building_block.name}
                             </SelectItem>
                           ))}
                         </SelectContent>
                       </Select>
                       {errors.building_block_id && (
-                        <p className="text-sm text-red-500">{errors.building_block_id.message}</p>
+                        <p className="text-sm text-red-500">
+                          {errors.building_block_id.message}
+                        </p>
                       )}
                     </div>
                   )}
@@ -260,13 +313,17 @@ export function SpaceForm({ space, isOpen, onClose, onSave, mode }: SpaceFormPro
                   <Input
                     id="floor"
                     type="number"
-                    {...register("floor", { setValueAs: (v) => v === '' ? undefined : Number(v) })}
+                    {...register("floor", {
+                      setValueAs: (v) => (v === "" ? undefined : Number(v)),
+                    })}
                     placeholder="0, 1, 2 , ..."
                     disabled={isReadOnly}
-                    className={errors.floor ? 'border-red-500' : ''}
+                    className={errors.floor ? "border-red-500" : ""}
                   />
                   {errors.floor && (
-                    <p className="text-sm text-red-500">{errors.floor.message}</p>
+                    <p className="text-sm text-red-500">
+                      {errors.floor.message}
+                    </p>
                   )}
                 </div>
                 <Controller
@@ -280,19 +337,25 @@ export function SpaceForm({ space, isOpen, onClose, onSave, mode }: SpaceFormPro
                         onValueChange={field.onChange}
                         disabled={isReadOnly}
                       >
-                        <SelectTrigger className={errors.kind ? 'border-red-500' : ''}>
+                        <SelectTrigger
+                          className={errors.kind ? "border-red-500" : ""}
+                        >
                           <SelectValue placeholder="Select type" />
                         </SelectTrigger>
                         <SelectContent>
                           {spaceKinds.map((kind) => (
                             <SelectItem key={kind} value={kind}>
-                              {kind.replace('_', ' ').replace(/\b\w/g, l => l.toUpperCase())}
+                              {kind
+                                .replace("_", " ")
+                                .replace(/\b\w/g, (l) => l.toUpperCase())}
                             </SelectItem>
                           ))}
                         </SelectContent>
                       </Select>
                       {errors.kind && (
-                        <p className="text-sm text-red-500">{errors.kind.message}</p>
+                        <p className="text-sm text-red-500">
+                          {errors.kind.message}
+                        </p>
                       )}
                     </div>
                   )}
@@ -306,31 +369,39 @@ export function SpaceForm({ space, isOpen, onClose, onSave, mode }: SpaceFormPro
                     id="area_sqft"
                     type="number"
                     step="any"
-                    {...register("area_sqft", { setValueAs: (v) => v === '' ? undefined : Number(v) })}
+                    {...register("area_sqft", {
+                      setValueAs: (v) => (v === "" ? undefined : Number(v)),
+                    })}
                     disabled={isReadOnly}
-                    className={errors.area_sqft ? 'border-red-500' : ''}
+                    className={errors.area_sqft ? "border-red-500" : ""}
                     min="0"
                   />
                   {errors.area_sqft && (
-                    <p className="text-sm text-red-500">{errors.area_sqft.message}</p>
+                    <p className="text-sm text-red-500">
+                      {errors.area_sqft.message}
+                    </p>
                   )}
                 </div>
               </div>
 
-              {selectedKind && ['room', 'apartment'].includes(selectedKind) && (
+              {selectedKind && ["room", "apartment"].includes(selectedKind) && (
                 <div className="grid grid-cols-2 gap-4">
                   <div className="space-y-2">
                     <Label htmlFor="beds">Beds</Label>
                     <Input
                       id="beds"
                       type="number"
-                      {...register("beds", { setValueAs: (v) => v === '' ? undefined : Number(v) })}
+                      {...register("beds", {
+                        setValueAs: (v) => (v === "" ? undefined : Number(v)),
+                      })}
                       disabled={isReadOnly}
-                      className={errors.beds ? 'border-red-500' : ''}
+                      className={errors.beds ? "border-red-500" : ""}
                       min="0"
                     />
                     {errors.beds && (
-                      <p className="text-sm text-red-500">{errors.beds.message}</p>
+                      <p className="text-sm text-red-500">
+                        {errors.beds.message}
+                      </p>
                     )}
                   </div>
                   <div className="space-y-2">
@@ -338,13 +409,17 @@ export function SpaceForm({ space, isOpen, onClose, onSave, mode }: SpaceFormPro
                     <Input
                       id="baths"
                       type="number"
-                      {...register("baths", { setValueAs: (v) => v === '' ? undefined : Number(v) })}
+                      {...register("baths", {
+                        setValueAs: (v) => (v === "" ? undefined : Number(v)),
+                      })}
                       disabled={isReadOnly}
-                      className={errors.baths ? 'border-red-500' : ''}
+                      className={errors.baths ? "border-red-500" : ""}
                       min="0"
                     />
                     {errors.baths && (
-                      <p className="text-sm text-red-500">{errors.baths.message}</p>
+                      <p className="text-sm text-red-500">
+                        {errors.baths.message}
+                      </p>
                     )}
                   </div>
                 </div>
@@ -362,17 +437,23 @@ export function SpaceForm({ space, isOpen, onClose, onSave, mode }: SpaceFormPro
                         onValueChange={field.onChange}
                         disabled={isReadOnly}
                       >
-                        <SelectTrigger className={errors.status ? 'border-red-500' : ''}>
+                        <SelectTrigger
+                          className={errors.status ? "border-red-500" : ""}
+                        >
                           <SelectValue />
                         </SelectTrigger>
                         <SelectContent>
                           <SelectItem value="available">Available</SelectItem>
                           <SelectItem value="occupied">Occupied</SelectItem>
-                          <SelectItem value="out_of_service">Out of Service</SelectItem>
+                          <SelectItem value="out_of_service">
+                            Out of Service
+                          </SelectItem>
                         </SelectContent>
                       </Select>
                       {errors.status && (
-                        <p className="text-sm text-red-500">{errors.status.message}</p>
+                        <p className="text-sm text-red-500">
+                          {errors.status.message}
+                        </p>
                       )}
                     </div>
                   )}
@@ -404,7 +485,9 @@ export function SpaceForm({ space, isOpen, onClose, onSave, mode }: SpaceFormPro
                           <SelectValue placeholder="Select option" />
                         </SelectTrigger>
                         <SelectContent>
-                          <SelectItem value="unfurnished">Unfurnished</SelectItem>
+                          <SelectItem value="unfurnished">
+                            Unfurnished
+                          </SelectItem>
                           <SelectItem value="semi">Semi Furnished</SelectItem>
                           <SelectItem value="fully">Fully Furnished</SelectItem>
                         </SelectContent>
@@ -429,7 +512,9 @@ export function SpaceForm({ space, isOpen, onClose, onSave, mode }: SpaceFormPro
                         <SelectContent>
                           {[0, 1, 2, 3, 4, 5].map((rating) => (
                             <SelectItem key={rating} value={rating.toString()}>
-                              {rating === 0 ? "No Rating" : `${rating} Star${rating > 1 ? 's' : ''}`}
+                              {rating === 0
+                                ? "No Rating"
+                                : `${rating} Star${rating > 1 ? "s" : ""}`}
                             </SelectItem>
                           ))}
                         </SelectContent>
@@ -440,12 +525,21 @@ export function SpaceForm({ space, isOpen, onClose, onSave, mode }: SpaceFormPro
               </div>
 
               <DialogFooter>
-                <Button type="button" variant="outline" onClick={onClose} disabled={isSubmitting}>
-                  {mode === 'view' ? 'Close' : 'Cancel'}
+                <Button
+                  type="button"
+                  variant="outline"
+                  onClick={onClose}
+                  disabled={isSubmitting}
+                >
+                  {mode === "view" ? "Close" : "Cancel"}
                 </Button>
-                {mode !== 'view' && (
+                {mode !== "view" && (
                   <Button type="submit" disabled={isSubmitting}>
-                    {isSubmitting ? "Saving..." : mode === 'create' ? 'Create Space' : 'Update Space'}
+                    {isSubmitting
+                      ? "Saving..."
+                      : mode === "create"
+                      ? "Create Space"
+                      : "Update Space"}
                   </Button>
                 )}
               </DialogFooter>

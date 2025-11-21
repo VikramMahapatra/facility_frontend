@@ -296,11 +296,11 @@ export default function SpaceGroups() {
                           {/* Member Count */}
                           <div className="flex items-center gap-2">
                             <Users className="h-4 w-4 text-muted-foreground" />
-                            <span className="text-sm font-medium">{group.group_members} spaces in this group</span>
+                            <span className="text-sm font-medium">{group.group_members} assignments in this group</span>
                           </div>
 
                           {/* Base Rate */}
-                          {group.specs.base_rate && (
+                          {group.specs.base_rate > 0 && (
                             <div className="flex items-center gap-2">
                               <DollarSign className="h-4 w-4 text-muted-foreground" />
                               <span className="text-sm font-medium">
