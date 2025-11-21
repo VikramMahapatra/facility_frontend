@@ -36,7 +36,7 @@ interface RoleFormProps {
   mode: "create" | "edit" | "view";
 }
 
-export function RoleForm({ role, isOpen, onClose, onSave, mode  }: RoleFormProps) {
+export function RoleForm({ role, isOpen, onClose, onSave, mode }: RoleFormProps) {
   const form = useForm<RoleFormValues>({
     resolver: zodResolver(roleFormSchema),
     defaultValues: {
@@ -53,12 +53,6 @@ export function RoleForm({ role, isOpen, onClose, onSave, mode  }: RoleFormProps
     });
   }, [role, form]);
 
-  const onSubmitForm = async (data: RoleFormValues) => {
-    const formResponse = await onSave({
-      ...role,
-      ...data,
-    });
-  };
 
   const handleSubmit = async (data: RoleFormValues) => {
     const formResponse = await onSave({
@@ -96,7 +90,7 @@ export function RoleForm({ role, isOpen, onClose, onSave, mode  }: RoleFormProps
                 <FormItem>
                   <FormLabel>Description</FormLabel>
                   <FormControl>
-                    <Textarea 
+                    <Textarea
                       placeholder="Describe the role's responsibilities"
                       className="resize-none"
                       {...field}

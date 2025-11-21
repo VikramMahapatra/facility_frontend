@@ -23,8 +23,8 @@ import { zodResolver } from "@hookform/resolvers/zod";
 import { leaseSchema, LeaseFormValues } from "@/schemas/lease.schema";
 import { siteApiService } from "@/services/spaces_sites/sitesapi";
 import { spacesApiService } from "@/services/spaces_sites/spacesapi";
-import { leasesApiService } from "@/services/Leasing_Tenants/leasesapi";
 import { Lease } from "@/interfaces/leasing_tenants_interface";
+import { leasesApiService } from "@/services/leasing_tenants/leasesapi";
 
 interface LeaseFormProps {
   lease?: Lease;
@@ -106,7 +106,7 @@ export function LeaseForm({ lease, isOpen, onClose, onSave, mode }: LeaseFormPro
       }, { keepErrors: false });
       clearErrors(["partner_id", "tenant_id"]);
       if (lease.site_id && lease.kind) {
-        loadLeasePartners(lease.kind, lease.site_id);
+        loadLeasePartners();
       }
     } else {
       reset({
@@ -131,21 +131,19 @@ export function LeaseForm({ lease, isOpen, onClose, onSave, mode }: LeaseFormPro
   const selectedKind = watch("kind");
 
   useEffect(() => {
-    if (selectedSiteId) {
-      loadSpaces(selectedSiteId);
-      if (selectedKind) loadLeasePartners(selectedKind, selectedSiteId);
-    } 
+    loadSpaces();
+    loadLeasePartners();
   }, [selectedSiteId, selectedKind]);
 
   useEffect(() => {
     if (lease && leasePartnerList.length > 0) {
-      if(lease.kind === "commercial" && lease.partner_id) {
+      if (lease.kind === "commercial" && lease.partner_id) {
         const partnerIdStr = String(lease.partner_id);
         clearErrors("partner_id");
         setValue("partner_id", partnerIdStr, { shouldValidate: true });
         trigger("partner_id");
       }
-      else if(lease.kind === "residential" && lease.tenant_id) {
+      else if (lease.kind === "residential" && lease.tenant_id) {
         const tenantIdStr = String(lease.tenant_id);
         clearErrors("tenant_id");
         setValue("tenant_id", tenantIdStr, { shouldValidate: true });
@@ -155,9 +153,12 @@ export function LeaseForm({ lease, isOpen, onClose, onSave, mode }: LeaseFormPro
   }, [leasePartnerList, lease, setValue, clearErrors, trigger]);
 
 
-  const loadSpaces = async (siteId: string) => {
-    const spaces = await spacesApiService.getSpaceLookup(siteId);
-    if (spaces.success) setSpaceList(spaces.data || []);
+  const loadSpaces = async () => {
+    if (selectedSiteId) {
+      const spaces = await spacesApiService.getSpaceLookup(selectedSiteId);
+      if (spaces.success) setSpaceList(spaces.data || []);
+    }
+
   }
 
   const loadSites = async () => {
@@ -165,9 +166,9 @@ export function LeaseForm({ lease, isOpen, onClose, onSave, mode }: LeaseFormPro
     if (sites.success) setSiteList(sites.data || []);
   }
 
-  const loadLeasePartners = async (kind?: string, site_id?: string) => {
-    if (!kind || !site_id) return;
-    const partners = await leasesApiService.getLeasePartnerLookup(kind, site_id);
+  const loadLeasePartners = async () => {
+    if (!selectedKind || !selectedSiteId) return;
+    const partners = await leasesApiService.getLeasePartnerLookup(selectedKind, selectedSiteId);
     if (partners?.success) setLeasePartnerList(partners.data || []);
   }
 
