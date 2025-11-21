@@ -166,34 +166,30 @@ export default function Spaces() {
   };
   const handleSave = async (spaceData: Partial<Space>) => {
     let response;
+    const attributes = spaceData.attributes ? { ...spaceData.attributes } : {};
+    if (attributes.star_rating === '' || attributes.star_rating === '0' || !attributes.star_rating) {
+      delete attributes.star_rating;
+    }
+
+    const spaceToSave = {
+      ...spaceData,
+      building_block_id: spaceData.building_block_id.length > 0 ? spaceData.building_block_id : undefined,
+      attributes: Object.keys(attributes).length > 0 ? attributes : undefined,
+    };
+
     if (formMode === 'create') {
       // Remove star_rating from attributes if it's empty or "0"
-      const attributes = spaceData.attributes ? { ...spaceData.attributes } : {};
-      if (attributes.star_rating === '' || attributes.star_rating === '0' || !attributes.star_rating) {
-        delete attributes.star_rating;
-      }
 
-      const spaceToCreate = {
-        ...spaceData,
-        attributes: Object.keys(attributes).length > 0 ? attributes : undefined,
-      };
-
-      response = await spacesApiService.addSpace(spaceToCreate);
+      response = await spacesApiService.addSpace(spaceToSave);
 
       if (response.success)
         updateSpacePage();
     } else if (formMode === 'edit' && selectedSpace) {
-      const attributes = spaceData.attributes ? { ...spaceData.attributes } : (selectedSpace.attributes || {});
-      if (attributes.star_rating === '' || attributes.star_rating === '0' || !attributes.star_rating) {
-        delete attributes.star_rating;
-      }
-
       const updatedSpace = {
         ...selectedSpace,
-        ...spaceData,
-        attributes: Object.keys(attributes).length > 0 ? attributes : undefined,
-        updated_at: new Date().toISOString(),
+        ...spaceToSave,
       };
+
       response = await spacesApiService.updateSpace(updatedSpace);
 
       if (response.success) {
