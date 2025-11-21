@@ -156,36 +156,36 @@ const Tenants = () => {
     }
   };
  const handleSave = async (tenantData: Partial<Tenant>) => {
-    let response;
-    if (formMode === "create") {
-      response = await tenantsApiService.addTenant(tenantData);
+  let response;
+  if (formMode === "create") {
+    response = await tenantsApiService.addTenant(tenantData);
 
-      if (response.success)
-        updateTenantPage();
-    } else if (formMode === "edit" && selectedTenant) {
-      const updatedTenant = {
-        ...selectedTenant,
-        ...tenantData,
-        updated_at: new Date().toISOString(),
-      };
-      response = await tenantsApiService.updateTenant(updatedTenant);
+    if (response.success)
+      updateTenantPage();
+  } else if (formMode === "edit" && selectedTenant) {
+    const updatedTenant = {
+      ...selectedTenant,
+      ...tenantData,
+      updated_at: new Date().toISOString(),
+    };
+    response = await tenantsApiService.updateTenant(updatedTenant);
 
-      if (response.success) {
-        // Update the edited tenant in local state
-        setTenants((prev) =>
-          prev.map((t) => (t.id === updatedTenant.id ? response.data : t))
-        );
-      }
-    }
-
-    if (response?.success) {
-      setIsFormOpen(false);
-      toast.success(
-        `Tenant ${tenantData.name} has been ${formMode === "create" ? "created" : "updated"} successfully.`
+    if (response.success) {
+      // FIX: Update with response.data instead of updatedTenant
+      setTenants((prev) =>
+        prev.map((t) => (t.id === updatedTenant.id ? response.data : t))
       );
     }
-    return response;
-  };
+  }
+
+  if (response?.success) {
+    setIsFormOpen(false);
+    toast.success(
+      `Tenant ${tenantData.name} has been ${formMode === "create" ? "created" : "updated"} successfully.`
+    );
+  }
+  return response;
+};
 
   const getStatusColor = (status: string) => {
     switch (status) {

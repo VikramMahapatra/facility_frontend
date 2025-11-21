@@ -154,9 +154,9 @@ export function TenantForm({
    
   useEffect(() => {
     console.log("Building list updated:", buildingList);
-    console.log("Tenant's building ID:", tenant?.building_id);
-    if (tenant?.building_id && buildingList.length > 0) {
-      setValue("building_id", String(tenant.building_id));
+    console.log("Tenant's building ID:", tenant?.building_block_id);
+    if (tenant?.building_block_id && buildingList.length > 0) {
+      setValue("building_id", String(tenant.building_block_id));
     }
   }, [buildingList]);
 
