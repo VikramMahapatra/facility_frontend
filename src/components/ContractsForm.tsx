@@ -61,7 +61,7 @@ export function ContractForm({ contract, isOpen, onClose, onSave, mode }: Contra
     mode: "onChange",
     reValidateMode: "onChange",
   });
-
+  const [formLoading, setFormLoading] = useState(true);
   const [typeList, setTypeList] = useState<any[]>([]);
   const [statusList, setStatusList] = useState<any[]>([]);
   const [vendorList, setVendorList] = useState<any[]>([]);
@@ -69,19 +69,14 @@ export function ContractForm({ contract, isOpen, onClose, onSave, mode }: Contra
 
   const documents = watch("documents") || [];
 
-  useEffect(() => {
-    if (contract && mode !== "create") {
-      const docs = (contract.documents || []).map((doc: any, index: number) => ({
-        id: doc.id || `doc-${index}`,
-        url: typeof doc === "string" ? doc : doc.url || "",
-        name:
-          doc.name ||
-          (typeof doc === "string"
-            ? doc.split("/").pop() || "Document"
-            : contract.url?.split("/").pop() || "Document"),
-      }));
+  const loadAll = async () => {
+    setFormLoading(true);
 
-      reset({
+    await Promise.all([loadTypeLookup(), loadStatusLookup(), loadVendorLookup(), loadSiteLookup()]);
+    
+    reset(
+      contract
+        ? {
         title: contract.title || "",
         type: contract.type || "",
         status: contract.status || "",
@@ -94,17 +89,18 @@ export function ContractForm({ contract, isOpen, onClose, onSave, mode }: Contra
           sla: { response_hrs: contract.terms?.sla?.response_hrs || undefined },
           penalty: { per_day: contract.terms?.penalty?.per_day || undefined },
         },
-        documents: docs,
-      });
-    } else {
-      reset(emptyFormData);
-    }
+        documents: contract.documents || [],
+      }
+        : emptyFormData
+    );
+    setFormLoading(false);
+  };
 
-    loadTypeLookup();
-    loadStatusLookup();
-    loadVendorLookup();
-    loadSiteLookup();
+  useEffect(() => {
+    loadAll();
   }, [contract, mode, reset]);
+
+  
 
   const loadTypeLookup = async () => {
     const response = await contractApiService.getTypeLookup();
@@ -181,8 +177,12 @@ export function ContractForm({ contract, isOpen, onClose, onSave, mode }: Contra
         </DialogHeader>
 
         <form onSubmit={handleSubmit(onSubmitForm)} className="space-y-4">
-          {/* Contract Details */}
-          <div className="grid grid-cols-3 gap-4">
+          {formLoading ? (
+            <p className="text-center">Loading...</p>
+          ) : (
+            <div className="space-y-4">
+              {/* Contract Details */}
+              <div className="grid grid-cols-3 gap-4">
             <div className="space-y-2">
               <Label htmlFor="title">Contract Title *</Label>
               <Input
@@ -446,16 +446,18 @@ export function ContractForm({ contract, isOpen, onClose, onSave, mode }: Contra
             </Card>
           </div>
 
-          <DialogFooter>
-            <Button type="button" variant="outline" onClick={onClose} disabled={isSubmitting}>
-              {mode === "view" ? "Close" : "Cancel"}
-            </Button>
-            {mode !== "view" && (
-              <Button type="submit" disabled={isSubmitting}>
-                {isSubmitting ? "Saving..." : mode === "create" ? "Create Contract" : "Update Contract"}
-              </Button>
-            )}
-          </DialogFooter>
+              <DialogFooter>
+                <Button type="button" variant="outline" onClick={onClose} disabled={isSubmitting}>
+                  {mode === "view" ? "Close" : "Cancel"}
+                </Button>
+                {mode !== "view" && (
+                  <Button type="submit" disabled={isSubmitting}>
+                    {isSubmitting ? "Saving..." : mode === "create" ? "Create Contract" : "Update Contract"}
+                  </Button>
+                )}
+              </DialogFooter>
+            </div>
+          )}
         </form>
       </DialogContent>
     </Dialog>
