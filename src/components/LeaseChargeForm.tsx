@@ -204,6 +204,7 @@ export function LeaseChargeForm({ charge, isOpen, onClose, onSave, mode }: Lease
               <Input
                 id="amount"
                 type="number"
+                step="any"
                 {...register("amount", { setValueAs: (v) => v === '' ? undefined : Number(v) })}
                 disabled={isReadOnly}
                 className={errors.amount ? 'border-red-500' : ''}
@@ -216,6 +217,7 @@ export function LeaseChargeForm({ charge, isOpen, onClose, onSave, mode }: Lease
               <Input
                 id="tax_pct"
                 type="number"
+                step="any"
                 {...register("tax_pct", { setValueAs: (v) => v === '' ? undefined : Number(v) })}
                 disabled={isReadOnly}
                 className={errors.tax_pct ? 'border-red-500' : ''}
