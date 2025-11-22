@@ -42,14 +42,14 @@ export function SpaceAssignmentForm({ assignment, isOpen, onClose, onSave, mode 
   const [siteList, setSiteList] = useState([]);
   const [spaceList, setSpaceList] = useState([]);
   const [spaceGroupList, setSpaceGroupList] = useState([]);
-  const [assignmentPreview, setAssignmentPreview] = useState({
+  const [assignmentPreview, setAssignmentPreview] = useState<any>({
     site_name: "",
     space_name: "",
     space_code: "",
     kind: "",
     group_name: "",
     specs: {
-      base_rate: ""
+      base_rate: undefined
     }
   });
 
@@ -75,8 +75,10 @@ export function SpaceAssignmentForm({ assignment, isOpen, onClose, onSave, mode 
   }, [formData.space_id]);
 
   useEffect(() => {
-    loadAssignmentPreview();
-  }, [formData.group_id]);
+    if (formData.group_id && formData.space_id) {
+      loadAssignmentPreview();
+    }
+  }, [formData.group_id, formData.space_id]);
 
 
   const loadSiteLookup = async () => {
@@ -110,7 +112,9 @@ export function SpaceAssignmentForm({ assignment, isOpen, onClose, onSave, mode 
 
   const loadAssignmentPreview = async () => {
     const preview = await spaceAssignmentApiService.getAssignmentPreview(formData.group_id, formData.space_id);
-    setAssignmentPreview(preview);
+    if (preview?.success && preview.data) {
+      setAssignmentPreview(preview.data);
+    }
   }
 
   const handleSubmit = async (e: React.FormEvent) => {

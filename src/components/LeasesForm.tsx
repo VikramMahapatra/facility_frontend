@@ -24,7 +24,7 @@ import { leaseSchema, LeaseFormValues } from "@/schemas/lease.schema";
 import { siteApiService } from "@/services/spaces_sites/sitesapi";
 import { spacesApiService } from "@/services/spaces_sites/spacesapi";
 import { Lease } from "@/interfaces/leasing_tenants_interface";
-import { leasesApiService } from "@/services/leasing_tenants/leasesapi";
+import { leasesApiService } from "@/services/Leasing_Tenants/leasesapi";
 
 interface LeaseFormProps {
   lease?: Lease;
@@ -34,7 +34,7 @@ interface LeaseFormProps {
   mode: "create" | "edit" | "view";
 }
 
-const EMPTY: Partial<Lease> = {
+const emptyFormData: Partial<Lease> = {
   kind: "commercial",
   site_id: "",
   space_id: "",
@@ -79,15 +79,19 @@ export function LeaseForm({ lease, isOpen, onClose, onSave, mode }: LeaseFormPro
     mode: "onChange",
     reValidateMode: "onChange",
   });
+  const [formLoading, setFormLoading] = useState(true);
   const [siteList, setSiteList] = useState<any[]>([]);
   const [spaceList, setSpaceList] = useState<any[]>([]);
   const [leasePartnerList, setLeasePartnerList] = useState<any[]>([]);
   const isReadOnly = mode === "view";
 
-  // hydrate form on open/change
-  useEffect(() => {
-    if (lease && mode !== "create") {
-      reset({
+  const loadAll = async () => {
+    setFormLoading(true);
+
+    await Promise.all([loadSites(), loadLeasePartners(), loadSpaces()]);
+    reset(
+      lease
+        ? {
         kind: (lease.kind as any) || "commercial",
         site_id: lease.site_id || "",
         space_id: lease.space_id || "",
@@ -103,29 +107,15 @@ export function LeaseForm({ lease, isOpen, onClose, onSave, mode }: LeaseFormPro
           water: lease.utilities?.water as any,
         },
         status: (lease.status as any) || "draft",
-      }, { keepErrors: false });
-      clearErrors(["partner_id", "tenant_id"]);
-      if (lease.site_id && lease.kind) {
-        loadLeasePartners();
-      }
-    } else {
-      reset({
-        kind: "commercial",
-        site_id: "",
-        space_id: "",
-        partner_id: "",
-        tenant_id: "",
-        start_date: "",
-        end_date: "",
-        rent_amount: undefined,
-        deposit_amount: undefined,
-        cam_rate: undefined,
-        utilities: { electricity: undefined, water: undefined },
-        status: "draft",
-      });
-    }
-    loadSites();
-  }, [lease, mode, reset, clearErrors]);
+        }
+        : emptyFormData
+    );
+    setFormLoading(false);
+  }
+
+  useEffect(() => {
+    loadAll();
+  }, [lease, mode, reset]);
 
   const selectedSiteId = watch("site_id");
   const selectedKind = watch("kind");
@@ -192,7 +182,11 @@ export function LeaseForm({ lease, isOpen, onClose, onSave, mode }: LeaseFormPro
         </DialogHeader>
 
         <form onSubmit={isSubmitting ? undefined : handleSubmit(onSubmitForm)} className="space-y-4">
-          <div className="grid grid-cols-2 gap-4">
+          {formLoading ? (
+            <p className="text-center">Loading...</p>
+          ) : (
+            <div className="space-y-4">
+              <div className="grid grid-cols-2 gap-4">
             <div>
               <Label>Site *</Label>
               <Controller
@@ -440,16 +434,19 @@ export function LeaseForm({ lease, isOpen, onClose, onSave, mode }: LeaseFormPro
             </div>
           </div>
 
-          <DialogFooter>
-            <Button type="button" variant="outline" onClick={onClose} disabled={isSubmitting}>
-              {mode === "view" ? "Close" : "Cancel"}
-            </Button>
-            {mode !== "view" && (
-              <Button type="submit" disabled={isSubmitting}>
-                {isSubmitting ? "Saving..." : mode === "create" ? "Create Lease" : "Update Lease"}
-              </Button>
-            )}
-          </DialogFooter>
+              <DialogFooter>
+                <Button type="button" variant="outline" onClick={onClose} disabled={isSubmitting}>
+                  {mode === "view" ? "Close" : "Cancel"}
+                </Button>
+                {mode !== "view" && (
+                  <Button type="submit" disabled={isSubmitting}>
+                    {isSubmitting ? "Saving..." : mode === "create" ? "Create Lease" : "Update Lease"}
+                  </Button>
+                  
+                )}
+              </DialogFooter>
+            </div>
+          )}
         </form>
       </DialogContent>
     </Dialog>

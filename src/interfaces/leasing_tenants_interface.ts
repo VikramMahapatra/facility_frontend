@@ -35,11 +35,13 @@ export interface Tenant {
     id?: string;
     org_id?: string;
     site_id?: string;
-    building_id?: string; // Keep this for form state
-    building_block_id?: string; // This comes from backend
+    building_id?: string; 
+    building_block_id?: string; 
     space_id?: string;
     space_name?: string;
     building_name?: string;
+    building_block_name?: string; 
+    site_name?: string; 
     name: string;
     email: string;
     phone: string;

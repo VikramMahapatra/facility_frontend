@@ -124,6 +124,7 @@ export function UserForm({
     reValidateMode: "onChange",
   });
 
+  const [formLoading, setFormLoading] = useState(true);
   const [statusList, setStatusList] = useState([]);
   const [roleList, setRoleList] = useState([]);
   const [siteList, setSiteList] = useState<any[]>([]);
@@ -140,14 +141,52 @@ export function UserForm({
   const isStaff = accountType === "staff";
   const isOrganization = accountType === "organization";
 
-  // Load lookup data when form opens
+  const loadAll = async () => {
+    setFormLoading(true);
+
+    const userSiteId = user && mode !== "create" ? (user as any).site_id : undefined;
+    const userBuildingId = user && mode !== "create" ? (user as any).building_block_id : undefined;
+
+    const promises = [
+      loadStatusLookup(),
+      loadRolesLookup(),
+      loadSiteLookup()
+    ];
+
+    if (userSiteId) {
+      promises.push(loadBuildingLookup(userSiteId));
+      if (userBuildingId) {
+        promises.push(loadSpaceLookup(userSiteId, userBuildingId));
+      }
+    }
+
+    await Promise.all(promises);
+
+    reset(
+      user && mode !== "create"
+        ? {
+            full_name: user.full_name || "",
+            email: user.email || "",
+            phone: user.phone || "",
+            status: user.status || "active",
+            account_type: user.account_type || "organization",
+            role_ids: user.roles?.map((r) => r.id) || [],
+            site_id: userSiteId || "",
+            building_id: userBuildingId || "",
+            space_id: (user as any).space_id || "",
+            site_ids: (user as any).site_ids || [],
+            tenant_type: (user as any).tenant_type || "individual",
+          }
+        : emptyFormData
+    );
+    setFormLoading(false);
+  };
+
   useEffect(() => {
     if (open) {
-      loadStatusLookup();
-      loadRolesLookup();
-      loadSiteLookup();
+      loadAll();
     }
-  }, [open]);
+  }, [open, user, mode, reset]);
 
   // Load buildings when site changes
   useEffect(() => {
@@ -159,7 +198,6 @@ export function UserForm({
     }
   }, [selectedSiteId]);
 
-
   useEffect(() => {
     if (selectedSiteId && selectedBuildingId) {
       loadSpaceLookup(selectedSiteId, selectedBuildingId);
@@ -167,43 +205,6 @@ export function UserForm({
       setSpaceList([]);
     }
   }, [selectedSiteId, selectedBuildingId]);
-
-  useEffect(() => {
-    if (user && mode !== "create") {
-      const userSiteId = (user as any).site_id || "";
-      const userBuildingId = (user as any).building_block_id || "";
-      const userSpaceId = (user as any).space_id || "";
-
-      const resetData = {
-        full_name: user.full_name || "",
-        email: user.email || "",
-        phone: user.phone || "",
-        status: user.status || "active",
-        account_type: user.account_type || "organization",
-        role_ids: user.roles?.map((r) => r.id) || [],
-        site_id: userSiteId,
-        building_id: userBuildingId, 
-        space_id: userSpaceId,
-        site_ids: (user as any).site_ids || [],
-        tenant_type: (user as any).tenant_type || "individual",
-      };
-
-      reset(resetData);
-
-      const loadDependentData = async () => {
-        if (userSiteId) {
-          await loadBuildingLookup(userSiteId);
-          if (userBuildingId) {
-            await loadSpaceLookup(userSiteId, userBuildingId);
-          }
-        }
-      };
-
-      loadDependentData();
-    } else {
-      reset(emptyFormData);
-    }
-  }, [user, mode, reset]);
 
   const loadStatusLookup = async () => {
     const lookup = await userManagementApiService.getUserStatusOverview();
@@ -250,6 +251,10 @@ export function UserForm({
             className="space-y-4"
             id="user-form"
           >
+            {formLoading ? (
+              <p className="text-center">Loading...</p>
+            ) : (
+              <div className="space-y-4">
             <div className="space-y-2">
               <Label htmlFor="full_name">Full Name *</Label>
               <Input
@@ -740,9 +745,12 @@ export function UserForm({
                 </div>
               )}
             />
+              </div>
+            )}
           </form>
         </div>
-        <DialogFooter>
+        {!formLoading && (
+          <DialogFooter>
           <Button
             type="button"
             variant="outline"
@@ -760,7 +768,8 @@ export function UserForm({
                 : "Update User"}
             </Button>
           )}
-        </DialogFooter>
+          </DialogFooter>
+        )}
       </DialogContent>
     </Dialog>
   );
