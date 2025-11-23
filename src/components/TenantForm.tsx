@@ -73,7 +73,7 @@ export function TenantForm({
     handleSubmit,
     control,
     reset,
-    setValue, // ✅ add this
+    setValue, // ✅ add this  
     watch,
     formState: { errors, isSubmitting, isValid },
   } = useForm<TenantFormValues>({
@@ -217,10 +217,17 @@ export function TenantForm({
     const formResponse = await onSave(data);
   };
 
+  const handleClose = () => {
+    reset(emptyFormData);
+    setBuildingList([]);
+    setSpaceList([]);
+    onClose();
+  };
+
   const isReadOnly = mode === "view";
 
   return (
-    <Dialog open={isOpen} onOpenChange={onClose}>
+    <Dialog open={isOpen} onOpenChange={handleClose}>
       <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
         <DialogHeader>
           <DialogTitle>
@@ -466,13 +473,19 @@ export function TenantForm({
               {selectedTenantType === "commercial" && (
                 <div className="grid grid-cols-2 gap-4">
                   <div>
-                    <Label htmlFor="legal_name">Legal Name</Label>
+                    <Label htmlFor="legal_name">Legal Name *</Label>
                     <Input
                       id="legal_name"
                       {...register("legal_name")}
                       placeholder="e.g., ABC Company Ltd"
                       disabled={isReadOnly}
+                      className={errors.legal_name ? "border-red-500" : ""}
                     />
+                    {errors.legal_name && (
+                      <p className="text-sm text-red-500">
+                        {errors.legal_name.message as any}
+                      </p>
+                    )}
                   </div>
                   <div>
                     <Label htmlFor="type">Business Type</Label>
@@ -491,7 +504,7 @@ export function TenantForm({
                             <SelectValue placeholder="Select business type (optional)" />
                           </SelectTrigger>
                           <SelectContent>
-                            <SelectItem value="none">No Type</SelectItem>
+                            <SelectItem value="none">Select Type</SelectItem>
                             <SelectItem value="merchant">Merchant</SelectItem>
                             <SelectItem value="brand">Brand</SelectItem>
                             <SelectItem value="kiosk">Kiosk</SelectItem>
@@ -628,7 +641,7 @@ export function TenantForm({
                 <Button
                   type="button"
                   variant="outline"
-                  onClick={onClose}
+                  onClick={handleClose}
                   disabled={isSubmitting}
                 >
                   {mode === "view" ? "Close" : "Cancel"}

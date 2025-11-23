@@ -47,6 +47,7 @@ import {
   MapPin,
 } from "lucide-react";
 import { tenantsApiService } from "@/services/Leasing_Tenants/tenantsapi";
+import { siteApiService } from "@/services/spaces_sites/sitesapi";
 import { Tenant, TenantOverview } from "@/interfaces/leasing_tenants_interface";
 import { useSkipFirstEffect } from "@/hooks/use-skipfirst-effect";
 import { toast } from "sonner";
@@ -77,6 +78,7 @@ const Tenants = () => {
   });
   const [statusList, setStatusList] = useState([]);
   const [typeList, setTypeList] = useState([]);
+  const [siteList, setSiteList] = useState([]);
 
   const [page, setPage] = useState(1); // current page
   const [pageSize] = useState(6); // items per page
@@ -93,6 +95,7 @@ const Tenants = () => {
   useEffect(() => {
     loadStatusLookup();
     loadTypeLookup();
+    loadSiteLookup();
   }, []);
 
   useEffect(() => {
@@ -121,6 +124,11 @@ const Tenants = () => {
   const loadTypeLookup = async () => {
     const lookup = await tenantsApiService.getTenantTypeLookup();
     if (lookup.success) setTypeList(lookup.data || []);
+  };
+
+  const loadSiteLookup = async () => {
+    const lookup = await siteApiService.getSiteLookup();
+    if (lookup.success) setSiteList(lookup.data || []);
   };
 
   const loadTenants = async () => {
@@ -358,6 +366,20 @@ const Tenants = () => {
                     className="pl-9"
                   />
                 </div>
+
+                <Select value={selectedSite} onValueChange={setSelectedSite}>
+                  <SelectTrigger className="w-[150px]">
+                    <SelectValue placeholder="All Sites" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="all">All Sites</SelectItem>
+                    {siteList.map((site: any) => (
+                      <SelectItem key={site.id} value={site.id}>
+                        {site.name}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
 
                 <Select value={selectedType} onValueChange={setSelectedType}>
                   <SelectTrigger className="w-[150px]">

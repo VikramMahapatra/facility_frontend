@@ -18,7 +18,7 @@ export const leaseSchema = z
     deposit_amount: z.coerce.number({
       required_error: "Deposit Amount is required",
       invalid_type_error: "Deposit Amount must be a number",
-    }).min(0.01, "Deposit Amount is required"),
+    }).min(0.00, "Deposit Amount is required"),
     cam_rate: z.coerce.number().optional(),
     utilities: z
       .object({
