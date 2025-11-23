@@ -29,7 +29,7 @@ export const tenantSchema = z
     
     status: z.coerce.string().min(1, "Status is required"),
     type: z.string().optional(),
-    legal_name: z.string().optional(),
+    legal_name: z.string().min(1, "Legal Name is required for Commercial Tenant"),
     contact_info: z
       .object({
         name: z.string().optional(),
@@ -81,7 +81,7 @@ export const tenantSchema = z
       ctx.addIssue({
         code: z.ZodIssueCode.custom,
         path: ["legal_name"],
-        message: "Provide Legal Name or Contact Name for commercial tenant",
+        message: "Provide Legal Name for Commercial Tenant",
       });
     }
   });

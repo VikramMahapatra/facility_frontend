@@ -172,8 +172,15 @@ export function LeaseForm({ lease, isOpen, onClose, onSave, mode }: LeaseFormPro
 
   };
 
+  const handleClose = () => {
+    reset(emptyFormData);
+    setSpaceList([]);
+    setLeasePartnerList([]);
+    onClose();
+  };
+
   return (
-    <Dialog open={isOpen} onOpenChange={onClose}>
+    <Dialog open={isOpen} onOpenChange={handleClose}>
       <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
         <DialogHeader>
           <DialogTitle>
@@ -211,28 +218,6 @@ export function LeaseForm({ lease, isOpen, onClose, onSave, mode }: LeaseFormPro
             </div>
 
             <div>
-              <Label>Lease Type *</Label>
-              <Controller
-                name="kind"
-                control={control}
-                render={({ field }) => (
-                  <Select value={field.value} onValueChange={field.onChange} disabled={isReadOnly}>
-                    <SelectTrigger className={errors.kind ? 'border-red-500' : ''}>
-                      <SelectValue />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="commercial">Commercial</SelectItem>
-                      <SelectItem value="residential">Residential</SelectItem>
-                    </SelectContent>
-                  </Select>
-                )}
-              />
-              {errors.kind && (<p className="text-sm text-red-500">{errors.kind.message as any}</p>)}
-            </div>
-          </div>
-
-          <div className="grid grid-cols-2 gap-4">
-            <div>
               <Label>Space *</Label>
               <Controller
                 name="space_id"
@@ -253,6 +238,28 @@ export function LeaseForm({ lease, isOpen, onClose, onSave, mode }: LeaseFormPro
                 )}
               />
               {errors.space_id && (<p className="text-sm text-red-500">{errors.space_id.message as any}</p>)}
+            </div>
+          </div>
+
+          <div className="grid grid-cols-2 gap-4">
+            <div>
+              <Label>Tenant Type *</Label>
+              <Controller
+                name="kind"
+                control={control}
+                render={({ field }) => (
+                  <Select value={field.value} onValueChange={field.onChange} disabled={isReadOnly}>
+                    <SelectTrigger className={errors.kind ? 'border-red-500' : ''}>
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="commercial">Commercial</SelectItem>
+                      <SelectItem value="residential">Residential</SelectItem>
+                    </SelectContent>
+                  </Select>
+                )}
+              />
+              {errors.kind && (<p className="text-sm text-red-500">{errors.kind.message as any}</p>)}
             </div>
 
             {/* simple text input for IDs (can replace with modal/lookup later) */}
@@ -435,7 +442,7 @@ export function LeaseForm({ lease, isOpen, onClose, onSave, mode }: LeaseFormPro
           </div>
 
               <DialogFooter>
-                <Button type="button" variant="outline" onClick={onClose} disabled={isSubmitting}>
+                <Button type="button" variant="outline" onClick={handleClose} disabled={isSubmitting}>
                   {mode === "view" ? "Close" : "Cancel"}
                 </Button>
                 {mode !== "view" && (
