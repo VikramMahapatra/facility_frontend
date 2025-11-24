@@ -46,7 +46,7 @@ import {
   Phone,
   MapPin,
 } from "lucide-react";
-import { tenantsApiService } from "@/services/leasing_tenants/tenantsapi";
+import { tenantsApiService } from "@/services/Leasing_Tenants/tenantsapi";
 import { siteApiService } from "@/services/spaces_sites/sitesapi";
 import { Tenant, TenantOverview } from "@/interfaces/leasing_tenants_interface";
 import { useSkipFirstEffect } from "@/hooks/use-skipfirst-effect";
@@ -230,7 +230,8 @@ const Tenants = () => {
     if (response?.success) {
       setIsFormOpen(false);
       toast.success(
-        `Tenant ${tenantData.name} has been ${formMode === "create" ? "created" : "updated"
+        `Tenant ${tenantData.name} has been ${
+          formMode === "create" ? "created" : "updated"
         } successfully.`
       );
     }
@@ -481,7 +482,8 @@ const Tenants = () => {
                               <CardDescription>
                                 <div className="flex items-center gap-1">
                                   <MapPin className="h-4 w-4 text-muted-foreground" />
-                                  {tenant.space_name} • {tenant.building_name} • {tenant.site_name}
+                                  {tenant.space_name} • {tenant.building_name} •
+                                  {tenant.site_name}
                                 </div>
                               </CardDescription>
                             </div>
