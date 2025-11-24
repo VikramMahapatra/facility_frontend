@@ -1,6 +1,7 @@
 export interface SLAPolicy {
   id: string;
   organization_name?: string;
+  org_name?: string;
   service_category: string;
   site_name?: string;
   site_id?: string;

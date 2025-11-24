@@ -480,7 +480,10 @@ const Tenants = () => {
                                 </div>
                               </CardTitle>
                               <CardDescription>
-                                {tenant.site_name} • {tenant.building_name} • {tenant.space_name}
+                                <div className="flex items-center gap-1">
+                                  <MapPin className="h-4 w-4 text-muted-foreground" />
+                                  {tenant.space_name} • {tenant.building_name} • {tenant.site_name}
+                                </div>
                               </CardDescription>
                             </div>
                             <div className="flex items-center gap-2">

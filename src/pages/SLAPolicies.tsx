@@ -26,8 +26,8 @@ import {
 import { Badge } from "@/components/ui/badge";
 import { Plus, Pencil, Trash2, Search, Clock, AlertCircle, ShieldCheck } from "lucide-react";
 import { SLAPolicyForm } from "@/components/SLAPolicyForm";
-import { mockSLAPolicies } from "@/data/mockSLAPoliciesData";
 import { toast } from "sonner";
+import { slaPoliciesApiService } from "@/services/ticketing_service/slapoliciesapi";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import {
   AlertDialog,
@@ -51,29 +51,28 @@ export default function SLAPolicies() {
   const [isFormOpen, setIsFormOpen] = useState(false);
   const [formMode, setFormMode] = useState<"create" | "edit" | "view">("create");
   const [selectedPolicy, setSelectedPolicy] = useState<SLAPolicy | null>(null);
-  const [allPolicies, setAllPolicies] = useState<SLAPolicy[]>(mockSLAPolicies);
   const [policies, setPolicies] = useState<SLAPolicy[]>([]);
   const [searchQuery, setSearchQuery] = useState("");
   const [selectedSite, setSelectedSite] = useState<string>("all");
   const [selectedOrganization, setSelectedOrganization] = useState<string>("all");
-  const [siteList] = useState<any[]>([
-    { id: "site-1", name: "Site 1" },
-    { id: "site-2", name: "Site 2" },
-  ]);
   const [deletePolicyId, setDeletePolicyId] = useState<string | null>(null);
   const [page, setPage] = useState(1);
   const [pageSize] = useState(5);
   const [totalItems, setTotalItems] = useState(0);
+  const [overview, setOverview] = useState<any>({
+    total_policies: 0,
+    active_policies: 0,
+    unique_organizations: 0,
+    unique_sites: 0,
+    avg_response_time: 0,
+  });
   const { canRead, canWrite, canDelete } = useAuth();
   const { withLoader } = useLoader();
   const resource = "sla_policies"; // must match resource name from backend policies
 
-  useEffect(() => {
-    loadPolicies();
-  }, []);
-
   useSkipFirstEffect(() => {
     loadPolicies();
+    loadOverview();
   }, [page]);
 
   useEffect(() => {
@@ -83,69 +82,59 @@ export default function SLAPolicies() {
   const updatePoliciesPage = () => {
     if (page === 1) {
       loadPolicies();
+      loadOverview();
     } else {
       setPage(1);
     }
   };
 
-
   const loadPolicies = async () => {
     const skip = (page - 1) * pageSize;
     const limit = pageSize;
 
-    // For now using mock data, but structured to match API pattern
+    // build query params
+    const params = new URLSearchParams();
+    if (searchQuery) params.append("search", searchQuery);
+    if (selectedOrganization && selectedOrganization !== "all") {
+      params.append("organization_name", selectedOrganization);
+    }
+    if (selectedSite && selectedSite !== "all") {
+      params.append("site_name", selectedSite);
+    }
+    params.append("skip", skip.toString());
+    params.append("limit", limit.toString());
+
     const response = await withLoader(async () => {
-      // Simulate API call delay
-      await new Promise(resolve => setTimeout(resolve, 100));
-      
-      let filtered = [...allPolicies];
-
-      if (searchQuery) {
-        const query = searchQuery.toLowerCase();
-        filtered = filtered.filter(
-          (policy) =>
-            policy.service_category?.toLowerCase().includes(query) ||
-            policy.organization_name?.toLowerCase().includes(query) ||
-            policy.site_name?.toLowerCase().includes(query)
-        );
-      }
-
-      if (selectedOrganization && selectedOrganization !== "all") {
-        filtered = filtered.filter(
-          (policy) => policy.organization_name === selectedOrganization
-        );
-      }
-
-      if (selectedSite && selectedSite !== "all") {
-        filtered = filtered.filter(
-          (policy) => policy.site_name === selectedSite
-        );
-      }
-
-      const paginated = filtered.slice(skip, skip + limit);
-
-      return {
-        success: true,
-        data: {
-          sla_policies: paginated,
-          total: filtered.length
-        }
-      };
+      return await slaPoliciesApiService.getSLAPolicies(params);
     });
 
     if (response?.success) {
-      setPolicies(response.data?.sla_policies || []);
+      setPolicies(response.data?.sla_policies || response.data || []);
       setTotalItems(response.data?.total || 0);
     }
   };
 
-  const totalPolicies = allPolicies.length;
-  const activePolicies = allPolicies.filter((p) => p.active).length;
-  const uniqueOrganizations = new Set(allPolicies.map((p) => p.organization_name).filter(Boolean)).size;
-  const uniqueSites = new Set(allPolicies.map((p) => p.site_name).filter(Boolean)).size;
-  const avgResponseTime = allPolicies.length > 0
-    ? Math.round(allPolicies.reduce((sum, p) => sum + p.response_time_mins, 0) / allPolicies.length)
-    : 0;
+  const loadOverview = async () => {
+    const params = new URLSearchParams();
+    if (searchQuery) params.append("search", searchQuery);
+    if (selectedOrganization && selectedOrganization !== "all") {
+      params.append("organization_name", selectedOrganization);
+    }
+    if (selectedSite && selectedSite !== "all") {
+      params.append("site_name", selectedSite);
+    }
+
+    const response = await slaPoliciesApiService.getSLAPoliciesOverview();
+    if (response?.success) {
+      setOverview(response.data || {});
+    }
+  };
+
+  const totalPolicies = overview.total_policies || 0;
+  const activePolicies = overview.active_policies || 0;
+  const uniqueOrganizations = overview.unique_organizations || 0;
+  const uniqueSites = overview.unique_sites || 0;
+  const avgResponseTime = overview.avg_response_time || 0;
 
   const handleCreate = () => {
     setSelectedPolicy(null);
@@ -162,51 +151,30 @@ export default function SLAPolicies() {
   const handleSave = async (policyData: any) => {
     let response;
     if (formMode === "create") {
-      const newPolicy: SLAPolicy = {
-        id: String(Date.now()),
-        organization_name: policyData.organization_name || undefined,
-        service_category: policyData.service_category,
-        site_name: policyData.site_name || undefined,
-        site_id: policyData.site_id || undefined,
-        default_contact: policyData.default_contact || undefined,
-        escalation_contact: policyData.escalation_contact || undefined,
-        response_time_mins: policyData.response_time_mins,
-        resolution_time_mins: policyData.resolution_time_mins,
-        escalation_time_mins: policyData.escalation_time_mins,
-        active: policyData.active ?? true,
-        created_at: new Date().toISOString(),
-        updated_at: new Date().toISOString(),
-      };
-      setAllPolicies((prev) => [newPolicy, ...prev]);
-      
-      if (page === 1) {
-        loadPolicies();
-      } else {
-        setPage(1);
-      }
-      
-      setIsFormOpen(false);
-      toast.success("SLA Policy has been created successfully.");
-      response = { success: true };
+      response = await slaPoliciesApiService.createSLAPolicy(policyData);
+      if (response.success) updatePoliciesPage();
     } else if (formMode === "edit" && selectedPolicy) {
-      const updatedPolicy: SLAPolicy = {
+      const updatedPolicy = {
         ...selectedPolicy,
         ...policyData,
-        updated_at: new Date().toISOString(),
       };
-      setAllPolicies((prev) =>
-        prev.map((p) => (p.id === updatedPolicy.id ? updatedPolicy : p))
-      );
-      
-      setPolicies((prev) =>
-        prev.map((p) => (p.id === updatedPolicy.id ? updatedPolicy : p))
-      );
-      
-      setIsFormOpen(false);
-      toast.success("SLA Policy has been updated successfully.");
-      response = { success: true };
+      response = await slaPoliciesApiService.updateSLAPolicy(updatedPolicy);
+      if (response.success) {
+        setPolicies((prev) =>
+          prev.map((p) => (p.id === updatedPolicy.id ? response.data : p))
+        );
+      }
     }
-    return response || { success: false };
+
+    if (response.success) {
+      setIsFormOpen(false);
+      toast.success(
+        `SLA Policy has been ${
+          formMode === "create" ? "created" : "updated"
+        } successfully.`
+      );
+    }
+    return response;
   };
 
   const handleDelete = (policyId: string) => {
@@ -215,10 +183,12 @@ export default function SLAPolicies() {
 
   const confirmDelete = async () => {
     if (deletePolicyId) {
-      setAllPolicies((prev) => prev.filter((p) => p.id !== deletePolicyId));
-      updatePoliciesPage();
-      toast.success("SLA Policy deleted successfully");
-      setDeletePolicyId(null);
+      const response = await slaPoliciesApiService.deleteSLAPolicy(deletePolicyId);
+      if (response.success) {
+        updatePoliciesPage();
+        setDeletePolicyId(null);
+        toast.success("SLA Policy deleted successfully");
+      }
     }
   };
 
@@ -317,9 +287,9 @@ export default function SLAPolicies() {
                         </SelectTrigger>
                         <SelectContent>
                           <SelectItem value="all">All Organizations</SelectItem>
-                          {Array.from(new Set(allPolicies.map((p) => p.organization_name).filter(Boolean))).map((org) => (
-                            <SelectItem key={org} value={org as string}>
-                              {org}
+                          {Array.from(new Set(policies.map((p) => p.org_name).filter(Boolean))).map((org) => (
+                            <SelectItem key={org as string} value={org as string}>
+                              {org as string}
                             </SelectItem>
                           ))}
                         </SelectContent>
@@ -330,9 +300,9 @@ export default function SLAPolicies() {
                         </SelectTrigger>
                         <SelectContent>
                           <SelectItem value="all">All Sites</SelectItem>
-                          {Array.from(new Set(allPolicies.map((p) => p.site_name).filter(Boolean))).map((site) => (
-                            <SelectItem key={site} value={site as string}>
-                              {site}
+                          {Array.from(new Set(policies.map((p) => p.site_name).filter(Boolean))).map((site) => (
+                            <SelectItem key={site as string} value={site as string}>
+                              {site as string}
                             </SelectItem>
                           ))}
                         </SelectContent>
@@ -371,10 +341,10 @@ export default function SLAPolicies() {
                             policies.map((policy) => (
                               <TableRow key={policy.id}>
                                 <TableCell className="font-medium">
-                                  {policy.organization_name || "—"}
+                                  {policy.org_name || "-"}
                                 </TableCell>
                                 <TableCell className="text-muted-foreground">
-                                  {policy.site_name || "—"}
+                                  {policy.site_name || "-"}
                                 </TableCell>
                                 <TableCell>
                                   <div className="flex items-center gap-2">

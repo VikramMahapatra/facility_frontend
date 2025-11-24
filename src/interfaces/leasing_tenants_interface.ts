@@ -4,6 +4,7 @@ export interface Lease {
     org_id: string;
     site_id?: string;
     space_id?: string;
+    space_name?: string;
     kind?: LeaseKind
     partner_id?: string;
     tenant_id?: string;

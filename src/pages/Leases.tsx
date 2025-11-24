@@ -1,6 +1,6 @@
 // app/(your-path)/Leases.tsx
 import { useState, useEffect } from "react";
-import { Home, Search, Plus, Eye, Edit, Trash2 } from "lucide-react";
+import { Home, Search, Plus, Eye, Edit, Trash2, MapPin } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -315,7 +315,10 @@ export default function Leases() {
                               {lease.tenant_name}
                             </CardTitle>
                             <p className="text-sm text-muted-foreground">
-                              {lease.space_code} • {lease.site_name}
+                              <div className="flex items-center gap-1">
+                                <MapPin className="h-4 w-4 text-muted-foreground" />
+                                {lease.space_name} • {lease.site_name}
+                              </div>
                             </p>
                           </div>
                           <Badge className={getStatusColor(lease.status)}>{lease.status}</Badge>
