@@ -15,7 +15,7 @@ import {
 import { Upload, X } from "lucide-react";
 import { spacesApiService } from "@/services/spaces_sites/spacesapi";
 import { siteApiService } from "@/services/spaces_sites/sitesapi";
-import { tenantsApiService } from "@/services/Leasing_Tenants/tenantsapi";
+import { tenantsApiService } from "@/services/leasing_tenants/tenantsapi";
 import { organisationApiService } from "@/services/spaces_sites/organisationapi";
 import { ticketsApiService } from "@/services/ticketing_service/ticketsapi";
 import { useToast } from "@/hooks/use-toast";
@@ -56,17 +56,19 @@ export default function TicketForm({
     formState: { errors, isSubmitting },
   } = useForm<TicketFormValues>({
     resolver: zodResolver(ticketSchema),
-    defaultValues: initialData ? {
-      title: initialData.title || "",
-      description: initialData.description || "",
-      category_id: initialData.category_id || "",
-      priority: initialData.priority || "low",
-      request_type: initialData.request_type || "unit",
-      site_id: initialData.site_id || "",
-      space_id: initialData.space_id || "",
-      tenant_id: initialData.tenant_id || "",
-      preferred_time: initialData.preferred_time || "",
-    } : emptyFormData,
+    defaultValues: initialData
+      ? {
+          title: initialData.title || "",
+          description: initialData.description || "",
+          category_id: initialData.category_id || "",
+          priority: initialData.priority || "low",
+          request_type: initialData.request_type || "unit",
+          site_id: initialData.site_id || "",
+          space_id: initialData.space_id || "",
+          tenant_id: initialData.tenant_id || "",
+          preferred_time: initialData.preferred_time || "",
+        }
+      : emptyFormData,
     mode: "onChange",
     reValidateMode: "onChange",
   });
@@ -221,7 +223,10 @@ export default function TicketForm({
   };
 
   return (
-    <form onSubmit={isSubmitting ? undefined : handleSubmit(onSubmitForm)} className="space-y-4">
+    <form
+      onSubmit={isSubmitting ? undefined : handleSubmit(onSubmitForm)}
+      className="space-y-4"
+    >
       {/* 1. Title */}
       <div className="space-y-2">
         <Label htmlFor="title">Title *</Label>
@@ -229,7 +234,7 @@ export default function TicketForm({
           id="title"
           {...register("title")}
           placeholder="Brief description of the issue"
-          className={errors.title ? 'border-red-500' : ''}
+          className={errors.title ? "border-red-500" : ""}
         />
         {errors.title && (
           <p className="text-sm text-red-500">{errors.title.message}</p>
@@ -244,11 +249,10 @@ export default function TicketForm({
           render={({ field }) => (
             <div className="space-y-2">
               <Label htmlFor="site_id">Site *</Label>
-              <Select
-                value={field.value || ""}
-                onValueChange={field.onChange}
-              >
-                <SelectTrigger className={errors.site_id ? 'border-red-500' : ''}>
+              <Select value={field.value || ""} onValueChange={field.onChange}>
+                <SelectTrigger
+                  className={errors.site_id ? "border-red-500" : ""}
+                >
                   <SelectValue placeholder="Select site" />
                 </SelectTrigger>
                 <SelectContent>
@@ -277,7 +281,9 @@ export default function TicketForm({
                 onValueChange={field.onChange}
                 disabled={!selectedSiteId}
               >
-                <SelectTrigger className={errors.space_id ? 'border-red-500' : ''}>
+                <SelectTrigger
+                  className={errors.space_id ? "border-red-500" : ""}
+                >
                   <SelectValue
                     placeholder={
                       selectedSiteId ? "Select space" : "Select site first"
@@ -293,7 +299,9 @@ export default function TicketForm({
                 </SelectContent>
               </Select>
               {errors.space_id && (
-                <p className="text-sm text-red-500">{errors.space_id.message}</p>
+                <p className="text-sm text-red-500">
+                  {errors.space_id.message}
+                </p>
               )}
             </div>
           )}
@@ -338,11 +346,10 @@ export default function TicketForm({
           render={({ field }) => (
             <div className="space-y-2">
               <Label htmlFor="category_id">Category *</Label>
-              <Select
-                value={field.value || ""}
-                onValueChange={field.onChange}
-              >
-                <SelectTrigger className={errors.category_id ? 'border-red-500' : ''}>
+              <Select value={field.value || ""} onValueChange={field.onChange}>
+                <SelectTrigger
+                  className={errors.category_id ? "border-red-500" : ""}
+                >
                   <SelectValue placeholder="Select Category" />
                 </SelectTrigger>
                 <SelectContent>
@@ -354,7 +361,9 @@ export default function TicketForm({
                 </SelectContent>
               </Select>
               {errors.category_id && (
-                <p className="text-sm text-red-500">{errors.category_id.message}</p>
+                <p className="text-sm text-red-500">
+                  {errors.category_id.message}
+                </p>
               )}
             </div>
           )}
@@ -369,11 +378,10 @@ export default function TicketForm({
           render={({ field }) => (
             <div className="space-y-2">
               <Label htmlFor="request_type">Request Type *</Label>
-              <Select
-                value={field.value}
-                onValueChange={field.onChange}
-              >
-                <SelectTrigger className={errors.request_type ? 'border-red-500' : ''}>
+              <Select value={field.value} onValueChange={field.onChange}>
+                <SelectTrigger
+                  className={errors.request_type ? "border-red-500" : ""}
+                >
                   <SelectValue placeholder="Select Request Type" />
                 </SelectTrigger>
                 <SelectContent>
@@ -382,7 +390,9 @@ export default function TicketForm({
                 </SelectContent>
               </Select>
               {errors.request_type && (
-                <p className="text-sm text-red-500">{errors.request_type.message}</p>
+                <p className="text-sm text-red-500">
+                  {errors.request_type.message}
+                </p>
               )}
             </div>
           )}
@@ -394,10 +404,7 @@ export default function TicketForm({
           render={({ field }) => (
             <div className="space-y-2">
               <Label htmlFor="priority">Priority</Label>
-              <Select
-                value={field.value}
-                onValueChange={field.onChange}
-              >
+              <Select value={field.value} onValueChange={field.onChange}>
                 <SelectTrigger>
                   <SelectValue placeholder="Select Priority" />
                 </SelectTrigger>
@@ -419,10 +426,7 @@ export default function TicketForm({
         render={({ field }) => (
           <div className="space-y-2">
             <Label htmlFor="preferred_time">Preferred Time</Label>
-            <Select
-              value={field.value || ""}
-              onValueChange={field.onChange}
-            >
+            <Select value={field.value || ""} onValueChange={field.onChange}>
               <SelectTrigger>
                 <SelectValue placeholder="Select preferred time" />
               </SelectTrigger>
@@ -446,7 +450,7 @@ export default function TicketForm({
           {...register("description")}
           placeholder="Detailed description of the issue"
           rows={4}
-          className={errors.description ? 'border-red-500' : ''}
+          className={errors.description ? "border-red-500" : ""}
         />
         {errors.description && (
           <p className="text-sm text-red-500">{errors.description.message}</p>
@@ -583,7 +587,11 @@ export default function TicketForm({
           Cancel
         </Button>
         <Button type="submit" disabled={isSubmitting}>
-          {isSubmitting ? "Saving..." : initialData ? "Update Ticket" : "Create Ticket"}
+          {isSubmitting
+            ? "Saving..."
+            : initialData
+            ? "Update Ticket"
+            : "Create Ticket"}
         </Button>
       </div>
     </form>

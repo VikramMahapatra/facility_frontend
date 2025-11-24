@@ -1,14 +1,29 @@
 import { useEffect, useState } from "react";
-import { Dialog, DialogContent, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import {
+  Dialog,
+  DialogContent,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
 import { Input } from "@/components/ui/input";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 import { toast } from "sonner";
-import { leasesApiService } from "@/services/Leasing_Tenants/leasesapi";
+import { leasesApiService } from "@/services/leasing_tenants/leasesapi";
 import { Controller, useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
-import { leaseChargeSchema, LeaseChargeFormValues } from "@/schemas/leaseCharge.schema";
+import {
+  leaseChargeSchema,
+  LeaseChargeFormValues,
+} from "@/schemas/leaseCharge.schema";
 
 // ---- Types (kept minimal and local to the form, mirroring SpaceForm style) ----
 export type ChargeCode =
@@ -25,7 +40,7 @@ export interface LeaseCharge {
   lease_id: string;
   charge_code: ChargeCode | string;
   period_start: string; // yyyy-mm-dd
-  period_end: string;   // yyyy-mm-dd
+  period_end: string; // yyyy-mm-dd
   amount: number;
   tax_pct?: number;
   created_at?: string;
@@ -40,8 +55,6 @@ interface LeaseChargeFormProps {
   mode: "create" | "edit" | "view";
 }
 
-
-
 // ---- Empty (default) form data, styled like SpaceForm's emptyFormData) ----
 const emptyFormData: Partial<LeaseCharge> = {
   lease_id: "",
@@ -52,14 +65,20 @@ const emptyFormData: Partial<LeaseCharge> = {
   tax_pct: 0,
 };
 
-export function LeaseChargeForm({ charge, isOpen, onClose, onSave, mode }: LeaseChargeFormProps) {
+export function LeaseChargeForm({
+  charge,
+  isOpen,
+  onClose,
+  onSave,
+  mode,
+}: LeaseChargeFormProps) {
   const {
     register,
     handleSubmit,
     control,
     reset,
     formState: { errors, isSubmitting, isValid },
-  } = useForm<LeaseChargeFormValues>({ 
+  } = useForm<LeaseChargeFormValues>({
     resolver: zodResolver(leaseChargeSchema),
     defaultValues: {
       lease_id: "",
@@ -103,7 +122,7 @@ export function LeaseChargeForm({ charge, isOpen, onClose, onSave, mode }: Lease
   const loadLeaseLookup = async () => {
     const lookup = await leasesApiService.getLeaseLookup();
     if (lookup.success) setLeaseList(lookup.data || []);
-  }
+  };
 
   const onSubmitForm = async (data: LeaseChargeFormValues) => {
     const formResponse = await onSave(data);
@@ -120,7 +139,10 @@ export function LeaseChargeForm({ charge, isOpen, onClose, onSave, mode }: Lease
           </DialogTitle>
         </DialogHeader>
 
-        <form onSubmit={isSubmitting ? undefined : handleSubmit(onSubmitForm)} className="space-y-4">
+        <form
+          onSubmit={isSubmitting ? undefined : handleSubmit(onSubmitForm)}
+          className="space-y-4"
+        >
           {/* Lease */}
           <div>
             <Label htmlFor="lease">Lease *</Label>
@@ -128,8 +150,14 @@ export function LeaseChargeForm({ charge, isOpen, onClose, onSave, mode }: Lease
               name="lease_id"
               control={control}
               render={({ field }) => (
-                <Select value={field.value} onValueChange={field.onChange} disabled={isReadOnly}>
-                  <SelectTrigger className={errors.lease_id ? 'border-red-500' : ''}>
+                <Select
+                  value={field.value}
+                  onValueChange={field.onChange}
+                  disabled={isReadOnly}
+                >
+                  <SelectTrigger
+                    className={errors.lease_id ? "border-red-500" : ""}
+                  >
                     <SelectValue placeholder="Select lease" />
                   </SelectTrigger>
                   <SelectContent>
@@ -142,7 +170,11 @@ export function LeaseChargeForm({ charge, isOpen, onClose, onSave, mode }: Lease
                 </Select>
               )}
             />
-            {errors.lease_id && (<p className="text-sm text-red-500">{errors.lease_id.message as any}</p>)}
+            {errors.lease_id && (
+              <p className="text-sm text-red-500">
+                {errors.lease_id.message as any}
+              </p>
+            )}
           </div>
 
           {/* Charge Code */}
@@ -152,8 +184,14 @@ export function LeaseChargeForm({ charge, isOpen, onClose, onSave, mode }: Lease
               name="charge_code"
               control={control}
               render={({ field }) => (
-                <Select value={field.value} onValueChange={field.onChange} disabled={isReadOnly}>
-                  <SelectTrigger className={errors.charge_code ? 'border-red-500' : ''}>
+                <Select
+                  value={field.value}
+                  onValueChange={field.onChange}
+                  disabled={isReadOnly}
+                >
+                  <SelectTrigger
+                    className={errors.charge_code ? "border-red-500" : ""}
+                  >
                     <SelectValue placeholder="Select type" />
                   </SelectTrigger>
                   <SelectContent>
@@ -168,7 +206,11 @@ export function LeaseChargeForm({ charge, isOpen, onClose, onSave, mode }: Lease
                 </Select>
               )}
             />
-            {errors.charge_code && (<p className="text-sm text-red-500">{errors.charge_code.message as any}</p>)}
+            {errors.charge_code && (
+              <p className="text-sm text-red-500">
+                {errors.charge_code.message as any}
+              </p>
+            )}
           </div>
 
           {/* Dates */}
@@ -180,9 +222,13 @@ export function LeaseChargeForm({ charge, isOpen, onClose, onSave, mode }: Lease
                 type="date"
                 {...register("period_start")}
                 disabled={isReadOnly}
-                className={errors.period_start ? 'border-red-500' : ''}
+                className={errors.period_start ? "border-red-500" : ""}
               />
-              {errors.period_start && (<p className="text-sm text-red-500">{errors.period_start.message as any}</p>)}
+              {errors.period_start && (
+                <p className="text-sm text-red-500">
+                  {errors.period_start.message as any}
+                </p>
+              )}
             </div>
             <div>
               <Label htmlFor="period_end">Period End *</Label>
@@ -191,9 +237,13 @@ export function LeaseChargeForm({ charge, isOpen, onClose, onSave, mode }: Lease
                 type="date"
                 {...register("period_end")}
                 disabled={isReadOnly}
-                className={errors.period_end ? 'border-red-500' : ''}
+                className={errors.period_end ? "border-red-500" : ""}
               />
-              {errors.period_end && (<p className="text-sm text-red-500">{errors.period_end.message as any}</p>)}
+              {errors.period_end && (
+                <p className="text-sm text-red-500">
+                  {errors.period_end.message as any}
+                </p>
+              )}
             </div>
           </div>
 
@@ -205,12 +255,18 @@ export function LeaseChargeForm({ charge, isOpen, onClose, onSave, mode }: Lease
                 id="amount"
                 type="number"
                 step="any"
-                {...register("amount", { setValueAs: (v) => v === '' ? undefined : Number(v) })}
+                {...register("amount", {
+                  setValueAs: (v) => (v === "" ? undefined : Number(v)),
+                })}
                 disabled={isReadOnly}
-                className={errors.amount ? 'border-red-500' : ''}
+                className={errors.amount ? "border-red-500" : ""}
                 min="0"
               />
-              {errors.amount && (<p className="text-sm text-red-500">{errors.amount.message as any}</p>)}
+              {errors.amount && (
+                <p className="text-sm text-red-500">
+                  {errors.amount.message as any}
+                </p>
+              )}
             </div>
             <div>
               <Label htmlFor="tax_pct">Tax %</Label>
@@ -218,22 +274,37 @@ export function LeaseChargeForm({ charge, isOpen, onClose, onSave, mode }: Lease
                 id="tax_pct"
                 type="number"
                 step="any"
-                {...register("tax_pct", { setValueAs: (v) => v === '' ? undefined : Number(v) })}
+                {...register("tax_pct", {
+                  setValueAs: (v) => (v === "" ? undefined : Number(v)),
+                })}
                 disabled={isReadOnly}
-                className={errors.tax_pct ? 'border-red-500' : ''}
+                className={errors.tax_pct ? "border-red-500" : ""}
                 min="0"
               />
-              {errors.tax_pct && (<p className="text-sm text-red-500">{errors.tax_pct.message as any}</p>)}
+              {errors.tax_pct && (
+                <p className="text-sm text-red-500">
+                  {errors.tax_pct.message as any}
+                </p>
+              )}
             </div>
           </div>
 
           <DialogFooter>
-            <Button type="button" variant="outline" onClick={onClose} disabled={isSubmitting}>
+            <Button
+              type="button"
+              variant="outline"
+              onClick={onClose}
+              disabled={isSubmitting}
+            >
               {mode === "view" ? "Close" : "Cancel"}
             </Button>
             {mode !== "view" && (
               <Button type="submit" disabled={isSubmitting}>
-                {isSubmitting ? "Saving..." : mode === "create" ? "Create Charge" : "Update Charge"}
+                {isSubmitting
+                  ? "Saving..."
+                  : mode === "create"
+                  ? "Create Charge"
+                  : "Update Charge"}
               </Button>
             )}
           </DialogFooter>

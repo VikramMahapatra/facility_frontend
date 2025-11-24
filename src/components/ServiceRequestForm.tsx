@@ -19,20 +19,43 @@ import {
 } from "@/components/ui/dialog";
 import { Controller, useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
-import { ServiceRequestFormValues, serviceRequestSchema } from "@/schemas/serviceRequest.schema";
+import {
+  ServiceRequestFormValues,
+  serviceRequestSchema,
+} from "@/schemas/serviceRequest.schema";
 import { toast } from "sonner";
 import { siteApiService } from "@/services/spaces_sites/sitesapi";
 import { spacesApiService } from "@/services/spaces_sites/spacesapi";
 import { organisationApiService } from "@/services/spaces_sites/organisationapi";
 import { serviceRequestApiService } from "@/services/maintenance_assets/servicerequestapi";
-import { leasesApiService } from "@/services/Leasing_Tenants/leasesapi";
+import { leasesApiService } from "@/services/leasing_tenants/leasesapi";
 import { Reply } from "lucide-react";
 
 export type ServiceRequestPriority = "low" | "medium" | "high" | "urgent";
-export type ServiceRequestStatus   = "open" | "in_progress" | "on_hold" | "resolved" | "close";
-export type ServiceRequestChannel  = "portal" | "email" | "phone" | "walkin" | "api";
-export type ServiceRequesterKind   = "resident" | "merchant" | "guest" | "staff" | "other";
-export type Category = "Maintenance" | "Housekeeping" | "Security" | "Utilities" | string;
+export type ServiceRequestStatus =
+  | "open"
+  | "in_progress"
+  | "on_hold"
+  | "resolved"
+  | "close";
+export type ServiceRequestChannel =
+  | "portal"
+  | "email"
+  | "phone"
+  | "walkin"
+  | "api";
+export type ServiceRequesterKind =
+  | "resident"
+  | "merchant"
+  | "guest"
+  | "staff"
+  | "other";
+export type Category =
+  | "Maintenance"
+  | "Housekeeping"
+  | "Security"
+  | "Utilities"
+  | string;
 
 export interface ServiceRequest {
   id?: string;
@@ -50,7 +73,6 @@ export interface ServiceRequest {
   linked_work_order_id?: string | null;
   created_at?: string;
   updated_at?: string;
-
 }
 
 interface ServiceRequestFormProps {
@@ -108,10 +130,28 @@ export function ServiceRequestForm({
   const [workOrderList, setWorkOrderList] = useState<any[]>([]);
 
   // Mock comments until endpoint is ready
-  type Comment = { id: string; author: string; ts: string; text: string; replies?: Comment[] };
+  type Comment = {
+    id: string;
+    author: string;
+    ts: string;
+    text: string;
+    replies?: Comment[];
+  };
   const [comments, setComments] = useState<Comment[]>([
-    { id: "c1", author: "Agent A", ts: new Date().toISOString(), text: "Ticket created.", replies: [] },
-    { id: "c2", author: "Requester", ts: new Date().toISOString(), text: "Please check AC in lobby.", replies: [] },
+    {
+      id: "c1",
+      author: "Agent A",
+      ts: new Date().toISOString(),
+      text: "Ticket created.",
+      replies: [],
+    },
+    {
+      id: "c2",
+      author: "Requester",
+      ts: new Date().toISOString(),
+      text: "Please check AC in lobby.",
+      replies: [],
+    },
   ]);
   const [newComment, setNewComment] = useState("");
   const [replyingToId, setReplyingToId] = useState<string | null>(null);
@@ -124,9 +164,11 @@ export function ServiceRequestForm({
     const kind = serviceRequest?.requester_kind || emptyFormData.requester_kind;
     console.log("Hydrating form with service request:", serviceRequest);
     if (serviceRequest && mode !== "create") {
-      const validRequesterKind = (serviceRequest.requester_kind === "resident" || serviceRequest.requester_kind === "merchant") 
-        ? serviceRequest.requester_kind 
-        : "resident";
+      const validRequesterKind =
+        serviceRequest.requester_kind === "resident" ||
+        serviceRequest.requester_kind === "merchant"
+          ? serviceRequest.requester_kind
+          : "resident";
       reset({
         site_id: serviceRequest.site_id || "",
         space_id: serviceRequest.space_id || null,
@@ -186,13 +228,6 @@ export function ServiceRequestForm({
       setValue("requester_id", null);
     }
   }, [selectedRequesterKind, selectedSiteId, setValue]);
-  
-
-  
-
- 
-
-
 
   const loadSiteLookup = async () => {
     try {
@@ -202,10 +237,11 @@ export function ServiceRequestForm({
       setSiteList([]);
     }
   };
-  
+
   const loadServiceRequestFilterWorkorderLookup = async () => {
     try {
-      const rows = await serviceRequestApiService. getServiceRequestFilterWorkorderLookup();
+      const rows =
+        await serviceRequestApiService.getServiceRequestFilterWorkorderLookup();
       if (rows.success) setWorkOrderList(rows.data || []);
     } catch {
       setWorkOrderList([]);
@@ -223,7 +259,8 @@ export function ServiceRequestForm({
 
   const loadStatusLookup = async () => {
     try {
-      const rows = await serviceRequestApiService.getServiceRequestStatusLookup();
+      const rows =
+        await serviceRequestApiService.getServiceRequestStatusLookup();
       if (rows.success) setStatusList(rows.data || []);
     } catch {
       setStatusList([]);
@@ -232,7 +269,8 @@ export function ServiceRequestForm({
 
   const loadPriorityLookup = async () => {
     try {
-      const rows = await serviceRequestApiService.getServiceRequestPriorityLookup();
+      const rows =
+        await serviceRequestApiService.getServiceRequestPriorityLookup();
       if (rows.success) setPriorityList(rows.data || []);
     } catch {
       setPriorityList([]);
@@ -241,7 +279,8 @@ export function ServiceRequestForm({
 
   const loadCategoryLookup = async () => {
     try {
-      const rows = await serviceRequestApiService.getServiceRequestCategoryLookup();
+      const rows =
+        await serviceRequestApiService.getServiceRequestCategoryLookup();
       if (rows.success) setCategoryList(rows.data || []);
     } catch {
       setCategoryList([]);
@@ -250,7 +289,8 @@ export function ServiceRequestForm({
 
   const loadChannelLookup = async () => {
     try {
-      const rows = await serviceRequestApiService.getServiceRequestChannelLookup();
+      const rows =
+        await serviceRequestApiService.getServiceRequestChannelLookup();
       if (rows.success) setChannelList(rows.data || []);
     } catch {
       setChannelList([]);
@@ -259,7 +299,8 @@ export function ServiceRequestForm({
 
   const loadRequesterKindLookup = async () => {
     try {
-      const rows = await serviceRequestApiService.getServiceRequestRequesterKindLookup();
+      const rows =
+        await serviceRequestApiService.getServiceRequestRequesterKindLookup();
       if (rows.success) setRequesterKindList(rows.data || []);
     } catch {
       setRequesterKindList([]);
@@ -268,8 +309,13 @@ export function ServiceRequestForm({
 
   const loadCustomerLookup = async (kind?: string, site_id?: string) => {
     if (!kind || !site_id) return;
-    
-    const Kind = kind === "resident" ? "individual" : kind === "merchant" ? "commercial" : kind;
+
+    const Kind =
+      kind === "resident"
+        ? "individual"
+        : kind === "merchant"
+        ? "commercial"
+        : kind;
     const lookup = await leasesApiService.getLeasePartnerLookup(Kind, site_id);
     if (lookup.success) setCustomerList(lookup.data || []);
   };
@@ -316,7 +362,10 @@ export function ServiceRequestForm({
           </DialogTitle>
         </DialogHeader>
 
-        <form onSubmit={isSubmitting ? undefined : handleSubmit(onSubmitForm)} className="space-y-4">
+        <form
+          onSubmit={isSubmitting ? undefined : handleSubmit(onSubmitForm)}
+          className="space-y-4"
+        >
           {/* Row 1: Site | Space */}
           <div className="grid grid-cols-2 gap-4">
             <Controller
@@ -334,7 +383,9 @@ export function ServiceRequestForm({
                     }}
                     disabled={isReadOnly}
                   >
-                    <SelectTrigger className={errors.site_id ? 'border-red-500' : ''}>
+                    <SelectTrigger
+                      className={errors.site_id ? "border-red-500" : ""}
+                    >
                       <SelectValue placeholder="Select site" />
                     </SelectTrigger>
                     <SelectContent>
@@ -346,7 +397,9 @@ export function ServiceRequestForm({
                     </SelectContent>
                   </Select>
                   {errors.site_id && (
-                    <p className="text-sm text-red-500">{errors.site_id.message}</p>
+                    <p className="text-sm text-red-500">
+                      {errors.site_id.message}
+                    </p>
                   )}
                 </div>
               )}
@@ -391,7 +444,9 @@ export function ServiceRequestForm({
                     onValueChange={field.onChange}
                     disabled={isReadOnly}
                   >
-                    <SelectTrigger className={errors.priority ? 'border-red-500' : ''}>
+                    <SelectTrigger
+                      className={errors.priority ? "border-red-500" : ""}
+                    >
                       <SelectValue placeholder="Select priority" />
                     </SelectTrigger>
                     <SelectContent>
@@ -403,7 +458,9 @@ export function ServiceRequestForm({
                     </SelectContent>
                   </Select>
                   {errors.priority && (
-                    <p className="text-sm text-red-500">{errors.priority.message}</p>
+                    <p className="text-sm text-red-500">
+                      {errors.priority.message}
+                    </p>
                   )}
                 </div>
               )}
@@ -419,7 +476,9 @@ export function ServiceRequestForm({
                     onValueChange={field.onChange}
                     disabled={isReadOnly}
                   >
-                    <SelectTrigger className={errors.status ? 'border-red-500' : ''}>
+                    <SelectTrigger
+                      className={errors.status ? "border-red-500" : ""}
+                    >
                       <SelectValue placeholder="Select status" />
                     </SelectTrigger>
                     <SelectContent>
@@ -431,7 +490,9 @@ export function ServiceRequestForm({
                     </SelectContent>
                   </Select>
                   {errors.status && (
-                    <p className="text-sm text-red-500">{errors.status.message}</p>
+                    <p className="text-sm text-red-500">
+                      {errors.status.message}
+                    </p>
                   )}
                 </div>
               )}
@@ -476,7 +537,9 @@ export function ServiceRequestForm({
                     onValueChange={field.onChange}
                     disabled={isReadOnly}
                   >
-                    <SelectTrigger className={errors.channel ? 'border-red-500' : ''}>
+                    <SelectTrigger
+                      className={errors.channel ? "border-red-500" : ""}
+                    >
                       <SelectValue placeholder="Select channel" />
                     </SelectTrigger>
                     <SelectContent>
@@ -488,7 +551,9 @@ export function ServiceRequestForm({
                     </SelectContent>
                   </Select>
                   {errors.channel && (
-                    <p className="text-sm text-red-500">{errors.channel.message}</p>
+                    <p className="text-sm text-red-500">
+                      {errors.channel.message}
+                    </p>
                   )}
                 </div>
               )}
@@ -513,7 +578,9 @@ export function ServiceRequestForm({
                     }}
                     disabled={isReadOnly}
                   >
-                    <SelectTrigger className={errors.requester_kind ? 'border-red-500' : ''}>
+                    <SelectTrigger
+                      className={errors.requester_kind ? "border-red-500" : ""}
+                    >
                       <SelectValue placeholder="Select requester kind" />
                     </SelectTrigger>
                     <SelectContent>
@@ -525,7 +592,9 @@ export function ServiceRequestForm({
                     </SelectContent>
                   </Select>
                   {errors.requester_kind && (
-                    <p className="text-sm text-red-500">{errors.requester_kind.message}</p>
+                    <p className="text-sm text-red-500">
+                      {errors.requester_kind.message}
+                    </p>
                   )}
                 </div>
               )}
@@ -537,10 +606,12 @@ export function ServiceRequestForm({
                 <div className="space-y-2">
                   <Label htmlFor="requester_id">Requester</Label>
                   <Select
-                    key={customerList.map(c => c.id).join("-")}
+                    key={customerList.map((c) => c.id).join("-")}
                     value={field.value || ""}
                     onValueChange={field.onChange}
-                    disabled={isReadOnly || !selectedSiteId || !selectedRequesterKind}
+                    disabled={
+                      isReadOnly || !selectedSiteId || !selectedRequesterKind
+                    }
                   >
                     <SelectTrigger>
                       <SelectValue placeholder="Select Requester" />
@@ -565,7 +636,9 @@ export function ServiceRequestForm({
               control={control}
               render={({ field }) => (
                 <div className="space-y-2">
-                  <Label htmlFor="linked_work_order_id">Linked Work Order</Label>
+                  <Label htmlFor="linked_work_order_id">
+                    Linked Work Order
+                  </Label>
                   <Select
                     value={field.value || ""}
                     onValueChange={field.onChange}
@@ -633,7 +706,9 @@ export function ServiceRequestForm({
                     <div className="flex items-center justify-between">
                       <div>
                         <div className="text-sm font-medium">{c.author}</div>
-                        <div className="text-xs text-muted-foreground">{new Date(c.ts).toLocaleString()}</div>
+                        <div className="text-xs text-muted-foreground">
+                          {new Date(c.ts).toLocaleString()}
+                        </div>
                       </div>
                       <Button
                         type="button"
@@ -655,8 +730,12 @@ export function ServiceRequestForm({
                       <div className="mt-2 space-y-2 pl-4 border-l">
                         {c.replies.map((r) => (
                           <div key={r.id} className="rounded p-2 bg-muted/30">
-                            <div className="text-sm font-medium">{r.author}</div>
-                            <div className="text-xs text-muted-foreground">{new Date(r.ts).toLocaleString()}</div>
+                            <div className="text-sm font-medium">
+                              {r.author}
+                            </div>
+                            <div className="text-xs text-muted-foreground">
+                              {new Date(r.ts).toLocaleString()}
+                            </div>
                             <div className="text-sm mt-1">{r.text}</div>
                           </div>
                         ))}
@@ -683,7 +762,12 @@ export function ServiceRequestForm({
                                       ...cm,
                                       replies: [
                                         ...(cm.replies || []),
-                                        { id: `r-${Date.now()}`, author: "You", ts: new Date().toISOString(), text: replyText.trim() },
+                                        {
+                                          id: `r-${Date.now()}`,
+                                          author: "You",
+                                          ts: new Date().toISOString(),
+                                          text: replyText.trim(),
+                                        },
                                       ],
                                     }
                                   : cm
@@ -696,7 +780,11 @@ export function ServiceRequestForm({
                         >
                           Send
                         </Button>
-                        <Button type="button" variant="ghost" onClick={() => setReplyingToId(null)}>
+                        <Button
+                          type="button"
+                          variant="ghost"
+                          onClick={() => setReplyingToId(null)}
+                        >
                           Cancel
                         </Button>
                       </div>
@@ -704,7 +792,9 @@ export function ServiceRequestForm({
                   </div>
                 ))}
                 {comments.length === 0 && (
-                  <div className="text-sm text-muted-foreground">No comments yet</div>
+                  <div className="text-sm text-muted-foreground">
+                    No comments yet
+                  </div>
                 )}
               </div>
               <div className="flex items-center gap-2">
@@ -721,7 +811,13 @@ export function ServiceRequestForm({
                     if (!newComment.trim()) return;
                     setComments((prev) => [
                       ...prev,
-                      { id: `c-${Date.now()}`, author: "You", ts: new Date().toISOString(), text: newComment.trim(), replies: [] },
+                      {
+                        id: `c-${Date.now()}`,
+                        author: "You",
+                        ts: new Date().toISOString(),
+                        text: newComment.trim(),
+                        replies: [],
+                      },
                     ]);
                     setNewComment("");
                   }}
@@ -734,12 +830,21 @@ export function ServiceRequestForm({
           )}
 
           <DialogFooter>
-            <Button type="button" variant="outline" onClick={onClose} disabled={isSubmitting}>
+            <Button
+              type="button"
+              variant="outline"
+              onClick={onClose}
+              disabled={isSubmitting}
+            >
               {mode === "view" ? "Close" : "Cancel"}
             </Button>
             {mode !== "view" && (
               <Button type="submit" disabled={isSubmitting}>
-                {isSubmitting ? "Saving..." : mode === "create" ? "Create Service Request" : "Update Service Request"}
+                {isSubmitting
+                  ? "Saving..."
+                  : mode === "create"
+                  ? "Create Service Request"
+                  : "Update Service Request"}
               </Button>
             )}
           </DialogFooter>
