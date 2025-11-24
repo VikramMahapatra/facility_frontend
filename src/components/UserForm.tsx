@@ -144,6 +144,12 @@ export function UserForm({
   const loadAll = async () => {
     setFormLoading(true);
 
+    
+    if (mode === "create") {
+      setBuildingList([]);
+      setSpaceList([]);
+    }
+
     const userSiteId = user && mode !== "create" ? (user as any).site_id : undefined;
     const userBuildingId = user && mode !== "create" ? (user as any).building_block_id : undefined;
 
@@ -235,8 +241,15 @@ export function UserForm({
     await onSubmit(data);
   };
 
+  const handleClose = () => {
+    reset(emptyFormData);
+    setBuildingList([]);
+    setSpaceList([]);
+    onOpenChange(false);
+  };
+
   return (
-    <Dialog open={open} onOpenChange={onOpenChange}>
+    <Dialog open={open} onOpenChange={handleClose}>
       <DialogContent className="sm:max-w-[600px] max-h-[90vh] flex flex-col">
         <DialogHeader>
           <DialogTitle>
@@ -754,7 +767,7 @@ export function UserForm({
           <Button
             type="button"
             variant="outline"
-            onClick={() => onOpenChange(false)}
+            onClick={handleClose}
             disabled={isSubmitting}
           >
             {mode === "view" ? "Close" : "Cancel"}
