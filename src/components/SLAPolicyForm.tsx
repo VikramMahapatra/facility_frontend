@@ -1,12 +1,22 @@
-import { useEffect } from "react";
+import { useEffect, useState } from "react";
 import { useForm, Controller } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Switch } from "@/components/ui/switch";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 import { slaPolicySchema, SLAPolicyFormValues } from "@/schemas/sla_policy.schema";
 import { SLAPolicy } from "@/interfaces/sla_policy_interface";
+import { slaPoliciesApiService } from "@/services/ticketing_service/slapoliciesapi";
+import { siteApiService } from "@/services/spaces_sites/sitesapi";
 
 interface SLAPolicyFormProps {
   policy?: SLAPolicy | null;
@@ -42,6 +52,17 @@ export function SLAPolicyForm({ policy, isOpen, onClose, onSave, mode }: SLAPoli
     reValidateMode: "onChange",
   });
 
+  const [orgList, setOrgList] = useState<any[]>([]);
+  const [siteList, setSiteList] = useState<any[]>([]);
+  const [serviceCategoryList, setServiceCategoryList] = useState<any[]>([]);
+  const [userContactList, setUserContactList] = useState<any[]>([]);
+
+  useEffect(() => {
+    if (isOpen) {
+      loadAllLookups();
+    }
+  }, [isOpen]);
+
   useEffect(() => {
     if (policy && mode !== "create") {
       reset({
@@ -60,6 +81,24 @@ export function SLAPolicyForm({ policy, isOpen, onClose, onSave, mode }: SLAPoli
     }
   }, [policy, mode, reset]);
 
+  const loadAllLookups = async () => {
+    try {
+      const [orgs, sites, categories, contacts] = await Promise.all([
+        slaPoliciesApiService.getOrgLookup(),
+        siteApiService.getSiteLookup(),
+        slaPoliciesApiService.getServiceCategoryLookup(),
+        slaPoliciesApiService.getUserContactLookup(),
+      ]);
+
+      if (orgs.success) setOrgList(orgs.data || []);
+      if (sites.success) setSiteList(sites.data || []);
+      if (categories.success) setServiceCategoryList(categories.data || []);
+      if (contacts.success) setUserContactList(contacts.data || []);
+    } catch (error) {
+      console.error("Failed to load lookup data:", error);
+    }
+  };
+
   const onSubmitForm = async (data: SLAPolicyFormValues) => {
     const formResponse = await onSave({
       ...policy,
@@ -70,18 +109,45 @@ export function SLAPolicyForm({ policy, isOpen, onClose, onSave, mode }: SLAPoli
   const isReadOnly = mode === "view";
 
   return (
-    <form onSubmit={isSubmitting ? undefined : handleSubmit(onSubmitForm)} className="space-y-4">
+    <Dialog open={isOpen} onOpenChange={onClose}>
+      <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
+        <DialogHeader>
+          <DialogTitle>
+            {mode === "create" && "Create New SLA Policy"}
+            {mode === "edit" && "Edit SLA Policy"}
+            {mode === "view" && "SLA Policy Details"}
+          </DialogTitle>
+        </DialogHeader>
+
+        <form onSubmit={isSubmitting ? undefined : handleSubmit(onSubmitForm)} className="space-y-4">
       <div className="grid grid-cols-2 gap-4">
         {/* Left Column */}
         <div className="space-y-4">
           <div className="space-y-2">
             <Label htmlFor="organization_name">Organization Name</Label>
-            <Input
-              id="organization_name"
-              {...register("organization_name")}
-              placeholder="e.g., ABC Corporation"
-              disabled={isReadOnly}
-              className={errors.organization_name ? 'border-red-500' : ''}
+            <Controller
+              name="organization_name"
+              control={control}
+              render={({ field }) => (
+                <Select
+                  value={field.value || ""}
+                  onValueChange={field.onChange}
+                  disabled={isReadOnly}
+                >
+                  <SelectTrigger
+                    className={errors.organization_name ? "border-red-500" : ""}
+                  >
+                    <SelectValue placeholder="Select organization" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {orgList.map((org) => (
+                      <SelectItem key={org.id} value={org.name || org.id}>
+                        {org.name}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              )}
             />
             {errors.organization_name && (
               <p className="text-sm text-red-500">{errors.organization_name.message}</p>
@@ -90,12 +156,29 @@ export function SLAPolicyForm({ policy, isOpen, onClose, onSave, mode }: SLAPoli
 
           <div className="space-y-2">
             <Label htmlFor="service_category">Service Category *</Label>
-            <Input
-              id="service_category"
-              {...register("service_category")}
-              placeholder="e.g., Electrical"
-              disabled={isReadOnly}
-              className={errors.service_category ? 'border-red-500' : ''}
+            <Controller
+              name="service_category"
+              control={control}
+              render={({ field }) => (
+                <Select
+                  value={field.value || ""}
+                  onValueChange={field.onChange}
+                  disabled={isReadOnly}
+                >
+                  <SelectTrigger
+                    className={errors.service_category ? "border-red-500" : ""}
+                  >
+                    <SelectValue placeholder="Select service category" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {serviceCategoryList.map((category) => (
+                      <SelectItem key={category.id} value={category.name || category.id}>
+                        {category.name}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              )}
             />
             {errors.service_category && (
               <p className="text-sm text-red-500">{errors.service_category.message}</p>
@@ -103,14 +186,30 @@ export function SLAPolicyForm({ policy, isOpen, onClose, onSave, mode }: SLAPoli
           </div>
 
           <div className="space-y-2">
-            <Label htmlFor="escalation_contact">Escalation Contact (User ID)</Label>
-            <Input
-              id="escalation_contact"
-              type="number"
-              {...register("escalation_contact", { valueAsNumber: true })}
-              placeholder="e.g., 102"
-              disabled={isReadOnly}
-              className={errors.escalation_contact ? 'border-red-500' : ''}
+            <Label htmlFor="escalation_contact">Escalation Contact</Label>
+            <Controller
+              name="escalation_contact"
+              control={control}
+              render={({ field }) => (
+                <Select
+                  value={field.value ? String(field.value) : ""}
+                  onValueChange={(value) => field.onChange(value ? Number(value) : undefined)}
+                  disabled={isReadOnly}
+                >
+                  <SelectTrigger
+                    className={errors.escalation_contact ? "border-red-500" : ""}
+                  >
+                    <SelectValue placeholder="Select escalation contact" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {userContactList.map((contact) => (
+                      <SelectItem key={contact.id} value={String(contact.id)}>
+                        {contact.name || contact.email || `User ${contact.id}`}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              )}
             />
             {errors.escalation_contact && (
               <p className="text-sm text-red-500">{errors.escalation_contact.message}</p>
@@ -154,12 +253,29 @@ export function SLAPolicyForm({ policy, isOpen, onClose, onSave, mode }: SLAPoli
         <div className="space-y-4">
           <div className="space-y-2">
             <Label htmlFor="site_name">Site Name</Label>
-            <Input
-              id="site_name"
-              {...register("site_name")}
-              placeholder="e.g., Downtown Tower"
-              disabled={isReadOnly}
-              className={errors.site_name ? 'border-red-500' : ''}
+            <Controller
+              name="site_name"
+              control={control}
+              render={({ field }) => (
+                <Select
+                  value={field.value || ""}
+                  onValueChange={field.onChange}
+                  disabled={isReadOnly}
+                >
+                  <SelectTrigger
+                    className={errors.site_name ? "border-red-500" : ""}
+                  >
+                    <SelectValue placeholder="Select site" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {siteList.map((site) => (
+                      <SelectItem key={site.id} value={site.name || site.id}>
+                        {site.name}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              )}
             />
             {errors.site_name && (
               <p className="text-sm text-red-500">{errors.site_name.message}</p>
@@ -167,14 +283,30 @@ export function SLAPolicyForm({ policy, isOpen, onClose, onSave, mode }: SLAPoli
           </div>
 
           <div className="space-y-2">
-            <Label htmlFor="default_contact">Default Contact (User ID)</Label>
-            <Input
-              id="default_contact"
-              type="number"
-              {...register("default_contact", { valueAsNumber: true })}
-              placeholder="e.g., 101"
-              disabled={isReadOnly}
-              className={errors.default_contact ? 'border-red-500' : ''}
+            <Label htmlFor="default_contact">Default Contact</Label>
+            <Controller
+              name="default_contact"
+              control={control}
+              render={({ field }) => (
+                <Select
+                  value={field.value ? String(field.value) : ""}
+                  onValueChange={(value) => field.onChange(value ? Number(value) : undefined)}
+                  disabled={isReadOnly}
+                >
+                  <SelectTrigger
+                    className={errors.default_contact ? "border-red-500" : ""}
+                  >
+                    <SelectValue placeholder="Select default contact" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {userContactList.map((contact) => (
+                      <SelectItem key={contact.id} value={String(contact.id)}>
+                        {contact.name || contact.email || `User ${contact.id}`}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              )}
             />
             {errors.default_contact && (
               <p className="text-sm text-red-500">{errors.default_contact.message}</p>
@@ -215,22 +347,24 @@ export function SLAPolicyForm({ policy, isOpen, onClose, onSave, mode }: SLAPoli
         </div>
       </div>
 
-      <div className="flex justify-end gap-2 pt-4">
-        <Button
-          type="button"
-          variant="outline"
-          onClick={onClose}
-          disabled={isSubmitting}
-        >
-          Cancel
-        </Button>
-        {mode !== "view" && (
-          <Button type="submit" disabled={isSubmitting}>
-            {isSubmitting ? "Saving..." : mode === "create" ? "Create SLA Policy" : "Update SLA Policy"}
-          </Button>
-        )}
-      </div>
-    </form>
+          <DialogFooter>
+            <Button
+              type="button"
+              variant="outline"
+              onClick={onClose}
+              disabled={isSubmitting}
+            >
+              Cancel
+            </Button>
+            {mode !== "view" && (
+              <Button type="submit" disabled={isSubmitting}>
+                {isSubmitting ? "Saving..." : mode === "create" ? "Create SLA Policy" : "Update SLA Policy"}
+              </Button>
+            )}
+          </DialogFooter>
+        </form>
+      </DialogContent>
+    </Dialog>
   );
 }
 
