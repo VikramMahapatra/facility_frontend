@@ -92,10 +92,17 @@ export function TenantForm({
   const loadAll = async () => {
     setFormLoading(true);
 
+    // Clear building and space lists when in create mode
+    if (mode === "create") {
+      setBuildingList([]);
+      setSpaceList([]);
+    }
+
     await Promise.all([loadSiteLookup(), loadStatusLookup(), loadTypeLookup()]);
 
+    // Reset form based on mode - if create mode or no tenant, use empty data
     reset(
-      tenant
+      tenant && mode !== "create"
         ? {
           name: tenant.name || "",
           email: tenant.email || "",
@@ -134,8 +141,10 @@ export function TenantForm({
   };
 
   useEffect(() => {
-    loadAll();
-  }, [tenant, mode, reset]);
+    if (isOpen) {
+      loadAll();
+    }
+  }, [tenant, mode, isOpen, reset]);
 
   const selectedSiteId = watch("site_id");
   const selectedBuildingId = watch("building_id");
@@ -302,8 +311,10 @@ export function TenantForm({
                     control={control}
                     render={({ field }) => (
                       <Select
-                        value={field.value || ""}
-                        onValueChange={field.onChange}
+                        value={field.value ? field.value : "none"}
+                        onValueChange={(v) =>
+                          field.onChange(v === "none" ? "" : v)
+                        }
                         disabled={isReadOnly || !selectedSiteId}
                       >
                         <SelectTrigger>
@@ -316,6 +327,7 @@ export function TenantForm({
                           />
                         </SelectTrigger>
                         <SelectContent>
+                          <SelectItem value="none">Select building</SelectItem>
                           {buildingList.map((building) => (
                             <SelectItem key={building.id} value={building.id}>
                               {building.name}

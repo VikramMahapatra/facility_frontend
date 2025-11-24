@@ -181,8 +181,14 @@ export function SpaceForm({
   const isReadOnly = mode === "view";
   const selectedKind = watch("kind");
 
+  const handleClose = () => {
+    reset(emptyFormData);
+    setBuildingList([]);
+    onClose();
+  };
+
   return (
-    <Dialog open={isOpen} onOpenChange={onClose}>
+    <Dialog open={isOpen} onOpenChange={handleClose}>
       <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
         <DialogHeader>
           <DialogTitle>
@@ -528,7 +534,7 @@ export function SpaceForm({
                 <Button
                   type="button"
                   variant="outline"
-                  onClick={onClose}
+                  onClick={handleClose}
                   disabled={isSubmitting}
                 >
                   {mode === "view" ? "Close" : "Cancel"}
