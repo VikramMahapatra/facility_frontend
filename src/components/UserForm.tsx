@@ -161,9 +161,7 @@ export function UserForm({
 
     if (userSiteId) {
       promises.push(loadBuildingLookup(userSiteId));
-      if (userBuildingId) {
-        promises.push(loadSpaceLookup(userSiteId, userBuildingId));
-      }
+      promises.push(loadSpaceLookup(userSiteId, userBuildingId));
     }
 
     await Promise.all(promises);
@@ -205,7 +203,7 @@ export function UserForm({
   }, [selectedSiteId]);
 
   useEffect(() => {
-    if (selectedSiteId && selectedBuildingId) {
+    if (selectedSiteId) {
       loadSpaceLookup(selectedSiteId, selectedBuildingId);
     } else {
       setSpaceList([]);
@@ -232,7 +230,7 @@ export function UserForm({
     if (lookup.success) setBuildingList(lookup.data || []);
   };
 
-  const loadSpaceLookup = async (siteId: string, buildingId: string) => {
+  const loadSpaceLookup = async (siteId: string, buildingId?: string) => {
     const lookup = await spacesApiService.getSpaceLookup(siteId, buildingId);
     if (lookup.success) setSpaceList(lookup.data || []);
   };
@@ -624,14 +622,18 @@ export function UserForm({
                         <Select
                           value={field.value || ""}
                           onValueChange={field.onChange}
-                          disabled={
-                            isReadOnly || !selectedSiteId || !selectedBuildingId
-                          }
+                          disabled={isReadOnly || !selectedSiteId}
                         >
                           <SelectTrigger
                             className={errors.space_id ? "border-red-500" : ""}
                           >
-                            <SelectValue placeholder="Select space" />
+                            <SelectValue
+                              placeholder={
+                                !selectedSiteId
+                                  ? "Select site first"
+                                  : "Select space"
+                              }
+                            />
                           </SelectTrigger>
                           <SelectContent>
                             {spaceList.map((space: any) => (
