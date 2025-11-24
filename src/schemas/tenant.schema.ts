@@ -75,8 +75,7 @@ export const tenantSchema = z
     // For commercial tenants, either legal_name or contact name should be present (soft rule)
     if (
       val.tenant_type === "commercial" &&
-      (!val.legal_name || String(val.legal_name).trim() === "") &&
-      (!val.contact_info?.name || String(val.contact_info?.name).trim() === "")
+      (!val.legal_name || String(val.legal_name).trim() === "")
     ) {
       ctx.addIssue({
         code: z.ZodIssueCode.custom,
