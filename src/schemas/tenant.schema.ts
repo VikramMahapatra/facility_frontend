@@ -24,12 +24,12 @@ export const tenantSchema = z
     building_id: z.string().optional(),
     space_id: z.string().min(1, "Space is required"),
     tenant_type: z.enum(["individual", "commercial"], {
-      required_error: "Tenant type is required",  
+      required_error: "Tenant type is required",
     }),
-    
+
     status: z.coerce.string().min(1, "Status is required"),
     type: z.string().optional(),
-    legal_name: z.string().min(1, "Legal Name is required for Commercial Tenant"),
+    legal_name: z.string().optional(),
     contact_info: z
       .object({
         name: z.string().optional(),
