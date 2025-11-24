@@ -70,7 +70,6 @@ const emptyFormData: SpaceFormValues = {
   status: "available",
   attributes: {
     view: "",
-    //smoking: false,
     furnished: undefined,
     star_rating: "",
   },
@@ -104,10 +103,15 @@ export function SpaceForm({
   const loadAll = async () => {
     setFormLoading(true);
 
+    // Clear building list when in create mode
+    if (mode === "create") {
+      setBuildingList([]);
+    }
+
     await Promise.all([loadSiteLookup(), loadBuildingLookup()]);
 
-    reset(
-      space
+      reset(
+      space && mode !== "create"
         ? {
             code: space.code || "",
             name: space.name || "",
@@ -119,12 +123,12 @@ export function SpaceForm({
                 : undefined,
             building_block_id: space.building_block_id || "",
             area_sqft: space.area_sqft,
-            beds: space.beds,
+            beds: space.beds ,
             baths: space.baths,
             status: space.status || "available",
             attributes: {
               view: space.attributes?.view || "",
-              //smoking: space.attributes?.smoking ?? false,
+             
               furnished: space.attributes?.furnished as
                 | "unfurnished"
                 | "semi"
@@ -140,8 +144,10 @@ export function SpaceForm({
   };
 
   useEffect(() => {
-    loadAll();
-  }, [space, mode, reset]);
+    if (isOpen) {
+      loadAll();
+    }
+  }, [space, mode, isOpen, reset]);
 
   useEffect(() => {
     if (selectedSiteId) {
