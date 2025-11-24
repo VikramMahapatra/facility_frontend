@@ -24,7 +24,7 @@ import { tenantSchema, TenantFormValues } from "@/schemas/tenant.schema";
 import { siteApiService } from "@/services/spaces_sites/sitesapi";
 import { spacesApiService } from "@/services/spaces_sites/spacesapi";
 import { buildingApiService } from "@/services/spaces_sites/buildingsapi";
-import { tenantsApiService } from "@/services/Leasing_Tenants/tenantsapi";
+import { tenantsApiService } from "@/services/leasing_tenants/tenantsapi";
 import { Tenant } from "@/interfaces/leasing_tenants_interface";
 import PhoneInput from "react-phone-input-2";
 
@@ -97,36 +97,36 @@ export function TenantForm({
     reset(
       tenant
         ? {
-          name: tenant.name || "",
-          email: tenant.email || "",
-          phone: tenant.phone || "",
-          tenant_type: tenant.tenant_type || "individual",
-          status: tenant.status || "active",
-          site_id: tenant.site_id || "",
-          building_id:
-            tenant.building_block_id ||
-            (tenant as any).building_block_id ||
-            "",
-          space_id: tenant.space_id || "",
-          type: tenant.type || "",
-          legal_name: tenant.legal_name || "",
-          contact_info: tenant.contact_info
-            ? {
-              name: tenant.contact_info.name || "",
-              email: tenant.contact_info.email || "",
-              phone: tenant.contact_info.phone || "",
-              address: tenant.contact_info.address
-                ? {
-                  line1: tenant.contact_info.address.line1 || "",
-                  line2: tenant.contact_info.address.line2 || "",
-                  city: tenant.contact_info.address.city || "",
-                  state: tenant.contact_info.address.state || "",
-                  pincode: tenant.contact_info.address.pincode || "",
+            name: tenant.name || "",
+            email: tenant.email || "",
+            phone: tenant.phone || "",
+            tenant_type: tenant.tenant_type || "individual",
+            status: tenant.status || "active",
+            site_id: tenant.site_id || "",
+            building_id:
+              tenant.building_block_id ||
+              (tenant as any).building_block_id ||
+              "",
+            space_id: tenant.space_id || "",
+            type: tenant.type || "",
+            legal_name: tenant.legal_name || "",
+            contact_info: tenant.contact_info
+              ? {
+                  name: tenant.contact_info.name || "",
+                  email: tenant.contact_info.email || "",
+                  phone: tenant.contact_info.phone || "",
+                  address: tenant.contact_info.address
+                    ? {
+                        line1: tenant.contact_info.address.line1 || "",
+                        line2: tenant.contact_info.address.line2 || "",
+                        city: tenant.contact_info.address.city || "",
+                        state: tenant.contact_info.address.state || "",
+                        pincode: tenant.contact_info.address.pincode || "",
+                      }
+                    : {},
                 }
-                : {},
-            }
-            : emptyFormData,
-        }
+              : emptyFormData,
+          }
         : emptyFormData
     );
     setFormLoading(false);
@@ -147,11 +147,11 @@ export function TenantForm({
   const selectedSpaceId = watch("space_id");
   const canSubmitCreate = Boolean(
     watchedName &&
-    watchedEmail &&
-    watchedPhone &&
-    selectedSiteId &&
-    selectedSpaceId &&
-    watchedStatus
+      watchedEmail &&
+      watchedPhone &&
+      selectedSiteId &&
+      selectedSpaceId &&
+      watchedStatus
   );
 
   useEffect(() => {
@@ -404,8 +404,9 @@ export function TenantForm({
                             required: true,
                           }}
                           containerClass="w-full relative"
-                          inputClass={`!w-full !h-10 !pl-12 !rounded-md !border !border-input !bg-background !px-3 !py-2 !text-base !ring-offset-background placeholder:!text-muted-foreground focus-visible:!outline-none focus-visible:!ring-2 focus-visible:!ring-ring focus-visible:!ring-offset-2 disabled:!cursor-not-allowed disabled:!opacity-50 md:!text-sm ${errors.phone ? "!border-red-500" : ""
-                            }`}
+                          inputClass={`!w-full !h-10 !pl-12 !rounded-md !border !border-input !bg-background !px-3 !py-2 !text-base !ring-offset-background placeholder:!text-muted-foreground focus-visible:!outline-none focus-visible:!ring-2 focus-visible:!ring-ring focus-visible:!ring-offset-2 disabled:!cursor-not-allowed disabled:!opacity-50 md:!text-sm ${
+                            errors.phone ? "!border-red-500" : ""
+                          }`}
                           buttonClass="!border-none !bg-transparent !absolute !left-2 !top-1/2 !-translate-y-1/2 z-10"
                           dropdownClass="!absolute !z-50 !bg-white !border !border-gray-200 !rounded-md !shadow-lg max-h-60 overflow-y-auto"
                           enableSearch={true}
@@ -652,8 +653,8 @@ export function TenantForm({
                     {isSubmitting
                       ? "Saving..."
                       : mode === "create"
-                        ? "Create Tenant"
-                        : "Update Tenant"}
+                      ? "Create Tenant"
+                      : "Update Tenant"}
                   </Button>
                 )}
               </DialogFooter>

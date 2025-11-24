@@ -6,16 +6,26 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { PropertySidebar } from "@/components/PropertySidebar";
-import { SidebarProvider, SidebarInset, SidebarTrigger } from "@/components/ui/sidebar";
+import {
+  SidebarProvider,
+  SidebarInset,
+  SidebarTrigger,
+} from "@/components/ui/sidebar";
 import { LeaseForm } from "@/components/LeasesForm";
 import {
-  AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent,
-  AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
 import { toast } from "sonner";
 import { Pagination } from "@/components/Pagination";
 import { siteApiService } from "@/services/spaces_sites/sitesapi";
-import { leasesApiService } from "@/services/Leasing_Tenants/leasesapi";
+import { leasesApiService } from "@/services/leasing_tenants/leasesapi";
 import { strict } from "assert";
 import { Lease, LeaseOverview } from "@/interfaces/leasing_tenants_interface";
 import { useAuth } from "../context/AuthContext";
@@ -24,7 +34,6 @@ import LoaderOverlay from "@/components/LoaderOverlay";
 import ContentContainer from "@/components/ContentContainer";
 
 export default function Leases() {
-
   const [searchTerm, setSearchTerm] = useState("");
   const [selectedKind, setSelectedKind] = useState<string>("all");
   const [selectedStatus, setSelectedStatus] = useState<string>("all");
@@ -32,7 +41,9 @@ export default function Leases() {
 
   const [leases, setLeases] = useState<Lease[]>([]);
   const [selectedLease, setSelectedLease] = useState<Lease | undefined>();
-  const [formMode, setFormMode] = useState<"create" | "edit" | "view">("create");
+  const [formMode, setFormMode] = useState<"create" | "edit" | "view">(
+    "create"
+  );
   const [isFormOpen, setIsFormOpen] = useState(false);
   const [deleteLeaseId, setDeleteLeaseId] = useState<string | null>(null);
   const [siteList, setSiteList] = useState<any[]>([]);
@@ -74,7 +85,6 @@ export default function Leases() {
     } else {
       setPage(1);
     }
-
   };
 
   const loadLeaseOverview = async () => {
@@ -103,7 +113,7 @@ export default function Leases() {
     const response = await withLoader(async () => {
       return await leasesApiService.getLeases(params);
     });
-    
+
     if (response?.success) {
       setLeases(response.data?.leases || []);
       setTotalItems(response.data?.total || 0);
@@ -141,44 +151,49 @@ export default function Leases() {
         setDeleteLeaseId(null);
         updateLeasePage();
       } else {
-        toast.error(`Cannot Delete Lease\n${authResponse?.message || "Unknown error"}`, {
-          style: { whiteSpace: "pre-line" },
-        });
+        toast.error(
+          `Cannot Delete Lease\n${authResponse?.message || "Unknown error"}`,
+          {
+            style: { whiteSpace: "pre-line" },
+          }
+        );
       }
     }
   };
 
- const handleSave = async (leaseData: Partial<Lease>) => {
-  let response;
-  if (formMode === "create") {
-    response = await leasesApiService.addLease(leaseData);
+  const handleSave = async (leaseData: Partial<Lease>) => {
+    let response;
+    if (formMode === "create") {
+      response = await leasesApiService.addLease(leaseData);
 
-    if (response.success)
-      updateLeasePage();
-  } else if (formMode === "edit" && selectedLease) {
-    const updated = {
-      ...selectedLease,
-      ...leaseData,
-      
-    };
-    response = await leasesApiService.updateLease(updated);
+      if (response.success) updateLeasePage();
+    } else if (formMode === "edit" && selectedLease) {
+      const updated = {
+        ...selectedLease,
+        ...leaseData,
+      };
+      response = await leasesApiService.updateLease(updated);
 
-    if (response.success) {
-      // FIX: Update the local state with the response data
-      setLeases(prev => 
-        prev.map(lease => lease.id === selectedLease.id ? response.data : lease)
+      if (response.success) {
+        // FIX: Update the local state with the response data
+        setLeases((prev) =>
+          prev.map((lease) =>
+            lease.id === selectedLease.id ? response.data : lease
+          )
+        );
+      }
+    }
+
+    if (response?.success) {
+      setIsFormOpen(false);
+      toast.success(
+        `Lease has been ${
+          formMode === "create" ? "created" : "updated"
+        } successfully.`
       );
     }
-  }
-
-  if (response?.success) {
-    setIsFormOpen(false);
-    toast.success(
-      `Lease has been ${formMode === "create" ? "created" : "updated"} successfully.`
-    );
-  }
-  return response;
-};
+    return response;
+  };
 
   const getStatusColor = (status?: string) => {
     const colors: Record<string, string> = {
@@ -192,7 +207,11 @@ export default function Leases() {
 
   const formatCurrency = (val?: number) => {
     if (val == null) return "-";
-    return new Intl.NumberFormat("en-IN", { style: "currency", currency: "INR", maximumFractionDigits: 0 }).format(val);
+    return new Intl.NumberFormat("en-IN", {
+      style: "currency",
+      currency: "INR",
+      maximumFractionDigits: 0,
+    }).format(val);
   };
 
   return (
@@ -204,7 +223,9 @@ export default function Leases() {
             <SidebarTrigger className="-ml-1" />
             <div className="flex items-center gap-2">
               <Home className="h-5 w-5 text-sidebar-primary" />
-              <h1 className="text-lg font-semibold text-sidebar-primary">Leases</h1>
+              <h1 className="text-lg font-semibold text-sidebar-primary">
+                Leases
+              </h1>
             </div>
           </header>
 
@@ -212,8 +233,12 @@ export default function Leases() {
             <div className="space-y-6">
               <div className="flex items-center justify-between">
                 <div>
-                  <h2 className="text-2xl font-bold text-sidebar-primary">All Leases</h2>
-                  <p className="text-muted-foreground">Manage lease agreements</p>
+                  <h2 className="text-2xl font-bold text-sidebar-primary">
+                    All Leases
+                  </h2>
+                  <p className="text-muted-foreground">
+                    Manage lease agreements
+                  </p>
                 </div>
                 {canWrite(resource) && (
                   <Button onClick={handleCreate} className="gap-2">
@@ -276,30 +301,48 @@ export default function Leases() {
                 <div className="grid gap-4 md:grid-cols-4">
                   <Card>
                     <CardContent className="p-4">
-                      <div className="text-2xl font-bold text-sidebar-primary">{leaseOverview.activeLeases}</div>
-                      <p className="text-sm text-muted-foreground">Active Leases</p>
+                      <div className="text-2xl font-bold text-sidebar-primary">
+                        {leaseOverview.activeLeases}
+                      </div>
+                      <p className="text-sm text-muted-foreground">
+                        Active Leases
+                      </p>
                     </CardContent>
                   </Card>
                   <Card>
                     <CardContent className="p-4">
-                      <div className="text-2xl font-bold text-green-600">{formatCurrency(leaseOverview.monthlyRentValue)}</div>
-                      <p className="text-sm text-muted-foreground">Monthly Rent Value</p>
+                      <div className="text-2xl font-bold text-green-600">
+                        {formatCurrency(leaseOverview.monthlyRentValue)}
+                      </div>
+                      <p className="text-sm text-muted-foreground">
+                        Monthly Rent Value
+                      </p>
                     </CardContent>
                   </Card>
                   <Card>
                     <CardContent className="p-4">
-                      <div className="text-2xl font-bold text-orange-600">{leaseOverview.expiringSoon}</div>
-                      <p className="text-sm text-muted-foreground">Expiring Soon</p>
+                      <div className="text-2xl font-bold text-orange-600">
+                        {leaseOverview.expiringSoon}
+                      </div>
+                      <p className="text-sm text-muted-foreground">
+                        Expiring Soon
+                      </p>
                     </CardContent>
                   </Card>
                   <Card>
                     <CardContent className="p-4">
                       <div className="text-2xl font-bold text-blue-600">
                         {leaseOverview.avgLeaseTermMonths < 12
-                          ? `${leaseOverview.avgLeaseTermMonths.toFixed(0)} months`
-                          : `${(leaseOverview.avgLeaseTermMonths / 12).toFixed(1)} years`}
+                          ? `${leaseOverview.avgLeaseTermMonths.toFixed(
+                              0
+                            )} months`
+                          : `${(leaseOverview.avgLeaseTermMonths / 12).toFixed(
+                              1
+                            )} years`}
                       </div>
-                      <p className="text-sm text-muted-foreground">Avg Lease Term</p>
+                      <p className="text-sm text-muted-foreground">
+                        Avg Lease Term
+                      </p>
                     </CardContent>
                   </Card>
                 </div>
@@ -307,7 +350,10 @@ export default function Leases() {
                 {/* Grid */}
                 <div className="grid gap-4 mt-6">
                   {leases.map((lease) => (
-                    <Card key={lease.id} className="hover:shadow-lg transition-shadow">
+                    <Card
+                      key={lease.id}
+                      className="hover:shadow-lg transition-shadow"
+                    >
                       <CardHeader className="pb-3">
                         <div className="flex items-start justify-between">
                           <div className="space-y-1">
@@ -321,19 +367,29 @@ export default function Leases() {
                               </div>
                             </p>
                           </div>
-                          <Badge className={getStatusColor(lease.status)}>{lease.status}</Badge>
+                          <Badge className={getStatusColor(lease.status)}>
+                            {lease.status}
+                          </Badge>
                         </div>
                       </CardHeader>
 
                       <CardContent className="space-y-4">
                         <div className="grid grid-cols-2 gap-4 text-sm">
                           <div>
-                            <div className="font-medium text-muted-foreground">Rent Amount</div>
-                            <div className="text-lg font-bold">{formatCurrency(lease.rent_amount)}</div>
-                            <div className="text-xs text-muted-foreground">per month</div>
+                            <div className="font-medium text-muted-foreground">
+                              Rent Amount
+                            </div>
+                            <div className="text-lg font-bold">
+                              {formatCurrency(lease.rent_amount)}
+                            </div>
+                            <div className="text-xs text-muted-foreground">
+                              per month
+                            </div>
                           </div>
                           <div>
-                            <div className="font-medium text-muted-foreground">Lease Term</div>
+                            <div className="font-medium text-muted-foreground">
+                              Lease Term
+                            </div>
                             <div className="text-sm">
                               {lease.start_date} - {lease.end_date}
                             </div>
@@ -342,18 +398,30 @@ export default function Leases() {
 
                         <div className="grid grid-cols-2 gap-4 text-sm">
                           <div>
-                            <div className="font-medium text-muted-foreground">Deposit</div>
-                            <div>{formatCurrency(lease.deposit_amount as any)}</div>
+                            <div className="font-medium text-muted-foreground">
+                              Deposit
+                            </div>
+                            <div>
+                              {formatCurrency(lease.deposit_amount as any)}
+                            </div>
                           </div>
                           <div>
-                            <div className="font-medium text-muted-foreground">CAM Rate</div>
-                            <div>{lease.cam_rate ? `₹${lease.cam_rate}/sq ft` : "-"}</div>
+                            <div className="font-medium text-muted-foreground">
+                              CAM Rate
+                            </div>
+                            <div>
+                              {lease.cam_rate
+                                ? `₹${lease.cam_rate}/sq ft`
+                                : "-"}
+                            </div>
                           </div>
                         </div>
 
                         {lease.utilities && (
                           <div>
-                            <div className="font-medium text-muted-foreground">Utilities</div>
+                            <div className="font-medium text-muted-foreground">
+                              Utilities
+                            </div>
                             <div className="text-sm">
                               {Object.entries(lease.utilities).map(([k, v]) => (
                                 <span key={k} className="mr-4">
@@ -365,36 +433,54 @@ export default function Leases() {
                         )}
 
                         <div className="flex items-center justify-end gap-2 pt-2">
-                          <Button size="sm" variant="outline" onClick={() => handleView(lease)}>
-                            <Eye className="h-3 w-3" />
-                          </Button>
-                          {canWrite(resource) && <Button size="sm" variant="outline" onClick={() => handleEdit(lease)}>
-                            <Edit className="h-3 w-3" />
-                          </Button>
-                           } 
-                           {canDelete(resource) &&
                           <Button
                             size="sm"
                             variant="outline"
-                            className="text-destructive hover:text-destructive"
-                            onClick={() => handleDelete(lease.id)}
+                            onClick={() => handleView(lease)}
                           >
-                            <Trash2 className="h-3 w-3" />
+                            <Eye className="h-3 w-3" />
                           </Button>
-                           }
+                          {canWrite(resource) && (
+                            <Button
+                              size="sm"
+                              variant="outline"
+                              onClick={() => handleEdit(lease)}
+                            >
+                              <Edit className="h-3 w-3" />
+                            </Button>
+                          )}
+                          {canDelete(resource) && (
+                            <Button
+                              size="sm"
+                              variant="outline"
+                              className="text-destructive hover:text-destructive"
+                              onClick={() => handleDelete(lease.id)}
+                            >
+                              <Trash2 className="h-3 w-3" />
+                            </Button>
+                          )}
                         </div>
                       </CardContent>
                     </Card>
                   ))}
                 </div>
 
-                <Pagination page={page} pageSize={pageSize} totalItems={totalItems} onPageChange={(newPage) => setPage(newPage)} />
+                <Pagination
+                  page={page}
+                  pageSize={pageSize}
+                  totalItems={totalItems}
+                  onPageChange={(newPage) => setPage(newPage)}
+                />
 
                 {leases.length === 0 && (
                   <div className="text-center py-12">
                     <Home className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
-                    <h3 className="text-lg font-semibold text-sidebar-primary mb-2">No leases found</h3>
-                    <p className="text-muted-foreground">Try adjusting your search criteria or add a new lease.</p>
+                    <h3 className="text-lg font-semibold text-sidebar-primary mb-2">
+                      No leases found
+                    </h3>
+                    <p className="text-muted-foreground">
+                      Try adjusting your search criteria or add a new lease.
+                    </p>
                   </div>
                 )}
               </ContentContainer>
@@ -411,15 +497,24 @@ export default function Leases() {
         mode={formMode}
       />
 
-      <AlertDialog open={!!deleteLeaseId} onOpenChange={() => setDeleteLeaseId(null)}>
+      <AlertDialog
+        open={!!deleteLeaseId}
+        onOpenChange={() => setDeleteLeaseId(null)}
+      >
         <AlertDialogContent>
           <AlertDialogHeader>
             <AlertDialogTitle>Delete Lease</AlertDialogTitle>
-            <AlertDialogDescription>Are you sure you want to delete this lease? This action cannot be undone.</AlertDialogDescription>
+            <AlertDialogDescription>
+              Are you sure you want to delete this lease? This action cannot be
+              undone.
+            </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
             <AlertDialogCancel>Cancel</AlertDialogCancel>
-            <AlertDialogAction onClick={confirmDelete} className="bg-destructive text-destructive-foreground">
+            <AlertDialogAction
+              onClick={confirmDelete}
+              className="bg-destructive text-destructive-foreground"
+            >
               Delete
             </AlertDialogAction>
           </AlertDialogFooter>

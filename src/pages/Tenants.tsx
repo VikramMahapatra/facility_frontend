@@ -46,7 +46,7 @@ import {
   Phone,
   MapPin,
 } from "lucide-react";
-import { tenantsApiService } from "@/services/Leasing_Tenants/tenantsapi";
+import { tenantsApiService } from "@/services/leasing_tenants/tenantsapi";
 import { siteApiService } from "@/services/spaces_sites/sitesapi";
 import { Tenant, TenantOverview } from "@/interfaces/leasing_tenants_interface";
 import { useSkipFirstEffect } from "@/hooks/use-skipfirst-effect";
