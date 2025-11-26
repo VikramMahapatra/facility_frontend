@@ -482,8 +482,9 @@ const Tenants = () => {
                               <CardDescription>
                                 <div className="flex items-center gap-1">
                                   <MapPin className="h-4 w-4 text-muted-foreground" />
-                                  {tenant.space_name} • {tenant.building_name} •
-                                  {tenant.site_name}
+                                  {[tenant.space_name, tenant.building_name, tenant.site_name]
+                                    .filter(Boolean)
+                                    .join(" • ")}
                                 </div>
                               </CardDescription>
                             </div>
@@ -537,23 +538,35 @@ const Tenants = () => {
                                   <Phone className="h-4 w-4 text-muted-foreground" />
                                   <span>{tenant.phone}</span>
                                 </div>
-                                {tenant.contact_info?.address && (
+                                {tenant.contact_info?.address && 
+                                  (tenant.contact_info.address.line1 || 
+                                   tenant.contact_info.address.city || 
+                                   tenant.contact_info.address.state || 
+                                   tenant.contact_info.address.pincode) && (
                                   <div className="flex items-start gap-2 text-sm">
                                     <MapPin className="h-4 w-4 text-muted-foreground mt-0.5" />
                                     <div>
-                                      <div>
-                                        {tenant.contact_info.address.line1}
-                                      </div>
+                                      {tenant.contact_info.address.line1 && (
+                                        <div>
+                                          {tenant.contact_info.address.line1}
+                                        </div>
+                                      )}
                                       {tenant.contact_info.address.line2 && (
                                         <div>
                                           {tenant.contact_info.address.line2}
                                         </div>
                                       )}
-                                      <div>
-                                        {tenant.contact_info.address.city},{" "}
-                                        {tenant.contact_info.address.state}{" "}
-                                        {tenant.contact_info.address.pincode}
-                                      </div>
+                                      {(tenant.contact_info.address.city || 
+                                        tenant.contact_info.address.state || 
+                                        tenant.contact_info.address.pincode) && (
+                                        <div>
+                                          {[
+                                            tenant.contact_info.address.city,
+                                            tenant.contact_info.address.state,
+                                            tenant.contact_info.address.pincode
+                                          ].filter(Boolean).join(", ")}
+                                        </div>
+                                      )}
                                     </div>
                                   </div>
                                 )}

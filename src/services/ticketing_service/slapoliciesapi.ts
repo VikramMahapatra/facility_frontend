@@ -34,8 +34,9 @@ class SLAPoliciesApiService {
     return await apiService.request(`/sla-policies/service-category-lookup`);
   }
 
-  async getUserContactLookup() {
-    return await apiService.request(`/sla-policies/user-contact-lookup`);
+  async getUserContactLookup(siteId?: string) {
+    const params = siteId ? `?site_id=${siteId}` : "";
+    return await apiService.request(`/sla-policies/user-contact-lookup${params}`);
   }
 
   async getOrgLookup() {

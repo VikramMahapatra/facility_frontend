@@ -166,32 +166,31 @@ export default function SpaceAssignments() {
 
   const handleSave = async (assignmentData: Partial<SpaceAssignment>) => {
     let response;
-      const request = {
-        space_id: assignmentData.space_id,
-        group_id: assignmentData.group_id,
-        assigned_by: assignmentData.assigned_by
-      }
-    
-      if (formMode === 'create') {
-      response = await spaceAssignmentApiService.addAssignment(request);
-      if (response.success) {
-        updateSpaceAssignmentPage();
-      }
-      } else if (formMode === 'edit' && selectedAssignment) {
-      response = await spaceAssignmentApiService.updateAssignment(request);
-      if (response.success) {
-        setAssignments((prev) =>
-          prev.map((a) => (a.id === selectedAssignment.id ? response.data : a))
-        );
-      }
+    const assignmentToSave = {
+      space_id: assignmentData.space_id,
+      group_id: assignmentData.group_id,
+      assigned_by: assignmentData.assigned_by,
+    };
+
+    if (formMode === 'create') {
+      response = await spaceAssignmentApiService.addAssignment(assignmentToSave);
+
+      if (response.success) updateSpaceAssignmentPage();
+    } else if (formMode === 'edit' && selectedAssignment) {
+      const updatedAssignment = {
+        ...selectedAssignment,
+        ...assignmentToSave,
+      };
+      response = await spaceAssignmentApiService.updateAssignment(updatedAssignment);
+
+      if (response.success) updateSpaceAssignmentPage();
     }
 
     if (response?.success) {
       setShowForm(false);
-      toast.success(`Space assignment has been ${formMode === 'create' ? 'created' : 'updated'} successfully.`);
-    } else if (response) {
-      const errorMessage = response?.data?.message || response?.message || `Failed to ${formMode === 'create' ? 'create' : 'update'} assignment`;
-      toast.error(errorMessage);
+      toast.success(
+        `Space assignment has been ${formMode === 'create' ? 'created' : 'updated'} successfully.`
+      );
     }
     return response;
   };

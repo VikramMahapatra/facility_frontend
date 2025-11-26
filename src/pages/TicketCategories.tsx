@@ -178,25 +178,14 @@ export default function TicketCategories() {
       const response = await ticketCategoriesApiService.deleteTicketCategory(
         deleteCategoryId
       );
+
       if (response.success) {
-        const deleteResponse = response.data;
-        if (deleteResponse?.success) {
-          // Update local state instead of reloading
-          setCategories((prev) =>
-            prev.filter(
-              (cat) => (cat.id || cat.category_id) !== deleteCategoryId
-            )
-          );
-          setTotalItems((prev) => prev - 1);
-          setDeleteCategoryId(null);
-          toast.success(
-            deleteResponse.message ||
-              "Ticket category has been deleted successfully."
-          );
-        }
+        // Success case
+        updateTicketCategoriesPage();
+        setDeleteCategoryId(null);
+        toast.success("Ticket category has been deleted successfully.");
       }
     }
-    setDeleteCategoryId(null);
   };
 
   return (
@@ -281,66 +270,77 @@ export default function TicketCategories() {
                           </TableRow>
                         </TableHeader>
                         <TableBody>
-                          {categories.map((category) => {
-                            const site = siteList.find(
-                              (s: any) => s.id === category.site_id
-                            );
-                            return (
-                              <TableRow
-                                key={category.id || category.category_id}
+                          {categories.length === 0 ? (
+                            <TableRow>
+                              <TableCell
+                                colSpan={6}
+                                className="text-center text-muted-foreground h-32"
                               >
-                                <TableCell className="font-medium">
-                                  {category.category_name}
-                                </TableCell>
-                                <TableCell>
-                                  {site ? site.name : category.site_id || "-"}
-                                </TableCell>
-                                <TableCell>
-                                  <Badge variant="outline">
-                                    {category.auto_assign_role}
-                                  </Badge>
-                                </TableCell>
-                                <TableCell>{category.sla_hours}h</TableCell>
-                                <TableCell>
-                                  <Badge
-                                    variant={
-                                      category.is_active
-                                        ? "default"
-                                        : "secondary"
-                                    }
-                                  >
-                                    {category.is_active ? "Active" : "Inactive"}
-                                  </Badge>
-                                </TableCell>
-                                <TableCell className="text-right">
-                                  <div className="flex justify-end gap-2">
-                                    {canWrite(resource) && (
-                                      <Button
-                                        variant="ghost"
-                                        size="sm"
-                                        onClick={() => handleEdit(category)}
-                                      >
-                                        <Edit className="w-4 h-4" />
-                                      </Button>
-                                    )}
-                                    {canDelete(resource) && (
-                                      <Button
-                                        variant="ghost"
-                                        size="sm"
-                                        onClick={() =>
-                                          handleDelete(
-                                            category.id || category.category_id
-                                          )
-                                        }
-                                      >
-                                        <Trash2 className="w-4 h-4" />
-                                      </Button>
-                                    )}
-                                  </div>
-                                </TableCell>
-                              </TableRow>
-                            );
-                          })}
+                                No categories found
+                              </TableCell>
+                            </TableRow>
+                          ) : (
+                            categories.map((category) => {
+                              const site = siteList.find(
+                                (s: any) => s.id === category.site_id
+                              );
+                              return (
+                                <TableRow
+                                  key={category.id || category.category_id}
+                                >
+                                  <TableCell className="font-medium">
+                                    {category.category_name}
+                                  </TableCell>
+                                  <TableCell>
+                                    {site ? site.name : category.site_id || "-"}
+                                  </TableCell>
+                                  <TableCell>
+                                    <Badge variant="outline">
+                                      {category.auto_assign_role}
+                                    </Badge>
+                                  </TableCell>
+                                  <TableCell>{category.sla_hours}h</TableCell>
+                                  <TableCell>
+                                    <Badge
+                                      variant={
+                                        category.is_active
+                                          ? "default"
+                                          : "secondary"
+                                      }
+                                    >
+                                      {category.is_active ? "Active" : "Inactive"}
+                                    </Badge>
+                                  </TableCell>
+                                  <TableCell className="text-right">
+                                    <div className="flex justify-end gap-2">
+                                      {canWrite(resource) && (
+                                        <Button
+                                          variant="ghost"
+                                          size="sm"
+                                          onClick={() => handleEdit(category)}
+                                        >
+                                          <Edit className="w-4 h-4" />
+                                        </Button>
+                                      )}
+                                      {canDelete(resource) && (
+                                        <Button
+                                          variant="ghost"
+                                          size="sm"
+                                          onClick={() =>
+                                            handleDelete(
+                                              category.id || category.category_id
+                                            )
+                                          }
+                                        >
+                                          <Trash2 className="w-4 h-4" />
+                                        </Button>
+                                      )}
+                                    </div>
+                                  </TableCell>
+                                </TableRow>
+                              );
+                            })
+                          )}
                         </TableBody>
                       </Table>
                     </ContentContainer>

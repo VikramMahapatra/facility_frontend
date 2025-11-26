@@ -107,14 +107,21 @@ class ApiService {
                 ...options.headers,
             },
         };
+        const errorMessage = "Something went wrong";
 
         try {
             console.log('request config: ', config, url);
             const response = await fetch(url, config);
             const result = await response.json().catch(() => null);
             console.log('response data: ', result);
-            if (result?.status === "Failure") {
-                const message = result.message || "Something went wrong";
+            
+            if (result?.status === "Failure" || result?.status?.toString().toLowerCase() === "failed") {
+                let message = errorMessage;
+
+                if (result.status_code != "210" && result.status_code != "400" && result.status_code != "500")
+                    message = result.message
+
+                toast.error(message);
 
                 // ✅ Handle token expiration or invalid authentication
                 if (
@@ -124,21 +131,22 @@ class ApiService {
                     console.warn("Access token expired, attempting refresh...");
                     localStorage.removeItem("access_token");
                     window.location.href = "/login";
-                    return;
+                    return { success: false };
                 }
 
-                throw new Error(message);
+                return { success: false, message };
             }
 
             if (!response.ok) {
-                const errorData = await response.json().catch(() => ({}));
-                throw new Error(errorData.detail || `HTTP error! status: ${response.status}`);
+                toast.error(errorMessage);
+                return { success: false, message: `HTTP error! status: ${response.status}` };
             }
 
-            return result.data;
+            return { success: true, data: result.data };
         } catch (error) {
             console.error('API request failed:', error);
-            throw new Error("Technical Error!");
+            toast.error(errorMessage);
+            return { success: false, message: errorMessage };
         }
     }
 

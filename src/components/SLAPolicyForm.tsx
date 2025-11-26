@@ -27,14 +27,14 @@ interface SLAPolicyFormProps {
 }
 
 const emptyFormData: SLAPolicyFormValues = {
-  organization_name: "",
   service_category: "",
   site_name: "",
-  default_contact: undefined,
-  escalation_contact: undefined,
+  default_contact: "",
+  escalation_contact: "",
   response_time_mins: 0,
   resolution_time_mins: 0,
   escalation_time_mins: 0,
+  reopen_time_mins: 0,
   active: true,
 };
 
@@ -44,6 +44,9 @@ export function SLAPolicyForm({ policy, isOpen, onClose, onSave, mode }: SLAPoli
     handleSubmit,
     control,
     reset,
+    watch,
+    setValue,
+
     formState: { errors, isSubmitting },
   } = useForm<SLAPolicyFormValues>({
     resolver: zodResolver(slaPolicySchema),
@@ -52,319 +55,360 @@ export function SLAPolicyForm({ policy, isOpen, onClose, onSave, mode }: SLAPoli
     reValidateMode: "onChange",
   });
 
-  const [orgList, setOrgList] = useState<any[]>([]);
+  const [formLoading, setFormLoading] = useState(true);
   const [siteList, setSiteList] = useState<any[]>([]);
-  const [serviceCategoryList, setServiceCategoryList] = useState<any[]>([]);
-  const [userContactList, setUserContactList] = useState<any[]>([]);
+  const [defaultContactList, setDefaultContactList] = useState<any[]>([]);
+  const [escalationContactList, setEscalationContactList] = useState<any[]>([]);
+
+  const selectedSiteName = watch("site_name");
+
+  const loadAll = async () => {
+    setFormLoading(true);
+
+    // Clear contact lists when opening form in create mode
+    if (mode === "create") {
+      setDefaultContactList([]);
+      setEscalationContactList([]);
+    }
+
+
+    const sitesResponse = await siteApiService.getSiteLookup();
+    const sites = sitesResponse.success ? sitesResponse.data || [] : [];
+    setSiteList(sites);
+
+    // For edit/view mode, load contacts based on policy's site
+    if (policy && mode !== "create" && policy.site_name) {
+      const site = sites.find((s: any) => s.name === policy.site_name);
+      if (site) {
+        await Promise.all([
+          loadDefaultContactLookup(site.id),
+          loadEscalationContactLookup(site.id)
+        ]);
+      }
+    }
+
+    reset(
+      policy && mode !== "create"
+        ? {
+            service_category: policy.service_category || "",
+            site_name: policy.site_name || "",
+            default_contact: policy.default_contact ? String(policy.default_contact) : "",
+            escalation_contact: policy.escalation_contact ? String(policy.escalation_contact) : "",
+            response_time_mins: policy.response_time_mins || 0,
+            resolution_time_mins: policy.resolution_time_mins || 0,
+            escalation_time_mins: policy.escalation_time_mins || 0,
+            reopen_time_mins: (policy as any).reopen_time_mins || 0,
+            active: policy.active ?? true,
+          }
+        : emptyFormData
+    );
+
+    setFormLoading(false);
+  };
 
   useEffect(() => {
     if (isOpen) {
-      loadAllLookups();
+      loadAll();
     }
-  }, [isOpen]);
+  }, [policy, mode, isOpen, reset]);
 
+ 
   useEffect(() => {
-    if (policy && mode !== "create") {
-      reset({
-        organization_name: policy.organization_name || "",
-        service_category: policy.service_category || "",
-        site_name: policy.site_name || "",
-        default_contact: policy.default_contact || undefined,
-        escalation_contact: policy.escalation_contact || undefined,
-        response_time_mins: policy.response_time_mins || 0,
-        resolution_time_mins: policy.resolution_time_mins || 0,
-        escalation_time_mins: policy.escalation_time_mins || 0,
-        active: policy.active ?? true,
-      });
-    } else {
-      reset(emptyFormData);
+    if (!selectedSiteName) {
+      setDefaultContactList([]);
+      setEscalationContactList([]);
+      return;
     }
-  }, [policy, mode, reset]);
-
-  const loadAllLookups = async () => {
-    try {
-      const [orgs, sites, categories, contacts] = await Promise.all([
-        slaPoliciesApiService.getOrgLookup(),
-        siteApiService.getSiteLookup(),
-        slaPoliciesApiService.getServiceCategoryLookup(),
-        slaPoliciesApiService.getUserContactLookup(),
-      ]);
-
-      if (orgs.success) setOrgList(orgs.data || []);
-      if (sites.success) setSiteList(sites.data || []);
-      if (categories.success) setServiceCategoryList(categories.data || []);
-      if (contacts.success) setUserContactList(contacts.data || []);
-    } catch (error) {
-      console.error("Failed to load lookup data:", error);
+    
+    if (siteList.length > 0) {
+      const selectedSite = siteList.find((site) => site.name === selectedSiteName);
+      if (selectedSite) {
+        loadDefaultContactLookup(selectedSite.id);
+        loadEscalationContactLookup(selectedSite.id);
+      }
     }
+  }, [selectedSiteName, siteList]);
+
+  const loadSiteLookup = async () => {
+    const lookup = await siteApiService.getSiteLookup();
+    if (lookup.success) setSiteList(lookup.data || []);
+  };
+
+  const loadDefaultContactLookup = async (siteId: string) => {
+    const lookup = await slaPoliciesApiService.getUserContactLookup(siteId);
+    if (lookup.success) setDefaultContactList(lookup.data || []);
+  };
+
+  const loadEscalationContactLookup = async (siteId: string) => {
+    const lookup = await slaPoliciesApiService.getUserContactLookup(siteId);
+    if (lookup.success) setEscalationContactList(lookup.data || []);
   };
 
   const onSubmitForm = async (data: SLAPolicyFormValues) => {
-    const formResponse = await onSave({
+
+    const selectedSite = siteList.find((site) => site.name === data.site_name);
+    
+    await onSave({
       ...policy,
       ...data,
+      site_id: selectedSite?.id || undefined,
     });
   };
 
   const isReadOnly = mode === "view";
 
+  const handleClose = () => {
+    reset(emptyFormData);
+    onClose();
+  };
+
   return (
-    <Dialog open={isOpen} onOpenChange={onClose}>
+    <Dialog open={isOpen} onOpenChange={handleClose}>
       <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
         <DialogHeader>
           <DialogTitle>
-            {mode === "create" && "Create New SLA Policy"}
+            {mode === "create" && "Create New Policy"}
             {mode === "edit" && "Edit SLA Policy"}
             {mode === "view" && "SLA Policy Details"}
           </DialogTitle>
         </DialogHeader>
 
         <form onSubmit={isSubmitting ? undefined : handleSubmit(onSubmitForm)} className="space-y-4">
-      <div className="grid grid-cols-2 gap-4">
-        {/* Left Column */}
-        <div className="space-y-4">
-          <div className="space-y-2">
-            <Label htmlFor="organization_name">Organization Name</Label>
-            <Controller
-              name="organization_name"
-              control={control}
-              render={({ field }) => (
-                <Select
-                  value={field.value || ""}
-                  onValueChange={field.onChange}
-                  disabled={isReadOnly}
-                >
-                  <SelectTrigger
-                    className={errors.organization_name ? "border-red-500" : ""}
-                  >
-                    <SelectValue placeholder="Select organization" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {orgList.map((org) => (
-                      <SelectItem key={org.id} value={org.name || org.id}>
-                        {org.name}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-              )}
-            />
-            {errors.organization_name && (
-              <p className="text-sm text-red-500">{errors.organization_name.message}</p>
-            )}
-          </div>
+          {formLoading ? (
+            <p className="text-center">Loading...</p>
+          ) : (
+            <div className="space-y-4">
+           
+              <div className="grid grid-cols-2 gap-4">
+                <div className="space-y-2">
+                  <Label htmlFor="site_name">Site Name *</Label>
+                  <Controller
+                    name="site_name"
+                    control={control}
+                    render={({ field }) => (
+                      <Select
+                        value={field.value || ""}
+                        onValueChange={field.onChange}
+                        disabled={isReadOnly}
+                      >
+                        <SelectTrigger
+                          className={errors.site_name ? "border-red-500" : ""}
+                        >
+                          <SelectValue placeholder="Select site" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          {siteList.length === 0 ? (
+                            <SelectItem value="none" disabled>No sites available</SelectItem>
+                          ) : (
+                            siteList.map((site) => (
+                              <SelectItem key={site.id} value={site.name || site.id}>
+                                {site.name}
+                              </SelectItem>
+                            ))
+                          )}
+                        </SelectContent>
+                      </Select>
+                    )}
+                  />
+                  {errors.site_name && (
+                    <p className="text-sm text-red-500">{errors.site_name.message}</p>
+                  )}
+                </div>
 
-          <div className="space-y-2">
-            <Label htmlFor="service_category">Service Category *</Label>
-            <Controller
-              name="service_category"
-              control={control}
-              render={({ field }) => (
-                <Select
-                  value={field.value || ""}
-                  onValueChange={field.onChange}
-                  disabled={isReadOnly}
-                >
-                  <SelectTrigger
+                <div className="space-y-2">
+                  <Label htmlFor="service_category">Service Category *</Label>
+                  <Input
+                    id="service_category"
+                    {...register("service_category")}
+                    placeholder="Enter service category"
+                    disabled={isReadOnly}
                     className={errors.service_category ? "border-red-500" : ""}
-                  >
-                    <SelectValue placeholder="Select service category" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {serviceCategoryList.map((category) => (
-                      <SelectItem key={category.id} value={category.name || category.id}>
-                        {category.name}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-              )}
-            />
-            {errors.service_category && (
-              <p className="text-sm text-red-500">{errors.service_category.message}</p>
-            )}
-          </div>
+                  />
+                  {errors.service_category && (
+                    <p className="text-sm text-red-500">{errors.service_category.message}</p>
+                  )}
+                </div>
+              </div>
 
-          <div className="space-y-2">
-            <Label htmlFor="escalation_contact">Escalation Contact</Label>
-            <Controller
-              name="escalation_contact"
-              control={control}
-              render={({ field }) => (
-                <Select
-                  value={field.value ? String(field.value) : ""}
-                  onValueChange={(value) => field.onChange(value ? Number(value) : undefined)}
-                  disabled={isReadOnly}
+              {/* Default Contact and Escalation Contact Row */}
+              <div className="grid grid-cols-2 gap-4">
+                <div className="space-y-2">
+                  <Label htmlFor="default_contact">Default Contact *</Label>
+                  <Controller
+                    name="default_contact"
+                    control={control}
+                    render={({ field }) => (
+                      <Select
+                        value={field.value || ""}
+                        onValueChange={field.onChange}
+                        disabled={isReadOnly || !selectedSiteName}
+                      >
+                        <SelectTrigger
+                          className={errors.default_contact ? "border-red-500" : ""}
+                        >
+                          <SelectValue placeholder={!selectedSiteName ? "Select site first" : "Select default contact"} />
+                        </SelectTrigger>
+                        <SelectContent>
+                          {defaultContactList.length === 0 ? (
+                            <SelectItem value="none" disabled>No contacts available</SelectItem>
+                          ) : (
+                            defaultContactList.map((contact) => (
+                              <SelectItem key={contact.id} value={String(contact.id)}>
+                                {contact.name || contact.email || `User ${contact.id}`}
+                              </SelectItem>
+                            ))
+                          )}
+                        </SelectContent>
+                      </Select>
+                    )}
+                  />
+                  {errors.default_contact && (
+                    <p className="text-sm text-red-500">{errors.default_contact.message}</p>
+                  )}
+                </div>
+
+                <div className="space-y-2">
+                  <Label htmlFor="escalation_contact">Escalation Contact *</Label>
+                  <Controller
+                    name="escalation_contact"
+                    control={control}
+                    render={({ field }) => (
+                      <Select
+                        value={field.value || ""}
+                        onValueChange={field.onChange}
+                        disabled={isReadOnly || !selectedSiteName}
+                      >
+                        <SelectTrigger
+                          className={errors.escalation_contact ? "border-red-500" : ""}
+                        >
+                          <SelectValue placeholder={!selectedSiteName ? "Select site first" : "Select escalation contact"} />
+                        </SelectTrigger>
+                        <SelectContent>
+                          {escalationContactList.length === 0 ? (
+                            <SelectItem value="none" disabled>No contacts available</SelectItem>
+                          ) : (
+                            escalationContactList.map((contact) => (
+                              <SelectItem key={contact.id} value={String(contact.id)}>
+                                {contact.name || contact.email || `User ${contact.id}`}
+                              </SelectItem>
+                            ))
+                          )}
+                        </SelectContent>
+                      </Select>
+                    )}
+                  />
+                  {errors.escalation_contact && (
+                    <p className="text-sm text-red-500">{errors.escalation_contact.message}</p>
+                  )}
+                </div>
+              </div>
+
+              <div className="grid grid-cols-2 gap-4">
+                {/* Left Column */}
+                <div className="space-y-4">
+                  <div className="space-y-2">
+                    <Label htmlFor="resolution_time_mins">Resolution Time (Minutes) *</Label>
+                    <Input
+                      id="resolution_time_mins"
+                      type="number"
+                      {...register("resolution_time_mins", { valueAsNumber: true })}
+                      min="1"
+                      placeholder="e.g., 240"
+                      disabled={isReadOnly}
+                      className={errors.resolution_time_mins ? 'border-red-500' : ''}
+                    />
+                    {errors.resolution_time_mins && (
+                      <p className="text-sm text-red-500">{errors.resolution_time_mins.message}</p>
+                    )}
+                  </div>
+
+                  <div className="space-y-2">
+                    <Label htmlFor="reopen_time_mins">Reopen Time (Minutes) *</Label>
+                    <Input
+                      id="reopen_time_mins"
+                      type="number"
+                      {...register("reopen_time_mins", { valueAsNumber: true })}
+                      min="1"
+                      placeholder="e.g., 120"
+                      disabled={isReadOnly}
+                      className={errors.reopen_time_mins ? 'border-red-500' : ''}
+                    />
+                    {errors.reopen_time_mins && (
+                      <p className="text-sm text-red-500">{errors.reopen_time_mins.message}</p>
+                    )}
+                  </div>
+
+                  <div className="flex items-center space-x-2">
+                    <Controller
+                      name="active"
+                      control={control}
+                      render={({ field }) => (
+                        <Switch
+                          id="active"
+                          checked={field.value}
+                          onCheckedChange={field.onChange}
+                          disabled={isReadOnly}
+                        />
+                      )}
+                    />
+                    <Label htmlFor="active">Active</Label>
+                  </div>
+                </div>
+
+                {/* Right Column */}
+                <div className="space-y-4">
+                  <div className="space-y-2">
+                    <Label htmlFor="response_time_mins">Response Time (Minutes) *</Label>
+                    <Input
+                      id="response_time_mins"
+                      type="number"
+                      {...register("response_time_mins", { valueAsNumber: true })}
+                      min="1"
+                      placeholder="e.g., 60"
+                      disabled={isReadOnly}
+                      className={errors.response_time_mins ? 'border-red-500' : ''}
+                    />
+                    {errors.response_time_mins && (
+                      <p className="text-sm text-red-500">{errors.response_time_mins.message}</p>
+                    )}
+                  </div>
+
+                  <div className="space-y-2">
+                    <Label htmlFor="escalation_time_mins">Escalation Time (Minutes) *</Label>
+                    <Input
+                      id="escalation_time_mins"
+                      type="number"
+                      {...register("escalation_time_mins", { valueAsNumber: true })}
+                      min="1"
+                      placeholder="e.g., 300"
+                      disabled={isReadOnly}
+                      className={errors.escalation_time_mins ? 'border-red-500' : ''}
+                    />
+                    {errors.escalation_time_mins && (
+                      <p className="text-sm text-red-500">{errors.escalation_time_mins.message}</p>
+                    )}
+                  </div>
+                </div>
+              </div>
+              <DialogFooter>
+                <Button
+                  type="button"
+                  variant="outline"
+                  onClick={handleClose}
+                  disabled={isSubmitting}
                 >
-                  <SelectTrigger
-                    className={errors.escalation_contact ? "border-red-500" : ""}
-                  >
-                    <SelectValue placeholder="Select escalation contact" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {userContactList.map((contact) => (
-                      <SelectItem key={contact.id} value={String(contact.id)}>
-                        {contact.name || contact.email || `User ${contact.id}`}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-              )}
-            />
-            {errors.escalation_contact && (
-              <p className="text-sm text-red-500">{errors.escalation_contact.message}</p>
-            )}
-          </div>
-
-          <div className="space-y-2">
-            <Label htmlFor="resolution_time_mins">Resolution Time (Minutes) *</Label>
-            <Input
-              id="resolution_time_mins"
-              type="number"
-              {...register("resolution_time_mins", { valueAsNumber: true })}
-              min="1"
-              placeholder="e.g., 240"
-              disabled={isReadOnly}
-              className={errors.resolution_time_mins ? 'border-red-500' : ''}
-            />
-            {errors.resolution_time_mins && (
-              <p className="text-sm text-red-500">{errors.resolution_time_mins.message}</p>
-            )}
-          </div>
-
-          <div className="flex items-center space-x-2">
-            <Controller
-              name="active"
-              control={control}
-              render={({ field }) => (
-                <Switch
-                  id="active"
-                  checked={field.value}
-                  onCheckedChange={field.onChange}
-                  disabled={isReadOnly}
-                />
-              )}
-            />
-            <Label htmlFor="active">Active</Label>
-          </div>
-        </div>
-
-        {/* Right Column */}
-        <div className="space-y-4">
-          <div className="space-y-2">
-            <Label htmlFor="site_name">Site Name</Label>
-            <Controller
-              name="site_name"
-              control={control}
-              render={({ field }) => (
-                <Select
-                  value={field.value || ""}
-                  onValueChange={field.onChange}
-                  disabled={isReadOnly}
-                >
-                  <SelectTrigger
-                    className={errors.site_name ? "border-red-500" : ""}
-                  >
-                    <SelectValue placeholder="Select site" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {siteList.map((site) => (
-                      <SelectItem key={site.id} value={site.name || site.id}>
-                        {site.name}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-              )}
-            />
-            {errors.site_name && (
-              <p className="text-sm text-red-500">{errors.site_name.message}</p>
-            )}
-          </div>
-
-          <div className="space-y-2">
-            <Label htmlFor="default_contact">Default Contact</Label>
-            <Controller
-              name="default_contact"
-              control={control}
-              render={({ field }) => (
-                <Select
-                  value={field.value ? String(field.value) : ""}
-                  onValueChange={(value) => field.onChange(value ? Number(value) : undefined)}
-                  disabled={isReadOnly}
-                >
-                  <SelectTrigger
-                    className={errors.default_contact ? "border-red-500" : ""}
-                  >
-                    <SelectValue placeholder="Select default contact" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {userContactList.map((contact) => (
-                      <SelectItem key={contact.id} value={String(contact.id)}>
-                        {contact.name || contact.email || `User ${contact.id}`}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-              )}
-            />
-            {errors.default_contact && (
-              <p className="text-sm text-red-500">{errors.default_contact.message}</p>
-            )}
-          </div>
-
-          <div className="space-y-2">
-            <Label htmlFor="response_time_mins">Response Time (Minutes) *</Label>
-            <Input
-              id="response_time_mins"
-              type="number"
-              {...register("response_time_mins", { valueAsNumber: true })}
-              min="1"
-              placeholder="e.g., 60"
-              disabled={isReadOnly}
-              className={errors.response_time_mins ? 'border-red-500' : ''}
-            />
-            {errors.response_time_mins && (
-              <p className="text-sm text-red-500">{errors.response_time_mins.message}</p>
-            )}
-          </div>
-
-          <div className="space-y-2">
-            <Label htmlFor="escalation_time_mins">Escalation Time (Minutes) *</Label>
-            <Input
-              id="escalation_time_mins"
-              type="number"
-              {...register("escalation_time_mins", { valueAsNumber: true })}
-              min="1"
-              placeholder="e.g., 300"
-              disabled={isReadOnly}
-              className={errors.escalation_time_mins ? 'border-red-500' : ''}
-            />
-            {errors.escalation_time_mins && (
-              <p className="text-sm text-red-500">{errors.escalation_time_mins.message}</p>
-            )}
-          </div>
-        </div>
-      </div>
-
-          <DialogFooter>
-            <Button
-              type="button"
-              variant="outline"
-              onClick={onClose}
-              disabled={isSubmitting}
-            >
-              Cancel
-            </Button>
-            {mode !== "view" && (
-              <Button type="submit" disabled={isSubmitting}>
-                {isSubmitting ? "Saving..." : mode === "create" ? "Create SLA Policy" : "Update SLA Policy"}
-              </Button>
-            )}
-          </DialogFooter>
+                  Cancel
+                </Button>
+                {mode !== "view" && (
+                  <Button type="submit" disabled={isSubmitting || formLoading}>
+                    {isSubmitting ? "Saving..." : mode === "create" ? "Create Policy" : "Update Policy"}
+                  </Button>
+                )}
+              </DialogFooter>
+            </div>
+          )}
         </form>
       </DialogContent>
     </Dialog>
   );
 }
-

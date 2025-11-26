@@ -77,6 +77,8 @@ export function LeaseChargeForm({
     handleSubmit,
     control,
     reset,
+    watch,
+    trigger,
     formState: { errors, isSubmitting, isValid },
   } = useForm<LeaseChargeFormValues>({
     resolver: zodResolver(leaseChargeSchema),
@@ -88,12 +90,25 @@ export function LeaseChargeForm({
       amount: undefined as any,
       tax_pct: 0 as any,
     },
-    mode: "onChange",
+    mode: "onBlur",
     reValidateMode: "onChange",
   });
   const [leaseList, setLeaseList] = useState([]);
 
+  const periodStart = watch("period_start");
+  const periodEnd = watch("period_end");
+
   const isReadOnly = mode === "view";
+
+  // Trigger validation when either date changes
+  useEffect(() => {
+    if (periodStart && periodEnd) {
+      // Only trigger validation when both dates are filled
+      setTimeout(() => {
+        trigger("period_end");
+      }, 0);
+    }
+  }, [periodStart, periodEnd, trigger]);
 
   // hydrate form data like SpaceForm
   useEffect(() => {
@@ -216,12 +231,15 @@ export function LeaseChargeForm({
           {/* Dates */}
           <div className="grid grid-cols-2 gap-4">
             <div>
-              <Label htmlFor="period_start">Period Start *</Label>
+              <Label>Period Start *</Label>
               <Input
-                id="period_start"
                 type="date"
-                {...register("period_start")}
                 disabled={isReadOnly}
+                {...register("period_start", {
+                  onBlur: () => {
+                    if (periodEnd) trigger("period_end");
+                  }
+                })}
                 className={errors.period_start ? "border-red-500" : ""}
               />
               {errors.period_start && (
@@ -231,12 +249,15 @@ export function LeaseChargeForm({
               )}
             </div>
             <div>
-              <Label htmlFor="period_end">Period End *</Label>
+              <Label>Period End *</Label>
               <Input
-                id="period_end"
                 type="date"
-                {...register("period_end")}
                 disabled={isReadOnly}
+                {...register("period_end", {
+                  onBlur: () => {
+                    if (periodStart) trigger("period_end");
+                  }
+                })}
                 className={errors.period_end ? "border-red-500" : ""}
               />
               {errors.period_end && (

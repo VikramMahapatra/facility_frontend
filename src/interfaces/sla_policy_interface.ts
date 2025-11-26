@@ -10,6 +10,7 @@ export interface SLAPolicy {
   response_time_mins: number;
   resolution_time_mins: number;
   escalation_time_mins: number;
+  reopen_time_mins: number;
   active: boolean;
   created_at?: string;
   updated_at?: string;

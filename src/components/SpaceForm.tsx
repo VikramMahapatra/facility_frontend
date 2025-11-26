@@ -286,8 +286,8 @@ export function SpaceForm({
                     <div className="space-y-2">
                       <Label htmlFor="building_block_id">Building Block</Label>
                       <Select
-                        value={field.value || ""}
-                        onValueChange={field.onChange}
+                        value={field.value || "none"}
+                        onValueChange={(value) => field.onChange(value === "none" ? "" : value)}
                         disabled={isReadOnly}
                       >
                         <SelectTrigger

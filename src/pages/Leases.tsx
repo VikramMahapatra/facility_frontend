@@ -175,7 +175,7 @@ export default function Leases() {
       response = await leasesApiService.updateLease(updated);
 
       if (response.success) {
-        // FIX: Update the local state with the response data
+
         setLeases((prev) =>
           prev.map((lease) =>
             lease.id === selectedLease.id ? response.data : lease
