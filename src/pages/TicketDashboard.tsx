@@ -266,10 +266,10 @@ export default function TicketDashboard() {
                 <CardContent>
                   <div className="space-y-4">
                     {workloadDistribution.map((workload: any) => (
-                      <div key={workload.technician_id} className="flex items-center justify-between border-b pb-3 last:border-0">
+                      <div key={workload.technician_name || workload.technician_id} className="flex items-center justify-between border-b pb-3 last:border-0">
                         <div className="space-y-1">
                           <p className="text-sm font-medium">
-                            {workload.technician_name || `Technician ${workload.technician_id?.substring(0, 8) || 'N/A'}`}
+                            {workload.technician_name || `Technician ${workload.technician_name?.substring(0, 8) || 'N/A'}`}
                           </p>
                           <div className="flex gap-4 text-xs text-muted-foreground">
                             <span>Open: {workload.open || 0}</span>

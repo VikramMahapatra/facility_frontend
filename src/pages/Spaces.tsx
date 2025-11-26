@@ -459,9 +459,11 @@ export default function Spaces() {
                             </span>
                           </div>
                           <div className="flex items-center justify-between">
-                            <span className="text-muted-foreground">
-                              Block: {space.building_block}
-                            </span>
+                            {space.building_block && (
+                              <span className="text-muted-foreground">
+                                Block: {space.building_block}
+                              </span>
+                            )}
                             <span className="text-muted-foreground">
                               Floor: {space.floor}
                             </span>
@@ -469,14 +471,14 @@ export default function Spaces() {
                         </div>
 
                         {/* Bed/Bath info for residential */}
-                        {(space.beds || space.baths) && (
+                        {(Number(space.beds) > 0 || Number(space.baths) > 0) && (
                           <div className="flex items-center gap-4 text-sm">
-                            {space.beds && (
+                            {Number(space.beds) > 0 && (
                               <span className="text-muted-foreground">
                                 🛏️ {space.beds} beds
                               </span>
                             )}
-                            {space.baths && (
+                            {Number(space.baths) > 0 && (
                               <span className="text-muted-foreground">
                                 🚿 {space.baths} baths
                               </span>

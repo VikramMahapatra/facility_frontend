@@ -429,7 +429,7 @@ export function LeaseForm({
 
               <div className="grid grid-cols-3 gap-4">
                 <div>
-                  <Label>Deposit Amount *</Label>
+                  <Label>Deposit Amount</Label>
                   <Input
                     type="number"
                     step="any"

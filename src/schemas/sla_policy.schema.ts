@@ -1,11 +1,10 @@
 import * as z from "zod";
 
 export const slaPolicySchema = z.object({
-  organization_name: z.string().optional(),
   service_category: z.string().min(1, "Service Category is required"),
-  site_name: z.string().optional(),
-  default_contact: z.coerce.number().optional(),
-  escalation_contact: z.coerce.number().optional(),
+  site_name: z.string().min(1, "Site Name is required"),
+  default_contact: z.string().min(1, "Default Contact is required"),
+  escalation_contact: z.string().min(1, "Escalation Contact is required"),
   response_time_mins: z.coerce.number({
     required_error: "Response Time is required",
     invalid_type_error: "Response Time must be a number",
@@ -18,6 +17,10 @@ export const slaPolicySchema = z.object({
     required_error: "Escalation Time is required",
     invalid_type_error: "Escalation Time must be a number",
   }).min(1, "Escalation Time must be at least 1 minute"),
+  reopen_time_mins: z.coerce.number({
+    required_error: "Reopen Time is required",
+    invalid_type_error: "Reopen Time must be a number",
+  }).min(1, "Reopen Time must be at least 1 minute"),
   active: z.boolean().default(true),
 });
 

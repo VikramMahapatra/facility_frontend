@@ -28,6 +28,7 @@ import { Plus, Pencil, Trash2, Search, Clock, AlertCircle, ShieldCheck } from "l
 import { SLAPolicyForm } from "@/components/SLAPolicyForm";
 import { toast } from "sonner";
 import { slaPoliciesApiService } from "@/services/ticketing_service/slapoliciesapi";
+import { siteApiService } from "@/services/spaces_sites/sitesapi";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import {
   AlertDialog,
@@ -54,21 +55,23 @@ export default function SLAPolicies() {
   const [policies, setPolicies] = useState<SLAPolicy[]>([]);
   const [searchQuery, setSearchQuery] = useState("");
   const [selectedSite, setSelectedSite] = useState<string>("all");
-  const [selectedOrganization, setSelectedOrganization] = useState<string>("all");
   const [deletePolicyId, setDeletePolicyId] = useState<string | null>(null);
   const [page, setPage] = useState(1);
   const [pageSize] = useState(5);
   const [totalItems, setTotalItems] = useState(0);
   const [overview, setOverview] = useState<any>({
-    total_policies: 0,
-    active_policies: 0,
-    unique_organizations: 0,
-    unique_sites: 0,
-    avg_response_time: 0,
+    total_sla_policies: 0,
+    total_organizations: 0,
+    average_response_time: 0,
   });
+  const [siteList, setSiteList] = useState<any[]>([]);
   const { canRead, canWrite, canDelete } = useAuth();
   const { withLoader } = useLoader();
   const resource = "sla_policies"; // must match resource name from backend policies
+
+  useEffect(() => {
+    loadSiteLookup();
+  }, []);
 
   useSkipFirstEffect(() => {
     loadPolicies();
@@ -77,7 +80,12 @@ export default function SLAPolicies() {
 
   useEffect(() => {
     updatePoliciesPage();
-  }, [searchQuery, selectedSite, selectedOrganization]);
+  }, [searchQuery, selectedSite]);
+
+  const loadSiteLookup = async () => {
+    const lookup = await siteApiService.getSiteLookup();
+    if (lookup.success) setSiteList(lookup.data || []);
+  };
 
   const updatePoliciesPage = () => {
     if (page === 1) {
@@ -95,11 +103,8 @@ export default function SLAPolicies() {
     // build query params
     const params = new URLSearchParams();
     if (searchQuery) params.append("search", searchQuery);
-    if (selectedOrganization && selectedOrganization !== "all") {
-      params.append("organization_name", selectedOrganization);
-    }
     if (selectedSite && selectedSite !== "all") {
-      params.append("site_name", selectedSite);
+      params.append("site_id", selectedSite);
     }
     params.append("skip", skip.toString());
     params.append("limit", limit.toString());
@@ -115,26 +120,15 @@ export default function SLAPolicies() {
   };
 
   const loadOverview = async () => {
-    const params = new URLSearchParams();
-    if (searchQuery) params.append("search", searchQuery);
-    if (selectedOrganization && selectedOrganization !== "all") {
-      params.append("organization_name", selectedOrganization);
-    }
-    if (selectedSite && selectedSite !== "all") {
-      params.append("site_name", selectedSite);
-    }
-
     const response = await slaPoliciesApiService.getSLAPoliciesOverview();
     if (response?.success) {
       setOverview(response.data || {});
     }
   };
 
-  const totalPolicies = overview.total_policies || 0;
-  const activePolicies = overview.active_policies || 0;
-  const uniqueOrganizations = overview.unique_organizations || 0;
-  const uniqueSites = overview.unique_sites || 0;
-  const avgResponseTime = overview.avg_response_time || 0;
+  const totalPolicies = overview.total_sla_policies || 0;
+  const totalOrganizations = overview.total_organizations || 0;
+  const avgResponseTime = overview.average_response_time || 0;
 
   const handleCreate = () => {
     setSelectedPolicy(null);
@@ -193,10 +187,11 @@ export default function SLAPolicies() {
   };
 
   const formatTime = (minutes: number) => {
-    if (minutes < 60) return `${minutes}m`;
-    const hours = Math.floor(minutes / 60);
-    const mins = minutes % 60;
-    return mins > 0 ? `${hours}h ${mins}m` : `${hours}h`;
+    const totalMins = Math.round(minutes);
+    if (totalMins < 60) return `${String(totalMins).padStart(2, '0')} min`;
+    const hours = Math.floor(totalMins / 60);
+    const mins = totalMins % 60;
+    return `${String(hours).padStart(1)} hr ${String(mins).padStart(2, '0')} min`;
   };
 
   return (
@@ -231,7 +226,7 @@ export default function SLAPolicies() {
                 {canWrite(resource) && (
                   <Button onClick={handleCreate}>
                     <Plus className="h-4 w-4 mr-2" />
-                    Create Ticket Category SLA
+                    Create Policy
                   </Button>
                 )}
               </div>
@@ -242,14 +237,14 @@ export default function SLAPolicies() {
                   <CardContent className="pt-6">
                     <p className="text-sm font-bold text-muted-foreground mb-3">Total SLA Policies</p>
                     <div className="text-3xl font-bold text-sidebar-primary mb-1">{totalPolicies}</div>
-                    <p className="text-sm text-blue-600">{activePolicies} active</p>
+                    <p className="text-sm text-blue-600">All policies</p>
                   </CardContent>
                 </Card>
                 <Card>
                   <CardContent className="pt-6">
                     <p className="text-sm font-bold text-muted-foreground mb-3">Organizations</p>
-                    <div className="text-3xl font-bold text-sidebar-primary mb-1">{uniqueOrganizations}</div>
-                    <p className="text-sm text-blue-600">Across {uniqueSites} sites</p>
+                    <div className="text-3xl font-bold text-sidebar-primary mb-1">{totalOrganizations}</div>
+                    <p className="text-sm text-blue-600">Total organizations</p>
                   </CardContent>
                 </Card>
                 <Card>
@@ -280,34 +275,19 @@ export default function SLAPolicies() {
                         className="pl-10"
                       />
                     </div>
-                    <div className="flex gap-2">
-                      <Select value={selectedOrganization} onValueChange={setSelectedOrganization}>
-                        <SelectTrigger className="w-[180px]">
-                          <SelectValue placeholder="All Organizations" />
-                        </SelectTrigger>
-                        <SelectContent>
-                          <SelectItem value="all">All Organizations</SelectItem>
-                          {Array.from(new Set(policies.map((p) => p.org_name).filter(Boolean))).map((org) => (
-                            <SelectItem key={org as string} value={org as string}>
-                              {org as string}
-                            </SelectItem>
-                          ))}
-                        </SelectContent>
-                      </Select>
-                      <Select value={selectedSite} onValueChange={setSelectedSite}>
-                        <SelectTrigger className="w-[150px]">
-                          <SelectValue placeholder="All Sites" />
-                        </SelectTrigger>
-                        <SelectContent>
-                          <SelectItem value="all">All Sites</SelectItem>
-                          {Array.from(new Set(policies.map((p) => p.site_name).filter(Boolean))).map((site) => (
-                            <SelectItem key={site as string} value={site as string}>
-                              {site as string}
-                            </SelectItem>
-                          ))}
-                        </SelectContent>
-                      </Select>
-                    </div>
+                    <Select value={selectedSite} onValueChange={setSelectedSite}>
+                      <SelectTrigger className="w-[180px]">
+                        <SelectValue placeholder="All Sites" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="all">All Sites</SelectItem>
+                        {siteList.map((site: any) => (
+                          <SelectItem key={site.id} value={site.id}>
+                            {site.name}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
                   </div>
                 </CardHeader>
                 <CardContent>
@@ -317,12 +297,12 @@ export default function SLAPolicies() {
                       <Table>
                         <TableHeader>
                           <TableRow>
-                            <TableHead>Organization</TableHead>
                             <TableHead>Site</TableHead>
                             <TableHead>Service Category</TableHead>
                             <TableHead>Response Time</TableHead>
                             <TableHead>Resolution Time</TableHead>
                             <TableHead>Escalation Time</TableHead>
+                            <TableHead>Reopen Time</TableHead>
                             <TableHead>Status</TableHead>
                             <TableHead className="text-right">Actions</TableHead>
                           </TableRow>
@@ -341,15 +321,12 @@ export default function SLAPolicies() {
                             policies.map((policy) => (
                               <TableRow key={policy.id}>
                                 <TableCell className="font-medium">
-                                  {policy.org_name || "-"}
-                                </TableCell>
-                                <TableCell className="text-muted-foreground">
                                   {policy.site_name || "-"}
                                 </TableCell>
                                 <TableCell>
                                   <div className="flex items-center gap-2">
                                     <AlertCircle className="h-4 w-4 text-muted-foreground" />
-                                    <span className="font-medium capitalize">
+                                    <span className="text-muted-foreground capitalize">
                                       {policy.service_category}
                                     </span>
                                   </div>
@@ -370,6 +347,12 @@ export default function SLAPolicies() {
                                   <div className="flex items-center gap-1">
                                     <Clock className="h-3 w-3 text-orange-500" />
                                     {formatTime(policy.escalation_time_mins)}
+                                  </div>
+                                </TableCell>
+                                <TableCell>
+                                  <div className="flex items-center gap-1">
+                                    <Clock className="h-3 w-3 text-purple-500" />
+                                    {formatTime(policy.reopen_time_mins)}
                                   </div>
                                 </TableCell>
                                 <TableCell>

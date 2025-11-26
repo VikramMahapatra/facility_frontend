@@ -18,9 +18,9 @@ import { siteApiService } from "@/services/spaces_sites/sitesapi";
 import { tenantsApiService } from "@/services/leasing_tenants/tenantsapi";
 import { organisationApiService } from "@/services/spaces_sites/organisationapi";
 import { ticketsApiService } from "@/services/ticketing_service/ticketsapi";
-import { useToast } from "@/hooks/use-toast";
+import { toast } from "sonner";
 import { ticketSchema, TicketFormValues } from "@/schemas/ticket.schema";
-import { toast as sonnerToast } from "sonner";
+//import { toast as sonnerToast } from "sonner";
 
 interface TicketFormProps {
   onSubmit: (data: any) => Promise<any>;
@@ -45,7 +45,6 @@ export default function TicketForm({
   onCancel,
   initialData,
 }: TicketFormProps) {
-  const { toast } = useToast();
   const {
     register,
     handleSubmit,
@@ -179,47 +178,37 @@ export default function TicketForm({
   };
 
   const onSubmitForm = async (data: TicketFormValues) => {
-    try {
-      const selectedCategory = categoryList.find(
-        (cat: any) => cat.id === data.category_id
-      );
+    const selectedCategory = categoryList.find(
+      (cat: any) => cat.id === data.category_id
+    );
 
-      const ticketFormData = new FormData();
+    const ticketFormData = new FormData();
 
-      ticketFormData.append("title", data.title);
-      ticketFormData.append("description", data.description);
-      ticketFormData.append("category_id", data.category_id);
-      ticketFormData.append(
-        "category",
-        selectedCategory?.category_name || selectedCategory?.name || ""
-      );
-      ticketFormData.append("priority", data.priority);
-      ticketFormData.append("request_type", data.request_type);
-      ticketFormData.append("site_id", data.site_id);
-      ticketFormData.append("space_id", data.space_id);
-      if (data.tenant_id) {
-        ticketFormData.append("tenant_id", data.tenant_id);
-      }
-      if (data.preferred_time) {
-        ticketFormData.append("preferred_time", data.preferred_time);
-      }
-
-      if (uploadedImages.length > 0) {
-        uploadedImages.forEach((file) => {
-          ticketFormData.append("file", file);
-        });
-      }
-
-      const formResponse = await onSubmit(ticketFormData);
-      if (formResponse?.success) {
-        // Form will be closed by parent component
-      } else {
-        reset(undefined, { keepErrors: true, keepValues: true });
-      }
-    } catch (error) {
-      reset(undefined, { keepErrors: true, keepValues: true });
-      sonnerToast.error("Failed to save ticket");
+    ticketFormData.append("title", data.title);
+    ticketFormData.append("description", data.description);
+    ticketFormData.append("category_id", data.category_id);
+    ticketFormData.append(
+      "category",
+      selectedCategory?.category_name || selectedCategory?.name || ""
+    );
+    ticketFormData.append("priority", data.priority);
+    ticketFormData.append("request_type", data.request_type);
+    ticketFormData.append("site_id", data.site_id);
+    ticketFormData.append("space_id", data.space_id);
+    if (data.tenant_id) {
+      ticketFormData.append("tenant_id", data.tenant_id);
     }
+    if (data.preferred_time) {
+      ticketFormData.append("preferred_time", data.preferred_time);
+    }
+
+    if (uploadedImages.length > 0) {
+      uploadedImages.forEach((file) => {
+        ticketFormData.append("file", file);
+      });
+    }
+
+    await onSubmit(ticketFormData);
   };
 
   return (
@@ -491,22 +480,14 @@ export default function TicketForm({
               files.forEach((file) => {
                 // Validation 1: File size (2MB)
                 if (file.size > MAX_FILE_SIZE) {
-                  toast({
-                    title: "File size error",
-                    description: `${file.name} exceeds 2MB limit. Please choose a smaller file.`,
-                    variant: "destructive",
-                  });
+                  toast.error(`${file.name} exceeds 2MB limit. Please choose a smaller file.`);
                   return;
                 }
 
                 // Validation 2: File type (png, jpeg, jpg)
                 const fileType = file.type.toLowerCase();
                 if (!ALLOWED_TYPES.includes(fileType)) {
-                  toast({
-                    title: "File type error",
-                    description: `${file.name} is not a valid image type. Only PNG, JPEG, and JPG are allowed.`,
-                    variant: "destructive",
-                  });
+                  toast.error(`${file.name} is not a valid image type. Only PNG, JPEG, and JPG are allowed.`);
                   return;
                 }
 

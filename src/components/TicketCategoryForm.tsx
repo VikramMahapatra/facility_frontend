@@ -201,13 +201,13 @@ export default function TicketCategoryForm({ category, isOpen, onClose, onSave, 
             control={control}
             render={({ field }) => (
               <div className="space-y-2">
-                <Label htmlFor="auto_assign_role">Auto-Assign Role</Label>
+                <Label htmlFor="auto_assign_role">Auto-Assign Role *</Label>
                 <Select
                   value={field.value || ""}
                   onValueChange={field.onChange}
                   disabled={isReadOnly}
                 >
-                  <SelectTrigger>
+                  <SelectTrigger className={errors.auto_assign_role ? 'border-red-500' : ''}>
                     <SelectValue placeholder="Select auto-assign role" />
                   </SelectTrigger>
                   <SelectContent>
@@ -218,6 +218,9 @@ export default function TicketCategoryForm({ category, isOpen, onClose, onSave, 
                     ))}
                   </SelectContent>
                 </Select>
+                {errors.auto_assign_role && (
+                  <p className="text-sm text-red-500">{errors.auto_assign_role.message}</p>
+                )}
               </div>
             )}
           />

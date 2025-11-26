@@ -101,12 +101,13 @@ export default function Tickets() {
     const response = await withLoader(async () => {
       return await ticketsApiService.addTicket(data);
     });
-    if (response) {
+    if (response?.success) {
       setIsFormOpen(false);
       loadTickets();
       toast.success("Service ticket has been created successfully.");
       return { success: true, data: response };
     }
+    // Error toast is already shown by the API service
     return { success: false };
   };
 
@@ -117,12 +118,13 @@ export default function Tickets() {
 
   const handleEditSubmit = async (data: any) => {
     const response = await ticketsApiService.addTicket(data);
-    if (response.success) {
+    if (response?.success) {
       setIsEditOpen(false);
       setEditingTicket(null);
       loadTickets();
       toast.success("Service ticket has been updated successfully.");
     }
+ 
     return response;
   };
 
@@ -272,35 +274,46 @@ export default function Tickets() {
                       </TableRow>
                     </TableHeader>
                     <TableBody>
-                      {tickets.map((ticket) => (
-                        <TableRow key={ticket.id || ticket.ticket_id}>
-                          <TableCell className="font-medium">#{ticket.ticket_no}</TableCell>
-                          <TableCell className="max-w-xs truncate">{ticket.title}</TableCell>
-                          <TableCell>
-                            <Badge variant="outline">{ticket.category}</Badge>
-                          </TableCell>
-                          <TableCell>
-                            <Badge className={getPriorityColor(ticket.priority)}>{ticket.priority}</Badge>
-                          </TableCell>
-                          <TableCell>
-                            <Badge className={getStatusColor(ticket.status)}>{ticket.status}</Badge>
-                          </TableCell>
-                          <TableCell>
-                            <Badge variant="secondary">{ticket.request_type}</Badge>
-                          </TableCell>
-                          <TableCell>{new Date(ticket.created_at).toLocaleDateString()}</TableCell>
-                          <TableCell className="text-right">
-                            <div className="flex justify-end gap-2">
-                              <Button variant="ghost" size="sm" onClick={() => handleView(ticket.id || ticket.ticket_id)}>
-                                <Eye className="w-4 h-4" />
-                              </Button>
-                              {/* <Button variant="ghost" size="sm" onClick={() => handleEdit(ticket)}>
-                                <Edit className="w-4 h-4" />
-                              </Button> */}
-                            </div>
+                      {tickets.length === 0 ? (
+                        <TableRow>
+                          <TableCell
+                            colSpan={8}
+                            className="text-center text-muted-foreground h-32"
+                          >
+                            No tickets found
                           </TableCell>
                         </TableRow>
-                      ))}
+                      ) : (
+                        tickets.map((ticket) => (
+                          <TableRow key={ticket.id || ticket.ticket_id}>
+                            <TableCell className="font-medium">#{ticket.ticket_no}</TableCell>
+                            <TableCell className="max-w-xs truncate">{ticket.title}</TableCell>
+                            <TableCell>
+                              <Badge variant="outline">{ticket.category}</Badge>
+                            </TableCell>
+                            <TableCell>
+                              <Badge className={getPriorityColor(ticket.priority)}>{ticket.priority}</Badge>
+                            </TableCell>
+                            <TableCell>
+                              <Badge className={getStatusColor(ticket.status)}>{ticket.status}</Badge>
+                            </TableCell>
+                            <TableCell>
+                              <Badge variant="secondary">{ticket.request_type}</Badge>
+                            </TableCell>
+                            <TableCell>{new Date(ticket.created_at).toLocaleDateString()}</TableCell>
+                            <TableCell className="text-right">
+                              <div className="flex justify-end gap-2">
+                                <Button variant="ghost" size="sm" onClick={() => handleView(ticket.id || ticket.ticket_id)}>
+                                  <Eye className="w-4 h-4" />
+                                </Button>
+                                {/* <Button variant="ghost" size="sm" onClick={() => handleEdit(ticket)}>
+                                  <Edit className="w-4 h-4" />
+                                </Button> */}
+                              </div>
+                            </TableCell>
+                          </TableRow>
+                        ))
+                      )}
                     </TableBody>
                     </Table>
                     <Pagination
