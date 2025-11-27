@@ -207,9 +207,6 @@ const confirmDelete = async () => {
     toast.success(
       `Contract ${contractData.title || contractData.code || contractData.contract_number || ""} has been ${formMode === "create" ? "created" : "updated"} successfully.`
     );
-  } else {
-    const errorMessage = response?.data?.message || `Failed to ${formMode === "create" ? "create" : "update"} contract`;
-    toast.error(errorMessage);
   }
   return response;
 };

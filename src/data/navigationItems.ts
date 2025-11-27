@@ -56,6 +56,7 @@ export const navigationItems = [
             { title: "Tickets", url: "/tickets", icon: AlertTriangle, resource: "tickets" },
             { title: "Ticket Categories", url: "/ticket-categories", icon: Archive, resource: "ticket_categories" },
             { title: "Ticket Category SLA", url: "/sla-policies", icon: ShieldCheck, resource: "sla_policies" },
+            { title: "Ticket Work Orders", url: "/ticket-work-orders", icon: Wrench, resource: "tickets" },
             { title: "Workload Management", url: "/ticket-workload", icon: Users, resource: "workload_management" },
         ]
     },

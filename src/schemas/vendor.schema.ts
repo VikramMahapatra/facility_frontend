@@ -6,13 +6,12 @@ export const vendorSchema = z.object({
     status: z.string().min(1, "Status is required"),
     categories: z.array(z.string()).default([]),
     contact: z.object({
-        name: z.string().optional(),
-        email: z.string().email("Invalid email format").optional().or(z.literal("")),
+        name: z.string().min(1, "Contact name is required"),
+        email: z.string().min(1, "Email is required").email("Invalid email format"),
         phone: z.string()
-            .optional()
-            .or(z.literal(""))
+            .min(1, "Phone is required")
             .refine((val) => {
-                if (!val || val === "") return true; // Allow empty
+                if (!val || val === "") return false; // Not allowed to be empty now
                 // Remove the + prefix and extract digits
                 const digits = val.replace(/\D/g, "");
                 // Check if we have country code (1-3 digits) + 10 digits
@@ -27,7 +26,7 @@ export const vendorSchema = z.object({
                 message: "Phone number must be exactly 10 digits after country code"
             }),
         address: z.string().optional(),
-    }).optional(),
+    }),
 });
 
 export type VendorFormValues = z.infer<typeof vendorSchema>;

@@ -248,7 +248,7 @@ export function UserForm({
 
   return (
     <Dialog open={open} onOpenChange={handleClose}>
-      <DialogContent className="sm:max-w-[600px] max-h-[90vh] flex flex-col">
+      <DialogContent className="max-w-[900px] max-h-[90vh] flex flex-col">
         <DialogHeader>
           <DialogTitle>
             {mode === "create" && "Create New User"}
@@ -266,23 +266,115 @@ export function UserForm({
               <p className="text-center">Loading...</p>
             ) : (
               <div className="space-y-4">
-            <div className="space-y-2">
-              <Label htmlFor="full_name">Full Name *</Label>
-              <Input
-                id="full_name"
-                {...register("full_name")}
-                placeholder="John Doe"
-                disabled={isReadOnly}
-                className={errors.full_name ? "border-red-500" : ""}
+            <div className={`grid gap-4 ${isTenant ? 'grid-cols-3' : isStaff ? 'grid-cols-3' : 'grid-cols-2'}`}>
+              <div className="space-y-2">
+                <Label htmlFor="full_name">Full Name *</Label>
+                <Input
+                  id="full_name"
+                  {...register("full_name")}
+                  placeholder="John Doe"
+                  disabled={isReadOnly}
+                  className={errors.full_name ? "border-red-500" : ""}
+                />
+                {errors.full_name && (
+                  <p className="text-sm text-red-500">
+                    {errors.full_name.message}
+                  </p>
+                )}
+              </div>
+
+              <Controller
+                name="account_type"
+                control={control}
+                render={({ field }) => (
+                  <div className="space-y-2">
+                    <Label>Type *</Label>
+                    <Select
+                      value={field.value || ""}
+                      onValueChange={field.onChange}
+                      disabled={isReadOnly}
+                    >
+                      <SelectTrigger className="w-full">
+                        <SelectValue placeholder="Select your account type" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {accountTypes.map((type) => (
+                          <SelectItem key={type.value} value={type.value}>
+                            <div className="flex items-center space-x-3">
+                              {type.icon}
+                              <div>
+                                <div className="font-medium">
+                                  {type.label}
+                                </div>
+                                <div className="text-xs text-muted-foreground">
+                                  {type.description}
+                                </div>
+                              </div>
+                            </div>
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                    {errors.account_type && (
+                      <p className="text-sm text-red-500">
+                        {errors.account_type.message}
+                      </p>
+                    )}
+                  </div>
+                )}
               />
-              {errors.full_name && (
-                <p className="text-sm text-red-500">
-                  {errors.full_name.message}
-                </p>
+
+              {isTenant && (
+                <Controller
+                  name="tenant_type"
+                  control={control}
+                  render={({ field }) => (
+                    <div className="space-y-2">
+                      <Label htmlFor="tenant_type">Tenant Type *</Label>
+                      <Select
+                        value={field.value || "individual"}
+                        onValueChange={field.onChange}
+                        disabled={isReadOnly}
+                      >
+                        <SelectTrigger
+                          className={
+                            errors.tenant_type ? "border-red-500" : ""
+                          }
+                        >
+                          <SelectValue placeholder="Select tenant type" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="individual">
+                            Individual
+                          </SelectItem>
+                          <SelectItem value="commercial">
+                            Commercial
+                          </SelectItem>
+                        </SelectContent>
+                      </Select>
+                      {errors.tenant_type && (
+                        <p className="text-sm text-red-500">
+                          {errors.tenant_type.message}
+                        </p>
+                      )}
+                    </div>
+                  )}
+                />
+              )}
+
+              {isStaff && (
+                <div className="space-y-2">
+                  <Label htmlFor="staff_roles">Staff Roles</Label>
+                  <Input
+                    id="staff_roles"
+                    placeholder="Enter staff role description"
+                    disabled={isReadOnly}
+                  />
+                </div>
               )}
             </div>
 
-            <div className="grid grid-cols-2 gap-4">
+            <div className="grid grid-cols-3 gap-4">
               <div className="space-y-2">
                 <Label htmlFor="email">Email *</Label>
                 <Input
@@ -297,6 +389,7 @@ export function UserForm({
                   <p className="text-sm text-red-500">{errors.email.message}</p>
                 )}
               </div>
+
               <Controller
                 name="phone"
                 control={control}
@@ -331,201 +424,43 @@ export function UserForm({
                   </div>
                 )}
               />
+
+              <Controller
+                name="status"
+                control={control}
+                render={({ field }) => (
+                  <div className="space-y-2">
+                    <Label htmlFor="status">Status *</Label>
+                    <Select
+                      value={field.value || ""}
+                      onValueChange={field.onChange}
+                      disabled={isReadOnly}
+                    >
+                      <SelectTrigger
+                        className={errors.status ? "border-red-500" : ""}
+                      >
+                        <SelectValue placeholder="Select status" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {statusList.map((status) => (
+                          <SelectItem key={status.id} value={status.id}>
+                            {status.name}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                    {errors.status && (
+                      <p className="text-sm text-red-500">
+                        {errors.status.message}
+                      </p>
+                    )}
+                  </div>
+                )}
+              />
             </div>
 
-            {isOrganization || isTenant || isStaff ? (
-              <>
-                <Controller
-                  name="status"
-                  control={control}
-                  render={({ field }) => (
-                    <div className="space-y-2">
-                      <Label htmlFor="status">Status *</Label>
-                      <Select
-                        value={field.value || ""}
-                        onValueChange={field.onChange}
-                        disabled={isReadOnly}
-                      >
-                        <SelectTrigger
-                          className={errors.status ? "border-red-500" : ""}
-                        >
-                          <SelectValue placeholder="Select status" />
-                        </SelectTrigger>
-                        <SelectContent>
-                          {statusList.map((status) => (
-                            <SelectItem key={status.id} value={status.id}>
-                              {status.name}
-                            </SelectItem>
-                          ))}
-                        </SelectContent>
-                      </Select>
-                      {errors.status && (
-                        <p className="text-sm text-red-500">
-                          {errors.status.message}
-                        </p>
-                      )}
-                    </div>
-                  )}
-                />
-
-                <Controller
-                  name="account_type"
-                  control={control}
-                  render={({ field }) => (
-                    <div className="space-y-2">
-                      <Label>Type *</Label>
-                      <Select
-                        value={field.value || ""}
-                        onValueChange={field.onChange}
-                        disabled={isReadOnly}
-                      >
-                        <SelectTrigger className="w-full">
-                          <SelectValue placeholder="Select your account type" />
-                        </SelectTrigger>
-                        <SelectContent>
-                          {accountTypes.map((type) => (
-                            <SelectItem key={type.value} value={type.value}>
-                              <div className="flex items-center space-x-3">
-                                {type.icon}
-                                <div>
-                                  <div className="font-medium">
-                                    {type.label}
-                                  </div>
-                                  <div className="text-xs text-muted-foreground">
-                                    {type.description}
-                                  </div>
-                                </div>
-                              </div>
-                            </SelectItem>
-                          ))}
-                        </SelectContent>
-                      </Select>
-                      {errors.account_type && (
-                        <p className="text-sm text-red-500">
-                          {errors.account_type.message}
-                        </p>
-                      )}
-                    </div>
-                  )}
-                />
-              </>
-            ) : (
-              <div className="grid grid-cols-2 gap-4">
-                <Controller
-                  name="status"
-                  control={control}
-                  render={({ field }) => (
-                    <div className="space-y-2">
-                      <Label htmlFor="status">Status *</Label>
-                      <Select
-                        value={field.value || ""}
-                        onValueChange={field.onChange}
-                        disabled={isReadOnly}
-                      >
-                        <SelectTrigger
-                          className={errors.status ? "border-red-500" : ""}
-                        >
-                          <SelectValue placeholder="Select status" />
-                        </SelectTrigger>
-                        <SelectContent>
-                          {statusList.map((status) => (
-                            <SelectItem key={status.id} value={status.id}>
-                              {status.name}
-                            </SelectItem>
-                          ))}
-                        </SelectContent>
-                      </Select>
-                      {errors.status && (
-                        <p className="text-sm text-red-500">
-                          {errors.status.message}
-                        </p>
-                      )}
-                    </div>
-                  )}
-                />
-
-                <Controller
-                  name="account_type"
-                  control={control}
-                  render={({ field }) => (
-                    <div className="space-y-2">
-                      <Label>Type *</Label>
-                      <Select
-                        value={field.value || ""}
-                        onValueChange={field.onChange}
-                        disabled={isReadOnly}
-                      >
-                        <SelectTrigger className="w-full">
-                          <SelectValue placeholder="Select your account type" />
-                        </SelectTrigger>
-                        <SelectContent>
-                          {accountTypes.map((type) => (
-                            <SelectItem key={type.value} value={type.value}>
-                              <div className="flex items-center space-x-3">
-                                {type.icon}
-                                <div>
-                                  <div className="font-medium">
-                                    {type.label}
-                                  </div>
-                                  <div className="text-xs text-muted-foreground">
-                                    {type.description}
-                                  </div>
-                                </div>
-                              </div>
-                            </SelectItem>
-                          ))}
-                        </SelectContent>
-                      </Select>
-                      {errors.account_type && (
-                        <p className="text-sm text-red-500">
-                          {errors.account_type.message}
-                        </p>
-                      )}
-                    </div>
-                  )}
-                />
-              </div>
-            )}
-
             {isTenant && (
-              <>
-                <div className="grid grid-cols-2 gap-4">
-                  <Controller
-                    name="tenant_type"
-                    control={control}
-                    render={({ field }) => (
-                      <div className="space-y-2">
-                        <Label htmlFor="tenant_type">Tenant Type</Label>
-                        <Select
-                          value={field.value || "individual"}
-                          onValueChange={field.onChange}
-                          disabled={isReadOnly}
-                        >
-                          <SelectTrigger
-                            className={
-                              errors.tenant_type ? "border-red-500" : ""
-                            }
-                          >
-                            <SelectValue placeholder="Select tenant type" />
-                          </SelectTrigger>
-                          <SelectContent>
-                            <SelectItem value="individual">
-                              Individual
-                            </SelectItem>
-                            <SelectItem value="commercial">
-                              Commercial
-                            </SelectItem>
-                          </SelectContent>
-                        </Select>
-                        {errors.tenant_type && (
-                          <p className="text-sm text-red-500">
-                            {errors.tenant_type.message}
-                          </p>
-                        )}
-                      </div>
-                    )}
-                  />
-
+              <div className="grid grid-cols-3 gap-4">
                   <Controller
                     name="site_id"
                     control={control}
@@ -567,9 +502,7 @@ export function UserForm({
                       </div>
                     )}
                   />
-                </div>
 
-                <div className="grid grid-cols-2 gap-4">
                   <Controller
                     name="building_id"
                     control={control}
@@ -652,22 +585,129 @@ export function UserForm({
                     )}
                   />
                 </div>
-              </>
             )}
 
             {isStaff && (
+              <div className="grid grid-cols-2 gap-4">
+                <Controller
+                  name="site_ids"
+                  control={control}
+                  render={({ field }) => (
+                    <div className="space-y-2">
+                      <Label>Select Sites *</Label>
+                      <div className="space-y-2 border rounded-md p-4 max-h-[180px] overflow-y-auto">
+                        {siteList.map((site: any) => {
+                          const isChecked = selectedSiteIds.includes(site.id);
+                          return (
+                            <div
+                              key={site.id}
+                              className="flex items-center space-x-3"
+                            >
+                              <Checkbox
+                                checked={isChecked}
+                                onCheckedChange={(checked) => {
+                                  const currentValues = field.value || [];
+                                  if (checked) {
+                                    field.onChange([...currentValues, site.id]);
+                                  } else {
+                                    field.onChange(
+                                      currentValues.filter(
+                                        (value) => value !== site.id
+                                      )
+                                    );
+                                  }
+                                }}
+                                disabled={isReadOnly}
+                              />
+                              <div className="space-y-0">
+                                <Label className="font-medium cursor-pointer">
+                                  {site.name}
+                                </Label>
+                                {site.code && (
+                                  <p className="text-xs text-muted-foreground">
+                                    {site.code}
+                                  </p>
+                                )}
+                              </div>
+                            </div>
+                          );
+                        })}
+                      </div>
+                      {errors.site_ids && (
+                        <p className="text-sm text-red-500">
+                          {errors.site_ids.message}
+                        </p>
+                      )}
+                    </div>
+                  )}
+                />
+
+                <Controller
+                  name="role_ids"
+                  control={control}
+                  render={({ field }) => (
+                    <div className="space-y-2">
+                      <Label>Assign Roles *</Label>
+                      <div className="space-y-2 border rounded-md p-4 max-h-[180px] overflow-y-auto">
+                        {roleList.map((role) => {
+                          const isChecked = selectedRoleIds.includes(role.id);
+                          return (
+                            <div
+                              key={role.id}
+                              className="flex items-center space-x-3"
+                            >
+                              <Checkbox
+                                checked={isChecked}
+                                onCheckedChange={(checked) => {
+                                  const currentValues = field.value || [];
+                                  if (checked) {
+                                    field.onChange([...currentValues, role.id]);
+                                  } else {
+                                    field.onChange(
+                                      currentValues.filter(
+                                        (value) => value !== role.id
+                                      )
+                                    );
+                                  }
+                                }}
+                                disabled={isReadOnly}
+                              />
+                              <div className="space-y-0">
+                                <Label className="font-medium cursor-pointer">
+                                  {role.name}
+                                </Label>
+                                <p className="text-xs text-muted-foreground">
+                                  {role.description || "no description"}
+                                </p>
+                              </div>
+                            </div>
+                          );
+                        })}
+                      </div>
+                      {errors.role_ids && (
+                        <p className="text-sm text-red-500">
+                        {errors.role_ids.message}
+                      </p>
+                    )}
+                    </div>
+                  )}
+                />
+              </div>
+            )}
+
+            {!isStaff && (
               <Controller
-                name="site_ids"
+                name="role_ids"
                 control={control}
                 render={({ field }) => (
                   <div className="space-y-2">
-                    <Label>Select Sites *</Label>
-                    <div className="space-y-2 border rounded-md p-4 max-h-48 overflow-y-auto">
-                      {siteList.map((site: any) => {
-                        const isChecked = selectedSiteIds.includes(site.id);
+                    <Label>Assign Roles *</Label>
+                    <div className="space-y-2 border rounded-md p-4 max-h-[180px] overflow-y-auto">
+                      {roleList.map((role) => {
+                        const isChecked = selectedRoleIds.includes(role.id);
                         return (
                           <div
-                            key={site.id}
+                            key={role.id}
                             className="flex items-center space-x-3"
                           >
                             <Checkbox
@@ -675,11 +715,11 @@ export function UserForm({
                               onCheckedChange={(checked) => {
                                 const currentValues = field.value || [];
                                 if (checked) {
-                                  field.onChange([...currentValues, site.id]);
+                                  field.onChange([...currentValues, role.id]);
                                 } else {
                                   field.onChange(
                                     currentValues.filter(
-                                      (value) => value !== site.id
+                                      (value) => value !== role.id
                                     )
                                   );
                                 }
@@ -688,78 +728,25 @@ export function UserForm({
                             />
                             <div className="space-y-0">
                               <Label className="font-medium cursor-pointer">
-                                {site.name}
+                                {role.name}
                               </Label>
-                              {site.code && (
-                                <p className="text-xs text-muted-foreground">
-                                  {site.code}
-                                </p>
-                              )}
+                              <p className="text-xs text-muted-foreground">
+                                {role.description || "no description"}
+                              </p>
                             </div>
                           </div>
                         );
                       })}
                     </div>
-                    {errors.site_ids && (
+                    {errors.role_ids && (
                       <p className="text-sm text-red-500">
-                        {errors.site_ids.message}
-                      </p>
-                    )}
+                      {errors.role_ids.message}
+                    </p>
+                  )}
                   </div>
                 )}
               />
             )}
-
-            <Controller
-              name="role_ids"
-              control={control}
-              render={({ field }) => (
-                <div className="space-y-2">
-                  <Label>Assign Roles *</Label>
-                  <div className="space-y-2 border rounded-md p-4 max-h-48 overflow-y-auto">
-                    {roleList.map((role) => {
-                      const isChecked = selectedRoleIds.includes(role.id);
-                      return (
-                        <div
-                          key={role.id}
-                          className="flex items-center space-x-3"
-                        >
-                          <Checkbox
-                            checked={isChecked}
-                            onCheckedChange={(checked) => {
-                              const currentValues = field.value || [];
-                              if (checked) {
-                                field.onChange([...currentValues, role.id]);
-                              } else {
-                                field.onChange(
-                                  currentValues.filter(
-                                    (value) => value !== role.id
-                                  )
-                                );
-                              }
-                            }}
-                            disabled={isReadOnly}
-                          />
-                          <div className="space-y-0">
-                            <Label className="font-medium cursor-pointer">
-                              {role.name}
-                            </Label>
-                            <p className="text-xs text-muted-foreground">
-                              {role.description || "no description"}
-                            </p>
-                          </div>
-                        </div>
-                      );
-                    })}
-                  </div>
-                  {errors.role_ids && (
-                    <p className="text-sm text-red-500">
-                      {errors.role_ids.message}
-                    </p>
-                  )}
-                </div>
-              )}
-            />
               </div>
             )}
           </form>

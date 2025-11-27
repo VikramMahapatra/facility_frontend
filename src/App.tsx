@@ -58,6 +58,7 @@ import TicketDashboard from "./pages/TicketDashboard";
 import Tickets from "./pages/Tickets";
 import ApprovalRules from "./pages/ApprovalRules";
 import SLAPolicies from "./pages/SLAPolicies";
+import TicketWorkOrders from "./pages/TicketWorkOrders";
 import { GoogleOAuthProvider } from "@react-oauth/google";
 import ProtectedLayout from "./components/ProtectedLayout";
 import ProtectedRoute from "./components/ProtectedRoute";
@@ -130,6 +131,7 @@ const App = () => {
                   <Route path="/tickets/:ticketId" element={<TicketDetail />} />
                   <Route path="/ticket-categories" element={<TicketCategories />} />
                   <Route path="/sla-policies" element={<SLAPolicies />} />
+                  <Route path="/ticket-work-orders" element={<TicketWorkOrders />} />
                   <Route path="/ticket-workload" element={<TicketWorkload />} />
                   <Route path="/approval-rules" element={<ApprovalRules />} />
                 </Route>

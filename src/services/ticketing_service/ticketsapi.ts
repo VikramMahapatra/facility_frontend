@@ -70,6 +70,10 @@ class TicketsApiService {
   async getStatusLookup() {
     return await apiService.request(`/tickets/filter-status-lookup`);
   }
+
+  async getTicketNoLookup() {
+    return await apiService.request(`/tickets/ticket-no-lookup`);
+  }
 }
 
 export const ticketsApiService = new TicketsApiService();
