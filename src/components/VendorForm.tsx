@@ -27,7 +27,7 @@ interface VendorFormProps {
 const emptyFormData: VendorFormValues = {
   name: "",
   gst_vat_id: "",
-  status: "",
+  status: "active",
   categories: [],
   contact: {
     name: "",
@@ -55,44 +55,58 @@ export function VendorForm({ vendor, isOpen, onClose, onSave, mode }: VendorForm
     reValidateMode: "onChange",
   });
 
+  const [formLoading, setFormLoading] = useState(true);
   const [statusList, setStatusList] = useState<any[]>([]);
   const [categoriesList, setCategoriesList] = useState<any[]>([]);
   const [categoryPopoverOpen, setCategoryPopoverOpen] = useState(false);
 
   const selectedCategories = watch("categories") || [];
 
-  useEffect(() => {
+  const loadAll = async () => {
+    setFormLoading(true);
+
+    await Promise.all([loadStatusLookup(), loadCategoriesLookup()]);
+
+    // Reset form based on mode
+    reset(
+      vendor && mode !== "create"
+        ? {
+            name: vendor.name || "",
+            gst_vat_id: vendor.gst_vat_id || "",
+            status: vendor.status || "active",
+            categories: vendor.categories || [],
+            contact: vendor.contact || {
+              name: "",
+              email: "",
+              phone: "",
+              address: "",
+            },
+          }
+        : emptyFormData
+    );
+
     if (vendor && mode !== "create") {
-      reset({
-        name: vendor.name || "",
-        gst_vat_id: vendor.gst_vat_id || "",
-        status: vendor.status || "",
-        categories: vendor.categories || [],
-        contact: vendor.contact || {
-          name: "",
-          email: "",
-          phone: "",
-          address: "",
-        },
-      });
-    
       setTimeout(() => trigger(), 100);
-    } else {
-      reset(emptyFormData);
     }
-    loadStatusLookup();
-    loadCategoriesLookup();
-  }, [vendor, mode, reset, trigger]);
+
+    setFormLoading(false);
+  };
+
+  useEffect(() => {
+    if (isOpen) {
+      loadAll();
+    }
+  }, [vendor, mode, isOpen, reset]);
 
   const loadStatusLookup = async () => {
-  const response = await vendorsApiService.getStatusLookup();
-  if (response.success) setStatusList(response.data || []);
-};
+    const response = await vendorsApiService.getStatusLookup();
+    if (response.success) setStatusList(response.data || []);
+  };
 
-const loadCategoriesLookup = async () => {
-  const response = await vendorsApiService.getCategoriesLookup();
-  if (response.success) setCategoriesList(response.data || []);
-};
+  const loadCategoriesLookup = async () => {
+    const response = await vendorsApiService.getCategoriesLookup();
+    if (response.success) setCategoriesList(response.data || []);
+  };
 
   const handleCategoryToggle = (categoryId: string) => {
     const currentCategories = getValues("categories") || [];
@@ -136,14 +150,19 @@ const loadCategoriesLookup = async () => {
         </DialogHeader>
 
         <form onSubmit={isSubmitting ? undefined : handleSubmit(onSubmitForm)} className="space-y-4">
-          {/* Vendor Details Section */}
-          <div className="grid grid-cols-2 gap-4">
+          {formLoading ? (
+            <p className="text-center">Loading...</p>
+          ) : (
+            <div className="space-y-4">
+              {/* Vendor Details Section */}
+              <div className="grid grid-cols-2 gap-4">
             <div className="space-y-2">
               <Label htmlFor="name">Vendor Name *</Label>
               <Input
                 id="name"
                 {...register("name")}
                 disabled={isReadOnly}
+                placeholder="Enter vendor name"
                 className={errors.name ? 'border-red-500' : ''}
               />
               {errors.name && (
@@ -156,6 +175,7 @@ const loadCategoriesLookup = async () => {
                 id="gst_vat_id"
                 {...register("gst_vat_id")}
                 disabled={isReadOnly}
+                placeholder="Enter GST/VAT ID"
               />
             </div>
           </div>
@@ -278,21 +298,27 @@ const loadCategoriesLookup = async () => {
           <div className="border rounded-lg p-4 space-y-4">
             <h3 className="text-sm font-medium text-gray-700">Contact Info:</h3>
             <div className="space-y-2">
-              <Label htmlFor="contact.name">Contact Name</Label>
+              <Label htmlFor="contact.name">Contact Name *</Label>
               <Input
                 id="contact.name"
                 {...register("contact.name")}
                 disabled={isReadOnly}
+                placeholder="Enter contact name"
+                className={errors.contact?.name ? 'border-red-500' : ''}
               />
+              {errors.contact?.name && (
+                <p className="text-sm text-red-500">{errors.contact.name.message}</p>
+              )}
             </div>
             <div className="grid grid-cols-2 gap-4">
               <div className="space-y-2">
-                <Label htmlFor="contact.email">Email</Label>
+                <Label htmlFor="contact.email">Email *</Label>
                 <Input
                   id="contact.email"
                   type="email"
                   {...register("contact.email")}
                   disabled={isReadOnly}
+                  placeholder="Enter email address"
                   className={errors.contact?.email ? 'border-red-500' : ''}
                 />
                 {errors.contact?.email && (
@@ -304,7 +330,7 @@ const loadCategoriesLookup = async () => {
                 control={control}
                 render={({ field }) => (
                   <div className="space-y-2">
-                    <Label htmlFor="contact.phone">Phone</Label>
+                    <Label htmlFor="contact.phone">Phone *</Label>
                     <PhoneInput
                       country={'in'}
                       value={field.value || ""}
@@ -316,7 +342,7 @@ const loadCategoriesLookup = async () => {
                       disabled={isReadOnly}
                       inputProps={{
                         name: 'contact.phone',
-                        required: false,
+                        required: true,
                       }}
                       containerClass="w-full relative"
                       inputClass={`!w-full !h-10 !pl-12 !rounded-md !border !border-input !bg-background !px-3 !py-2 !text-base !ring-offset-background placeholder:!text-muted-foreground focus-visible:!outline-none focus-visible:!ring-2 focus-visible:!ring-ring focus-visible:!ring-offset-2 disabled:!cursor-not-allowed disabled:!opacity-50 md:!text-sm ${errors.contact?.phone ? '!border-red-500' : ''}`}
@@ -337,20 +363,23 @@ const loadCategoriesLookup = async () => {
                 id="contact.address"
                 {...register("contact.address")}
                 disabled={isReadOnly}
+                placeholder="Enter contact address"
               />
             </div>
           </div>
 
-          <DialogFooter>
-            <Button type="button" variant="outline" onClick={onClose} disabled={isSubmitting}>
-              {mode === "view" ? "Close" : "Cancel"}
-            </Button>
-            {mode !== "view" && (
-              <Button type="submit" disabled={isSubmitting}>
-                {isSubmitting ? "Saving..." : mode === "create" ? "Create Vendor" : "Update Vendor"}
-              </Button>
-            )}
-          </DialogFooter>
+              <DialogFooter>
+                <Button type="button" variant="outline" onClick={onClose} disabled={isSubmitting}>
+                  {mode === "view" ? "Close" : "Cancel"}
+                </Button>
+                {mode !== "view" && (
+                  <Button type="submit" disabled={isSubmitting}>
+                    {isSubmitting ? "Saving..." : mode === "create" ? "Create Vendor" : "Update Vendor"}
+                  </Button>
+                )}
+              </DialogFooter>
+            </div>
+          )}
         </form>
       </DialogContent>
     </Dialog>

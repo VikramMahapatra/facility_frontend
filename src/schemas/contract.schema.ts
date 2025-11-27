@@ -24,7 +24,7 @@ export const contractSchema = z.object({
   type: z.string().optional().nullable(),
   status: z.string().optional().nullable(),
   vendor_id: z.string().min(1, "Vendor is required"),
-  site_id: z.string().optional().nullable(),
+  site_id: z.string().min(1, "Site is required"),
   start_date: z.string().min(1, "Start Date is required"),
   end_date: z.string().min(1, "End Date is required"),
   value: z.coerce.number().min(0, "Contract value cannot be negative").optional().nullable(),

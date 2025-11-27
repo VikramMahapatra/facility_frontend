@@ -188,9 +188,6 @@ const confirmDelete = async () => {
     toast.success(
       `Vendor ${vendorData.name || ""} has been ${formMode === "create" ? "created" : "updated"} successfully.`
     );
-  } else {
-    const errorMessage = response?.data?.message || `Failed to ${formMode === "create" ? "create" : "update"} vendor`;
-    toast.error(errorMessage);
   }
   return response;
 };

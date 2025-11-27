@@ -75,7 +75,7 @@ export function ContractForm({ contract, isOpen, onClose, onSave, mode }: Contra
     await Promise.all([loadTypeLookup(), loadStatusLookup(), loadVendorLookup(), loadSiteLookup()]);
     
     reset(
-      contract
+      contract && mode !== "create"
         ? {
         title: contract.title || "",
         type: contract.type || "",
@@ -97,8 +97,10 @@ export function ContractForm({ contract, isOpen, onClose, onSave, mode }: Contra
   };
 
   useEffect(() => {
-    loadAll();
-  }, [contract, mode, reset]);
+    if (isOpen) {
+      loadAll();
+    }
+  }, [contract, mode, isOpen, reset]);
 
   
 
@@ -159,14 +161,16 @@ export function ContractForm({ contract, isOpen, onClose, onSave, mode }: Contra
       ...data,
     });
   };
-     
 
-
+  const handleClose = () => {
+    reset(emptyFormData);
+    onClose();
+  };
 
   const isReadOnly = mode === "view";
 
   return (
-    <Dialog open={isOpen} onOpenChange={onClose}>
+    <Dialog open={isOpen} onOpenChange={handleClose}>
       <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
         <DialogHeader>
           <DialogTitle>
@@ -270,10 +274,10 @@ export function ContractForm({ contract, isOpen, onClose, onSave, mode }: Contra
               control={control}
               render={({ field }) => (
                 <div className="space-y-2">
-                  <Label htmlFor="site">Site</Label>
+                  <Label htmlFor="site">Site *</Label>
                   <Select value={field.value || ""} onValueChange={field.onChange} disabled={isReadOnly}>
-                    <SelectTrigger>
-                      <SelectValue placeholder="Select site (optional)" />
+                    <SelectTrigger className={errors.site_id ? "border-red-500" : ""}>
+                      <SelectValue placeholder="Select site" />
                     </SelectTrigger>
                     <SelectContent>
                       {siteList.map((site: any) => (
@@ -283,6 +287,7 @@ export function ContractForm({ contract, isOpen, onClose, onSave, mode }: Contra
                       ))}
                     </SelectContent>
                   </Select>
+                  {errors.site_id && <p className="text-sm text-red-500">{errors.site_id.message}</p>}
                 </div>
               )}
             />
@@ -447,7 +452,7 @@ export function ContractForm({ contract, isOpen, onClose, onSave, mode }: Contra
           </div>
 
               <DialogFooter>
-                <Button type="button" variant="outline" onClick={onClose} disabled={isSubmitting}>
+                <Button type="button" variant="outline" onClick={handleClose} disabled={isSubmitting}>
                   {mode === "view" ? "Close" : "Cancel"}
                 </Button>
                 {mode !== "view" && (

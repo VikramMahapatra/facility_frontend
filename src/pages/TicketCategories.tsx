@@ -182,10 +182,10 @@ export default function TicketCategories() {
       if (response.success) {
         // Success case
         updateTicketCategoriesPage();
-        setDeleteCategoryId(null);
+          setDeleteCategoryId(null);
         toast.success("Ticket category has been deleted successfully.");
+        }
       }
-    }
   };
 
   return (
@@ -224,7 +224,7 @@ export default function TicketCategories() {
 
               <Card>
                 <CardHeader>
-                  <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-4">
                     <div className="relative flex-1 max-w-sm">
                       <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground h-4 w-4" />
                       <Input
@@ -238,7 +238,7 @@ export default function TicketCategories() {
                       value={selectedSite}
                       onValueChange={setSelectedSite}
                     >
-                      <SelectTrigger className="w-[200px]">
+                      <SelectTrigger className="w-[160px]">
                         <SelectValue placeholder="All Sites" />
                       </SelectTrigger>
                       <SelectContent>
@@ -281,64 +281,64 @@ export default function TicketCategories() {
                             </TableRow>
                           ) : (
                             categories.map((category) => {
-                              const site = siteList.find(
-                                (s: any) => s.id === category.site_id
-                              );
-                              return (
-                                <TableRow
-                                  key={category.id || category.category_id}
-                                >
-                                  <TableCell className="font-medium">
-                                    {category.category_name}
-                                  </TableCell>
-                                  <TableCell>
-                                    {site ? site.name : category.site_id || "-"}
-                                  </TableCell>
-                                  <TableCell>
-                                    <Badge variant="outline">
-                                      {category.auto_assign_role}
-                                    </Badge>
-                                  </TableCell>
-                                  <TableCell>{category.sla_hours}h</TableCell>
-                                  <TableCell>
-                                    <Badge
-                                      variant={
-                                        category.is_active
-                                          ? "default"
-                                          : "secondary"
-                                      }
-                                    >
-                                      {category.is_active ? "Active" : "Inactive"}
-                                    </Badge>
-                                  </TableCell>
-                                  <TableCell className="text-right">
-                                    <div className="flex justify-end gap-2">
-                                      {canWrite(resource) && (
-                                        <Button
-                                          variant="ghost"
-                                          size="sm"
-                                          onClick={() => handleEdit(category)}
-                                        >
-                                          <Edit className="w-4 h-4" />
-                                        </Button>
-                                      )}
-                                      {canDelete(resource) && (
-                                        <Button
-                                          variant="ghost"
-                                          size="sm"
-                                          onClick={() =>
-                                            handleDelete(
-                                              category.id || category.category_id
-                                            )
-                                          }
-                                        >
-                                          <Trash2 className="w-4 h-4" />
-                                        </Button>
-                                      )}
-                                    </div>
-                                  </TableCell>
-                                </TableRow>
-                              );
+                            const site = siteList.find(
+                              (s: any) => s.id === category.site_id
+                            );
+                            return (
+                              <TableRow
+                                key={category.id || category.category_id}
+                              >
+                                <TableCell className="font-medium">
+                                  {category.category_name}
+                                </TableCell>
+                                <TableCell>
+                                  {site ? site.name : category.site_id || "-"}
+                                </TableCell>
+                                <TableCell>
+                                  <Badge variant="outline">
+                                    {category.auto_assign_role}
+                                  </Badge>
+                                </TableCell>
+                                <TableCell>{category.sla_hours}h</TableCell>
+                                <TableCell>
+                                  <Badge
+                                    variant={
+                                      category.is_active
+                                        ? "default"
+                                        : "secondary"
+                                    }
+                                  >
+                                    {category.is_active ? "Active" : "Inactive"}
+                                  </Badge>
+                                </TableCell>
+                                <TableCell className="text-right">
+                                  <div className="flex justify-end gap-2">
+                                    {canWrite(resource) && (
+                                      <Button
+                                        variant="ghost"
+                                        size="sm"
+                                        onClick={() => handleEdit(category)}
+                                      >
+                                        <Edit className="w-4 h-4" />
+                                      </Button>
+                                    )}
+                                    {canDelete(resource) && (
+                                      <Button
+                                        variant="ghost"
+                                        size="sm"
+                                        onClick={() =>
+                                          handleDelete(
+                                            category.id || category.category_id
+                                          )
+                                        }
+                                      >
+                                        <Trash2 className="w-4 h-4" />
+                                      </Button>
+                                    )}
+                                  </div>
+                                </TableCell>
+                              </TableRow>
+                            );
                             })
                           )}
                         </TableBody>

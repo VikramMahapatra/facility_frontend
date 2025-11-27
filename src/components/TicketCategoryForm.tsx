@@ -266,7 +266,7 @@ export default function TicketCategoryForm({ category, isOpen, onClose, onSave, 
               </div>
             )}
           />
-          <div className="flex items-center space-x-2">
+          <div className="flex items-center space-x-2 pt-4">
             <Controller
               name="is_active"
               control={control}

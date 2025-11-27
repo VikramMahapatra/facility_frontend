@@ -45,6 +45,8 @@ export function RoleForm({ role, isOpen, onClose, onSave, mode }: RoleFormProps)
     },
   });
 
+  const { isSubmitting } = form.formState;
+
   // Reset form when role changes
   useEffect(() => {
     form.reset({
@@ -69,7 +71,7 @@ export function RoleForm({ role, isOpen, onClose, onSave, mode }: RoleFormProps)
           <DialogTitle>{role ? "Edit Role" : "Create New Role"}</DialogTitle>
         </DialogHeader>
         <Form {...form}>
-          <form onSubmit={form.handleSubmit(handleSubmit)} className="space-y-4">
+          <form onSubmit={isSubmitting ? undefined : form.handleSubmit(handleSubmit)} className="space-y-4">
             <FormField
               control={form.control}
               name="name"
@@ -101,14 +103,19 @@ export function RoleForm({ role, isOpen, onClose, onSave, mode }: RoleFormProps)
               )}
             />
             <div className="flex justify-end gap-3">
-              <Button type="button" variant="outline" onClick={() => {
-                form.reset();
-                onClose();
-              }}>
+              <Button 
+                type="button" 
+                variant="outline" 
+                onClick={() => {
+                  form.reset();
+                  onClose();
+                }}
+                disabled={isSubmitting}
+              >
                 Cancel
               </Button>
-              <Button type="submit">
-                {role ? "Update" : "Create"} Role
+              <Button type="submit" disabled={isSubmitting}>
+                {isSubmitting ? "Saving..." : role ? "Update Role" : "Create Role"}
               </Button>
             </div>
           </form>
