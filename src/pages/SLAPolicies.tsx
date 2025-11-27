@@ -127,7 +127,7 @@ export default function SLAPolicies() {
   };
 
   const totalPolicies = overview.total_sla_policies || 0;
-  const totalOrganizations = overview.total_organizations || 0;
+  const activeslapolicies = overview.active_sla_policies || 0;
   const avgResponseTime = overview.average_response_time || 0;
 
   const handleCreate = () => {
@@ -242,9 +242,9 @@ export default function SLAPolicies() {
                 </Card>
                 <Card>
                   <CardContent className="pt-6">
-                    <p className="text-sm font-bold text-muted-foreground mb-3">Organizations</p>
-                    <div className="text-3xl font-bold text-sidebar-primary mb-1">{totalOrganizations}</div>
-                    <p className="text-sm text-blue-600">Total organizations</p>
+                    <p className="text-sm font-bold text-muted-foreground mb-3">Active SLA Policies</p>
+                    <div className="text-3xl font-bold text-sidebar-primary mb-1">{ activeslapolicies }</div>
+                    <p className="text-sm text-blue-600">Total Active SLA Policies</p>
                   </CardContent>
                 </Card>
                 <Card>
