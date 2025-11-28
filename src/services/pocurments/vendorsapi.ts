@@ -49,6 +49,10 @@ class VendorsApiService {
   async getVendorLookup() {
     return await apiService.request(`/vendors/vendor-lookup`);
   }
+
+  async getVendorWorkOrderLookup() {
+    return await apiService.request(`/vendors/vendor-workorder-lookup`);
+  }
 }
 
 export const vendorsApiService = new VendorsApiService();

@@ -74,6 +74,7 @@ const emptyFormData: UserFormValues = {
   space_id: "",
   site_ids: [],
   tenant_type: "individual",
+  staff_role: "",
 };
 
 const accountTypes = [
@@ -180,6 +181,7 @@ export function UserForm({
             space_id: (user as any).space_id || "",
             site_ids: (user as any).site_ids || [],
             tenant_type: (user as any).tenant_type || "individual",
+            staff_role: (user as any).staff_role || "",
           }
         : emptyFormData
     );
@@ -364,12 +366,19 @@ export function UserForm({
 
               {isStaff && (
                 <div className="space-y-2">
-                  <Label htmlFor="staff_roles">Staff Roles</Label>
+                  <Label htmlFor="staff_role">Staff Role</Label>
                   <Input
-                    id="staff_roles"
-                    placeholder="Enter staff role description"
+                    id="staff_role"
+                    {...register("staff_role")}
+                    placeholder="Enter staff role"
                     disabled={isReadOnly}
+                    className={errors.staff_role ? "border-red-500" : ""}
                   />
+                  {errors.staff_role && (
+                    <p className="text-sm text-red-500">
+                      {errors.staff_role.message}
+                    </p>
+                  )}
                 </div>
               )}
             </div>

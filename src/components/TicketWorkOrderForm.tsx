@@ -97,7 +97,7 @@ export function TicketWorkOrderForm({
   }, [workOrder, mode, isOpen, reset]);
 
   const loadVendorLookup = async () => {
-    const lookup = await vendorsApiService.getVendorLookup();
+    const lookup = await vendorsApiService.getVendorWorkOrderLookup();
     if (lookup.success) setVendorList(lookup.data || []);
   };
 

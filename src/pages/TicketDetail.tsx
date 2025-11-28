@@ -213,8 +213,6 @@ export default function TicketDetail() {
           toast.success("Work order created successfully");
           setIsWorkOrderFormOpen(false);
           loadTicket(); // Reload ticket to get updated work orders
-        } else {
-          toast.error("Failed to create work order");
         }
       }
     });
