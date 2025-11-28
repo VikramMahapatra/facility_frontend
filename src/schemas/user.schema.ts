@@ -12,6 +12,7 @@ export const userSchema = z.object({
   space_id: z.string().optional(),
   site_ids: z.array(z.string()).optional(),
   tenant_type: z.string().optional(),
+  staff_role: z.string().optional(),
 }).superRefine((data, ctx) => {
   // Make site_ids required when account_type is "staff"
   if (data.account_type === "staff") {

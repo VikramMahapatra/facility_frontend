@@ -202,8 +202,10 @@ const confirmDelete = async () => {
     }
   }
 
-  if (response.success) {
+  if (response?.success) {
     setIsCreateDialogOpen(false);
+    setSelectedContract(undefined);
+    setFormMode("create");
     toast.success(
       `Contract ${contractData.title || contractData.code || contractData.contract_number || ""} has been ${formMode === "create" ? "created" : "updated"} successfully.`
     );
@@ -403,7 +405,7 @@ const confirmDelete = async () => {
                             </TableCell>
                             <TableCell>
                               <div>
-                                <div className="font-medium">{getVendorName(contract.vendor_id || contract.vendor_name)}</div>
+                                <div className="font-medium">{getVendorName(contract.vendor_name)}</div>
                                 <div className="text-sm text-muted-foreground">
                                   SLA: {contract.terms?.sla?.response_hrs || 'N/A'}h response
                                 </div>
@@ -482,7 +484,11 @@ const confirmDelete = async () => {
       <ContractForm
         contract={selectedContract}
         isOpen={isCreateDialogOpen}
-        onClose={() => setIsCreateDialogOpen(false)}
+        onClose={() => {
+          setIsCreateDialogOpen(false);
+          setSelectedContract(undefined);
+          setFormMode("create");
+        }}
         onSave={handleSave}
         mode={formMode}
       />

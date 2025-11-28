@@ -160,6 +160,9 @@ export function ContractForm({ contract, isOpen, onClose, onSave, mode }: Contra
       ...contract,
       ...data,
     });
+    if (formResponse?.success) {
+      reset(emptyFormData);
+    }
   };
 
   const handleClose = () => {
