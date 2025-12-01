@@ -118,56 +118,104 @@ export default function TicketDetail() {
   }, [ticket]);
 
   const handleAddComment = async () => {
-    if (!newComment.trim() || !ticketId) return;
+  if (!newComment.trim() || !ticketId) return;
 
-    await withLoader(async () => {
-      const response = await ticketsApiService.postComment(
-        ticketId,
-        newComment
-      );
-      if (response.success) {
-        loadTicket();
-        toast.success("Your comment has been posted successfully.");
-        setNewComment("");
-      }
-    });
-  };
+  const response = await ticketsApiService.postComment(
+    ticketId,
+    newComment
+  );
+  
+  if (response.success && response.data) {
+    // Convert the API response to match your comment structure
+    const newCommentObj = {
+      comment_id: response.data.id,
+      user_id: response.data.action_by,
+      user_name: response.data.action_by_name,
+      comment_text: response.data.action_taken,
+      created_at: response.data.created_at,
+      reactions: []
+    };
+
+    // Add the new comment to the ticket's comments array
+    setTicket(prevTicket => ({
+      ...prevTicket,
+      comments: [...(prevTicket?.comments || []), newCommentObj]
+    }));
+
+    toast.success("Your comment has been posted successfully.");
+    setNewComment("");
+  } else {
+    toast.error("Failed to post comment");
+  }
+};
 
   const handleStatusUpdate = async () => {
-    if (!ticketId || !selectedStatus || !user?.id || isStatusUpdateDisabled)
-      return;
+  if (!ticketId || !selectedStatus || !user?.id || isStatusUpdateDisabled)
+    return;
 
-    setIsStatusUpdateDisabled(true);
-    await withLoader(async () => {
-      const response = await ticketsApiService.updateTicketStatus(
-        ticketId,
-        selectedStatus,
-        user.id
-      );
-      if (response.success) {
-        loadTicket();
-        toast.success(`Ticket status changed to ${selectedStatus}`);
-      }
-    });
-    setIsStatusUpdateDisabled(false);
-  };
+  setIsStatusUpdateDisabled(true);
+  
+  const response = await ticketsApiService.updateTicketStatus(
+    ticketId,
+    selectedStatus,
+    user.id
+  );
+  
+  // ✅ Now checking response.success (boolean)
+  if (response.success && response.data) {
+   
+    setTicket(prevTicket => ({
+      ...prevTicket,
+      status: response.data.ticket.status,
+      updated_at: response.data.ticket.updated_at,
+      // Add the workflow log as a new comment
+      comments: [...(prevTicket?.comments || []), {
+        comment_id: response.data.log.workflow_id,
+        user_id: response.data.log.action_by,
+        user_name: response.data.log.action_by_name,
+        comment_text: response.data.log.action_taken,
+        created_at: response.data.log.created_at,
+        reactions: [],
+        is_system_update: true
+      }]
+    }));
+    
+    toast.success(`Ticket status changed to ${selectedStatus}`);
+  } else {
+    toast.error("Failed to update status");
+  }
+  
+  setIsStatusUpdateDisabled(false);
+};
 
   const handleAssignment = async () => {
-    if (!ticketId || !assignedTo || isAssignmentDisabled) return;
+  if (!ticketId || !assignedTo || isAssignmentDisabled) return;
 
-    setIsAssignmentDisabled(true);
-    await withLoader(async () => {
-      const response = await ticketsApiService.assignTicket(
-        ticketId,
-        assignedTo
-      );
-      if (response.success) {
-        loadTicket();
-        toast.success("Ticket has been assigned successfully.");
-      }
-    });
-    setIsAssignmentDisabled(false);
-  };
+  setIsAssignmentDisabled(true);
+  
+  const response = await ticketsApiService.assignTicket(
+    ticketId,
+    assignedTo
+  );
+  
+  // ✅ Now checking response.success (boolean) - NO LOADER
+  if (response.success && response.data) {
+    // Update assignment immediately without loader
+    setTicket(prevTicket => ({
+      ...prevTicket,
+      assigned_to: response.data.assigned_to,
+      assigned_to_name: response.data.assigned_to_name, // Now available
+      updated_at: response.data.updated_at
+      // Note: If you need assigned_to_name, make sure your TicketOut model includes it
+    }));
+    
+    toast.success("Ticket has been assigned successfully.");
+  } else {
+    toast.error("Failed to assign ticket");
+  }
+  
+  setIsAssignmentDisabled(false);
+};
 
   const handleReopen = () => {
     toast.success("The ticket has been reopened for further action.");
