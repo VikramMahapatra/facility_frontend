@@ -171,7 +171,7 @@ export default function TicketDetail() {
 };
 
   const handleStatusUpdate = async () => {
-  if (!ticketId || !selectedStatus || !user?.id || isStatusUpdateDisabled || isTicketClosed)
+  if (!ticketId || !selectedStatus || !user?.id || isStatusUpdateDisabled)
     return;
 
   setIsStatusUpdateDisabled(true);
@@ -182,7 +182,7 @@ export default function TicketDetail() {
     user.id
   );
   
-  // ✅ Now checking response.success (boolean)
+ 
   if (response.success && response.data) {
    
     setTicket(prevTicket => ({
@@ -711,7 +711,6 @@ export default function TicketDetail() {
                             <Select
                               value={selectedStatus || undefined}
                               onValueChange={setSelectedStatus}
-                              disabled={isTicketClosed}
                             >
                               <SelectTrigger>
                                 <SelectValue placeholder="Select status" />
@@ -728,13 +727,13 @@ export default function TicketDetail() {
                               onClick={handleStatusUpdate}
                               className="w-full"
                               size="sm"
-                              disabled={isStatusUpdateDisabled || isTicketClosed}
+                              disabled={isStatusUpdateDisabled}
                             >
                               Update Status
                             </Button>
                           </div>
                           <div className="space-y-2">
-                            <p className="text-sm font-medium">Assign To</p>
+                            <p className="text-sm font-medium">Assign Staff</p>
                             <Select
                               value={assignedTo}
                               onValueChange={(value) => setAssignedTo(value)}
@@ -764,7 +763,7 @@ export default function TicketDetail() {
                             </Button>
                           </div>
                           <div className="space-y-2">
-                            <p className="text-sm font-medium">Assigned To (Vendor)</p>
+                            <p className="text-sm font-medium">Assign Vendor</p>
                             <Select
                               value={assignedToVendor}
                               onValueChange={(value) => setAssignedToVendor(value)}
