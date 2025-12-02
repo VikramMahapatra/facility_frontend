@@ -38,7 +38,13 @@ const emptyFormData: TicketWorkOrderFormValues = {
   ticket_id: "",
   description: "",
   assigned_to: "",
+  vendor_name: "",
   status: "pending",
+  labour_cost: undefined,
+  material_cost: undefined,
+  other_expenses: undefined,
+  estimated_time: undefined,
+  special_instructions: "",
 };
 
 export function TicketWorkOrderForm({
@@ -67,11 +73,18 @@ export function TicketWorkOrderForm({
   const [vendorList, setVendorList] = useState<any[]>([]);
   const [ticketsList, setTicketsList] = useState<any[]>([]);
   const [statusList, setStatusList] = useState<any[]>([]);
+  const [selectedTicketDetails, setSelectedTicketDetails] = useState<any>(null);
+
+  const selectedTicketId = watch("ticket_id");
 
   const loadAll = async () => {
     setFormLoading(true);
 
     await Promise.all([loadVendorLookup(), loadTicketLookup(), loadStatusLookup()]);
+
+    const ticketId = workOrder && mode !== "create" 
+      ? workOrder.ticket_id || "" 
+      : initialTicketId || "";
 
     reset(
       workOrder && mode !== "create"
@@ -79,13 +92,31 @@ export function TicketWorkOrderForm({
             ticket_id: workOrder.ticket_id || "",
             description: workOrder.description || "",
             assigned_to: workOrder.assigned_to || "",
+            vendor_name: workOrder.vendor_name || "",
             status: workOrder.status || "PENDING",
+            labour_cost: workOrder.labour_cost || undefined,
+            material_cost: workOrder.material_cost || undefined,
+            other_expenses: workOrder.other_expenses || undefined,
+            estimated_time: workOrder.estimated_time || undefined,
+            special_instructions: workOrder.special_instructions || "",
           }
         : {
             ...emptyFormData,
             ticket_id: initialTicketId || "",
           }
     );
+
+    // Load ticket details if ticket_id exists (for view/edit mode)
+    if (ticketId) {
+      try {
+        const response = await ticketsApiService.getTicketById(ticketId);
+        if (response.success) {
+          setSelectedTicketDetails(response.data);
+        }
+      } catch (error) {
+        console.error("Failed to load ticket details:", error);
+      }
+    }
 
     setFormLoading(false);
   };
@@ -95,6 +126,25 @@ export function TicketWorkOrderForm({
       loadAll();
     }
   }, [workOrder, mode, isOpen, reset]);
+
+  useEffect(() => {
+    const loadTicketDetails = async () => {
+      if (selectedTicketId) {
+        try {
+          const response = await ticketsApiService.getTicketById(selectedTicketId);
+          if (response.success) {
+            setSelectedTicketDetails(response.data);
+          }
+        } catch (error) {
+          console.error("Failed to load ticket details:", error);
+        }
+      } else {
+        setSelectedTicketDetails(null);
+      }
+    };
+
+    loadTicketDetails();
+  }, [selectedTicketId, mode, isOpen]);
 
   const loadVendorLookup = async () => {
     const lookup = await vendorsApiService.getVendorWorkOrderLookup();
@@ -202,48 +252,123 @@ export function TicketWorkOrderForm({
             />
           </div>
 
-          {/* Row 2: Assigned To */}
-          <div className="space-y-2">
-            <Label htmlFor="assigned_to">Assigned To *</Label>
-            <Controller
-              name="assigned_to"
-              control={control}
-              render={({ field }) => (
-                <Select
-                  value={field.value || "none"}
-                  onValueChange={(value) => field.onChange(value === "none" ? "" : value)}
-                  disabled={isReadOnly}
-                >
-                  <SelectTrigger>
-                    <SelectValue placeholder="Select technician (optional)" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="none">Unassigned</SelectItem>
-                    {vendorList.map((vendor) => (
-                      <SelectItem key={vendor.id} value={vendor.id}>
-                        {vendor.name}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
+          {/* Row 2: Preview (when ticket selected) or Description (when no ticket) */}
+          {selectedTicketId ? (
+            <div className="bg-muted p-4 rounded-lg space-y-2">
+              <h4 className="font-medium text-sm">Assignment Preview:</h4>
+              <div className="text-sm text-muted-foreground space-y-1">
+                <div>
+                  <strong>Assigned to:</strong>{" "}
+                  {selectedTicketDetails?.assigned_to_name || 
+                   selectedTicketDetails?.assigned_to || 
+                   "N/A"}
+                </div>
+                <div>
+                  <strong>Vendor name:</strong>{" "}
+                  {selectedTicketDetails?.vendor_name || 
+                   selectedTicketDetails?.vendor?.name || 
+                   "N/A"}
+                </div>
+              </div>
+            </div>
+          ) : (
+            <div className="space-y-2">
+              <Label htmlFor="description">Description *</Label>
+              <Textarea
+                id="description"
+                {...register("description")}
+                placeholder="Detailed description of the work to be performed..."
+                rows={5}
+                disabled={isReadOnly}
+                className={errors.description ? 'border-red-500' : ''}
+              />
+              {errors.description && (
+                <p className="text-sm text-red-500">{errors.description.message}</p>
               )}
-            />
+            </div>
+          )}
+
+          {/* Row 3: Description (when ticket selected) */}
+          {selectedTicketId && (
+            <div className="space-y-2">
+              <Label htmlFor="description">Description *</Label>
+              <Textarea
+                id="description"
+                {...register("description")}
+                placeholder="Detailed description of the work to be performed..."
+                rows={5}
+                disabled={isReadOnly}
+                className={errors.description ? 'border-red-500' : ''}
+              />
+              {errors.description && (
+                <p className="text-sm text-red-500">{errors.description.message}</p>
+              )}
+            </div>
+          )}
+
+          {/* Row 4: Labour Cost | Material Cost */}
+          <div className="grid grid-cols-2 gap-4">
+            <div className="space-y-2">
+              <Label htmlFor="labour_cost">Labour Cost</Label>
+              <Input
+                id="labour_cost"
+                type="number"
+                step="0.01"
+                {...register("labour_cost", { setValueAs: (v) => (v === "" ? undefined : Number(v)) })}
+                placeholder="0.00"
+                disabled={isReadOnly}
+              />
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="material_cost">Material Cost</Label>
+              <Input
+                id="material_cost"
+                type="number"
+                step="0.01"
+                {...register("material_cost", { setValueAs: (v) => (v === "" ? undefined : Number(v)) })}
+                placeholder="0.00"
+                disabled={isReadOnly}
+              />
+            </div>
           </div>
 
-          {/* Row 3: Description */}
+          {/* Row 5: Other Expenses | Estimated Time */}
+          <div className="grid grid-cols-2 gap-4">
+            <div className="space-y-2">
+              <Label htmlFor="other_expenses">Other Expenses</Label>
+              <Input
+                id="other_expenses"
+                type="number"
+                step="0.01"
+                {...register("other_expenses", { setValueAs: (v) => (v === "" ? undefined : Number(v)) })}
+                placeholder="0.00"
+                disabled={isReadOnly}
+              />
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="estimated_time">Estimated Time (minutes)</Label>
+              <Input
+                id="estimated_time"
+                type="number"
+                min="0"
+                step="1"
+                {...register("estimated_time", { setValueAs: (v) => (v === "" ? undefined : Number(v)) })}
+                placeholder="0"
+                disabled={isReadOnly}
+              />
+            </div>
+          </div>
+
+          {/* Row 6: Special Instructions */}
           <div className="space-y-2">
-            <Label htmlFor="description">Description *</Label>
+            <Label htmlFor="special_instructions">Special Instructions</Label>
             <Textarea
-              id="description"
-              {...register("description")}
-              placeholder="Detailed description of the work to be performed..."
-              rows={5}
+              id="special_instructions"
+              {...register("special_instructions")}
+              placeholder="Enter any special instructions or notes..."
+              rows={3}
               disabled={isReadOnly}
-              className={errors.description ? 'border-red-500' : ''}
             />
-            {errors.description && (
-              <p className="text-sm text-red-500">{errors.description.message}</p>
-            )}
           </div>
 
               <DialogFooter>

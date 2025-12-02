@@ -60,6 +60,7 @@ export default function TicketWorkload() {
   const [assignedTicketsPageSize] = useState(7);
   const [unassignedTicketsPage, setUnassignedTicketsPage] = useState(1);
   const [unassignedTicketsPageSize] = useState(6);
+  const [isAssigning, setIsAssigning] = useState(false);
   useEffect(() => {
     loadSiteLookup();
   }, []);
@@ -174,6 +175,7 @@ export default function TicketWorkload() {
       return;
     }
 
+    setIsAssigning(true);
     const response = await withLoader(async () => {
       return await ticketsApiService.assignTicket(
         selectedTicket.id,
@@ -188,9 +190,11 @@ export default function TicketWorkload() {
       setIsReassignOpen(false);
       setNewAssignee("");
       setSelectedTicket(null);
+      setIsAssigning(false);
       loadWorkloadData();
     } else {
       toast.error(response?.message || "Failed to reassign ticket");
+      setIsAssigning(false);
     }
   };
 
@@ -514,8 +518,9 @@ export default function TicketWorkload() {
                                       ticket.ticket_no
                                     )
                                   }
+                                  disabled={isAssigning || (selectedTicket?.id === (ticket.id || ticket.ticket_id))}
                                 >
-                                  Assign
+                                  {isAssigning && selectedTicket?.id === (ticket.id || ticket.ticket_id) ? "Assigning..." : "Assign"}
                                 </Button>
                               </TableCell>
                             </TableRow>
@@ -584,15 +589,21 @@ export default function TicketWorkload() {
             <div className="flex justify-end gap-2">
               <Button
                 variant="outline"
-                onClick={() => setIsReassignOpen(false)}
+                onClick={() => {
+                  setIsReassignOpen(false);
+                  setIsAssigning(false);
+                  setNewAssignee("");
+                  setSelectedTicket(null);
+                }}
+                disabled={isAssigning}
               >
                 Cancel
               </Button>
               <Button
                 onClick={handleReassignSubmit}
-                disabled={loadingEmployees}
+                disabled={loadingEmployees || isAssigning}
               >
-                Reassign
+                {isAssigning ? "Assigning..." : "Assign"}
               </Button>
             </div>
           </div>

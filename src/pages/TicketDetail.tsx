@@ -32,6 +32,7 @@ import {
 import { toast } from "sonner";
 import { ticketsApiService } from "@/services/ticketing_service/ticketsapi";
 import { ticketWorkOrderApiService } from "@/services/ticketing_service/ticketworkorderapi";
+import { vendorsApiService } from "@/services/pocurments/vendorsapi";
 import { useAuth } from "@/context/AuthContext";
 import { useLoader } from "@/context/LoaderContext";
 import LoaderOverlay from "@/components/LoaderOverlay";
@@ -46,6 +47,7 @@ export default function TicketDetail() {
   const [ticket, setTicket] = useState<any>(null);
   const [statusList, setStatusList] = useState<any[]>([]);
   const [employeeList, setEmployeeList] = useState<any[]>([]);
+  const [vendorList, setVendorList] = useState<any[]>([]);
   const [attachments, setAttachments] = useState<any[]>([]);
 
   const workflows = ticket?.logs || ticket?.workflows || [];
@@ -68,6 +70,7 @@ export default function TicketDetail() {
         );
         if (ticketId) {
           loadEmployeesForTicket();
+          loadVendorsForTicket();
           loadNextStatuses();
         }
       } else {
@@ -90,6 +93,20 @@ export default function TicketDetail() {
     });
   };
 
+  const loadVendorsForTicket = async () => {
+    if (!ticketId) return;
+    await withLoader(async () => {
+      const response = await vendorsApiService.getVendorLookup();
+      if (response.success) {
+        setVendorList(
+          Array.isArray(response.data)
+            ? response.data
+            : response.data?.vendors || []
+        );
+      }
+    });
+  };
+
   const loadNextStatuses = async () => {
     if (!ticketId) return;
     await withLoader(async () => {
@@ -103,10 +120,12 @@ export default function TicketDetail() {
   const [newComment, setNewComment] = useState("");
   const [selectedStatus, setSelectedStatus] = useState<string>(ticket?.status);
   const [assignedTo, setAssignedTo] = useState<string>("");
+  const [assignedToVendor, setAssignedToVendor] = useState<string>("");
   const [rating, setRating] = useState(0);
   const [feedback, setFeedback] = useState("");
   const [isStatusUpdateDisabled, setIsStatusUpdateDisabled] = useState(false);
   const [isAssignmentDisabled, setIsAssignmentDisabled] = useState(false);
+  const [isVendorAssignmentDisabled, setIsVendorAssignmentDisabled] = useState(false);
   const [isWorkOrderFormOpen, setIsWorkOrderFormOpen] = useState(false);
   const [selectedWorkOrder, setSelectedWorkOrder] = useState<any>(null);
 
@@ -114,59 +133,125 @@ export default function TicketDetail() {
     if (ticket) {
       setSelectedStatus(ticket?.status);
       setAssignedTo(ticket?.assigned_to);
+      setAssignedToVendor(ticket?.vendor_id || ticket?.assigned_to_vendor || "");
     }
   }, [ticket]);
 
   const handleAddComment = async () => {
-    if (!newComment.trim() || !ticketId) return;
+  if (!newComment.trim() || !ticketId) return;
 
-    await withLoader(async () => {
-      const response = await ticketsApiService.postComment(
-        ticketId,
-        newComment
-      );
-      if (response.success) {
-        loadTicket();
-        toast.success("Your comment has been posted successfully.");
-        setNewComment("");
-      }
-    });
-  };
+  const response = await ticketsApiService.postComment(
+    ticketId,
+    newComment
+  );
+  
+  if (response.success && response.data) {
+    // Convert the API response to match your comment structure
+    const newCommentObj = {
+      comment_id: response.data.id,
+      user_id: response.data.action_by,
+      user_name: response.data.action_by_name,
+      comment_text: response.data.action_taken,
+      created_at: response.data.created_at,
+      reactions: []
+    };
+
+    // Add the new comment to the ticket's comments array
+    setTicket(prevTicket => ({
+      ...prevTicket,
+      comments: [...(prevTicket?.comments || []), newCommentObj]
+    }));
+
+    toast.success("Your comment has been posted successfully.");
+    setNewComment("");
+  } else {
+    toast.error("Failed to post comment");
+  }
+};
 
   const handleStatusUpdate = async () => {
-    if (!ticketId || !selectedStatus || !user?.id || isStatusUpdateDisabled)
-      return;
+  if (!ticketId || !selectedStatus || !user?.id || isStatusUpdateDisabled)
+    return;
 
-    setIsStatusUpdateDisabled(true);
-    await withLoader(async () => {
-      const response = await ticketsApiService.updateTicketStatus(
-        ticketId,
-        selectedStatus,
-        user.id
-      );
-      if (response.success) {
-        loadTicket();
-        toast.success(`Ticket status changed to ${selectedStatus}`);
-      }
-    });
-    setIsStatusUpdateDisabled(false);
-  };
+  setIsStatusUpdateDisabled(true);
+  
+  const response = await ticketsApiService.updateTicketStatus(
+    ticketId,
+    selectedStatus,
+    user.id
+  );
+  
+  // ✅ Now checking response.success (boolean)
+  if (response.success && response.data) {
+   
+    setTicket(prevTicket => ({
+      ...prevTicket,
+      status: response.data.ticket.status,
+      updated_at: response.data.ticket.updated_at,
+      // Add the workflow log as a new comment
+      comments: [...(prevTicket?.comments || []), {
+        comment_id: response.data.log.workflow_id,
+        user_id: response.data.log.action_by,
+        user_name: response.data.log.action_by_name,
+        comment_text: response.data.log.action_taken,
+        created_at: response.data.log.created_at,
+        reactions: [],
+        is_system_update: true
+      }]
+    }));
+    
+    toast.success(`Ticket status changed to ${selectedStatus}`);
+  } else {
+    toast.error("Failed to update status");
+  }
+  
+  setIsStatusUpdateDisabled(false);
+};
 
   const handleAssignment = async () => {
-    if (!ticketId || !assignedTo || isAssignmentDisabled) return;
+  if (!ticketId || !assignedTo || isAssignmentDisabled) return;
 
-    setIsAssignmentDisabled(true);
+  setIsAssignmentDisabled(true);
+  
+  const response = await ticketsApiService.assignTicket(
+    ticketId,
+    assignedTo
+  );
+  
+  // ✅ Now checking response.success (boolean) - NO LOADER
+  if (response.success && response.data) {
+    // Update assignment immediately without loader
+    setTicket(prevTicket => ({
+      ...prevTicket,
+      assigned_to: response.data.assigned_to,
+      assigned_to_name: response.data.assigned_to_name, // Now available
+      updated_at: response.data.updated_at
+      // Note: If you need assigned_to_name, make sure your TicketOut model includes it
+    }));
+    
+    toast.success("Ticket has been assigned successfully.");
+  } else {
+    toast.error("Failed to assign ticket");
+  }
+  
+  setIsAssignmentDisabled(false);
+};
+
+  const handleVendorAssignment = async () => {
+    if (!ticketId || !assignedToVendor || isVendorAssignmentDisabled) return;
+
+    setIsVendorAssignmentDisabled(true);
     await withLoader(async () => {
-      const response = await ticketsApiService.assignTicket(
+      const response = await ticketsApiService.assignVendor(
         ticketId,
-        assignedTo
+        assignedToVendor
       );
       if (response.success) {
         loadTicket();
-        toast.success("Ticket has been assigned successfully.");
+        toast.success("Vendor has been assigned successfully.");
       }
     });
-    setIsAssignmentDisabled(false);
+    setIsVendorAssignmentDisabled(false);
   };
 
   const handleReopen = () => {
@@ -668,6 +753,35 @@ export default function TicketDetail() {
                               disabled={isAssignmentDisabled}
                             >
                               Assign Ticket
+                            </Button>
+                          </div>
+                          <div className="space-y-2">
+                            <p className="text-sm font-medium">Assigned To (Vendor)</p>
+                            <Select
+                              value={assignedToVendor}
+                              onValueChange={(value) => setAssignedToVendor(value)}
+                            >
+                              <SelectTrigger>
+                                <SelectValue placeholder="Select vendor" />
+                              </SelectTrigger>
+                              <SelectContent>
+                                {vendorList.map((vendor: any) => (
+                                  <SelectItem
+                                    key={vendor.id || vendor.vendor_id}
+                                    value={vendor.id || vendor.vendor_id}
+                                  >
+                                    {vendor.name || vendor.vendor_name}
+                                  </SelectItem>
+                                ))}
+                              </SelectContent>
+                            </Select>
+                            <Button
+                              onClick={handleVendorAssignment}
+                              className="w-full"
+                              size="sm"
+                              disabled={isVendorAssignmentDisabled}
+                            >
+                              Assign Vendor
                             </Button>
                           </div>
                           {ticket?.status === "CLOSED" && (
