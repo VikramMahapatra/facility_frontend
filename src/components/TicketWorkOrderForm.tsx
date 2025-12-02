@@ -43,7 +43,7 @@ const emptyFormData: TicketWorkOrderFormValues = {
   labour_cost: undefined,
   material_cost: undefined,
   other_expenses: undefined,
-  estimated_time: undefined,
+  estimated_time: 0,
   special_instructions: "",
 };
 
@@ -258,15 +258,15 @@ export function TicketWorkOrderForm({
               <h4 className="font-medium text-sm">Assignment Preview:</h4>
               <div className="text-sm text-muted-foreground space-y-1">
                 <div>
-                  <strong>Assigned to:</strong>{" "}
-                  {selectedTicketDetails?.assigned_to_name || 
-                   selectedTicketDetails?.assigned_to || 
+                  <strong>Staff:</strong>{" "}
+                  {selectedTicketDetails?.assigned_to_name ||
+                   selectedTicketDetails?.assigned_to ||
                    "N/A"}
                 </div>
                 <div>
-                  <strong>Vendor name:</strong>{" "}
-                  {selectedTicketDetails?.vendor_name || 
-                   selectedTicketDetails?.vendor?.name || 
+                  <strong>Vendor:</strong>{" "}
+                  {selectedTicketDetails?.vendor_name ||
+                   selectedTicketDetails?.vendor?.name ||
                    "N/A"}
                 </div>
               </div>
@@ -346,16 +346,24 @@ export function TicketWorkOrderForm({
               />
             </div>
             <div className="space-y-2">
-              <Label htmlFor="estimated_time">Estimated Time (minutes)</Label>
+              <Label htmlFor="estimated_time">Estimated Time (minutes) *</Label>
               <Input
                 id="estimated_time"
                 type="number"
                 min="0"
                 step="1"
-                {...register("estimated_time", { setValueAs: (v) => (v === "" ? undefined : Number(v)) })}
+                {...register("estimated_time", {
+                  setValueAs: (v) => (v === "" ? undefined : Number(v)),
+                })}
                 placeholder="0"
                 disabled={isReadOnly}
+                className={errors.estimated_time ? "border-red-500" : ""}
               />
+              {errors.estimated_time && (
+                <p className="text-sm text-red-500">
+                  {errors.estimated_time.message}
+                </p>
+              )}
             </div>
           </div>
 

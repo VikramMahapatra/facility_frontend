@@ -9,7 +9,14 @@ export const ticketWorkOrderSchema = z.object({
   labour_cost: z.number().optional(),
   material_cost: z.number().optional(),
   other_expenses: z.number().optional(),
-  estimated_time: z.number().optional(),
+  estimated_time: z
+    .coerce
+    .number({
+      required_error: "Estimated time is required",
+      invalid_type_error: "Estimated time is required",
+    })
+    .min(1, "Estimated time must be at least 1 minute")
+    .int("Estimated time must be a whole number"),
   special_instructions: z.string().optional(),
 });
 
