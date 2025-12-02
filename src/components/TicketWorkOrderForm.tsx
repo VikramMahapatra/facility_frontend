@@ -313,6 +313,7 @@ export function TicketWorkOrderForm({
               <Input
                 id="labour_cost"
                 type="number"
+                min="0"
                 step="0.01"
                 {...register("labour_cost", { setValueAs: (v) => (v === "" ? undefined : Number(v)) })}
                 placeholder="0.00"
@@ -324,6 +325,7 @@ export function TicketWorkOrderForm({
               <Input
                 id="material_cost"
                 type="number"
+                min="0"
                 step="0.01"
                 {...register("material_cost", { setValueAs: (v) => (v === "" ? undefined : Number(v)) })}
                 placeholder="0.00"
@@ -339,6 +341,7 @@ export function TicketWorkOrderForm({
               <Input
                 id="other_expenses"
                 type="number"
+                min="0"
                 step="0.01"
                 {...register("other_expenses", { setValueAs: (v) => (v === "" ? undefined : Number(v)) })}
                 placeholder="0.00"
