@@ -39,6 +39,7 @@ const emptyFormData: TicketFormValues = {
   site_id: "",
   space_id: "",
   tenant_id: "",
+  preferred_date: "",
   preferred_time: "",
   assigned_to: "",
   vendor_id: "",
@@ -69,11 +70,16 @@ export default function TicketForm({
           site_id: initialData.site_id || "",
           space_id: initialData.space_id || "",
           tenant_id: initialData.tenant_id || "",
+          preferred_date:
+            initialData.preferred_date || new Date().toISOString().split("T")[0],
           preferred_time: initialData.preferred_time || "",
           assigned_to: initialData.assigned_to || "",
           vendor_id: initialData.vendor_id || "",
         }
-      : emptyFormData,
+      : {
+          ...emptyFormData,
+          preferred_date: new Date().toISOString().split("T")[0],
+        },
     mode: "onChange",
     reValidateMode: "onChange",
   });
@@ -142,6 +148,8 @@ export default function TicketForm({
         site_id: initialData.site_id || "",
         space_id: initialData.space_id || "",
         tenant_id: initialData.tenant_id || "",
+        preferred_date:
+          initialData.preferred_date || new Date().toISOString().split("T")[0],
         preferred_time: initialData.preferred_time || "",
         assigned_to: initialData.assigned_to || "",
         vendor_id: initialData.vendor_id || "",
@@ -154,7 +162,10 @@ export default function TicketForm({
         }
       }
     } else {
-      reset(emptyFormData);
+      reset({
+        ...emptyFormData,
+        preferred_date: new Date().toISOString().split("T")[0],
+      });
     }
   }, [initialData, reset]);
 
@@ -221,6 +232,9 @@ export default function TicketForm({
     ticketFormData.append("space_id", data.space_id);
     if (data.tenant_id) {
       ticketFormData.append("tenant_id", data.tenant_id);
+    }
+    if (data.preferred_date) {
+      ticketFormData.append("preferred_date", data.preferred_date);
     }
     if (data.preferred_time) {
       ticketFormData.append("preferred_time", data.preferred_time);
@@ -438,28 +452,46 @@ export default function TicketForm({
         />
       </div>
 
-      {/* 5. Preferred time */}
-      <Controller
-        name="preferred_time"
-        control={control}
-        render={({ field }) => (
-          <div className="space-y-2">
-            <Label htmlFor="preferred_time">Preferred Time</Label>
-            <Select value={field.value || ""} onValueChange={field.onChange}>
-              <SelectTrigger>
-                <SelectValue placeholder="Select preferred time" />
-              </SelectTrigger>
-              <SelectContent>
-                {preferredTimeSlots.map((slot) => (
-                  <SelectItem key={slot.value} value={slot.value}>
-                    {slot.label}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-          </div>
-        )}
-      />
+      {/* 5. Preferred date & time */}
+      <div className="grid grid-cols-2 gap-4">
+        <div className="space-y-2">
+          <Label htmlFor="preferred_date">Preferred Date *</Label>
+          <Input
+            id="preferred_date"
+            type="date"
+            min={new Date().toISOString().split("T")[0]}
+            {...register("preferred_date")}
+            className={errors.preferred_date ? "border-red-500" : ""}
+          />
+          {errors.preferred_date && (
+            <p className="text-sm text-red-500">
+              {errors.preferred_date.message}
+            </p>
+          )}
+        </div>
+
+        <Controller
+          name="preferred_time"
+          control={control}
+          render={({ field }) => (
+            <div className="space-y-2">
+              <Label htmlFor="preferred_time">Preferred Time</Label>
+              <Select value={field.value || ""} onValueChange={field.onChange}>
+                <SelectTrigger>
+                  <SelectValue placeholder="Select preferred time" />
+                </SelectTrigger>
+                <SelectContent>
+                  {preferredTimeSlots.map((slot) => (
+                    <SelectItem key={slot.value} value={slot.value}>
+                      {slot.label}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+          )}
+        />
+      </div>
 
       {/* 6. Assigned To (Staff) and Vendor */}
       <div className="grid grid-cols-2 gap-4">
@@ -468,7 +500,7 @@ export default function TicketForm({
           control={control}
           render={({ field }) => (
             <div className="space-y-2">
-              <Label htmlFor="assigned_to">Assigned To (Staff)</Label>
+              <Label htmlFor="assigned_to">Assign To (Staff)</Label>
               <Select value={field.value || ""} onValueChange={field.onChange}>
                 <SelectTrigger>
                   <SelectValue placeholder=" Select staff " />
