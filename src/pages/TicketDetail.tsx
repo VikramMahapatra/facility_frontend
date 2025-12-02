@@ -128,6 +128,7 @@ export default function TicketDetail() {
   const [isVendorAssignmentDisabled, setIsVendorAssignmentDisabled] = useState(false);
   const [isWorkOrderFormOpen, setIsWorkOrderFormOpen] = useState(false);
   const [selectedWorkOrder, setSelectedWorkOrder] = useState<any>(null);
+  const isTicketClosed = (ticket?.status || "").toUpperCase() === "CLOSED";
 
   useEffect(() => {
     if (ticket) {
@@ -138,7 +139,7 @@ export default function TicketDetail() {
   }, [ticket]);
 
   const handleAddComment = async () => {
-  if (!newComment.trim() || !ticketId) return;
+  if (!newComment.trim() || !ticketId || isTicketClosed) return;
 
   const response = await ticketsApiService.postComment(
     ticketId,
@@ -170,7 +171,7 @@ export default function TicketDetail() {
 };
 
   const handleStatusUpdate = async () => {
-  if (!ticketId || !selectedStatus || !user?.id || isStatusUpdateDisabled)
+  if (!ticketId || !selectedStatus || !user?.id || isStatusUpdateDisabled || isTicketClosed)
     return;
 
   setIsStatusUpdateDisabled(true);
@@ -209,7 +210,7 @@ export default function TicketDetail() {
 };
 
   const handleAssignment = async () => {
-  if (!ticketId || !assignedTo || isAssignmentDisabled) return;
+  if (!ticketId || !assignedTo || isAssignmentDisabled || isTicketClosed) return;
 
   setIsAssignmentDisabled(true);
   
@@ -238,7 +239,7 @@ export default function TicketDetail() {
 };
 
   const handleVendorAssignment = async () => {
-    if (!ticketId || !assignedToVendor || isVendorAssignmentDisabled) return;
+    if (!ticketId || !assignedToVendor || isVendorAssignmentDisabled || isTicketClosed) return;
 
     setIsVendorAssignmentDisabled(true);
     await withLoader(async () => {
@@ -269,6 +270,7 @@ export default function TicketDetail() {
   };
 
   const handleCreateWorkOrder = () => {
+    if (isTicketClosed) return;
     setSelectedWorkOrder(null);
     setIsWorkOrderFormOpen(true);
   };
@@ -583,8 +585,12 @@ export default function TicketDetail() {
                               value={newComment}
                               onChange={(e) => setNewComment(e.target.value)}
                               rows={3}
+                              disabled={isTicketClosed}
                             />
-                            <Button onClick={handleAddComment}>
+                            <Button
+                              onClick={handleAddComment}
+                              disabled={isTicketClosed || !newComment.trim()}
+                            >
                               Post Comment
                             </Button>
                           </div>
@@ -705,6 +711,7 @@ export default function TicketDetail() {
                             <Select
                               value={selectedStatus || undefined}
                               onValueChange={setSelectedStatus}
+                              disabled={isTicketClosed}
                             >
                               <SelectTrigger>
                                 <SelectValue placeholder="Select status" />
@@ -721,7 +728,7 @@ export default function TicketDetail() {
                               onClick={handleStatusUpdate}
                               className="w-full"
                               size="sm"
-                              disabled={isStatusUpdateDisabled}
+                              disabled={isStatusUpdateDisabled || isTicketClosed}
                             >
                               Update Status
                             </Button>
@@ -731,6 +738,7 @@ export default function TicketDetail() {
                             <Select
                               value={assignedTo}
                               onValueChange={(value) => setAssignedTo(value)}
+                              disabled={isTicketClosed}
                             >
                               <SelectTrigger>
                                 <SelectValue placeholder="Select person" />
@@ -750,7 +758,7 @@ export default function TicketDetail() {
                               onClick={handleAssignment}
                               className="w-full"
                               size="sm"
-                              disabled={isAssignmentDisabled}
+                              disabled={isAssignmentDisabled || isTicketClosed}
                             >
                               Assign Ticket
                             </Button>
@@ -760,6 +768,7 @@ export default function TicketDetail() {
                             <Select
                               value={assignedToVendor}
                               onValueChange={(value) => setAssignedToVendor(value)}
+                              disabled={isTicketClosed}
                             >
                               <SelectTrigger>
                                 <SelectValue placeholder="Select vendor" />
@@ -779,7 +788,7 @@ export default function TicketDetail() {
                               onClick={handleVendorAssignment}
                               className="w-full"
                               size="sm"
-                              disabled={isVendorAssignmentDisabled}
+                              disabled={isVendorAssignmentDisabled || isTicketClosed}
                             >
                               Assign Vendor
                             </Button>
@@ -839,6 +848,7 @@ export default function TicketDetail() {
                             size="sm"
                             className="w-full"
                             onClick={handleCreateWorkOrder}
+                            disabled={isTicketClosed}
                           >
                             Link Work Order
                           </Button>

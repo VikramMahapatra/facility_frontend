@@ -121,6 +121,8 @@ interface TicketWorkOrder {
   description: string;
   assigned_to: string;
   assigned_to_name?: string;
+  staff_name?: string;
+  vendor_name?: string;
   site_name?: string;
   status: string;
   created_at: string;
@@ -473,7 +475,8 @@ export default function TicketWorkOrders() {
                             <TableRow>
                               <TableHead>Ticket ID</TableHead>
                               <TableHead>Description</TableHead>
-                              <TableHead>Assigned To</TableHead>
+                              <TableHead>Assigned To (Staff)</TableHead>
+                              <TableHead>Assigned To (Vendor)</TableHead>
                               <TableHead>Status</TableHead>
                               <TableHead>Created At</TableHead>
                               <TableHead>Actions</TableHead>
@@ -501,7 +504,17 @@ export default function TicketWorkOrders() {
                                   <TableCell>
                                     <div className="flex items-center">
                                       <User className="w-4 h-4 mr-2" />
-                                      {workOrder.assigned_to_name || "Unassigned"}
+                                      {/* Currently no staff field coming from backend for ticket work orders */}
+                                      {workOrder.staff_name || "Unassigned"}
+                                    </div>
+                                  </TableCell>
+                                  <TableCell>
+                                    <div className="flex items-center">
+                                      <User className="w-4 h-4 mr-2" />
+                                      {/* Backend sends vendors in assigned_to_name for now */}
+                                      {workOrder.assigned_to_name ||
+                                        workOrder.vendor_name ||
+                                        "Unassigned"}
                                     </div>
                                   </TableCell>
                                   <TableCell>
