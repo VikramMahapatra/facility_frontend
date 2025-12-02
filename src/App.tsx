@@ -59,6 +59,7 @@ import Tickets from "./pages/Tickets";
 import ApprovalRules from "./pages/ApprovalRules";
 import SLAPolicies from "./pages/SLAPolicies";
 import TicketWorkOrders from "./pages/TicketWorkOrders";
+import TicketPMTemplates from "./pages/TicketPMTemplates";
 import { GoogleOAuthProvider } from "@react-oauth/google";
 import ProtectedLayout from "./components/ProtectedLayout";
 import ProtectedRoute from "./components/ProtectedRoute";
@@ -133,6 +134,7 @@ const App = () => {
                   <Route path="/sla-policies" element={<SLAPolicies />} />
                   <Route path="/ticket-work-orders" element={<TicketWorkOrders />} />
                   <Route path="/ticket-workload" element={<TicketWorkload />} />
+                  <Route path="/ticket-pm-templates" element={<TicketPMTemplates />} />
                   <Route path="/approval-rules" element={<ApprovalRules />} />
                 </Route>
                 {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}

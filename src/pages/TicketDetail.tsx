@@ -32,6 +32,7 @@ import {
 import { toast } from "sonner";
 import { ticketsApiService } from "@/services/ticketing_service/ticketsapi";
 import { ticketWorkOrderApiService } from "@/services/ticketing_service/ticketworkorderapi";
+import { vendorsApiService } from "@/services/pocurments/vendorsapi";
 import { useAuth } from "@/context/AuthContext";
 import { useLoader } from "@/context/LoaderContext";
 import LoaderOverlay from "@/components/LoaderOverlay";
@@ -46,6 +47,7 @@ export default function TicketDetail() {
   const [ticket, setTicket] = useState<any>(null);
   const [statusList, setStatusList] = useState<any[]>([]);
   const [employeeList, setEmployeeList] = useState<any[]>([]);
+  const [vendorList, setVendorList] = useState<any[]>([]);
   const [attachments, setAttachments] = useState<any[]>([]);
 
   const workflows = ticket?.logs || ticket?.workflows || [];
@@ -68,6 +70,7 @@ export default function TicketDetail() {
         );
         if (ticketId) {
           loadEmployeesForTicket();
+          loadVendorsForTicket();
           loadNextStatuses();
         }
       } else {
@@ -90,6 +93,20 @@ export default function TicketDetail() {
     });
   };
 
+  const loadVendorsForTicket = async () => {
+    if (!ticketId) return;
+    await withLoader(async () => {
+      const response = await vendorsApiService.getVendorLookup();
+      if (response.success) {
+        setVendorList(
+          Array.isArray(response.data)
+            ? response.data
+            : response.data?.vendors || []
+        );
+      }
+    });
+  };
+
   const loadNextStatuses = async () => {
     if (!ticketId) return;
     await withLoader(async () => {
@@ -103,10 +120,12 @@ export default function TicketDetail() {
   const [newComment, setNewComment] = useState("");
   const [selectedStatus, setSelectedStatus] = useState<string>(ticket?.status);
   const [assignedTo, setAssignedTo] = useState<string>("");
+  const [assignedToVendor, setAssignedToVendor] = useState<string>("");
   const [rating, setRating] = useState(0);
   const [feedback, setFeedback] = useState("");
   const [isStatusUpdateDisabled, setIsStatusUpdateDisabled] = useState(false);
   const [isAssignmentDisabled, setIsAssignmentDisabled] = useState(false);
+  const [isVendorAssignmentDisabled, setIsVendorAssignmentDisabled] = useState(false);
   const [isWorkOrderFormOpen, setIsWorkOrderFormOpen] = useState(false);
   const [selectedWorkOrder, setSelectedWorkOrder] = useState<any>(null);
 
@@ -114,6 +133,7 @@ export default function TicketDetail() {
     if (ticket) {
       setSelectedStatus(ticket?.status);
       setAssignedTo(ticket?.assigned_to);
+      setAssignedToVendor(ticket?.vendor_id || ticket?.assigned_to_vendor || "");
     }
   }, [ticket]);
 
@@ -167,6 +187,23 @@ export default function TicketDetail() {
       }
     });
     setIsAssignmentDisabled(false);
+  };
+
+  const handleVendorAssignment = async () => {
+    if (!ticketId || !assignedToVendor || isVendorAssignmentDisabled) return;
+
+    setIsVendorAssignmentDisabled(true);
+    await withLoader(async () => {
+      const response = await ticketsApiService.assignVendor(
+        ticketId,
+        assignedToVendor
+      );
+      if (response.success) {
+        loadTicket();
+        toast.success("Vendor has been assigned successfully.");
+      }
+    });
+    setIsVendorAssignmentDisabled(false);
   };
 
   const handleReopen = () => {
@@ -668,6 +705,35 @@ export default function TicketDetail() {
                               disabled={isAssignmentDisabled}
                             >
                               Assign Ticket
+                            </Button>
+                          </div>
+                          <div className="space-y-2">
+                            <p className="text-sm font-medium">Assigned To (Vendor)</p>
+                            <Select
+                              value={assignedToVendor}
+                              onValueChange={(value) => setAssignedToVendor(value)}
+                            >
+                              <SelectTrigger>
+                                <SelectValue placeholder="Select vendor" />
+                              </SelectTrigger>
+                              <SelectContent>
+                                {vendorList.map((vendor: any) => (
+                                  <SelectItem
+                                    key={vendor.id || vendor.vendor_id}
+                                    value={vendor.id || vendor.vendor_id}
+                                  >
+                                    {vendor.name || vendor.vendor_name}
+                                  </SelectItem>
+                                ))}
+                              </SelectContent>
+                            </Select>
+                            <Button
+                              onClick={handleVendorAssignment}
+                              className="w-full"
+                              size="sm"
+                              disabled={isVendorAssignmentDisabled}
+                            >
+                              Assign Vendor
                             </Button>
                           </div>
                           {ticket?.status === "CLOSED" && (

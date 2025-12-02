@@ -82,6 +82,10 @@ export function TicketWorkOrderForm({
 
     await Promise.all([loadVendorLookup(), loadTicketLookup(), loadStatusLookup()]);
 
+    const ticketId = workOrder && mode !== "create" 
+      ? workOrder.ticket_id || "" 
+      : initialTicketId || "";
+
     reset(
       workOrder && mode !== "create"
         ? {
@@ -102,6 +106,18 @@ export function TicketWorkOrderForm({
           }
     );
 
+    // Load ticket details if ticket_id exists (for view/edit mode)
+    if (ticketId) {
+      try {
+        const response = await ticketsApiService.getTicketById(ticketId);
+        if (response.success) {
+          setSelectedTicketDetails(response.data);
+        }
+      } catch (error) {
+        console.error("Failed to load ticket details:", error);
+      }
+    }
+
     setFormLoading(false);
   };
 
@@ -113,7 +129,7 @@ export function TicketWorkOrderForm({
 
   useEffect(() => {
     const loadTicketDetails = async () => {
-      if (selectedTicketId && mode === "create") {
+      if (selectedTicketId) {
         try {
           const response = await ticketsApiService.getTicketById(selectedTicketId);
           if (response.success) {
@@ -128,7 +144,7 @@ export function TicketWorkOrderForm({
     };
 
     loadTicketDetails();
-  }, [selectedTicketId, mode]);
+  }, [selectedTicketId, mode, isOpen]);
 
   const loadVendorLookup = async () => {
     const lookup = await vendorsApiService.getVendorWorkOrderLookup();
