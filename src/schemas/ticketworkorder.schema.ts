@@ -6,9 +6,18 @@ export const ticketWorkOrderSchema = z.object({
   assigned_to: z.string().optional(),
   vendor_name: z.string().optional(),
   status: z.string().min(1, "Status is required"),
-  labour_cost: z.number().optional(),
-  material_cost: z.number().optional(),
-  other_expenses: z.number().optional(),
+  labour_cost: z
+    .number()
+    .min(0, "Labour cost cannot be negative")
+    .optional(),
+  material_cost: z
+    .number()
+    .min(0, "Material cost cannot be negative")
+    .optional(),
+  other_expenses: z
+    .number()
+    .min(0, "Other expenses cannot be negative")
+    .optional(),
   estimated_time: z
     .coerce
     .number({

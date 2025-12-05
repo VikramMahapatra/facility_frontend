@@ -125,7 +125,8 @@ export default function TicketDetail() {
   const [feedback, setFeedback] = useState("");
   const [isStatusUpdateDisabled, setIsStatusUpdateDisabled] = useState(false);
   const [isAssignmentDisabled, setIsAssignmentDisabled] = useState(false);
-  const [isVendorAssignmentDisabled, setIsVendorAssignmentDisabled] = useState(false);
+  const [isVendorAssignmentDisabled, setIsVendorAssignmentDisabled] =
+    useState(false);
   const [isWorkOrderFormOpen, setIsWorkOrderFormOpen] = useState(false);
   const [selectedWorkOrder, setSelectedWorkOrder] = useState<any>(null);
   const isTicketClosed = (ticket?.status || "").toUpperCase() === "CLOSED";
@@ -134,45 +135,44 @@ export default function TicketDetail() {
     if (ticket) {
       setSelectedStatus(ticket?.status);
       setAssignedTo(ticket?.assigned_to);
-      setAssignedToVendor(ticket?.vendor_id || ticket?.assigned_to_vendor || "");
+      setAssignedToVendor(
+        ticket?.vendor_id || ticket?.assigned_to_vendor || ""
+      );
     }
   }, [ticket]);
 
   const handleAddComment = async () => {
-  if (!newComment.trim() || !ticketId || isTicketClosed) return;
+    if (!newComment.trim() || !ticketId || isTicketClosed) return;
 
-  const response = await ticketsApiService.postComment(
-    ticketId,
-    newComment
-  );
-  
-  if (response.success && response.data) {
-    // Convert the API response to match your comment structure
-    const newCommentObj = {
-      comment_id: response.data.id,
-      user_id: response.data.action_by,
-      user_name: response.data.action_by_name,
-      comment_text: response.data.action_taken,
-      created_at: response.data.created_at,
-      reactions: []
-    };
+    const response = await ticketsApiService.postComment(ticketId, newComment);
 
-    // Add the new comment to the ticket's comments array
-    setTicket(prevTicket => ({
-      ...prevTicket,
-      comments: [...(prevTicket?.comments || []), newCommentObj]
-    }));
+    if (response.success && response.data) {
+      // Convert the API response to match your comment structure
+      const newCommentObj = {
+        comment_id: response.data.id,
+        user_id: response.data.action_by,
+        user_name: response.data.action_by_name,
+        comment_text: response.data.action_taken,
+        created_at: response.data.created_at,
+        reactions: [],
+      };
 
-    toast.success("Your comment has been posted successfully.");
-    setNewComment("");
-  } else {
-    toast.error("Failed to post comment");
-  }
-};
+      // Add the new comment to the ticket's comments array
+      setTicket((prevTicket) => ({
+        ...prevTicket,
+        comments: [...(prevTicket?.comments || []), newCommentObj],
+      }));
 
- const handleStatusUpdate = async () => {
-  if (!ticketId || !selectedStatus || !user?.id || isStatusUpdateDisabled || isTicketClosed)
-    return;
+      toast.success("Your comment has been posted successfully.");
+      setNewComment("");
+    } else {
+      toast.error("Failed to post comment");
+    }
+  };
+
+  const handleStatusUpdate = async () => {
+    if (!ticketId || !selectedStatus || !user?.id || isStatusUpdateDisabled)
+      return;
 
   setIsStatusUpdateDisabled(true);
   
@@ -201,7 +201,8 @@ export default function TicketDetail() {
 };
 
   const handleAssignment = async () => {
-  if (!ticketId || !assignedTo || isAssignmentDisabled || isTicketClosed) return;
+    if (!ticketId || !assignedTo || isAssignmentDisabled || isTicketClosed)
+      return;
 
   setIsAssignmentDisabled(true);
   
@@ -232,7 +233,13 @@ export default function TicketDetail() {
 };
 
   const handleVendorAssignment = async () => {
-    if (!ticketId || !assignedToVendor || isVendorAssignmentDisabled || isTicketClosed) return;
+    if (
+      !ticketId ||
+      !assignedToVendor ||
+      isVendorAssignmentDisabled ||
+      isTicketClosed
+    )
+      return;
 
     setIsVendorAssignmentDisabled(true);
     await withLoader(async () => {
@@ -284,7 +291,6 @@ export default function TicketDetail() {
           toast.error("Failed to update work order");
         }
       } else {
-        // Create mode - pre-populate with current ticket ID
         const response = await ticketWorkOrderApiService.addTicketWorkOrder({
           ...workOrderData,
           ticket_id: ticketId,
@@ -292,7 +298,7 @@ export default function TicketDetail() {
         if (response.success) {
           toast.success("Work order created successfully");
           setIsWorkOrderFormOpen(false);
-          loadTicket(); // Reload ticket to get updated work orders
+          loadTicket();
         }
       }
     });
@@ -704,7 +710,6 @@ export default function TicketDetail() {
                             <Select
                               value={selectedStatus || undefined}
                               onValueChange={setSelectedStatus}
-                              disabled={isTicketClosed}
                             >
                               <SelectTrigger>
                                 <SelectValue placeholder="Select status" />
@@ -721,13 +726,13 @@ export default function TicketDetail() {
                               onClick={handleStatusUpdate}
                               className="w-full"
                               size="sm"
-                              disabled={isStatusUpdateDisabled || isTicketClosed}
+                              disabled={isStatusUpdateDisabled}
                             >
                               Update Status
                             </Button>
                           </div>
                           <div className="space-y-2">
-                            <p className="text-sm font-medium">Assign To</p>
+                            <p className="text-sm font-medium">Assign Staff</p>
                             <Select
                               value={assignedTo}
                               onValueChange={(value) => setAssignedTo(value)}
@@ -757,10 +762,12 @@ export default function TicketDetail() {
                             </Button>
                           </div>
                           <div className="space-y-2">
-                            <p className="text-sm font-medium">Assigned To (Vendor)</p>
+                            <p className="text-sm font-medium">Assign Vendor</p>
                             <Select
                               value={assignedToVendor}
-                              onValueChange={(value) => setAssignedToVendor(value)}
+                              onValueChange={(value) =>
+                                setAssignedToVendor(value)
+                              }
                               disabled={isTicketClosed}
                             >
                               <SelectTrigger>
@@ -781,7 +788,9 @@ export default function TicketDetail() {
                               onClick={handleVendorAssignment}
                               className="w-full"
                               size="sm"
-                              disabled={isVendorAssignmentDisabled || isTicketClosed}
+                              disabled={
+                                isVendorAssignmentDisabled || isTicketClosed
+                              }
                             >
                               Assign Vendor
                             </Button>
