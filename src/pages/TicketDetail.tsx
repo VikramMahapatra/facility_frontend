@@ -170,7 +170,7 @@ export default function TicketDetail() {
   }
 };
 
-  const handleStatusUpdate = async () => {
+ const handleStatusUpdate = async () => {
   if (!ticketId || !selectedStatus || !user?.id || isStatusUpdateDisabled || isTicketClosed)
     return;
 
@@ -182,23 +182,14 @@ export default function TicketDetail() {
     user.id
   );
   
-  // ✅ Now checking response.success (boolean)
   if (response.success && response.data) {
-   
     setTicket(prevTicket => ({
       ...prevTicket,
       status: response.data.ticket.status,
       updated_at: response.data.ticket.updated_at,
-      // Add the workflow log as a new comment
-      comments: [...(prevTicket?.comments || []), {
-        comment_id: response.data.log.workflow_id,
-        user_id: response.data.log.action_by,
-        user_name: response.data.log.action_by_name,
-        comment_text: response.data.log.action_taken,
-        created_at: response.data.log.created_at,
-        reactions: [],
-        is_system_update: true
-      }]
+      // Only update workflow logs, NOT comments
+      logs: [...(prevTicket?.logs || []), response.data.log],
+      workflows: [...(prevTicket?.workflows || []), response.data.log]
     }));
     
     toast.success(`Ticket status changed to ${selectedStatus}`);
@@ -219,15 +210,17 @@ export default function TicketDetail() {
     assignedTo
   );
   
-  // ✅ Now checking response.success (boolean) - NO LOADER
   if (response.success && response.data) {
-    // Update assignment immediately without loader
+    // ✅ Access nested ticket and log (same as status update)
     setTicket(prevTicket => ({
       ...prevTicket,
-      assigned_to: response.data.assigned_to,
-      assigned_to_name: response.data.assigned_to_name, // Now available
-      updated_at: response.data.updated_at
-      // Note: If you need assigned_to_name, make sure your TicketOut model includes it
+      // ✅ Get data from server response (not local variables)
+      assigned_to: response.data.ticket.assigned_to,
+      assigned_to_name: response.data.ticket.assigned_to_name, // Now available from server
+      updated_at: response.data.ticket.updated_at, // Server timestamp
+      // ✅ Add the workflow log (same as status update)
+      logs: [...(prevTicket?.logs || []), response.data.log],
+      workflows: [...(prevTicket?.workflows || []), response.data.log]
     }));
     
     toast.success("Ticket has been assigned successfully.");
