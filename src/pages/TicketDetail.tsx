@@ -125,7 +125,8 @@ export default function TicketDetail() {
   const [feedback, setFeedback] = useState("");
   const [isStatusUpdateDisabled, setIsStatusUpdateDisabled] = useState(false);
   const [isAssignmentDisabled, setIsAssignmentDisabled] = useState(false);
-  const [isVendorAssignmentDisabled, setIsVendorAssignmentDisabled] = useState(false);
+  const [isVendorAssignmentDisabled, setIsVendorAssignmentDisabled] =
+    useState(false);
   const [isWorkOrderFormOpen, setIsWorkOrderFormOpen] = useState(false);
   const [selectedWorkOrder, setSelectedWorkOrder] = useState<any>(null);
   const isTicketClosed = (ticket?.status || "").toUpperCase() === "CLOSED";
@@ -134,112 +135,113 @@ export default function TicketDetail() {
     if (ticket) {
       setSelectedStatus(ticket?.status);
       setAssignedTo(ticket?.assigned_to);
-      setAssignedToVendor(ticket?.vendor_id || ticket?.assigned_to_vendor || "");
+      setAssignedToVendor(
+        ticket?.vendor_id || ticket?.assigned_to_vendor || ""
+      );
     }
   }, [ticket]);
 
   const handleAddComment = async () => {
-  if (!newComment.trim() || !ticketId || isTicketClosed) return;
+    if (!newComment.trim() || !ticketId || isTicketClosed) return;
 
-  const response = await ticketsApiService.postComment(
-    ticketId,
-    newComment
-  );
-  
-  if (response.success && response.data) {
-    // Convert the API response to match your comment structure
-    const newCommentObj = {
-      comment_id: response.data.id,
-      user_id: response.data.action_by,
-      user_name: response.data.action_by_name,
-      comment_text: response.data.action_taken,
-      created_at: response.data.created_at,
-      reactions: []
-    };
+    const response = await ticketsApiService.postComment(ticketId, newComment);
 
-    // Add the new comment to the ticket's comments array
-    setTicket(prevTicket => ({
-      ...prevTicket,
-      comments: [...(prevTicket?.comments || []), newCommentObj]
-    }));
+    if (response.success && response.data) {
+      // Convert the API response to match your comment structure
+      const newCommentObj = {
+        comment_id: response.data.id,
+        user_id: response.data.action_by,
+        user_name: response.data.action_by_name,
+        comment_text: response.data.action_taken,
+        created_at: response.data.created_at,
+        reactions: [],
+      };
 
-    toast.success("Your comment has been posted successfully.");
-    setNewComment("");
-  } else {
-    toast.error("Failed to post comment");
-  }
-};
+      // Add the new comment to the ticket's comments array
+      setTicket((prevTicket) => ({
+        ...prevTicket,
+        comments: [...(prevTicket?.comments || []), newCommentObj],
+      }));
+
+      toast.success("Your comment has been posted successfully.");
+      setNewComment("");
+    } else {
+      toast.error("Failed to post comment");
+    }
+  };
 
   const handleStatusUpdate = async () => {
-  if (!ticketId || !selectedStatus || !user?.id || isStatusUpdateDisabled)
-    return;
+    if (!ticketId || !selectedStatus || !user?.id || isStatusUpdateDisabled)
+      return;
 
-  setIsStatusUpdateDisabled(true);
-  
-  const response = await ticketsApiService.updateTicketStatus(
-    ticketId,
-    selectedStatus,
-    user.id
-  );
-  
- 
-  if (response.success && response.data) {
-   
-    setTicket(prevTicket => ({
-      ...prevTicket,
-      status: response.data.ticket.status,
-      updated_at: response.data.ticket.updated_at,
-      // Add the workflow log as a new comment
-      comments: [...(prevTicket?.comments || []), {
-        comment_id: response.data.log.workflow_id,
-        user_id: response.data.log.action_by,
-        user_name: response.data.log.action_by_name,
-        comment_text: response.data.log.action_taken,
-        created_at: response.data.log.created_at,
-        reactions: [],
-        is_system_update: true
-      }]
-    }));
-    
-    toast.success(`Ticket status changed to ${selectedStatus}`);
-  } else {
-    toast.error("Failed to update status");
-  }
-  
-  setIsStatusUpdateDisabled(false);
-};
+    setIsStatusUpdateDisabled(true);
+
+    const response = await ticketsApiService.updateTicketStatus(
+      ticketId,
+      selectedStatus,
+      user.id
+    );
+
+    if (response.success && response.data) {
+      setTicket((prevTicket) => ({
+        ...prevTicket,
+        status: response.data.ticket.status,
+        updated_at: response.data.ticket.updated_at,
+        // Add the workflow log as a new comment
+        comments: [
+          ...(prevTicket?.comments || []),
+          {
+            comment_id: response.data.log.workflow_id,
+            user_id: response.data.log.action_by,
+            user_name: response.data.log.action_by_name,
+            comment_text: response.data.log.action_taken,
+            created_at: response.data.log.created_at,
+            reactions: [],
+            is_system_update: true,
+          },
+        ],
+      }));
+
+      toast.success(`Ticket status changed to ${selectedStatus}`);
+    } else {
+      toast.error("Failed to update status");
+    }
+
+    setIsStatusUpdateDisabled(false);
+  };
 
   const handleAssignment = async () => {
-  if (!ticketId || !assignedTo || isAssignmentDisabled || isTicketClosed) return;
+    if (!ticketId || !assignedTo || isAssignmentDisabled || isTicketClosed)
+      return;
 
-  setIsAssignmentDisabled(true);
-  
-  const response = await ticketsApiService.assignTicket(
-    ticketId,
-    assignedTo
-  );
-  
-  // ✅ Now checking response.success (boolean) - NO LOADER
-  if (response.success && response.data) {
-    // Update assignment immediately without loader
-    setTicket(prevTicket => ({
-      ...prevTicket,
-      assigned_to: response.data.assigned_to,
-      assigned_to_name: response.data.assigned_to_name, // Now available
-      updated_at: response.data.updated_at
-      // Note: If you need assigned_to_name, make sure your TicketOut model includes it
-    }));
-    
-    toast.success("Ticket has been assigned successfully.");
-  } else {
-    toast.error("Failed to assign ticket");
-  }
-  
-  setIsAssignmentDisabled(false);
-};
+    setIsAssignmentDisabled(true);
+
+    const response = await ticketsApiService.assignTicket(ticketId, assignedTo);
+
+    if (response.success && response.data) {
+      setTicket((prevTicket) => ({
+        ...prevTicket,
+        assigned_to: response.data.assigned_to,
+        assigned_to_name: response.data.assigned_to_name,
+        updated_at: response.data.updated_at,
+      }));
+
+      toast.success("Ticket has been assigned successfully.");
+    } else {
+      toast.error("Failed to assign ticket");
+    }
+
+    setIsAssignmentDisabled(false);
+  };
 
   const handleVendorAssignment = async () => {
-    if (!ticketId || !assignedToVendor || isVendorAssignmentDisabled || isTicketClosed) return;
+    if (
+      !ticketId ||
+      !assignedToVendor ||
+      isVendorAssignmentDisabled ||
+      isTicketClosed
+    )
+      return;
 
     setIsVendorAssignmentDisabled(true);
     await withLoader(async () => {
@@ -291,7 +293,6 @@ export default function TicketDetail() {
           toast.error("Failed to update work order");
         }
       } else {
-        // Create mode - pre-populate with current ticket ID
         const response = await ticketWorkOrderApiService.addTicketWorkOrder({
           ...workOrderData,
           ticket_id: ticketId,
@@ -299,7 +300,7 @@ export default function TicketDetail() {
         if (response.success) {
           toast.success("Work order created successfully");
           setIsWorkOrderFormOpen(false);
-          loadTicket(); // Reload ticket to get updated work orders
+          loadTicket();
         }
       }
     });
@@ -766,7 +767,9 @@ export default function TicketDetail() {
                             <p className="text-sm font-medium">Assign Vendor</p>
                             <Select
                               value={assignedToVendor}
-                              onValueChange={(value) => setAssignedToVendor(value)}
+                              onValueChange={(value) =>
+                                setAssignedToVendor(value)
+                              }
                               disabled={isTicketClosed}
                             >
                               <SelectTrigger>
@@ -787,7 +790,9 @@ export default function TicketDetail() {
                               onClick={handleVendorAssignment}
                               className="w-full"
                               size="sm"
-                              disabled={isVendorAssignmentDisabled || isTicketClosed}
+                              disabled={
+                                isVendorAssignmentDisabled || isTicketClosed
+                              }
                             >
                               Assign Vendor
                             </Button>
