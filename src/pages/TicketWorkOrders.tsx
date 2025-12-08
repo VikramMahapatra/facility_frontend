@@ -58,62 +58,6 @@ import ContentContainer from "@/components/ContentContainer";
 import { ticketWorkOrderApiService } from "@/services/ticketing_service/ticketworkorderapi";
 import { siteApiService } from "@/services/spaces_sites/sitesapi";
 
-const mockTicketWorkOrders = [
-  {
-    id: "two-001",
-    ticket_id: "TKT-001",
-    description: "Replace faulty outlet and check circuit breaker in Room 201",
-    assigned_to: "101", // UUID of technician
-    assigned_to_name: "John Smith",
-    status: "IN_PROGRESS",
-    created_at: "2025-01-15T10:30:00Z",
-  },
-  {
-    id: "two-002",
-    ticket_id: "TKT-002",
-    description: "Replace bathroom faucet cartridge and check water pressure",
-    assigned_to: "103",
-    assigned_to_name: "Mike Johnson",
-    status: "PENDING",
-    created_at: "2025-01-15T11:00:00Z",
-  },
-  {
-    id: "two-003",
-    ticket_id: "TKT-003",
-    description:
-      "Complete AC maintenance including filter cleaning and refrigerant check",
-    assigned_to: "105",
-    assigned_to_name: "Sarah Wilson",
-    status: "COMPLETED",
-    created_at: "2025-01-14T08:00:00Z",
-  },
-  {
-    id: "two-004",
-    ticket_id: "TKT-004",
-    description: "Fix jammed door lock and lubricate mechanism",
-    assigned_to: "107",
-    assigned_to_name: "David Lee",
-    status: "PENDING",
-    created_at: "2025-01-16T09:30:00Z",
-  },
-  {
-    id: "two-005",
-    ticket_id: "TKT-005",
-    description: "Complete monthly inspection and testing of fire alarm system",
-    assigned_to: "101",
-    assigned_to_name: "John Smith",
-    status: "IN_PROGRESS",
-    created_at: "2025-01-16T10:00:00Z",
-  },
-];
-
-const mockOverview = {
-  total: 5,
-  pending: 2,
-  in_progress: 2,
-  completed: 1,
-};
-
 interface TicketWorkOrder {
   id: string;
   ticket_id: string;
