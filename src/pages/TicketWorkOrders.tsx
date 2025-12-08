@@ -58,7 +58,6 @@ import ContentContainer from "@/components/ContentContainer";
 import { ticketWorkOrderApiService } from "@/services/ticketing_service/ticketworkorderapi";
 import { siteApiService } from "@/services/spaces_sites/sitesapi";
 
-
 const mockTicketWorkOrders = [
   {
     id: "two-001",
@@ -81,7 +80,8 @@ const mockTicketWorkOrders = [
   {
     id: "two-003",
     ticket_id: "TKT-003",
-    description: "Complete AC maintenance including filter cleaning and refrigerant check",
+    description:
+      "Complete AC maintenance including filter cleaning and refrigerant check",
     assigned_to: "105",
     assigned_to_name: "Sarah Wilson",
     status: "COMPLETED",
@@ -142,17 +142,24 @@ export default function TicketWorkOrders() {
   const [selectedSite, setSelectedSite] = useState<string>("all");
   const [selectedStatus, setSelectedStatus] = useState<string>("all");
   const [workOrders, setWorkOrders] = useState<TicketWorkOrder[]>([]);
-  const [formMode, setFormMode] = useState<"create" | "edit" | "view">("create");
+  const [formMode, setFormMode] = useState<"create" | "edit" | "view">(
+    "create"
+  );
   const [isFormOpen, setIsFormOpen] = useState(false);
-  const [deleteWorkOrderId, setDeleteWorkOrderId] = useState<string | null>(null);
-  const [selectedWorkOrder, setSelectedWorkOrder] = useState<TicketWorkOrder | undefined>();
-  const [workOrderOverview, setWorkOrderOverview] = useState<TicketWorkOrderOverview>({
-    total_work_orders: 0,
-    pending: 0,
-    in_progress: 0,
-    completed: 0,
-  });
-  
+  const [deleteWorkOrderId, setDeleteWorkOrderId] = useState<string | null>(
+    null
+  );
+  const [selectedWorkOrder, setSelectedWorkOrder] = useState<
+    TicketWorkOrder | undefined
+  >();
+  const [workOrderOverview, setWorkOrderOverview] =
+    useState<TicketWorkOrderOverview>({
+      total_work_orders: 0,
+      pending: 0,
+      in_progress: 0,
+      completed: 0,
+    });
+
   const { canRead, canWrite, canDelete } = useAuth();
   const { withLoader } = useLoader();
   const resource = "tickets";
@@ -181,7 +188,7 @@ export default function TicketWorkOrders() {
       loadTicketWorkOrders();
       loadTicketWorkOrderOverview();
     } else {
-      setPage(1); 
+      setPage(1);
     }
   };
 
@@ -202,11 +209,11 @@ export default function TicketWorkOrders() {
       params.append("site_id", selectedSite);
     if (selectedStatus && selectedStatus !== "all")
       params.append("status", selectedStatus);
-    
+
     const response = await withLoader(async () => {
       return await ticketWorkOrderApiService.getTicketWorkOrderOverview(params);
     });
-    
+
     if (response?.success) setWorkOrderOverview(response.data || {});
   };
 
@@ -258,7 +265,9 @@ export default function TicketWorkOrders() {
 
   const confirmDelete = async () => {
     if (deleteWorkOrderId) {
-      const response = await ticketWorkOrderApiService.deleteTicketWorkOrder(deleteWorkOrderId);
+      const response = await ticketWorkOrderApiService.deleteTicketWorkOrder(
+        deleteWorkOrderId
+      );
 
       if (response.success) {
         updateWorkOrderPage();
@@ -272,7 +281,9 @@ export default function TicketWorkOrders() {
     let response;
 
     if (formMode === "create") {
-      response = await ticketWorkOrderApiService.addTicketWorkOrder(workOrderData);
+      response = await ticketWorkOrderApiService.addTicketWorkOrder(
+        workOrderData
+      );
 
       if (response.success) updateWorkOrderPage();
     } else if (formMode === "edit" && selectedWorkOrder) {
@@ -425,7 +436,9 @@ export default function TicketWorkOrders() {
                     </Card>
                     <Card>
                       <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                        <CardTitle className="text-sm font-medium">Pending</CardTitle>
+                        <CardTitle className="text-sm font-medium">
+                          Pending
+                        </CardTitle>
                         <Clock className="h-4 w-4 text-muted-foreground" />
                       </CardHeader>
                       <CardContent>
@@ -449,7 +462,9 @@ export default function TicketWorkOrders() {
                     </Card>
                     <Card>
                       <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                        <CardTitle className="text-sm font-medium">Completed</CardTitle>
+                        <CardTitle className="text-sm font-medium">
+                          Completed
+                        </CardTitle>
                         <AlertTriangle className="h-4 w-4 text-muted-foreground" />
                       </CardHeader>
                       <CardContent>
@@ -504,28 +519,33 @@ export default function TicketWorkOrders() {
                                   <TableCell>
                                     <div className="flex items-center">
                                       <User className="w-4 h-4 mr-2" />
-                                      {/* Currently no staff field coming from backend for ticket work orders */}
-                                      {workOrder.staff_name || "Unassigned"}
+
+                                      {workOrder.assigned_to_name ||
+                                        "Unassigned"}
                                     </div>
                                   </TableCell>
                                   <TableCell>
                                     <div className="flex items-center">
                                       <User className="w-4 h-4 mr-2" />
                                       {/* Backend sends vendors in assigned_to_name for now */}
-                                      {workOrder.assigned_to_name ||
-                                        workOrder.vendor_name ||
-                                        "Unassigned"}
+                                      {workOrder.vendor_name || "Unassigned"}
                                     </div>
                                   </TableCell>
                                   <TableCell>
-                                    <span className={`inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-semibold ${getStatusColor(workOrder.status)}`}>
+                                    <span
+                                      className={`inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-semibold ${getStatusColor(
+                                        workOrder.status
+                                      )}`}
+                                    >
                                       {getStatusLabel(workOrder.status)}
                                     </span>
                                   </TableCell>
                                   <TableCell>
                                     <div className="flex items-center">
                                       <Calendar className="w-4 h-4 mr-2" />
-                                      {new Date(workOrder.created_at).toLocaleDateString()}
+                                      {new Date(
+                                        workOrder.created_at
+                                      ).toLocaleDateString()}
                                     </div>
                                   </TableCell>
                                   <TableCell>
@@ -551,7 +571,9 @@ export default function TicketWorkOrders() {
                                           variant="ghost"
                                           size="sm"
                                           className="text-destructive hover:text-destructive"
-                                          onClick={() => handleDelete(workOrder.id!)}
+                                          onClick={() =>
+                                            handleDelete(workOrder.id!)
+                                          }
                                         >
                                           <Trash2 className="w-4 h-4" />
                                         </Button>
@@ -600,8 +622,8 @@ export default function TicketWorkOrders() {
           <AlertDialogHeader>
             <AlertDialogTitle>Delete Ticket Work Order</AlertDialogTitle>
             <AlertDialogDescription>
-              Are you sure you want to delete this ticket work order? This action
-              cannot be undone.
+              Are you sure you want to delete this ticket work order? This
+              action cannot be undone.
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
@@ -618,4 +640,3 @@ export default function TicketWorkOrders() {
     </SidebarProvider>
   );
 }
-
