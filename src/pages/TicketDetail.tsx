@@ -143,7 +143,6 @@ export default function TicketDetail() {
     const response = await ticketsApiService.postComment(ticketId, newComment);
 
     if (response.success && response.data) {
-      // Convert the API response to match your comment structure
       const newCommentObj = {
         comment_id: response.data.id,
         user_id: response.data.action_by,
@@ -153,7 +152,6 @@ export default function TicketDetail() {
         reactions: [],
       };
 
-      // Add the new comment to the ticket's comments array
       setTicket((prevTicket) => ({
         ...prevTicket,
         comments: [...(prevTicket?.comments || []), newCommentObj],
@@ -170,98 +168,95 @@ export default function TicketDetail() {
     if (!ticketId || !selectedStatus || !user?.id || isStatusUpdateDisabled)
       return;
 
-  setIsStatusUpdateDisabled(true);
-  
-  const response = await ticketsApiService.updateTicketStatus(
-    ticketId,
-    selectedStatus,
-    user.id
-  );
-  
-  if (response.success && response.data) {
-    setTicket(prevTicket => ({
-      ...prevTicket,
-      status: response.data.ticket.status,
-      updated_at: response.data.ticket.updated_at,
+    setIsStatusUpdateDisabled(true);
 
-      // Only update workflow logs, NOT comments
-      logs: [...(prevTicket?.logs || []), response.data.log],
-    }));
+    const response = await ticketsApiService.updateTicketStatus(
+      ticketId,
+      selectedStatus,
+      user.id
+    );
 
-    setStatusList (response.data.possible_next_statuses)
-    
-    toast.success(`Ticket status changed to ${selectedStatus}`);
-  } else {
-    toast.error("Failed to update status");
-  }
-  
-  setIsStatusUpdateDisabled(false);
-};
+    if (response.success && response.data) {
+      setTicket((prevTicket) => ({
+        ...prevTicket,
+        status: response.data.ticket.status,
+        updated_at: response.data.ticket.updated_at,
+
+        // Only update workflow logs, NOT comments
+        logs: [...(prevTicket?.logs || []), response.data.log],
+      }));
+
+      setStatusList(response.data.possible_next_statuses);
+
+      toast.success(`Ticket status changed to ${selectedStatus}`);
+    } else {
+      toast.error("Failed to update status");
+    }
+
+    setIsStatusUpdateDisabled(false);
+  };
 
   const handleAssignment = async () => {
     if (!ticketId || !assignedTo || isAssignmentDisabled || isTicketClosed)
       return;
 
-  setIsAssignmentDisabled(true);
-  
-  const response = await ticketsApiService.assignTicket(
-    ticketId,
-    assignedTo
-  );
-  
-  if (response.success && response.data) {
-   
-    setTicket(prevTicket => ({
-      ...prevTicket,
-      
-      assigned_to: response.data.ticket.assigned_to,
-      assigned_to_name: response.data.ticket.assigned_to_name, 
-      updated_at: response.data.ticket.updated_at,
-      
-      logs: [...(prevTicket?.logs || []), response.data.log],
-       }));
-    
-    toast.success("Ticket has been assigned successfully.");
-  } else {
-    toast.error("Failed to assign ticket");
-  }
-  
-  setIsAssignmentDisabled(false);
-};
+    setIsAssignmentDisabled(true);
 
- const handleVendorAssignment = async () => {
-  if (!ticketId || !assignedToVendor || isVendorAssignmentDisabled || isTicketClosed)
-    return;
+    const response = await ticketsApiService.assignTicket(ticketId, assignedTo);
 
-  setIsVendorAssignmentDisabled(true);
-  
-  
-  
-  const response = await ticketsApiService.assignVendor(
-    ticketId,
-    assignedToVendor
-  );
-  
-  
-  
-  if (response.success && response.data) {
-    console.log("6. Trying to access response.data.ticket.vendor_id...");
-    
-    setTicket(prevTicket => ({
-      ...prevTicket,
-      vendor_id: response.data.ticket.vendor_id,
-      vendor_name: response.data.ticket.vendor_name,
-      updated_at: response.data.ticket.updated_at,
-      logs: [...(prevTicket?.logs || []), response.data.log],
-    }));
-    
-    toast.success("Vendor has been assigned successfully.");
-  } else {
-    toast.error("Failed to assign vendor");
-  }
-  
-  setIsVendorAssignmentDisabled(false);
-};
+    if (response.success && response.data) {
+      setTicket((prevTicket) => ({
+        ...prevTicket,
+
+        assigned_to: response.data.ticket.assigned_to,
+        assigned_to_name: response.data.ticket.assigned_to_name,
+        updated_at: response.data.ticket.updated_at,
+
+        logs: [...(prevTicket?.logs || []), response.data.log],
+      }));
+
+      toast.success("Ticket has been assigned successfully.");
+    } else {
+      toast.error("Failed to assign ticket");
+    }
+
+    setIsAssignmentDisabled(false);
+  };
+
+  const handleVendorAssignment = async () => {
+    if (
+      !ticketId ||
+      !assignedToVendor ||
+      isVendorAssignmentDisabled ||
+      isTicketClosed
+    )
+      return;
+
+    setIsVendorAssignmentDisabled(true);
+
+    const response = await ticketsApiService.assignVendor(
+      ticketId,
+      assignedToVendor
+    );
+
+    if (response.success && response.data) {
+      console.log("6. Trying to access response.data.ticket.vendor_id...");
+
+      setTicket((prevTicket) => ({
+        ...prevTicket,
+        vendor_id: response.data.ticket.vendor_id,
+        vendor_name: response.data.ticket.vendor_name,
+        updated_at: response.data.ticket.updated_at,
+        logs: [...(prevTicket?.logs || []), response.data.log],
+      }));
+
+      toast.success("Vendor has been assigned successfully.");
+    } else {
+      toast.error("Failed to assign vendor");
+    }
+
+    setIsVendorAssignmentDisabled(false);
+  };
 
   const handleReopen = () => {
     toast.success("The ticket has been reopened for further action.");
@@ -294,7 +289,7 @@ export default function TicketDetail() {
         if (response.success) {
           toast.success("Work order updated successfully");
           setIsWorkOrderFormOpen(false);
-          loadTicket(); // Reload ticket to get updated work orders
+          loadTicket();
         } else {
           toast.error("Failed to update work order");
         }

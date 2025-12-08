@@ -118,22 +118,11 @@ export function TicketWorkOrderForm({
   
     if (ticketId) {
       setIsLoadingTicketDetails(true);
-      try {
-        const response = await ticketsApiService.getTicketById(ticketId);
-        if (response.success) {
-          setSelectedTicketDetails(response.data);
-        }
-      } catch (error) {
-        console.error("Failed to load ticket details:", error);
-        setSelectedTicketDetails(null);
-      } finally {
-        setIsLoadingTicketDetails(false);
+      const response = await ticketsApiService.getTicketById(ticketId);
+      if (response.success) {
+        setSelectedTicketDetails(response.data);
       }
-    } else {
-      setSelectedTicketDetails(null);
-      setIsLoadingTicketDetails(false);
     }
-
     setFormLoading(false);
   };
 
@@ -148,19 +137,13 @@ export function TicketWorkOrderForm({
       if (selectedTicketId) {
         setIsLoadingTicketDetails(true);
         setSelectedTicketDetails(null); // Clear previous details while loading
-        try {
           const response = await ticketsApiService.getTicketById(
             selectedTicketId
           );
           if (response.success) {
-            setSelectedTicketDetails(response.data);
-          }
-        } catch (error) {
-          console.error("Failed to load ticket details:", error);
-          setSelectedTicketDetails(null);
-        } finally {
-          setIsLoadingTicketDetails(false);
+          setSelectedTicketDetails(response.data);
         }
+        setIsLoadingTicketDetails(false);
       } else {
         setSelectedTicketDetails(null);
         setIsLoadingTicketDetails(false);
