@@ -115,13 +115,16 @@ export function TicketWorkOrderForm({
           }
     );
 
-  
     if (ticketId) {
       setIsLoadingTicketDetails(true);
-      const response = await ticketsApiService.getTicketById(ticketId);
+      const response = await ticketWorkOrderApiService.getTicketAssignments(ticketId);
       if (response.success) {
         setSelectedTicketDetails(response.data);
       }
+      setIsLoadingTicketDetails(false);
+    } else {
+      setSelectedTicketDetails(null);
+      setIsLoadingTicketDetails(false);
     }
     setFormLoading(false);
   };
@@ -133,14 +136,14 @@ export function TicketWorkOrderForm({
   }, [workOrder, mode, isOpen, reset]);
 
   useEffect(() => {
-    const loadTicketDetails = async () => {
+    const loadTicketAssignments = async () => {
       if (selectedTicketId) {
         setIsLoadingTicketDetails(true);
-        setSelectedTicketDetails(null); // Clear previous details while loading
-          const response = await ticketsApiService.getTicketById(
-            selectedTicketId
-          );
-          if (response.success) {
+        setSelectedTicketDetails(null); 
+        const response = await ticketWorkOrderApiService.getTicketAssignments(
+          selectedTicketId
+        );
+        if (response.success) {
           setSelectedTicketDetails(response.data);
         }
         setIsLoadingTicketDetails(false);
@@ -150,7 +153,7 @@ export function TicketWorkOrderForm({
       }
     };
 
-    loadTicketDetails();
+    loadTicketAssignments();
   }, [selectedTicketId, mode, isOpen]);
 
   const loadVendorLookup = async () => {
@@ -287,12 +290,14 @@ export function TicketWorkOrderForm({
                     <div className="text-sm text-muted-foreground space-y-1">
                       <div>
                         <strong>Staff:</strong>{" "}
-                        {selectedTicketDetails?.assigned_to_name || "N/A"}
+                        {selectedTicketDetails?.assigned_to_name ||
+                          selectedTicketDetails?.assigned_to?.name ||
+                          "N/A"}
                       </div>
                       <div>
                         <strong>Vendor:</strong>{" "}
                         {selectedTicketDetails?.vendor_name ||
-                          selectedTicketDetails?.vendor?.name ||
+                          selectedTicketDetails?.assigned_vendor_name ||
                           "N/A"}
                       </div>
                     </div>
