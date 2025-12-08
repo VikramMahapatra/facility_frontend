@@ -177,25 +177,18 @@ export default function TicketDetail() {
     );
 
     if (response.success && response.data) {
-      const ticketData =
-        response.data.ticket || response.data.data || response.data;
-      const logData = response.data.log || response.data;
+      setTicket((prevTicket) => ({
+        ...prevTicket,
+        status: response.data.ticket.status,
+        updated_at: response.data.ticket.updated_at,
 
-      if (ticketData) {
-        setTicket((prevTicket) => ({
-          ...(prevTicket || {}),
-          status: ticketData.status,
-          updated_at: ticketData.updated_at,
-          logs: [...(prevTicket?.logs || []), logData].filter(Boolean),
-          workflows: [...(prevTicket?.workflows || []), logData].filter(
-            Boolean
-          ),
-        }));
+        // Only update workflow logs, NOT comments
+        logs: [...(prevTicket?.logs || []), response.data.log],
+      }));
 
-        toast.success(`Ticket status changed to ${selectedStatus}`);
-      } else {
-        toast.error("Failed to update status: Invalid response structure");
-      }
+      setStatusList(response.data.possible_next_statuses);
+
+      toast.success(`Ticket status changed to ${selectedStatus}`);
     } else {
       toast.error("Failed to update status");
     }
@@ -212,26 +205,17 @@ export default function TicketDetail() {
     const response = await ticketsApiService.assignTicket(ticketId, assignedTo);
 
     if (response.success && response.data) {
-      const ticketData =
-        response.data.ticket || response.data.data || response.data;
-      const logData = response.data.log || response.data;
+      setTicket((prevTicket) => ({
+        ...prevTicket,
 
-      if (ticketData) {
-        setTicket((prevTicket) => ({
-          ...(prevTicket || {}),
-          assigned_to: ticketData.assigned_to,
-          assigned_to_name: ticketData.assigned_to_name,
-          updated_at: ticketData.updated_at,
-          logs: [...(prevTicket?.logs || []), logData].filter(Boolean),
-          workflows: [...(prevTicket?.workflows || []), logData].filter(
-            Boolean
-          ),
-        }));
+        assigned_to: response.data.ticket.assigned_to,
+        assigned_to_name: response.data.ticket.assigned_to_name,
+        updated_at: response.data.ticket.updated_at,
 
-        toast.success("Ticket has been assigned successfully.");
-      } else {
-        toast.error("Failed to assign ticket: Invalid response structure");
-      }
+        logs: [...(prevTicket?.logs || []), response.data.log],
+      }));
+
+      toast.success("Ticket has been assigned successfully.");
     } else {
       toast.error("Failed to assign ticket");
     }
@@ -249,16 +233,28 @@ export default function TicketDetail() {
       return;
 
     setIsVendorAssignmentDisabled(true);
-    await withLoader(async () => {
-      const response = await ticketsApiService.assignVendor(
-        ticketId,
-        assignedToVendor
-      );
-      if (response.success) {
-        loadTicket();
-        toast.success("Vendor has been assigned successfully.");
-      }
-    });
+
+    const response = await ticketsApiService.assignVendor(
+      ticketId,
+      assignedToVendor
+    );
+
+    if (response.success && response.data) {
+      console.log("6. Trying to access response.data.ticket.vendor_id...");
+
+      setTicket((prevTicket) => ({
+        ...prevTicket,
+        vendor_id: response.data.ticket.vendor_id,
+        vendor_name: response.data.ticket.vendor_name,
+        updated_at: response.data.ticket.updated_at,
+        logs: [...(prevTicket?.logs || []), response.data.log],
+      }));
+
+      toast.success("Vendor has been assigned successfully.");
+    } else {
+      toast.error("Failed to assign vendor");
+    }
+
     setIsVendorAssignmentDisabled(false);
   };
 
