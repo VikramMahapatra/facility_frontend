@@ -183,10 +183,12 @@ export default function TicketDetail() {
       ...prevTicket,
       status: response.data.ticket.status,
       updated_at: response.data.ticket.updated_at,
+
       // Only update workflow logs, NOT comments
       logs: [...(prevTicket?.logs || []), response.data.log],
-      workflows: [...(prevTicket?.workflows || []), response.data.log]
     }));
+
+    setStatusList (response.data.possible_next_statuses)
     
     toast.success(`Ticket status changed to ${selectedStatus}`);
   } else {
@@ -208,17 +210,16 @@ export default function TicketDetail() {
   );
   
   if (response.success && response.data) {
-    // ✅ Access nested ticket and log (same as status update)
+   
     setTicket(prevTicket => ({
       ...prevTicket,
-      // ✅ Get data from server response (not local variables)
+      
       assigned_to: response.data.ticket.assigned_to,
-      assigned_to_name: response.data.ticket.assigned_to_name, // Now available from server
-      updated_at: response.data.ticket.updated_at, // Server timestamp
-      // ✅ Add the workflow log (same as status update)
+      assigned_to_name: response.data.ticket.assigned_to_name, 
+      updated_at: response.data.ticket.updated_at,
+      
       logs: [...(prevTicket?.logs || []), response.data.log],
-      workflows: [...(prevTicket?.workflows || []), response.data.log]
-    }));
+       }));
     
     toast.success("Ticket has been assigned successfully.");
   } else {
@@ -228,28 +229,39 @@ export default function TicketDetail() {
   setIsAssignmentDisabled(false);
 };
 
-  const handleVendorAssignment = async () => {
-    if (
-      !ticketId ||
-      !assignedToVendor ||
-      isVendorAssignmentDisabled ||
-      isTicketClosed
-    )
-      return;
+ const handleVendorAssignment = async () => {
+  if (!ticketId || !assignedToVendor || isVendorAssignmentDisabled || isTicketClosed)
+    return;
 
-    setIsVendorAssignmentDisabled(true);
-    await withLoader(async () => {
-      const response = await ticketsApiService.assignVendor(
-        ticketId,
-        assignedToVendor
-      );
-      if (response.success) {
-        loadTicket();
-        toast.success("Vendor has been assigned successfully.");
-      }
-    });
-    setIsVendorAssignmentDisabled(false);
-  };
+  setIsVendorAssignmentDisabled(true);
+  
+  
+  
+  const response = await ticketsApiService.assignVendor(
+    ticketId,
+    assignedToVendor
+  );
+  
+  
+  
+  if (response.success && response.data) {
+    console.log("6. Trying to access response.data.ticket.vendor_id...");
+    
+    setTicket(prevTicket => ({
+      ...prevTicket,
+      vendor_id: response.data.ticket.vendor_id,
+      vendor_name: response.data.ticket.vendor_name,
+      updated_at: response.data.ticket.updated_at,
+      logs: [...(prevTicket?.logs || []), response.data.log],
+    }));
+    
+    toast.success("Vendor has been assigned successfully.");
+  } else {
+    toast.error("Failed to assign vendor");
+  }
+  
+  setIsVendorAssignmentDisabled(false);
+};
 
   const handleReopen = () => {
     toast.success("The ticket has been reopened for further action.");
