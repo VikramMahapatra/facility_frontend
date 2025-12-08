@@ -77,6 +77,7 @@ export function TicketWorkOrderForm({
   const [ticketsList, setTicketsList] = useState<any[]>([]);
   const [statusList, setStatusList] = useState<any[]>([]);
   const [selectedTicketDetails, setSelectedTicketDetails] = useState<any>(null);
+  const [isLoadingTicketDetails, setIsLoadingTicketDetails] = useState(false);
 
   const selectedTicketId = watch("ticket_id");
 
@@ -114,8 +115,9 @@ export function TicketWorkOrderForm({
           }
     );
 
-    // Load ticket details if ticket_id exists (for view/edit mode)
+  
     if (ticketId) {
+      setIsLoadingTicketDetails(true);
       try {
         const response = await ticketsApiService.getTicketById(ticketId);
         if (response.success) {
@@ -123,7 +125,13 @@ export function TicketWorkOrderForm({
         }
       } catch (error) {
         console.error("Failed to load ticket details:", error);
+        setSelectedTicketDetails(null);
+      } finally {
+        setIsLoadingTicketDetails(false);
       }
+    } else {
+      setSelectedTicketDetails(null);
+      setIsLoadingTicketDetails(false);
     }
 
     setFormLoading(false);
@@ -138,6 +146,8 @@ export function TicketWorkOrderForm({
   useEffect(() => {
     const loadTicketDetails = async () => {
       if (selectedTicketId) {
+        setIsLoadingTicketDetails(true);
+        setSelectedTicketDetails(null); // Clear previous details while loading
         try {
           const response = await ticketsApiService.getTicketById(
             selectedTicketId
@@ -147,9 +157,13 @@ export function TicketWorkOrderForm({
           }
         } catch (error) {
           console.error("Failed to load ticket details:", error);
+          setSelectedTicketDetails(null);
+        } finally {
+          setIsLoadingTicketDetails(false);
         }
       } else {
         setSelectedTicketDetails(null);
+        setIsLoadingTicketDetails(false);
       }
     };
 
@@ -277,21 +291,30 @@ export function TicketWorkOrderForm({
 
               {/* Row 2: Preview (when ticket selected) or Description (when no ticket) */}
               {selectedTicketId ? (
-                <div className="bg-muted p-4 rounded-lg space-y-2">
-                  <h4 className="font-medium text-sm">Assignment Preview:</h4>
-                  <div className="text-sm text-muted-foreground space-y-1">
-                    <div>
-                      <strong>Staff:</strong>{" "}
-                      {selectedTicketDetails?.assigned_to_name || "N/A"}
-                    </div>
-                    <div>
-                      <strong>Vendor:</strong>{" "}
-                      {selectedTicketDetails?.vendor_name ||
-                        selectedTicketDetails?.vendor?.name ||
-                        "N/A"}
+                isLoadingTicketDetails ? (
+                  <div className="bg-muted p-4 rounded-lg space-y-2">
+                    <h4 className="font-medium text-sm">Assignment Preview:</h4>
+                    <div className="text-sm text-muted-foreground">
+                      Loading ticket details...
                     </div>
                   </div>
-                </div>
+                ) : selectedTicketDetails ? (
+                  <div className="bg-muted p-4 rounded-lg space-y-2">
+                    <h4 className="font-medium text-sm">Assignment Preview:</h4>
+                    <div className="text-sm text-muted-foreground space-y-1">
+                      <div>
+                        <strong>Staff:</strong>{" "}
+                        {selectedTicketDetails?.assigned_to_name || "N/A"}
+                      </div>
+                      <div>
+                        <strong>Vendor:</strong>{" "}
+                        {selectedTicketDetails?.vendor_name ||
+                          selectedTicketDetails?.vendor?.name ||
+                          "N/A"}
+                      </div>
+                    </div>
+                  </div>
+                ) : null
               ) : (
                 <div className="space-y-2">
                   <Label htmlFor="description">Description *</Label>
