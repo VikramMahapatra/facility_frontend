@@ -586,26 +586,29 @@ export default function TicketWorkload() {
                 </SelectContent>
               </Select>
             </div>
-            <div className="flex justify-end gap-2">
-              <Button
-                variant="outline"
-                onClick={() => {
-                  setIsReassignOpen(false);
-                  setIsAssigning(false);
-                  setNewAssignee("");
-                  setSelectedTicket(null);
-                }}
-                disabled={isAssigning}
-              >
-                Cancel
-              </Button>
-              <Button
-                onClick={handleReassignSubmit}
-                disabled={loadingEmployees || isAssigning}
-              >
-                {isAssigning ? "Assigning..." : "Assign"}
-              </Button>
-            </div>
+    
+            {!loadingEmployees && (
+              <div className="flex justify-end gap-2">
+                <Button
+                  variant="outline"
+                  onClick={() => {
+                    setIsReassignOpen(false);
+                    setIsAssigning(false);
+                    setNewAssignee("");
+                    setSelectedTicket(null);
+                  }}
+                  disabled={isAssigning}
+                >
+                  Cancel
+                </Button>
+                <Button
+                  onClick={handleReassignSubmit}
+                  disabled={isAssigning}
+                >
+                  {isAssigning ? "Assigning..." : "Assign"}
+                </Button>
+              </div>
+            )}
           </div>
         </DialogContent>
       </Dialog>
