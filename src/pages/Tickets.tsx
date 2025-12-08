@@ -26,7 +26,7 @@ export default function Tickets() {
   const navigate = useNavigate();
   const { withLoader } = useLoader();
   const { canRead, canWrite, canDelete } = useAuth();
-  const resource = "tickets"; // must match resource name from backend policies
+  const resource = "tickets";
   const [isFormOpen, setIsFormOpen] = useState(false);
   const [isEditOpen, setIsEditOpen] = useState(false);
   const [editingTicket, setEditingTicket] = useState<any>(null);
@@ -38,8 +38,8 @@ export default function Tickets() {
   const [siteList, setSiteList] = useState<any[]>([]);
   const [priorityList, setPriorityList] = useState<any[]>([]);
   const [statusList, setStatusList] = useState<any[]>([]);
-  const [page, setPage] = useState(1); // current page
-  const [pageSize] = useState(10); // items per page
+  const [page, setPage] = useState(1); 
+  const [pageSize] = useState(10); 
   const [totalItems, setTotalItems] = useState(0);
 
   useSkipFirstEffect(() => {

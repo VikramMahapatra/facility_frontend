@@ -143,7 +143,6 @@ export default function TicketDetail() {
     const response = await ticketsApiService.postComment(ticketId, newComment);
 
     if (response.success && response.data) {
-      // Convert the API response to match your comment structure
       const newCommentObj = {
         comment_id: response.data.id,
         user_id: response.data.action_by,
@@ -153,7 +152,6 @@ export default function TicketDetail() {
         reactions: [],
       };
 
-      // Add the new comment to the ticket's comments array
       setTicket((prevTicket) => ({
         ...prevTicket,
         comments: [...(prevTicket?.comments || []), newCommentObj],
@@ -170,63 +168,76 @@ export default function TicketDetail() {
     if (!ticketId || !selectedStatus || !user?.id || isStatusUpdateDisabled)
       return;
 
-  setIsStatusUpdateDisabled(true);
-  
-  const response = await ticketsApiService.updateTicketStatus(
-    ticketId,
-    selectedStatus,
-    user.id
-  );
-  
-  if (response.success && response.data) {
-    setTicket(prevTicket => ({
-      ...prevTicket,
-      status: response.data.ticket.status,
-      updated_at: response.data.ticket.updated_at,
-      // Only update workflow logs, NOT comments
-      logs: [...(prevTicket?.logs || []), response.data.log],
-      workflows: [...(prevTicket?.workflows || []), response.data.log]
-    }));
-    
-    toast.success(`Ticket status changed to ${selectedStatus}`);
-  } else {
-    toast.error("Failed to update status");
-  }
-  
-  setIsStatusUpdateDisabled(false);
-};
+    setIsStatusUpdateDisabled(true);
+
+    const response = await ticketsApiService.updateTicketStatus(
+      ticketId,
+      selectedStatus,
+      user.id
+    );
+
+    if (response.success && response.data) {
+      const ticketData =
+        response.data.ticket || response.data.data || response.data;
+      const logData = response.data.log || response.data;
+
+      if (ticketData) {
+        setTicket((prevTicket) => ({
+          ...(prevTicket || {}),
+          status: ticketData.status,
+          updated_at: ticketData.updated_at,
+          logs: [...(prevTicket?.logs || []), logData].filter(Boolean),
+          workflows: [...(prevTicket?.workflows || []), logData].filter(
+            Boolean
+          ),
+        }));
+
+        toast.success(`Ticket status changed to ${selectedStatus}`);
+      } else {
+        toast.error("Failed to update status: Invalid response structure");
+      }
+    } else {
+      toast.error("Failed to update status");
+    }
+
+    setIsStatusUpdateDisabled(false);
+  };
 
   const handleAssignment = async () => {
     if (!ticketId || !assignedTo || isAssignmentDisabled || isTicketClosed)
       return;
 
-  setIsAssignmentDisabled(true);
-  
-  const response = await ticketsApiService.assignTicket(
-    ticketId,
-    assignedTo
-  );
-  
-  if (response.success && response.data) {
-    // ✅ Access nested ticket and log (same as status update)
-    setTicket(prevTicket => ({
-      ...prevTicket,
-      // ✅ Get data from server response (not local variables)
-      assigned_to: response.data.ticket.assigned_to,
-      assigned_to_name: response.data.ticket.assigned_to_name, // Now available from server
-      updated_at: response.data.ticket.updated_at, // Server timestamp
-      // ✅ Add the workflow log (same as status update)
-      logs: [...(prevTicket?.logs || []), response.data.log],
-      workflows: [...(prevTicket?.workflows || []), response.data.log]
-    }));
-    
-    toast.success("Ticket has been assigned successfully.");
-  } else {
-    toast.error("Failed to assign ticket");
-  }
-  
-  setIsAssignmentDisabled(false);
-};
+    setIsAssignmentDisabled(true);
+
+    const response = await ticketsApiService.assignTicket(ticketId, assignedTo);
+
+    if (response.success && response.data) {
+      const ticketData =
+        response.data.ticket || response.data.data || response.data;
+      const logData = response.data.log || response.data;
+
+      if (ticketData) {
+        setTicket((prevTicket) => ({
+          ...(prevTicket || {}),
+          assigned_to: ticketData.assigned_to,
+          assigned_to_name: ticketData.assigned_to_name,
+          updated_at: ticketData.updated_at,
+          logs: [...(prevTicket?.logs || []), logData].filter(Boolean),
+          workflows: [...(prevTicket?.workflows || []), logData].filter(
+            Boolean
+          ),
+        }));
+
+        toast.success("Ticket has been assigned successfully.");
+      } else {
+        toast.error("Failed to assign ticket: Invalid response structure");
+      }
+    } else {
+      toast.error("Failed to assign ticket");
+    }
+
+    setIsAssignmentDisabled(false);
+  };
 
   const handleVendorAssignment = async () => {
     if (
@@ -282,7 +293,7 @@ export default function TicketDetail() {
         if (response.success) {
           toast.success("Work order updated successfully");
           setIsWorkOrderFormOpen(false);
-          loadTicket(); // Reload ticket to get updated work orders
+          loadTicket();
         } else {
           toast.error("Failed to update work order");
         }
