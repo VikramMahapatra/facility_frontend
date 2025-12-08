@@ -20,6 +20,7 @@ import { organisationApiService } from "@/services/spaces_sites/organisationapi"
 import { ticketsApiService } from "@/services/ticketing_service/ticketsapi";
 import { vendorsApiService } from "@/services/pocurments/vendorsapi";
 import { userManagementApiService } from "@/services/access_control/usermanagementapi";
+import { slaPoliciesApiService } from "@/services/ticketing_service/slapoliciesapi";
 import { toast } from "sonner";
 import { ticketSchema, TicketFormValues } from "@/schemas/ticket.schema";
 //import { toast as sonnerToast } from "sonner";
@@ -108,7 +109,7 @@ export default function TicketForm({
   useEffect(() => {
     loadSiteLookup();
     loadCategoryLookup(initialData?.site_id || "all");
-    loadStaffLookup();
+    loadStaffLookup(initialData?.site_id);
     loadVendorLookup();
     if (initialData?.site_id) {
       loadSpaceLookup(initialData.site_id);
@@ -119,11 +120,13 @@ export default function TicketForm({
     if (selectedSiteId) {
       loadSpaceLookup(selectedSiteId);
       loadCategoryLookup(selectedSiteId);
+      loadStaffLookup(selectedSiteId);
       setValue("space_id", "");
       setValue("tenant_id", "");
     } else {
       setSpaceList([]);
       setTenantList([]);
+      setStaffList([]);
       loadCategoryLookup("all");
     }
   }, [selectedSiteId, setValue]);
@@ -157,6 +160,7 @@ export default function TicketForm({
       if (initialData.site_id) {
         loadSpaceLookup(initialData.site_id);
         loadCategoryLookup(initialData.site_id);
+        loadStaffLookup(initialData.site_id);
         if (initialData.space_id) {
           loadTenantLookup(initialData.site_id, initialData.space_id);
         }
@@ -200,11 +204,11 @@ export default function TicketForm({
     }
   };
 
-  const loadStaffLookup = async () => {
-    const params = new URLSearchParams();
-    params.append("account_type", "staff");
-    const response = await userManagementApiService.getUsers(params);
-    if (response.success) setStaffList(response.data?.users || []);
+  const loadStaffLookup = async (siteId?: string) => {
+    const response = await slaPoliciesApiService.getUserContactLookup(siteId);
+    if (response.success) {
+      setStaffList(response.data || []);
+    }
   };
 
   const loadVendorLookup = async () => {
@@ -507,8 +511,8 @@ export default function TicketForm({
                 </SelectTrigger>
                 <SelectContent>
                   {staffList.map((staff: any) => (
-                    <SelectItem key={staff.id} value={staff.id}>
-                      {staff.full_name}
+                    <SelectItem key={staff.id} value={String(staff.id)}>
+                      {staff.name || staff.email || staff.full_name || `User ${staff.id}`}
                     </SelectItem>
                   ))}
                 </SelectContent>

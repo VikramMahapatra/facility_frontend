@@ -96,13 +96,9 @@ export default function TicketDetail() {
   const loadVendorsForTicket = async () => {
     if (!ticketId) return;
     await withLoader(async () => {
-      const response = await vendorsApiService.getVendorLookup();
+      const response = await vendorsApiService.getVendorWorkOrderLookup();
       if (response.success) {
-        setVendorList(
-          Array.isArray(response.data)
-            ? response.data
-            : response.data?.vendors || []
-        );
+        setVendorList(response.data || []);
       }
     });
   };
