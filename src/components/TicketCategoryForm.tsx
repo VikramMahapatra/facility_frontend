@@ -5,12 +5,20 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Switch } from "@/components/ui/switch";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 import { ticketCategoriesApiService } from "@/services/ticketing_service/ticketcategoriesapi";
 import { siteApiService } from "@/services/spaces_sites/sitesapi";
-import { ticketCategorySchema, TicketCategoryFormValues } from "@/schemas/ticketCategory.schema";
+import {
+  ticketCategorySchema,
+  TicketCategoryFormValues,
+} from "@/schemas/ticketCategory.schema";
 import { toast } from "sonner";
-
 
 interface TicketCategoryFormProps {
   category?: any;
@@ -30,7 +38,13 @@ const emptyFormData: TicketCategoryFormValues = {
   status: "",
 };
 
-export default function TicketCategoryForm({ category, isOpen, onClose, onSave, mode }: TicketCategoryFormProps) {
+export default function TicketCategoryForm({
+  category,
+  isOpen,
+  onClose,
+  onSave,
+  mode,
+}: TicketCategoryFormProps) {
   const {
     register,
     handleSubmit,
@@ -58,18 +72,22 @@ export default function TicketCategoryForm({ category, isOpen, onClose, onSave, 
     await Promise.all([
       loadAutoAssignRoleLookup(),
       loadStatusLookup(),
-      loadSiteLookup()
+      loadSiteLookup(),
     ]);
     setFormLoading(false);
-    reset(category ? {
-      ...category,
-      sla_hours: category.sla_hours || 24,
-      is_active: category.is_active ?? true,
-    } : emptyFormData);
-  }
+    reset(
+      category
+        ? {
+            ...category,
+            sla_hours: category.sla_hours || 24,
+            is_active: category.is_active ?? true,
+          }
+        : emptyFormData
+    );
+  };
 
   useEffect(() => {
-    console.log("category data :", category)
+    console.log("category data :", category);
     loadAll();
   }, [category, mode, reset]);
 
@@ -93,8 +111,6 @@ export default function TicketCategoryForm({ category, isOpen, onClose, onSave, 
     }
   }, [slaPolicyList]);
 
-
-
   const loadAutoAssignRoleLookup = async () => {
     const response = await ticketCategoriesApiService.getAutoAssignRoleLookup();
     if (response.success) {
@@ -103,7 +119,9 @@ export default function TicketCategoryForm({ category, isOpen, onClose, onSave, 
   };
 
   const loadSlaPolicyLookup = async (siteId: string) => {
-    const response = await ticketCategoriesApiService.getSlaPolicyLookup(siteId);
+    const response = await ticketCategoriesApiService.getSlaPolicyLookup(
+      siteId
+    );
     if (response.success) {
       setSlaPolicyList(response.data || []);
     } else {
@@ -119,11 +137,12 @@ export default function TicketCategoryForm({ category, isOpen, onClose, onSave, 
   };
 
   const getActiveStatusId = () => {
-    return statusList.find((s: any) => s.name?.toLowerCase() === 'active')?.id;
+    return statusList.find((s: any) => s.name?.toLowerCase() === "active")?.id;
   };
 
   const getInactiveStatusId = () => {
-    return statusList.find((s: any) => s.name?.toLowerCase() === 'inactive')?.id;
+    return statusList.find((s: any) => s.name?.toLowerCase() === "inactive")
+      ?.id;
   };
 
   const handleActiveToggle = (checked: boolean) => {
@@ -150,7 +169,10 @@ export default function TicketCategoryForm({ category, isOpen, onClose, onSave, 
   const isReadOnly = mode === "view";
 
   return (
-    <form onSubmit={isSubmitting ? undefined : handleSubmit(onSubmitForm)} className="space-y-4">
+    <form
+      onSubmit={isSubmitting ? undefined : handleSubmit(onSubmitForm)}
+      className="space-y-4"
+    >
       {formLoading ? (
         <p className="text-center">Loading...</p>
       ) : (
@@ -161,11 +183,13 @@ export default function TicketCategoryForm({ category, isOpen, onClose, onSave, 
               id="category_name"
               {...register("category_name")}
               placeholder="e.g., Electrical Issues"
-              className={errors.category_name ? 'border-red-500' : ''}
+              className={errors.category_name ? "border-red-500" : ""}
               disabled={isReadOnly}
             />
             {errors.category_name && (
-              <p className="text-sm text-red-500">{errors.category_name.message}</p>
+              <p className="text-sm text-red-500">
+                {errors.category_name.message}
+              </p>
             )}
           </div>
           <Controller
@@ -179,7 +203,9 @@ export default function TicketCategoryForm({ category, isOpen, onClose, onSave, 
                   onValueChange={field.onChange}
                   disabled={isReadOnly}
                 >
-                  <SelectTrigger className={errors.site_id ? 'border-red-500' : ''}>
+                  <SelectTrigger
+                    className={errors.site_id ? "border-red-500" : ""}
+                  >
                     <SelectValue placeholder="Select site" />
                   </SelectTrigger>
                   <SelectContent>
@@ -191,7 +217,9 @@ export default function TicketCategoryForm({ category, isOpen, onClose, onSave, 
                   </SelectContent>
                 </Select>
                 {errors.site_id && (
-                  <p className="text-sm text-red-500">{errors.site_id.message}</p>
+                  <p className="text-sm text-red-500">
+                    {errors.site_id.message}
+                  </p>
                 )}
               </div>
             )}
@@ -207,7 +235,9 @@ export default function TicketCategoryForm({ category, isOpen, onClose, onSave, 
                   onValueChange={field.onChange}
                   disabled={isReadOnly}
                 >
-                  <SelectTrigger className={errors.auto_assign_role ? 'border-red-500' : ''}>
+                  <SelectTrigger
+                    className={errors.auto_assign_role ? "border-red-500" : ""}
+                  >
                     <SelectValue placeholder="Select auto-assign role" />
                   </SelectTrigger>
                   <SelectContent>
@@ -219,7 +249,9 @@ export default function TicketCategoryForm({ category, isOpen, onClose, onSave, 
                   </SelectContent>
                 </Select>
                 {errors.auto_assign_role && (
-                  <p className="text-sm text-red-500">{errors.auto_assign_role.message}</p>
+                  <p className="text-sm text-red-500">
+                    {errors.auto_assign_role.message}
+                  </p>
                 )}
               </div>
             )}
@@ -231,7 +263,7 @@ export default function TicketCategoryForm({ category, isOpen, onClose, onSave, 
               type="number"
               {...register("sla_hours", { valueAsNumber: true })}
               min="1"
-              className={errors.sla_hours ? 'border-red-500' : ''}
+              className={errors.sla_hours ? "border-red-500" : ""}
               disabled={isReadOnly}
             />
             {errors.sla_hours && (
@@ -248,8 +280,11 @@ export default function TicketCategoryForm({ category, isOpen, onClose, onSave, 
                   value={field.value?.toString() || ""}
                   onValueChange={field.onChange}
                   disabled={isReadOnly}
+                  required
                 >
-                  <SelectTrigger className={errors.sla_id ? 'border-red-500' : ''}>
+                  <SelectTrigger
+                    className={errors.sla_id ? "border-red-500" : ""}
+                  >
                     <SelectValue placeholder="Select SLA Policy" />
                   </SelectTrigger>
                   <SelectContent>
@@ -261,7 +296,9 @@ export default function TicketCategoryForm({ category, isOpen, onClose, onSave, 
                   </SelectContent>
                 </Select>
                 {errors.sla_id && (
-                  <p className="text-sm text-red-500">{errors.sla_id.message}</p>
+                  <p className="text-sm text-red-500">
+                    {errors.sla_id.message}
+                  </p>
                 )}
               </div>
             )}
@@ -292,7 +329,11 @@ export default function TicketCategoryForm({ category, isOpen, onClose, onSave, 
             </Button>
             {mode !== "view" && (
               <Button type="submit" disabled={isSubmitting}>
-                {isSubmitting ? "Saving..." : mode === "create" ? "Create Ticket Category" : "Update Ticket Category"}
+                {isSubmitting
+                  ? "Saving..."
+                  : mode === "create"
+                  ? "Create Ticket Category"
+                  : "Update Ticket Category"}
               </Button>
             )}
           </div>

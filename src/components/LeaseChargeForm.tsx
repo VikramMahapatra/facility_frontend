@@ -18,6 +18,7 @@ import {
 } from "@/components/ui/select";
 import { toast } from "sonner";
 import { leasesApiService } from "@/services/leasing_tenants/leasesapi";
+import { leaseChargeApiService } from "@/services/leasing_tenants/leasechargeapi";
 import { Controller, useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import {
@@ -25,20 +26,11 @@ import {
   LeaseChargeFormValues,
 } from "@/schemas/leaseCharge.schema";
 
-// ---- Types (kept minimal and local to the form, mirroring SpaceForm style) ----
-export type ChargeCode =
-  | "RENT"
-  | "CAM"
-  | "ELEC"
-  | "WATER"
-  | "PARK"
-  | "PENALTY"
-  | "MAINTENANCE";
 
 export interface LeaseCharge {
   id: string;
   lease_id: string;
-  charge_code: ChargeCode | string;
+  charge_code:  string;
   period_start: string; // yyyy-mm-dd
   period_end: string; // yyyy-mm-dd
   amount: number;
@@ -58,7 +50,7 @@ interface LeaseChargeFormProps {
 // ---- Empty (default) form data, styled like SpaceForm's emptyFormData) ----
 const emptyFormData: Partial<LeaseCharge> = {
   lease_id: "",
-  charge_code: "RENT",
+  charge_code: "",
   period_start: "",
   period_end: "",
   amount: undefined as unknown as number,
@@ -84,7 +76,7 @@ export function LeaseChargeForm({
     resolver: zodResolver(leaseChargeSchema),
     defaultValues: {
       lease_id: "",
-      charge_code: "RENT",
+      charge_code: "",
       period_start: "",
       period_end: "",
       amount: undefined as any,
@@ -94,6 +86,7 @@ export function LeaseChargeForm({
     reValidateMode: "onChange",
   });
   const [leaseList, setLeaseList] = useState([]);
+  const [chargeCodeList, setChargeCodeList] = useState([]);
 
   const periodStart = watch("period_start");
   const periodEnd = watch("period_end");
@@ -115,7 +108,7 @@ export function LeaseChargeForm({
     if (charge && mode !== "create") {
       reset({
         lease_id: (charge.lease_id as any) || "",
-        charge_code: (charge.charge_code as any) || "RENT",
+        charge_code: (charge.charge_code as any) || "",
         period_start: charge.period_start || "",
         period_end: charge.period_end || "",
         amount: charge.amount as any,
@@ -124,7 +117,7 @@ export function LeaseChargeForm({
     } else {
       reset({
         lease_id: "",
-        charge_code: "RENT",
+        charge_code: "",
         period_start: "",
         period_end: "",
         amount: undefined as any,
@@ -132,11 +125,17 @@ export function LeaseChargeForm({
       });
     }
     loadLeaseLookup();
+    loadLeaseChargeLookup();
   }, [charge, isOpen, mode, reset]);
 
   const loadLeaseLookup = async () => {
     const lookup = await leasesApiService.getLeaseLookup();
     if (lookup.success) setLeaseList(lookup.data || []);
+  };
+
+  const loadLeaseChargeLookup = async () => {
+    const lookup = await leaseChargeApiService.getLeaseChargeLookup();
+    if (lookup.success) setChargeCodeList(lookup.data || []);
   };
 
   const onSubmitForm = async (data: LeaseChargeFormValues) => {
@@ -210,13 +209,11 @@ export function LeaseChargeForm({
                     <SelectValue placeholder="Select type" />
                   </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="RENT">RENT</SelectItem>
-                    <SelectItem value="CAM">CAM</SelectItem>
-                    <SelectItem value="ELEC">ELEC</SelectItem>
-                    <SelectItem value="WATER">WATER</SelectItem>
-                    <SelectItem value="PARK">PARK</SelectItem>
-                    <SelectItem value="PENALTY">PENALTY</SelectItem>
-                    <SelectItem value="MAINTENANCE">MAINTENANCE</SelectItem>
+                    {chargeCodeList.map((code: any) => (
+                      <SelectItem key={code.id} value={code.id}>
+                        {code.name}
+                      </SelectItem>
+                    ))}
                   </SelectContent>
                 </Select>
               )}
