@@ -22,6 +22,7 @@ import SpaceAssignments from "./pages/SpaceAssignments";
 import Leases from "./pages/Leases";
 import Tenants from "./pages/Tenants";
 import LeaseCharges from "./pages/LeaseCharges";
+import LeaseChargeCode from "./pages/LeaseChargeCode";
 import Invoices from "./pages/Invoices";
 import RevenueReports from "./pages/RevenueReports";
 import TaxManagement from "./pages/TaxManagement";
@@ -59,7 +60,6 @@ import Tickets from "./pages/Tickets";
 import ApprovalRules from "./pages/ApprovalRules";
 import SLAPolicies from "./pages/SLAPolicies";
 import TicketWorkOrders from "./pages/TicketWorkOrders";
-import TicketPMTemplates from "./pages/TicketPMTemplates";
 import { GoogleOAuthProvider } from "@react-oauth/google";
 import ProtectedLayout from "./components/ProtectedLayout";
 import ProtectedRoute from "./components/ProtectedRoute";
@@ -82,7 +82,10 @@ const App = () => {
                 <Route path="/pricing" element={<Pricing />} />
                 <Route path="/login" element={<Login />} />
                 <Route path="/signup" element={<SignUp />} />
-                <Route path="/registration-status" element={<RegistrationStatus />} />
+                <Route
+                  path="/registration-status"
+                  element={<RegistrationStatus />}
+                />
 
                 {/* All protected pages go inside */}
                 <Route element={<ProtectedRoute></ProtectedRoute>}>
@@ -95,18 +98,34 @@ const App = () => {
                   <Route path="/spaces" element={<Spaces />} />
                   <Route path="/spaces/:kind" element={<SpacesByKind />} />
                   <Route path="/space-groups" element={<SpaceGroups />} />
-                  <Route path="/space-assignments" element={<SpaceAssignments />} />
+                  <Route
+                    path="/space-assignments"
+                    element={<SpaceAssignments />}
+                  />
                   <Route path="/leases" element={<Leases />} />
                   <Route path="/tenants" element={<Tenants />} />
                   <Route path="/lease-charges" element={<LeaseCharges />} />
+                  <Route
+                    path="/lease-charge-codes"
+                    element={<LeaseChargeCode />}
+                  />
                   <Route path="/invoices" element={<Invoices />} />
                   <Route path="/revenue-reports" element={<RevenueReports />} />
                   <Route path="/tax-management" element={<TaxManagement />} />
                   <Route path="/assets" element={<Assets />} />
                   <Route path="/work-orders" element={<WorkOrders />} />
-                  <Route path="/service-requests" element={<ServiceRequests />} />
-                  <Route path="/service-requests/:id" element={<ServiceRequestDetail />} />
-                  <Route path="/preventive-maintenance" element={<PreventiveMaintenance />} />
+                  <Route
+                    path="/service-requests"
+                    element={<ServiceRequests />}
+                  />
+                  <Route
+                    path="/service-requests/:id"
+                    element={<ServiceRequestDetail />}
+                  />
+                  <Route
+                    path="/preventive-maintenance"
+                    element={<PreventiveMaintenance />}
+                  />
                   <Route path="/vendors" element={<Vendors />} />
                   <Route path="/contracts" element={<Contracts />} />
                   <Route path="/meters" element={<MetersReadings />} />
@@ -125,16 +144,30 @@ const App = () => {
                   <Route path="/documentation" element={<Documentation />} />
                   <Route path="/roles" element={<RolesManagement />} />
                   <Route path="/role-policies" element={<RolePolicies />} />
-                  <Route path="/users-management" element={<UsersManagement />} />
-                  <Route path="/pending-approvals" element={<PendingApprovals />} />
-                  <Route path="/ticket-dashboard" element={<TicketDashboard />} />
+                  <Route
+                    path="/users-management"
+                    element={<UsersManagement />}
+                  />
+                  <Route
+                    path="/pending-approvals"
+                    element={<PendingApprovals />}
+                  />
+                  <Route
+                    path="/ticket-dashboard"
+                    element={<TicketDashboard />}
+                  />
                   <Route path="/tickets" element={<Tickets />} />
                   <Route path="/tickets/:ticketId" element={<TicketDetail />} />
-                  <Route path="/ticket-categories" element={<TicketCategories />} />
+                  <Route
+                    path="/ticket-categories"
+                    element={<TicketCategories />}
+                  />
                   <Route path="/sla-policies" element={<SLAPolicies />} />
-                  <Route path="/ticket-work-orders" element={<TicketWorkOrders />} />
+                  <Route
+                    path="/ticket-work-orders"
+                    element={<TicketWorkOrders />}
+                  />
                   <Route path="/ticket-workload" element={<TicketWorkload />} />
-                  <Route path="/ticket-pm-templates" element={<TicketPMTemplates />} />
                   <Route path="/approval-rules" element={<ApprovalRules />} />
                 </Route>
                 {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}

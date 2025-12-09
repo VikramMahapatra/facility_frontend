@@ -139,14 +139,15 @@ export default function TicketWorkload() {
     unassignedTicketsEndIndex
   );
 
-  const loadEmployeesForTicket = async (ticketId: string) => {
+  const loadEmployeesForTicket = async () => {
+    if (!selectedSiteId) return;
     setLoadingEmployees(true);
-    const response = await ticketsApiService.getEmployeesForTicket(ticketId);
+    const response = await workloadManagementApiService.AssignTo(selectedSiteId);
     if (response.success) {
       setEmployeeList(
         Array.isArray(response.data)
           ? response.data
-          : response.data?.employees || []
+          : response.data?.employees || response.data?.data || []
       );
     }
     setLoadingEmployees(false);
@@ -166,7 +167,7 @@ export default function TicketWorkload() {
     setNewAssignee("");
     setEmployeeList([]);
     setIsReassignOpen(true);
-    await loadEmployeesForTicket(ticketIdStr);
+    await loadEmployeesForTicket();
   };
 
   const handleReassignSubmit = async () => {
@@ -574,13 +575,10 @@ export default function TicketWorkload() {
                 </SelectTrigger>
                 <SelectContent>
                   {employeeList
-                    .filter(
-                      (user: any) =>
-                        user.user_id !== selectedTicket?.assigned_to
-                    )
+                    .filter((user: any) => user.id !== selectedTicket?.assigned_to)
                     .map((user: any) => (
-                      <SelectItem key={user.user_id} value={user.user_id}>
-                        {user.full_name}
+                      <SelectItem key={user.id} value={String(user.id)}>
+                        {user.name}
                       </SelectItem>
                     ))}
                 </SelectContent>

@@ -72,7 +72,8 @@ export default function TicketForm({
           space_id: initialData.space_id || "",
           tenant_id: initialData.tenant_id || "",
           preferred_date:
-            initialData.preferred_date || new Date().toISOString().split("T")[0],
+            initialData.preferred_date ||
+            new Date().toISOString().split("T")[0],
           preferred_time: initialData.preferred_time || "",
           assigned_to: initialData.assigned_to || "",
           vendor_id: initialData.vendor_id || "",
@@ -234,7 +235,7 @@ export default function TicketForm({
     ticketFormData.append("request_type", data.request_type);
     ticketFormData.append("site_id", data.site_id);
     ticketFormData.append("space_id", data.space_id);
-    if (data.tenant_id) {
+    if (data.tenant_id && data.tenant_id !== "none") {
       ticketFormData.append("tenant_id", data.tenant_id);
     }
     if (data.preferred_date) {
@@ -243,10 +244,10 @@ export default function TicketForm({
     if (data.preferred_time) {
       ticketFormData.append("preferred_time", data.preferred_time);
     }
-    if (data.assigned_to) {
+    if (data.assigned_to && data.assigned_to !== "none") {
       ticketFormData.append("assigned_to", data.assigned_to);
     }
-    if (data.vendor_id) {
+    if (data.vendor_id && data.vendor_id !== "none") {
       ticketFormData.append("vendor_id", data.vendor_id);
     }
 
@@ -361,11 +362,12 @@ export default function TicketForm({
                 <SelectTrigger>
                   <SelectValue
                     placeholder={
-                      selectedSpaceId ? "Select tenant" : "Select space first"
+                      selectedSpaceId ? "Select Tenant" : "Select space first"
                     }
                   />
                 </SelectTrigger>
                 <SelectContent>
+                  <SelectItem value="none">Select Tenant</SelectItem>
                   {tenantList.map((tenant: any) => (
                     <SelectItem key={tenant.id} value={tenant.id}>
                       {tenant.name}
@@ -507,12 +509,16 @@ export default function TicketForm({
               <Label htmlFor="assigned_to">Assign To (Staff)</Label>
               <Select value={field.value || ""} onValueChange={field.onChange}>
                 <SelectTrigger>
-                  <SelectValue placeholder=" Select staff " />
+                  <SelectValue placeholder=" Select Staff " />
                 </SelectTrigger>
                 <SelectContent>
+                <SelectItem value="none">Select Staff</SelectItem>
                   {staffList.map((staff: any) => (
                     <SelectItem key={staff.id} value={String(staff.id)}>
-                      {staff.name || staff.email || staff.full_name || `User ${staff.id}`}
+                      {staff.name ||
+                        staff.email ||
+                        staff.full_name ||
+                        `User ${staff.id}`}
                     </SelectItem>
                   ))}
                 </SelectContent>
@@ -529,9 +535,10 @@ export default function TicketForm({
               <Label htmlFor="vendor_id">Vendor</Label>
               <Select value={field.value || ""} onValueChange={field.onChange}>
                 <SelectTrigger>
-                  <SelectValue placeholder="Select vendor" />
+                  <SelectValue placeholder="Select Vendor" />
                 </SelectTrigger>
                 <SelectContent>
+                <SelectItem value="none">Select Vendor</SelectItem>
                   {vendorList.map((vendor: any) => (
                     <SelectItem key={vendor.id} value={vendor.id}>
                       {vendor.name}
@@ -593,14 +600,18 @@ export default function TicketForm({
               files.forEach((file) => {
                 // Validation 1: File size (2MB)
                 if (file.size > MAX_FILE_SIZE) {
-                  toast.error(`${file.name} exceeds 2MB limit. Please choose a smaller file.`);
+                  toast.error(
+                    `${file.name} exceeds 2MB limit. Please choose a smaller file.`
+                  );
                   return;
                 }
 
                 // Validation 2: File type (png, jpeg, jpg)
                 const fileType = file.type.toLowerCase();
                 if (!ALLOWED_TYPES.includes(fileType)) {
-                  toast.error(`${file.name} is not a valid image type. Only PNG, JPEG, and JPG are allowed.`);
+                  toast.error(
+                    `${file.name} is not a valid image type. Only PNG, JPEG, and JPG are allowed.`
+                  );
                   return;
                 }
 
