@@ -27,6 +27,7 @@ import Invoices from "./pages/Invoices";
 import RevenueReports from "./pages/RevenueReports";
 import TaxManagement from "./pages/TaxManagement";
 import Assets from "./pages/Assets";
+import AssetCategories from "./pages/AssetCategories";
 import WorkOrders from "./pages/WorkOrders";
 import ServiceRequests from "./pages/ServiceRequests";
 import ServiceRequestDetail from "./pages/ServiceRequestDetail";
@@ -113,6 +114,7 @@ const App = () => {
                   <Route path="/revenue-reports" element={<RevenueReports />} />
                   <Route path="/tax-management" element={<TaxManagement />} />
                   <Route path="/assets" element={<Assets />} />
+                  <Route path="/asset-categories" element={<AssetCategories />} />
                   <Route path="/work-orders" element={<WorkOrders />} />
                   <Route
                     path="/service-requests"
