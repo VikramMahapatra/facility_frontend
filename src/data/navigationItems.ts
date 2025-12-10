@@ -27,6 +27,7 @@ import {
   Search,
   UserCog,
   ShieldCheck,
+  FolderTree,
 } from "lucide-react";
 
 export const navigationItems = [
@@ -135,6 +136,7 @@ export const navigationItems = [
     title: "Maintenance & Assets",
     items: [
       { title: "Assets", url: "/assets", icon: Package, resource: "assets" },
+      { title: "Asset Categories", url: "/asset-categories", icon: FolderTree, resource: "assets" },
       {
         title: "Work Orders",
         url: "/work-orders",

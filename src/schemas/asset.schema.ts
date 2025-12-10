@@ -16,6 +16,17 @@ export const assetSchema = z.object({
     status: z.enum(["active", "retired", "in_repair"], {
         required_error: "Status is required",
     }).optional(),
-});
+}).refine(
+    (data) => {
+        if (!data.purchase_date || !data.warranty_expiry) {
+            return true; 
+        }
+        return new Date(data.warranty_expiry) >= new Date(data.purchase_date);
+    },
+    {
+        message: "Warranty expiry date must be after purchase date",
+        path: ["warranty_expiry"],
+    }
+);
 
 export type AssetFormValues = z.infer<typeof assetSchema>;
