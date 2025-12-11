@@ -46,7 +46,7 @@ export function RevenueChart() {
   };
 
   return (
-    <Card className="col-span-2 relative">
+    <Card className="col-span-2 relative overflow-hidden">
       <CardHeader>
         <CardTitle>Monthly Revenue Trend</CardTitle>
       </CardHeader>
@@ -93,6 +93,10 @@ export function RevenueChart() {
         </ResponsiveContainer>
         </CardContent>
       </ContentContainer>
+      {/* Coming soon overlay */}
+      <div className="absolute inset-0 bg-background/70 backdrop-blur-sm flex items-center justify-center text-muted-foreground font-semibold pointer-events-none">
+        Not Available
+      </div>
     </Card>
   );
 }
@@ -258,7 +262,7 @@ export function EnergyChart() {
   };
 
   return (
-    <Card className="col-span-2 relative">
+    <Card className="col-span-2 relative overflow-hidden">
       <CardHeader>
         <CardTitle>Energy Consumption Trend</CardTitle>
       </CardHeader>
@@ -302,6 +306,10 @@ export function EnergyChart() {
         </ResponsiveContainer>
         </CardContent>
       </ContentContainer>
+      {/* Coming soon overlay */}
+      <div className="absolute inset-0 bg-background/70 backdrop-blur-sm flex items-center justify-center text-muted-foreground font-semibold pointer-events-none">
+        Not Available
+      </div>
     </Card>
   );
 }
