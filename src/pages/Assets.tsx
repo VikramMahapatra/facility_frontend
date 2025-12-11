@@ -28,7 +28,7 @@ export default function Assets() {
   const [statusFilter, setStatusFilter] = useState("all");
   const { canRead, canWrite, canDelete } = useAuth();
   const resource = "assets";
-  // NEW: dynamic filter sources
+ 
   const [categoryOptions, setCategoryOptions] = useState([]);
   const [statusOptions, setStatusOptions] = useState([]);
 
@@ -58,7 +58,6 @@ export default function Assets() {
   }, [searchTerm, categoryFilter, statusFilter]);
 
   useEffect(() => {
-    // load cards + filter sources once
     loadAssetOverView();
     loadCategories();
     loadStatuses();
@@ -87,9 +86,7 @@ export default function Assets() {
   }
 
   const loadAssetOverView = async () => {
-    const response = await withLoader(async () => {
-      return await assetApiService.getAssetOverview();
-    });
+    const response = await assetApiService.getAssetOverview();
     if (response?.success) setAssetOverview(response.data);
   };
 
@@ -99,8 +96,8 @@ export default function Assets() {
 
     const params = new URLSearchParams();
     if (searchTerm) params.append("search", searchTerm);
-    if (categoryFilter) params.append("category", categoryFilter);
-    if (statusFilter) params.append("status", statusFilter);
+    if (categoryFilter && categoryFilter !== "all") params.append("category", categoryFilter);
+    if (statusFilter && statusFilter !== "all") params.append("status", statusFilter);
     params.append("skip", String(skip));
     params.append("limit", String(limit));
 
@@ -115,7 +112,7 @@ export default function Assets() {
   };
 
   const handleCreate = () => {
-    setSelectedAsset(undefined);
+    setSelectedAsset(null);
     setFormMode('create');
     setIsFormOpen(true);
   };
@@ -135,21 +132,13 @@ export default function Assets() {
   const handleDelete = (assetId: string) => setDeleteAssetId(assetId);
 
   const confirmDelete = async () => {
-    if (!deleteAssetId) return;
-    const resp = await assetApiService.deleteAsset(deleteAssetId);
-    if (resp.success) {
-      const authResponse = resp.data;
-      if (authResponse?.success) {
-        // Success - refresh data
+    if (deleteAssetId) {
+      const response = await assetApiService.deleteAsset(deleteAssetId);
+      if (response.success) {
         updateAssetPage();
         loadAssetOverView();
         setDeleteAssetId(null);
-        toast.success("The asset has been removed successfully.");
-      } else {
-        // Show error popup from backend
-        toast.error(`Cannot Delete Asset\n${authResponse?.message || "Unknown error"}`, {
-          style: { whiteSpace: "pre-line" },
-        });
+        toast.success("Asset deleted successfully");
       }
     }
   };
@@ -158,11 +147,8 @@ export default function Assets() {
     let response;
     if (formMode === 'create') {
       response = await assetApiService.addAsset(values);
-
-      if (response.success) {
-        updateAssetPage();
+      if (response.success) updateAssetPage()
         loadAssetOverView();
-      }
     } else if (formMode === 'edit' && selectedAsset) {
       const updatedAsset = {
         ...selectedAsset,
@@ -172,11 +158,10 @@ export default function Assets() {
       response = await assetApiService.updateAsset(updatedAsset);
 
       if (response.success) {
-        // Update the edited asset in local state
-        setAssets((prev) =>
-          prev.map((a) => (a.id === updatedAsset.id ? updatedAsset : a))
-        );
         loadAssetOverView();
+        setAssets((prev) =>
+          prev.map((a) => (a.id === updatedAsset.id ? response.data || updatedAsset : a))
+        );
       }
     }
 
@@ -190,9 +175,13 @@ export default function Assets() {
   };
 
   const getStatusBadge = (status: string) => {
+    if (!status || status === "unknown") {
+      return <Badge variant="outline">Unknown</Badge>;
+    }
     status = status.toLowerCase();
     const variants = {
       active: "default",
+      inactive: "secondary",
       retired: "secondary",
       in_repair: "destructive"
     } as const;
@@ -361,8 +350,8 @@ export default function Assets() {
                                 {asset.model && <div className="text-sm text-muted-foreground">{asset.model}</div>}
                               </div>
                             </TableCell>
-                            <TableCell>{(asset as any).category_name || 'Unknown'}</TableCell>
-                            <TableCell>{asset.location}</TableCell>
+                            <TableCell>{(asset as any).category?.name || (asset as any).category_name || 'Unknown'}</TableCell>
+                            <TableCell>{asset.location || '-'}</TableCell>
                             <TableCell>{getStatusBadge(asset.status)}</TableCell>
                             <TableCell>₹{asset.cost?.toLocaleString() || 'N/A'}</TableCell>
                             <TableCell>
@@ -384,9 +373,9 @@ export default function Assets() {
                                   <Edit className="h-4 w-4" />
                                 </Button>
                                 }
-                                <Button variant="ghost" size="sm">
+                                {/* <Button variant="ghost" size="sm">
                                   <Wrench className="h-4 w-4" />
-                                </Button>
+                                </Button> */}
                                 {canDelete(resource) && <Button
                                   variant="ghost"
                                   size="sm"
