@@ -53,7 +53,7 @@ export default function AssetCategories() {
     string | number | null
   >(null);
   const [page, setPage] = useState(1);
-  const [pageSize] = useState(3);
+  const [pageSize] = useState(10);
   const [totalItems, setTotalItems] = useState(0);
   const [searchTerm, setSearchTerm] = useState("");
   const { withLoader } = useLoader();
