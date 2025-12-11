@@ -108,21 +108,28 @@ export function AssetForm({ isOpen, mode, asset, onClose, onSave }: Props) {
   }
 
   const onSubmitForm = async (data: AssetFormValues) => {
-    try {
-      await onSave({
-        ...asset,
-        ...data,
-      } as Partial<Asset>);
-      reset(emptyFormData);
-      onClose();
-    } catch (error) {
-      reset(undefined, { keepErrors: true, keepValues: true });
-      toast.error("Failed to save asset");
+    const assetData: any = {
+      ...asset,
+      ...data,
+    };
+    if (assetData.space_id === "" || !assetData.space_id) {
+      assetData.space_id = null;
     }
+    
+    if (assetData.attributes === "" || assetData.attributes === undefined) {
+      assetData.attributes = null;
+    }
+    
+    await onSave(assetData as Partial<Asset>);
+  };
+
+  const handleClose = () => {
+    reset(emptyFormData);
+    onClose();
   };
 
   return (
-    <Dialog open={isOpen} onOpenChange={onClose}>
+    <Dialog open={isOpen} onOpenChange={handleClose}>
       <DialogContent className="max-w-2xl">
         <DialogHeader>
           <DialogTitle>
@@ -196,13 +203,13 @@ export function AssetForm({ isOpen, mode, asset, onClose, onSave }: Props) {
               control={control}
               render={({ field }) => (
                 <div className="space-y-2">
-                  <Label htmlFor="category_id">Category</Label>
+                  <Label htmlFor="category_id">Category *</Label>
                   <Select
                     value={field.value || ''}
                     onValueChange={field.onChange}
                     disabled={readOnly}
                   >
-                    <SelectTrigger>
+                    <SelectTrigger className={errors.category_id ? 'border-red-500' : ''}>
                       <SelectValue placeholder="Select category" />
                     </SelectTrigger>
                     <SelectContent>
@@ -211,6 +218,9 @@ export function AssetForm({ isOpen, mode, asset, onClose, onSave }: Props) {
                       ))}
                     </SelectContent>
                   </Select>
+                  {errors.category_id && (
+                    <p className="text-sm text-red-500">{errors.category_id.message}</p>
+                  )}
                 </div>
               )}
             />
@@ -248,7 +258,7 @@ export function AssetForm({ isOpen, mode, asset, onClose, onSave }: Props) {
 
           <div className="grid grid-cols-3 gap-4">
             <div className="space-y-2">
-              <Label htmlFor="purchase_date">Purchase Date</Label>
+              <Label htmlFor="purchase_date">Purchase Date *</Label>
               <Input
                 id="purchase_date"
                 type="date"
@@ -256,10 +266,16 @@ export function AssetForm({ isOpen, mode, asset, onClose, onSave }: Props) {
                   onChange: () => trigger("warranty_expiry"),
                 })}
                 disabled={readOnly}
+                className={errors.purchase_date ? "border-red-500" : ""}
               />
+              {errors.purchase_date && (
+                <p className="text-sm text-red-500">
+                  {errors.purchase_date.message}
+                </p>
+              )}
             </div>
             <div className="space-y-2">
-              <Label htmlFor="warranty_expiry">Warranty Expiry</Label>
+              <Label htmlFor="warranty_expiry">Warranty Expiry *</Label>
               <Input
                 id="warranty_expiry"
                 type="date"
@@ -274,14 +290,15 @@ export function AssetForm({ isOpen, mode, asset, onClose, onSave }: Props) {
               )}
             </div>
             <div className="space-y-2">
-              <Label htmlFor="cost">Cost</Label>
+              <Label htmlFor="cost">Cost *</Label>
               <Input
                 id="cost"
                 type="number"
                 {...register("cost", { setValueAs: (v) => v === '' ? undefined : Number(v) })}
                 disabled={readOnly}
                 className={errors.cost ? 'border-red-500' : ''}
-                min="0"
+                min="0.01"
+                step="0.01"
                 placeholder="e.g., 5000.00"
               />
               {errors.cost && (

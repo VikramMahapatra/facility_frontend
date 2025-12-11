@@ -107,12 +107,7 @@ export default function TicketCategoryForm({
 
   useEffect(() => {
     if (category && slaPolicyList.length > 0) {
-      const slaExists = slaPolicyList.some((sla) => sla.id === category.sla_id);
-      if (slaExists) {
-        setValue("sla_id", category.sla_id, { shouldValidate: true });
-      } else {
-        setValue("sla_id", undefined, { shouldValidate: true });
-      }
+      setValue("sla_id", category.sla_id, { shouldValidate: true });
     }
   }, [slaPolicyList]);
 
@@ -165,13 +160,10 @@ export default function TicketCategoryForm({
   };
 
   const onSubmitForm = async (data: TicketCategoryFormValues) => {
-    const formdata = {
+    const formResponse = await onSave({
       ...category,
       ...data,
-      sla_id: data.sla_id || undefined,
-    };
-    console.log("Submitting form data:", formdata);
-    const formResponse = await onSave(formdata);
+    });
   };
 
   const isReadOnly = mode === "view";
@@ -208,11 +200,7 @@ export default function TicketCategoryForm({
                 <Label htmlFor="site_id">Site *</Label>
                 <Select
                   value={field.value || ""}
-                  onValueChange={(value) => {
-                    field.onChange(value);
-                    setValue("sla_id", undefined, { shouldValidate: true });
-                    console.log("Site changed to:", value);
-                  }}
+                  onValueChange={field.onChange}
                   disabled={isReadOnly}
                 >
                   <SelectTrigger
@@ -290,9 +278,7 @@ export default function TicketCategoryForm({
                 <Label htmlFor="sla_id">SLA Policy *</Label>
                 <Select
                   value={field.value?.toString() || ""}
-                  onValueChange={(value) => {
-                    field.onChange(value);
-                  }}
+                  onValueChange={field.onChange}
                   disabled={isReadOnly}
                   required
                 >
