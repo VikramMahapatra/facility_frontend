@@ -299,12 +299,17 @@ export default function Assets() {
                       <SelectTrigger className="w-48">
                         <SelectValue placeholder="All Categories" />
                       </SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value="all">All Categories</SelectItem>
-                        {categoryOptions.map((c) => (
-                          <SelectItem key={c.id} value={c.id}>{c.name}</SelectItem>
-                        ))}
-                      </SelectContent>
+                    <SelectContent>
+                      <SelectItem value="all">All Categories</SelectItem>
+                      {categoryOptions.map((c) => (
+                        <SelectItem
+                          key={c.id}
+                          value={c.name || c.id}
+                        >
+                          {c.name}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
                     </Select>
 
                     <Select value={statusFilter} onValueChange={setStatusFilter}>
