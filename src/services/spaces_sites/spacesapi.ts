@@ -3,7 +3,7 @@ import { apiService } from '../api';
 class SpacesApiService {
 
     async getSpaces(params) {
-        return await apiService.request(`/spaces?${params.toString()}`);
+        return await apiService.request(`/spaces/all?${params.toString()}`);
     }
 
     async getSpaceOverview(params) {

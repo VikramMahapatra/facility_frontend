@@ -1,85 +1,95 @@
-import { apiService } from './api';
+import { apiService } from "./api";
 
 // Define interfaces for analytics dat
 
 class AnalyticsApiService {
-    async getAdvanceAnalytics() {
-        return await apiService.request('/analytics/advance-analytics');
-    }
+  async getAdvanceAnalytics() {
+    return await apiService.request("/analytics/advance-analytics");
+  }
 
-    async getByMonth() {
-        return await apiService.request('/analytics/by-month');
-    }
+  async getByMonth() {
+    return await apiService.request("/analytics/by-month");
+  }
 
-    async getSitePropertyLookup() {
-        return await apiService.request('/analytics/');
-    }
+  async getSitePropertyLookup() {
+    return await apiService.request("/analytics/site-lookup");
+  }
 
-    async getRevenueAnalytics() {
-        return await apiService.request('/analytics/revenue/revenue-trends-forecast');
-      }
+  async getRevenueAnalytics() {
+    return await apiService.request(
+      "/analytics/revenue/revenue-trends-forecast"
+    );
+  }
 
-    async getSiteProfitability() {
-        return await apiService.request('/analytics/revenue/revenue-site-profitability');
-      }
+  async getSiteProfitability() {
+    return await apiService.request(
+      "/analytics/revenue/revenue-site-profitability"
+    );
+  }
 
-    async getCollectionPerformance() {
-        return await apiService.request('/analytics/revenue/revenue-collection-performance');
-      }
-    
-    async getOccupancyTrends() {
-        return await apiService.request('/analytics/occupancy/occupancy-trends');
-      }
+  async getCollectionPerformance() {
+    return await apiService.request(
+      "/analytics/revenue/revenue-collection-performance"
+    );
+  }
 
-    async getSpaceTypePerformance() {
-        return await apiService.request('/analytics/occupancy/space-type-performance');
-      }
+  async getOccupancyTrends() {
+    return await apiService.request("/analytics/occupancy/occupancy-trends");
+  }
 
-    async getPortfolioDistribution() {
-        return await apiService.request('/analytics/occupancy/portfolio-distribution');
-      }
+  async getSpaceTypePerformance() {
+    return await apiService.request(
+      "/analytics/occupancy/space-type-performance"
+    );
+  }
 
-    async getYoyPerformance() {
-        return await apiService.request('/analytics/financial/yoy-performance');
-      }
+  async getPortfolioDistribution() {
+    return await apiService.request(
+      "/analytics/occupancy/portfolio-distribution"
+    );
+  }
 
-    async getSiteComparison() {
-        return await apiService.request('/analytics/financial/site-comparison');
-      }
+  async getYoyPerformance() {
+    return await apiService.request("/analytics/financial/yoy-performance");
+  }
 
-    async getMaintenanceEfficiency() {
-        return await apiService.request('/analytics/operations/maintenance-efficiency');
-    }
+  async getSiteComparison() {
+    return await apiService.request("/analytics/financial/site-comparison");
+  }
 
-    async getEnergyConsumption() {
-        return await apiService.request('/analytics/operations/energy-consumption');
-    }
+  async getMaintenanceEfficiency() {
+    return await apiService.request(
+      "/analytics/operations/maintenance-efficiency"
+    );
+  }
 
-    async getDailyVisitorTrends() {
-        return await apiService.request('/analytics/access/daily-visitor-trends');
-    }
+  async getEnergyConsumption() {
+    return await apiService.request("/analytics/operations/energy-consumption");
+  }
 
-    async getHourlyAccessPattern() {
-        return await apiService.request('/analytics/access/hourly-access-pattern');
-    }
+  async getDailyVisitorTrends() {
+    return await apiService.request("/analytics/access/daily-visitor-trends");
+  }
 
-    async getTenantSatisfaction() {
-        return await apiService.request('/analytics/tenant/tenant-satisfaction');
-    }
+  async getHourlyAccessPattern() {
+    return await apiService.request("/analytics/access/hourly-access-pattern");
+  }
 
-    async getTenantRetention() {
-        return await apiService.request('/analytics/tenant/tenant-retention');
-    }
+  async getTenantSatisfaction() {
+    return await apiService.request("/analytics/tenant/tenant-satisfaction");
+  }
 
-    async getPortfolioHeatmap() {
-        return await apiService.request('/analytics/portfolio/portfolio-heatmap');
-    }
+  async getTenantRetention() {
+    return await apiService.request("/analytics/tenant/tenant-retention");
+  }
 
-    async getPerformanceSummary() {
-        return await apiService.request('/analytics/portfolio/performance-summary');
-    }
-    }
+  async getPortfolioHeatmap() {
+    return await apiService.request("/analytics/portfolio/portfolio-heatmap");
+  }
+
+  async getPerformanceSummary() {
+    return await apiService.request("/analytics/portfolio/performance-summary");
+  }
+}
 
 export const analyticsApiService = new AnalyticsApiService();
-
-
