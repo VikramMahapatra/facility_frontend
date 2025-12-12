@@ -3,11 +3,8 @@ import { facilityAuthApiService as apiService } from '../services/api';
 class AuthApiService {
 
     async sendOtp(mobileNo: string) {
-        const response = await apiService.request('/auth/mobile/send_otp', {
+        return await apiService.request('/auth/mobile/send_otp', {
             method: 'POST',
-            headers: {
-                'Content-Type': 'application/json',
-            },
             body: JSON.stringify({
                 mobile: mobileNo
             }),
@@ -17,14 +14,10 @@ class AuthApiService {
     async verifyOtp(mobileNo: string, otp: string) {
         const response = await apiService.request('/auth/mobile/verify_otp', {
             method: 'POST',
-            headers: {
-                'Content-Type': 'application/json',
-            },
-            body: JSON.stringify(
-                {
-                    mobile: mobileNo,
-                    otp
-                }),
+            body: JSON.stringify({
+                mobile: mobileNo,
+                otp
+            }),
         });
 
         this.updateTokens(response);
