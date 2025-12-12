@@ -3,7 +3,7 @@ import { apiService } from '../api';
 class OrganisationApiService {
 
     async getOrg() {
-        return await apiService.request('/orgs');
+        return await apiService.request('/orgs/get_org');
     }
 
     async update(orgData: any) {
