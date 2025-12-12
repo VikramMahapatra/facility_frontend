@@ -3,7 +3,7 @@ import { apiService } from '../api';
 class SpaceGroupsApiService {
 
     async getSpaceGroups(params) {
-        return await apiService.request(`/space-groups?${params.toString()}`);
+        return await apiService.request(`/space-groups/all?${params.toString()}`);
     }
 
     async addSpaceGroup(spaceGroupData: any) {
