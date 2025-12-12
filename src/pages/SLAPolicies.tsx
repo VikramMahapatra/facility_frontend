@@ -24,12 +24,26 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
-import { Plus, Pencil, Trash2, Search, Clock, AlertCircle, ShieldCheck } from "lucide-react";
+import {
+  Plus,
+  Pencil,
+  Trash2,
+  Search,
+  Clock,
+  AlertCircle,
+  ShieldCheck,
+} from "lucide-react";
 import { SLAPolicyForm } from "@/components/SLAPolicyForm";
 import { toast } from "sonner";
 import { slaPoliciesApiService } from "@/services/ticketing_service/slapoliciesapi";
 import { siteApiService } from "@/services/spaces_sites/sitesapi";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -50,7 +64,9 @@ import { SLAPolicy } from "@/interfaces/sla_policy_interface";
 
 export default function SLAPolicies() {
   const [isFormOpen, setIsFormOpen] = useState(false);
-  const [formMode, setFormMode] = useState<"create" | "edit" | "view">("create");
+  const [formMode, setFormMode] = useState<"create" | "edit" | "view">(
+    "create"
+  );
   const [selectedPolicy, setSelectedPolicy] = useState<SLAPolicy | null>(null);
   const [policies, setPolicies] = useState<SLAPolicy[]>([]);
   const [searchQuery, setSearchQuery] = useState("");
@@ -154,6 +170,7 @@ export default function SLAPolicies() {
       };
       response = await slaPoliciesApiService.updateSLAPolicy(updatedPolicy);
       if (response.success) {
+        loadOverview();
         setPolicies((prev) =>
           prev.map((p) => (p.id === updatedPolicy.id ? response.data : p))
         );
@@ -177,7 +194,9 @@ export default function SLAPolicies() {
 
   const confirmDelete = async () => {
     if (deletePolicyId) {
-      const response = await slaPoliciesApiService.deleteSLAPolicy(deletePolicyId);
+      const response = await slaPoliciesApiService.deleteSLAPolicy(
+        deletePolicyId
+      );
       if (response.success) {
         updatePoliciesPage();
         setDeletePolicyId(null);
@@ -188,10 +207,13 @@ export default function SLAPolicies() {
 
   const formatTime = (minutes: number) => {
     const totalMins = Math.round(minutes);
-    if (totalMins < 60) return `${String(totalMins).padStart(2, '0')} min`;
+    if (totalMins < 60) return `${String(totalMins).padStart(2, "0")} min`;
     const hours = Math.floor(totalMins / 60);
     const mins = totalMins % 60;
-    return `${String(hours).padStart(1)} hr ${String(mins).padStart(2, '0')} min`;
+    return `${String(hours).padStart(1)} hr ${String(mins).padStart(
+      2,
+      "0"
+    )} min`;
   };
 
   return (
@@ -235,23 +257,39 @@ export default function SLAPolicies() {
               <div className="grid grid-cols-3 gap-4">
                 <Card>
                   <CardContent className="pt-6">
-                    <p className="text-sm font-bold text-muted-foreground mb-3">Total SLA Policies</p>
-                    <div className="text-3xl font-bold text-sidebar-primary mb-1">{totalPolicies}</div>
+                    <p className="text-sm font-bold text-muted-foreground mb-3">
+                      Total SLA Policies
+                    </p>
+                    <div className="text-3xl font-bold text-sidebar-primary mb-1">
+                      {totalPolicies}
+                    </div>
                     <p className="text-sm text-blue-600">All policies</p>
                   </CardContent>
                 </Card>
                 <Card>
                   <CardContent className="pt-6">
-                    <p className="text-sm font-bold text-muted-foreground mb-3">Active SLA Policies</p>
-                    <div className="text-3xl font-bold text-sidebar-primary mb-1">{ activeslapolicies }</div>
-                    <p className="text-sm text-blue-600">Total Active SLA Policies</p>
+                    <p className="text-sm font-bold text-muted-foreground mb-3">
+                      Active SLA Policies
+                    </p>
+                    <div className="text-3xl font-bold text-sidebar-primary mb-1">
+                      {activeslapolicies}
+                    </div>
+                    <p className="text-sm text-blue-600">
+                      Total Active SLA Policies
+                    </p>
                   </CardContent>
                 </Card>
                 <Card>
                   <CardContent className="pt-6">
-                    <p className="text-sm font-bold text-muted-foreground mb-3">Avg Response Time</p>
-                    <div className="text-3xl font-bold text-sidebar-primary mb-1">{formatTime(avgResponseTime)}</div>
-                    <p className="text-sm text-blue-600">Average across all policies</p>
+                    <p className="text-sm font-bold text-muted-foreground mb-3">
+                      Avg Response Time
+                    </p>
+                    <div className="text-3xl font-bold text-sidebar-primary mb-1">
+                      {formatTime(avgResponseTime)}
+                    </div>
+                    <p className="text-sm text-blue-600">
+                      Average across all policies
+                    </p>
                   </CardContent>
                 </Card>
               </div>
@@ -275,7 +313,10 @@ export default function SLAPolicies() {
                         className="pl-10"
                       />
                     </div>
-                    <Select value={selectedSite} onValueChange={setSelectedSite}>
+                    <Select
+                      value={selectedSite}
+                      onValueChange={setSelectedSite}
+                    >
                       <SelectTrigger className="w-[180px]">
                         <SelectValue placeholder="All Sites" />
                       </SelectTrigger>
@@ -304,7 +345,9 @@ export default function SLAPolicies() {
                             <TableHead>Escalation Time</TableHead>
                             <TableHead>Reopen Time</TableHead>
                             <TableHead>Status</TableHead>
-                            <TableHead className="text-right">Actions</TableHead>
+                            <TableHead className="text-right">
+                              Actions
+                            </TableHead>
                           </TableRow>
                         </TableHeader>
                         <TableBody>
@@ -357,7 +400,9 @@ export default function SLAPolicies() {
                                 </TableCell>
                                 <TableCell>
                                   <Badge
-                                    variant={policy.active ? "default" : "secondary"}
+                                    variant={
+                                      policy.active ? "default" : "secondary"
+                                    }
                                   >
                                     {policy.active ? "Active" : "Inactive"}
                                   </Badge>
@@ -407,7 +452,11 @@ export default function SLAPolicies() {
               <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
                 <DialogHeader>
                   <DialogTitle>
-                    {formMode === "create" ? "Create SLA Policy" : formMode === "edit" ? "Edit SLA Policy" : "SLA Policy Details"}
+                    {formMode === "create"
+                      ? "Create SLA Policy"
+                      : formMode === "edit"
+                      ? "Edit SLA Policy"
+                      : "SLA Policy Details"}
                   </DialogTitle>
                   <DialogDescription>
                     {formMode === "create"
@@ -459,4 +508,3 @@ export default function SLAPolicies() {
     </SidebarProvider>
   );
 }
-

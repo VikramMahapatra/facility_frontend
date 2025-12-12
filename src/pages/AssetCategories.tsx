@@ -1,0 +1,337 @@
+import { useState, useEffect } from "react";
+import {
+  SidebarProvider,
+  SidebarInset,
+  SidebarTrigger,
+} from "@/components/ui/sidebar";
+import { PropertySidebar } from "@/components/PropertySidebar";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Card, CardContent, CardHeader } from "@/components/ui/card";
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from "@/components/ui/table";
+import { Edit, Plus, Trash2, FolderTree, Search } from "lucide-react";
+import AssetCategoryForm from "@/components/AssetCategoryForm";
+import { toast } from "sonner";
+import { assetCategoriesApiService } from "@/services/maintenance_assets/assetcategoriesapi";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
+import { useLoader } from "@/context/LoaderContext";
+import LoaderOverlay from "@/components/LoaderOverlay";
+import ContentContainer from "@/components/ContentContainer";
+import { Pagination } from "@/components/Pagination";
+import { useSkipFirstEffect } from "@/hooks/use-skipfirst-effect";
+
+export default function AssetCategories() {
+  const [isFormOpen, setIsFormOpen] = useState(false);
+  const [formMode, setFormMode] = useState<"create" | "edit" | "view">(
+    "create"
+  );
+  const [selectedCategory, setSelectedCategory] = useState<any>(null);
+  const [categories, setCategories] = useState<any[]>([]);
+  const [deleteCategoryId, setDeleteCategoryId] = useState<
+    string | number | null
+  >(null);
+  const [page, setPage] = useState(1);
+  const [pageSize] = useState(10);
+  const [totalItems, setTotalItems] = useState(0);
+  const [searchTerm, setSearchTerm] = useState("");
+  const { withLoader } = useLoader();
+
+  useEffect(() => {
+    loadAssetCategories();
+  }, []);
+
+  useSkipFirstEffect(() => {
+    loadAssetCategories();
+  }, [page]);
+
+  useEffect(() => {
+    updateAssetCategoriesPage();
+  }, [searchTerm]);
+
+  const updateAssetCategoriesPage = () => {
+    if (page === 1) {
+      loadAssetCategories();
+    } else {
+      setPage(1);
+    }
+  };
+
+  const loadAssetCategories = async () => {
+    const skip = (page - 1) * pageSize;
+    const limit = pageSize;
+
+    const params = new URLSearchParams();
+    if (searchTerm) params.append("search", searchTerm);
+    params.append("skip", skip.toString());
+    params.append("limit", limit.toString());
+
+    const response = await withLoader(async () => {
+      return await assetCategoriesApiService.getAssetCategories(params);
+    });
+    if (response?.success) {
+      setCategories(
+        response.data?.assetcategories || []
+      );
+      setTotalItems(response.data?.total || 0);
+    }
+  };
+
+  const handleCreate = () => {
+    setSelectedCategory(null);
+    setFormMode("create");
+    setIsFormOpen(true);
+  };
+
+  const handleEdit = (category: any) => {
+    setSelectedCategory(category);
+    setFormMode("edit");
+    setIsFormOpen(true);
+  };
+
+  const handleSave = async (categoryData: any) => {
+    let response;
+    if (formMode === "create") {
+      response = await assetCategoriesApiService.addAssetCategory(categoryData);
+
+      if (response.success) loadAssetCategories();
+    } else if (formMode === "edit" && selectedCategory) {
+      const updatedCategory = {
+        ...selectedCategory,
+        ...categoryData,
+      };
+      response = await assetCategoriesApiService.updateAssetCategory(
+        selectedCategory.id,
+        updatedCategory
+      );
+
+      if (response.success) {
+        setCategories((prev) =>
+          prev.map((cat) =>
+            cat.id === updatedCategory.id ? response.data : cat
+          )
+        
+        );
+      }
+      
+    }
+
+    if (response?.success) {
+      setIsFormOpen(false);
+      toast.success(
+        `Asset category has been ${
+          formMode === "create" ? "created" : "updated"
+        } successfully.`
+      );
+    }
+    return response;
+  };
+
+  const handleDelete = (categoryId: string | number) => {
+    setDeleteCategoryId(categoryId);
+  };
+
+  const confirmDelete = async () => {
+    if (deleteCategoryId) {
+      const response = await assetCategoriesApiService.deleteAssetCategory(
+        deleteCategoryId
+      );
+
+      if (response.success) {
+        updateAssetCategoriesPage();
+        setDeleteCategoryId(null);
+        toast.success("Asset category has been deleted successfully.");
+      }
+    }
+  };
+
+  return (
+    <SidebarProvider>
+      <div className="flex min-h-screen w-full">
+        <PropertySidebar />
+        <SidebarInset className="flex-1">
+          <header className="flex h-16 shrink-0 items-center gap-2 border-b border-sidebar-border px-4">
+            <SidebarTrigger className="-ml-1" />
+            <div className="flex items-center gap-2">
+              <FolderTree className="h-5 w-5 text-sidebar-primary" />
+              <h1 className="text-lg font-semibold text-sidebar-primary">
+                Asset Categories
+              </h1>
+            </div>
+          </header>
+
+          <main className="flex-1 p-6">
+            <div className="space-y-6">
+              <div className="flex items-center justify-between">
+                <div>
+                  <h2 className="text-3xl font-bold text-sidebar-primary">
+                    Asset Categories
+                  </h2>
+                  <p className="text-muted-foreground">
+                    Manage asset categories
+                  </p>
+                </div>
+                <Button onClick={handleCreate} className="gap-2">
+                  <Plus className="h-4 w-4" />
+                  Add Category
+                </Button>
+              </div>
+
+              <Card>
+                <CardHeader>
+                  <div className="flex items-center gap-4">
+                    <div className="relative flex-1 max-w-sm">
+                      <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground h-4 w-4" />
+                      <Input
+                        placeholder="Search categories..."
+                        value={searchTerm}
+                        onChange={(e) => setSearchTerm(e.target.value)}
+                        className="pl-10"
+                      />
+                    </div>
+                  </div>
+                </CardHeader>
+                <CardContent>
+                  <div className="relative rounded-md border">
+                    <ContentContainer>
+                      <LoaderOverlay />
+                      <Table>
+                        <TableHeader>
+                          <TableRow>
+                            <TableHead>Name</TableHead>
+                            <TableHead>Code</TableHead>
+                            <TableHead className="text-right">
+                              Actions
+                            </TableHead>
+                          </TableRow>
+                        </TableHeader>
+                        <TableBody>
+                          {categories.length === 0 ? (
+                            <TableRow>
+                              <TableCell
+                                colSpan={3}
+                                className="text-center text-muted-foreground h-32"
+                              >
+                                No categories found
+                              </TableCell>
+                            </TableRow>
+                          ) : (
+                            categories.map((category) => (
+                              <TableRow key={category.id}>
+                                <TableCell className="font-medium">
+                                  {category.name}
+                                </TableCell>
+                                <TableCell>{category.code || "-"}</TableCell>
+                                <TableCell className="text-right">
+                                  <div className="flex justify-end gap-2">
+                                    <Button
+                                      variant="ghost"
+                                      size="sm"
+                                      onClick={() => handleEdit(category)}
+                                    >
+                                      <Edit className="w-4 h-4" />
+                                    </Button>
+                                    <Button
+                                      variant="ghost"
+                                      size="sm"
+                                      onClick={() => handleDelete(category.id)}
+                                    >
+                                      <Trash2 className="w-4 h-4" />
+                                    </Button>
+                                  </div>
+                                </TableCell>
+                              </TableRow>
+                            ))
+                          )}
+                        </TableBody>
+                      </Table>
+                    </ContentContainer>
+                  </div>
+
+                  {categories.length > 0 && (
+                    <div className="mt-4">
+                      <Pagination
+                        page={page}
+                        pageSize={pageSize}
+                        totalItems={totalItems}
+                        onPageChange={setPage}
+                      />
+                    </div>
+                  )}
+                </CardContent>
+              </Card>
+            </div>
+          </main>
+        </SidebarInset>
+      </div>
+      <Dialog open={isFormOpen} onOpenChange={setIsFormOpen}>
+        <DialogContent className="max-w-2xl">
+          <DialogHeader>
+            <DialogTitle>
+              {formMode === "create"
+                ? "Create Asset Category"
+                : formMode === "edit"
+                ? "Edit Asset Category"
+                : "Asset Category Details"}
+            </DialogTitle>
+          </DialogHeader>
+          <AssetCategoryForm
+            category={selectedCategory}
+            isOpen={isFormOpen}
+            onClose={() => {
+              setIsFormOpen(false);
+              setSelectedCategory(null);
+            }}
+            onSave={handleSave}
+            mode={formMode}
+          />
+        </DialogContent>
+      </Dialog>
+
+      <AlertDialog
+        open={!!deleteCategoryId}
+        onOpenChange={() => setDeleteCategoryId(null)}
+      >
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Delete Asset Category</AlertDialogTitle>
+            <AlertDialogDescription>
+              Are you sure you want to delete this asset category? This action
+              cannot be undone.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancel</AlertDialogCancel>
+            <AlertDialogAction
+              onClick={confirmDelete}
+              className="bg-destructive text-destructive-foreground"
+            >
+              Delete
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+    </SidebarProvider>
+  );
+}

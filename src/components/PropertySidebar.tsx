@@ -3,7 +3,7 @@ import { NavLink, useLocation } from "react-router-dom";
 import {
   Building2, Users, FileText, BarChart3, Wrench, Car, Zap, UserCheck,
   Hotel, ShoppingCart, Settings, Bell, Shield, Home, Calendar, CreditCard,
-  Briefcase, Package, MapPin, AlertTriangle, TrendingUp, Archive, Key, Receipt, Bot, Search, UserCog
+  Briefcase, Package, MapPin, AlertTriangle, TrendingUp, Archive, Key, Receipt, Bot, Search, UserCog, FolderTree
 } from "lucide-react";
 import {
   Sidebar,

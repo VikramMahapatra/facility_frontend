@@ -43,6 +43,8 @@ export function AssetForm({ isOpen, mode, asset, onClose, onSave }: Props) {
     handleSubmit,
     control,
     reset,
+    watch,
+    trigger,
     formState: { errors, isSubmitting, isValid },
   } = useForm<AssetFormValues>({
     resolver: zodResolver(assetSchema),
@@ -51,37 +53,44 @@ export function AssetForm({ isOpen, mode, asset, onClose, onSave }: Props) {
     reValidateMode: "onChange",
   });
 
+  const [formLoading, setFormLoading] = useState(true);
   const [sites, setSites] = useState<{ id: string; name: string }[]>([]);
   const [categories, setCategories] = useState([]);
   const [statuses, setStatuses] = useState([]);
 
   const readOnly = mode === 'view';
 
-  useEffect(() => {
-    if (asset && mode !== "create") {
-      reset({
-        tag: asset.tag || "",
-        name: asset.name || "",
-        site_id: asset.site_id || "",
-        category_id: asset.category_id || "",
-        serial_no: asset.serial_no || "",
-        model: asset.model || "",
-        manufacturer: asset.manufacturer || "",
-        purchase_date: asset.purchase_date || "",
-        warranty_expiry: asset.warranty_expiry || "",
-        cost: asset.cost,
-        status: asset.status || "active",
-      });
-    } else {
-      reset(emptyFormData);
-    }
-  }, [asset, mode, reset]);
+  const loadAll = async () => {
+    setFormLoading(true);
+
+    await Promise.all([loadSites(), loadCategories(), loadStatuses()]);
+
+    reset(
+      asset && mode !== "create"
+        ? {
+            tag: asset.tag || "",
+            name: asset.name || "",
+            site_id: asset.site_id || "",
+            category_id: asset.category_id || "",
+            serial_no: asset.serial_no || "",
+            model: asset.model || "",
+            manufacturer: asset.manufacturer || "",
+            purchase_date: asset.purchase_date || "",
+            warranty_expiry: asset.warranty_expiry || "",
+            cost: asset.cost,
+            status: asset.status || "active",
+          }
+        : emptyFormData
+    );
+
+    setFormLoading(false);
+  };
 
   useEffect(() => {
-    loadSites();
-    loadCategories();
-    loadStatuses();
-  }, []);
+    if (isOpen) {
+      loadAll();
+    }
+  }, [asset, mode, isOpen, reset]);
 
   const loadSites = async () => {
     const response = await siteApiService.getSiteLookup();
@@ -99,21 +108,28 @@ export function AssetForm({ isOpen, mode, asset, onClose, onSave }: Props) {
   }
 
   const onSubmitForm = async (data: AssetFormValues) => {
-    try {
-      await onSave({
-        ...asset,
-        ...data,
-      } as Partial<Asset>);
-      reset(emptyFormData);
-      onClose();
-    } catch (error) {
-      reset(undefined, { keepErrors: true, keepValues: true });
-      toast.error("Failed to save asset");
+    const assetData: any = {
+      ...asset,
+      ...data,
+    };
+    if (assetData.space_id === "" || !assetData.space_id) {
+      assetData.space_id = null;
     }
+    
+    if (assetData.attributes === "" || assetData.attributes === undefined) {
+      assetData.attributes = null;
+    }
+    
+    await onSave(assetData as Partial<Asset>);
+  };
+
+  const handleClose = () => {
+    reset(emptyFormData);
+    onClose();
   };
 
   return (
-    <Dialog open={isOpen} onOpenChange={onClose}>
+    <Dialog open={isOpen} onOpenChange={handleClose}>
       <DialogContent className="max-w-2xl">
         <DialogHeader>
           <DialogTitle>
@@ -122,7 +138,11 @@ export function AssetForm({ isOpen, mode, asset, onClose, onSave }: Props) {
         </DialogHeader>
 
         <form onSubmit={isSubmitting ? undefined : handleSubmit(onSubmitForm)} className="space-y-4">
-          <div className="grid grid-cols-2 gap-4">
+          {formLoading ? (
+            <p className="text-center">Loading...</p>
+          ) : (
+            <div className="space-y-4">
+              <div className="grid grid-cols-2 gap-4">
             <div className="space-y-2">
               <Label htmlFor="tag">Asset Tag *</Label>
               <Input
@@ -183,13 +203,13 @@ export function AssetForm({ isOpen, mode, asset, onClose, onSave }: Props) {
               control={control}
               render={({ field }) => (
                 <div className="space-y-2">
-                  <Label htmlFor="category_id">Category</Label>
+                  <Label htmlFor="category_id">Category *</Label>
                   <Select
                     value={field.value || ''}
                     onValueChange={field.onChange}
                     disabled={readOnly}
                   >
-                    <SelectTrigger>
+                    <SelectTrigger className={errors.category_id ? 'border-red-500' : ''}>
                       <SelectValue placeholder="Select category" />
                     </SelectTrigger>
                     <SelectContent>
@@ -198,6 +218,9 @@ export function AssetForm({ isOpen, mode, asset, onClose, onSave }: Props) {
                       ))}
                     </SelectContent>
                   </Select>
+                  {errors.category_id && (
+                    <p className="text-sm text-red-500">{errors.category_id.message}</p>
+                  )}
                 </div>
               )}
             />
@@ -210,6 +233,7 @@ export function AssetForm({ isOpen, mode, asset, onClose, onSave }: Props) {
                 id="serial_no"
                 {...register("serial_no")}
                 disabled={readOnly}
+                placeholder="e.g., SN123"
               />
             </div>
             <div className="space-y-2">
@@ -218,6 +242,7 @@ export function AssetForm({ isOpen, mode, asset, onClose, onSave }: Props) {
                 id="model"
                 {...register("model")}
                 disabled={readOnly}
+                placeholder="e.g., Model x-2024"
               />
             </div>
             <div className="space-y-2">
@@ -226,38 +251,55 @@ export function AssetForm({ isOpen, mode, asset, onClose, onSave }: Props) {
                 id="manufacturer"
                 {...register("manufacturer")}
                 disabled={readOnly}
+                placeholder="e.g., abc Corporation"
               />
             </div>
           </div>
 
           <div className="grid grid-cols-3 gap-4">
             <div className="space-y-2">
-              <Label htmlFor="purchase_date">Purchase Date</Label>
+              <Label htmlFor="purchase_date">Purchase Date *</Label>
               <Input
                 id="purchase_date"
                 type="date"
-                {...register("purchase_date")}
+                {...register("purchase_date", {
+                  onChange: () => trigger("warranty_expiry"),
+                })}
                 disabled={readOnly}
+                className={errors.purchase_date ? "border-red-500" : ""}
               />
+              {errors.purchase_date && (
+                <p className="text-sm text-red-500">
+                  {errors.purchase_date.message}
+                </p>
+              )}
             </div>
             <div className="space-y-2">
-              <Label htmlFor="warranty_expiry">Warranty Expiry</Label>
+              <Label htmlFor="warranty_expiry">Warranty Expiry *</Label>
               <Input
                 id="warranty_expiry"
                 type="date"
                 {...register("warranty_expiry")}
                 disabled={readOnly}
+                className={errors.warranty_expiry ? "border-red-500" : ""}
               />
+              {errors.warranty_expiry && (
+                <p className="text-sm text-red-500">
+                  {errors.warranty_expiry.message}
+                </p>
+              )}
             </div>
             <div className="space-y-2">
-              <Label htmlFor="cost">Cost</Label>
+              <Label htmlFor="cost">Cost *</Label>
               <Input
                 id="cost"
                 type="number"
                 {...register("cost", { setValueAs: (v) => v === '' ? undefined : Number(v) })}
                 disabled={readOnly}
                 className={errors.cost ? 'border-red-500' : ''}
-                min="0"
+                min="0.01"
+                step="0.01"
+                placeholder="e.g., 5000.00"
               />
               {errors.cost && (
                 <p className="text-sm text-red-500">{errors.cost.message}</p>
@@ -291,16 +333,18 @@ export function AssetForm({ isOpen, mode, asset, onClose, onSave }: Props) {
             />
           </div>
 
-          <DialogFooter>
-            <Button type="button" variant="outline" onClick={onClose} disabled={isSubmitting}>
-              {mode === 'view' ? 'Close' : 'Cancel'}
-            </Button>
-            {mode !== 'view' && (
-              <Button type="submit" disabled={isSubmitting}>
-                {isSubmitting ? "Saving..." : mode === 'create' ? 'Create Asset' : 'Update Asset'}
-              </Button>
-            )}
-          </DialogFooter>
+              <DialogFooter>
+                <Button type="button" variant="outline" onClick={onClose} disabled={isSubmitting}>
+                  {mode === 'view' ? 'Close' : 'Cancel'}
+                </Button>
+                {mode !== 'view' && (
+                  <Button type="submit" disabled={isSubmitting}>
+                    {isSubmitting ? "Saving..." : mode === 'create' ? 'Create Asset' : 'Update Asset'}
+                  </Button>
+                )}
+              </DialogFooter>
+            </div>
+          )}
         </form>
       </DialogContent>
     </Dialog>

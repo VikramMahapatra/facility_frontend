@@ -9,7 +9,10 @@ export const ticketSchema = z.object({
   site_id: z.string().min(1, "Site is required"),
   space_id: z.string().min(1, "Space is required"),
   tenant_id: z.string().optional(),
+  preferred_date: z.string().min(1, "Preferred date is required"),
   preferred_time: z.string().optional(),
+  assigned_to: z.string().optional(),
+  vendor_id: z.string().optional(),
 });
 
 export type TicketFormValues = z.infer<typeof ticketSchema>;

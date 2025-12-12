@@ -38,6 +38,10 @@ class TicketWorkOrderApiService {
       method: "DELETE",
     });
   }
+
+  async getTicketAssignments(ticketId: string) {
+    return await apiService.request(`/ticket-work-orders/tickets/${ticketId}/assignments`);
+  }
 }
 
 export const ticketWorkOrderApiService = new TicketWorkOrderApiService();

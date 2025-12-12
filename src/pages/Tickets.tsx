@@ -26,7 +26,7 @@ export default function Tickets() {
   const navigate = useNavigate();
   const { withLoader } = useLoader();
   const { canRead, canWrite, canDelete } = useAuth();
-  const resource = "tickets"; // must match resource name from backend policies
+  const resource = "tickets";
   const [isFormOpen, setIsFormOpen] = useState(false);
   const [isEditOpen, setIsEditOpen] = useState(false);
   const [editingTicket, setEditingTicket] = useState<any>(null);
@@ -38,8 +38,8 @@ export default function Tickets() {
   const [siteList, setSiteList] = useState<any[]>([]);
   const [priorityList, setPriorityList] = useState<any[]>([]);
   const [statusList, setStatusList] = useState<any[]>([]);
-  const [page, setPage] = useState(1); // current page
-  const [pageSize] = useState(10); // items per page
+  const [page, setPage] = useState(1); 
+  const [pageSize] = useState(10); 
   const [totalItems, setTotalItems] = useState(0);
 
   useSkipFirstEffect(() => {
@@ -203,8 +203,8 @@ export default function Tickets() {
 
             <Card>
               <CardHeader>
-                <div className="flex justify-between items-center">
-                  <div className="relative flex-1 max-w-sm">
+                <div className="flex flex-wrap items-center gap-2">
+                  <div className="relative flex-1 min-w-[200px] max-w-sm">
                     <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground h-4 w-4" />
                     <Input
                       placeholder="Search tickets..."
@@ -213,47 +213,45 @@ export default function Tickets() {
                       className="pl-10"
                     />
                   </div>
-                  <div className="flex gap-2">
-                    <Select value={selectedSite} onValueChange={setSelectedSite}>
-                      <SelectTrigger className="w-[150px]">
-                        <SelectValue placeholder="Site" />
-                      </SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value="all">All Sites</SelectItem>
-                        {siteList.map((site: any) => (
-                          <SelectItem key={site.id} value={site.id}>
-                            {site.name}
-                          </SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
-                    <Select value={statusFilter} onValueChange={setStatusFilter}>
-                      <SelectTrigger className="w-[150px]">
-                        <SelectValue placeholder="Status" />
-                      </SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value="ALL">All Status</SelectItem>
-                        {statusList.map((status: any) => (
-                          <SelectItem key={status.id} value={status.id}>
-                            {status.name}
-                          </SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
-                    <Select value={priorityFilter} onValueChange={setPriorityFilter}>
-                      <SelectTrigger className="w-[150px]">
-                        <SelectValue placeholder="Priority" />
-                      </SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value="ALL">All Priority</SelectItem>
-                        {priorityList.map((priority: any) => (
-                          <SelectItem key={priority.id} value={priority.id}>
-                            {priority.name}
-                          </SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
-                  </div>
+                  <Select value={selectedSite} onValueChange={setSelectedSite}>
+                    <SelectTrigger className="w-[150px]">
+                      <SelectValue placeholder="Site" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="all">All Sites</SelectItem>
+                      {siteList.map((site: any) => (
+                        <SelectItem key={site.id} value={site.id}>
+                          {site.name}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                  <Select value={statusFilter} onValueChange={setStatusFilter}>
+                    <SelectTrigger className="w-[150px]">
+                      <SelectValue placeholder="Status" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="ALL">All Status</SelectItem>
+                      {statusList.map((status: any) => (
+                        <SelectItem key={status.id} value={status.id}>
+                          {status.name}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                  <Select value={priorityFilter} onValueChange={setPriorityFilter}>
+                    <SelectTrigger className="w-[150px]">
+                      <SelectValue placeholder="Priority" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="ALL">All Priority</SelectItem>
+                      {priorityList.map((priority: any) => (
+                        <SelectItem key={priority.id} value={priority.id}>
+                          {priority.name}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
                 </div>
               </CardHeader>
               <CardContent>

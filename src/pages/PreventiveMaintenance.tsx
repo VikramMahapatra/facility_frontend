@@ -160,10 +160,7 @@ export default function PreventiveMaintenance() {
     if (selectedFrequency && selectedFrequency !== "all")
       params.append("frequency", selectedFrequency);
     
-    const response = await withLoader(async () => {
-      return await preventiveMaintenanceApiService.getPreventiveMaintenanceOverview(params);
-    });
-    
+    const response = await preventiveMaintenanceApiService.getPreventiveMaintenanceOverview(params);
     if (response?.success) setTemplateOverview(response.data || {});
   };
 
@@ -213,7 +210,7 @@ export default function PreventiveMaintenance() {
 
   // Form handlers
   const handleCreate = () => {
-    setSelectedTemplate(undefined);
+    setSelectedTemplate(null);
     setFormMode("create");
     setIsFormOpen(true);
   };
@@ -238,41 +235,29 @@ export default function PreventiveMaintenance() {
     if (deleteTemplateId) {
       const response = await preventiveMaintenanceApiService.deletePreventiveMaintenance(deleteTemplateId);
       if (response.success) {
-        const authResponse = response.data;
-        if (authResponse?.success) {
-          // Success - refresh data
-          updateTemplatePage();
-          setDeleteTemplateId(null);
-          toast.success("The PM template has been removed successfully.");
-        } else {
-          // Show error popup from backend
-          toast.error(`Cannot Delete PM Template\n${authResponse?.message || "Unknown error"}`, {
-            style: { whiteSpace: "pre-line" },
-          });
-        }
+        updateTemplatePage();
+        setDeleteTemplateId(null);
+        toast.success("PM Template deleted successfully");
       }
     }
   };
 
-  const handleSave = async (templateData: Partial<PMTemplate>) => {
+  const handleSave = async (templateData: any) => {
     let response;
     if (formMode === "create") {
       response = await preventiveMaintenanceApiService.addPreventiveMaintenance(templateData);
-
-      if (response.success)
-        updateTemplatePage();
+      if (response.success) updateTemplatePage();
+      loadTemplateOverview(); 
     } else if (formMode === "edit" && selectedTemplate) {
       const updatedTemplate = {
         ...selectedTemplate,
         ...templateData,
-        updated_at: new Date().toISOString(),
       };
       response = await preventiveMaintenanceApiService.updatePreventiveMaintenance(updatedTemplate);
-
       if (response.success) {
-        // Update the edited template in local state
+        loadTemplateOverview();
         setTemplates((prev) =>
-          prev.map((t) => (t.id === updatedTemplate.id ? updatedTemplate : t))
+          prev.map((t) => (t.id === updatedTemplate.id ? response.data : t))
         );
       }
     }
@@ -280,7 +265,9 @@ export default function PreventiveMaintenance() {
     if (response.success) {
       setIsFormOpen(false);
       toast.success(
-        `PM template ${templateData.name} has been ${formMode === "create" ? "created" : "updated"} successfully.`
+        `PM Template has been ${
+          formMode === "create" ? "created" : "updated"
+        } successfully.`
       );
     }
     return response;

@@ -18,6 +18,9 @@ import { siteApiService } from "@/services/spaces_sites/sitesapi";
 import { tenantsApiService } from "@/services/leasing_tenants/tenantsapi";
 import { organisationApiService } from "@/services/spaces_sites/organisationapi";
 import { ticketsApiService } from "@/services/ticketing_service/ticketsapi";
+import { vendorsApiService } from "@/services/pocurments/vendorsapi";
+import { userManagementApiService } from "@/services/access_control/usermanagementapi";
+import { slaPoliciesApiService } from "@/services/ticketing_service/slapoliciesapi";
 import { toast } from "sonner";
 import { ticketSchema, TicketFormValues } from "@/schemas/ticket.schema";
 //import { toast as sonnerToast } from "sonner";
@@ -37,7 +40,10 @@ const emptyFormData: TicketFormValues = {
   site_id: "",
   space_id: "",
   tenant_id: "",
+  preferred_date: "",
   preferred_time: "",
+  assigned_to: "",
+  vendor_id: "",
 };
 
 export default function TicketForm({
@@ -65,9 +71,17 @@ export default function TicketForm({
           site_id: initialData.site_id || "",
           space_id: initialData.space_id || "",
           tenant_id: initialData.tenant_id || "",
+          preferred_date:
+            initialData.preferred_date ||
+            new Date().toISOString().split("T")[0],
           preferred_time: initialData.preferred_time || "",
+          assigned_to: initialData.assigned_to || "",
+          vendor_id: initialData.vendor_id || "",
         }
-      : emptyFormData,
+      : {
+          ...emptyFormData,
+          preferred_date: new Date().toISOString().split("T")[0],
+        },
     mode: "onChange",
     reValidateMode: "onChange",
   });
@@ -79,6 +93,8 @@ export default function TicketForm({
   const [tenantList, setTenantList] = useState<any[]>([]);
   const [siteList, setSiteList] = useState<any[]>([]);
   const [categoryList, setCategoryList] = useState<any[]>([]);
+  const [staffList, setStaffList] = useState<any[]>([]);
+  const [vendorList, setVendorList] = useState<any[]>([]);
 
   const selectedSiteId = watch("site_id");
   const selectedSpaceId = watch("space_id");
@@ -94,6 +110,8 @@ export default function TicketForm({
   useEffect(() => {
     loadSiteLookup();
     loadCategoryLookup(initialData?.site_id || "all");
+    loadStaffLookup(initialData?.site_id);
+    loadVendorLookup();
     if (initialData?.site_id) {
       loadSpaceLookup(initialData.site_id);
     }
@@ -103,11 +121,13 @@ export default function TicketForm({
     if (selectedSiteId) {
       loadSpaceLookup(selectedSiteId);
       loadCategoryLookup(selectedSiteId);
+      loadStaffLookup(selectedSiteId);
       setValue("space_id", "");
       setValue("tenant_id", "");
     } else {
       setSpaceList([]);
       setTenantList([]);
+      setStaffList([]);
       loadCategoryLookup("all");
     }
   }, [selectedSiteId, setValue]);
@@ -132,17 +152,25 @@ export default function TicketForm({
         site_id: initialData.site_id || "",
         space_id: initialData.space_id || "",
         tenant_id: initialData.tenant_id || "",
+        preferred_date:
+          initialData.preferred_date || new Date().toISOString().split("T")[0],
         preferred_time: initialData.preferred_time || "",
+        assigned_to: initialData.assigned_to || "",
+        vendor_id: initialData.vendor_id || "",
       });
       if (initialData.site_id) {
         loadSpaceLookup(initialData.site_id);
         loadCategoryLookup(initialData.site_id);
+        loadStaffLookup(initialData.site_id);
         if (initialData.space_id) {
           loadTenantLookup(initialData.site_id, initialData.space_id);
         }
       }
     } else {
-      reset(emptyFormData);
+      reset({
+        ...emptyFormData,
+        preferred_date: new Date().toISOString().split("T")[0],
+      });
     }
   }, [initialData, reset]);
 
@@ -177,6 +205,18 @@ export default function TicketForm({
     }
   };
 
+  const loadStaffLookup = async (siteId?: string) => {
+    const response = await slaPoliciesApiService.getUserContactLookup(siteId);
+    if (response.success) {
+      setStaffList(response.data || []);
+    }
+  };
+
+  const loadVendorLookup = async () => {
+    const response = await vendorsApiService.getVendorWorkOrderLookup();
+    if (response.success) setVendorList(response.data || []);
+  };
+
   const onSubmitForm = async (data: TicketFormValues) => {
     const selectedCategory = categoryList.find(
       (cat: any) => cat.id === data.category_id
@@ -195,11 +235,20 @@ export default function TicketForm({
     ticketFormData.append("request_type", data.request_type);
     ticketFormData.append("site_id", data.site_id);
     ticketFormData.append("space_id", data.space_id);
-    if (data.tenant_id) {
+    if (data.tenant_id && data.tenant_id !== "none") {
       ticketFormData.append("tenant_id", data.tenant_id);
+    }
+    if (data.preferred_date) {
+      ticketFormData.append("preferred_date", data.preferred_date);
     }
     if (data.preferred_time) {
       ticketFormData.append("preferred_time", data.preferred_time);
+    }
+    if (data.assigned_to && data.assigned_to !== "none") {
+      ticketFormData.append("assigned_to", data.assigned_to);
+    }
+    if (data.vendor_id && data.vendor_id !== "none") {
+      ticketFormData.append("vendor_id", data.vendor_id);
     }
 
     if (uploadedImages.length > 0) {
@@ -313,11 +362,12 @@ export default function TicketForm({
                 <SelectTrigger>
                   <SelectValue
                     placeholder={
-                      selectedSpaceId ? "Select tenant" : "Select space first"
+                      selectedSpaceId ? "Select Tenant" : "Select space first"
                     }
                   />
                 </SelectTrigger>
                 <SelectContent>
+                  <SelectItem value="none">Select Tenant</SelectItem>
                   {tenantList.map((tenant: any) => (
                     <SelectItem key={tenant.id} value={tenant.id}>
                       {tenant.name}
@@ -408,30 +458,100 @@ export default function TicketForm({
         />
       </div>
 
-      {/* 5. Preferred time */}
-      <Controller
-        name="preferred_time"
-        control={control}
-        render={({ field }) => (
-          <div className="space-y-2">
-            <Label htmlFor="preferred_time">Preferred Time</Label>
-            <Select value={field.value || ""} onValueChange={field.onChange}>
-              <SelectTrigger>
-                <SelectValue placeholder="Select preferred time" />
-              </SelectTrigger>
-              <SelectContent>
-                {preferredTimeSlots.map((slot) => (
-                  <SelectItem key={slot.value} value={slot.value}>
-                    {slot.label}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-          </div>
-        )}
-      />
+      {/* 5. Preferred date & time */}
+      <div className="grid grid-cols-2 gap-4">
+        <div className="space-y-2">
+          <Label htmlFor="preferred_date">Preferred Date *</Label>
+          <Input
+            id="preferred_date"
+            type="date"
+            min={new Date().toISOString().split("T")[0]}
+            {...register("preferred_date")}
+            className={errors.preferred_date ? "border-red-500" : ""}
+          />
+          {errors.preferred_date && (
+            <p className="text-sm text-red-500">
+              {errors.preferred_date.message}
+            </p>
+          )}
+        </div>
 
-      {/* 6. Description */}
+        <Controller
+          name="preferred_time"
+          control={control}
+          render={({ field }) => (
+            <div className="space-y-2">
+              <Label htmlFor="preferred_time">Preferred Time</Label>
+              <Select value={field.value || ""} onValueChange={field.onChange}>
+                <SelectTrigger>
+                  <SelectValue placeholder="Select preferred time" />
+                </SelectTrigger>
+                <SelectContent>
+                  {preferredTimeSlots.map((slot) => (
+                    <SelectItem key={slot.value} value={slot.value}>
+                      {slot.label}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+          )}
+        />
+      </div>
+
+      {/* 6. Assigned To (Staff) and Vendor */}
+      <div className="grid grid-cols-2 gap-4">
+        <Controller
+          name="assigned_to"
+          control={control}
+          render={({ field }) => (
+            <div className="space-y-2">
+              <Label htmlFor="assigned_to">Assign To (Staff)</Label>
+              <Select value={field.value || ""} onValueChange={field.onChange}>
+                <SelectTrigger>
+                  <SelectValue placeholder=" Select Staff " />
+                </SelectTrigger>
+                <SelectContent>
+                <SelectItem value="none">Select Staff</SelectItem>
+                  {staffList.map((staff: any) => (
+                    <SelectItem key={staff.id} value={String(staff.id)}>
+                      {staff.name ||
+                        staff.email ||
+                        staff.full_name ||
+                        `User ${staff.id}`}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+          )}
+        />
+
+        <Controller
+          name="vendor_id"
+          control={control}
+          render={({ field }) => (
+            <div className="space-y-2">
+              <Label htmlFor="vendor_id">Vendor</Label>
+              <Select value={field.value || ""} onValueChange={field.onChange}>
+                <SelectTrigger>
+                  <SelectValue placeholder="Select Vendor" />
+                </SelectTrigger>
+                <SelectContent>
+                <SelectItem value="none">Select Vendor</SelectItem>
+                  {vendorList.map((vendor: any) => (
+                    <SelectItem key={vendor.id} value={vendor.id}>
+                      {vendor.name}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+          )}
+        />
+      </div>
+
+      {/* 7. Description */}
       <div className="space-y-2">
         <Label htmlFor="description">Description *</Label>
         <Textarea
@@ -480,14 +600,18 @@ export default function TicketForm({
               files.forEach((file) => {
                 // Validation 1: File size (2MB)
                 if (file.size > MAX_FILE_SIZE) {
-                  toast.error(`${file.name} exceeds 2MB limit. Please choose a smaller file.`);
+                  toast.error(
+                    `${file.name} exceeds 2MB limit. Please choose a smaller file.`
+                  );
                   return;
                 }
 
                 // Validation 2: File type (png, jpeg, jpg)
                 const fileType = file.type.toLowerCase();
                 if (!ALLOWED_TYPES.includes(fileType)) {
-                  toast.error(`${file.name} is not a valid image type. Only PNG, JPEG, and JPG are allowed.`);
+                  toast.error(
+                    `${file.name} is not a valid image type. Only PNG, JPEG, and JPG are allowed.`
+                  );
                   return;
                 }
 

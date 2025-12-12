@@ -22,6 +22,7 @@ import { zodResolver } from "@hookform/resolvers/zod";
 import { PMTemplateFormValues, pmTemplateSchema } from "@/schemas/pmTemplate.schema";
 import { toast } from "sonner";
 import { preventiveMaintenanceApiService } from "@/services/maintenance_assets/preventive_maintenanceapi";
+import { assetApiService } from '@/services/maintenance_assets/assetsapi';
 //import { siteApiService } from "@/services/spaces_sites/sitesapi";
 
 interface ChecklistItem {
@@ -64,9 +65,9 @@ const defaultChecklistItem: ChecklistItem = { step: 1, pass_fail: false, instruc
 
 const emptyFormData: PMTemplateFormValues = {
   name: "",
-  category_id: null,
+  category_id: "",
   frequency: "",
-  status: "",
+  status: "active",
   next_due: null,
   checklist: [defaultChecklistItem],
   meter_metric: "",
@@ -111,7 +112,7 @@ export function PMTemplateForm({
     if (template && mode !== "create") {
       reset({
         name: template.name || "",
-        category_id: template.category_id || null,
+        category_id: template.category_id || "",
         frequency: template.frequency || "",
         status: template.status || "",
         next_due: template.next_due || null,
@@ -135,8 +136,8 @@ export function PMTemplateForm({
   }, [template, mode, reset]);
 
   const loadCategoryLookup = async () => {
-    const lookup = await preventiveMaintenanceApiService.getPreventiveMaintenanceCategoryLookup();
-    if (lookup.success) setCategoryList(lookup.data || []);
+    const response = await assetApiService.getCategories();
+    if (response.success) setCategoryList(response.data || []);
   };
 
   const loadFrequencyLookup = async () => {
@@ -182,7 +183,7 @@ export function PMTemplateForm({
     try {
       const templateData = {
         name: data.name,
-        category_id: data.category_id || null,
+        category_id: data.category_id,
         frequency: data.frequency,
         status: data.status,
         next_due: data.next_due,
@@ -241,17 +242,16 @@ export function PMTemplateForm({
               control={control}
               render={({ field }) => (
                 <div className="space-y-2">
-                  <Label htmlFor="category_id">Asset Category</Label>
+                  <Label htmlFor="category_id">Asset Category *</Label>
                   <Select
-                    value={field.value || "none"}
-                    onValueChange={(value) => field.onChange(value === "none" ? null : value)}
+                    value={field.value || ''}
+                    onValueChange={field.onChange}
                     disabled={isReadOnly}
                   >
-                    <SelectTrigger>
+                    <SelectTrigger className={errors.category_id ? 'border-red-500' : ''}>
                       <SelectValue placeholder="Select category" />
                     </SelectTrigger>
                     <SelectContent>
-                      <SelectItem value="none">None</SelectItem>
                       {categoryList.map((category) => (
                         <SelectItem key={category.id} value={category.id}>
                           {category.name}
@@ -259,6 +259,9 @@ export function PMTemplateForm({
                       ))}
                     </SelectContent>
                   </Select>
+                  {errors.category_id && (
+                    <p className="text-sm text-red-500">{errors.category_id.message}</p>
+                  )}
                 </div>
               )}
             />
@@ -267,7 +270,7 @@ export function PMTemplateForm({
               control={control}
               render={({ field }) => (
                 <div className="space-y-2">
-                  <Label htmlFor="frequency">Frequency</Label>
+                  <Label htmlFor="frequency">Frequency *</Label>
                   <Select
                     value={field.value || ""}
                     onValueChange={field.onChange}
@@ -327,9 +330,16 @@ export function PMTemplateForm({
               <Input
                 id="next_due"
                 type="date"
+                min={new Date().toISOString().split("T")[0]}
                 {...register("next_due")}
+                className={errors.next_due ? "border-red-500" : ""}
                 disabled={isReadOnly}
               />
+              {errors.next_due && (
+                <p className="text-sm text-red-500">
+                  {errors.next_due.message}
+                </p>
+              )}
             </div>
           </div>
 
@@ -400,7 +410,7 @@ export function PMTemplateForm({
                       onValueChange={(value) => updateChecklistItem(index, "pass_fail", value === "pass")}
                       disabled={isReadOnly}
                     >
-                      <SelectTrigger>
+                      <SelectTrigger className={errors.checklist?.[index]?.pass_fail ? 'border-red-500' : ''}>
                         <SelectValue placeholder="Select pass/fail" />
                       </SelectTrigger>
                       <SelectContent>
@@ -408,6 +418,9 @@ export function PMTemplateForm({
                         <SelectItem value="fail">Fail</SelectItem>
                       </SelectContent>
                     </Select>
+                    {errors.checklist?.[index]?.pass_fail && (
+                      <p className="text-xs text-red-500">{errors.checklist[index]?.pass_fail?.message}</p>
+                    )}
                   </div>
                   <div className="col-span-6">
                     <Label className="text-xs">Instruction</Label>

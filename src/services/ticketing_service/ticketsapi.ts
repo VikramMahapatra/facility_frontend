@@ -39,6 +39,13 @@ class TicketsApiService {
     });
   }
 
+  async assignVendor(ticketId: string, vendorId: string) {
+    return await apiService.request(`/tickets/assign-vendor`, {
+      method: "PUT",
+      body: JSON.stringify({ ticket_id: ticketId, vendor_id: vendorId }),
+    });
+  }
+
   async postComment(ticketId: string, comment: string) {
     return await apiService.request(`/tickets/post-comment`, {
       method: "POST",
