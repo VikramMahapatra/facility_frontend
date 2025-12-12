@@ -3,7 +3,7 @@ import { apiService } from "../api";
 class AssetCategoriesApiService {
   async getAssetCategories(params?: URLSearchParams) {
     const qs = params?.toString() ? `?${params.toString()}` : "";
-    return await apiService.request(`/asset-categories/${qs}`);
+    return await apiService.request(`/asset-categories/all/${qs}`);
   }
 
   async getAssetCategoryById(categoryId: string | number) {
@@ -36,9 +36,10 @@ class AssetCategoriesApiService {
       params.append("category_id", categoryId);
     }
     const qs = params.toString() ? `?${params.toString()}` : "";
-    return await apiService.request(`/asset-categories/asset-parent-category-lookup${qs}`);
+    return await apiService.request(
+      `/asset-categories/asset-parent-category-lookup${qs}`
+    );
   }
 }
 
 export const assetCategoriesApiService = new AssetCategoriesApiService();
-
