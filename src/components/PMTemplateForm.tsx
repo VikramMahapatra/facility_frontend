@@ -43,6 +43,7 @@ interface PMTemplate {
   category_id?: string;
   asset_category?: string;
   frequency?: string;
+  start_date?: string;
   next_due?: string;
   checklist?: ChecklistItem[];
   meter_metric?: string;
@@ -68,7 +69,7 @@ const emptyFormData: PMTemplateFormValues = {
   category_id: "",
   frequency: "",
   status: "active",
-  next_due: null,
+  start_date: null,
   checklist: [defaultChecklistItem],
   meter_metric: "",
   threshold: undefined,
@@ -115,7 +116,7 @@ export function PMTemplateForm({
         category_id: template.category_id || "",
         frequency: template.frequency || "",
         status: template.status || "",
-        next_due: template.next_due || null,
+        start_date: template.start_date || null,
         checklist: template.checklist && template.checklist.length > 0
           ? template.checklist
           : [defaultChecklistItem],
@@ -186,7 +187,7 @@ export function PMTemplateForm({
         category_id: data.category_id,
         frequency: data.frequency,
         status: data.status,
-        next_due: data.next_due,
+        start_date: data.start_date && data.start_date !== "" ? data.start_date : null,
         checklist: data.checklist as ChecklistItem[],
         meter_metric: data.meter_metric,
         threshold: data.threshold,
@@ -326,18 +327,18 @@ export function PMTemplateForm({
               )}
             />
             <div className="space-y-2">
-              <Label htmlFor="next_due">Next Due Date</Label>
+              <Label htmlFor="start_date">Start Date</Label>
               <Input
-                id="next_due"
+                id="start_date"
                 type="date"
                 min={new Date().toISOString().split("T")[0]}
-                {...register("next_due")}
-                className={errors.next_due ? "border-red-500" : ""}
+                {...register("start_date")}
+                className={errors.start_date ? "border-red-500" : ""}
                 disabled={isReadOnly}
               />
-              {errors.next_due && (
+              {errors.start_date && (
                 <p className="text-sm text-red-500">
-                  {errors.next_due.message}
+                  {errors.start_date.message}
                 </p>
               )}
             </div>
