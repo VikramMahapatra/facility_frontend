@@ -52,23 +52,23 @@ export function StatsGrid() {
         const IconComponent = iconMap[stat.icon as keyof typeof iconMap] || Building2;
         const isPositive = stat.trend === 'up';
 
+        const titleLower = stat.title?.toLowerCase() || '';
+        const isMonthlyRevenue = titleLower.includes('monthly revenue');
+        const isRentCollection = titleLower.includes('rent collection');
+        const isEnergyUsage = titleLower.includes('energy usage') || titleLower.includes('energy');
+        const isComingSoonCard = isMonthlyRevenue || isRentCollection || isEnergyUsage;
+
         return (
-          <Card key={index} className="border-l-4 border-l-primary relative">
+          <Card
+            key={index}
+            className={`border-l-4 border-l-primary relative ${isComingSoonCard ? 'overflow-hidden' : ''}`}
+          >
             <ContentContainer>
               <LoaderOverlay />
               <CardContent className="p-6">
                 <div className="flex items-center justify-between mb-4">
                   <div className="w-12 h-12 bg-primary/10 rounded-lg flex items-center justify-center text-primary">
                     <IconComponent className="w-6 h-6" />
-                  </div>
-                  <div className={`flex items-center text-sm font-medium ${isPositive ? 'text-accent' : 'text-destructive'
-                    }`}>
-                    {isPositive ? (
-                      <TrendingUp className="w-4 h-4 mr-1" />
-                    ) : (
-                      <TrendingDown className="w-4 h-4 mr-1" />
-                    )}
-                    {stat.change}
                   </div>
                 </div>
                 <div className="space-y-1">
@@ -78,6 +78,11 @@ export function StatsGrid() {
                 </div>
               </CardContent>
             </ContentContainer>
+            {isComingSoonCard && (
+              <div className="absolute inset-0 bg-background/70 backdrop-blur-sm flex items-center justify-center text-muted-foreground font-semibold pointer-events-none">
+                Not Available
+              </div>
+            )}
           </Card>
         );
       })}
@@ -177,11 +182,11 @@ export function MaintenanceOverview() {
         <CardContent className="space-y-4">
         <div className="grid grid-cols-2 gap-4">
           <div className="text-center p-3 bg-primary/5 rounded-lg">
-            <div className="text-2xl font-bold text-primary">{maintenanceData?.open_work_orders}</div>
+            <div className="text-2xl font-bold text-primary">{maintenanceData?.open}</div>
             <div className="text-xs text-muted-foreground">Open</div>
           </div>
           <div className="text-center p-3 bg-accent/5 rounded-lg">
-            <div className="text-2xl font-bold text-accent">{maintenanceData?.closed_work_orders}</div>
+            <div className="text-2xl font-bold text-accent">{maintenanceData?.closed}</div>
             <div className="text-xs text-muted-foreground">Closed</div>
           </div>
         </div>
@@ -199,14 +204,14 @@ export function MaintenanceOverview() {
               <AlertTriangle className="w-4 h-4 mr-2" />
               Service Requests
             </span>
-            <Badge variant="outline">{maintenanceData?.open_service_requests}</Badge>
+            <Badge variant="outline">{maintenanceData?.service_requests}</Badge>
           </div>
           <div className="flex items-center justify-between text-sm">
             <span className="flex items-center text-destructive">
               <Clock className="w-4 h-4 mr-2" />
               Assets at Risk
             </span>
-            <Badge variant="destructive">{maintenanceData?.assets_at_risk}</Badge>
+            <Badge variant="destructive">{maintenanceData?.asset_at_risk}</Badge>
           </div>
         </div>
         </CardContent>
@@ -231,7 +236,7 @@ export function AccessOverview() {
   };
 
   return (
-    <Card className="relative">
+    <Card className="relative overflow-hidden">
       <CardHeader>
         <CardTitle className="flex items-center space-x-2">
           <UserCheck className="w-5 h-5" />
@@ -278,6 +283,10 @@ export function AccessOverview() {
         </div>
         </CardContent>
       </ContentContainer>
+      {/* Coming soon overlay */}
+      <div className="absolute inset-0 bg-background/70 backdrop-blur-sm flex items-center justify-center text-muted-foreground font-semibold pointer-events-none">
+        Not Available
+      </div>
     </Card>
   );
 }
@@ -298,7 +307,7 @@ export function FinancialSummary() {
   };
 
   return (
-    <Card className="relative">
+    <Card className="relative overflow-hidden">
       <CardHeader>
         <CardTitle className="flex items-center space-x-2">
           <DollarSign className="w-5 h-5" />
@@ -335,6 +344,10 @@ export function FinancialSummary() {
         </div>
         </CardContent>
       </ContentContainer>
+      {/* Coming soon overlay */}
+      <div className="absolute inset-0 bg-background/70 backdrop-blur-sm flex items-center justify-center text-muted-foreground font-semibold pointer-events-none">
+        Not Available
+      </div>
     </Card>
   );
 }
@@ -354,7 +367,7 @@ export function EnergyOverview() {
     if (energyData?.success) setEnergyData(energyData.data);
   };
   return (
-    <Card className="relative">
+    <Card className="relative overflow-hidden">
       <CardHeader>
         <CardTitle className="flex items-center space-x-2">
           <Zap className="w-5 h-5" />
@@ -386,6 +399,10 @@ export function EnergyOverview() {
         </div>
         </CardContent>
       </ContentContainer>
+      {/* Coming soon overlay */}
+      <div className="absolute inset-0 bg-background/70 backdrop-blur-sm flex items-center justify-center text-muted-foreground font-semibold pointer-events-none">
+        Not Available
+      </div>
     </Card>
   );
 }

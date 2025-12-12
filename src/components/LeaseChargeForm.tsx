@@ -87,6 +87,7 @@ export function LeaseChargeForm({
   });
   const [leaseList, setLeaseList] = useState([]);
   const [chargeCodeList, setChargeCodeList] = useState([]);
+  const [formLoading, setFormLoading] = useState(true);
 
   const periodStart = watch("period_start");
   const periodEnd = watch("period_end");
@@ -103,8 +104,18 @@ export function LeaseChargeForm({
     }
   }, [periodStart, periodEnd, trigger]);
 
-  // hydrate form data like SpaceForm
+ 
   useEffect(() => {
+    if (isOpen) {
+      loadAll();
+    }
+  }, [charge, isOpen, mode, reset]);
+
+  const loadAll = async () => {
+    setFormLoading(true);
+
+    await Promise.all([loadLeaseLookup(), loadLeaseChargeLookup()]);
+
     if (charge && mode !== "create") {
       reset({
         lease_id: (charge.lease_id as any) || "",
@@ -124,9 +135,9 @@ export function LeaseChargeForm({
         tax_pct: 0 as any,
       });
     }
-    loadLeaseLookup();
-    loadLeaseChargeLookup();
-  }, [charge, isOpen, mode, reset]);
+
+    setFormLoading(false);
+  };
 
   const loadLeaseLookup = async () => {
     const lookup = await leasesApiService.getLeaseLookup();
@@ -144,7 +155,7 @@ export function LeaseChargeForm({
 
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
-      <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
+      <DialogContent className="max-w-2xl">
         <DialogHeader>
           <DialogTitle>
             {mode === "create" && "Create Lease Charge"}
@@ -153,6 +164,9 @@ export function LeaseChargeForm({
           </DialogTitle>
         </DialogHeader>
 
+        {formLoading ? (
+          <p className="text-center py-8">Loading...</p>
+        ) : (
         <form
           onSubmit={isSubmitting ? undefined : handleSubmit(onSubmitForm)}
           className="space-y-4"
@@ -327,6 +341,7 @@ export function LeaseChargeForm({
             )}
           </DialogFooter>
         </form>
+        )}
       </DialogContent>
     </Dialog>
   );
