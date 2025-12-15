@@ -10,14 +10,14 @@ class SiteApiService {
   }
 
   async addSite(siteData: any) {
-    return await apiService.request("/sites", {
+    return await apiService.request("/sites/", {
       method: "POST",
       body: JSON.stringify(siteData),
     });
   }
 
   async update(siteData: any) {
-    return await apiService.request("/sites", {
+    return await apiService.request("/sites/", {
       method: "PUT",
       body: JSON.stringify(siteData),
     });

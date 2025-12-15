@@ -11,14 +11,14 @@ class VisitorApiService {
     }
 
     async addVisitor(data: any) {
-        return await apiService.request('/visitors', {
+        return await apiService.request('/visitors/', {
             method: 'POST',
             body: JSON.stringify(data),
         });
     }
 
     async updateVisitor(data: any) {
-        return await apiService.request('/visitors', {
+        return await apiService.request('/visitors/', {
             method: 'PUT',
             body: JSON.stringify(data),
         });

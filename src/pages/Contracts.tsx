@@ -9,8 +9,8 @@ import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, D
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Plus, Search, Eye, Edit, FileText, Calendar, Building, Filter, AlertCircle, CheckCircle, Trash2 } from "lucide-react";
-import { contractApiService } from "@/services/pocurments/contractapi";
-import { vendorsApiService } from "@/services/pocurments/vendorsapi";
+import { contractApiService } from "@/services/procurements/contractapi";
+import { vendorsApiService } from "@/services/procurements/vendorsapi";
 import { useSkipFirstEffect } from "@/hooks/use-skipfirst-effect";
 import { SidebarProvider, SidebarTrigger, SidebarInset } from "@/components/ui/sidebar";
 import { Separator } from "@/components/ui/separator";

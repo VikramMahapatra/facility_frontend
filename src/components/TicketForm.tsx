@@ -18,7 +18,7 @@ import { siteApiService } from "@/services/spaces_sites/sitesapi";
 import { tenantsApiService } from "@/services/leasing_tenants/tenantsapi";
 import { organisationApiService } from "@/services/spaces_sites/organisationapi";
 import { ticketsApiService } from "@/services/ticketing_service/ticketsapi";
-import { vendorsApiService } from "@/services/pocurments/vendorsapi";
+import { vendorsApiService } from "@/services/procurements/vendorsapi";
 import { userManagementApiService } from "@/services/access_control/usermanagementapi";
 import { slaPoliciesApiService } from "@/services/ticketing_service/slapoliciesapi";
 import { toast } from "sonner";

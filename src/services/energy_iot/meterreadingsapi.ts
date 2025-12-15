@@ -7,14 +7,14 @@ class MeterReadingApiService {
     }
 
     async addMeter(data: any) {
-        return await apiService.request('/meters', {
+        return await apiService.request('/meters/', {
             method: 'POST',
             body: JSON.stringify(data),
         });
     }
 
     async updateMeter(data: any) {
-        return await apiService.request('/meters', {
+        return await apiService.request('/meters/', {
             method: 'PUT',
             body: JSON.stringify(data),
         });

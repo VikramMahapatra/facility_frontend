@@ -14,14 +14,14 @@ class BuildingApiService {
   }
 
   async addBuilding(buildingData: any) {
-    return await apiService.request("/buildings", {
+    return await apiService.request("/buildings/", {
       method: "POST",
       body: JSON.stringify(buildingData),
     });
   }
 
   async updateBuilding(buildingData: any) {
-    return await apiService.request("/buildings", {
+    return await apiService.request("/buildings/", {
       method: "PUT",
       body: JSON.stringify(buildingData),
     });

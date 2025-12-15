@@ -7,14 +7,14 @@ class SpaceGroupsApiService {
     }
 
     async addSpaceGroup(spaceGroupData: any) {
-        return await apiService.request('/space-groups', {
+        return await apiService.request('/space-groups/', {
             method: 'POST',
             body: JSON.stringify(spaceGroupData),
         });
     }
 
     async updateSpaceGroup(spaceGroupData: any) {
-        return await apiService.request('/space-groups', {
+        return await apiService.request('/space-groups/', {
             method: 'PUT',
             body: JSON.stringify(spaceGroupData),
         });

@@ -11,14 +11,14 @@ class ParkingZoneApiService {
     }
 
     async addParkingZone(assetData: any) {
-        return await apiService.request('/parking-zones', {
+        return await apiService.request('/parking-zones/', {
             method: 'POST',
             body: JSON.stringify(assetData),
         });
     }
 
     async updateParkingZone(assetData: any) {
-        return await apiService.request('/parking-zones', {
+        return await apiService.request('/parking-zones/', {
             method: 'PUT',
             body: JSON.stringify(assetData),
         });
