@@ -18,14 +18,14 @@ class SpaceAssignmentApiService {
     }
 
     async addAssignment(spaceData: any) {
-        return await apiService.request('/space-group-members', {
+        return await apiService.request('/space-group-members/', {
             method: 'POST',
             body: JSON.stringify(spaceData),
         });
     }
 
     async updateAssignment(spaceData: any) {
-        return await apiService.request('/space-group-members', {
+        return await apiService.request('/space-group-members/', {
             method: 'PUT',
             body: JSON.stringify(spaceData),
         });

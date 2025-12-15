@@ -7,7 +7,7 @@ class LeaseChargeCodesApiService {
     }
 
     async addLeaseChargeCode(data: any) {
-        return await apiService.request('/lease-charge-codes', {
+        return await apiService.request('/lease-charge-codes/', {
             method: 'POST',
             body: JSON.stringify(data),
         });

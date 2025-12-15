@@ -12,7 +12,7 @@ import { Controller, useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { VendorFormValues, vendorSchema } from "@/schemas/vendor.schema";
 import { toast } from "sonner";
-import { vendorsApiService } from "@/services/pocurments/vendorsapi";
+import { vendorsApiService } from "@/services/procurements/vendorsapi";
 import { ChevronsUpDown, X } from "lucide-react";
 import PhoneInput from "react-phone-input-2";
 

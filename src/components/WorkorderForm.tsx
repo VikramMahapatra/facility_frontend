@@ -27,7 +27,7 @@ import { workOrderApiService } from "@/services/maintenance_assets/workorderapi"
 import { assetApiService } from "@/services/maintenance_assets/assetsapi";
 import { serviceRequestApiService } from "@/services/maintenance_assets/servicerequestapi";
 import { organisationApiService } from "@/services/spaces_sites/organisationapi";
-import { vendorsApiService } from "@/services/pocurments/vendorsapi";
+import { vendorsApiService } from "@/services/procurements/vendorsapi";
 import {
   WorkOrder,
   WorkOrderPriority,

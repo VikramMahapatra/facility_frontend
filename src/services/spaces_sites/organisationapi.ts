@@ -7,7 +7,7 @@ class OrganisationApiService {
     }
 
     async update(orgData: any) {
-        return await apiService.request('/orgs', {
+        return await apiService.request('/orgs/', {
             method: 'PUT',
             body: JSON.stringify(orgData),
         });

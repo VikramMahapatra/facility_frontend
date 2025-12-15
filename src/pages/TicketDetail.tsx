@@ -32,7 +32,7 @@ import {
 import { toast } from "sonner";
 import { ticketsApiService } from "@/services/ticketing_service/ticketsapi";
 import { ticketWorkOrderApiService } from "@/services/ticketing_service/ticketworkorderapi";
-import { vendorsApiService } from "@/services/pocurments/vendorsapi";
+import { vendorsApiService } from "@/services/procurements/vendorsapi";
 import { useAuth } from "@/context/AuthContext";
 import { useLoader } from "@/context/LoaderContext";
 import LoaderOverlay from "@/components/LoaderOverlay";

@@ -15,14 +15,14 @@ class InvoiceApiService {
     }
 
     async addInvoice(invoiceData: any) {
-        return await apiService.request('/invoices', {
+        return await apiService.request('/invoices/', {
             method: 'POST',
             body: JSON.stringify(invoiceData),
         });
     }
 
     async updateInvoice(invoiceData: any) {
-        return await apiService.request('/invoices', {
+        return await apiService.request('/invoices/', {
             method: 'PUT',
             body: JSON.stringify(invoiceData),
         });

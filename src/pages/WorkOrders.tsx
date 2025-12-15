@@ -55,7 +55,7 @@ import { workOrderApiService } from "@/services/maintenance_assets/workorderapi"
 import { spacesApiService } from "@/services/spaces_sites/spacesapi";
 import { useSkipFirstEffect } from "@/hooks/use-skipfirst-effect";
 import { siteApiService } from "@/services/spaces_sites/sitesapi";
-import { vendorsApiService } from "@/services/pocurments/vendorsapi";
+import { vendorsApiService } from "@/services/procurements/vendorsapi";
 import { WorkOrder, WorkOrderOverview } from "@/interfaces/assets_interface";
 import { useAuth } from "../context/AuthContext";
 import { useLoader } from "@/context/LoaderContext";
