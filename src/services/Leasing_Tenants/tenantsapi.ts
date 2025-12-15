@@ -10,14 +10,14 @@ class TenantsApiService {
   }
 
   async addTenant(tenantData: any) {
-    return await apiService.request("/tenants", {
+    return await apiService.request('/tenants/', {
       method: "POST",
       body: JSON.stringify(tenantData),
     });
   }
 
   async updateTenant(tenantData: any) {
-    return await apiService.request(`/tenants`, {
+    return await apiService.request(`/tenants/`, {
       method: "PUT",
       body: JSON.stringify(tenantData),
     });
