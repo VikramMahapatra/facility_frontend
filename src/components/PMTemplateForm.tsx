@@ -116,7 +116,7 @@ export function PMTemplateForm({
         category_id: template.category_id || "",
         frequency: template.frequency || "",
         status: template.status || "",
-        start_date: template.start_date || null,
+        start_date: template.start_date && template.start_date !== "" ? template.start_date : null,
         checklist: template.checklist && template.checklist.length > 0
           ? template.checklist
           : [defaultChecklistItem],
@@ -326,22 +326,29 @@ export function PMTemplateForm({
                 </div>
               )}
             />
-            <div className="space-y-2">
-              <Label htmlFor="start_date">Start Date</Label>
-              <Input
-                id="start_date"
-                type="date"
-                min={new Date().toISOString().split("T")[0]}
-                {...register("start_date")}
-                className={errors.start_date ? "border-red-500" : ""}
-                disabled={isReadOnly}
-              />
-              {errors.start_date && (
-                <p className="text-sm text-red-500">
-                  {errors.start_date.message}
-                </p>
+            <Controller
+              name="start_date"
+              control={control}
+              render={({ field }) => (
+                <div className="space-y-2">
+                  <Label htmlFor="start_date">Start Date</Label>
+                  <Input
+                    id="start_date"
+                    type="date"
+                    min={new Date().toISOString().split("T")[0]}
+                    value={field.value || ""}
+                    onChange={(e) => field.onChange(e.target.value || null)}
+                    className={errors.start_date ? "border-red-500" : ""}
+                    disabled={isReadOnly}
+                  />
+                  {errors.start_date && (
+                    <p className="text-sm text-red-500">
+                      {errors.start_date.message}
+                    </p>
+                  )}
+                </div>
               )}
-            </div>
+            />
           </div>
 
           {/* Meter Metric and Threshold */}
