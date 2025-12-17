@@ -6,8 +6,24 @@ class InvoiceApiService {
         return await apiService.request(`/invoices/all?${params.toString()}`);
     }
 
+    async getLeaseChargeInvoices(params) {
+        return await apiService.request(`/invoices/all-lease-charge-invoices?${params.toString()}`);
+    }
+
     async getPayments(params) {
         return await apiService.request(`/invoices/payments?${params.toString()}`);
+    }
+
+    async getWorkOrderInvoices(params) {
+        return await apiService.request(`/invoices/all-work-order-invoices?${params.toString()}`);
+    }
+
+    async getInvoiceEntityLookup(params) {
+        return await apiService.request(`/invoices/entity-lookup?${params.toString()}`);
+    }
+
+    async getInvoiceTotals(params) {
+        return await apiService.request(`/invoices/invoice-totals?${params.toString()}`);
     }
 
     async getInvoiceOverview() {

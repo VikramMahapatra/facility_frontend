@@ -2,9 +2,13 @@ export interface Invoice {
     id: string;
     org_id: string;
     site_id: string;
+    site_name?: string;
     customer_kind: 'resident' | 'merchant' | 'guest' | 'staff' | 'other'; // ✅ Match service request types
     customer_id: string;
     customer_name: string;
+    billable_item_name?: string;
+    billable_item_type?: string;
+    billable_item_id?: string;
     invoice_no: string;
     date: string;
     due_date: string;
@@ -15,6 +19,7 @@ export interface Invoice {
         tax: number;
         grand: number;
     };
+    is_paid?: boolean;
     meta?: any;
     lines?: InvoiceLine[];
     created_at?: string;

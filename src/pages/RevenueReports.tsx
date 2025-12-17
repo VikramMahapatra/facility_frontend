@@ -3,10 +3,10 @@ import { Button } from "@/components/ui/button";
 import { useEffect } from "react";
 import { siteApiService } from "@/services/spaces_sites/sitesapi";
 import { useToast } from "@/hooks/use-toast";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Download, TrendingUp, TrendingDown, DollarSign, FileText, Calendar, Target } from "lucide-react";
-import { AreaChart, Area, BarChart, Bar, LineChart, Line, PieChart, Pie, Cell, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer } from "recharts";
-import { mockRevenueReports } from "@/data/mockFinancialsData";
+//import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Download, TrendingUp, TrendingDown, DollarSign, FileText,Target } from "lucide-react";
+import { AreaChart, Area, BarChart, Bar, PieChart, Pie, Cell, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer } from "recharts";
+//import { mockRevenueReports } from "@/data/mockFinancialsData";
 import { useState } from "react";
 import { SidebarProvider, SidebarTrigger, SidebarInset } from "@/components/ui/sidebar";
 import { Separator } from "@/components/ui/separator";
@@ -42,13 +42,6 @@ interface RevenueReportsOverview {
     });
 
 
-  useEffect(() => {
-    loadSiteLookup();
-  }, []);
-
-
-
-
   const loadSiteLookup = async () => {
     const lookup = await withLoader(async () => {
       return await siteApiService.getSiteLookup();
@@ -56,51 +49,115 @@ interface RevenueReportsOverview {
     if (lookup?.success) setSiteList(lookup.data || []);
   }
 
+  const loadRevenueReportsMonthLookup = async () => {
+    const response = await withLoader(async () => {
+      return await revenueReportsApiService.getRevenueReportsMonthLookup();
+    });
+    if (response?.success && response.data) {
+      setSelectedPeriod(response.data);
+    }
+  }
+
+  const loadRevenueReportsByTrend = async () => {
+    const params = new URLSearchParams();
+    if (selectedSite && selectedSite !== "all") {
+      params.append("site_id", selectedSite);
+    }
+    if (selectedPeriod && selectedPeriod !== "all") {
+      // Map period to month values (1, 2, 3, 4)
+      const monthMap: Record<string, string> = {
+        "Last_Month": "1",
+        "Last_3_Months": "2",
+        "Last_6_Months": "3",
+        "Last_Year": "4"
+      };
+      if (monthMap[selectedPeriod]) {
+        params.append("month", monthMap[selectedPeriod]);
+      }
+    }
+    const trendData = await withLoader(async () => {
+      return await revenueReportsApiService.getRevenueReportsByTrend(params);
+    });
+    if (trendData?.success) setTrendData(trendData.data || []);
+  }
    
+  const loadRevenueReportsBySource = async () => {
+    const params = new URLSearchParams();
+    if (selectedSite && selectedSite !== "all") {
+      params.append("site_id", selectedSite);
+    }
+    if (selectedPeriod && selectedPeriod !== "all") {
+      const monthMap: Record<string, string> = {
+        "Last_Month": "1",
+        "Last_3_Months": "2",
+        "Last_6_Months": "3",
+        "Last_Year": "4"
+      };
+      if (monthMap[selectedPeriod]) {
+        params.append("month", monthMap[selectedPeriod]);
+      }
+    }
+    const sourceData = await withLoader(async () => {
+      return await revenueReportsApiService.getRevenueReportsBySource(params);
+    });
+    if (sourceData?.success) setSourceData(sourceData.data || []);
+  }
+    
+  const loadRevenueReportsByOutstandingReceivables = async () => {
+    const params = new URLSearchParams();
+    if (selectedSite && selectedSite !== "all") {
+      params.append("site_id", selectedSite);
+    }
+    if (selectedPeriod && selectedPeriod !== "all") {
+      const monthMap: Record<string, string> = {
+        "Last_Month": "1",
+        "Last_3_Months": "2",
+        "Last_6_Months": "3",
+        "Last_Year": "4"
+      };
+      if (monthMap[selectedPeriod]) {
+        params.append("month", monthMap[selectedPeriod]);
+      }
+    }
+    const outstandingReceivablesData = await withLoader(async () => {
+      return await revenueReportsApiService.getRevenueReportsByOutstandingReceivables(params);
+    });
+    if (outstandingReceivablesData?.success) setOutstandingReceivablesData(outstandingReceivablesData.data || []);
+  }
+
+  const loadRevenueReportsOverview = async () => {
+    const params = new URLSearchParams();
+    if (selectedSite && selectedSite !== "all") {
+      params.append("site_id", selectedSite);
+    }
+    if (selectedPeriod && selectedPeriod !== "all") {
+      const monthMap: Record<string, string> = {
+        "Last_Month": "1",
+        "Last_3_Months": "2",
+        "Last_6_Months": "3",
+        "Last_Year": "4"
+      };
+      if (monthMap[selectedPeriod]) {
+        params.append("month", monthMap[selectedPeriod]);
+      }
+    }
+    const revenueReportsOverview = await withLoader(async () => {
+      return await revenueReportsApiService.getRevenueReportsOverview(params);
+    });
+    if (revenueReportsOverview?.success) setRevenueReportsOverview(revenueReportsOverview.data || {});
+  }
 
   useEffect(() => {
+    loadSiteLookup();
     loadRevenueReportsMonthLookup();
+  }, []);
+
+  useEffect(() => {
     loadRevenueReportsByTrend();
     loadRevenueReportsBySource();
     loadRevenueReportsByOutstandingReceivables();
     loadRevenueReportsOverview();
-  }, []);
-  
-
-   const loadRevenueReportsMonthLookup= async () => {
-      const selectedPeriod = await withLoader(async () => {
-        return await revenueReportsApiService.getRevenueReportsMonthLookup();
-      });
-      if (selectedPeriod?.success) setSelectedPeriod(selectedPeriod.data || "");
-    }
-
-    const loadRevenueReportsByTrend= async () => {
-      const trendData = await withLoader(async () => {
-        return await revenueReportsApiService.getRevenueReportsByTrend();
-      });
-      if (trendData?.success) setTrendData(trendData.data || []);
-    }
-   
-   
-    const loadRevenueReportsBySource= async () => {
-      const sourceData = await withLoader(async () => {
-        return await revenueReportsApiService.getRevenueReportsBySource();
-      });
-      if (sourceData?.success) setSourceData(sourceData.data || []);
-    }
-    
-    const loadRevenueReportsByOutstandingReceivables= async () => {
-      const outstandingReceivablesData = await withLoader(async () => {
-        return await revenueReportsApiService.getRevenueReportsByOutstandingReceivables();
-      });
-      if (outstandingReceivablesData?.success) setOutstandingReceivablesData(outstandingReceivablesData.data || []);
-    }
-    const loadRevenueReportsOverview= async () => {
-      const revenueReportsOverview = await withLoader(async () => {
-        return await revenueReportsApiService.getRevenueReportsOverview();
-      });
-      if (revenueReportsOverview?.success) setRevenueReportsOverview(revenueReportsOverview.data || {});
-    }
+  }, [selectedPeriod, selectedSite]);
   
   return (
     <SidebarProvider>
