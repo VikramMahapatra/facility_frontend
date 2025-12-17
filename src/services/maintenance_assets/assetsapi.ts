@@ -15,14 +15,14 @@ class AssetApiService {
   }
 
   async addAsset(assetData: any) {
-    return await apiService.request('/assets', {
+    return await apiService.request('/assets/', {
       method: 'POST',
       body: JSON.stringify(assetData),
     });
   }
 
   async updateAsset(assetData: any) {
-    return await apiService.request('/assets', {
+    return await apiService.request('/assets/', {
       method: 'PUT',
       body: JSON.stringify(assetData),
     });

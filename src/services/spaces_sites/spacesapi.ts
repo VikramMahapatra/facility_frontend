@@ -11,14 +11,14 @@ class SpacesApiService {
     }
 
     async addSpace(spaceData: any) {
-        return await apiService.request('/spaces', {
+        return await apiService.request('/spaces/', {
             method: 'POST',
             body: JSON.stringify(spaceData),
         });
     }
 
     async updateSpace(spaceData: any) {
-        return await apiService.request('/spaces', {
+        return await apiService.request('/spaces/', {
             method: 'PUT',
             body: JSON.stringify(spaceData),
         });

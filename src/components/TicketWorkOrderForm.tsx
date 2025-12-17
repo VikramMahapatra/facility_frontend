@@ -20,7 +20,7 @@ import {
 import { Controller, useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { toast } from "sonner";
-import { vendorsApiService } from "@/services/pocurments/vendorsapi";
+import { vendorsApiService } from "@/services/procurements/vendorsapi";
 import { ticketsApiService } from "@/services/ticketing_service/ticketsapi";
 import { ticketWorkOrderApiService } from "@/services/ticketing_service/ticketworkorderapi";
 import {

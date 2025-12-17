@@ -8,14 +8,14 @@ class RoleManagementApiService {
 
 
     async addRoleManagement(roleData: any) {
-        return await apiService.request('/roles', {
+        return await apiService.request('/roles/', {
             method: 'POST',
             body: JSON.stringify(roleData),
         });
     }
 
     async updateRoleManagement(roleData: any) {
-        return await apiService.request('/roles', {
+        return await apiService.request('/roles/', {
             method: 'PUT',
             body: JSON.stringify(roleData),
         });

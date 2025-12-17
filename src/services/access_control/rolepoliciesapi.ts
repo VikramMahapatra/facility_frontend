@@ -11,7 +11,7 @@ class RolePolicyApiService {
     }
 
     async savePolicies(role_id: string, policies: any) {
-        return await apiService.request('/role-policies', {
+        return await apiService.request('/role-policies/', {
             method: 'POST',
             body: JSON.stringify({
                 role_id,

@@ -8,8 +8,8 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Plus, Trash2, ExternalLink } from "lucide-react";
 import { Controller, useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
-import { contractApiService } from "@/services/pocurments/contractapi";
-import { vendorsApiService } from "@/services/pocurments/vendorsapi";
+import { contractApiService } from "@/services/procurements/contractapi";
+import { vendorsApiService } from "@/services/procurements/vendorsapi";
 import { siteApiService } from "@/services/spaces_sites/sitesapi";
 import { organisationApiService } from "@/services/spaces_sites/organisationapi";
 import { ContractFormValues, contractSchema } from "@/schemas/contract.schema";

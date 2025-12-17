@@ -15,14 +15,14 @@ class TaxCodeApiService {
     }
 
     async addTaxCode(taxCodeData: any) {
-        return await apiService.request('/tax-codes', {
+        return await apiService.request('/tax-codes/', {
             method: 'POST',
             body: JSON.stringify(taxCodeData),
         });
     }
 
     async updateTaxCode(taxCodeData: any) {
-        return await apiService.request('/tax-codes', {
+        return await apiService.request('/tax-codes/', {
             method: 'PUT',
             body: JSON.stringify(taxCodeData),
         });

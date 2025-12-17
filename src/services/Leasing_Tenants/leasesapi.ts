@@ -12,14 +12,14 @@ class LeasesApiService {
   }
 
   async addLease(leaseData: any) {
-    return await apiService.request('/leases', {
+    return await apiService.request('/leases/', {
       method: 'POST',
       body: JSON.stringify(leaseData),
     });
   }
 
   async updateLease(leaseData: any) {
-    return await apiService.request('/leases', {
+    return await apiService.request('/leases/', {
       method: 'PUT',
       body: JSON.stringify(leaseData),
     });
