@@ -54,9 +54,9 @@ export function StatsGrid() {
 
         const titleLower = stat.title?.toLowerCase() || '';
         const isMonthlyRevenue = titleLower.includes('monthly revenue');
-        const isRentCollection = titleLower.includes('rent collection');
-        const isEnergyUsage = titleLower.includes('energy usage') || titleLower.includes('energy');
-        const isComingSoonCard = isMonthlyRevenue || isRentCollection || isEnergyUsage;
+        //const isRentCollection = titleLower.includes('rent collection');
+       // const isEnergyUsage = titleLower.includes('energy usage') || titleLower.includes('energy');
+        const isComingSoonCard = isMonthlyRevenue;  //|| isEnergyUsage;//|| isRentCollection;
 
         return (
           <Card
@@ -307,7 +307,7 @@ export function FinancialSummary() {
   };
 
   return (
-    <Card className="relative overflow-hidden">
+    <Card >
       <CardHeader>
         <CardTitle className="flex items-center space-x-2">
           <DollarSign className="w-5 h-5" />
@@ -344,10 +344,7 @@ export function FinancialSummary() {
         </div>
         </CardContent>
       </ContentContainer>
-      {/* Coming soon overlay */}
-      <div className="absolute inset-0 bg-background/70 backdrop-blur-sm flex items-center justify-center text-muted-foreground font-semibold pointer-events-none">
-        Not Available
-      </div>
+     
     </Card>
   );
 }
@@ -399,10 +396,7 @@ export function EnergyOverview() {
         </div>
         </CardContent>
       </ContentContainer>
-      {/* Coming soon overlay */}
-      <div className="absolute inset-0 bg-background/70 backdrop-blur-sm flex items-center justify-center text-muted-foreground font-semibold pointer-events-none">
-        Not Available
-      </div>
+      
     </Card>
   );
 }
