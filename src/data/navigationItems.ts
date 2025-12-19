@@ -105,7 +105,7 @@ export const navigationItems = [
         title: "Lease Charge Codes",
         url: "/lease-charge-codes",
         icon: Key,
-        resource: "leases",
+        resource: "leases_charge_codes",
       },
     ],
   },
@@ -140,7 +140,7 @@ export const navigationItems = [
         title: "Ticket Work Orders",
         url: "/ticket-work-orders",
         icon: Wrench,
-        resource: "tickets",
+        resource: "tickets_work_order",
       },
       {
         title: "Workload Management",
@@ -171,7 +171,7 @@ export const navigationItems = [
     title: "Maintenance & Assets",
     items: [
       { title: "Assets", url: "/assets", icon: Package, resource: "assets" },
-      { title: "Asset Categories", url: "/asset-categories", icon: FolderTree, resource: "assets" },
+      { title: "Asset Categories", url: "/asset-categories", icon: FolderTree, resource: "asset_categories" },
       {
         title: "Work Orders",
         url: "/work-orders",
@@ -333,7 +333,7 @@ export const navigationItems = [
         title: "Notifications",
         url: "/notifications",
         icon: Bell,
-        resource: "settings",
+        resource: "notifications",
       },
       {
         title: "Settings",
