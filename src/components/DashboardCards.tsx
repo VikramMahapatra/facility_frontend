@@ -46,17 +46,34 @@ export function StatsGrid() {
   };
 
 
+  const sortedStats = overviewData?.stats ? [...overviewData.stats].sort((a: any, b: any) => {
+    const aTitleLower = a.title?.toLowerCase() || '';
+    const bTitleLower = b.title?.toLowerCase() || '';
+    const aIsComingSoon = aTitleLower.includes('monthly revenue');
+    const bIsComingSoon = bTitleLower.includes('monthly revenue');
+    const aIsRentCollection = aTitleLower.includes('rent collection');
+    const bIsRentCollection = bTitleLower.includes('rent collection');
+    
+    if (aIsComingSoon && !bIsComingSoon && !aIsRentCollection && !bIsRentCollection) return 1;
+    if (!aIsComingSoon && bIsComingSoon && !aIsRentCollection && !bIsRentCollection) return -1;
+    if (aIsRentCollection && !bIsRentCollection && !aIsComingSoon && !bIsComingSoon) return 1;
+    if (!aIsRentCollection && bIsRentCollection && !aIsComingSoon && !bIsComingSoon) return -1;
+    
+    return 0;
+  }) : [];
+
   return (
     <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-6 gap-6 mb-8">
-      {overviewData?.stats?.map((stat: any, index: number) => {
+      {sortedStats.map((stat: any, index: number) => {
         const IconComponent = iconMap[stat.icon as keyof typeof iconMap] || Building2;
         const isPositive = stat.trend === 'up';
 
         const titleLower = stat.title?.toLowerCase() || '';
         const isMonthlyRevenue = titleLower.includes('monthly revenue');
-        //const isRentCollection = titleLower.includes('rent collection');
+        const isRentCollection = titleLower.includes('rent collection');
        // const isEnergyUsage = titleLower.includes('energy usage') || titleLower.includes('energy');
-        const isComingSoonCard = isMonthlyRevenue;  //|| isEnergyUsage;//|| isRentCollection;
+        const isComingSoonCard = isMonthlyRevenue || isRentCollection;
+        //|| isEnergyUsage;|| isRentCollection;
 
         return (
           <Card
@@ -283,10 +300,6 @@ export function AccessOverview() {
         </div>
         </CardContent>
       </ContentContainer>
-      {/* Coming soon overlay */}
-      <div className="absolute inset-0 bg-background/70 backdrop-blur-sm flex items-center justify-center text-muted-foreground font-semibold pointer-events-none">
-        Not Available
-      </div>
     </Card>
   );
 }
@@ -307,7 +320,7 @@ export function FinancialSummary() {
   };
 
   return (
-    <Card >
+    <Card className="relative">
       <CardHeader>
         <CardTitle className="flex items-center space-x-2">
           <DollarSign className="w-5 h-5" />
