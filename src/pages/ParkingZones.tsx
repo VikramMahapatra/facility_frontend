@@ -1,354 +1,422 @@
-import { useState, useEffect, useRef } from "react";
-import { Car, Search, Plus, Eye, Edit, Trash2 } from "lucide-react";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Badge } from "@/components/ui/badge";
+import { useState, useEffect } from "react";
+import {
+  SidebarProvider,
+  SidebarInset,
+  SidebarTrigger,
+} from "@/components/ui/sidebar";
+import { PropertySidebar } from "@/components/PropertySidebar";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
-import { PropertySidebar } from "@/components/PropertySidebar";
-import { SidebarProvider, SidebarInset, SidebarTrigger } from "@/components/ui/sidebar";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from "@/components/ui/table";
+import { Badge } from "@/components/ui/badge";
+import { Plus, Pencil, Trash2, Search, Car } from "lucide-react";
 import { ParkingZoneForm } from "@/components/ParkingZoneForm";
-import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
 import { toast } from "sonner";
-import { ParkingZone, ParkingZoneOverview } from "@/interfaces/parking_access_interface";
-import { Pagination } from "@/components/Pagination";
-import { siteApiService } from "@/services/spaces_sites/sitesapi";
 import { parkingZoneApiService } from "@/services/parking_access/parkingzonesapi";
+import { siteApiService } from "@/services/spaces_sites/sitesapi";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
+import { Pagination } from "@/components/Pagination";
 import { useSkipFirstEffect } from "@/hooks/use-skipfirst-effect";
-import { useAuth } from "../context/AuthContext";
-import { useLoader } from "@/context/LoaderContext";
-import LoaderOverlay from "@/components/LoaderOverlay";
 import ContentContainer from "@/components/ContentContainer";
+import LoaderOverlay from "@/components/LoaderOverlay";
+import { useLoader } from "@/context/LoaderContext";
+import { useAuth } from "../context/AuthContext";
+import { ParkingZone } from "@/interfaces/parking_access_interface";
+
 export default function ParkingZones() {
-  const [searchTerm, setSearchTerm] = useState("");
-  const [selectedSite, setSelectedSite] = useState<string>("all");
-  const [zones, setZones] = useState<ParkingZone[]>([]);
-  const [selectedZone, setSelectedZone] = useState<ParkingZone | undefined>();
-  const [formMode, setFormMode] = useState<'create' | 'edit' | 'view'>('create');
   const [isFormOpen, setIsFormOpen] = useState(false);
+  const [formMode, setFormMode] = useState<"create" | "edit" | "view">(
+    "create"
+  );
+  const [selectedZone, setSelectedZone] = useState<ParkingZone | null>(null);
+  const [zones, setZones] = useState<ParkingZone[]>([]);
+  const [searchQuery, setSearchQuery] = useState("");
+  const [selectedSite, setSelectedSite] = useState<string>("all");
   const [deleteZoneId, setDeleteZoneId] = useState<string | null>(null);
-  const [siteList, setSiteList] = useState([]);
-  const [parkingZoneOverview, setParkingZoneOverview] = useState<ParkingZoneOverview>({
+  const [page, setPage] = useState(1);
+  const [pageSize] = useState(5);
+  const [totalItems, setTotalItems] = useState(0);
+  const [overview, setOverview] = useState<any>({
     totalZones: 0,
     totalCapacity: 0,
     avgCapacity: 0,
   });
-  const [page, setPage] = useState(1); // current page
-  const [pageSize] = useState(5); // items per page
-  const [totalItems, setTotalItems] = useState(0);
+  const [siteList, setSiteList] = useState<any[]>([]);
   const { canRead, canWrite, canDelete } = useAuth();
   const { withLoader } = useLoader();
   const resource = "parking_zones";
-  useSkipFirstEffect(() => {
-    loadParkingZone();
-  }, [page]);
-
-  useEffect(() => {
-    updateParkingZonePage();
-  }, [searchTerm, selectedSite]);
 
   useEffect(() => {
     loadSiteLookup();
-    loadParkingZoneOverView();
   }, []);
 
-  const updateParkingZonePage = () => {
+  useSkipFirstEffect(() => {
+    loadZones();
+    loadOverview();
+  }, [page]);
+
+  useEffect(() => {
+    updateZonesPage();
+  }, [searchQuery, selectedSite]);
+
+  const loadSiteLookup = async () => {
+    const lookup = await siteApiService.getSiteLookup();
+    if (lookup.success) setSiteList(lookup.data || []);
+  };
+
+  const updateZonesPage = () => {
     if (page === 1) {
-      loadParkingZone();
+      loadZones();
+      loadOverview();
     } else {
-      setPage(1);    // triggers the page effect
+      setPage(1);
     }
-  }
+  };
 
-  const loadParkingZoneOverView = async () => {
-    const params = new URLSearchParams();
-    if (searchTerm) params.append("search", searchTerm);
-    if (selectedSite) params.append("site_id", selectedSite);
-    const response = await withLoader(async () => {
-      return await parkingZoneApiService.getParkingZoneOverview();
-    });
-    if (response?.success) setParkingZoneOverview(response.data);
-  }
-
-  const loadParkingZone = async () => {
+  const loadZones = async () => {
     const skip = (page - 1) * pageSize;
     const limit = pageSize;
 
     // build query params
     const params = new URLSearchParams();
-    if (searchTerm) params.append("search", searchTerm);
-    if (selectedSite) params.append("site_id", selectedSite);
+    if (searchQuery) params.append("search", searchQuery);
+    if (selectedSite && selectedSite !== "all") {
+      params.append("site_id", selectedSite);
+    }
     params.append("skip", skip.toString());
     params.append("limit", limit.toString());
+
     const response = await withLoader(async () => {
       return await parkingZoneApiService.getParkingZones(params);
     });
+
     if (response?.success) {
-      setZones(response.data?.zones || []);
+      setZones(response.data?.zones || response.data || []);
       setTotalItems(response.data?.total || 0);
     }
-  }
-
-  const loadSiteLookup = async () => {
-    const lookup = await withLoader(async () => {
-      return await siteApiService.getSiteLookup();
-    });
-    if (lookup?.success) setSiteList(lookup.data || []);
-  }
-
-  const handleCreate = () => {
-    setSelectedZone(undefined);
-    setFormMode('create');
-    setIsFormOpen(true);
   };
 
-  const handleView = (zone: ParkingZone) => {
-    setSelectedZone(zone);
-    setFormMode('view');
+  const loadOverview = async () => {
+    const response = await parkingZoneApiService.getParkingZoneOverview();
+    if (response?.success) {
+      setOverview(response.data || {});
+    }
+  };
+
+  const totalZones = overview.totalZones || 0;
+  const totalCapacity = overview.totalCapacity || 0;
+  const avgCapacity = overview.avgCapacity || 0;
+
+  const handleCreate = () => {
+    setSelectedZone(null);
+    setFormMode("create");
     setIsFormOpen(true);
   };
 
   const handleEdit = (zone: ParkingZone) => {
     setSelectedZone(zone);
-    setFormMode('edit');
+    setFormMode("edit");
     setIsFormOpen(true);
   };
 
- const handleDelete = (zoneId: string) => {
-  setDeleteZoneId(zoneId);
-};
-
-const confirmDelete = async () => {
-  if (deleteZoneId) {
-    const response = await parkingZoneApiService.deleteParkingZone(deleteZoneId);
-
-    if (response.success) {
-      // Success - refresh data
-      updateParkingZonePage();
-      loadParkingZoneOverView();
-      setDeleteZoneId(null);
-      toast.success("Parking zone has been deleted successfully.");
-    } else {
-      const errorMessage = response?.data?.message || "Failed to delete parking zone";
-      toast.error(errorMessage);
+  const handleSave = async (zoneData: any) => {
+    let response;
+    if (formMode === "create") {
+      response = await parkingZoneApiService.addParkingZone(zoneData);
+      if (response.success) updateZonesPage();
+    } else if (formMode === "edit" && selectedZone) {
+      const updatedZone = {
+        ...selectedZone,
+        ...zoneData,
+      };
+      response = await parkingZoneApiService.updateParkingZone(updatedZone);
+      if (response.success) {
+        loadOverview();
+        setZones((prev) =>
+          prev.map((z) => (z.id === updatedZone.id ? response.data : z))
+        );
+      }
     }
 
-    setDeleteZoneId(null);
-  }
-};
-  const handleSave = async (zoneData: Partial<ParkingZone>) => {
-  let response;
-  if (formMode === "create") {
-    response = await parkingZoneApiService.addParkingZone(zoneData);
-
     if (response.success) {
-      updateParkingZonePage();
-      loadParkingZoneOverView();
-    }
-  } else if (formMode === "edit" && selectedZone) {
-    const updatedZone = {
-      ...selectedZone,
-      ...zoneData,
-      updated_at: new Date().toISOString(),
-    };
-    response = await parkingZoneApiService.updateParkingZone(updatedZone);
-
-    if (response.success) {
-      // Update the edited zone in local state
-      setZones((prev) =>
-        prev.map((z) => (z.id === updatedZone.id ? updatedZone : z))
+      setIsFormOpen(false);
+      toast.success(
+        `Parking Zone has been ${
+          formMode === "create" ? "created" : "updated"
+        } successfully.`
       );
-      loadParkingZoneOverView();
     }
-  }
+    return response;
+  };
 
-  if (response.success) {
-    setIsFormOpen(false);
-    toast.success(
-      `Parking zone "${zoneData.name}" has been ${formMode === "create" ? "created" : "updated"} successfully.`
-    );
-  } else {
-    const errorMessage = response?.data?.message || `Failed to ${formMode === "create" ? "create" : "update"} parking zone`;
-    toast.error(errorMessage);
-  }
-  return response;
-};
+  const handleDelete = (zoneId: string) => {
+    setDeleteZoneId(zoneId);
+  };
+
+  const confirmDelete = async () => {
+    if (deleteZoneId) {
+      const response = await parkingZoneApiService.deleteParkingZone(
+        deleteZoneId
+      );
+      if (response.success) {
+        updateZonesPage();
+        setDeleteZoneId(null);
+        toast.success("Parking Zone deleted successfully");
+      }
+    }
+  };
 
   return (
     <SidebarProvider>
-      <div className="flex min-h-screen w-full">
+      <div className="min-h-screen flex w-full bg-background">
         <PropertySidebar />
-        <SidebarInset className="flex-1">
-          <header className="flex h-16 shrink-0 items-center gap-2 border-b border-sidebar-border px-4">
-            <SidebarTrigger className="-ml-1" />
+
+        <SidebarInset>
+          <header className="bg-card border-b border-border px-6 py-4">
             <div className="flex items-center gap-2">
-              <Car className="h-5 w-5 text-sidebar-primary" />
-              <h1 className="text-lg font-semibold text-sidebar-primary">Parking Zones</h1>
+              <SidebarTrigger />
+              <div className="flex items-center gap-2">
+                <Car className="h-5 w-5 text-sidebar-primary" />
+                <h1 className="text-lg font-semibold text-sidebar-primary">
+                  Parking Zones
+                </h1>
+              </div>
             </div>
           </header>
 
           <main className="flex-1 p-6">
             <div className="space-y-6">
-              {/* Header */}
               <div className="flex items-center justify-between">
                 <div>
-                  <h2 className="text-2xl font-bold text-sidebar-primary">Parking Zones</h2>
-                  <p className="text-muted-foreground">Manage parking zones and capacity</p>
+                  <h2 className="text-3xl font-bold text-sidebar-primary">
+                    Parking Zones
+                  </h2>
+                  <p className="text-muted-foreground">
+                    Manage parking zones and capacity.
+                  </p>
                 </div>
-                <Button onClick={handleCreate} className="gap-2">
-                  <Plus className="h-4 w-4" />
-                  Add Zone
-                </Button>
+                {canWrite(resource) && (
+                  <Button onClick={handleCreate}>
+                    <Plus className="h-4 w-4 mr-2" />
+                    Create Zone
+                  </Button>
+                )}
               </div>
 
-              <div className="space-y-6">
-                {/* Stats */}
-                <div className="grid gap-4 md:grid-cols-3">
-                  <Card>
-                    <CardContent className="p-4">
-                      <div className="text-2xl font-bold text-sidebar-primary">{parkingZoneOverview.totalZones}</div>
-                      <p className="text-sm text-muted-foreground">Total Zones</p>
-                    </CardContent>
-                  </Card>
-                  <Card>
-                    <CardContent className="p-4">
-                      <div className="text-2xl font-bold text-blue-600">
-                        {parkingZoneOverview.totalCapacity}
-                      </div>
-                      <p className="text-sm text-muted-foreground">Total Capacity</p>
-                    </CardContent>
-                  </Card>
-                  <Card>
-                    <CardContent className="p-4">
-                      <div className="text-2xl font-bold text-green-600">
-                        {parkingZoneOverview.avgCapacity}
-                      </div>
-                      <p className="text-sm text-muted-foreground">Avg. Capacity</p>
-                    </CardContent>
-                  </Card>
-                </div>
+              {/* Summary Cards */}
+              <div className="grid grid-cols-3 gap-4">
+                <Card>
+                  <CardContent className="pt-6">
+                    <p className="text-sm font-bold text-muted-foreground mb-3">
+                      Total Zones
+                    </p>
+                    <div className="text-3xl font-bold text-sidebar-primary mb-1">
+                      {totalZones}
+                    </div>
+                    <p className="text-sm text-blue-600">All zones</p>
+                  </CardContent>
+                </Card>
+                <Card>
+                  <CardContent className="pt-6">
+                    <p className="text-sm font-bold text-muted-foreground mb-3">
+                      Total Capacity
+                    </p>
+                    <div className="text-3xl font-bold text-sidebar-primary mb-1">
+                      {totalCapacity}
+                    </div>
+                    <p className="text-sm text-blue-600">Total parking spots</p>
+                  </CardContent>
+                </Card>
+                <Card>
+                  <CardContent className="pt-6">
+                    <p className="text-sm font-bold text-muted-foreground mb-3">
+                      Avg Capacity
+                    </p>
+                    <div className="text-3xl font-bold text-sidebar-primary mb-1">
+                      {avgCapacity}
+                    </div>
+                    <p className="text-sm text-blue-600">Average per zone</p>
+                  </CardContent>
+                </Card>
+              </div>
 
-                {/* Filters */}
-                <div className="flex flex-wrap items-center gap-4">
-                  <div className="flex items-center gap-2">
-                    <Search className="h-4 w-4 text-muted-foreground" />
-                    <Input
-                      placeholder="Search zones..."
-                      value={searchTerm}
-                      onChange={(e) => setSearchTerm(e.target.value)}
-                      className="w-64"
-                    />
+              <Card>
+                <CardHeader>
+                  <div className="flex items-center gap-4">
+                    <div className="relative flex-1 max-w-sm">
+                      <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground h-4 w-4" />
+                      <Input
+                        type="text"
+                        placeholder="Search by name or site..."
+                        value={searchQuery}
+                        onChange={(e) => setSearchQuery(e.target.value)}
+                        className="pl-10"
+                      />
+                    </div>
+                    <Select
+                      value={selectedSite}
+                      onValueChange={setSelectedSite}
+                    >
+                      <SelectTrigger className="w-[180px]">
+                        <SelectValue placeholder="All Sites" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="all">All Sites</SelectItem>
+                        {siteList.map((site: any) => (
+                          <SelectItem key={site.id} value={site.id}>
+                            {site.name}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
                   </div>
-
-                  <select
-                    value={selectedSite}
-                    onChange={(e) => setSelectedSite(e.target.value)}
-                    className="rounded-md border border-input bg-background px-3 py-2 text-sm"
-                  >
-                    <option value="all">All Sites</option>
-                    {siteList.map(site => (
-                      <option key={site.id} value={site.id}>{site.name}</option>
-                    ))}
-                  </select>
-                </div>
-
-                <div className="relative rounded-md border">
-                  <ContentContainer>
-                    <LoaderOverlay />
-                    {/* Table */}
-                    <Card>
-                    <CardHeader>
-                      <CardTitle>Parking Zones ({zones?.length || 0})</CardTitle>
-                    </CardHeader>
-                    <CardContent>
+                </CardHeader>
+                <CardContent>
+                  <div className="relative rounded-md border">
+                    <ContentContainer>
+                      <LoaderOverlay />
                       <Table>
                         <TableHeader>
                           <TableRow>
                             <TableHead>Zone Name</TableHead>
                             <TableHead>Site</TableHead>
                             <TableHead>Capacity</TableHead>
-                            <TableHead className="text-right">Actions</TableHead>
+                            <TableHead className="text-right">
+                              Actions
+                            </TableHead>
                           </TableRow>
                         </TableHeader>
                         <TableBody>
-                          {zones.map((zone) => (
-                            <TableRow key={zone.id}>
-                              <TableCell className="font-medium">{zone.name}</TableCell>
-                              <TableCell>{zone.site_name}</TableCell>
-                              <TableCell>
-                                <Badge variant="outline">{zone.capacity} spots</Badge>
-                              </TableCell>
-                              <TableCell className="text-right">
-                                <div className="flex items-center justify-end gap-2">
-                                  <Button size="sm" variant="outline" onClick={() => handleView(zone)}>
-                                    <Eye className="h-3 w-3" />
-                                  </Button>
-                                  {canWrite(resource) && <Button size="sm" variant="outline" onClick={() => handleEdit(zone)}>
-                                    <Edit className="h-3 w-3" />
-                                  </Button>
-                                  }
-                                  {canDelete(resource) && <Button
-                                    size="sm"
-                                    variant="outline"
-                                    className="text-destructive hover:text-destructive"
-                                    onClick={() => handleDelete(zone.id)}
-                                  >
-                                    <Trash2 className="h-3 w-3" />
-                                  </Button>
-                                  }
-                                </div>
+                          {zones.length === 0 ? (
+                            <TableRow>
+                              <TableCell
+                                colSpan={4}
+                                className="text-center text-muted-foreground"
+                              >
+                                No parking zones found
                               </TableCell>
                             </TableRow>
-                          ))}
+                          ) : (
+                            zones.map((zone) => (
+                              <TableRow key={zone.id}>
+                                <TableCell className="font-medium">
+                                  {zone.name}
+                                </TableCell>
+                                <TableCell>{zone.site_name || "-"}</TableCell>
+                                <TableCell>
+                                  <Badge variant="outline">
+                                    {zone.capacity} spots
+                                  </Badge>
+                                </TableCell>
+                                <TableCell className="text-right">
+                                  <div className="flex justify-end gap-2">
+                                    {canWrite(resource) && (
+                                      <Button
+                                        variant="ghost"
+                                        size="icon"
+                                        onClick={() => handleEdit(zone)}
+                                      >
+                                        <Pencil className="h-4 w-4" />
+                                      </Button>
+                                    )}
+                                    {canDelete(resource) && (
+                                      <Button
+                                        variant="ghost"
+                                        size="icon"
+                                        onClick={() => handleDelete(zone.id)}
+                                      >
+                                        <Trash2 className="h-4 w-4 text-destructive" />
+                                      </Button>
+                                    )}
+                                  </div>
+                                </TableCell>
+                              </TableRow>
+                            ))
+                          )}
                         </TableBody>
                       </Table>
-                    <Pagination
-                    page={page}
-                    pageSize={pageSize}
-                    totalItems={totalItems}
-                    onPageChange={(newPage) => setPage(newPage)}
-                  />
-                    {zones?.length === 0 && (
-                      <div className="text-center py-8">
-                        <Car className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
-                        <h3 className="text-lg font-semibold text-sidebar-primary mb-2">No zones found</h3>
-                        <p className="text-muted-foreground">Try adjusting your search criteria or add a new zone.</p>
-                      </div>
-                    )}
-                  </CardContent>
-                    </Card>
-                  </ContentContainer>
-                </div>
-              </div>
+                    </ContentContainer>
+                  </div>
+                </CardContent>
+              </Card>
+
+              {/* Pagination */}
+              <Pagination
+                page={page}
+                pageSize={pageSize}
+                totalItems={totalItems}
+                onPageChange={setPage}
+              />
             </div>
+
+            <ParkingZoneForm
+              zone={selectedZone}
+              isOpen={isFormOpen}
+              onClose={() => {
+                setIsFormOpen(false);
+                setSelectedZone(null);
+              }}
+              onSave={handleSave}
+              mode={formMode}
+            />
+
+            <AlertDialog
+              open={!!deleteZoneId}
+              onOpenChange={() => setDeleteZoneId(null)}
+            >
+              <AlertDialogContent>
+                <AlertDialogHeader>
+                  <AlertDialogTitle>Delete Parking Zone</AlertDialogTitle>
+                  <AlertDialogDescription>
+                    Are you sure you want to delete this parking zone? This
+                    action cannot be undone.
+                  </AlertDialogDescription>
+                </AlertDialogHeader>
+                <AlertDialogFooter>
+                  <AlertDialogCancel>Cancel</AlertDialogCancel>
+                  <AlertDialogAction
+                    onClick={confirmDelete}
+                    className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+                  >
+                    Delete
+                  </AlertDialogAction>
+                </AlertDialogFooter>
+              </AlertDialogContent>
+            </AlertDialog>
           </main>
         </SidebarInset>
       </div>
-
-      <ParkingZoneForm
-        zone={selectedZone}
-        isOpen={isFormOpen}
-        onClose={() => setIsFormOpen(false)}
-        onSave={handleSave}
-        mode={formMode}
-      />
-
-      <AlertDialog open={!!deleteZoneId} onOpenChange={() => setDeleteZoneId(null)}>
-        <AlertDialogContent>
-          <AlertDialogHeader>
-            <AlertDialogTitle>Delete Parking Zone</AlertDialogTitle>
-            <AlertDialogDescription>
-              Are you sure you want to delete this parking zone? This action cannot be undone.
-            </AlertDialogDescription>
-          </AlertDialogHeader>
-          <AlertDialogFooter>
-            <AlertDialogCancel>Cancel</AlertDialogCancel>
-            <AlertDialogAction onClick={confirmDelete} className="bg-destructive text-destructive-foreground">
-              Delete
-            </AlertDialogAction>
-          </AlertDialogFooter>
-        </AlertDialogContent>
-      </AlertDialog>
     </SidebarProvider>
   );
 }
