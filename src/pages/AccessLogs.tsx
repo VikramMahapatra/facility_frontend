@@ -1,13 +1,40 @@
 import { useState, useEffect } from "react";
-import { Key, Search, Download, Filter, ArrowUpCircle, ArrowDownCircle } from "lucide-react";
+import {
+  Key,
+  Search,
+  Download,
+  ArrowUpCircle,
+  ArrowDownCircle,
+} from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from "@/components/ui/table";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 import { PropertySidebar } from "@/components/PropertySidebar";
-import { SidebarProvider, SidebarInset, SidebarTrigger } from "@/components/ui/sidebar";
-import { AccessEvent, AccessEventOverview } from "@/interfaces/parking_access_interface";
+import {
+  SidebarProvider,
+  SidebarInset,
+  SidebarTrigger,
+} from "@/components/ui/sidebar";
+import {
+  AccessEvent,
+  AccessEventOverview,
+} from "@/interfaces/parking_access_interface";
 import { useSkipFirstEffect } from "@/hooks/use-skipfirst-effect";
 import { siteApiService } from "@/services/spaces_sites/sitesapi";
 import { accessEventApiService } from "@/services/parking_access/accesseventsapi";
@@ -21,7 +48,7 @@ export default function AccessLogs() {
   const [selectedSite, setSelectedSite] = useState<string>("all");
   const [selectedDirection, setSelectedDirection] = useState<string>("all");
 
-  const [events, setEvents] = useState<AccessEvent[]>([])
+  const [events, setEvents] = useState<AccessEvent[]>([]);
   const [page, setPage] = useState(1); // current page
   const [pageSize] = useState(6); // items per page
   const [totalItems, setTotalItems] = useState(0);
@@ -42,7 +69,7 @@ export default function AccessLogs() {
     if (page === 1) {
       loadEvents();
     } else {
-      setPage(1);    // triggers the page effect
+      setPage(1); // triggers the page effect
     }
   }, [searchTerm, selectedSite, selectedDirection]);
 
@@ -69,32 +96,34 @@ export default function AccessLogs() {
       setEvents(response.data?.events || []);
       setTotalItems(response.data?.total || 0);
     }
-  }
+  };
 
   const loadEventOverView = async () => {
     const response = await withLoader(async () => {
       return await accessEventApiService.getAccessEventOverview();
     });
     if (response?.success) setEventOverview(response.data || []);
-  }
+  };
 
   const loadSiteLookup = async () => {
     const lookup = await withLoader(async () => {
       return await siteApiService.getSiteLookup();
     });
     if (lookup?.success) setSiteList(lookup.data || []);
-  }
-
-  const getDirectionIcon = (direction: 'in' | 'out') => {
-    return direction === 'in' ?
-      <ArrowUpCircle className="h-4 w-4 text-green-600" /> :
-      <ArrowDownCircle className="h-4 w-4 text-orange-600" />;
   };
 
-  const getDirectionColor = (direction: 'in' | 'out') => {
-    return direction === 'in' ?
-      "bg-green-100 text-green-800" :
-      "bg-orange-100 text-orange-800";
+  const getDirectionIcon = (direction: "in" | "out") => {
+    return direction === "in" ? (
+      <ArrowUpCircle className="h-4 w-4 text-green-600" />
+    ) : (
+      <ArrowDownCircle className="h-4 w-4 text-orange-600" />
+    );
+  };
+
+  const getDirectionColor = (direction: "in" | "out") => {
+    return direction === "in"
+      ? "bg-green-100 text-green-800"
+      : "bg-orange-100 text-orange-800";
   };
 
   const formatDateTime = (dateString: string) => {
@@ -110,7 +139,9 @@ export default function AccessLogs() {
             <SidebarTrigger className="-ml-1" />
             <div className="flex items-center gap-2">
               <Key className="h-5 w-5 text-sidebar-primary" />
-              <h1 className="text-lg font-semibold text-sidebar-primary">Access Logs</h1>
+              <h1 className="text-lg font-semibold text-sidebar-primary">
+                Access Logs
+              </h1>
             </div>
           </header>
 
@@ -119,8 +150,12 @@ export default function AccessLogs() {
               {/* Header */}
               <div className="flex items-center justify-between">
                 <div>
-                  <h2 className="text-2xl font-bold text-sidebar-primary">Access Logs</h2>
-                  <p className="text-muted-foreground">Monitor entry and exit activities</p>
+                  <h2 className="text-2xl font-bold text-sidebar-primary">
+                    Access Logs
+                  </h2>
+                  <p className="text-muted-foreground">
+                    Monitor entry and exit activities
+                  </p>
                 </div>
                 <Button variant="outline" className="gap-2">
                   <Download className="h-4 w-4" />
@@ -132,19 +167,29 @@ export default function AccessLogs() {
               <div className="grid gap-4 md:grid-cols-4">
                 <Card>
                   <CardContent className="p-4">
-                    <div className="text-2xl font-bold text-sidebar-primary">{eventOverview.todayEvents}</div>
-                    <p className="text-sm text-muted-foreground">Today's Events</p>
+                    <div className="text-2xl font-bold text-sidebar-primary">
+                      {eventOverview.todayEvents}
+                    </div>
+                    <p className="text-sm text-muted-foreground">
+                      Today's Events
+                    </p>
                   </CardContent>
                 </Card>
                 <Card>
                   <CardContent className="p-4">
-                    <div className="text-2xl font-bold text-green-600">{eventOverview.totalEntries}</div>
-                    <p className="text-sm text-muted-foreground">Total Entries</p>
+                    <div className="text-2xl font-bold text-green-600">
+                      {eventOverview.totalEntries}
+                    </div>
+                    <p className="text-sm text-muted-foreground">
+                      Total Entries
+                    </p>
                   </CardContent>
                 </Card>
                 <Card>
                   <CardContent className="p-4">
-                    <div className="text-2xl font-bold text-orange-600">{eventOverview.totalExits}</div>
+                    <div className="text-2xl font-bold text-orange-600">
+                      {eventOverview.totalExits}
+                    </div>
                     <p className="text-sm text-muted-foreground">Total Exits</p>
                   </CardContent>
                 </Card>
@@ -172,26 +217,36 @@ export default function AccessLogs() {
                       />
                     </div>
 
-                    <select
+                    <Select
                       value={selectedSite}
-                      onChange={(e) => setSelectedSite(e.target.value)}
-                      className="rounded-md border border-input bg-background px-3 py-2 text-sm"
+                      onValueChange={setSelectedSite}
                     >
-                      <option value="all">All Sites</option>
-                      {siteList.map(site => (
-                        <option key={site.id} value={site.id}>{site.name}</option>
-                      ))}
-                    </select>
+                      <SelectTrigger className="w-[180px]">
+                        <SelectValue placeholder="All Sites" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="all">All Sites</SelectItem>
+                        {siteList.map((site: any) => (
+                          <SelectItem key={site.id} value={site.id}>
+                            {site.name}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
 
-                    <select
+                    <Select
                       value={selectedDirection}
-                      onChange={(e) => setSelectedDirection(e.target.value)}
-                      className="rounded-md border border-input bg-background px-3 py-2 text-sm"
+                      onValueChange={setSelectedDirection}
                     >
-                      <option value="all">All Directions</option>
-                      <option value="in">Entry</option>
-                      <option value="out">Exit</option>
-                    </select>
+                      <SelectTrigger className="w-[180px]">
+                        <SelectValue placeholder="All Directions" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="all">All Directions</SelectItem>
+                        <SelectItem value="in">Entry</SelectItem>
+                        <SelectItem value="out">Exit</SelectItem>
+                      </SelectContent>
+                    </Select>
                   </div>
                 </CardHeader>
               </Card>
@@ -225,24 +280,38 @@ export default function AccessLogs() {
                               <TableCell>
                                 <div className="flex items-center gap-2">
                                   {getDirectionIcon(event.direction)}
-                                  <Badge className={getDirectionColor(event.direction)}>
-                                    {event.direction === 'in' ? 'Entry' : 'Exit'}
+                                  <Badge
+                                    className={getDirectionColor(
+                                      event.direction
+                                    )}
+                                  >
+                                    {event.direction === "in"
+                                      ? "Entry"
+                                      : "Exit"}
                                   </Badge>
                                 </div>
                               </TableCell>
                               <TableCell>{event.gate}</TableCell>
                               <TableCell>
                                 {event.vehicle_no ? (
-                                  <Badge variant="outline">{event.vehicle_no}</Badge>
+                                  <Badge variant="outline">
+                                    {event.vehicle_no}
+                                  </Badge>
                                 ) : (
-                                  <span className="text-muted-foreground">-</span>
+                                  <span className="text-muted-foreground">
+                                    -
+                                  </span>
                                 )}
                               </TableCell>
                               <TableCell>
                                 {event.card_id ? (
-                                  <Badge variant="outline">{event.card_id}</Badge>
+                                  <Badge variant="outline">
+                                    {event.card_id}
+                                  </Badge>
                                 ) : (
-                                  <span className="text-muted-foreground">-</span>
+                                  <span className="text-muted-foreground">
+                                    -
+                                  </span>
                                 )}
                               </TableCell>
                               <TableCell>{event.site_name}</TableCell>
@@ -253,8 +322,12 @@ export default function AccessLogs() {
                       {events.length === 0 && (
                         <div className="text-center py-8">
                           <Key className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
-                          <h3 className="text-lg font-semibold text-sidebar-primary mb-2">No events found</h3>
-                          <p className="text-muted-foreground">Try adjusting your search criteria.</p>
+                          <h3 className="text-lg font-semibold text-sidebar-primary mb-2">
+                            No events found
+                          </h3>
+                          <p className="text-muted-foreground">
+                            Try adjusting your search criteria.
+                          </p>
                         </div>
                       )}
                     </CardContent>
