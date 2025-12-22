@@ -1,5 +1,6 @@
 import { createContext, useContext, useState, useEffect, ReactNode } from "react";
 import { useNavigate } from "react-router-dom";
+import { authApiService } from "@/services/authapi";
 
 export interface RolePolicy {
     resource: string;
@@ -76,9 +77,10 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
         );
     };
 
-        const handleLogout = () => {
-        localStorage.removeItem('user');
-        navigate('/login');
+    const handleLogout = async () => {
+        await authApiService.logout(); 
+        setUser(null);                 
+        navigate("/login");
     };
 
 
