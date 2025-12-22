@@ -1,84 +1,101 @@
 import { useState, useEffect } from "react";
-import { UserCheck, Search, Plus, Eye, Edit, Trash2, Clock } from "lucide-react";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Badge } from "@/components/ui/badge";
+import {
+  SidebarProvider,
+  SidebarInset,
+  SidebarTrigger,
+} from "@/components/ui/sidebar";
+import { PropertySidebar } from "@/components/PropertySidebar";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { LogOut, } from "lucide-react";
+import { Clock, LogOut, Pencil, Plus, Search, Trash2, UserCheck, } from "lucide-react";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
-import { PropertySidebar } from "@/components/PropertySidebar";
-import { SidebarProvider, SidebarInset, SidebarTrigger } from "@/components/ui/sidebar";
+//import { PropertySidebar } from "@/components/PropertySidebar";
+//import { SidebarProvider, SidebarInset, SidebarTrigger } from "@/components/ui/sidebar";
 import { VisitorForm } from "@/components/VisitorForm";
-import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
 import { toast } from "sonner";
-import { useSkipFirstEffect } from "@/hooks/use-skipfirst-effect";
-import { siteApiService } from "@/services/spaces_sites/sitesapi";
 import { visitorApiService } from "@/services/parking_access/visitorsapi";
-import { Visitor, VisitorOverview } from "@/interfaces/parking_access_interface";
+import { siteApiService } from "@/services/spaces_sites/sitesapi";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
 import { Pagination } from "@/components/Pagination";
-import { useAuth } from "../context/AuthContext";
-import { useLoader } from "@/context/LoaderContext";
-import LoaderOverlay from "@/components/LoaderOverlay";
+import { useSkipFirstEffect } from "@/hooks/use-skipfirst-effect";
 import ContentContainer from "@/components/ContentContainer";
+import LoaderOverlay from "@/components/LoaderOverlay";
+import { useLoader } from "@/context/LoaderContext";
+import { useAuth } from "../context/AuthContext";
+import { Visitor } from "@/interfaces/parking_access_interface";
+import { Card, CardContent, CardHeader } from "@/components/ui/card";
+import { Badge } from "@/components/ui/badge";
+
 export default function Visitors() {
-  const [searchTerm, setSearchTerm] = useState("");
+  const [isFormOpen, setIsFormOpen] = useState(false);
+  const [formMode, setFormMode] = useState<"create" | "edit" | "view">(
+    "create"
+  );
+  const [selectedVisitor, setSelectedVisitor] = useState<Visitor | null>(null);
+  const [visitors, setVisitors] = useState<Visitor[]>([]);
+  const [searchQuery, setSearchQuery] = useState("");
   const [selectedSite, setSelectedSite] = useState<string>("all");
   const [selectedStatus, setSelectedStatus] = useState<string>("all");
-  const [visitors, setVisitors] = useState<Visitor[]>([]);
-  const [selectedVisitor, setSelectedVisitor] = useState<Visitor | undefined>();
-  const [formMode, setFormMode] = useState<'create' | 'edit' | 'view'>('create');
-  const [isFormOpen, setIsFormOpen] = useState(false);
   const [deleteVisitorId, setDeleteVisitorId] = useState<string | null>(null);
   const [siteList, setSiteList] = useState([]);
   const { user, handleLogout } = useAuth();
   const [page, setPage] = useState(1); // current page
   const [pageSize] = useState(6); // items per page
   const [totalItems, setTotalItems] = useState(0);
-  const [visitorOverview, setVisitorOverview] = useState<VisitorOverview>({
+  const [overview, setOverview] = useState<any>({
     checkedInToday: 0,
     expectedToday: 0,
     totalVisitors: 0,
     totalVisitorsWithVehicle: 0,
   });
+  //const [siteList, setSiteList] = useState<any[]>([]);
   const { canRead, canWrite, canDelete } = useAuth();
   const { withLoader } = useLoader();
   const resource = "visitors";
+
   useEffect(() => {
     loadSiteLookup();
-    loadVisitorOverView();
   }, []);
 
   useSkipFirstEffect(() => {
     loadVisitors();
+    loadOverview();
   }, [page]);
 
   useEffect(() => {
-    updateVisitorPage();
-  }, [searchTerm, selectedSite, selectedStatus]);
+    updateVisitorsPage();
+  }, [searchQuery, selectedSite, selectedStatus]);
 
-  const updateVisitorPage = () => {
+  const loadSiteLookup = async () => {
+    const lookup = await siteApiService.getSiteLookup();
+    if (lookup.success) setSiteList(lookup.data || []);
+  };
+
+  const updateVisitorsPage = () => {
     if (page === 1) {
       loadVisitors();
+      loadOverview();
     } else {
       setPage(1);
     }
-  }
-
-  const loadSiteLookup = async () => {
-    const lookup = await withLoader(async () => {
-      return await siteApiService.getSiteLookup();
-    });
-    if (lookup?.success) setSiteList(lookup.data || []);
-  }
-
-  const loadVisitorOverView = async () => {
-    const response = await withLoader(async () => {
-      return await visitorApiService.getVisitorOverview();
-    });
-    if (response?.success) {setVisitorOverview(response.data || {});
-    }
-  }
+  };
 
   const loadVisitors = async () => {
     const skip = (page - 1) * pageSize;
@@ -86,26 +103,100 @@ export default function Visitors() {
 
     // build query params
     const params = new URLSearchParams();
-    if (searchTerm) params.append("search", searchTerm);
-    if (selectedSite) params.append("site_id", selectedSite);
-    if (selectedStatus) params.append("status", selectedStatus);
-
+    if (searchQuery) params.append("search", searchQuery);
+    if (selectedSite && selectedSite !== "all") {
+      params.append("site_id", selectedSite);
+    }
+    if (selectedStatus && selectedStatus !== "all") {
+      params.append("status", selectedStatus);
+    }
     params.append("skip", skip.toString());
     params.append("limit", limit.toString());
+
     const response = await withLoader(async () => {
       return await visitorApiService.getVisitors(params);
     });
+
     if (response?.success) {
-      setVisitors(response.data?.visitors || []);
+      setVisitors(response.data?.visitors || response.data || []);
       setTotalItems(response.data?.total || 0);
     }
-  }
+  };
+
+  const loadOverview = async () => {
+    const response = await visitorApiService.getVisitorOverview();
+    if (response?.success) {
+      setOverview(response.data || {});
+    }
+  };
+
+  const checkedInToday = overview.checkedInToday || 0;
+  const expectedToday = overview.expectedToday || 0;
+  const totalVisitors = overview.totalVisitors || 0;
+  const totalVisitorsWithVehicle = overview.totalVisitorsWithVehicle || 0;
+
+  const handleCreate = () => {
+    setSelectedVisitor(null);
+    setFormMode("create");
+    setIsFormOpen(true);
+  };
+
+  const handleEdit = (visitor: Visitor) => {
+    setSelectedVisitor(visitor);
+    setFormMode("edit");
+    setIsFormOpen(true);
+  };
+
+  const handleSave = async (visitorData: any) => {
+    let response;
+    if (formMode === "create") {
+      response = await visitorApiService.addVisitor(visitorData);
+      if (response.success) updateVisitorsPage();
+    } else if (formMode === "edit" && selectedVisitor) {
+      const updatedVisitor = {
+        ...selectedVisitor,
+        ...visitorData,
+      };
+      response = await visitorApiService.updateVisitor(updatedVisitor);
+      if (response.success) {
+        loadOverview();
+        setVisitors((prev) =>
+          prev.map((v) => (v.id === updatedVisitor.id ? response.data : v))
+        );
+      }
+    }
+
+    if (response.success) {
+      setIsFormOpen(false);
+      toast.success(
+        `Visitor has been ${
+          formMode === "create" ? "created" : "updated"
+        } successfully.`
+      );
+    }
+    return response;
+  };
+
+  const handleDelete = (visitorId: string) => {
+    setDeleteVisitorId(visitorId);
+  };
+
+  const confirmDelete = async () => {
+    if (deleteVisitorId) {
+      const response = await visitorApiService.deleteVisitor(deleteVisitorId);
+      if (response.success) {
+        updateVisitorsPage();
+        setDeleteVisitorId(null);
+        toast.success("Visitor deleted successfully");
+      }
+    }
+  };
 
   const getStatusColor = (status: string) => {
     const colors = {
       checked_in: "bg-green-100 text-green-800",
       checked_out: "bg-gray-100 text-gray-800",
-      expected: "bg-blue-100 text-blue-800"
+      expected: "bg-blue-100 text-blue-800",
     };
     return colors[status as keyof typeof colors] || "bg-gray-100 text-gray-800";
   };
@@ -114,88 +205,9 @@ export default function Visitors() {
     return new Date(dateString).toLocaleString();
   };
 
-  const handleCreate = () => {
-    setSelectedVisitor(undefined);
-    setFormMode('create');
-    setIsFormOpen(true);
-  };
-
-  const handleView = (visitor: Visitor) => {
-    setSelectedVisitor(visitor);
-    setFormMode('view');
-    setIsFormOpen(true);
-  };
-
-  const handleEdit = (visitor: Visitor) => {
-    setSelectedVisitor(visitor);
-    setFormMode('edit');
-    setIsFormOpen(true);
-  };
-
-  const handleDelete = (visitorId: string) => {
-  setDeleteVisitorId(visitorId);
-};
-
-const confirmDelete = async () => {
-  if (deleteVisitorId) {
-    const response = await visitorApiService.deleteVisitor(deleteVisitorId);
-
-    if (response.success) {
-      // Success - refresh data
-      updateVisitorPage();
-      loadVisitorOverView();
-      setDeleteVisitorId(null);
-      toast.success("Visitor record has been removed successfully.");
-    } else {
-      const errorMessage = response?.data?.message || "Failed to delete visitor";
-      toast.error(errorMessage);
-    }
-
-    setDeleteVisitorId(null);
-  }
-};
-
- const handleSave = async (visitorData: Partial<Visitor>) => {
-  let response;
-  if (formMode === "create") {
-    response = await visitorApiService.addVisitor(visitorData);
-
-    if (response.success) {
-      updateVisitorPage();
-      loadVisitorOverView();
-    }
-  } else if (formMode === "edit" && selectedVisitor) {
-    const updatedLog = {
-      ...selectedVisitor,
-      ...visitorData,
-      updated_at: new Date().toISOString(),
-    };
-    response = await visitorApiService.updateVisitor(updatedLog);
-
-    if (response.success) {
-      // Update the edited visitor in local state
-      setVisitors((prev) =>
-        prev.map((v) => (v.id === updatedLog.id ? response.data : v))
-      );
-      loadVisitorOverView();
-    }
-  }
-
-  if (response.success) {
-    setIsFormOpen(false);
-    toast.success(
-      `Visitor "${visitorData.name}" has been ${formMode === "create" ? "added" : "updated"} successfully.`
-    );
-  } else {
-    const errorMessage = response?.data?.message || `Failed to ${formMode === "create" ? "add" : "update"} visitor`;
-    toast.error(errorMessage);
-  }
-  return response;
-};
-
   return (
     <SidebarProvider>
-      <div className="flex min-h-screen w-full">
+      <div className="min-h-screen flex w-full bg-background">
         <PropertySidebar />
         <SidebarInset className="flex-1">
           <header className="flex h-16 shrink-0 items-center justify-between border-b border-sidebar-border px-4">
@@ -236,93 +248,109 @@ const confirmDelete = async () => {
 
           <main className="flex-1 p-6">
             <div className="space-y-6">
-              {/* Header */}
               <div className="flex items-center justify-between">
                 <div>
-                  <h2 className="text-2xl font-bold text-sidebar-primary">Visitor Management</h2>
-                  <p className="text-muted-foreground">Track and manage visitor access</p>
+                  <h2 className="text-3xl font-bold text-sidebar-primary">
+                    Visitor Management
+                  </h2>
+                  <p className="text-muted-foreground">
+                    Track and manage visitor access.
+                  </p>
                 </div>
-                <Button onClick={handleCreate} className="gap-2">
-                  <Plus className="h-4 w-4" />
-                  Add Visitor
-                </Button>
+                {canWrite(resource) && (
+                  <Button onClick={handleCreate}>
+                    <Plus className="h-4 w-4 mr-2" />
+                    Create Visitor
+                  </Button>
+                )}
               </div>
 
-              <div className="space-y-6">
-                {/* Stats */}
-                <div className="grid gap-4 md:grid-cols-4">
-                  <Card>
-                    <CardContent className="p-4">
-                      <div className="text-2xl font-bold text-green-600">{visitorOverview.checkedInToday}</div>
-                      <p className="text-sm text-muted-foreground">Checked In Today</p>
-                    </CardContent>
-                  </Card>
-                  <Card>
-                    <CardContent className="p-4">
-                      <div className="text-2xl font-bold text-blue-600">{visitorOverview.expectedToday}</div>
-                      <p className="text-sm text-muted-foreground">Expected Today</p>
-                    </CardContent>
-                  </Card>
-                  <Card>
-                    <CardContent className="p-4">
-                      <div className="text-2xl font-bold text-sidebar-primary">{visitorOverview.totalVisitors}</div>
-                      <p className="text-sm text-muted-foreground">Total Records</p>
-                    </CardContent>
-                  </Card>
-                  <Card>
-                    <CardContent className="p-4">
-                      <div className="text-2xl font-bold text-orange-600">
-                        {visitorOverview.totalVisitorsWithVehicle}
-                      </div>
-                      <p className="text-sm text-muted-foreground">With Vehicles</p>
-                    </CardContent>
-                  </Card>
-                </div>
+              {/* Summary Cards */}
+              <div className="grid grid-cols-3 gap-4">
+                <Card>
+                  <CardContent className="pt-6">
+                    <p className="text-sm font-bold text-muted-foreground mb-3">
+                      Checked In Today
+                    </p>
+                    <div className="text-3xl font-bold text-sidebar-primary mb-1">
+                      {checkedInToday}
+                    </div>
+                    <p className="text-sm text-blue-600">Active visitors</p>
+                  </CardContent>
+                </Card>
+                <Card>
+                  <CardContent className="pt-6">
+                    <p className="text-sm font-bold text-muted-foreground mb-3">
+                      Expected Today
+                    </p>
+                    <div className="text-3xl font-bold text-sidebar-primary mb-1">
+                      {expectedToday}
+                    </div>
+                    <p className="text-sm text-blue-600">Scheduled visitors</p>
+                  </CardContent>
+                </Card>
+                <Card>
+                  <CardContent className="pt-6">
+                    <p className="text-sm font-bold text-muted-foreground mb-3">
+                      Total Visitors
+                    </p>
+                    <div className="text-3xl font-bold text-sidebar-primary mb-1">
+                      {totalVisitors}
+                    </div>
+                    <p className="text-sm text-blue-600">All visitor records</p>
+                  </CardContent>
+                </Card>
+              </div>
 
-                {/* Filters */}
-                <div className="flex flex-wrap items-center gap-4">
-                  <div className="flex items-center gap-2">
-                    <Search className="h-4 w-4 text-muted-foreground" />
-                    <Input
-                      placeholder="Search visitors..."
-                      value={searchTerm}
-                      onChange={(e) => setSearchTerm(e.target.value)}
-                      className="w-64"
-                    />
+              <Card>
+                <CardHeader>
+                  <div className="flex items-center gap-4">
+                    <div className="relative flex-1 max-w-sm">
+                      <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground h-4 w-4" />
+                      <Input
+                        type="text"
+                        placeholder="Search by name, phone, or purpose..."
+                        value={searchQuery}
+                        onChange={(e) => setSearchQuery(e.target.value)}
+                        className="pl-10"
+                      />
+                    </div>
+                    <Select
+                      value={selectedSite}
+                      onValueChange={setSelectedSite}
+                    >
+                      <SelectTrigger className="w-[180px]">
+                        <SelectValue placeholder="All Sites" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="all">All Sites</SelectItem>
+                        {siteList.map((site: any) => (
+                          <SelectItem key={site.id} value={site.id}>
+                            {site.name}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                    <Select
+                      value={selectedStatus}
+                      onValueChange={setSelectedStatus}
+                    >
+                      <SelectTrigger className="w-[180px]">
+                        <SelectValue placeholder="All Status" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="all">All Status</SelectItem>
+                        <SelectItem value="checked_in">Checked In</SelectItem>
+                        <SelectItem value="checked_out">Checked Out</SelectItem>
+                        <SelectItem value="expected">Expected</SelectItem>
+                      </SelectContent>
+                    </Select>
                   </div>
-
-                  <select
-                    value={selectedSite}
-                    onChange={(e) => setSelectedSite(e.target.value)}
-                    className="rounded-md border border-input bg-background px-3 py-2 text-sm"
-                  >
-                    <option value="all">All Sites</option>
-                    {siteList.map(site => (
-                      <option key={site.id} value={site.id}>{site.name}</option>
-                    ))}
-                  </select>
-
-                  <select
-                    value={selectedStatus}
-                    onChange={(e) => setSelectedStatus(e.target.value)}
-                    className="rounded-md border border-input bg-background px-3 py-2 text-sm"
-                  >
-                    <option value="all">All Status</option>
-                    <option value="checked_in">Checked In</option>
-                    <option value="checked_out">Checked Out</option>
-                    <option value="expected">Expected</option>
-                  </select>
-                </div>
-
-                <div className="relative rounded-md border">
-                  <ContentContainer>
-                    <LoaderOverlay />
-                    {/* Table */}
-                    <Card>
-                    <CardHeader>
-                      <CardTitle>Visitors ({visitors.length})</CardTitle>
-                    </CardHeader>
-                    <CardContent>
+                </CardHeader>
+                <CardContent>
+                  <div className="relative rounded-md border">
+                    <ContentContainer>
+                      <LoaderOverlay />
                       <Table>
                         <TableHeader>
                           <TableRow>
@@ -332,109 +360,138 @@ const confirmDelete = async () => {
                             <TableHead>Entry Time</TableHead>
                             <TableHead>Status</TableHead>
                             <TableHead>Vehicle</TableHead>
-                            <TableHead className="text-right">Actions</TableHead>
+                            <TableHead className="text-right">
+                              Actions
+                            </TableHead>
                           </TableRow>
                         </TableHeader>
                         <TableBody>
-                          {visitors.map((visitor) => (
-                            <TableRow key={visitor.id}>
-                              <TableCell>
-                                <div>
-                                  <div className="font-medium">{visitor.name}</div>
-                                  <div className="text-sm text-muted-foreground">{visitor.phone}</div>
-                                </div>
-                              </TableCell>
-                              <TableCell>{visitor.visiting}</TableCell>
-                              <TableCell>{visitor.purpose}</TableCell>
-                              <TableCell>
-                                <div className="flex items-center gap-2">
-                                  <Clock className="h-3 w-3 text-muted-foreground" />
-                                  {formatDateTime(visitor.entry_time)}
-                                </div>
-                              </TableCell>
-                              <TableCell>
-                                <Badge className={getStatusColor(visitor.status)}>
-                                  {visitor.status.replace('_', ' ')}
-                                </Badge>
-                              </TableCell>
-                              <TableCell>
-                                {visitor.vehicle_no ? (
-                                  <Badge variant="outline">{visitor.vehicle_no}</Badge>
-                                ) : (
-                                  <span className="text-muted-foreground">-</span>
-                                )}
-                              </TableCell>
-                              <TableCell className="text-right">
-                                <div className="flex items-center justify-end gap-2">
-                                  <Button size="sm" variant="outline" onClick={() => handleView(visitor)}>
-                                    <Eye className="h-3 w-3" />
-                                  </Button>
-                                  {canWrite(resource) && <Button size="sm" variant="outline" onClick={() => handleEdit(visitor)}>
-                                    <Edit className="h-3 w-3" />
-                                  </Button>
-                                  }
-                                  {canDelete(resource) && <Button
-                                    size="sm"
-                                    variant="outline"
-                                    className="text-destructive hover:text-destructive"
-                                    onClick={() => handleDelete(visitor.id)}
-                                  >
-                                    <Trash2 className="h-3 w-3" />
-                                  </Button>
-                                  }
-                                </div>
+                          {visitors.length === 0 ? (
+                            <TableRow>
+                              <TableCell
+                                colSpan={7}
+                                className="text-center text-muted-foreground"
+                              >
+                                No visitors found
                               </TableCell>
                             </TableRow>
-                          ))}
+                          ) : (
+                            visitors.map((visitor) => (
+                              <TableRow key={visitor.id}>
+                                <TableCell>
+                                  <div>
+                                    <div className="font-medium">
+                                      {visitor.name}
+                                    </div>
+                                    <div className="text-sm text-muted-foreground">
+                                      {visitor.phone}
+                                    </div>
+                                  </div>
+                                </TableCell>
+                                <TableCell>{visitor.visiting}</TableCell>
+                                <TableCell>{visitor.purpose}</TableCell>
+                                <TableCell>
+                                  <div className="flex items-center gap-2">
+                                    <Clock className="h-3 w-3 text-muted-foreground" />
+                                    {formatDateTime(visitor.entry_time)}
+                                  </div>
+                                </TableCell>
+                                <TableCell>
+                                  <Badge
+                                    className={getStatusColor(visitor.status)}
+                                  >
+                                    {visitor.status.replace("_", " ")}
+                                  </Badge>
+                                </TableCell>
+                                <TableCell>
+                                  {visitor.vehicle_no ? (
+                                    <Badge variant="outline">
+                                      {visitor.vehicle_no}
+                                    </Badge>
+                                  ) : (
+                                    <span className="text-muted-foreground">
+                                      -
+                                    </span>
+                                  )}
+                                </TableCell>
+                                <TableCell className="text-right">
+                                  <div className="flex justify-end gap-2">
+                                    {canWrite(resource) && (
+                                      <Button
+                                        variant="ghost"
+                                        size="icon"
+                                        onClick={() => handleEdit(visitor)}
+                                      >
+                                        <Pencil className="h-4 w-4" />
+                                      </Button>
+                                    )}
+                                    {canDelete(resource) && (
+                                      <Button
+                                        variant="ghost"
+                                        size="icon"
+                                        onClick={() => handleDelete(visitor.id)}
+                                      >
+                                        <Trash2 className="h-4 w-4 text-destructive" />
+                                      </Button>
+                                    )}
+                                  </div>
+                                </TableCell>
+                              </TableRow>
+                            ))
+                          )}
                         </TableBody>
-                    </Table>
-                    <Pagination
-                    page={page}
-                    pageSize={pageSize}
-                    totalItems={totalItems}
-                    onPageChange={(newPage) => setPage(newPage)}
-                    />
-                    {visitors.length === 0 && (
-                      <div className="text-center py-8">
-                        <UserCheck className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
-                        <h3 className="text-lg font-semibold text-sidebar-primary mb-2">No visitors found</h3>
-                        <p className="text-muted-foreground">Try adjusting your search criteria or add a new visitor.</p>
-                      </div>
-                    )}
-                  </CardContent>
-                    </Card>
-                  </ContentContainer>
-                </div>
-              </div>
+                      </Table>
+                    </ContentContainer>
+                  </div>
+                </CardContent>
+              </Card>
+
+              {/* Pagination */}
+              <Pagination
+                page={page}
+                pageSize={pageSize}
+                totalItems={totalItems}
+                onPageChange={setPage}
+              />
             </div>
+
+            <VisitorForm
+              visitor={selectedVisitor}
+              isOpen={isFormOpen}
+              onClose={() => {
+                setIsFormOpen(false);
+                setSelectedVisitor(null);
+              }}
+              onSave={handleSave}
+              mode={formMode}
+            />
+
+            <AlertDialog
+              open={!!deleteVisitorId}
+              onOpenChange={() => setDeleteVisitorId(null)}
+            >
+              <AlertDialogContent>
+                <AlertDialogHeader>
+                  <AlertDialogTitle>Delete Visitor</AlertDialogTitle>
+                  <AlertDialogDescription>
+                    Are you sure you want to delete this visitor? This action
+                    cannot be undone.
+                  </AlertDialogDescription>
+                </AlertDialogHeader>
+                <AlertDialogFooter>
+                  <AlertDialogCancel>Cancel</AlertDialogCancel>
+                  <AlertDialogAction
+                    onClick={confirmDelete}
+                    className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+                  >
+                    Delete
+                  </AlertDialogAction>
+                </AlertDialogFooter>
+              </AlertDialogContent>
+            </AlertDialog>
           </main>
         </SidebarInset>
       </div>
-
-      <VisitorForm
-        visitor={selectedVisitor}
-        isOpen={isFormOpen}
-        onClose={() => setIsFormOpen(false)}
-        onSave={handleSave}
-        mode={formMode}
-      />
-
-      <AlertDialog open={!!deleteVisitorId} onOpenChange={() => setDeleteVisitorId(null)}>
-        <AlertDialogContent>
-          <AlertDialogHeader>
-            <AlertDialogTitle>Remove Visitor Record</AlertDialogTitle>
-            <AlertDialogDescription>
-              Are you sure you want to remove this visitor record? This action cannot be undone.
-            </AlertDialogDescription>
-          </AlertDialogHeader>
-          <AlertDialogFooter>
-            <AlertDialogCancel>Cancel</AlertDialogCancel>
-            <AlertDialogAction onClick={confirmDelete} className="bg-destructive text-destructive-foreground">
-              Remove
-            </AlertDialogAction>
-          </AlertDialogFooter>
-        </AlertDialogContent>
-      </AlertDialog>
     </SidebarProvider>
   );
 }
