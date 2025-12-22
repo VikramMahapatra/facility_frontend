@@ -1,6 +1,8 @@
 import { useEffect, useState } from "react";
-import { Save, Shield } from "lucide-react";
+import { Save, Shield, ShieldCheck } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { LogOut, } from "lucide-react";
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import {
   Select,
@@ -28,6 +30,7 @@ import { navigationItems } from "@/data/navigationItems";
 import { useLoader } from "@/context/LoaderContext";
 import LoaderOverlay from "@/components/LoaderOverlay";
 import ContentContainer from "@/components/ContentContainer";
+import { useAuth } from "@/context/AuthContext";
 
 export interface RolePolicy {
   role_id: string;
@@ -59,6 +62,7 @@ export default function RolePolicies() {
   const [roles, setRoles] = useState<any[]>([]);
   const [selectedRole, setSelectedRole] = useState<any>({});
   const { withLoader } = useLoader();
+  const { user, handleLogout } = useAuth();
 
   useEffect(() => {
     loadRoles();
@@ -154,9 +158,47 @@ export default function RolePolicies() {
         <PropertySidebar />
 
         <div className="flex-1 flex flex-col">
-          <header className="bg-card border-b border-border px-6 py-4">
-            <SidebarTrigger />
+          <header className="flex h-16 shrink-0 items-center justify-between border-b border-sidebar-border px-4">
+
+            {/* LEFT SIDE */}
+            <div className="flex items-center gap-2">
+              <SidebarTrigger className="-ml-1" />
+              <ShieldCheck className="h-5 w-5 text-sidebar-primary" />
+              <h1 className="text-lg font-semibold text-sidebar-primary">
+                Role Policies
+              </h1>
+            </div>
+
+            {/* RIGHT SIDE */}
+            <div className="flex items-center gap-4">
+              <div className="flex items-center gap-3">
+                <Avatar>
+                  <AvatarFallback className="bg-gradient-primary text-white">
+                    {user.name.charAt(0)}
+                  </AvatarFallback>
+                </Avatar>
+
+                <div className="text-right">
+                  <p className="text-sm font-medium">{user.name}</p>
+                  <p className="text-xs text-muted-foreground">
+                    {user.account_type}
+                  </p>
+                </div>
+              </div>
+
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={handleLogout}
+                className="text-muted-foreground hover:text-destructive"
+              >
+                <LogOut className="w-4 h-4 mr-2" />
+                Logout
+              </Button>
+            </div>
+
           </header>
+
 
           <main className="flex-1 p-6 overflow-auto">
             <div className="max-w-7xl mx-auto space-y-6">

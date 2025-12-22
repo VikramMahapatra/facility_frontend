@@ -9,6 +9,7 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
+import { LogOut, } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
@@ -43,6 +44,7 @@ import { userManagementApiService } from "@/services/access_control/usermanageme
 import { useLoader } from "@/context/LoaderContext";
 import LoaderOverlay from "@/components/LoaderOverlay";
 import ContentContainer from "@/components/ContentContainer";
+import { useAuth } from "@/context/AuthContext";
 
 
 export default function PendingApprovals() {
@@ -59,6 +61,8 @@ export default function PendingApprovals() {
   const [pageSize] = useState(5); // items per page
   const [totalItems, setTotalItems] = useState(0);
   const { withLoader } = useLoader();
+  const { user, handleLogout } = useAuth();
+  
 
   useSkipFirstEffect(() => {
     loadUsersForApproval();
@@ -195,10 +199,36 @@ export default function PendingApprovals() {
         <PropertySidebar />
 
         <div className="flex-1 flex flex-col">
-          <header className="bg-card border-b border-border px-6 py-4">
+          <header className="flex h-16 shrink-0 items-center justify-between border-b border-sidebar-border px-4">
             <div className="flex items-center gap-2">
               <Clock className="h-5 w-5 text-muted-foreground" />
               <h2 className="text-lg font-semibold">Pending User Approvals</h2>
+            </div>
+            <div className="flex items-center gap-4">
+              <div className="flex items-center gap-3">
+                <Avatar>
+                  <AvatarFallback className="bg-gradient-primary text-white">
+                    {user.name.charAt(0)}
+                  </AvatarFallback>
+                </Avatar>
+
+                <div className="text-right">
+                  <p className="text-sm font-medium">{user.name}</p>
+                  <p className="text-xs text-muted-foreground">
+                    {user.account_type}
+                  </p>
+                </div>
+              </div>
+
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={handleLogout}
+                className="text-muted-foreground hover:text-destructive"
+              >
+                <LogOut className="w-4 h-4 mr-2" />
+                Logout
+              </Button>
             </div>
           </header>
 

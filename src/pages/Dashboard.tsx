@@ -33,13 +33,8 @@ interface User {
 }
 
 const Dashboard = () => {
-  const navigate = useNavigate();
-  const { user } = useAuth();
+  const { user, handleLogout } = useAuth();
 
-  const handleLogout = () => {
-    localStorage.removeItem('user');
-    navigate('/login');
-  };
 
   if (!user) {
     return (

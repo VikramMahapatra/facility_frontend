@@ -21,6 +21,8 @@ import {
 } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
+import { LogOut, } from "lucide-react";
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Input } from "@/components/ui/input";
 import {
   Table,
@@ -109,6 +111,7 @@ export default function TicketWorkOrders() {
   const resource = "tickets";
   const [page, setPage] = useState(1);
   const [pageSize] = useState(6);
+  const { user, handleLogout } = useAuth();
   const [totalItems, setTotalItems] = useState(0);
   const [siteList, setSiteList] = useState<any[]>([]);
   const [statusList, setStatusList] = useState<any[]>([]);
@@ -293,14 +296,48 @@ export default function TicketWorkOrders() {
       <div className="min-h-screen flex w-full">
         <PropertySidebar />
         <SidebarInset className="flex-1">
-          <div className="flex h-16 shrink-0 items-center gap-2 border-b px-4">
-            <SidebarTrigger className="-ml-1" />
-            <Separator orientation="vertical" className="mr-2 h-4" />
+          <header className="flex h-16 shrink-0 items-center justify-between border-b border-sidebar-border px-4">
+
+            {/* LEFT SIDE */}
             <div className="flex items-center gap-2">
+              <SidebarTrigger className="-ml-1" />
+              <Separator orientation="vertical" className="mr-2 h-4" />
               <Wrench className="h-5 w-5 text-muted-foreground" />
-              <h1 className="text-lg font-semibold">Ticket Work Orders</h1>
+              <h1 className="text-lg font-semibold">
+                Ticket Work Orders
+              </h1>
             </div>
-          </div>
+
+            {/* RIGHT SIDE */}
+            <div className="flex items-center gap-4">
+              <div className="flex items-center gap-3">
+                <Avatar>
+                  <AvatarFallback className="bg-gradient-primary text-white">
+                    {user.name.charAt(0)}
+                  </AvatarFallback>
+                </Avatar>
+
+                <div className="text-right">
+                  <p className="text-sm font-medium">{user.name}</p>
+                  <p className="text-xs text-muted-foreground">
+                    {user.account_type}
+                  </p>
+                </div>
+              </div>
+
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={handleLogout}
+                className="text-muted-foreground hover:text-destructive"
+              >
+                <LogOut className="w-4 h-4 mr-2" />
+                Logout
+              </Button>
+            </div>
+
+          </header>
+
 
           <div className="flex-1 space-y-6 p-6">
             {/* Header Actions */}

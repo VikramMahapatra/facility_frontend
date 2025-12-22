@@ -8,10 +8,12 @@ import {
   Trash2,
   Plus,
 } from "lucide-react";
+import { LogOut, } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { PropertySidebar } from "@/components/PropertySidebar";
 import {
   SidebarProvider,
@@ -85,6 +87,7 @@ export default function Sites() {
   const { canRead, canWrite, canDelete } = useAuth();
   const resource = "sites"; // must match resource name from backend policies
   const { withLoader } = useLoader();
+  const { user, handleLogout } = useAuth();
 
   useSkipFirstEffect(() => {
     loadSites();
@@ -219,15 +222,47 @@ export default function Sites() {
       <div className="flex min-h-screen w-full">
         <PropertySidebar />
         <SidebarInset className="flex-1">
-          <header className="flex h-16 shrink-0 items-center gap-2 border-b border-sidebar-border px-4">
-            <SidebarTrigger className="-ml-1" />
+          <header className="flex h-16 shrink-0 items-center justify-between border-b border-sidebar-border px-4">
+
+            {/* LEFT SIDE */}
             <div className="flex items-center gap-2">
+              <SidebarTrigger className="-ml-1" />
               <Building2 className="h-5 w-5 text-sidebar-primary" />
               <h1 className="text-lg font-semibold text-sidebar-primary">
                 Sites & Buildings
               </h1>
             </div>
+
+            {/* RIGHT SIDE */}
+            <div className="flex items-center gap-4">
+              <div className="flex items-center gap-3">
+                <Avatar>
+                  <AvatarFallback className="bg-gradient-primary text-white">
+                    {user.name.charAt(0)}
+                  </AvatarFallback>
+                </Avatar>
+
+                <div className="text-right">
+                  <p className="text-sm font-medium">{user.name}</p>
+                  <p className="text-xs text-muted-foreground">
+                    {user.account_type}
+                  </p>
+                </div>
+              </div>
+
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={handleLogout}
+                className="text-muted-foreground hover:text-destructive"
+              >
+                <LogOut className="w-4 h-4 mr-2" />
+                Logout
+              </Button>
+            </div>
+
           </header>
+
 
           <main className="flex-1 p-6">
             <div className="space-y-6">
