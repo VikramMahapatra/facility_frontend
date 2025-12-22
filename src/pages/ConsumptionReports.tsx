@@ -4,6 +4,8 @@ import { SidebarProvider, SidebarTrigger } from "@/components/ui/sidebar";
 import { PropertySidebar } from "@/components/PropertySidebar";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
+import { LogOut, } from "lucide-react";
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
@@ -13,6 +15,7 @@ import { consumptionApiService } from "@/services/energy_iot/consumptionapi";
 import { useLoader } from "@/context/LoaderContext";
 import LoaderOverlay from "@/components/LoaderOverlay";
 import ContentContainer from "@/components/ContentContainer";
+import { useAuth } from "@/context/AuthContext";
 
 const getTrendIcon = (trend: string) => {
   switch (trend) {
@@ -52,6 +55,7 @@ export default function ConsumptionReports() {
   const [utilityTypes, setUtilityTypes] = useState<any[]>([]);
   const [availableMonths, setAvailableMonths] = useState<any[]>([]);
   const { withLoader } = useLoader();
+  const { user, handleLogout } = useAuth();
 
   useEffect(() => {
     loadOverviewData();
@@ -161,13 +165,59 @@ export default function ConsumptionReports() {
       <div className="flex min-h-screen w-full">
         <PropertySidebar />
         <div className="flex-1">
-          <header className="flex h-16 items-center gap-4 border-b bg-background px-6">
-            <SidebarTrigger />
-            <div className="flex-1">
-              <h1 className="text-xl font-semibold">Consumption Reports</h1>
-              <p className="text-sm text-muted-foreground">Analyze utility consumption patterns and costs</p>
+           <header className="flex h-16 shrink-0 items-center justify-between border-b border-sidebar-border px-4">
+
+            {/* LEFT SIDE */}
+            <div className="flex items-start gap-3">
+              <SidebarTrigger className="-ml-1 mt-1" />
+
+              <div className="flex flex-col">
+                {/* ICON + TITLE */}
+                <div className="flex items-center gap-2">
+                  <BarChart3 className="h-5 w-5 text-muted-foreground" />
+                  <h1 className="text-lg font-semibold">
+                    Consumption Reports
+                  </h1>
+                </div>
+
+                {/* SUBTITLE */}
+                <p className="text-sm text-muted-foreground">
+                  Analyze utility consumption patterns and costs
+                </p>
+              </div>
             </div>
+
+            {/* RIGHT SIDE */}
+            <div className="flex items-center gap-4">
+              <div className="flex items-center gap-3">
+                <Avatar>
+                  <AvatarFallback className="bg-gradient-primary text-white">
+                    {user.name.charAt(0)}
+                  </AvatarFallback>
+                </Avatar>
+
+                <div className="text-right">
+                  <p className="text-sm font-medium">{user.name}</p>
+                  <p className="text-xs text-muted-foreground">
+                    {user.account_type}
+                  </p>
+                </div>
+              </div>
+
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={handleLogout}
+                className="text-muted-foreground hover:text-destructive"
+              >
+                <LogOut className="w-4 h-4 mr-2" />
+                Logout
+              </Button>
+            </div>
+
           </header>
+
+        
 
           <main className="flex-1 space-y-6 p-6">
             <ContentContainer>

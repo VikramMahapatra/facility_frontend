@@ -6,6 +6,8 @@ import { Badge } from "@/components/ui/badge";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Plus, Search, Eye, Edit, Mail, Phone, Star, Building, Filter, User, MapPin, Trash2 } from "lucide-react";
+import { LogOut, } from "lucide-react";
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { vendorsApiService } from "@/services/procurements/vendorsapi";
 import { useSkipFirstEffect } from "@/hooks/use-skipfirst-effect";
 import { SidebarProvider, SidebarTrigger, SidebarInset } from "@/components/ui/sidebar";
@@ -37,6 +39,7 @@ export default function Vendors() {
   const [deleteVendorId, setDeleteVendorId] = useState<string | null>(null);
   const { canRead, canWrite, canDelete } = useAuth();
   const { withLoader } = useLoader();
+  const { user, handleLogout } = useAuth();
   const resource = "vendors"; // must match resource name from backend policies
 
 
@@ -219,14 +222,48 @@ const confirmDelete = async () => {
       <div className="min-h-screen flex w-full">
         <PropertySidebar />
         <SidebarInset className="flex-1">
-          <div className="flex h-16 shrink-0 items-center gap-2 border-b px-4">
-            <SidebarTrigger className="-ml-1" />
-            <Separator orientation="vertical" className="mr-2 h-4" />
+          <header className="flex h-16 shrink-0 items-center justify-between border-b border-sidebar-border px-4">
+
+            {/* LEFT SIDE */}
             <div className="flex items-center gap-2">
+              <SidebarTrigger className="-ml-1" />
+              <Separator orientation="vertical" className="mr-2 h-4" />
               <Building className="h-5 w-5 text-muted-foreground" />
-              <h1 className="text-lg font-semibold">Vendors</h1>
+              <h1 className="text-lg font-semibold">
+                Vendors
+              </h1>
             </div>
-          </div>
+
+            {/* RIGHT SIDE */}
+            <div className="flex items-center gap-4">
+              <div className="flex items-center gap-3">
+                <Avatar>
+                  <AvatarFallback className="bg-gradient-primary text-white">
+                    {user.name.charAt(0)}
+                  </AvatarFallback>
+                </Avatar>
+
+                <div className="text-right">
+                  <p className="text-sm font-medium">{user.name}</p>
+                  <p className="text-xs text-muted-foreground">
+                    {user.account_type}
+                  </p>
+                </div>
+              </div>
+
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={handleLogout}
+                className="text-muted-foreground hover:text-destructive"
+              >
+                <LogOut className="w-4 h-4 mr-2" />
+                Logout
+              </Button>
+            </div>
+
+          </header>
+
 
           <div className="flex-1 space-y-6 p-6">
             {/* Header Actions */}

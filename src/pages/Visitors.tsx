@@ -7,17 +7,11 @@ import {
 import { PropertySidebar } from "@/components/PropertySidebar";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import {
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
-} from "@/components/ui/table";
-import { Badge } from "@/components/ui/badge";
-import { Plus, Pencil, Trash2, Search, UserCheck, Clock } from "lucide-react";
+import { Clock, LogOut, Pencil, Plus, Search, Trash2, UserCheck, } from "lucide-react";
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
+//import { PropertySidebar } from "@/components/PropertySidebar";
+//import { SidebarProvider, SidebarInset, SidebarTrigger } from "@/components/ui/sidebar";
 import { VisitorForm } from "@/components/VisitorForm";
 import { toast } from "sonner";
 import { visitorApiService } from "@/services/parking_access/visitorsapi";
@@ -46,6 +40,8 @@ import LoaderOverlay from "@/components/LoaderOverlay";
 import { useLoader } from "@/context/LoaderContext";
 import { useAuth } from "../context/AuthContext";
 import { Visitor } from "@/interfaces/parking_access_interface";
+import { Card, CardContent, CardHeader } from "@/components/ui/card";
+import { Badge } from "@/components/ui/badge";
 
 export default function Visitors() {
   const [isFormOpen, setIsFormOpen] = useState(false);
@@ -58,8 +54,10 @@ export default function Visitors() {
   const [selectedSite, setSelectedSite] = useState<string>("all");
   const [selectedStatus, setSelectedStatus] = useState<string>("all");
   const [deleteVisitorId, setDeleteVisitorId] = useState<string | null>(null);
-  const [page, setPage] = useState(1);
-  const [pageSize] = useState(5);
+  const [siteList, setSiteList] = useState([]);
+  const { user, handleLogout } = useAuth();
+  const [page, setPage] = useState(1); // current page
+  const [pageSize] = useState(6); // items per page
   const [totalItems, setTotalItems] = useState(0);
   const [overview, setOverview] = useState<any>({
     checkedInToday: 0,
@@ -67,7 +65,7 @@ export default function Visitors() {
     totalVisitors: 0,
     totalVisitorsWithVehicle: 0,
   });
-  const [siteList, setSiteList] = useState<any[]>([]);
+  //const [siteList, setSiteList] = useState<any[]>([]);
   const { canRead, canWrite, canDelete } = useAuth();
   const { withLoader } = useLoader();
   const resource = "visitors";
@@ -211,18 +209,41 @@ export default function Visitors() {
     <SidebarProvider>
       <div className="min-h-screen flex w-full bg-background">
         <PropertySidebar />
-
-        <SidebarInset>
-          <header className="bg-card border-b border-border px-6 py-4">
+        <SidebarInset className="flex-1">
+          <header className="flex h-16 shrink-0 items-center justify-between border-b border-sidebar-border px-4">
             <div className="flex items-center gap-2">
-              <SidebarTrigger />
-              <div className="flex items-center gap-2">
-                <UserCheck className="h-5 w-5 text-sidebar-primary" />
-                <h1 className="text-lg font-semibold text-sidebar-primary">
-                  Visitor Management
-                </h1>
-              </div>
+            <SidebarTrigger className="-ml-1" />
+            
+              <UserCheck className="h-5 w-5 text-sidebar-primary" />
+              <h1 className="text-lg font-semibold text-sidebar-primary">Visitor Management</h1>
             </div>
+            <div className="flex items-center gap-4">
+              <div className="flex items-center gap-3">
+                <Avatar>
+                  <AvatarFallback className="bg-gradient-primary text-white">
+                    {user.name.charAt(0)}
+                  </AvatarFallback>
+                </Avatar>
+
+                <div className="text-right">
+                  <p className="text-sm font-medium">{user.name}</p>
+                  <p className="text-xs text-muted-foreground">
+                    {user.account_type}
+                  </p>
+                </div>
+              </div>
+
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={handleLogout}
+                className="text-muted-foreground hover:text-destructive"
+              >
+                <LogOut className="w-4 h-4 mr-2" />
+                Logout
+              </Button>
+            </div>
+
           </header>
 
           <main className="flex-1 p-6">

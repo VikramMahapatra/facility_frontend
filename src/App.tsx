@@ -71,12 +71,13 @@ const queryClient = new QueryClient();
 const App = () => {
   return (
     <GoogleOAuthProvider clientId={import.meta.env.VITE_GOOGLE_CLIENT_ID}>
+      <BrowserRouter>
       <AuthProvider>
         <QueryClientProvider client={queryClient}>
           <TooltipProvider>
             <Toaster />
             <Sonner />
-            <BrowserRouter>
+            
               <Routes>
                 <Route path="/" element={<Home />} />
                 <Route path="/features" element={<Features />} />
@@ -175,10 +176,11 @@ const App = () => {
                 {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
                 <Route path="*" element={<NotFound />} />
               </Routes>
-            </BrowserRouter>
+           
           </TooltipProvider>
         </QueryClientProvider>
       </AuthProvider>
+      </BrowserRouter>
     </GoogleOAuthProvider>
   );
 };

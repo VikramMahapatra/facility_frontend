@@ -3,6 +3,8 @@ import { Button } from "@/components/ui/button";
 import { useEffect } from "react";
 import { siteApiService } from "@/services/spaces_sites/sitesapi";
 import { useToast } from "@/hooks/use-toast";
+import { LogOut, } from "lucide-react";
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 //import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Download, TrendingUp, TrendingDown, DollarSign, FileText,Target } from "lucide-react";
 import { AreaChart, Area, BarChart, Bar, PieChart, Pie, Cell, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer } from "recharts";
@@ -15,6 +17,7 @@ import { revenueReportsApiService } from "@/services/financials/revenuereportsap
 import { useLoader } from "@/context/LoaderContext";
 import LoaderOverlay from "@/components/LoaderOverlay";
 import ContentContainer from "@/components/ContentContainer";
+import { useAuth } from "@/context/AuthContext";
 
 
 
@@ -28,6 +31,7 @@ interface RevenueReportsOverview {
   export default function RevenueReports() {
   const { toast } = useToast();
   const { withLoader } = useLoader();
+  const { user, handleLogout } = useAuth();
   const [selectedPeriod, setSelectedPeriod] = useState<string>("all");
   const [selectedSite, setSelectedSite] = useState<string>("all");
   const [siteList, setSiteList] = useState<any[]>([]);
@@ -164,14 +168,48 @@ interface RevenueReportsOverview {
       <div className="min-h-screen flex w-full">
         <PropertySidebar />
         <SidebarInset className="flex-1">
-          <div className="flex h-16 shrink-0 items-center gap-2 border-b px-4">
+        <header className="flex h-16 shrink-0 items-center justify-between border-b border-sidebar-border px-4">
+
+          {/* LEFT SIDE */}
+          <div className="flex items-center gap-2">
             <SidebarTrigger className="-ml-1" />
             <Separator orientation="vertical" className="mr-2 h-4" />
-            <div className="flex items-center gap-2">
-              <TrendingUp className="h-5 w-5 text-muted-foreground" />
-              <h1 className="text-lg font-semibold">Revenue Reports</h1>
-            </div>
+            <TrendingUp className="h-5 w-5 text-muted-foreground" />
+            <h1 className="text-lg font-semibold">
+              Revenue Reports
+            </h1>
           </div>
+
+          {/* RIGHT SIDE */}
+          <div className="flex items-center gap-4">
+            <div className="flex items-center gap-3">
+              <Avatar>
+                <AvatarFallback className="bg-gradient-primary text-white">
+                  {user.name.charAt(0)}
+                </AvatarFallback>
+              </Avatar>
+
+              <div className="text-right">
+                <p className="text-sm font-medium">{user.name}</p>
+                <p className="text-xs text-muted-foreground">
+                  {user.account_type}
+                </p>
+              </div>
+            </div>
+
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={handleLogout}
+              className="text-muted-foreground hover:text-destructive"
+            >
+              <LogOut className="w-4 h-4 mr-2" />
+              Logout
+            </Button>
+          </div>
+
+        </header>
+
 
           <div className="flex-1 space-y-6 p-6">
             {/* Header Actions */}

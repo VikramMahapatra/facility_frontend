@@ -20,6 +20,8 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog";
 import { Label } from "@/components/ui/label";
+import { LogOut, } from "lucide-react";
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { ArrowLeft, UserX, RefreshCw, Users } from "lucide-react";
@@ -40,6 +42,7 @@ import { ticketsApiService } from "@/services/ticketing_service/ticketsapi";
 import { useLoader } from "@/context/LoaderContext";
 import LoaderOverlay from "@/components/LoaderOverlay";
 import ContentContainer from "@/components/ContentContainer";
+import { useAuth } from "@/context/AuthContext";
 
 export default function TicketWorkload() {
   const navigate = useNavigate();
@@ -55,6 +58,8 @@ export default function TicketWorkload() {
   } | null>(null);
   const [newAssignee, setNewAssignee] = useState("");
   const [employeeList, setEmployeeList] = useState<any[]>([]);
+  const { user, handleLogout } = useAuth();
+  
   const [loadingEmployees, setLoadingEmployees] = useState(false);
   const [assignedTicketsPage, setAssignedTicketsPage] = useState(1);
   const [assignedTicketsPageSize] = useState(7);
@@ -261,13 +266,40 @@ export default function TicketWorkload() {
       <div className="flex min-h-screen w-full">
         <PropertySidebar />
         <SidebarInset className="flex-1">
-          <header className="flex h-16 shrink-0 items-center gap-2 border-b border-sidebar-border px-4">
-            <SidebarTrigger className="-ml-1" />
+          <header className="flex h-16 shrink-0 items-center justify-between border-b border-sidebar-border px-4">
             <div className="flex items-center gap-2">
+            <SidebarTrigger className="-ml-1" />
+            
               <Users className="h-5 w-5 text-sidebar-primary" />
               <h1 className="text-lg font-semibold text-sidebar-primary">
                 Workload Management
               </h1>
+            </div>
+            <div className="flex items-center gap-4">
+              <div className="flex items-center gap-3">
+                <Avatar>
+                  <AvatarFallback className="bg-gradient-primary text-white">
+                    {user.name.charAt(0)}
+                  </AvatarFallback>
+                </Avatar>
+
+                <div className="text-right">
+                  <p className="text-sm font-medium">{user.name}</p>
+                  <p className="text-xs text-muted-foreground">
+                    {user.account_type}
+                  </p>
+                </div>
+              </div>
+
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={handleLogout}
+                className="text-muted-foreground hover:text-destructive"
+              >
+                <LogOut className="w-4 h-4 mr-2" />
+                Logout
+              </Button>
             </div>
           </header>
 

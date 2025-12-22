@@ -10,6 +10,8 @@ import { Plus, Search, Eye, Edit, Trash2, Package, Wrench, AlertTriangle, CheckC
 import { AlertDialog, AlertDialogContent, AlertDialogHeader, AlertDialogFooter, AlertDialogTitle, AlertDialogDescription, AlertDialogCancel, AlertDialogAction } from "@/components/ui/alert-dialog";
 import { SidebarProvider, SidebarTrigger, SidebarInset } from "@/components/ui/sidebar";
 import { Separator } from "@/components/ui/separator";
+import { LogOut, } from "lucide-react";
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { PropertySidebar } from "@/components/PropertySidebar";
 import { Asset, AssetOverview } from "@/interfaces/assets_interface";
 import { assetApiService } from "@/services/maintenance_assets/assetsapi";
@@ -38,6 +40,7 @@ export default function Assets() {
   const [selectedAsset, setSelectedAsset] = useState<Asset | undefined>();
   const [deleteAssetId, setDeleteAssetId] = useState<string | null>(null);
   const { withLoader } = useLoader();
+  const { user, handleLogout } = useAuth();
   const [assetOverview, setAssetOverview] = useState<AssetOverview>({
     totalAssets: 0,
     activeAssets: 0,
@@ -193,14 +196,48 @@ export default function Assets() {
       <div className="min-h-screen flex w-full">
         <PropertySidebar />
         <SidebarInset className="flex-1">
-          <div className="flex h-16 shrink-0 items-center gap-2 border-b px-4">
-            <SidebarTrigger className="-ml-1" />
-            <Separator orientation="vertical" className="mr-2 h-4" />
+          <header className="flex h-16 shrink-0 items-center justify-between border-b border-sidebar-border px-4">
+
+            {/* LEFT SIDE */}
             <div className="flex items-center gap-2">
+              <SidebarTrigger className="-ml-1" />
+              <Separator orientation="vertical" className="mr-2 h-4" />
               <Package className="h-5 w-5 text-muted-foreground" />
-              <h1 className="text-lg font-semibold">Assets</h1>
+              <h1 className="text-lg font-semibold">
+                Assets
+              </h1>
             </div>
-          </div>
+
+            {/* RIGHT SIDE */}
+            <div className="flex items-center gap-4">
+              <div className="flex items-center gap-3">
+                <Avatar>
+                  <AvatarFallback className="bg-gradient-primary text-white">
+                    {user.name.charAt(0)}
+                  </AvatarFallback>
+                </Avatar>
+
+                <div className="text-right">
+                  <p className="text-sm font-medium">{user.name}</p>
+                  <p className="text-xs text-muted-foreground">
+                    {user.account_type}
+                  </p>
+                </div>
+              </div>
+
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={handleLogout}
+                className="text-muted-foreground hover:text-destructive"
+              >
+                <LogOut className="w-4 h-4 mr-2" />
+                Logout
+              </Button>
+            </div>
+
+          </header>
+
 
           <div className="flex-1 space-y-6 p-6">
             {/* Header Actions */}

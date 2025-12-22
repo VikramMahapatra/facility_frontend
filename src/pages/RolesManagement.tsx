@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { Plus, Pencil, Trash2, Search } from "lucide-react";
+import { Plus, Pencil, Trash2, Search, Shield } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import {
@@ -12,6 +12,9 @@ import {
 } from "@/components/ui/table";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
+import { LogOut, } from "lucide-react";
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
+
 import { RoleForm } from "@/components/RoleForm";
 import { toast } from "sonner";
 import { SidebarProvider, SidebarTrigger } from "@/components/ui/sidebar";
@@ -24,6 +27,7 @@ import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, 
 import { useLoader } from "@/context/LoaderContext";
 import LoaderOverlay from "@/components/LoaderOverlay";
 import ContentContainer from "@/components/ContentContainer";
+import { useAuth } from "@/context/AuthContext";
 
 export default function RolesManagement() {
   const [roles, setRoles] = useState<Role[]>([]);
@@ -35,6 +39,8 @@ export default function RolesManagement() {
   const [pageSize] = useState(5);
   const [totalItems, setTotalItems] = useState(0);
   const { withLoader } = useLoader();
+  const { user, handleLogout } = useAuth();
+  
 
   useSkipFirstEffect(() => {
     loadRoleManagement();
@@ -150,9 +156,47 @@ export default function RolesManagement() {
         <PropertySidebar />
         
         <div className="flex-1 flex flex-col">
-          <header className="bg-card border-b border-border px-6 py-4">
-            <SidebarTrigger />
+          <header className="flex h-16 shrink-0 items-center justify-between border-b border-sidebar-border px-4">
+
+            {/* LEFT SIDE */}
+            <div className="flex items-center gap-2">
+              <SidebarTrigger className="-ml-1" />
+              <Shield className="h-5 w-5 text-sidebar-primary" />
+              <h1 className="text-lg font-semibold text-sidebar-primary">
+                Roles Management
+              </h1>
+            </div>
+
+            {/* RIGHT SIDE */}
+            <div className="flex items-center gap-4">
+              <div className="flex items-center gap-3">
+                <Avatar>
+                  <AvatarFallback className="bg-gradient-primary text-white">
+                    {user.name.charAt(0)}
+                  </AvatarFallback>
+                </Avatar>
+
+                <div className="text-right">
+                  <p className="text-sm font-medium">{user.name}</p>
+                  <p className="text-xs text-muted-foreground">
+                    {user.account_type}
+                  </p>
+                </div>
+              </div>
+
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={handleLogout}
+                className="text-muted-foreground hover:text-destructive"
+              >
+                <LogOut className="w-4 h-4 mr-2" />
+                Logout
+              </Button>
+            </div>
+
           </header>
+
 
           <main className="relative  flex-1 p-6 overflow-auto">
             <div className="max-w-7xl mx-auto space-y-6">

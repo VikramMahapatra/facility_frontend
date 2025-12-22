@@ -1,4 +1,5 @@
 import { createContext, useContext, useState, useEffect, ReactNode } from "react";
+import { useNavigate } from "react-router-dom";
 
 export interface RolePolicy {
     resource: string;
@@ -23,6 +24,7 @@ interface AuthContextType {
     canRead: (resource: string) => boolean;
     canWrite: (resource: string) => boolean;
     canDelete: (resource: string) => boolean;
+    handleLogout: () => void;
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
@@ -30,6 +32,9 @@ const AuthContext = createContext<AuthContextType | undefined>(undefined);
 export const AuthProvider = ({ children }: { children: ReactNode }) => {
     const [user, setUser] = useState<AuthUser | null>(null);
     const [loading, setLoading] = useState(true);
+    const navigate = useNavigate();
+  
+
 
     useEffect(() => {
         const loadUser = async () => {
@@ -61,6 +66,8 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
 
     const hasPermission = (resource: string, action: string) => {
         if (!user?.role_policies) return false;
+      
+
 
         return user.role_policies.some(
             (policy) =>
@@ -68,6 +75,13 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
                 policy.action.toLowerCase() === action.toLowerCase()
         );
     };
+
+        const handleLogout = () => {
+        localStorage.removeItem('user');
+        navigate('/login');
+    };
+
+
 
     return (
         <AuthContext.Provider value={{
@@ -77,6 +91,8 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
             canRead: (r) => hasPermission(r, "read"),
             canWrite: (r) => hasPermission(r, "write"),
             canDelete: (r) => hasPermission(r, "delete"),
+            handleLogout
+
         }}>
             {children}
         </AuthContext.Provider>

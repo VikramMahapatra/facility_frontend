@@ -6,6 +6,8 @@ import {
 } from "@/components/ui/sidebar";
 import { PropertySidebar } from "@/components/PropertySidebar";
 import { Button } from "@/components/ui/button";
+import { LogOut, } from "lucide-react";
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Input } from "@/components/ui/input";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import {
@@ -83,6 +85,7 @@ export default function SLAPolicies() {
   const [siteList, setSiteList] = useState<any[]>([]);
   const { canRead, canWrite, canDelete } = useAuth();
   const { withLoader } = useLoader();
+  const { user, handleLogout } = useAuth();
   const resource = "sla_policies"; // must match resource name from backend policies
 
   useEffect(() => {
@@ -222,7 +225,7 @@ export default function SLAPolicies() {
         <PropertySidebar />
 
         <SidebarInset>
-          <header className="bg-card border-b border-border px-6 py-4">
+          <header className="flex h-16 shrink-0 items-center justify-between border-b border-sidebar-border px-4">
             <div className="flex items-center gap-2">
               <SidebarTrigger />
               <div className="flex items-center gap-2">
@@ -231,6 +234,32 @@ export default function SLAPolicies() {
                   Ticket Category SLA
                 </h1>
               </div>
+            </div>
+            <div className="flex items-center gap-4">
+              <div className="flex items-center gap-3">
+                <Avatar>
+                  <AvatarFallback className="bg-gradient-primary text-white">
+                    {user.name.charAt(0)}
+                  </AvatarFallback>
+                </Avatar>
+
+                <div className="text-right">
+                  <p className="text-sm font-medium">{user.name}</p>
+                  <p className="text-xs text-muted-foreground">
+                    {user.account_type}
+                  </p>
+                </div>
+              </div>
+
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={handleLogout}
+                className="text-muted-foreground hover:text-destructive"
+              >
+                <LogOut className="w-4 h-4 mr-2" />
+                Logout
+              </Button>
             </div>
           </header>
 
