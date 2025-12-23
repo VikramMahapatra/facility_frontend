@@ -8,7 +8,7 @@ export const invoiceSchema = z
       .optional(),
     customer_id: z.string().optional(),
     date: z.string().min(1, "Invoice Date is required"),
-    due_date: z.string().optional(),
+    due_date: z.string().min(1, "Due date is required"),
     status: z.enum(["draft", "issued", "paid", "partial", "void"]).optional(),
     currency: z.string().optional(),
     billable_item_type: z.enum(["lease_charge", "work_order"], {
