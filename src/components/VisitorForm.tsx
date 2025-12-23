@@ -25,6 +25,7 @@ import { Visitor } from "@/interfaces/parking_access_interface";
 import { siteApiService } from "@/services/spaces_sites/sitesapi";
 import { utcToLocal, localToUTC } from "@/helpers/dateHelpers";
 import { spacesApiService } from "@/services/spaces_sites/spacesapi";
+import PhoneInput from "react-phone-input-2";
 
 interface VisitorFormProps {
   visitor?: Visitor;
@@ -203,19 +204,27 @@ export function VisitorForm({
                   render={({ field }) => (
                     <div className="space-y-2">
                       <Label htmlFor="phone">Phone *</Label>
-                      <Input
-                        id="phone"
+                      <PhoneInput
+                        country={"in"}
                         value={field.value || ""}
-                        onChange={(e) => {
-                          const value = e.target.value
-                            .replace(/\D/g, "")
-                            .slice(0, 10);
-                          field.onChange(value);
+                        onChange={(value) => {
+                          const digits = value.replace(/\D/g, "");
+                          const finalValue = digits ? "+" + digits : "";
+                          field.onChange(finalValue);
                         }}
-                        placeholder="9876543210"
-                        maxLength={10}
                         disabled={isReadOnly}
-                        className={errors.phone ? "border-red-500" : ""}
+                        inputProps={{
+                          name: "phone",
+                          required: true,
+                          id: "phone",
+                        }}
+                        containerClass="w-full relative"
+                        inputClass={`!w-full !h-10 !pl-12 !rounded-md !border !border-input !bg-background !px-3 !py-2 !text-base !ring-offset-background placeholder:!text-muted-foreground focus-visible:!outline-none focus-visible:!ring-2 focus-visible:!ring-ring focus-visible:!ring-offset-2 disabled:!cursor-not-allowed disabled:!opacity-50 md:!text-sm ${
+                          errors.phone ? "!border-red-500" : ""
+                        }`}
+                        buttonClass="!border-none !bg-transparent !absolute !left-2 !top-1/2 !-translate-y-1/2 z-10"
+                        dropdownClass="!absolute !z-50 !bg-white !border !border-gray-200 !rounded-md !shadow-lg max-h-60 overflow-y-auto"
+                        enableSearch={true}
                       />
                       {errors.phone && (
                         <p className="text-sm text-red-500">

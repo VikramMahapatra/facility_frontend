@@ -432,7 +432,7 @@ export function InvoiceForm({
                   )}
                 </div>
                 <div className="space-y-2">
-                  <Label htmlFor="due_date">Due Date</Label>
+                  <Label htmlFor="due_date">Due Date *</Label>
                   <Input
                     id="due_date"
                     type="date"
