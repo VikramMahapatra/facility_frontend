@@ -8,7 +8,7 @@ import {
 } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { LogOut, } from "lucide-react";
+import { LogOut } from "lucide-react";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
 import {
@@ -291,6 +291,7 @@ export default function Invoices() {
     if (formMode === "create") {
       response = await invoiceApiService.addInvoice(invoiceData);
       if (response.success) updateInvoicesPage();
+      loadWorkOrderInvoices();
     } else if (formMode === "edit" && selectedInvoice) {
       const updatedInvoice = {
         ...selectedInvoice,
@@ -329,15 +330,12 @@ export default function Invoices() {
         <PropertySidebar />
         <SidebarInset className="flex-1">
           <header className="flex h-16 shrink-0 items-center justify-between border-b border-sidebar-border px-4">
-
             {/* LEFT SIDE */}
             <div className="flex items-center gap-2">
               <SidebarTrigger className="-ml-1" />
               <Separator orientation="vertical" className="mr-2 h-4" />
               <FileText className="h-5 w-5 text-muted-foreground" />
-              <h1 className="text-lg font-semibold">
-                Invoices
-              </h1>
+              <h1 className="text-lg font-semibold">Invoices</h1>
             </div>
 
             {/* RIGHT SIDE */}
@@ -367,9 +365,7 @@ export default function Invoices() {
                 Logout
               </Button>
             </div>
-
           </header>
-
 
           <div className="flex-1 space-y-6 p-6">
             {/* Header Actions */}
