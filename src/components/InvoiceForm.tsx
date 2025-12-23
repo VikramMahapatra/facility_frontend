@@ -80,8 +80,12 @@ export function InvoiceForm({
 
     await loadSiteLookup();
 
-    
-    if (invoice && mode !== "create" && invoice.site_id && invoice.billable_item_type) {
+    if (
+      invoice &&
+      mode !== "create" &&
+      invoice.site_id &&
+      invoice.billable_item_type
+    ) {
       const billableType =
         invoice.billable_item_type === "lease charge"
           ? "lease_charge"
@@ -91,7 +95,6 @@ export function InvoiceForm({
       await loadBillableItemLookup(billableType, invoice.site_id);
     }
 
-    
     reset(
       invoice && mode !== "create"
         ? {
@@ -130,7 +133,6 @@ export function InvoiceForm({
     }
   }, [invoice, mode, isOpen, reset]);
 
-  
   useEffect(() => {
     if (watchedBillableType && watchedSiteId) {
       loadBillableItemLookup(watchedBillableType, watchedSiteId);
@@ -146,7 +148,10 @@ export function InvoiceForm({
       loadInvoiceTotals(watchedBillableType, watchedBillableItemId);
     } else {
       // Reset totals if billable item is cleared or in edit/view mode
-      if (mode === "create" && (!watchedBillableItemId || !watchedBillableType)) {
+      if (
+        mode === "create" &&
+        (!watchedBillableItemId || !watchedBillableType)
+      ) {
         setValue("totals.sub", 0);
         setValue("totals.tax", 0);
         setValue("totals.grand", 0);
@@ -201,7 +206,10 @@ export function InvoiceForm({
     }
   };
 
-  const loadInvoiceTotals = async (billableType: string, billableItemId: string) => {
+  const loadInvoiceTotals = async (
+    billableType: string,
+    billableItemId: string
+  ) => {
     if (!billableType || !billableItemId) {
       setTotalsAutoFilled(false);
       return;
@@ -250,19 +258,23 @@ export function InvoiceForm({
   };
 
   const isReadOnly = mode === "view";
- 
+
   const isFieldDisabled = (fieldName: string) => {
     if (mode === "view") return true;
     if (mode === "edit") {
       return fieldName !== "due_date" && fieldName !== "status";
     }
-    
+
     if (mode === "create" && totalsAutoFilled) {
-      if (fieldName === "totals.sub" || fieldName === "totals.tax" || fieldName === "totals.grand") {
+      if (
+        fieldName === "totals.sub" ||
+        fieldName === "totals.tax" ||
+        fieldName === "totals.grand"
+      ) {
         return true;
       }
     }
-    return false; 
+    return false;
   };
 
   return (
@@ -276,7 +288,10 @@ export function InvoiceForm({
           </DialogTitle>
         </DialogHeader>
 
-        <form onSubmit={isSubmitting ? undefined : handleSubmit(onSubmitForm)} className="space-y-4">
+        <form
+          onSubmit={isSubmitting ? undefined : handleSubmit(onSubmitForm)}
+          className="space-y-4"
+        >
           {formLoading ? (
             <p className="text-center">Loading...</p>
           ) : (
@@ -311,7 +326,9 @@ export function InvoiceForm({
                   )}
                 />
                 {errors.site_id && (
-                  <p className="text-sm text-red-500">{errors.site_id.message}</p>
+                  <p className="text-sm text-red-500">
+                    {errors.site_id.message}
+                  </p>
                 )}
               </div>
 
@@ -339,7 +356,9 @@ export function InvoiceForm({
                           <SelectValue placeholder="Select type" />
                         </SelectTrigger>
                         <SelectContent>
-                          <SelectItem value="lease_charge">Lease Charge</SelectItem>
+                          <SelectItem value="lease_charge">
+                            Lease Charge
+                          </SelectItem>
                           <SelectItem value="work_order">Work Order</SelectItem>
                         </SelectContent>
                       </Select>
@@ -365,7 +384,10 @@ export function InvoiceForm({
                       <Select
                         value={field.value || ""}
                         onValueChange={field.onChange}
-                        disabled={isFieldDisabled("billable_item_id") || !watchedBillableType}
+                        disabled={
+                          isFieldDisabled("billable_item_id") ||
+                          !watchedBillableType
+                        }
                       >
                         <SelectTrigger
                           className={
@@ -404,7 +426,9 @@ export function InvoiceForm({
                     className={errors.date ? "border-red-500" : ""}
                   />
                   {errors.date && (
-                    <p className="text-sm text-red-500">{errors.date.message}</p>
+                    <p className="text-sm text-red-500">
+                      {errors.date.message}
+                    </p>
                   )}
                 </div>
                 <div className="space-y-2">
@@ -414,7 +438,14 @@ export function InvoiceForm({
                     type="date"
                     {...register("due_date")}
                     disabled={isFieldDisabled("due_date")}
+                    className={errors.due_date ? "border-red-500" : ""}
+                    min={watch("date") || undefined}
                   />
+                  {errors.due_date && (
+                    <p className="text-sm text-red-500">
+                      {errors.due_date.message}
+                    </p>
+                  )}
                 </div>
               </div>
 
