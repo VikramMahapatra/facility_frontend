@@ -338,7 +338,7 @@ export default function Settings() {
               onValueChange={setActiveTab}
               className="space-y-6"
             >
-              <TabsList className="grid w-full grid-cols-5">
+              <TabsList className="grid w-full grid-cols-2">
                 <TabsTrigger value="general">
                   <Building className="h-4 w-4 mr-2" />
                   General
@@ -347,6 +347,7 @@ export default function Settings() {
                   <Shield className="h-4 w-4 mr-2" />
                   Security
                 </TabsTrigger>
+                {/*
                 <TabsTrigger value="integrations">
                   <Zap className="h-4 w-4 mr-2" />
                   Integrations
@@ -359,6 +360,7 @@ export default function Settings() {
                   <Database className="h-4 w-4 mr-2" />
                   Backup
                 </TabsTrigger>
+                */}
               </TabsList>
 
               <div className="relative rounded-md">
@@ -645,7 +647,7 @@ export default function Settings() {
                       </CardContent>
                     </Card>
                   </TabsContent>
-
+                  {/*
                   <TabsContent value="integrations" className="space-y-6">
                     <Card>
                       <CardHeader>
@@ -906,6 +908,7 @@ export default function Settings() {
                       </CardContent>
                     </Card>
                   </TabsContent>
+                */}
                 </ContentContainer>
               </div>
             </Tabs>
