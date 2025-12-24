@@ -121,12 +121,13 @@ export default function MetersReadings() {
   const [pageSize] = useState(5); // items per page
   const [totalItems, setTotalItems] = useState(0);
   const { canWrite, canDelete } = useAuth();
-  const resource = "meters";
+  const resource = "meter_readings";
   const resourceReadings = "meter_readings";
   const [readingsPage, setReadingsPage] = useState(1); // current page
   const [readingsPageSize] = useState(5); // items per page
   const [totalReadingsItems, setTotalReadingsItems] = useState(0);
   const [deleteReadingId, setDeleteReadingId] = useState<string | null>(null);
+  const [deleteMeterId, setDeleteMeterId] = useState<string | null>(null);
   const { withLoader } = useLoader();
   const { user, handleLogout } = useAuth();
 
@@ -332,6 +333,22 @@ export default function MetersReadings() {
       );
     }
     return response;
+  };
+
+  const handleDelete = (meterId: string) => {
+    setDeleteMeterId(meterId);
+  };
+
+  const confirmDelete = async () => {
+    if (deleteMeterId) {
+      const response = await meterReadingApiService.deleteMeter(deleteMeterId);
+      if (response.success) {
+        updateMeterTab();
+        loadReadingOverView();
+        setDeleteMeterId(null);
+        toast.success("Meter deleted successfully");
+      }
+    }
   };
 
   const onDeleteMeterReading = async (reading: MeterReading) => {
@@ -572,21 +589,19 @@ export default function MetersReadings() {
                         type={activeTab}
                         onImport={handleBulkImport}
                       />
-                      {activeTab === "meters" ? (
-                        //canWrite(resource) && (
-                        <Button size="sm" onClick={onCreateMeter}>
-                          <Plus className="h-4 w-4 mr-2" />
-                          Add Meter
-                        </Button>
-                      ) : (
-                        //)
-                        canWrite(resourceReadings) && (
-                          <Button size="sm" onClick={onCreateMeterReading}>
-                            <Plus className="h-4 w-4 mr-2" />
-                            Add Reading
-                          </Button>
-                        )
-                      )}
+                      {activeTab === "meters"
+                        ? canWrite(resource) && (
+                            <Button size="sm" onClick={onCreateMeter}>
+                              <Plus className="h-4 w-4 mr-2" />
+                              Add Meter
+                            </Button>
+                          )
+                        : canWrite(resourceReadings) && (
+                            <Button size="sm" onClick={onCreateMeterReading}>
+                              <Plus className="h-4 w-4 mr-2" />
+                              Add Reading
+                            </Button>
+                          )}
                     </div>
                   </div>
 
@@ -658,17 +673,21 @@ export default function MetersReadings() {
                                       >
                                         <Eye className="h-4 w-4" />
                                       </Button>
-                                      {/* canWrite(resource) && ( */}
-                                      <Button
-                                        variant="ghost"
-                                        size="sm"
-                                        onClick={() => onEditMeter(meter)}
-                                      >
-                                        <Edit className="h-4 w-4" />
-                                      </Button>
-                                      {/* )} */}
+                                      {canWrite(resource) && (
+                                        <Button
+                                          variant="ghost"
+                                          size="sm"
+                                          onClick={() => onEditMeter(meter)}
+                                        >
+                                          <Edit className="h-4 w-4" />
+                                        </Button>
+                                      )}
                                       {canDelete(resource) && (
-                                        <Button variant="ghost" size="sm">
+                                        <Button
+                                          variant="ghost"
+                                          size="sm"
+                                          onClick={() => handleDelete(meter.id)}
+                                        >
                                           <Trash2 className="h-4 w-4" />
                                         </Button>
                                       )}
@@ -830,6 +849,31 @@ export default function MetersReadings() {
         onSave={onSaveMeterReading}
         mode={meterReadingFormMode}
       />
+
+      {/* Delete confirmation for meter */}
+      <AlertDialog
+        open={!!deleteMeterId}
+        onOpenChange={() => setDeleteMeterId(null)}
+      >
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Delete Meter</AlertDialogTitle>
+            <AlertDialogDescription>
+              Are you sure you want to delete this meter? This action cannot be
+              undone.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancel</AlertDialogCancel>
+            <AlertDialogAction
+              onClick={confirmDelete}
+              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+            >
+              Delete
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
 
       {/* Delete confirmation for meter reading */}
       <AlertDialog
