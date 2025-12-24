@@ -314,7 +314,7 @@ export default function MetersReadings() {
       );
 
       if (response.success) {
-        // Update the edited meter reading in local state
+        loadReadingOverView();
         setMeterReadings((prev) =>
           prev.map((mr) =>
             mr.id === updatedMeterReading.id ? response.data : mr
