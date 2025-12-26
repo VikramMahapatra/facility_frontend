@@ -1,35 +1,32 @@
-import { apiService } from '../api';
+import { apiService } from "../api";
 
 class ConsumptionApiService {
-    // Overview 
-    async getOverview() {
-        return await apiService.request('/consumption-reports/overview');
-    }
+  async getOverview() {
+    return await apiService.request("/consumption-reports/overview");
+  }
 
-    // Weekly consumption trends chart 
-    async getWeeklyConsumptionTrend() {
-        return await apiService.request('/consumption-reports/weekly-trends');
-    }
+  async getWeeklyConsumptionTrend() {
+    return await apiService.request("/consumption-reports/weekly-trends");
+  }
 
-    // Monthly cost analysis chart 
-    async getMonthlyCostAnalysis() {
-        return await apiService.request('/consumption-reports/monthly-cost-analysis');
-    }
+  async getMonthlyCostAnalysis() {
+    return await apiService.request(
+      "/consumption-reports/monthly-cost-analysis"
+    );
+  }
 
-    // All types dropdown 
-    async getUtilityTypes() {
-        return await apiService.request('/consumption-reports/month-lookup');
-    }
+  async getConsumptionReports(params?: URLSearchParams) {
+    const queryString = params ? `?${params.toString()}` : "";
+    return await apiService.request(`/consumption-reports/all${queryString}`);
+  }
 
-    // Month dropdown 
-    async getAvailableMonths() {
-        return await apiService.request('/consumption-reports/type-lookup');
-    }
+  async getConsumptionReportsMonthLookup() {
+    return await apiService.request("/consumption-reports/month-lookup");
+  }
 
-    // Get consumption data with filters
-    /*async getConsumption(params: any) {
-        return await apiService.request(`/consumption/all?${params.toString()}`);
-    }*/
+  async getConsumptionReportsTypeLookup() {
+    return await apiService.request("/consumption-reports/type-lookup");
+  }
 }
 
 export const consumptionApiService = new ConsumptionApiService();
