@@ -160,7 +160,7 @@ export default function ConsumptionReports() {
   const loadConsumptionReports = async () => {
     const params = new URLSearchParams();
     if (selectedMeterKind && selectedMeterKind !== "all") {
-      params.append("utility_type", selectedMeterKind);
+      params.append("consumption_type", selectedMeterKind);
     }
     if (selectedPeriod && selectedPeriod !== "all") {
       params.append("month", selectedPeriod);
