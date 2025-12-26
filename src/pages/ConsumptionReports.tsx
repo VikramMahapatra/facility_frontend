@@ -18,7 +18,7 @@ import {
 } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { LogOut } from "lucide-react";
-import { Avatar, AvatarFallback } from "@/components/ui/avatar";
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
 import {
   Table,
@@ -51,8 +51,6 @@ import { consumptionApiService } from "@/services/energy_iot/consumptionapi";
 import { useLoader } from "@/context/LoaderContext";
 import ContentContainer from "@/components/ContentContainer";
 import { useAuth } from "@/context/AuthContext";
-import { exportToExcel } from "@/helpers/exportToExcelHelper";
-//import LoaderOverlay from "@/components/LoaderOverlay";
 
 const getTrendIcon = (trend: string) => {
   switch (trend) {
@@ -178,18 +176,6 @@ export default function ConsumptionReports() {
     } finally {
       setLoadingConsumptionReports(false);
     }
-  };
-
-  const onExport = async () => {
-    const params = new URLSearchParams();
-    if (selectedMeterKind && selectedMeterKind !== "all") {
-      params.append("utility_type", selectedMeterKind);
-    }
-    if (selectedPeriod && selectedPeriod !== "all") {
-      params.append("month", selectedPeriod);
-    }
-
-    await exportToExcel("consumption-reports", params);
   };
 
   /* const filteredReports = mockConsumptionReports.filter(report => {
@@ -502,32 +488,52 @@ export default function ConsumptionReports() {
                           </SelectTrigger>
                           <SelectContent>
                             <SelectItem value="all">All Types</SelectItem>
-                            {utilityTypes.map((type) => (
-                              <SelectItem key={type.value} value={type.value}>
-                                {type.name}
-                              </SelectItem>
-                            ))}
+                            {utilityTypes
+                              .filter(
+                                (type) =>
+                                  (type.value || type.id) &&
+                                  (type.value || type.id) !== ""
+                              )
+                              .map((type) => {
+                                const value = type.value || type.id;
+                                const name = type.name || type.label;
+                                return (
+                                  <SelectItem key={value} value={String(value)}>
+                                    {name}
+                                  </SelectItem>
+                                );
+                              })}
                           </SelectContent>
                         </Select>
                         <Select
                           value={selectedPeriod}
                           onValueChange={setSelectedPeriod}
                         >
-                          <SelectTrigger className="w-40">
-                            <SelectValue placeholder="Period" />
+                          <SelectTrigger className="w-[180px]">
+                            <SelectValue placeholder="Filter by period" />
                           </SelectTrigger>
                           <SelectContent>
                             <SelectItem value="all">All Months</SelectItem>
-                            {availableMonths.map((month) => (
-                              <SelectItem key={month.value} value={month.value}>
-                                {month.name}
-                              </SelectItem>
-                            ))}
+                            {availableMonths
+                              .filter(
+                                (month) =>
+                                  (month.value || month.id) &&
+                                  (month.value || month.id) !== ""
+                              )
+                              .map((month) => {
+                                const value = month.value || month.id;
+                                const name = month.name || month.label;
+                                return (
+                                  <SelectItem key={value} value={String(value)}>
+                                    {name}
+                                  </SelectItem>
+                                );
+                              })}
                           </SelectContent>
                         </Select>
                       </div>
                       <div className="flex items-center space-x-2">
-                        <Button variant="outline" size="sm" onClick={onExport}>
+                        <Button variant="outline" size="sm">
                           <Download className="h-4 w-4 mr-2" />
                           Export
                         </Button>
