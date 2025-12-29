@@ -1,25 +1,27 @@
 export interface Lease {
-  id: string;
-  org_id: string;
-  site_id?: string;
-  space_id?: string;
-  space_name?: string;
-  kind?: LeaseKind;
-  partner_id?: string;
-  tenant_id?: string;
-  tenant_name: string;
-  start_date?: string;
-  end_date?: string;
-  rent_amount?: number;
-  deposit_amount?: number;
-  cam_rate?: number;
-  utilities?: Record<string, any>;
-  status?: "active" | "expired" | "terminated" | "draft";
-  created_at?: string;
-  updated_at?: string;
-  space_code?: string;
-  site_name?: string;
-  frequency?: string;
+    id: string;
+    org_id: string;
+    site_id?: string;
+    building_id?: string;
+    building_block_id?: string;
+    space_id?: string;
+    space_name?: string;
+    kind?: LeaseKind
+    partner_id?: string;
+    tenant_id?: string;
+    tenant_name: string;
+    start_date?: string;
+    end_date?: string;
+    rent_amount?: number;
+    deposit_amount?: number;
+    cam_rate?: number;
+    utilities?: Record<string, any>;
+    status?: "active" | "expired" | "terminated" | "draft";
+    created_at?: string;
+    updated_at?: string;
+    space_code?: string;
+    site_name?: string;
+    frequency?: string;
 }
 
 export interface LeaseOverview {
