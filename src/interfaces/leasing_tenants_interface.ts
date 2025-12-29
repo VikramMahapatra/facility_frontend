@@ -1,8 +1,9 @@
-
 export interface Lease {
     id: string;
     org_id: string;
     site_id?: string;
+    building_id?: string;
+    building_block_id?: string;
     space_id?: string;
     space_name?: string;
     kind?: LeaseKind
