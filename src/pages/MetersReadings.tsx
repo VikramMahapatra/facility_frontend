@@ -23,7 +23,7 @@ import {
   CardTitle,
 } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { LogOut, } from "lucide-react";
+import { LogOut } from "lucide-react";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
@@ -50,7 +50,16 @@ import { meterReadingApiService } from "@/services/energy_iot/meterreadingsapi";
 import { Pagination } from "@/components/Pagination";
 import { exportToExcel } from "@/helpers/exportToExcelHelper";
 import { useAuth } from "../context/AuthContext";
-import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
 import { useLoader } from "@/context/LoaderContext";
 import LoaderOverlay from "@/components/LoaderOverlay";
 import ContentContainer from "@/components/ContentContainer";
@@ -111,13 +120,14 @@ export default function MetersReadings() {
   const [page, setPage] = useState(1); // current page
   const [pageSize] = useState(5); // items per page
   const [totalItems, setTotalItems] = useState(0);
-  const { canRead, canWrite, canDelete } = useAuth();
-  const resource = "meters";
+  const { canWrite, canDelete } = useAuth();
+  const resource = "meter_readings";
   const resourceReadings = "meter_readings";
   const [readingsPage, setReadingsPage] = useState(1); // current page
   const [readingsPageSize] = useState(5); // items per page
   const [totalReadingsItems, setTotalReadingsItems] = useState(0);
   const [deleteReadingId, setDeleteReadingId] = useState<string | null>(null);
+  const [deleteMeterId, setDeleteMeterId] = useState<string | null>(null);
   const { withLoader } = useLoader();
   const { user, handleLogout } = useAuth();
 
@@ -158,10 +168,10 @@ export default function MetersReadings() {
   };
 
   const loadReadingOverView = async () => {
-    const response = await withLoader(async () => {
-      return await meterReadingApiService.getReadingOverview();
-    });
-    if (response?.success) setMeterReadingOverview(response.data || {});
+    const response = await meterReadingApiService.getReadingOverview();
+    if (response?.success) {
+      setMeterReadingOverview(response.data || {});
+    }
   };
 
   const loadMeters = async () => {
@@ -232,17 +242,40 @@ export default function MetersReadings() {
 
   const onSaveMeter = async (meterData: Partial<Meter>) => {
     let response;
-    if (meterFormMode === 'create') {
+    if (meterFormMode === "create") {
       response = await meterReadingApiService.addMeter(meterData);
-    } else if (meterFormMode === 'edit' && meterData) {
-      response = await meterReadingApiService.updateMeter({ ...selectedMeter, ...meterData });
+      if (response.success) {
+        updateMeterTab();
+        loadReadingOverView();
+      }
+    } else if (meterFormMode === "edit" && selectedMeter) {
+      const updatedMeter = {
+        ...selectedMeter,
+        ...meterData,
+      };
+
+      setMeters((prev) =>
+        prev.map((m) => (m.id === updatedMeter.id ? updatedMeter : m))
+      );
+
+      response = await meterReadingApiService.updateMeter(updatedMeter);
+      if (response.success) {
+        loadReadingOverView();
+        setMeters((prev) =>
+          prev.map((m) => (m.id === updatedMeter.id ? response.data : m))
+        );
+      }
     }
 
-    if (response?.success) {
+    if (response.success) {
       setIsMeterFormOpen(false);
-      updateMeterTab();
-      toast.success(`Meter has been ${meterFormMode === "create" ? "created" : "updated"} successfully.`);
+      toast.success(
+        `Meter has been ${
+          meterFormMode === "create" ? "created" : "updated"
+        } successfully.`
+      );
     }
+    return response;
   };
 
   const onCreateMeterReading = () => {
@@ -264,36 +297,59 @@ export default function MetersReadings() {
   };
 
   const onSaveMeterReading = async (
-  meterReadingData: Partial<MeterReading>
-) => {
-  let response;
-  if (meterReadingFormMode === 'create') {
-    response = await meterReadingApiService.addMeterReading(meterReadingData);
+    meterReadingData: Partial<MeterReading>
+  ) => {
+    let response;
+    if (meterReadingFormMode === "create") {
+      response = await meterReadingApiService.addMeterReading(meterReadingData);
 
-    if (response.success)
-      await loadMeterReadings();
-  } else if (meterReadingFormMode === 'edit' && selectedMeterReading) {
-    const updatedMeterReading = {
-      ...selectedMeterReading,
-      ...meterReadingData,
-      updated_at: new Date().toISOString(),
-    };
-    response = await meterReadingApiService.updateMeterReading(updatedMeterReading);
+      if (response.success) await loadMeterReadings();
+    } else if (meterReadingFormMode === "edit" && selectedMeterReading) {
+      const updatedMeterReading = {
+        ...selectedMeterReading,
+        ...meterReadingData,
+        updated_at: new Date().toISOString(),
+      };
+      response = await meterReadingApiService.updateMeterReading(
+        updatedMeterReading
+      );
 
-    if (response.success) {
-      // Update the edited meter reading in local state
-      setMeterReadings((prev) =>
-        prev.map((mr) => (mr.id === updatedMeterReading.id ? response.data : mr))
+      if (response.success) {
+        loadReadingOverView();
+        setMeterReadings((prev) =>
+          prev.map((mr) =>
+            mr.id === updatedMeterReading.id ? response.data : mr
+          )
+        );
+      }
+    }
+
+    if (response?.success) {
+      setIsMeterReadingFormOpen(false);
+      toast.success(
+        `Meter reading has been ${
+          meterReadingFormMode === "create" ? "added" : "updated"
+        } successfully.`
       );
     }
-  }
+    return response;
+  };
 
-  if (response?.success) {
-    setIsMeterReadingFormOpen(false);
-    toast.success(`Meter reading has been ${meterReadingFormMode === "create" ? "added" : "updated"} successfully.`);
-  }
-  return response;
-};
+  const handleDelete = (meterId: string) => {
+    setDeleteMeterId(meterId);
+  };
+
+  const confirmDelete = async () => {
+    if (deleteMeterId) {
+      const response = await meterReadingApiService.deleteMeter(deleteMeterId);
+      if (response.success) {
+        updateMeterTab();
+        loadReadingOverView();
+        setDeleteMeterId(null);
+        toast.success("Meter deleted successfully");
+      }
+    }
+  };
 
   const onDeleteMeterReading = async (reading: MeterReading) => {
     setDeleteReadingId(reading.id);
@@ -301,15 +357,22 @@ export default function MetersReadings() {
 
   const confirmDeleteReading = async () => {
     if (deleteReadingId) {
-      const response = await meterReadingApiService.deleteMeterReading(deleteReadingId);
+      const response = await meterReadingApiService.deleteMeterReading(
+        deleteReadingId
+      );
       if (response?.success) {
         await loadMeterReadings();
         setDeleteReadingId(null);
         toast.success("The meter reading has been removed successfully.");
       } else {
-        toast.error(`Cannot Delete Meter Reading\n${response?.message || "Unknown error"}`, {
-          style: { whiteSpace: "pre-line" },
-        });
+        toast.error(
+          `Cannot Delete Meter Reading\n${
+            response?.message || "Unknown error"
+          }`,
+          {
+            style: { whiteSpace: "pre-line" },
+          }
+        );
       }
     }
   };
@@ -319,7 +382,7 @@ export default function MetersReadings() {
     if (searchTerm) params.append("search", searchTerm);
 
     await exportToExcel(activeTab, params);
-  }
+  };
 
   const onCreateReading = () => {
     console.log("Opening reading form...");
@@ -328,10 +391,8 @@ export default function MetersReadings() {
   const handleBulkImport = async (data: any[]) => {
     console.log("Importing meters:", data);
 
-    if (activeTab === "meters")
-      updateMeterTab()
-    else
-      updateMeterReadingTab()
+    if (activeTab === "meters") updateMeterTab();
+    else updateMeterReadingTab();
 
     loadReadingOverView();
   };
@@ -364,8 +425,7 @@ export default function MetersReadings() {
       <div className="flex min-h-screen w-full">
         <PropertySidebar />
         <div className="flex-1">
-           <header className="flex h-16 shrink-0 items-center justify-between border-b border-sidebar-border px-4">
-
+          <header className="flex h-16 shrink-0 items-center justify-between border-b border-sidebar-border px-4">
             {/* LEFT SIDE */}
             <div className="flex items-start gap-3">
               <SidebarTrigger className="-ml-1 mt-1" />
@@ -376,9 +436,7 @@ export default function MetersReadings() {
                   <Gauge className="h-5 w-5 text-muted-foreground" />
 
                   {/* TITLE */}
-                  <h1 className="text-lg font-semibold">
-                    Meters & Readings
-                  </h1>
+                  <h1 className="text-lg font-semibold">Meters & Readings</h1>
                 </div>
 
                 {/* SUBTITLE */}
@@ -415,9 +473,7 @@ export default function MetersReadings() {
                 Logout
               </Button>
             </div>
-
           </header>
-
 
           <main className="flex-1 space-y-6 p-6">
             <div className="space-y-6">
@@ -495,7 +551,9 @@ export default function MetersReadings() {
                         Meters
                       </Button>
                       <Button
-                        variant={activeTab === "readings" ? "default" : "outline"}
+                        variant={
+                          activeTab === "readings" ? "default" : "outline"
+                        }
                         onClick={() => setActiveTab("readings")}
                       >
                         Readings
@@ -519,7 +577,11 @@ export default function MetersReadings() {
                         <Filter className="h-4 w-4 mr-2" />
                         Filter
                       </Button>
-                      <Button variant="outline" size="sm" onClick={() => onExport()}>
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={() => onExport()}
+                      >
                         <Download className="h-4 w-4 mr-2" />
                         Export
                       </Button>
@@ -527,21 +589,19 @@ export default function MetersReadings() {
                         type={activeTab}
                         onImport={handleBulkImport}
                       />
-                      {activeTab === "meters" ? (
-                        canWrite(resource) && (
-                          <Button size="sm" onClick={onCreateMeter}>
-                            <Plus className="h-4 w-4 mr-2" />
-                            Add Meter
-                          </Button>
-                        )
-                      ) : (
-                        canWrite(resourceReadings) && (
-                          <Button size="sm" onClick={onCreateMeterReading}>
-                            <Plus className="h-4 w-4 mr-2" />
-                            Add Reading
-                          </Button>
-                        )
-                      )}
+                      {activeTab === "meters"
+                        ? canWrite(resource) && (
+                            <Button size="sm" onClick={onCreateMeter}>
+                              <Plus className="h-4 w-4 mr-2" />
+                              Add Meter
+                            </Button>
+                          )
+                        : canWrite(resourceReadings) && (
+                            <Button size="sm" onClick={onCreateMeterReading}>
+                              <Plus className="h-4 w-4 mr-2" />
+                              Add Reading
+                            </Button>
+                          )}
                     </div>
                   </div>
 
@@ -552,78 +612,90 @@ export default function MetersReadings() {
                       {activeTab === "meters" ? (
                         <div>
                           <Table>
-                      <TableHeader>
-                        <TableRow>
-                          <TableHead>Type</TableHead>
-                          <TableHead>Code</TableHead>
-                          <TableHead>Site</TableHead>
-                          <TableHead>Location</TableHead>
-                          <TableHead>Unit</TableHead>
-                          <TableHead>Last Reading</TableHead>
-                          <TableHead>Status</TableHead>
-                          <TableHead>Actions</TableHead>
-                        </TableRow>
-                      </TableHeader>
-                      <TableBody>
-                        {meters.map((meter) => (
-                          <TableRow key={meter.id}>
-                            <TableCell>
-                              <div className="flex items-center gap-2">
-                                {getMeterIcon(meter.kind)}
-                                <span className="capitalize">{meter.kind}</span>
-                              </div>
-                            </TableCell>
-                            <TableCell className="font-medium">
-                              {meter.code}
-                            </TableCell>
-                            <TableCell>{meter.site_name}</TableCell>
-                            <TableCell>
-                              {meter.space_name || meter.asset_name || "General"}
-                            </TableCell>
-                            <TableCell>{meter.unit}</TableCell>
-                            <TableCell>
-                              {meter.last_reading ? (
-                                <div>
-                                  <div className="font-medium">
-                                    {meter.last_reading} {meter.unit}
-                                  </div>
-                                  <div className="text-xs text-muted-foreground">
-                                    {new Date(
-                                      meter.last_reading_date!
-                                    ).toLocaleDateString()}
-                                  </div>
-                                </div>
-                              ) : (
-                                "No readings"
-                              )}
-                            </TableCell>
-                            <TableCell>{getStatusBadge(meter.status)}</TableCell>
-                            <TableCell>
-                              <div className="flex items-center gap-2">
-                                <Button
-                                  variant="ghost"
-                                  size="sm"
-                                  onClick={() => onViewMeter(meter)}
-                                >
-                                  <Eye className="h-4 w-4" />
-                                </Button>
-                                {canWrite(resource) && <Button
-                                  variant="ghost"
-                                  size="sm"
-                                  onClick={() => onEditMeter(meter)}
-                                >
-                                  <Edit className="h-4 w-4" />
-                                </Button>
-                                }
-                                {canDelete(resource) && <Button variant="ghost" size="sm">
-                                  <Trash2 className="h-4 w-4" />
-                                </Button>
-                                }
-                              </div>
-                            </TableCell>
-                          </TableRow>
-                        ))}
-                          </TableBody>
+                            <TableHeader>
+                              <TableRow>
+                                <TableHead>Type</TableHead>
+                                <TableHead>Code</TableHead>
+                                <TableHead>Site</TableHead>
+                                <TableHead>Location</TableHead>
+                                <TableHead>Unit</TableHead>
+                                <TableHead>Last Reading</TableHead>
+                                <TableHead>Status</TableHead>
+                                <TableHead>Actions</TableHead>
+                              </TableRow>
+                            </TableHeader>
+                            <TableBody>
+                              {meters.map((meter) => (
+                                <TableRow key={meter.id}>
+                                  <TableCell>
+                                    <div className="flex items-center gap-2">
+                                      {getMeterIcon(meter.kind)}
+                                      <span className="capitalize">
+                                        {meter.kind}
+                                      </span>
+                                    </div>
+                                  </TableCell>
+                                  <TableCell className="font-medium">
+                                    {meter.code}
+                                  </TableCell>
+                                  <TableCell>{meter.site_name}</TableCell>
+                                  <TableCell>
+                                    {meter.space_name ||
+                                      meter.asset_name ||
+                                      "General"}
+                                  </TableCell>
+                                  <TableCell>{meter.unit}</TableCell>
+                                  <TableCell>
+                                    {meter.last_reading ? (
+                                      <div>
+                                        <div className="font-medium">
+                                          {meter.last_reading} {meter.unit}
+                                        </div>
+                                        <div className="text-xs text-muted-foreground">
+                                          {new Date(
+                                            meter.last_reading_date!
+                                          ).toLocaleDateString()}
+                                        </div>
+                                      </div>
+                                    ) : (
+                                      "No readings"
+                                    )}
+                                  </TableCell>
+                                  <TableCell>
+                                    {getStatusBadge(meter.status)}
+                                  </TableCell>
+                                  <TableCell>
+                                    <div className="flex items-center gap-2">
+                                      <Button
+                                        variant="ghost"
+                                        size="sm"
+                                        onClick={() => onViewMeter(meter)}
+                                      >
+                                        <Eye className="h-4 w-4" />
+                                      </Button>
+                                      {canWrite(resource) && (
+                                        <Button
+                                          variant="ghost"
+                                          size="sm"
+                                          onClick={() => onEditMeter(meter)}
+                                        >
+                                          <Edit className="h-4 w-4" />
+                                        </Button>
+                                      )}
+                                      {canDelete(resource) && (
+                                        <Button
+                                          variant="ghost"
+                                          size="sm"
+                                          onClick={() => handleDelete(meter.id)}
+                                        >
+                                          <Trash2 className="h-4 w-4" />
+                                        </Button>
+                                      )}
+                                    </div>
+                                  </TableCell>
+                                </TableRow>
+                              ))}
+                            </TableBody>
                           </Table>
                           <Pagination
                             page={page}
@@ -635,100 +707,113 @@ export default function MetersReadings() {
                       ) : (
                         <div>
                           <Table>
-                      <TableHeader>
-                        <TableRow>
-                          <TableHead>Meter</TableHead>
-                          <TableHead>Type</TableHead>
-                          <TableHead>Reading</TableHead>
-                          <TableHead>Delta</TableHead>
-                          <TableHead>Source</TableHead>
-                          <TableHead>Timestamp</TableHead>
-                          <TableHead>Actions</TableHead>
-                        </TableRow>
-                      </TableHeader>
-                      <TableBody>
-                        {meterReadings.map((reading) => (
-                          <TableRow key={reading.id}>
-                            <TableCell>
-                              <div>
-                                <div className="font-medium">
-                                  {reading.meter_code}
-                                </div>
-                                <div className="text-sm text-muted-foreground capitalize">
-                                  {reading.meter_kind}
-                                </div>
-                              </div>
-                            </TableCell>
-                            <TableCell>
-                              <div className="flex items-center gap-2">
-                                {getMeterIcon(reading.meter_kind)}
-                                <span className="capitalize">
-                                  {reading.meter_kind}
-                                </span>
-                              </div>
-                            </TableCell>
-                            <TableCell>
-                              <span className="font-medium">
-                                {reading.reading} {reading.unit}
-                              </span>
-                            </TableCell>
-                            <TableCell>
-                              {reading.delta ? (
-                                <span className="text-blue-600">
-                                  +{reading.delta} {reading.unit}
-                                </span>
-                              ) : (
-                                "-"
-                              )}
-                            </TableCell>
-                            <TableCell>
-                              <Badge
-                                variant={
-                                  reading.source === "iot"
-                                    ? "default"
-                                    : "secondary"
-                                }
-                              >
-                                {reading.source}
-                              </Badge>
-                            </TableCell>
-                            <TableCell>
-                              <div className="text-sm">
-                                {new Date(reading.ts).toLocaleDateString()}
-                                <div className="text-xs text-muted-foreground">
-                                  {new Date(reading.ts).toLocaleTimeString()}
-                                </div>
-                              </div>
-                            </TableCell>
-                            <TableCell>
-                              <div className="flex items-center gap-2">
-                                
-                                <Button
-                                  variant="ghost"
-                                  size="sm"
-                                  onClick={() => onViewMeterReading(reading)}
-                                >
-                                  <Eye className="h-4 w-4" />
-                                </Button>
-                                {canWrite(resourceReadings) &&
-                                <Button
-                                  variant="ghost"
-                                  size="sm"
-                                  onClick={() => onEditMeterReading(reading)}
-                                >
-                                  <Edit className="h-4 w-4" />
-                                </Button>
-                                }
-                                {canDelete(resourceReadings) &&
-                                <Button variant="ghost" size="sm" onClick={() => onDeleteMeterReading(reading)}>
-                                  <Trash2 className="h-4 w-4" />
-                                </Button>
-                                }
-                              </div>
-                            </TableCell>
-                          </TableRow>
-                        ))}
-                          </TableBody>
+                            <TableHeader>
+                              <TableRow>
+                                <TableHead>Meter</TableHead>
+                                <TableHead>Type</TableHead>
+                                <TableHead>Reading</TableHead>
+                                <TableHead>Delta</TableHead>
+                                <TableHead>Source</TableHead>
+                                <TableHead>Timestamp</TableHead>
+                                <TableHead>Actions</TableHead>
+                              </TableRow>
+                            </TableHeader>
+                            <TableBody>
+                              {meterReadings.map((reading) => (
+                                <TableRow key={reading.id}>
+                                  <TableCell>
+                                    <div>
+                                      <div className="font-medium">
+                                        {reading.meter_code}
+                                      </div>
+                                      <div className="text-sm text-muted-foreground capitalize">
+                                        {reading.meter_kind}
+                                      </div>
+                                    </div>
+                                  </TableCell>
+                                  <TableCell>
+                                    <div className="flex items-center gap-2">
+                                      {getMeterIcon(reading.meter_kind)}
+                                      <span className="capitalize">
+                                        {reading.meter_kind}
+                                      </span>
+                                    </div>
+                                  </TableCell>
+                                  <TableCell>
+                                    <span className="font-medium">
+                                      {reading.reading} {reading.unit}
+                                    </span>
+                                  </TableCell>
+                                  <TableCell>
+                                    {reading.delta ? (
+                                      <span className="text-blue-600">
+                                        +{reading.delta} {reading.unit}
+                                      </span>
+                                    ) : (
+                                      "-"
+                                    )}
+                                  </TableCell>
+                                  <TableCell>
+                                    <Badge
+                                      variant={
+                                        reading.source === "iot"
+                                          ? "default"
+                                          : "secondary"
+                                      }
+                                    >
+                                      {reading.source}
+                                    </Badge>
+                                  </TableCell>
+                                  <TableCell>
+                                    <div className="text-sm">
+                                      {new Date(
+                                        reading.ts
+                                      ).toLocaleDateString()}
+                                      <div className="text-xs text-muted-foreground">
+                                        {new Date(
+                                          reading.ts
+                                        ).toLocaleTimeString()}
+                                      </div>
+                                    </div>
+                                  </TableCell>
+                                  <TableCell>
+                                    <div className="flex items-center gap-2">
+                                      <Button
+                                        variant="ghost"
+                                        size="sm"
+                                        onClick={() =>
+                                          onViewMeterReading(reading)
+                                        }
+                                      >
+                                        <Eye className="h-4 w-4" />
+                                      </Button>
+                                      {canWrite(resourceReadings) && (
+                                        <Button
+                                          variant="ghost"
+                                          size="sm"
+                                          onClick={() =>
+                                            onEditMeterReading(reading)
+                                          }
+                                        >
+                                          <Edit className="h-4 w-4" />
+                                        </Button>
+                                      )}
+                                      {canDelete(resourceReadings) && (
+                                        <Button
+                                          variant="ghost"
+                                          size="sm"
+                                          onClick={() =>
+                                            onDeleteMeterReading(reading)
+                                          }
+                                        >
+                                          <Trash2 className="h-4 w-4" />
+                                        </Button>
+                                      )}
+                                    </div>
+                                  </TableCell>
+                                </TableRow>
+                              ))}
+                            </TableBody>
                           </Table>
                           <Pagination
                             page={readingsPage}
@@ -765,18 +850,50 @@ export default function MetersReadings() {
         mode={meterReadingFormMode}
       />
 
-      {/* Delete confirmation for meter reading */}
-      <AlertDialog open={!!deleteReadingId} onOpenChange={() => setDeleteReadingId(null)}>
+      {/* Delete confirmation for meter */}
+      <AlertDialog
+        open={!!deleteMeterId}
+        onOpenChange={() => setDeleteMeterId(null)}
+      >
         <AlertDialogContent>
           <AlertDialogHeader>
-            <AlertDialogTitle>Delete Meter Reading</AlertDialogTitle>
+            <AlertDialogTitle>Delete Meter</AlertDialogTitle>
             <AlertDialogDescription>
-              Are you sure you want to delete this meter reading? This action cannot be undone.
+              Are you sure you want to delete this meter? This action cannot be
+              undone.
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
             <AlertDialogCancel>Cancel</AlertDialogCancel>
-            <AlertDialogAction onClick={confirmDeleteReading} className="bg-destructive text-destructive-foreground">
+            <AlertDialogAction
+              onClick={confirmDelete}
+              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+            >
+              Delete
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+
+      {/* Delete confirmation for meter reading */}
+      <AlertDialog
+        open={!!deleteReadingId}
+        onOpenChange={() => setDeleteReadingId(null)}
+      >
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Delete Meter Reading</AlertDialogTitle>
+            <AlertDialogDescription>
+              Are you sure you want to delete this meter reading? This action
+              cannot be undone.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancel</AlertDialogCancel>
+            <AlertDialogAction
+              onClick={confirmDeleteReading}
+              className="bg-destructive text-destructive-foreground"
+            >
               Delete
             </AlertDialogAction>
           </AlertDialogFooter>
