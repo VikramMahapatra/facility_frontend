@@ -6,6 +6,7 @@ export const leaseSchema = z
       required_error: "Lease Type is required",
     }),
     site_id: z.string().min(1, "Site is required"),
+    building_id: z.string().optional(),
     space_id: z.string().min(1, "Space is required"),
     partner_id: z.string().optional(),
     tenant_id: z.string().optional(),
@@ -46,5 +47,3 @@ export const leaseSchema = z
   });
 
 export type LeaseFormValues = z.infer<typeof leaseSchema>;
-
-
