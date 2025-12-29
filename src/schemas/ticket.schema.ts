@@ -7,6 +7,7 @@ export const ticketSchema = z.object({
   priority: z.enum(["low", "medium", "high"]).default("low"),
   request_type: z.enum(["unit", "community"]).default("unit"),
   site_id: z.string().min(1, "Site is required"),
+  building_id: z.string().optional(),
   space_id: z.string().min(1, "Space is required"),
   tenant_id: z.string().optional(),
   preferred_date: z.string().min(1, "Preferred date is required"),
@@ -16,4 +17,3 @@ export const ticketSchema = z.object({
 });
 
 export type TicketFormValues = z.infer<typeof ticketSchema>;
-

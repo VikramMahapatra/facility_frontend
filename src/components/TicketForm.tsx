@@ -15,6 +15,7 @@ import {
 import { Upload, X } from "lucide-react";
 import { spacesApiService } from "@/services/spaces_sites/spacesapi";
 import { siteApiService } from "@/services/spaces_sites/sitesapi";
+import { buildingApiService } from "@/services/spaces_sites/buildingsapi";
 import { tenantsApiService } from "@/services/leasing_tenants/tenantsapi";
 import { organisationApiService } from "@/services/spaces_sites/organisationapi";
 import { ticketsApiService } from "@/services/ticketing_service/ticketsapi";
@@ -38,6 +39,7 @@ const emptyFormData: TicketFormValues = {
   priority: "low",
   request_type: "unit",
   site_id: "",
+  building_id: "",
   space_id: "",
   tenant_id: "",
   preferred_date: "",
@@ -69,6 +71,7 @@ export default function TicketForm({
           priority: initialData.priority || "low",
           request_type: initialData.request_type || "unit",
           site_id: initialData.site_id || "",
+          building_id: initialData.building_id || "",
           space_id: initialData.space_id || "",
           tenant_id: initialData.tenant_id || "",
           preferred_date:
@@ -90,6 +93,7 @@ export default function TicketForm({
   const [imagePreviews, setImagePreviews] = useState<string[]>([]);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [spaceList, setSpaceList] = useState<any[]>([]);
+  const [buildingList, setBuildingList] = useState<any[]>([]);
   const [tenantList, setTenantList] = useState<any[]>([]);
   const [siteList, setSiteList] = useState<any[]>([]);
   const [categoryList, setCategoryList] = useState<any[]>([]);
@@ -97,6 +101,7 @@ export default function TicketForm({
   const [vendorList, setVendorList] = useState<any[]>([]);
 
   const selectedSiteId = watch("site_id");
+  const selectedBuildingId = watch("building_id");
   const selectedSpaceId = watch("space_id");
 
   // Mock preferred time slots
@@ -113,13 +118,25 @@ export default function TicketForm({
     loadStaffLookup(initialData?.site_id);
     loadVendorLookup();
     if (initialData?.site_id) {
-      loadSpaceLookup(initialData.site_id);
+      loadBuildingLookup(initialData.site_id);
+      loadSpaceLookup(initialData.site_id, initialData.building_id);
     }
   }, []);
 
+  // Load buildings when site changes
   useEffect(() => {
     if (selectedSiteId) {
-      loadSpaceLookup(selectedSiteId);
+      loadBuildingLookup(selectedSiteId);
+    } else {
+      setBuildingList([]);
+      setSpaceList([]);
+    }
+  }, [selectedSiteId]);
+
+  // Load spaces when site or building changes
+  useEffect(() => {
+    if (selectedSiteId) {
+      loadSpaceLookup(selectedSiteId, selectedBuildingId);
       loadCategoryLookup(selectedSiteId);
       loadStaffLookup(selectedSiteId);
       setValue("space_id", "");
@@ -130,7 +147,7 @@ export default function TicketForm({
       setStaffList([]);
       loadCategoryLookup("all");
     }
-  }, [selectedSiteId, setValue]);
+  }, [selectedSiteId, selectedBuildingId, setValue]);
 
   useEffect(() => {
     if (selectedSiteId && selectedSpaceId) {
@@ -150,6 +167,7 @@ export default function TicketForm({
         priority: initialData.priority || "low",
         request_type: initialData.request_type || "unit",
         site_id: initialData.site_id || "",
+        building_id: initialData.building_id || "",
         space_id: initialData.space_id || "",
         tenant_id: initialData.tenant_id || "",
         preferred_date:
@@ -159,7 +177,8 @@ export default function TicketForm({
         vendor_id: initialData.vendor_id || "",
       });
       if (initialData.site_id) {
-        loadSpaceLookup(initialData.site_id);
+        loadBuildingLookup(initialData.site_id);
+        loadSpaceLookup(initialData.site_id, initialData.building_id);
         loadCategoryLookup(initialData.site_id);
         loadStaffLookup(initialData.site_id);
         if (initialData.space_id) {
@@ -188,8 +207,13 @@ export default function TicketForm({
     }
   };
 
-  const loadSpaceLookup = async (siteId: string) => {
-    const response = await spacesApiService.getSpaceLookup(siteId);
+  const loadBuildingLookup = async (siteId: string) => {
+    const lookup = await buildingApiService.getBuildingLookup(siteId);
+    if (lookup.success) setBuildingList(lookup.data || []);
+  };
+
+  const loadSpaceLookup = async (siteId: string, buildingId?: string) => {
+    const response = await spacesApiService.getSpaceLookup(siteId, buildingId);
     if (response.success) {
       setSpaceList(response.data || []);
     }
@@ -234,6 +258,9 @@ export default function TicketForm({
     ticketFormData.append("priority", data.priority);
     ticketFormData.append("request_type", data.request_type);
     ticketFormData.append("site_id", data.site_id);
+    if (data.building_id && data.building_id !== "") {
+      ticketFormData.append("building_id", data.building_id);
+    }
     ticketFormData.append("space_id", data.space_id);
     if (data.tenant_id && data.tenant_id !== "none") {
       ticketFormData.append("tenant_id", data.tenant_id);
@@ -279,15 +306,23 @@ export default function TicketForm({
         )}
       </div>
 
-      {/* 2. Site, Space */}
-      <div className="grid grid-cols-2 gap-4">
+      {/* 2. Site, Building, Space */}
+      <div className="grid grid-cols-3 gap-4">
         <Controller
           name="site_id"
           control={control}
           render={({ field }) => (
             <div className="space-y-2">
               <Label htmlFor="site_id">Site *</Label>
-              <Select value={field.value || ""} onValueChange={field.onChange}>
+              <Select
+                value={field.value || ""}
+                onValueChange={(value) => {
+                  field.onChange(value);
+                  // Reset building and space when site changes
+                  setValue("building_id", "");
+                  setValue("space_id", "");
+                }}
+              >
                 <SelectTrigger
                   className={errors.site_id ? "border-red-500" : ""}
                 >
@@ -309,6 +344,40 @@ export default function TicketForm({
         />
 
         <Controller
+          name="building_id"
+          control={control}
+          render={({ field }) => (
+            <div className="space-y-2">
+              <Label htmlFor="building_id">Building</Label>
+              <Select
+                value={field.value || ""}
+                onValueChange={(value) => {
+                  field.onChange(value);
+                  // Reset space when building changes
+                  setValue("space_id", "");
+                }}
+                disabled={!selectedSiteId}
+              >
+                <SelectTrigger>
+                  <SelectValue
+                    placeholder={
+                      !selectedSiteId ? "Select site first" : "Select building"
+                    }
+                  />
+                </SelectTrigger>
+                <SelectContent>
+                  {buildingList.map((building: any) => (
+                    <SelectItem key={building.id} value={building.id}>
+                      {building.name}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+          )}
+        />
+
+        <Controller
           name="space_id"
           control={control}
           render={({ field }) => (
@@ -324,14 +393,14 @@ export default function TicketForm({
                 >
                   <SelectValue
                     placeholder={
-                      selectedSiteId ? "Select space" : "Select site first"
+                      !selectedSiteId ? "Select site first" : "Select space"
                     }
                   />
                 </SelectTrigger>
                 <SelectContent>
                   {spaceList.map((space: any) => (
                     <SelectItem key={space.id} value={space.id}>
-                      {space.name}
+                      {space.name || space.code}
                     </SelectItem>
                   ))}
                 </SelectContent>
@@ -346,8 +415,8 @@ export default function TicketForm({
         />
       </div>
 
-      {/* 3. Tenant, Category */}
-      <div className="grid grid-cols-2 gap-4">
+      {/* 3. Tenant, Category, Request Type */}
+      <div className="grid grid-cols-3 gap-4">
         <Controller
           name="tenant_id"
           control={control}
@@ -407,10 +476,7 @@ export default function TicketForm({
             </div>
           )}
         />
-      </div>
 
-      {/* 4. Request type, Priority */}
-      <div className="grid grid-cols-2 gap-4">
         <Controller
           name="request_type"
           control={control}
@@ -436,7 +502,10 @@ export default function TicketForm({
             </div>
           )}
         />
+      </div>
 
+      {/* 4. Priority, Preferred Date, Preferred Time */}
+      <div className="grid grid-cols-3 gap-4">
         <Controller
           name="priority"
           control={control}
@@ -456,10 +525,7 @@ export default function TicketForm({
             </div>
           )}
         />
-      </div>
 
-      {/* 5. Preferred date & time */}
-      <div className="grid grid-cols-2 gap-4">
         <div className="space-y-2">
           <Label htmlFor="preferred_date">Preferred Date *</Label>
           <Input
@@ -512,7 +578,7 @@ export default function TicketForm({
                   <SelectValue placeholder=" Select Staff " />
                 </SelectTrigger>
                 <SelectContent>
-                <SelectItem value="none">Select Staff</SelectItem>
+                  <SelectItem value="none">Select Staff</SelectItem>
                   {staffList.map((staff: any) => (
                     <SelectItem key={staff.id} value={String(staff.id)}>
                       {staff.name ||
@@ -538,7 +604,7 @@ export default function TicketForm({
                   <SelectValue placeholder="Select Vendor" />
                 </SelectTrigger>
                 <SelectContent>
-                <SelectItem value="none">Select Vendor</SelectItem>
+                  <SelectItem value="none">Select Vendor</SelectItem>
                   {vendorList.map((vendor: any) => (
                     <SelectItem key={vendor.id} value={vendor.id}>
                       {vendor.name}
