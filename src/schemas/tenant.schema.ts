@@ -92,8 +92,8 @@ export const tenantSchema = z
     vehicle_info: z
       .array(
         z.object({
-          type_of_vehicle: z.string().optional(),
-          vehicle_no: z.string().optional(),
+          type: z.string().optional(),
+          number: z.string().optional(),
         })
       )
       .optional(),

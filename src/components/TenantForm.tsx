@@ -61,7 +61,7 @@ const emptyFormData = {
   type: "",
   legal_name: "",
   family_info: [{ member: "", relation: "" }],
-  vehicle_info: [{ type_of_vehicle: "", vehicle_no: "" }],
+  vehicle_info: [{ type: "", number: "" }],
 };
 
 export function TenantForm({
@@ -154,7 +154,7 @@ export function TenantForm({
                 : (tenant as any).vehicle_info &&
                   typeof (tenant as any).vehicle_info === "object"
                 ? [(tenant as any).vehicle_info] // Convert old format to array
-                : [{ type_of_vehicle: "", vehicle_no: "" }], // Default one entry
+                : [{ type: "", number: "" }], // Default one entry
           }
         : emptyFormData
     );
@@ -288,7 +288,7 @@ export function TenantForm({
 
   const addVehicle = () => {
     const currentVehicleInfo = getValues("vehicle_info") || [];
-    const newVehicle = { type_of_vehicle: "", vehicle_no: "" };
+    const newVehicle = { type: "", number: "" };
     setValue("vehicle_info", [...currentVehicleInfo, newVehicle]);
   };
 
@@ -297,15 +297,13 @@ export function TenantForm({
     const remaining = currentVehicleInfo.filter((_, i) => i !== index);
     // Ensure at least one entry remains
     const ensured =
-      remaining.length === 0
-        ? [{ type_of_vehicle: "", vehicle_no: "" }]
-        : remaining;
+      remaining.length === 0 ? [{ type: "", number: "" }] : remaining;
     setValue("vehicle_info", ensured);
   };
 
   const updateVehicle = (
     index: number,
-    field: "type_of_vehicle" | "vehicle_no",
+    field: "type" | "number",
     value: string
   ) => {
     const currentVehicleInfo = getValues("vehicle_info") || [];
@@ -754,7 +752,8 @@ export function TenantForm({
                 )}
 
                 {/* Vehicle Information - Only for Individual tenants */}
-                {selectedTenantType === "individual" && (
+                {(selectedTenantType === "individual" ||
+                  selectedTenantType === "commercial") && (
                   <div className="space-y-2">
                     <div className="flex items-center justify-between">
                       <Label htmlFor="vehicle_info">Vehicle Information</Label>
@@ -785,21 +784,17 @@ export function TenantForm({
                           }`}
                         >
                           <Input
-                            value={vehicle.type_of_vehicle || ""}
+                            value={(vehicle as any).type || ""}
                             onChange={(e) =>
-                              updateVehicle(
-                                index,
-                                "type_of_vehicle",
-                                e.target.value
-                              )
+                              updateVehicle(index, "type", e.target.value)
                             }
                             placeholder="Enter vehicle type"
                             disabled={isReadOnly}
                           />
                           <Input
-                            value={vehicle.vehicle_no || ""}
+                            value={(vehicle as any).number || ""}
                             onChange={(e) =>
-                              updateVehicle(index, "vehicle_no", e.target.value)
+                              updateVehicle(index, "number", e.target.value)
                             }
                             placeholder="Enter vehicle number"
                             disabled={isReadOnly}
