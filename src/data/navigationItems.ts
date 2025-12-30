@@ -28,6 +28,7 @@ import {
   UserCog,
   ShieldCheck,
   FolderTree,
+  Ticket,
 } from "lucide-react";
 
 export const navigationItems = [
@@ -225,6 +226,12 @@ export const navigationItems = [
         url: "/parking-zones",
         icon: Car,
         resource: "parking_zones",
+      },
+      {
+        title: "Parking Passes",
+        url: "/parking-passes",
+        icon: Ticket,
+        resource: "parking_passes",
       },
       {
         title: "Access Logs",
