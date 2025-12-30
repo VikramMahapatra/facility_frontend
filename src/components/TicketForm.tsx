@@ -280,7 +280,7 @@ export default function TicketForm({
 
     if (uploadedImages.length > 0) {
       uploadedImages.forEach((file) => {
-        ticketFormData.append("file", file);
+        ticketFormData.append("files", file);
       });
     }
 
