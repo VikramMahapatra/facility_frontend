@@ -477,6 +477,7 @@ export default function ParkingPasses() {
                             <TableHead>Space</TableHead>
                             <TableHead>Zone</TableHead>
                             <TableHead>Tenant</TableHead>
+                            <TableHead>Pass Holder</TableHead>
                             <TableHead>Vehicle No.</TableHead>
                             <TableHead>Valid From and To</TableHead>
                             <TableHead>Status</TableHead>
@@ -489,7 +490,7 @@ export default function ParkingPasses() {
                           {passes.length === 0 ? (
                             <TableRow>
                               <TableCell
-                                colSpan={9}
+                                colSpan={10}
                                 className="text-center text-muted-foreground"
                               >
                                 No parking passes found
@@ -516,6 +517,11 @@ export default function ParkingPasses() {
                                   <div className="flex items-center gap-2">
                                     <User className="h-4 w-4 text-muted-foreground" />
                                     {pass.partner_name || "-"}
+                                  </div>
+                                </TableCell>
+                                <TableCell>
+                                  <div className="font-medium">
+                                    {pass.pass_holder_name || "-"}
                                   </div>
                                 </TableCell>
                                 <TableCell>

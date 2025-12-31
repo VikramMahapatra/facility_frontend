@@ -13,6 +13,13 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { PropertySidebar } from "@/components/PropertySidebar";
 import {
@@ -292,19 +299,23 @@ export default function Sites() {
                   onChange={(e) => setSearchTerm(e.target.value)}
                   className="max-w-sm"
                 />
-                <select
+                <Select
                   value={selectedKind}
-                  onChange={(e) => setSelectedKind(e.target.value)}
-                  className="rounded-md border border-input bg-background px-3 py-2 text-sm"
+                  onValueChange={setSelectedKind}
                 >
-                  <option value="all">All Types</option>
-                  <option value="residential">Residential</option>
-                  <option value="commercial">Commercial</option>
-                  <option value="hotel">Hotel</option>
-                  <option value="mall">Mall</option>
-                  <option value="mixed">Mixed</option>
-                  <option value="campus">Campus</option>
-                </select>
+                  <SelectTrigger className="w-[180px]">
+                    <SelectValue placeholder="All Types" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="all">All Types</SelectItem>
+                    <SelectItem value="residential">Residential</SelectItem>
+                    <SelectItem value="commercial">Commercial</SelectItem>
+                    <SelectItem value="hotel">Hotel</SelectItem>
+                    <SelectItem value="mall">Mall</SelectItem>
+                    <SelectItem value="mixed">Mixed</SelectItem>
+                    <SelectItem value="campus">Campus</SelectItem>
+                  </SelectContent>
+                </Select>
               </div>
 
               <ContentContainer>
