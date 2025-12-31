@@ -411,42 +411,57 @@ export default function Analytics() {
     loadSiteOptions();
   }, []);
 
-  const KPICard = ({ kpi }: { kpi: AdvanceAnalytics }) => (
-    <Card className="border-l-4 border-l-primary">
-      <CardHeader className="pb-2">
-        <div className="flex items-center justify-between">
-          <CardTitle className="text-sm font-medium text-muted-foreground">
-            {kpi.title}
-          </CardTitle>
-          {/*<div
-            className={`flex items-center space-x-1 ${
-              kpi.trend === "up"
-                ? "text-green-600"
-                : kpi.trend === "down"
-                ? "text-red-600"
-                : "text-gray-500"
-            }`}
-          >
-            {kpi.trend === "up" ? (
-              <ArrowUpRight className="h-3 w-3" />
-            ) : kpi.trend === "down" ? (
-              <ArrowDownRight className="h-3 w-3" />
-            ) : null}
-            <span className="text-xs font-medium">
-              {kpi.change > 0 ? "+" : ""}
-              {kpi.change}%
-            </span>
-          </div>*/}
-        </div>
-      </CardHeader>
-      <CardContent>
-        <div className="space-y-1">
-          <p className="text-2xl font-bold">{kpi.value}</p>
-          <p className="text-xs text-muted-foreground">{kpi.subtitle}</p>
-        </div>
-      </CardContent>
-    </Card>
-  );
+  const KPICard = ({ kpi }: { kpi: AdvanceAnalytics }) => {
+    const titleLower = kpi.title?.toLowerCase() || "";
+    const isTenantSatisfaction = titleLower.includes("tenant satisfaction");
+    const isComingSoonCard = isTenantSatisfaction;
+
+    return (
+      <Card
+        className={`border-l-4 border-l-primary relative ${
+          isComingSoonCard ? "overflow-hidden" : ""
+        }`}
+      >
+        <CardHeader className="pb-2">
+          <div className="flex items-center justify-between">
+            <CardTitle className="text-sm font-medium text-muted-foreground">
+              {kpi.title}
+            </CardTitle>
+            {/*<div
+              className={`flex items-center space-x-1 ${
+                kpi.trend === "up"
+                  ? "text-green-600"
+                  : kpi.trend === "down"
+                  ? "text-red-600"
+                  : "text-gray-500"
+              }`}
+            >
+              {kpi.trend === "up" ? (
+                <ArrowUpRight className="h-3 w-3" />
+              ) : kpi.trend === "down" ? (
+                <ArrowDownRight className="h-3 w-3" />
+              ) : null}
+              <span className="text-xs font-medium">
+                {kpi.change > 0 ? "+" : ""}
+                {kpi.change}%
+              </span>
+            </div>*/}
+          </div>
+        </CardHeader>
+        <CardContent>
+          <div className="space-y-1">
+            <p className="text-2xl font-bold">{kpi.value}</p>
+            <p className="text-xs text-muted-foreground">{kpi.subtitle}</p>
+          </div>
+        </CardContent>
+        {isComingSoonCard && (
+          <div className="absolute inset-0 bg-background/70 backdrop-blur-sm flex items-center justify-center text-muted-foreground font-semibold pointer-events-none">
+            Not Available
+          </div>
+        )}
+      </Card>
+    );
+  };
 
   const CustomTooltip = ({ active, payload, label }: any) => {
     if (active && payload && payload.length) {
@@ -810,7 +825,7 @@ export default function Analytics() {
 
               <TabsContent value="financial" className="space-y-4">
                 <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
-                  <Card className="col-span-2">
+                  <Card className="col-span-2 relative overflow-hidden">
                     <CardHeader>
                       <CardTitle>Year-over-Year Performance</CardTitle>
                       <CardDescription>
@@ -867,6 +882,9 @@ export default function Analytics() {
                           ))}
                       </div>
                     </CardContent>
+                    <div className="absolute inset-0 bg-background/70 backdrop-blur-sm flex items-center justify-center text-muted-foreground font-semibold pointer-events-none">
+                      Not Available
+                    </div>
                   </Card>
 
                   <Card>
@@ -1029,7 +1047,7 @@ export default function Analytics() {
 
               <TabsContent value="access" className="space-y-4">
                 <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
-                  <Card>
+                  <Card className="relative overflow-hidden">
                     <CardHeader>
                       <CardTitle>Daily Visitor Trends</CardTitle>
                       <CardDescription>
@@ -1068,9 +1086,12 @@ export default function Analytics() {
                         </LineChart>
                       </ResponsiveContainer>
                     </CardContent>
+                    <div className="absolute inset-0 bg-background/70 backdrop-blur-sm flex items-center justify-center text-muted-foreground font-semibold pointer-events-none">
+                      Not Available
+                    </div>
                   </Card>
 
-                  <Card>
+                  <Card className="relative overflow-hidden">
                     <CardHeader>
                       <CardTitle>Hourly Access Patterns</CardTitle>
                       <CardDescription>
@@ -1105,13 +1126,16 @@ export default function Analytics() {
                         </AreaChart>
                       </ResponsiveContainer>
                     </CardContent>
+                    <div className="absolute inset-0 bg-background/70 backdrop-blur-sm flex items-center justify-center text-muted-foreground font-semibold pointer-events-none">
+                      Not Available
+                    </div>
                   </Card>
                 </div>
               </TabsContent>
 
               <TabsContent value="tenant" className="space-y-4">
                 <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
-                  <Card>
+                  <Card className="relative">
                     <CardHeader>
                       <CardTitle>Tenant Satisfaction</CardTitle>
                       <CardDescription>
@@ -1136,6 +1160,12 @@ export default function Analytics() {
                         </RadialBarChart>
                       </ResponsiveContainer>
                     </CardContent>
+                    {(!tenantSatisfaction ||
+                      tenantSatisfaction.length === 0) && (
+                      <div className="absolute inset-0 bg-background/70 backdrop-blur-sm flex items-center justify-center text-muted-foreground font-semibold pointer-events-none">
+                        Not Available
+                      </div>
+                    )}
                   </Card>
 
                   <Card>
@@ -1201,7 +1231,7 @@ export default function Analytics() {
                     </CardContent>
                   </Card>
 
-                  <Card>
+                  <Card className="relative overflow-hidden">
                     <CardHeader>
                       <CardTitle>Performance Summary</CardTitle>
                       <CardDescription>Key metrics overview</CardDescription>
@@ -1251,6 +1281,9 @@ export default function Analytics() {
                         </div>
                       </div>
                     </CardContent>
+                    <div className="absolute inset-0 bg-background/70 backdrop-blur-sm flex items-center justify-center text-muted-foreground font-semibold pointer-events-none">
+                      Not Available
+                    </div>
                   </Card>
                 </div>
               </TabsContent>
