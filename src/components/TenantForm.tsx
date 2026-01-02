@@ -710,40 +710,40 @@ export function TenantForm({
                             index !== familyInfo.length - 1 ? "border-b" : ""
                           }`}
                         >
-                          <Input
-                            value={member.member || ""}
-                            onChange={(e) =>
-                              updateFamilyMember(
-                                index,
-                                "member",
-                                e.target.value
-                              )
-                            }
-                            placeholder="Enter family member name"
-                            disabled={isReadOnly}
-                          />
-                          <Input
-                            value={member.relation || ""}
-                            onChange={(e) =>
-                              updateFamilyMember(
-                                index,
-                                "relation",
-                                e.target.value
-                              )
-                            }
-                            placeholder="Enter relation"
-                            disabled={isReadOnly}
-                          />
+                            <Input
+                              value={member.member || ""}
+                              onChange={(e) =>
+                                updateFamilyMember(
+                                  index,
+                                  "member",
+                                  e.target.value
+                                )
+                              }
+                              placeholder="Enter family member name"
+                              disabled={isReadOnly}
+                            />
+                            <Input
+                              value={member.relation || ""}
+                              onChange={(e) =>
+                                updateFamilyMember(
+                                  index,
+                                  "relation",
+                                  e.target.value
+                                )
+                              }
+                              placeholder="Enter relation"
+                              disabled={isReadOnly}
+                            />
                           {!isReadOnly && (
-                            <Button
-                              type="button"
+                              <Button
+                                type="button"
                               variant="ghost"
                               size="icon"
                               className="text-destructive hover:text-destructive"
-                              onClick={() => removeFamilyMember(index)}
-                            >
+                                onClick={() => removeFamilyMember(index)}
+                              >
                               <Trash2 className="h-4 w-4" />
-                            </Button>
+                              </Button>
                           )}
                         </div>
                       ))}
@@ -783,32 +783,32 @@ export function TenantForm({
                             index !== vehicleInfo.length - 1 ? "border-b" : ""
                           }`}
                         >
-                          <Input
+                            <Input
                             value={(vehicle as any).type || ""}
-                            onChange={(e) =>
+                              onChange={(e) =>
                               updateVehicle(index, "type", e.target.value)
-                            }
-                            placeholder="Enter vehicle type"
-                            disabled={isReadOnly}
-                          />
-                          <Input
+                              }
+                              placeholder="Enter vehicle type"
+                              disabled={isReadOnly}
+                            />
+                            <Input
                             value={(vehicle as any).number || ""}
-                            onChange={(e) =>
+                              onChange={(e) =>
                               updateVehicle(index, "number", e.target.value)
-                            }
-                            placeholder="Enter vehicle number"
-                            disabled={isReadOnly}
-                          />
+                              }
+                              placeholder="Enter vehicle number"
+                              disabled={isReadOnly}
+                            />
                           {!isReadOnly && (
-                            <Button
-                              type="button"
+                              <Button
+                                type="button"
                               variant="ghost"
                               size="icon"
                               className="text-destructive hover:text-destructive"
-                              onClick={() => removeVehicle(index)}
-                            >
+                                onClick={() => removeVehicle(index)}
+                              >
                               <Trash2 className="h-4 w-4" />
-                            </Button>
+                              </Button>
                           )}
                         </div>
                       ))}

@@ -298,7 +298,7 @@ export default function RevenueReports() {
                     </CardHeader>
                     <CardContent>
                       <div className="text-2xl font-bold">
-                        ₹{revenueReportsOverview.TotalRevenue}L
+                        ₹{revenueReportsOverview.TotalRevenue}
                       </div>
                       {/* <p className="text-xs text-muted-foreground flex items-center">
                         <TrendingUp className="w-3 h-3 mr-1 text-green-500" />
@@ -315,7 +315,7 @@ export default function RevenueReports() {
                     </CardHeader>
                     <CardContent>
                       <div className="text-2xl font-bold">
-                        ₹{revenueReportsOverview.RENTRevenue}L
+                        ₹{revenueReportsOverview.RENTRevenue}
                       </div>
                       {/* <p className="text-xs text-muted-foreground flex items-center">
                         <TrendingUp className="w-3 h-3 mr-1 text-green-500" />
@@ -332,7 +332,7 @@ export default function RevenueReports() {
                     </CardHeader>
                     <CardContent>
                       <div className="text-2xl font-bold">
-                        ₹{revenueReportsOverview.CAMRevenue}L
+                        ₹{revenueReportsOverview.CAMRevenue}
                       </div>
                       {/* <p className="text-xs text-muted-foreground flex items-center">
                         <TrendingDown className="w-3 h-3 mr-1 text-red-500" />

@@ -375,7 +375,7 @@ export function InvoiceForm({
                   <Label htmlFor="billable_item_id">
                     {watchedBillableType === "work_order"
                       ? "Work Order *"
-                      : "Lease Charge Code *"}
+                      : "Lease Charge *"}
                   </Label>
                   <Controller
                     name="billable_item_id"

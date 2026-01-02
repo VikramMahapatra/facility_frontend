@@ -561,16 +561,27 @@ export default function Invoices() {
                                     >
                                       <Eye className="h-4 w-4" />
                                     </Button>
-                                    {canWrite(resource) && (
+                                    {canWrite(resource) &&
+                                      invoice.status !== "paid" && (
+                                        <Button
+                                          variant="ghost"
+                                          size="sm"
+                                          onClick={() => handleEdit(invoice)}
+                                        >
+                                          <Edit className="h-4 w-4" />
+                                        </Button>
+                                      )}
+                                    {canDelete(resource) && (
                                       <Button
                                         variant="ghost"
                                         size="sm"
-                                        onClick={() => handleEdit(invoice)}
+                                        className="text-destructive hover:text-destructive"
+                                        onClick={() => handleDelete(invoice.id)}
                                       >
-                                        <Edit className="h-4 w-4" />
+                                        <Trash2 className="h-4 w-4" />
                                       </Button>
                                     )}
-                                    {invoice.status !== "paid" &&
+                                    {invoice.status === "issued" &&
                                       canWrite(resource) && (
                                         <Button
                                           size="sm"
@@ -585,25 +596,6 @@ export default function Invoices() {
                                           Mark as Paid
                                         </Button>
                                       )}
-                                    {/* {invoice.status === 'draft' && (
-                                <Button variant="ghost" size="sm">
-                                  <Send className="h-4 w-4" />
-                                </Button>
-                              )} */}
-                                    {/* <Button variant="ghost" size="sm">
-                                <Download className="h-4 w-4" />
-                              </Button> */}
-
-                                    {canDelete(resource) && (
-                                      <Button
-                                        variant="ghost"
-                                        size="sm"
-                                        className="text-destructive hover:text-destructive"
-                                        onClick={() => handleDelete(invoice.id)}
-                                      >
-                                        <Trash2 className="h-4 w-4" />
-                                      </Button>
-                                    )}
                                   </div>
                                 </TableCell>
                               </TableRow>
@@ -684,16 +676,27 @@ export default function Invoices() {
                                     >
                                       <Eye className="h-4 w-4" />
                                     </Button>
-                                    {canWrite(resource) && (
+                                    {canWrite(resource) &&
+                                      invoice.status !== "paid" && (
+                                        <Button
+                                          variant="ghost"
+                                          size="sm"
+                                          onClick={() => handleEdit(invoice)}
+                                        >
+                                          <Edit className="h-4 w-4" />
+                                        </Button>
+                                      )}
+                                    {canDelete(resource) && (
                                       <Button
                                         variant="ghost"
                                         size="sm"
-                                        onClick={() => handleEdit(invoice)}
+                                        className="text-destructive hover:text-destructive"
+                                        onClick={() => handleDelete(invoice.id)}
                                       >
-                                        <Edit className="h-4 w-4" />
+                                        <Trash2 className="h-4 w-4" />
                                       </Button>
                                     )}
-                                    {invoice.status !== "paid" &&
+                                    {invoice.status === "issued" &&
                                       canWrite(resource) && (
                                         <Button
                                           size="sm"
@@ -708,16 +711,6 @@ export default function Invoices() {
                                           Mark as Paid
                                         </Button>
                                       )}
-                                    {canDelete(resource) && (
-                                      <Button
-                                        variant="ghost"
-                                        size="sm"
-                                        className="text-destructive hover:text-destructive"
-                                        onClick={() => handleDelete(invoice.id)}
-                                      >
-                                        <Trash2 className="h-4 w-4" />
-                                      </Button>
-                                    )}
                                   </div>
                                 </TableCell>
                               </TableRow>

@@ -367,42 +367,54 @@ export default function PreventiveMaintenance() {
                     className="pl-10"
                   />
                 </div>
-                <select
+                <Select
                   value={selectedStatus}
-                  onChange={(e) => setSelectedStatus(e.target.value)}
-                  className="rounded-md border border-input bg-background px-3 py-2 text-sm w-[160px]"
+                  onValueChange={setSelectedStatus}
                 >
-                  <option value="all">All Status</option>
-                  {statusList.map((status) => (
-                    <option key={status.id} value={status.id}>
-                      {status.name}
-                    </option>
-                  ))}
-                </select>
-                <select
+                  <SelectTrigger className="w-[180px]">
+                    <SelectValue placeholder="All Status" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="all">All Status</SelectItem>
+                    {statusList.map((status) => (
+                      <SelectItem key={status.id} value={status.id}>
+                        {status.name}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+                <Select
                   value={selectedFrequency}
-                  onChange={(e) => setSelectedFrequency(e.target.value)}
-                  className="rounded-md border border-input bg-background px-3 py-2 text-sm w-[160px]"
+                  onValueChange={setSelectedFrequency}
                 >
-                  <option value="all">All Frequency</option>
-                  {frequencyList.map((frequency) => (
-                    <option key={frequency.id} value={frequency.id}>
-                      {frequency.name}
-                    </option>
-                  ))}
-                </select>
-                <select
+                  <SelectTrigger className="w-[180px]">
+                    <SelectValue placeholder="All Frequency" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="all">All Frequency</SelectItem>
+                    {frequencyList.map((frequency) => (
+                      <SelectItem key={frequency.id} value={frequency.id}>
+                        {frequency.name}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+                <Select
                   value={selectedCategory}
-                  onChange={(e) => setSelectedCategory(e.target.value)}
-                  className="rounded-md border border-input bg-background px-3 py-2 text-sm w-[160px]"
+                  onValueChange={setSelectedCategory}
                 >
-                  <option value="all">All Categories</option>
-                  {categoryList.map((category) => (
-                    <option key={category.id} value={category.id}>
-                      {category.name}
-                    </option>
-                  ))}
-                </select>
+                  <SelectTrigger className="w-[180px]">
+                    <SelectValue placeholder="All Categories" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="all">All Categories</SelectItem>
+                    {categoryList.map((category) => (
+                      <SelectItem key={category.id} value={category.id}>
+                        {category.name}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
               </div>
 
               {/* Content with Loader - Stats Cards and Table */}
