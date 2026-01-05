@@ -28,6 +28,7 @@ import {
   UserCog,
   ShieldCheck,
   FolderTree,
+  Ticket,
 } from "lucide-react";
 
 export const navigationItems = [
@@ -105,55 +106,7 @@ export const navigationItems = [
         title: "Lease Charge Codes",
         url: "/lease-charge-codes",
         icon: Key,
-        resource: "leases",
-      },
-    ],
-  },
-  {
-    title: "Financials",
-    items: [
-      {
-        title: "Invoices & Payments",
-        url: "/invoices",
-        icon: BarChart3,
-        resource: "invoices",
-      },
-      {
-        title: "Revenue Reports",
-        url: "/revenue-reports",
-        icon: TrendingUp,
-        resource: "revenue_reports",
-      },
-      {
-        title: "Tax Management",
-        url: "/tax-management",
-        icon: Briefcase,
-        resource: "tax_management",
-      },
-    ],
-  },
-  {
-    title: "Maintenance & Assets",
-    items: [
-      { title: "Assets", url: "/assets", icon: Package, resource: "assets" },
-      { title: "Asset Categories", url: "/asset-categories", icon: FolderTree, resource: "assets" },
-      {
-        title: "Work Orders",
-        url: "/work-orders",
-        icon: Wrench,
-        resource: "work_orders",
-      },
-      {
-        title: "Service Requests",
-        url: "/service-requests",
-        icon: AlertTriangle,
-        resource: "service_requests",
-      },
-      {
-        title: "Preventive Maintenance",
-        url: "/preventive-maintenance",
-        icon: Calendar,
-        resource: "preventive_maintenance",
+        resource: "leases_charge_codes",
       },
     ],
   },
@@ -188,13 +141,55 @@ export const navigationItems = [
         title: "Ticket Work Orders",
         url: "/ticket-work-orders",
         icon: Wrench,
-        resource: "tickets",
+        resource: "tickets_work_order",
       },
       {
         title: "Workload Management",
         url: "/ticket-workload",
         icon: Users,
         resource: "workload_management",
+      },
+    ],
+  },
+  {
+    title: "Procurement",
+    items: [
+      {
+        title: "Vendors",
+        url: "/vendors",
+        icon: Building2,
+        resource: "vendors",
+      },
+      {
+        title: "Contracts",
+        url: "/contracts",
+        icon: FileText,
+        resource: "contracts",
+      },
+    ],
+  },
+  {
+    title: "Maintenance & Assets",
+    items: [
+      { title: "Assets", url: "/assets", icon: Package, resource: "assets" },
+      { title: "Asset Categories", url: "/asset-categories", icon: FolderTree, resource: "asset_categories" },
+      {
+        title: "Work Orders",
+        url: "/work-orders",
+        icon: Wrench,
+        resource: "work_orders",
+      },
+      {
+        title: "Service Requests",
+        url: "/service-requests",
+        icon: AlertTriangle,
+        resource: "service_requests",
+      },
+      {
+        title: "Preventive Maintenance",
+        url: "/preventive-maintenance",
+        icon: Calendar,
+        resource: "preventive_maintenance",
       },
     ],
   },
@@ -224,23 +219,6 @@ export const navigationItems = [
     ],
   },
   {
-    title: "Procurement",
-    items: [
-      {
-        title: "Vendors",
-        url: "/vendors",
-        icon: Building2,
-        resource: "vendors",
-      },
-      {
-        title: "Contracts",
-        url: "/contracts",
-        icon: FileText,
-        resource: "contracts",
-      },
-    ],
-  },
-  {
     title: "Parking & Access",
     items: [
       {
@@ -248,6 +226,12 @@ export const navigationItems = [
         url: "/parking-zones",
         icon: Car,
         resource: "parking_zones",
+      },
+      {
+        title: "Parking Passes",
+        url: "/parking-passes",
+        icon: Ticket,
+        resource: "parking_passes",
       },
       {
         title: "Access Logs",
@@ -264,7 +248,7 @@ export const navigationItems = [
     ],
   },
   {
-    title: "Energy & IoT",
+    title: "Energy consumption",
     items: [
       {
         title: "Meters & Readings",
@@ -281,6 +265,29 @@ export const navigationItems = [
     ],
   },
   {
+    title: "Financials",
+    items: [
+      {
+        title: "Invoices & Payments",
+        url: "/invoices",
+        icon: BarChart3,
+        resource: "invoices",
+      },
+      {
+        title: "Revenue Reports",
+        url: "/revenue-reports",
+        icon: TrendingUp,
+        resource: "revenue_reports",
+      },
+      {
+        title: "Tax Management",
+        url: "/tax-management",
+        icon: Briefcase,
+        resource: "tax_management",
+      },
+    ],
+  },
+  {
     title: "AI & Automation",
     items: [
       {
@@ -292,7 +299,7 @@ export const navigationItems = [
     ],
   },
   {
-    title: "Access Control",
+    title: "Access & Control",
     items: [
       {
         title: "Roles Management",
@@ -333,7 +340,7 @@ export const navigationItems = [
         title: "Notifications",
         url: "/notifications",
         icon: Bell,
-        resource: "settings",
+        resource: "notifications",
       },
       {
         title: "Settings",

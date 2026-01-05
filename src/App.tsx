@@ -43,6 +43,7 @@ import Folios from "./pages/Folios";
 import Housekeeping from "./pages/Housekeeping";
 import ChatBot from "./pages/ChatBot";
 import ParkingZones from "./pages/ParkingZones";
+import ParkingPasses from "./pages/ParkingPasses";
 import AccessLogs from "./pages/AccessLogs";
 import Visitors from "./pages/Visitors";
 import AiPredictions from "./pages/AiPredictions";
@@ -71,12 +72,13 @@ const queryClient = new QueryClient();
 const App = () => {
   return (
     <GoogleOAuthProvider clientId={import.meta.env.VITE_GOOGLE_CLIENT_ID}>
+      <BrowserRouter>
       <AuthProvider>
         <QueryClientProvider client={queryClient}>
           <TooltipProvider>
             <Toaster />
             <Sonner />
-            <BrowserRouter>
+            
               <Routes>
                 <Route path="/" element={<Home />} />
                 <Route path="/features" element={<Features />} />
@@ -139,6 +141,7 @@ const App = () => {
                   <Route path="/housekeeping" element={<Housekeeping />} />
                   <Route path="/chatbot" element={<ChatBot />} />
                   <Route path="/parking-zones" element={<ParkingZones />} />
+                  <Route path="/parking-passes" element={<ParkingPasses />} />
                   <Route path="/access-logs" element={<AccessLogs />} />
                   <Route path="/visitors" element={<Visitors />} />
                   <Route path="/notifications" element={<Notifications />} />
@@ -175,10 +178,11 @@ const App = () => {
                 {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
                 <Route path="*" element={<NotFound />} />
               </Routes>
-            </BrowserRouter>
+           
           </TooltipProvider>
         </QueryClientProvider>
       </AuthProvider>
+      </BrowserRouter>
     </GoogleOAuthProvider>
   );
 };

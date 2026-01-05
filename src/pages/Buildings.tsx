@@ -4,18 +4,27 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 import { PropertySidebar } from "@/components/PropertySidebar";
 import {
   SidebarProvider,
   SidebarInset,
   SidebarTrigger,
 } from "@/components/ui/sidebar";
+import { LogOut, } from "lucide-react";
 //import { mockSites, getBuildingBlocks, getSpacesBySite } from "@/data/mockSpacesData";
 import { BuildingForm } from "@/components/BuildingForm";
 import { buildingApiService } from "@/services/spaces_sites/buildingsapi";
 import { Pagination } from "@/components/Pagination";
 import { siteApiService } from "@/services/spaces_sites/sitesapi";
 import { toast } from "sonner";
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -62,6 +71,7 @@ export default function Buildings() {
   const { canRead, canWrite, canDelete } = useAuth();
   const resource = "buildings";
   const { withLoader } = useLoader();
+  const { user, handleLogout } = useAuth();
 
   useSkipFirstEffect(() => {
     loadBuildings();
@@ -216,13 +226,40 @@ export default function Buildings() {
       <div className="flex min-h-screen w-full">
         <PropertySidebar />
         <SidebarInset className="flex-1">
-          <header className="flex h-16 shrink-0 items-center gap-2 border-b border-sidebar-border px-4">
-            <SidebarTrigger className="-ml-1" />
+          <header className="flex h-16 shrink-0 items-center justify-between border-b border-sidebar-border px-4">
             <div className="flex items-center gap-2">
+            <SidebarTrigger className="-ml-1" />
+            
               <Building className="h-5 w-5 text-sidebar-primary" />
               <h1 className="text-lg font-semibold text-sidebar-primary">
                 Buildings & Blocks
               </h1>
+            </div>
+             <div className="flex items-center gap-4">
+              <div className="flex items-center gap-3">
+                <Avatar>
+                  <AvatarFallback className="bg-gradient-primary text-white">
+                    {user.name.charAt(0)}
+                  </AvatarFallback>
+                </Avatar>
+
+                <div className="text-right">
+                  <p className="text-sm font-medium">{user.name}</p>
+                  <p className="text-xs text-muted-foreground">
+                    {user.account_type}
+                  </p>
+                </div>
+              </div>
+
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={handleLogout}
+                className="text-muted-foreground hover:text-destructive"
+              >
+                <LogOut className="w-4 h-4 mr-2" />
+                Logout
+              </Button>
             </div>
           </header>
 
@@ -255,18 +292,22 @@ export default function Buildings() {
                   className="max-w-sm"
                 />
 
-                <select
+                <Select
                   value={selectedSite}
-                  onChange={(e) => setSelectedSite(e.target.value)}
-                  className="rounded-md border border-input bg-background px-3 py-2 text-sm"
+                  onValueChange={setSelectedSite}
                 >
-                  <option value="all">All Sites</option>
-                  {siteList.map((site) => (
-                    <option key={site.id} value={site.id}>
-                      {site.name}
-                    </option>
-                  ))}
-                </select>
+                  <SelectTrigger className="w-[180px]">
+                    <SelectValue placeholder="All Sites" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="all">All Sites</SelectItem>
+                    {siteList.map((site) => (
+                      <SelectItem key={site.id} value={site.id}>
+                        {site.name}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
               </div>
 
               <ContentContainer>

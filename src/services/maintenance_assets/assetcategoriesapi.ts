@@ -1,10 +1,10 @@
 import { apiService } from "../api";
 
 class AssetCategoriesApiService {
-  async getAssetCategories(params?: URLSearchParams) {
-    const qs = params?.toString() ? `?${params.toString()}` : "";
-    return await apiService.request(`/asset-categories/all/${qs}`);
+  async getAssetCategories(params: URLSearchParams) {
+    return await apiService.request(`/asset-categories/all?${params.toString()}`);
   }
+
 
   async getAssetCategoryById(categoryId: string | number) {
     return await apiService.request(`/asset-categories/${categoryId}`);

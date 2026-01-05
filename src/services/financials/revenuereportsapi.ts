@@ -2,21 +2,25 @@ import { apiService } from '../api';
 
 class RevenueReportsApiService {
     
-    async getRevenueReportsOverview() {
-        return await apiService.request(`/revenue-reports/overview`);
+    async getRevenueReportsOverview(params?: URLSearchParams) {
+        const queryString = params ? `?${params.toString()}` : '';
+        return await apiService.request(`/revenue-reports/overview${queryString}`);
     }
 
     
-    async getRevenueReportsBySource() {
-    return await apiService.request('/revenue-reports/revenue-by-source');
+    async getRevenueReportsBySource(params?: URLSearchParams) {
+        const queryString = params ? `?${params.toString()}` : '';
+        return await apiService.request(`/revenue-reports/revenue-by-source${queryString}`);
    }
 
-   async getRevenueReportsByOutstandingReceivables() {
-    return await apiService.request('/revenue-reports/outstanding-receivables');
+   async getRevenueReportsByOutstandingReceivables(params?: URLSearchParams) {
+        const queryString = params ? `?${params.toString()}` : '';
+        return await apiService.request(`/revenue-reports/revenue-outstanding${queryString}`);
    }
 
-     async getRevenueReportsByTrend() {
-        return await apiService.request('/revenue-reports/revenue-by-trend');
+     async getRevenueReportsByTrend(params?: URLSearchParams) {
+        const queryString = params ? `?${params.toString()}` : '';
+        return await apiService.request(`/revenue-reports/revenue-trend${queryString}`);
     }
 
     async getRevenueReportsMonthLookup() {

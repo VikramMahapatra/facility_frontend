@@ -1,8 +1,9 @@
-
 export interface Lease {
     id: string;
     org_id: string;
     site_id?: string;
+    building_id?: string;
+    building_block_id?: string;
     space_id?: string;
     space_name?: string;
     kind?: LeaseKind
@@ -24,52 +25,52 @@ export interface Lease {
 }
 
 export interface LeaseOverview {
-    activeLeases: number;
-    monthlyRentValue: number;
-    expiringSoon: number;
-    avgLeaseTermMonths: number;
+  activeLeases: number;
+  monthlyRentValue: number;
+  expiringSoon: number;
+  avgLeaseTermMonths: number;
 }
 
 export type LeaseKind = "commercial" | "residential" | undefined;
 
 export interface Tenant {
-    id?: string;
-    org_id?: string;
-    site_id?: string;
-    building_id?: string; 
-    building_block_id?: string; 
-    space_id?: string;
-    space_name?: string;
-    building_name?: string;
-    building_block_name?: string; 
-    site_name?: string; 
+  id?: string;
+  org_id?: string;
+  site_id?: string;
+  building_id?: string;
+  building_block_id?: string;
+  space_id?: string;
+  space_name?: string;
+  building_name?: string;
+  building_block_name?: string;
+  site_name?: string;
+  name: string;
+  email: string;
+  phone: string;
+  tenant_type: "individual" | "commercial";
+  status: "active" | "inactive" | "suspended";
+  contact_info?: {
     name: string;
     email: string;
     phone: string;
-    tenant_type: "individual" | "commercial";
-    status: "active" | "inactive" | "suspended";
-    contact_info?: {
-        name: string;
-        email: string;
-        phone: string;
-        address?: {
-            line1: string;
-            line2?: string;
-            city: string;
-            state: string;
-            pincode: string;
-        };
+    address?: {
+      line1: string;
+      line2?: string;
+      city: string;
+      state: string;
+      pincode: string;
     };
-    legal_name?: string;
-    type?: string;
-    created_at?: string;
-    updated_at?: string;
-    tenant_leases?: Lease[];
+  };
+  legal_name?: string;
+  type?: string;
+  created_at?: string;
+  updated_at?: string;
+  tenant_leases?: Lease[];
 }
 
 export interface TenantOverview {
-    totalTenants: number;
-    activeTenants: number;
-    commercialTenants: number;
-    individualTenants: number;
+  totalTenants: number;
+  activeTenants: number;
+  commercialTenants: number;
+  individualTenants: number;
 }

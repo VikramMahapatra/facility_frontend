@@ -1,15 +1,26 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import {
-  Building2, Users, BarChart3, Wrench, CreditCard, Zap,
-  TrendingUp, TrendingDown, AlertTriangle, Clock, DollarSign,
-  Car, UserCheck, Calendar
+  Building2,
+  Users,
+  BarChart3,
+  Wrench,
+  CreditCard,
+  Zap,
+  TrendingUp,
+  TrendingDown,
+  AlertTriangle,
+  Clock,
+  DollarSign,
+  Car,
+  UserCheck,
+  Calendar,
 } from "lucide-react";
-import { dashboardApiService } from '@/services/dashboardapi';
-import { useLoader } from '@/context/LoaderContext';
-import ContentContainer from '@/components/ContentContainer';
-import LoaderOverlay from '@/components/LoaderOverlay';
+import { dashboardApiService } from "@/services/dashboardapi";
+import { useLoader } from "@/context/LoaderContext";
+import ContentContainer from "@/components/ContentContainer";
+import LoaderOverlay from "@/components/LoaderOverlay";
 
 const iconMap = {
   Building2,
@@ -17,10 +28,8 @@ const iconMap = {
   BarChart3,
   Wrench,
   CreditCard,
-  Zap
+  Zap,
 };
-
-
 
 /*interface LeasingOverview {
   activeLeases: number;
@@ -45,23 +54,68 @@ export function StatsGrid() {
     if (overview?.success) setOverviewData(overview.data);
   };
 
+  const sortedStats = overviewData?.stats
+    ? [...overviewData.stats].sort((a: any, b: any) => {
+        const aTitleLower = a.title?.toLowerCase() || "";
+        const bTitleLower = b.title?.toLowerCase() || "";
+        const aIsComingSoon = aTitleLower.includes("monthly revenue");
+        const bIsComingSoon = bTitleLower.includes("monthly revenue");
+        const aIsRentCollection = aTitleLower.includes("rent collection");
+        const bIsRentCollection = bTitleLower.includes("rent collection");
+
+        if (
+          aIsComingSoon &&
+          !bIsComingSoon &&
+          !aIsRentCollection &&
+          !bIsRentCollection
+        )
+          return 1;
+        if (
+          !aIsComingSoon &&
+          bIsComingSoon &&
+          !aIsRentCollection &&
+          !bIsRentCollection
+        )
+          return -1;
+        if (
+          aIsRentCollection &&
+          !bIsRentCollection &&
+          !aIsComingSoon &&
+          !bIsComingSoon
+        )
+          return 1;
+        if (
+          !aIsRentCollection &&
+          bIsRentCollection &&
+          !aIsComingSoon &&
+          !bIsComingSoon
+        )
+          return -1;
+
+        return 0;
+      })
+    : [];
 
   return (
     <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-6 gap-6 mb-8">
-      {overviewData?.stats?.map((stat: any, index: number) => {
-        const IconComponent = iconMap[stat.icon as keyof typeof iconMap] || Building2;
-        const isPositive = stat.trend === 'up';
+      {sortedStats.map((stat: any, index: number) => {
+        const IconComponent =
+          iconMap[stat.icon as keyof typeof iconMap] || Building2;
+        const isPositive = stat.trend === "up";
 
-        const titleLower = stat.title?.toLowerCase() || '';
-        const isMonthlyRevenue = titleLower.includes('monthly revenue');
-        const isRentCollection = titleLower.includes('rent collection');
-        const isEnergyUsage = titleLower.includes('energy usage') || titleLower.includes('energy');
-        const isComingSoonCard = isMonthlyRevenue || isRentCollection || isEnergyUsage;
+        const titleLower = stat.title?.toLowerCase() || "";
+        const isMonthlyRevenue = titleLower.includes("monthly revenue");
+        const isRentCollection = titleLower.includes("rent collection");
+        // const isEnergyUsage = titleLower.includes('energy usage') || titleLower.includes('energy');
+        const isComingSoonCard = isMonthlyRevenue || isRentCollection;
+        //|| isEnergyUsage;|| isRentCollection;
 
         return (
           <Card
             key={index}
-            className={`border-l-4 border-l-primary relative ${isComingSoonCard ? 'overflow-hidden' : ''}`}
+            className={`border-l-4 border-l-primary relative ${
+              isComingSoonCard ? "overflow-hidden" : ""
+            }`}
           >
             <ContentContainer>
               <LoaderOverlay />
@@ -72,9 +126,15 @@ export function StatsGrid() {
                   </div>
                 </div>
                 <div className="space-y-1">
-                  <div className="text-2xl font-bold text-foreground">{stat.value}</div>
-                  <div className="text-sm font-medium text-foreground">{stat.title}</div>
-                  <div className="text-xs text-muted-foreground">{stat.description}</div>
+                  <div className="text-2xl font-bold text-foreground">
+                    {stat.value}
+                  </div>
+                  <div className="text-sm font-medium text-foreground">
+                    {stat.title}
+                  </div>
+                  <div className="text-xs text-muted-foreground">
+                    {stat.description}
+                  </div>
                 </div>
               </CardContent>
             </ContentContainer>
@@ -91,19 +151,19 @@ export function StatsGrid() {
 }
 
 export function LeasingOverview() {
-  const [leasingData, setLeasingData] = useState<any>(null)
+  const [leasingData, setLeasingData] = useState<any>(null);
   const { withLoader } = useLoader();
 
   useEffect(() => {
     loadLeasingData();
-  }, [])
+  }, []);
 
   const loadLeasingData = async () => {
     const resp = await withLoader(async () => {
       return await dashboardApiService.getLeasingOverviewData();
     });
     if (resp?.success) setLeasingData(resp.data);
-  }
+  };
 
   return (
     <Card className="relative">
@@ -116,38 +176,48 @@ export function LeasingOverview() {
       <ContentContainer>
         <LoaderOverlay />
         <CardContent className="space-y-4">
-        <div className="flex items-center justify-between">
-          <span className="text-sm text-muted-foreground">Active Leases</span>
-          <span className="text-xl font-semibold">{leasingData?.activeLeases}</span>
-        </div>
+          <div className="flex items-center justify-between">
+            <span className="text-sm text-muted-foreground">Active Leases</span>
+            <span className="text-xl font-semibold">
+              {leasingData?.activeLeases}
+            </span>
+          </div>
 
-        <div className="space-y-2">
-          <div className="flex items-center justify-between text-sm">
-            <span className="text-muted-foreground">Renewals (30 days)</span>
-            <Badge variant="outline" className="text-destructive border-destructive">
-              {leasingData?.renewals_30_days}
-            </Badge>
+          <div className="space-y-2">
+            <div className="flex items-center justify-between text-sm">
+              <span className="text-muted-foreground">Renewals (30 days)</span>
+              <Badge
+                variant="outline"
+                className="text-destructive border-destructive"
+              >
+                {leasingData?.renewals_30_days}
+              </Badge>
+            </div>
+            <div className="flex items-center justify-between text-sm">
+              <span className="text-muted-foreground">Renewals (60 days)</span>
+              <Badge
+                variant="outline"
+                className="text-orange-500 border-orange-500"
+              >
+                {leasingData?.renewals_60_days}
+              </Badge>
+            </div>
+            <div className="flex items-center justify-between text-sm">
+              <span className="text-muted-foreground">Renewals (90 days)</span>
+              <Badge variant="outline" className="text-primary border-primary">
+                {leasingData?.renewals_90_days}
+              </Badge>
+            </div>
           </div>
-          <div className="flex items-center justify-between text-sm">
-            <span className="text-muted-foreground">Renewals (60 days)</span>
-            <Badge variant="outline" className="text-orange-500 border-orange-500">
-              {leasingData?.renewals_60_days}
-            </Badge>
-          </div>
-          <div className="flex items-center justify-between text-sm">
-            <span className="text-muted-foreground">Renewals (90 days)</span>
-            <Badge variant="outline" className="text-primary border-primary">
-              {leasingData?.renewals_90_days}
-            </Badge>
-          </div>
-        </div>
 
-        <div className="pt-2 border-t border-border">
-          <div className="flex items-center justify-between text-sm">
-            <span className="text-muted-foreground">Collection Rate</span>
-            <span className="text-accent font-semibold">{leasingData?.collection_rate_pct}%</span>
+          <div className="pt-2 border-t border-border">
+            <div className="flex items-center justify-between text-sm">
+              <span className="text-muted-foreground">Collection Rate</span>
+              <span className="text-accent font-semibold">
+                {leasingData?.collection_rate_pct}%
+              </span>
+            </div>
           </div>
-        </div>
         </CardContent>
       </ContentContainer>
     </Card>
@@ -180,40 +250,48 @@ export function MaintenanceOverview() {
       <ContentContainer>
         <LoaderOverlay />
         <CardContent className="space-y-4">
-        <div className="grid grid-cols-2 gap-4">
-          <div className="text-center p-3 bg-primary/5 rounded-lg">
-            <div className="text-2xl font-bold text-primary">{maintenanceData?.open}</div>
-            <div className="text-xs text-muted-foreground">Open</div>
+          <div className="grid grid-cols-2 gap-4">
+            <div className="text-center p-3 bg-primary/5 rounded-lg">
+              <div className="text-2xl font-bold text-primary">
+                {maintenanceData?.open}
+              </div>
+              <div className="text-xs text-muted-foreground">Open</div>
+            </div>
+            <div className="text-center p-3 bg-accent/5 rounded-lg">
+              <div className="text-2xl font-bold text-accent">
+                {maintenanceData?.closed}
+              </div>
+              <div className="text-xs text-muted-foreground">Closed</div>
+            </div>
           </div>
-          <div className="text-center p-3 bg-accent/5 rounded-lg">
-            <div className="text-2xl font-bold text-accent">{maintenanceData?.closed}</div>
-            <div className="text-xs text-muted-foreground">Closed</div>
-          </div>
-        </div>
 
-        <div className="space-y-2">
-          <div className="flex items-center justify-between text-sm">
-            <span className="flex items-center text-muted-foreground">
-              <Calendar className="w-4 h-4 mr-2" />
-              Upcoming PM
-            </span>
-            <Badge variant="secondary">{maintenanceData?.upcoming_pm}</Badge>
+          <div className="space-y-2">
+            <div className="flex items-center justify-between text-sm">
+              <span className="flex items-center text-muted-foreground">
+                <Calendar className="w-4 h-4 mr-2" />
+                Upcoming PM
+              </span>
+              <Badge variant="secondary">{maintenanceData?.upcoming_pm}</Badge>
+            </div>
+            <div className="flex items-center justify-between text-sm">
+              <span className="flex items-center text-muted-foreground">
+                <AlertTriangle className="w-4 h-4 mr-2" />
+                Service Requests
+              </span>
+              <Badge variant="outline">
+                {maintenanceData?.service_requests}
+              </Badge>
+            </div>
+            <div className="flex items-center justify-between text-sm">
+              <span className="flex items-center text-destructive">
+                <Clock className="w-4 h-4 mr-2" />
+                Assets at Risk
+              </span>
+              <Badge variant="destructive">
+                {maintenanceData?.asset_at_risk}
+              </Badge>
+            </div>
           </div>
-          <div className="flex items-center justify-between text-sm">
-            <span className="flex items-center text-muted-foreground">
-              <AlertTriangle className="w-4 h-4 mr-2" />
-              Service Requests
-            </span>
-            <Badge variant="outline">{maintenanceData?.service_requests}</Badge>
-          </div>
-          <div className="flex items-center justify-between text-sm">
-            <span className="flex items-center text-destructive">
-              <Clock className="w-4 h-4 mr-2" />
-              Assets at Risk
-            </span>
-            <Badge variant="destructive">{maintenanceData?.asset_at_risk}</Badge>
-          </div>
-        </div>
         </CardContent>
       </ContentContainer>
     </Card>
@@ -246,47 +324,61 @@ export function AccessOverview() {
       <ContentContainer>
         <LoaderOverlay />
         <CardContent className="space-y-4">
-        <div className="flex items-center justify-between">
-          <span className="text-sm text-muted-foreground">Today's Visitors</span>
-          <span className="text-xl font-semibold text-accent">{data?.today_visitors ?? 0}</span>
-        </div>
-
-        <div className="space-y-2">
-          <div className="flex items-center justify-between text-sm">
-            <span className="flex items-center text-muted-foreground">
-              <Car className="w-4 h-4 mr-2" />
-              Parking Occupancy
+          <div className="flex items-center justify-between">
+            <span className="text-sm text-muted-foreground">
+              Today's Visitors
             </span>
-            <span className="font-semibold">{data?.parking_occupancy_pct ?? 0}%</span>
+            <span className="text-xl font-semibold text-accent">
+              {data?.today_visitors ?? 0}
+            </span>
           </div>
-          <div className="w-full bg-muted rounded-full h-2">
-            <div
-              className="bg-primary rounded-full h-2 transition-all duration-300"
-              style={{ width: `${data?.parking_occupancy_pct ?? 0}%` }}
-            />
-          </div>
-          <div className="text-xs text-muted-foreground text-center">
-            {data?.occupied_spaces ?? 0} of {data?.total_spaces ?? 0} spaces occupied
-          </div>
-        </div>
 
-        <div className="pt-2 border-t border-border">
-          <div className="text-xs text-muted-foreground mb-2">Recent Access Events</div>
-          <div className="space-y-1 max-h-20 overflow-y-auto">
-            {(data?.recent_access_events ?? []).map((event: any, index: number) => (
-              <div key={index} className="text-xs flex items-center justify-between">
-                <span>{event.time} - {event.event}</span>
-                <span className="text-muted-foreground">{event.location}</span>
-              </div>
-            ))}
+          <div className="space-y-2">
+            <div className="flex items-center justify-between text-sm">
+              <span className="flex items-center text-muted-foreground">
+                <Car className="w-4 h-4 mr-2" />
+                Parking Occupancy
+              </span>
+              <span className="font-semibold">
+                {data?.parking_occupancy_pct ?? 0}%
+              </span>
+            </div>
+            <div className="w-full bg-muted rounded-full h-2">
+              <div
+                className="bg-primary rounded-full h-2 transition-all duration-300"
+                style={{ width: `${data?.parking_occupancy_pct ?? 0}%` }}
+              />
+            </div>
+            <div className="text-xs text-muted-foreground text-center">
+              {data?.occupied_spaces ?? 0} of {data?.total_spaces ?? 0} spaces
+              occupied
+            </div>
           </div>
-        </div>
+
+          <div className="pt-2 border-t border-border">
+            <div className="text-xs text-muted-foreground mb-2">
+              Recent Access Events
+            </div>
+            <div className="space-y-1 max-h-20 overflow-y-auto">
+              {(data?.recent_access_events ?? []).map(
+                (event: any, index: number) => (
+                  <div
+                    key={index}
+                    className="text-xs flex items-center justify-between"
+                  >
+                    <span>
+                      {event.time} - {event.event}
+                    </span>
+                    <span className="text-muted-foreground">
+                      {event.location}
+                    </span>
+                  </div>
+                )
+              )}
+            </div>
+          </div>
         </CardContent>
       </ContentContainer>
-      {/* Coming soon overlay */}
-      <div className="absolute inset-0 bg-background/70 backdrop-blur-sm flex items-center justify-center text-muted-foreground font-semibold pointer-events-none">
-        Not Available
-      </div>
     </Card>
   );
 }
@@ -307,7 +399,7 @@ export function FinancialSummary() {
   };
 
   return (
-    <Card className="relative overflow-hidden">
+    <Card className="relative">
       <CardHeader>
         <CardTitle className="flex items-center space-x-2">
           <DollarSign className="w-5 h-5" />
@@ -317,37 +409,48 @@ export function FinancialSummary() {
       <ContentContainer>
         <LoaderOverlay />
         <CardContent className="space-y-4">
-        <div className="grid grid-cols-2 gap-4">
-          <div className="text-center p-3 bg-accent/5 rounded-lg">
-            <div className="text-lg font-bold text-accent">₹{(data?.monthly_income ?? 0).toLocaleString()}</div>
-            <div className="text-xs text-muted-foreground">Monthly Income</div>
+          <div className="grid grid-cols-2 gap-4">
+            <div className="text-center p-3 bg-accent/5 rounded-lg">
+              <div className="text-lg font-bold text-accent">
+                ₹{(data?.monthly_income ?? 0).toLocaleString()}
+              </div>
+              <div className="text-xs text-muted-foreground">
+                Monthly Income
+              </div>
+            </div>
+            <div className="text-center p-3 bg-destructive/5 rounded-lg">
+              <div className="text-lg font-bold text-destructive">
+                ₹{(data?.overdue ?? 0).toLocaleString()}
+              </div>
+              <div className="text-xs text-muted-foreground">Overdue</div>
+            </div>
           </div>
-          <div className="text-center p-3 bg-destructive/5 rounded-lg">
-            <div className="text-lg font-bold text-destructive">₹{(data?.overdue ?? 0).toLocaleString()}</div>
-            <div className="text-xs text-muted-foreground">Overdue</div>
-          </div>
-        </div>
 
-        <div className="space-y-2">
-          <div className="flex items-center justify-between text-sm">
-            <span className="text-muted-foreground">Pending Invoices</span>
-            <Badge variant="outline" className="text-orange-500 border-orange-500">{data?.pending_invoices ?? 0}</Badge>
+          <div className="space-y-2">
+            <div className="flex items-center justify-between text-sm">
+              <span className="text-muted-foreground">Pending Invoices</span>
+              <Badge
+                variant="outline"
+                className="text-orange-500 border-orange-500"
+              >
+                {data?.pending_invoices ?? 0}
+              </Badge>
+            </div>
+            <div className="flex items-center justify-between text-sm">
+              <span className="text-muted-foreground">Recent Payments</span>
+              <span className="text-accent font-semibold">
+                ₹{(data?.recent_payments_total ?? 0).toLocaleString()}
+              </span>
+            </div>
+            <div className="flex items-center justify-between text-sm">
+              <span className="text-muted-foreground">Outstanding CAM</span>
+              <span className="font-semibold">
+                ₹{(data?.outstanding_cam ?? 0).toLocaleString()}
+              </span>
+            </div>
           </div>
-          <div className="flex items-center justify-between text-sm">
-            <span className="text-muted-foreground">Recent Payments</span>
-            <span className="text-accent font-semibold">₹{(data?.recent_payments_total ?? 0).toLocaleString()}</span>
-          </div>
-          <div className="flex items-center justify-between text-sm">
-            <span className="text-muted-foreground">Outstanding CAM</span>
-            <span className="font-semibold">₹{(data?.outstanding_cam ?? 0).toLocaleString()}</span>
-          </div>
-        </div>
         </CardContent>
       </ContentContainer>
-      {/* Coming soon overlay */}
-      <div className="absolute inset-0 bg-background/70 backdrop-blur-sm flex items-center justify-center text-muted-foreground font-semibold pointer-events-none">
-        Not Available
-      </div>
     </Card>
   );
 }
@@ -377,32 +480,39 @@ export function EnergyOverview() {
       <ContentContainer>
         <LoaderOverlay />
         <CardContent className="space-y-4">
-        <div className="flex items-center justify-between">
-          <span className="text-sm text-muted-foreground">Total Consumption</span>
-          <span className="text-xl font-semibold">{energyData?.totalConsumption?.toLocaleString()} kWh</span>
-        </div>
+          <div className="flex items-center justify-between">
+            <span className="text-sm text-muted-foreground">
+              Total Consumption
+            </span>
+            <span className="text-xl font-semibold">
+              {energyData?.totalConsumption?.toLocaleString()} kWh
+            </span>
+          </div>
 
-        <div className="space-y-2">
-          {(energyData?.alerts ?? []).map((alert: any, index: number) => (
-            <div key={index} className="flex items-start space-x-2 p-2 bg-orange-50 border border-orange-200 rounded-lg">
-              <AlertTriangle className="w-4 h-4 text-orange-500 mt-0.5 flex-shrink-0" />
-              <div>
-                <div className="text-xs font-semibold text-orange-700">{alert.type}</div>
-                <div className="text-xs text-orange-600">{alert.message}</div>
+          <div className="space-y-2">
+            {(energyData?.alerts ?? []).map((alert: any, index: number) => (
+              <div
+                key={index}
+                className="flex items-start space-x-2 p-2 bg-orange-50 border border-orange-200 rounded-lg"
+              >
+                <AlertTriangle className="w-4 h-4 text-orange-500 mt-0.5 flex-shrink-0" />
+                <div>
+                  <div className="text-xs font-semibold text-orange-700">
+                    {alert.type}
+                  </div>
+                  <div className="text-xs text-orange-600">{alert.message}</div>
+                </div>
               </div>
-            </div>
-          ))}
-        </div>
+            ))}
+          </div>
 
-        <div className="pt-2 border-t border-border">
-          <div className="text-xs text-muted-foreground">Monthly trend: -2.3% vs last month</div>
-        </div>
+          <div className="pt-2 border-t border-border">
+            <div className="text-xs text-muted-foreground">
+              Monthly trend: -2.3% vs last month
+            </div>
+          </div>
         </CardContent>
       </ContentContainer>
-      {/* Coming soon overlay */}
-      <div className="absolute inset-0 bg-background/70 backdrop-blur-sm flex items-center justify-center text-muted-foreground font-semibold pointer-events-none">
-        Not Available
-      </div>
     </Card>
   );
 }

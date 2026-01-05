@@ -2,8 +2,17 @@ import { useEffect, useState } from "react";
 import { Building2, Plus, Eye, Edit, Trash2, Mail, Phone, MapPin, Calendar } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
+import { LogOut, } from "lucide-react";
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 import { PropertySidebar } from "@/components/PropertySidebar";
 import { SidebarProvider, SidebarInset, SidebarTrigger } from "@/components/ui/sidebar";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from "@/components/ui/alert-dialog";
@@ -40,6 +49,8 @@ export default function Organizations() {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const { withLoader } = useLoader();
   const { canRead, canWrite, canDelete } = useAuth();
+  const { user, handleLogout } = useAuth();
+
   const resource = "organizations"; 
 
   useEffect(() => {
@@ -149,11 +160,38 @@ export default function Organizations() {
       <div className="flex min-h-screen w-full">
         <PropertySidebar />
         <SidebarInset className="flex-1">
-          <header className="flex h-16 shrink-0 items-center gap-2 border-b border-sidebar-border px-4">
-            <SidebarTrigger className="-ml-1" />
+          <header className="flex h-16 shrink-0 items-center justify-between border-b border-sidebar-border px-4">
             <div className="flex items-center gap-2">
+            <SidebarTrigger className="-ml-1" />
+            
               <Building2 className="h-5 w-5 text-sidebar-primary" />
               <h1 className="text-lg font-semibold text-sidebar-primary">Organizations</h1>
+            </div>
+             <div className="flex items-center gap-4">
+              <div className="flex items-center gap-3">
+                <Avatar>
+                  <AvatarFallback className="bg-gradient-primary text-white">
+                    {user.name.charAt(0)}
+                  </AvatarFallback>
+                </Avatar>
+
+                <div className="text-right">
+                  <p className="text-sm font-medium">{user.name}</p>
+                  <p className="text-xs text-muted-foreground">
+                    {user.account_type}
+                  </p>
+                </div>
+              </div>
+
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={handleLogout}
+                className="text-muted-foreground hover:text-destructive"
+              >
+                <LogOut className="w-4 h-4 mr-2" />
+                Logout
+              </Button>
             </div>
           </header>
 
@@ -182,16 +220,20 @@ export default function Organizations() {
                   className="max-w-sm"
                 />
 
-                <select
+                <Select
                   value={selectedPlan}
-                  onChange={(e) => setSelectedPlan(e.target.value)}
-                  className="rounded-md border border-input bg-background px-3 py-2 text-sm"
+                  onValueChange={setSelectedPlan}
                 >
-                  <option value="all">All Plans</option>
-                  <option value="basic">Basic</option>
-                  <option value="pro">Pro</option>
-                  <option value="enterprise">Enterprise</option>
-                </select>
+                  <SelectTrigger className="w-[180px]">
+                    <SelectValue placeholder="All Plans" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="all">All Plans</SelectItem>
+                    <SelectItem value="basic">Basic</SelectItem>
+                    <SelectItem value="pro">Pro</SelectItem>
+                    <SelectItem value="enterprise">Enterprise</SelectItem>
+                  </SelectContent>
+                </Select>
               </div>
 
               {/* Summary Stats */}
@@ -306,7 +348,7 @@ export default function Organizations() {
         onClose={() => setShowForm(false)}
         onSave={handleSave}
         mode={formMode}
-        isSubmitting={isSubmitting}
+        
       />
     </SidebarProvider>
   );

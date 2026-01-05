@@ -9,10 +9,18 @@ import {
   Trash2,
   MapPin,
 } from "lucide-react";
+import { LogOut } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 import { PropertySidebar } from "@/components/PropertySidebar";
 import {
   SidebarProvider,
@@ -37,6 +45,7 @@ import { SpaceKind, spaceKinds } from "@/interfaces/spaces_interfaces";
 import { useSkipFirstEffect } from "@/hooks/use-skipfirst-effect";
 import { useAuth } from "../context/AuthContext";
 import { useLoader } from "@/context/LoaderContext";
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import LoaderOverlay from "@/components/LoaderOverlay";
 import ContentContainer from "@/components/ContentContainer";
 import { toast } from "sonner";
@@ -92,6 +101,7 @@ export default function Spaces() {
   const [totalItems, setTotalItems] = useState(0);
   const { canRead, canWrite, canDelete } = useAuth();
   const { withLoader } = useLoader();
+  const { user, handleLogout } = useAuth();
   const resource = "spaces";
 
   useSkipFirstEffect(() => {
@@ -223,6 +233,7 @@ export default function Spaces() {
 
       if (response.success) {
         // Update the edited space in local state
+        loadSpaceOverView();
         setSpaces((prev) =>
           prev.map((s) => (s.id === updatedSpace.id ? response.data : s))
         );
@@ -289,13 +300,40 @@ export default function Spaces() {
       <div className="flex min-h-screen w-full">
         <PropertySidebar />
         <SidebarInset className="flex-1">
-          <header className="flex h-16 shrink-0 items-center gap-2 border-b border-sidebar-border px-4">
-            <SidebarTrigger className="-ml-1" />
+          <header className="flex h-16 shrink-0 items-center justify-between border-b border-sidebar-border px-4">
             <div className="flex items-center gap-2">
+              <SidebarTrigger className="-ml-1" />
+
               <Home className="h-5 w-5 text-sidebar-primary" />
               <h1 className="text-lg font-semibold text-sidebar-primary">
                 All Spaces
               </h1>
+            </div>
+            <div className="flex items-center gap-4">
+              <div className="flex items-center gap-3">
+                <Avatar>
+                  <AvatarFallback className="bg-gradient-primary text-white">
+                    {user.name.charAt(0)}
+                  </AvatarFallback>
+                </Avatar>
+
+                <div className="text-right">
+                  <p className="text-sm font-medium">{user.name}</p>
+                  <p className="text-xs text-muted-foreground">
+                    {user.account_type}
+                  </p>
+                </div>
+              </div>
+
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={handleLogout}
+                className="text-muted-foreground hover:text-destructive"
+              >
+                <LogOut className="w-4 h-4 mr-2" />
+                Logout
+              </Button>
             </div>
           </header>
 
@@ -331,44 +369,52 @@ export default function Spaces() {
                   />
                 </div>
 
-                <select
-                  value={selectedSite}
-                  onChange={(e) => setSelectedSite(e.target.value)}
-                  className="rounded-md border border-input bg-background px-3 py-2 text-sm"
-                >
-                  <option value="all">All Sites</option>
-                  {siteList.map((site) => (
-                    <option key={site.id} value={site.id}>
-                      {site.name}
-                    </option>
-                  ))}
-                </select>
+                <Select value={selectedSite} onValueChange={setSelectedSite}>
+                  <SelectTrigger className="w-[180px]">
+                    <SelectValue placeholder="All Sites" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="all">All Sites</SelectItem>
+                    {siteList.map((site) => (
+                      <SelectItem key={site.id} value={site.id}>
+                        {site.name}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
 
-                <select
-                  value={selectedKind}
-                  onChange={(e) => setSelectedKind(e.target.value)}
-                  className="rounded-md border border-input bg-background px-3 py-2 text-sm"
-                >
-                  <option value="all">All Types</option>
-                  {spaceKinds.map((kind) => (
-                    <option key={kind} value={kind}>
-                      {kind
-                        .replace("_", " ")
-                        .replace(/\b\w/g, (l) => l.toUpperCase())}
-                    </option>
-                  ))}
-                </select>
+                <Select value={selectedKind} onValueChange={setSelectedKind}>
+                  <SelectTrigger className="w-[180px]">
+                    <SelectValue placeholder="All Types" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="all">All Types</SelectItem>
+                    {spaceKinds.map((kind) => (
+                      <SelectItem key={kind} value={kind}>
+                        {kind
+                          .replace("_", " ")
+                          .replace(/\b\w/g, (l) => l.toUpperCase())}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
 
-                <select
+                <Select
                   value={selectedStatus}
-                  onChange={(e) => setSelectedStatus(e.target.value)}
-                  className="rounded-md border border-input bg-background px-3 py-2 text-sm"
+                  onValueChange={setSelectedStatus}
                 >
-                  <option value="all">All Status</option>
-                  <option value="available">Available</option>
-                  <option value="occupied">Occupied</option>
-                  <option value="out_of_service">Out of Service</option>
-                </select>
+                  <SelectTrigger className="w-[180px]">
+                    <SelectValue placeholder="All Status" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="all">All Status</SelectItem>
+                    <SelectItem value="available">Available</SelectItem>
+                    <SelectItem value="occupied">Occupied</SelectItem>
+                    <SelectItem value="out_of_service">
+                      Out of Service
+                    </SelectItem>
+                  </SelectContent>
+                </Select>
               </div>
 
               <ContentContainer>
@@ -445,9 +491,11 @@ export default function Spaces() {
                           <Badge className={getKindColor(space.kind)}>
                             {space.kind.replace("_", " ")}
                           </Badge>
-                          <div className="text-sm text-muted-foreground">
-                            {space.area_sqft} sq ft
-                          </div>
+                          {Number(space.area_sqft) > 0 && (
+                            <div className="text-sm text-muted-foreground">
+                              {space.area_sqft} sq ft
+                            </div>
+                          )}
                         </div>
 
                         {/* Location Details */}
@@ -464,14 +512,18 @@ export default function Spaces() {
                                 Block: {space.building_block}
                               </span>
                             )}
-                            <span className="text-muted-foreground">
-                              Floor: {space.floor}
-                            </span>
+                            {Number(space.floor) !== 0 &&
+                              Number(space.floor) > 0 && (
+                                <span className="text-muted-foreground">
+                                  Floor: {space.floor}
+                                </span>
+                              )}
                           </div>
                         </div>
 
                         {/* Bed/Bath info for residential */}
-                        {(Number(space.beds) > 0 || Number(space.baths) > 0) && (
+                        {(Number(space.beds) > 0 ||
+                          Number(space.baths) > 0) && (
                           <div className="flex items-center gap-4 text-sm">
                             {Number(space.beds) > 0 && (
                               <span className="text-muted-foreground">

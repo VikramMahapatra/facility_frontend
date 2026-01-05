@@ -62,8 +62,21 @@ class AuthApiService {
     }
 
     async logout() {
-        localStorage.removeItem('access_token');
-    }
+        const refreshToken = localStorage.getItem("refresh_token");
+
+        if (refreshToken) {
+            await apiService.request(
+            `/auth/logout?refresh_token_str=${refreshToken}`,
+            { method: "POST" }
+            );
+        }
+
+        // 🧹 client cleanup
+        localStorage.removeItem("access_token");
+        localStorage.removeItem("refresh_token");
+        localStorage.removeItem("loggedInUser");
+        }
+
 
     private updateTokens(response: any) {
         // 🧹 Always start by clearing old tokens

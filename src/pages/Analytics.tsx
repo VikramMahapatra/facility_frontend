@@ -1,42 +1,103 @@
 import { useState, useEffect } from "react";
 import { PropertySidebar } from "@/components/PropertySidebar";
 import { SidebarProvider, SidebarTrigger } from "@/components/ui/sidebar";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import {
-  AreaChart, Area, BarChart, Bar, LineChart, Line, PieChart, Pie, Cell,
-  XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer,
-  ComposedChart, ScatterChart, Scatter, RadialBarChart, RadialBar
+  AreaChart,
+  Area,
+  BarChart,
+  Bar,
+  LineChart,
+  Line,
+  PieChart,
+  Pie,
+  Cell,
+  XAxis,
+  YAxis,
+  CartesianGrid,
+  Tooltip,
+  Legend,
+  ResponsiveContainer,
+  ComposedChart,
+  ScatterChart,
+  Scatter,
+  RadialBarChart,
+  RadialBar,
 } from "recharts";
 //import { kpiData } from "@/data/mockAnalyticsData";
-import { ArrowUpRight, ArrowDownRight, RefreshCw, Download, Users } from "lucide-react";
+import {
+  ArrowUpRight,
+  ArrowDownRight,
+  RefreshCw,
+  Download,
+  Users,
+} from "lucide-react";
 import { analyticsApiService } from "@/services/analyticsapi";
 
 export default function Analytics() {
-  const [dateRange, setDateRange] = useState("12m");
-  const [advanceAnalytics, setAdvanceAnalytics] = useState<AdvanceAnalytics[]>([]);
-  const [revenueAnalytics, setRevenueAnalytics] = useState<RevenueAnalytics | null>(null);
+  const [dateRange, setDateRange] = useState("all");
+  const [advanceAnalytics, setAdvanceAnalytics] = useState<AdvanceAnalytics[]>(
+    []
+  );
+  const [revenueAnalytics, setRevenueAnalytics] =
+    useState<RevenueAnalytics | null>(null);
   const [siteProfitability, setSiteProfitability] = useState<any[]>([]);
-  const [collectionPerformance, setCollectionPerformance] = useState<CollectionPerformance | null>(null);
-  const [occupancyTrends, setOccupancyTrends] = useState<OccupancyTrends | null>(null);
-  const [spaceTypePerformance, setSpaceTypePerformance] = useState<SpaceTypePerformance[]>([]);
-  const [portfolioDistribution, setPortfolioDistribution] = useState<PortfolioDistribution[]>([]);
-  const [yoyPerformance, setYoyPerformance] = useState<YoyPerformance | null>(null);
+  const [collectionPerformance, setCollectionPerformance] =
+    useState<CollectionPerformance | null>(null);
+  const [occupancyTrends, setOccupancyTrends] =
+    useState<OccupancyTrends | null>(null);
+  const [spaceTypePerformance, setSpaceTypePerformance] = useState<
+    SpaceTypePerformance[]
+  >([]);
+  const [portfolioDistribution, setPortfolioDistribution] = useState<
+    PortfolioDistribution[]
+  >([]);
+  const [yoyPerformance, setYoyPerformance] = useState<YoyPerformance | null>(
+    null
+  );
   const [siteComparison, setSiteComparison] = useState<SiteComparison[]>([]);
-  const [maintenanceEfficiency, setMaintenanceEfficiency] = useState<MaintenanceEfficiency[]>([]);
-  const [energyConsumption, setEnergyConsumption] = useState<EnergyConsumption[]>([]);
-  const [dailyVisitorTrends, setDailyVisitorTrends] = useState<DailyVisitorTrends[] | null>(null);
-  const [hourlyAccessPattern, setHourlyAccessPattern] = useState<HourlyAccessPattern[] | null>(null);
-  const [tenantSatisfaction, setTenantSatisfaction] = useState<TenantSatisfaction[] | null>(null);
-  const [tenantRetention, setTenantRetention] = useState<TenantRetention[] | null>(null);
-  const [portfolioHeatmap, setPortfolioHeatmap] = useState<PortfolioHeatmap[] | null>(null);
-  const [performanceSummary, setPerformanceSummary] = useState<PerformanceSummary | null>(null);
+  const [maintenanceEfficiency, setMaintenanceEfficiency] = useState<
+    MaintenanceEfficiency[]
+  >([]);
+  const [energyConsumption, setEnergyConsumption] = useState<
+    EnergyConsumption[]
+  >([]);
+  const [dailyVisitorTrends, setDailyVisitorTrends] = useState<
+    DailyVisitorTrends[] | null
+  >(null);
+  const [hourlyAccessPattern, setHourlyAccessPattern] = useState<
+    HourlyAccessPattern[] | null
+  >(null);
+  const [tenantSatisfaction, setTenantSatisfaction] = useState<
+    TenantSatisfaction[] | null
+  >(null);
+  const [tenantRetention, setTenantRetention] = useState<
+    TenantRetention[] | null
+  >(null);
+  const [portfolioHeatmap, setPortfolioHeatmap] = useState<
+    PortfolioHeatmap[] | null
+  >(null);
+  const [performanceSummary, setPerformanceSummary] =
+    useState<PerformanceSummary | null>(null);
   const [selectedSite, setSelectedSite] = useState("all");
   const [refreshing, setRefreshing] = useState(false);
-  
+
   // Dropdown data states
   const [monthlyData, setMonthlyData] = useState<any[]>([]);
   const [siteOptions, setSiteOptions] = useState<any[]>([]);
@@ -50,7 +111,7 @@ export default function Analytics() {
     color: string;
   }
 
-  interface RevenueAnalytics { 
+  interface RevenueAnalytics {
     monthly: {
       date: string;
       rental: number;
@@ -199,12 +260,12 @@ export default function Analytics() {
     "Monthly Revenue": string;
     "Collection Rate": string;
   }
-  
+
   const loadAdvanceAnalytics = async () => {
     const advanceObj = await analyticsApiService.getAdvanceAnalytics();
     if (advanceObj.success) setAdvanceAnalytics(advanceObj.data || []);
   };
-  
+
   const loadRevenueAnalytics = async () => {
     const revenueObj = await analyticsApiService.getRevenueAnalytics();
     if (revenueObj.success) setRevenueAnalytics(revenueObj.data || null);
@@ -237,7 +298,7 @@ export default function Analytics() {
 
   const loadYoyPerformance = async () => {
     const yoyObj = await analyticsApiService.getYoyPerformance();
-    if (yoyObj.success) setYoyPerformance(yoyObj.data || null );
+    if (yoyObj.success) setYoyPerformance(yoyObj.data || null);
   };
 
   const loadSiteComparison = async () => {
@@ -252,7 +313,8 @@ export default function Analytics() {
 
   const loadMaintenanceEfficiency = async () => {
     const maintenanceObj = await analyticsApiService.getMaintenanceEfficiency();
-    if (maintenanceObj.success) setMaintenanceEfficiency(maintenanceObj.data || []);
+    if (maintenanceObj.success)
+      setMaintenanceEfficiency(maintenanceObj.data || []);
   };
 
   const loadEnergyConsumption = async () => {
@@ -272,7 +334,8 @@ export default function Analytics() {
 
   const loadTenantSatisfaction = async () => {
     const satisfactionObj = await analyticsApiService.getTenantSatisfaction();
-    if (satisfactionObj.success) setTenantSatisfaction(satisfactionObj.data || []);
+    if (satisfactionObj.success)
+      setTenantSatisfaction(satisfactionObj.data || []);
   };
 
   const loadTenantRetention = async () => {
@@ -289,17 +352,17 @@ export default function Analytics() {
     const summaryObj = await analyticsApiService.getPerformanceSummary();
     if (summaryObj.success) setPerformanceSummary(summaryObj.data || null);
   };
-  
+
   const loadMonthlyData = async () => {
     const monthlyObj = await analyticsApiService.getByMonth();
     if (monthlyObj.success) setMonthlyData(monthlyObj.data || []);
   };
-  
+
   const loadSiteOptions = async () => {
     const siteObj = await analyticsApiService.getSitePropertyLookup();
     if (siteObj.success) setSiteOptions(siteObj.data || []);
   };
-  
+
   const handleRefresh = async () => {
     setRefreshing(true);
     await Promise.allSettled([
@@ -321,7 +384,7 @@ export default function Analytics() {
       loadPortfolioHeatmap(),
       loadPerformanceSummary(),
       loadMonthlyData(),
-      loadSiteOptions()
+      loadSiteOptions(),
     ]);
     setRefreshing(false);
   };
@@ -330,7 +393,7 @@ export default function Analytics() {
     loadAdvanceAnalytics();
     loadRevenueAnalytics();
     loadSiteProfitability();
-    loadCollectionPerformance();  
+    loadCollectionPerformance();
     loadOccupancyTrends();
     loadSpaceTypePerformance();
     loadPortfolioDistribution();
@@ -346,35 +409,59 @@ export default function Analytics() {
     loadPerformanceSummary();
     loadMonthlyData();
     loadSiteOptions();
-  }, [])
+  }, []);
 
-  const KPICard = ({ kpi }: { kpi: AdvanceAnalytics }) => (
-    <Card className="border-l-4 border-l-primary">
-      <CardHeader className="pb-2">
-        <div className="flex items-center justify-between">
-          <CardTitle className="text-sm font-medium text-muted-foreground">
-            {kpi.title}
-          </CardTitle>
-          <div className={`flex items-center space-x-1 ${
-            kpi.trend === 'up' ? 'text-green-600' : 
-            kpi.trend === 'down' ? 'text-red-600' : 'text-gray-500'
-          }`}>
-            {kpi.trend === 'up' ? <ArrowUpRight className="h-3 w-3" /> : 
-             kpi.trend === 'down' ? <ArrowDownRight className="h-3 w-3" /> : null}
-            <span className="text-xs font-medium">
-              {kpi.change > 0 ? '+' : ''}{kpi.change}%
-            </span>
+  const KPICard = ({ kpi }: { kpi: AdvanceAnalytics }) => {
+    const titleLower = kpi.title?.toLowerCase() || "";
+    const isTenantSatisfaction = titleLower.includes("tenant satisfaction");
+    const isComingSoonCard = isTenantSatisfaction;
+
+    return (
+      <Card
+        className={`border-l-4 border-l-primary relative ${
+          isComingSoonCard ? "overflow-hidden" : ""
+        }`}
+      >
+        <CardHeader className="pb-2">
+          <div className="flex items-center justify-between">
+            <CardTitle className="text-sm font-medium text-muted-foreground">
+              {kpi.title}
+            </CardTitle>
+            {/*<div
+              className={`flex items-center space-x-1 ${
+                kpi.trend === "up"
+                  ? "text-green-600"
+                  : kpi.trend === "down"
+                  ? "text-red-600"
+                  : "text-gray-500"
+              }`}
+            >
+              {kpi.trend === "up" ? (
+                <ArrowUpRight className="h-3 w-3" />
+              ) : kpi.trend === "down" ? (
+                <ArrowDownRight className="h-3 w-3" />
+              ) : null}
+              <span className="text-xs font-medium">
+                {kpi.change > 0 ? "+" : ""}
+                {kpi.change}%
+              </span>
+            </div>*/}
           </div>
-        </div>
-      </CardHeader>
-      <CardContent>
-        <div className="space-y-1">
-          <p className="text-2xl font-bold">{kpi.value}</p>
-          <p className="text-xs text-muted-foreground">{kpi.subtitle}</p>
-        </div>
-      </CardContent>
-    </Card>
-  );
+        </CardHeader>
+        <CardContent>
+          <div className="space-y-1">
+            <p className="text-2xl font-bold">{kpi.value}</p>
+            <p className="text-xs text-muted-foreground">{kpi.subtitle}</p>
+          </div>
+        </CardContent>
+        {isComingSoonCard && (
+          <div className="absolute inset-0 bg-background/70 backdrop-blur-sm flex items-center justify-center text-muted-foreground font-semibold pointer-events-none">
+            Not Available
+          </div>
+        )}
+      </Card>
+    );
+  };
 
   const CustomTooltip = ({ active, payload, label }: any) => {
     if (active && payload && payload.length) {
@@ -383,8 +470,11 @@ export default function Analytics() {
           <p className="font-medium">{`${label}`}</p>
           {payload.map((entry: any, index: number) => (
             <p key={index} style={{ color: entry.color }} className="text-sm">
-              {`${entry.dataKey}: ${typeof entry.value === 'number' ? 
-                entry.value.toLocaleString() : entry.value}`}
+              {`${entry.dataKey}: ${
+                typeof entry.value === "number"
+                  ? entry.value.toLocaleString()
+                  : entry.value
+              }`}
             </p>
           ))}
         </div>
@@ -405,7 +495,9 @@ export default function Analytics() {
               <div className="flex-1 flex items-center justify-between">
                 <div>
                   <h1 className="text-lg font-semibold">Advanced Analytics</h1>
-                  <p className="text-sm text-muted-foreground">Comprehensive insights & performance metrics</p>
+                  <p className="text-sm text-muted-foreground">
+                    Comprehensive insights & performance metrics
+                  </p>
                 </div>
                 <div className="flex items-center space-x-2">
                   <Select value={dateRange} onValueChange={setDateRange}>
@@ -413,12 +505,14 @@ export default function Analytics() {
                       <SelectValue />
                     </SelectTrigger>
                     <SelectContent>
-                    <SelectItem value="all">Months</SelectItem>
-                      {monthlyData.filter(item => item.id && item.id !== "").map((item, index) => (
-                        <SelectItem key={index} value={item.id}>
-                          {item.name}
-                        </SelectItem>
-                      ))}
+                      <SelectItem value="all">Months</SelectItem>
+                      {monthlyData
+                        .filter((item) => item.id && item.id !== "")
+                        .map((item, index) => (
+                          <SelectItem key={index} value={item.id}>
+                            {item.name}
+                          </SelectItem>
+                        ))}
                     </SelectContent>
                   </Select>
                   <Select value={selectedSite} onValueChange={setSelectedSite}>
@@ -427,15 +521,26 @@ export default function Analytics() {
                     </SelectTrigger>
                     <SelectContent>
                       <SelectItem value="all">All Properties</SelectItem>
-                      {siteOptions.filter(site => site.id && site.id !== "").map((site, index) => (
-                        <SelectItem key={index} value={site.id}>
-                          {site.name}
-                        </SelectItem>
-                      ))}
+                      {siteOptions
+                        .filter((site) => site.id && site.id !== "")
+                        .map((site, index) => (
+                          <SelectItem key={index} value={site.id}>
+                            {site.name}
+                          </SelectItem>
+                        ))}
                     </SelectContent>
                   </Select>
-                  <Button variant="outline" size="sm" onClick={handleRefresh} disabled={refreshing}>
-                     <RefreshCw className={`h-4 w-4 mr-2 ${refreshing ? 'animate-spin' : ''}`} />
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={handleRefresh}
+                    disabled={refreshing}
+                  >
+                    <RefreshCw
+                      className={`h-4 w-4 mr-2 ${
+                        refreshing ? "animate-spin" : ""
+                      }`}
+                    />
                     Refresh
                   </Button>
                   <Button variant="outline" size="sm">
@@ -451,7 +556,7 @@ export default function Analytics() {
           <div className="p-6 space-y-6">
             {/* KPI Cards */}
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-              {(advanceAnalytics ).map((kpi, index) => (
+              {advanceAnalytics.map((kpi, index) => (
                 <KPICard key={index} kpi={kpi} />
               ))}
             </div>
@@ -473,22 +578,58 @@ export default function Analytics() {
                 <Card>
                   <CardHeader>
                     <CardTitle>Revenue Trend & Forecast</CardTitle>
-                    <CardDescription>Monthly revenue breakdown with 3-month forecast</CardDescription>
+                    <CardDescription>
+                      Monthly revenue breakdown with 3-month forecast
+                    </CardDescription>
                   </CardHeader>
                   <CardContent>
-                     <ResponsiveContainer width="100%" height={400}>
-                       <ComposedChart data={revenueAnalytics?.monthly}>
+                    <ResponsiveContainer width="100%" height={400}>
+                      <ComposedChart data={revenueAnalytics?.monthly}>
                         <CartesianGrid strokeDasharray="3 3" />
                         <XAxis dataKey="date" />
                         <YAxis />
                         <Tooltip content={<CustomTooltip />} />
                         <Legend />
-                        <Area type="monotone" dataKey="rental" stackId="1" stroke="#10b981" fill="#10b981" name="Rental Income" />
-                        <Area type="monotone" dataKey="cam" stackId="1" stroke="#f59e0b" fill="#f59e0b" name="CAM Charges" />
-                        <Area type="monotone" dataKey="utilities" stackId="1" stroke="#8b5cf6" fill="#8b5cf6" name="Utilities" />
-                        <Area type="monotone" dataKey="parking" stackId="1" stroke="#ef4444" fill="#ef4444" name="Parking" />
-                        <Line type="monotone" dataKey="total" stroke="#3b82f6" strokeWidth={3} name="Total Revenue" />
-                       </ComposedChart>
+                        <Area
+                          type="monotone"
+                          dataKey="rental"
+                          stackId="1"
+                          stroke="#10b981"
+                          fill="#10b981"
+                          name="Rental Income"
+                        />
+                        <Area
+                          type="monotone"
+                          dataKey="cam"
+                          stackId="1"
+                          stroke="#f59e0b"
+                          fill="#f59e0b"
+                          name="CAM Charges"
+                        />
+                        <Area
+                          type="monotone"
+                          dataKey="utilities"
+                          stackId="1"
+                          stroke="#8b5cf6"
+                          fill="#8b5cf6"
+                          name="Utilities"
+                        />
+                        <Area
+                          type="monotone"
+                          dataKey="parking"
+                          stackId="1"
+                          stroke="#ef4444"
+                          fill="#ef4444"
+                          name="Parking"
+                        />
+                        <Line
+                          type="monotone"
+                          dataKey="total"
+                          stroke="#3b82f6"
+                          strokeWidth={3}
+                          name="Total Revenue"
+                        />
+                      </ComposedChart>
                     </ResponsiveContainer>
                   </CardContent>
                 </Card>
@@ -498,7 +639,9 @@ export default function Analytics() {
                   <Card>
                     <CardHeader>
                       <CardTitle>Site Profitability</CardTitle>
-                      <CardDescription>Revenue vs expenses by property</CardDescription>
+                      <CardDescription>
+                        Revenue vs expenses by property
+                      </CardDescription>
                     </CardHeader>
                     <CardContent>
                       <ResponsiveContainer width="100%" height={300}>
@@ -508,8 +651,16 @@ export default function Analytics() {
                           <YAxis />
                           <Tooltip content={<CustomTooltip />} />
                           <Legend />
-                          <Bar dataKey="revenue" fill="#3b82f6" name="Revenue" />
-                          <Bar dataKey="expenses" fill="#ef4444" name="Expenses" />
+                          <Bar
+                            dataKey="revenue"
+                            fill="#3b82f6"
+                            name="Revenue"
+                          />
+                          <Bar
+                            dataKey="expenses"
+                            fill="#ef4444"
+                            name="Expenses"
+                          />
                           <Bar dataKey="profit" fill="#10b981" name="Profit" />
                         </ComposedChart>
                       </ResponsiveContainer>
@@ -519,7 +670,9 @@ export default function Analytics() {
                   <Card>
                     <CardHeader>
                       <CardTitle>Collection Performance</CardTitle>
-                      <CardDescription>Payment collection trends over time</CardDescription>
+                      <CardDescription>
+                        Payment collection trends over time
+                      </CardDescription>
                     </CardHeader>
                     <CardContent>
                       <ResponsiveContainer width="100%" height={300}>
@@ -529,9 +682,30 @@ export default function Analytics() {
                           <YAxis />
                           <Tooltip content={<CustomTooltip />} />
                           <Legend />
-                          <Area type="monotone" dataKey="collected" stackId="1" stroke="#10b981" fill="#10b981" name="Collected %" />
-                          <Area type="monotone" dataKey="pending" stackId="1" stroke="#f59e0b" fill="#f59e0b" name="Pending %" />
-                          <Area type="monotone" dataKey="overdue" stackId="1" stroke="#ef4444" fill="#ef4444" name="Overdue %" />
+                          <Area
+                            type="monotone"
+                            dataKey="collected"
+                            stackId="1"
+                            stroke="#10b981"
+                            fill="#10b981"
+                            name="Collected %"
+                          />
+                          <Area
+                            type="monotone"
+                            dataKey="pending"
+                            stackId="1"
+                            stroke="#f59e0b"
+                            fill="#f59e0b"
+                            name="Pending %"
+                          />
+                          <Area
+                            type="monotone"
+                            dataKey="overdue"
+                            stackId="1"
+                            stroke="#ef4444"
+                            fill="#ef4444"
+                            name="Overdue %"
+                          />
                         </ComposedChart>
                       </ResponsiveContainer>
                     </CardContent>
@@ -544,19 +718,45 @@ export default function Analytics() {
                   <Card className="col-span-2">
                     <CardHeader>
                       <CardTitle>Occupancy Trends</CardTitle>
-                      <CardDescription>Historical occupancy rates and availability</CardDescription>
+                      <CardDescription>
+                        Historical occupancy rates and availability
+                      </CardDescription>
                     </CardHeader>
                     <CardContent>
                       <ResponsiveContainer width="100%" height={350}>
-                         <AreaChart data={occupancyTrends?.trend}>
+                        <AreaChart data={occupancyTrends?.trend}>
                           <CartesianGrid strokeDasharray="3 3" />
                           <XAxis dataKey="date" />
                           <YAxis />
                           <Tooltip content={<CustomTooltip />} />
                           <Legend />
-                           <Area type="monotone" dataKey="occupancy" stackId="1" stroke="#3b82f6" fill="#3b82f6" fillOpacity={0.8} name="Occupied %" />
-                           <Area type="monotone" dataKey="available" stackId="1" stroke="#10b981" fill="#10b981" fillOpacity={0.6} name="Available %" />
-                           <Area type="monotone" dataKey="maintenance" stackId="1" stroke="#ef4444" fill="#ef4444" fillOpacity={0.4} name="Maintenance %" />
+                          <Area
+                            type="monotone"
+                            dataKey="occupancy"
+                            stackId="1"
+                            stroke="#3b82f6"
+                            fill="#3b82f6"
+                            fillOpacity={0.8}
+                            name="Occupied %"
+                          />
+                          <Area
+                            type="monotone"
+                            dataKey="available"
+                            stackId="1"
+                            stroke="#10b981"
+                            fill="#10b981"
+                            fillOpacity={0.6}
+                            name="Available %"
+                          />
+                          <Area
+                            type="monotone"
+                            dataKey="maintenance"
+                            stackId="1"
+                            stroke="#ef4444"
+                            fill="#ef4444"
+                            fillOpacity={0.4}
+                            name="Maintenance %"
+                          />
                         </AreaChart>
                       </ResponsiveContainer>
                     </CardContent>
@@ -565,16 +765,25 @@ export default function Analytics() {
                   <Card>
                     <CardHeader>
                       <CardTitle>Space Type Performance</CardTitle>
-                      <CardDescription>Occupancy rates by space category</CardDescription>
+                      <CardDescription>
+                        Occupancy rates by space category
+                      </CardDescription>
                     </CardHeader>
                     <CardContent>
                       <ResponsiveContainer width="100%" height={300}>
-                        <BarChart data={spaceTypePerformance} layout="horizontal">
+                        <BarChart
+                          data={spaceTypePerformance}
+                          layout="horizontal"
+                        >
                           <CartesianGrid strokeDasharray="3 3" />
                           <XAxis type="number" />
                           <YAxis dataKey="type" type="category" width={80} />
                           <Tooltip content={<CustomTooltip />} />
-                          <Bar dataKey="occupancy" fill="#3b82f6" name="Occupancy %" />
+                          <Bar
+                            dataKey="occupancy"
+                            fill="#3b82f6"
+                            name="Occupancy %"
+                          />
                         </BarChart>
                       </ResponsiveContainer>
                     </CardContent>
@@ -583,25 +792,29 @@ export default function Analytics() {
                   <Card>
                     <CardHeader>
                       <CardTitle>Portfolio Distribution</CardTitle>
-                      <CardDescription>Space allocation across property types</CardDescription>
+                      <CardDescription>
+                        Space allocation across property types
+                      </CardDescription>
                     </CardHeader>
                     <CardContent>
                       <ResponsiveContainer width="100%" height={300}>
                         <PieChart>
                           <Pie
-                              data={portfolioDistribution}
+                            data={portfolioDistribution}
                             cx="50%"
                             cy="50%"
-                             labelLine={true}
-                             label={({ name, percentage }) => `${name} (${percentage}%)`}
-                             outerRadius={100}
-                             fill="#8884d8"
-                             dataKey="value"
-                           >
-                              {(portfolioDistribution).map((entry, index) => (
-                                <Cell key={`cell-${index}`} fill={entry.color} />
-                              ))}
-                           </Pie>
+                            labelLine={true}
+                            label={({ name, percentage }) =>
+                              `${name} (${percentage}%)`
+                            }
+                            outerRadius={100}
+                            fill="#8884d8"
+                            dataKey="value"
+                          >
+                            {portfolioDistribution.map((entry, index) => (
+                              <Cell key={`cell-${index}`} fill={entry.color} />
+                            ))}
+                          </Pie>
                           <Tooltip content={<CustomTooltip />} />
                         </PieChart>
                       </ResponsiveContainer>
@@ -612,44 +825,74 @@ export default function Analytics() {
 
               <TabsContent value="financial" className="space-y-4">
                 <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
-                  <Card className="col-span-2">
+                  <Card className="col-span-2 relative overflow-hidden">
                     <CardHeader>
                       <CardTitle>Year-over-Year Performance</CardTitle>
-                      <CardDescription>Key financial metrics comparison</CardDescription>
+                      <CardDescription>
+                        Key financial metrics comparison
+                      </CardDescription>
                     </CardHeader>
                     <CardContent>
                       <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
-                        {yoyPerformance && Object.entries(yoyPerformance).map(([key, data]) => (
-                          <div key={key} className="text-center p-4 border rounded-lg">
-                            <h4 className="text-sm font-medium text-muted-foreground capitalize">{key}</h4>
-                            <p className="text-2xl font-bold mt-2">
-                              {typeof data === 'object' && data?.current ? 
-                                (key === 'occupancy' ? `${data.current}%` : 
-                                 key === 'revenue' || key === 'expenses' || key === 'profit' ? `₹${data.current.toLocaleString()}` : 
-                                 data.current) : 
-                               typeof data === 'string' ? data.replace('$', '₹') : 
-                               String(data)}
-                            </p>
-                            <div className={`flex items-center justify-center mt-2 ${
-                              typeof data === 'object' && data?.growth > 0 ? 'text-green-600' : 'text-red-600'
-                            }`}>
-                              {typeof data === 'object' && data?.growth > 0 ? <ArrowUpRight className="h-3 w-3 mr-1" /> : <ArrowDownRight className="h-3 w-3 mr-1" />}
-                              <span className="text-sm font-medium">
-                                {typeof data === 'object' && data?.growth !== undefined ? `${data.growth}%` : 
-                                 typeof data === 'string' ? data : 
-                                 '0%'}
-                              </span>
+                        {yoyPerformance &&
+                          Object.entries(yoyPerformance).map(([key, data]) => (
+                            <div
+                              key={key}
+                              className="text-center p-4 border rounded-lg"
+                            >
+                              <h4 className="text-sm font-medium text-muted-foreground capitalize">
+                                {key}
+                              </h4>
+                              <p className="text-2xl font-bold mt-2">
+                                {typeof data === "object" && data?.current
+                                  ? key === "occupancy"
+                                    ? `${data.current}%`
+                                    : key === "revenue" ||
+                                      key === "expenses" ||
+                                      key === "profit"
+                                    ? `₹${data.current.toLocaleString()}`
+                                    : data.current
+                                  : typeof data === "string"
+                                  ? data.replace("$", "₹")
+                                  : String(data)}
+                              </p>
+                              <div
+                                className={`flex items-center justify-center mt-2 ${
+                                  typeof data === "object" && data?.growth > 0
+                                    ? "text-green-600"
+                                    : "text-red-600"
+                                }`}
+                              >
+                                {typeof data === "object" &&
+                                data?.growth > 0 ? (
+                                  <ArrowUpRight className="h-3 w-3 mr-1" />
+                                ) : (
+                                  <ArrowDownRight className="h-3 w-3 mr-1" />
+                                )}
+                                <span className="text-sm font-medium">
+                                  {typeof data === "object" &&
+                                  data?.growth !== undefined
+                                    ? `${data.growth}%`
+                                    : typeof data === "string"
+                                    ? data
+                                    : "0%"}
+                                </span>
+                              </div>
                             </div>
-                          </div>
-                        ))}
+                          ))}
                       </div>
                     </CardContent>
+                    <div className="absolute inset-0 bg-background/70 backdrop-blur-sm flex items-center justify-center text-muted-foreground font-semibold pointer-events-none">
+                      Not Available
+                    </div>
                   </Card>
 
                   <Card>
                     <CardHeader>
                       <CardTitle>Site Comparison</CardTitle>
-                      <CardDescription>Performance across properties</CardDescription>
+                      <CardDescription>
+                        Performance across properties
+                      </CardDescription>
                     </CardHeader>
                     <CardContent>
                       <div className="max-h-[400px] overflow-y-auto pr-2 space-y-4">
@@ -659,20 +902,36 @@ export default function Analytics() {
                               <h4 className="font-medium mb-2">{site.site}</h4>
                               <div className="grid grid-cols-2 gap-2 text-xs">
                                 <div>
-                                  <span className="text-muted-foreground">Occupancy:</span>
-                                  <span className="font-medium ml-1">{site.metrics.occupancy}%</span>
+                                  <span className="text-muted-foreground">
+                                    Occupancy:
+                                  </span>
+                                  <span className="font-medium ml-1">
+                                    {site.metrics.occupancy}%
+                                  </span>
                                 </div>
                                 <div>
-                                  <span className="text-muted-foreground">Revenue:</span>
-                                  <span className="font-medium ml-1">₹{site.metrics.revenue.toLocaleString()}</span>
+                                  <span className="text-muted-foreground">
+                                    Revenue:
+                                  </span>
+                                  <span className="font-medium ml-1">
+                                    ₹{site.metrics.revenue.toLocaleString()}
+                                  </span>
                                 </div>
                                 <div>
-                                  <span className="text-muted-foreground">Satisfaction:</span>
-                                  <span className="font-medium ml-1">{site.metrics.satisfaction}/5</span>
+                                  <span className="text-muted-foreground">
+                                    Satisfaction:
+                                  </span>
+                                  <span className="font-medium ml-1">
+                                    {site.metrics.satisfaction}/5
+                                  </span>
                                 </div>
                                 <div>
-                                  <span className="text-muted-foreground">Efficiency:</span>
-                                  <span className="font-medium ml-1">{site.metrics.efficiency}%</span>
+                                  <span className="text-muted-foreground">
+                                    Efficiency:
+                                  </span>
+                                  <span className="font-medium ml-1">
+                                    {site.metrics.efficiency}%
+                                  </span>
                                 </div>
                               </div>
                             </div>
@@ -693,7 +952,9 @@ export default function Analytics() {
                   <Card>
                     <CardHeader>
                       <CardTitle>Maintenance Efficiency</CardTitle>
-                      <CardDescription>Work order completion trends</CardDescription>
+                      <CardDescription>
+                        Work order completion trends
+                      </CardDescription>
                     </CardHeader>
                     <CardContent>
                       <ResponsiveContainer width="100%" height={300}>
@@ -704,10 +965,32 @@ export default function Analytics() {
                           <YAxis yAxisId="right" orientation="right" />
                           <Tooltip content={<CustomTooltip />} />
                           <Legend />
-                          <Bar yAxisId="left" dataKey="completed" fill="#10b981" name="Completed" />
-                          <Bar yAxisId="left" dataKey="pending" fill="#f59e0b" name="Pending" />
-                          <Bar yAxisId="left" dataKey="overdue" fill="#ef4444" name="Overdue" />
-                          <Line yAxisId="right" type="monotone" dataKey="efficiency" stroke="#3b82f6" strokeWidth={3} name="Efficiency %" />
+                          <Bar
+                            yAxisId="left"
+                            dataKey="completed"
+                            fill="#10b981"
+                            name="Completed"
+                          />
+                          <Bar
+                            yAxisId="left"
+                            dataKey="pending"
+                            fill="#f59e0b"
+                            name="Pending"
+                          />
+                          <Bar
+                            yAxisId="left"
+                            dataKey="overdue"
+                            fill="#ef4444"
+                            name="Overdue"
+                          />
+                          <Line
+                            yAxisId="right"
+                            type="monotone"
+                            dataKey="efficiency"
+                            stroke="#3b82f6"
+                            strokeWidth={3}
+                            name="Efficiency %"
+                          />
                         </ComposedChart>
                       </ResponsiveContainer>
                     </CardContent>
@@ -716,7 +999,9 @@ export default function Analytics() {
                   <Card>
                     <CardHeader>
                       <CardTitle>Energy Consumption</CardTitle>
-                      <CardDescription>Monthly utility usage and costs</CardDescription>
+                      <CardDescription>
+                        Monthly utility usage and costs
+                      </CardDescription>
                     </CardHeader>
                     <CardContent>
                       <ResponsiveContainer width="100%" height={300}>
@@ -727,10 +1012,32 @@ export default function Analytics() {
                           <YAxis yAxisId="right" orientation="right" />
                           <Tooltip content={<CustomTooltip />} />
                           <Legend />
-                          <Bar yAxisId="left" dataKey="electricity" fill="#3b82f6" name="Electricity (kWh)" />
-                          <Bar yAxisId="left" dataKey="water" fill="#06b6d4" name="Water (L)" />
-                          <Bar yAxisId="left" dataKey="gas" fill="#f59e0b" name="Gas (m³)" />
-                          <Line yAxisId="right" type="monotone" dataKey="cost" stroke="#ef4444" strokeWidth={3} name="Total Cost (₹)" />
+                          <Bar
+                            yAxisId="left"
+                            dataKey="electricity"
+                            fill="#3b82f6"
+                            name="Electricity (kWh)"
+                          />
+                          <Bar
+                            yAxisId="left"
+                            dataKey="water"
+                            fill="#06b6d4"
+                            name="Water (L)"
+                          />
+                          <Bar
+                            yAxisId="left"
+                            dataKey="gas"
+                            fill="#f59e0b"
+                            name="Gas (m³)"
+                          />
+                          <Line
+                            yAxisId="right"
+                            type="monotone"
+                            dataKey="cost"
+                            stroke="#ef4444"
+                            strokeWidth={3}
+                            name="Total Cost (₹)"
+                          />
                         </ComposedChart>
                       </ResponsiveContainer>
                     </CardContent>
@@ -740,10 +1047,12 @@ export default function Analytics() {
 
               <TabsContent value="access" className="space-y-4">
                 <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
-                  <Card>
+                  <Card className="relative overflow-hidden">
                     <CardHeader>
                       <CardTitle>Daily Visitor Trends</CardTitle>
-                      <CardDescription>Entry and exit patterns over time</CardDescription>
+                      <CardDescription>
+                        Entry and exit patterns over time
+                      </CardDescription>
                     </CardHeader>
                     <CardContent>
                       <ResponsiveContainer width="100%" height={300}>
@@ -753,18 +1062,41 @@ export default function Analytics() {
                           <YAxis />
                           <Tooltip content={<CustomTooltip />} />
                           <Legend />
-                          <Line type="monotone" dataKey="visitors" stroke="#8884d8" strokeWidth={3} name="Unique Visitors" />
-                          <Line type="monotone" dataKey="entries" stroke="#82ca9d" strokeWidth={2} name="Total Entries" />
-                          <Line type="monotone" dataKey="exits" stroke="#ffc658" strokeWidth={2} name="Total Exits" />
+                          <Line
+                            type="monotone"
+                            dataKey="visitors"
+                            stroke="#8884d8"
+                            strokeWidth={3}
+                            name="Unique Visitors"
+                          />
+                          <Line
+                            type="monotone"
+                            dataKey="entries"
+                            stroke="#82ca9d"
+                            strokeWidth={2}
+                            name="Total Entries"
+                          />
+                          <Line
+                            type="monotone"
+                            dataKey="exits"
+                            stroke="#ffc658"
+                            strokeWidth={2}
+                            name="Total Exits"
+                          />
                         </LineChart>
                       </ResponsiveContainer>
                     </CardContent>
+                    <div className="absolute inset-0 bg-background/70 backdrop-blur-sm flex items-center justify-center text-muted-foreground font-semibold pointer-events-none">
+                      Not Available
+                    </div>
                   </Card>
 
-                  <Card>
+                  <Card className="relative overflow-hidden">
                     <CardHeader>
                       <CardTitle>Hourly Access Patterns</CardTitle>
-                      <CardDescription>Peak hours and traffic flow</CardDescription>
+                      <CardDescription>
+                        Peak hours and traffic flow
+                      </CardDescription>
                     </CardHeader>
                     <CardContent>
                       <ResponsiveContainer width="100%" height={300}>
@@ -773,36 +1105,75 @@ export default function Analytics() {
                           <XAxis dataKey="hour" />
                           <YAxis />
                           <Tooltip content={<CustomTooltip />} />
-                          <Area type="monotone" dataKey="entries" stackId="1" stroke="#82ca9d" fill="#82ca9d" fillOpacity={0.8} name="Entries" />
-                          <Area type="monotone" dataKey="exits" stackId="1" stroke="#ffc658" fill="#ffc658" fillOpacity={0.8} name="Exits" />
+                          <Area
+                            type="monotone"
+                            dataKey="entries"
+                            stackId="1"
+                            stroke="#82ca9d"
+                            fill="#82ca9d"
+                            fillOpacity={0.8}
+                            name="Entries"
+                          />
+                          <Area
+                            type="monotone"
+                            dataKey="exits"
+                            stackId="1"
+                            stroke="#ffc658"
+                            fill="#ffc658"
+                            fillOpacity={0.8}
+                            name="Exits"
+                          />
                         </AreaChart>
                       </ResponsiveContainer>
                     </CardContent>
+                    <div className="absolute inset-0 bg-background/70 backdrop-blur-sm flex items-center justify-center text-muted-foreground font-semibold pointer-events-none">
+                      Not Available
+                    </div>
                   </Card>
                 </div>
               </TabsContent>
 
               <TabsContent value="tenant" className="space-y-4">
                 <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
-                  <Card>
+                  <Card className="relative">
                     <CardHeader>
                       <CardTitle>Tenant Satisfaction</CardTitle>
-                      <CardDescription>Service rating across categories</CardDescription>
+                      <CardDescription>
+                        Service rating across categories
+                      </CardDescription>
                     </CardHeader>
                     <CardContent>
                       <ResponsiveContainer width="100%" height={300}>
-                        <RadialBarChart cx="50%" cy="50%" innerRadius="10%" outerRadius="80%" data={tenantSatisfaction }>
-                          <RadialBar dataKey="score" cornerRadius={10} fill="#3b82f6" />
+                        <RadialBarChart
+                          cx="50%"
+                          cy="50%"
+                          innerRadius="10%"
+                          outerRadius="80%"
+                          data={tenantSatisfaction}
+                        >
+                          <RadialBar
+                            dataKey="score"
+                            cornerRadius={10}
+                            fill="#3b82f6"
+                          />
                           <Tooltip content={<CustomTooltip />} />
                         </RadialBarChart>
                       </ResponsiveContainer>
                     </CardContent>
+                    {(!tenantSatisfaction ||
+                      tenantSatisfaction.length === 0) && (
+                      <div className="absolute inset-0 bg-background/70 backdrop-blur-sm flex items-center justify-center text-muted-foreground font-semibold pointer-events-none">
+                        Not Available
+                      </div>
+                    )}
                   </Card>
 
                   <Card>
                     <CardHeader>
                       <CardTitle>Tenant Retention</CardTitle>
-                      <CardDescription>Lease renewal trends over years</CardDescription>
+                      <CardDescription>
+                        Lease renewal trends over years
+                      </CardDescription>
                     </CardHeader>
                     <CardContent>
                       <ResponsiveContainer width="100%" height={300}>
@@ -812,7 +1183,13 @@ export default function Analytics() {
                           <YAxis />
                           <Tooltip content={<CustomTooltip />} />
                           <Legend />
-                          <Line type="monotone" dataKey="rate" stroke="#10b981" strokeWidth={3} name="Retention Rate %" />
+                          <Line
+                            type="monotone"
+                            dataKey="rate"
+                            stroke="#10b981"
+                            strokeWidth={3}
+                            name="Retention Rate %"
+                          />
                         </LineChart>
                       </ResponsiveContainer>
                     </CardContent>
@@ -825,19 +1202,23 @@ export default function Analytics() {
                   <Card className="col-span-2">
                     <CardHeader>
                       <CardTitle>Portfolio Heat Map</CardTitle>
-                      <CardDescription>Occupancy distribution across floors and blocks</CardDescription>
+                      <CardDescription>
+                        Occupancy distribution across floors and blocks
+                      </CardDescription>
                     </CardHeader>
                     <CardContent>
                       <div className="grid grid-cols-4 gap-2">
                         {(portfolioHeatmap || []).map((item, index) => {
                           const occupancyNum = item.occupancy || 0;
                           return (
-                            <div 
-                              key={index} 
+                            <div
+                              key={index}
                               className="p-3 rounded-lg text-center text-white text-xs font-medium"
-                              style={{ 
-                                backgroundColor: `hsl(${occupancyNum * 1.2}, 70%, 50%)`, 
-                                opacity: 0.8 + (occupancyNum / 500) 
+                              style={{
+                                backgroundColor: `hsl(${
+                                  occupancyNum * 1.2
+                                }, 70%, 50%)`,
+                                opacity: 0.8 + occupancyNum / 500,
                               }}
                             >
                               <div>{item.floor}</div>
@@ -850,7 +1231,7 @@ export default function Analytics() {
                     </CardContent>
                   </Card>
 
-                  <Card>
+                  <Card className="relative overflow-hidden">
                     <CardHeader>
                       <CardTitle>Performance Summary</CardTitle>
                       <CardDescription>Key metrics overview</CardDescription>
@@ -858,27 +1239,51 @@ export default function Analytics() {
                     <CardContent>
                       <div className="space-y-4">
                         <div className="flex justify-between items-center">
-                          <span className="text-sm font-medium">Total Properties</span>
-                          <Badge variant="secondary">{performanceSummary?.["Total Properties"] || "0 Sites"}</Badge>
+                          <span className="text-sm font-medium">
+                            Total Properties
+                          </span>
+                          <Badge variant="secondary">
+                            {performanceSummary?.["Total Properties"] ||
+                              "0 Sites"}
+                          </Badge>
                         </div>
                         <div className="flex justify-between items-center">
-                          <span className="text-sm font-medium">Total Spaces</span>
-                          <Badge variant="secondary">{performanceSummary?.["Total Spaces"] || "0 Units"}</Badge>
+                          <span className="text-sm font-medium">
+                            Total Spaces
+                          </span>
+                          <Badge variant="secondary">
+                            {performanceSummary?.["Total Spaces"] || "0 Units"}
+                          </Badge>
                         </div>
                         <div className="flex justify-between items-center">
-                          <span className="text-sm font-medium">Avg Occupancy</span>
-                          <Badge variant="outline" className="text-green-600">{performanceSummary?.["Avg Occupancy"] || "0%"}%</Badge>
+                          <span className="text-sm font-medium">
+                            Avg Occupancy
+                          </span>
+                          <Badge variant="outline" className="text-green-600">
+                            {performanceSummary?.["Avg Occupancy"] || "0%"}%
+                          </Badge>
                         </div>
                         <div className="flex justify-between items-center">
-                          <span className="text-sm font-medium">Monthly Revenue</span>
-                          <Badge variant="outline" className="text-blue-600">{performanceSummary?.["Monthly Revenue"] || '₹0K'}</Badge>
+                          <span className="text-sm font-medium">
+                            Monthly Revenue
+                          </span>
+                          <Badge variant="outline" className="text-blue-600">
+                            {performanceSummary?.["Monthly Revenue"] || "₹0K"}
+                          </Badge>
                         </div>
                         <div className="flex justify-between items-center">
-                          <span className="text-sm font-medium">Collection Rate</span>
-                          <Badge variant="outline" className="text-purple-600">{performanceSummary?.["Collection Rate"] || "0%"}%</Badge>
+                          <span className="text-sm font-medium">
+                            Collection Rate
+                          </span>
+                          <Badge variant="outline" className="text-purple-600">
+                            {performanceSummary?.["Collection Rate"] || "0%"}%
+                          </Badge>
                         </div>
                       </div>
                     </CardContent>
+                    <div className="absolute inset-0 bg-background/70 backdrop-blur-sm flex items-center justify-center text-muted-foreground font-semibold pointer-events-none">
+                      Not Available
+                    </div>
                   </Card>
                 </div>
               </TabsContent>

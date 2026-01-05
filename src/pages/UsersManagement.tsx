@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import { Plus, Pencil, Trash2, Search, UserCircle, Eye } from "lucide-react";
+import { Plus, Pencil, Trash2, Search, UserCircle, Eye, Users } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import {
@@ -18,6 +18,7 @@ import {
   CardDescription,
 } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
+import { LogOut, } from "lucide-react";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { UserForm } from "@/components/UserForm";
 import { userManagementApiService } from "@/services/access_control/usermanagementapi";
@@ -67,6 +68,7 @@ import { useSkipFirstEffect } from "@/hooks/use-skipfirst-effect";
 import LoaderOverlay from "@/components/LoaderOverlay";
 import ContentContainer from "@/components/ContentContainer";
 import { useLoader } from "@/context/LoaderContext";
+import { useAuth } from "@/context/AuthContext";
 
 export default function UsersManagement() {
   const [users, setUsers] = useState<User[]>([]);
@@ -76,6 +78,7 @@ export default function UsersManagement() {
   const [formMode, setFormMode] = useState<'create' | 'edit' | 'view'>('create');
   const [deleteUserId, setDeleteUserId] = useState<string | null>(null);
   const [page, setPage] = useState(1);
+  const { user, handleLogout } = useAuth();
   const [pageSize] = useState(10);
   const [totalItems, setTotalItems] = useState(0);
   const { withLoader } = useLoader();
@@ -208,9 +211,47 @@ export default function UsersManagement() {
         <PropertySidebar />
 
         <div className="flex-1 flex flex-col">
-          <header className="bg-card border-b border-border px-6 py-4">
-            <SidebarTrigger />
+          <header className="flex h-16 shrink-0 items-center justify-between border-b border-sidebar-border px-4">
+
+            {/* LEFT SIDE */}
+            <div className="flex items-center gap-2">
+              <SidebarTrigger className="-ml-1" />
+              <Users className="h-5 w-5 text-sidebar-primary" />
+              <h1 className="text-lg font-semibold text-sidebar-primary">
+                Users Management
+              </h1>
+            </div>
+
+            {/* RIGHT SIDE */}
+            <div className="flex items-center gap-4">
+              <div className="flex items-center gap-3">
+                <Avatar>
+                  <AvatarFallback className="bg-gradient-primary text-white">
+                    {user.name.charAt(0)}
+                  </AvatarFallback>
+                </Avatar>
+
+                <div className="text-right">
+                  <p className="text-sm font-medium">{user.name}</p>
+                  <p className="text-xs text-muted-foreground">
+                    {user.account_type}
+                  </p>
+                </div>
+              </div>
+
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={handleLogout}
+                className="text-muted-foreground hover:text-destructive"
+              >
+                <LogOut className="w-4 h-4 mr-2" />
+                Logout
+              </Button>
+            </div>
+
           </header>
+
 
           <main className="relative  flex-1 p-6 overflow-auto">
             <div className="max-w-7xl mx-auto space-y-6">

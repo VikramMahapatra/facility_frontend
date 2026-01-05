@@ -8,6 +8,7 @@ import {
   CardHeader,
   CardTitle,
 } from "@/components/ui/card";
+import { LogOut } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import {
   Select,
@@ -35,6 +36,7 @@ import {
   DollarSign,
   Calendar,
   TrendingUp,
+  MapPin,
 } from "lucide-react";
 import {
   AlertDialog,
@@ -47,6 +49,7 @@ import {
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
 import { toast } from "sonner";
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { leaseChargeApiService } from "@/services/leasing_tenants/leasechargeapi";
 import { LeaseChargeForm } from "@/components/LeaseChargeForm";
 import { useSkipFirstEffect } from "@/hooks/use-skipfirst-effect";
@@ -130,6 +133,7 @@ export default function LeaseCharges() {
   const [deleteId, setDeleteId] = useState<string | null>(null);
   const [leaseCharges, setLeaseCharges] = useState<LeaseCharge[]>([]);
   const [chargeCodeList, setChargeCodeList] = useState([]);
+  const { user, handleLogout } = useAuth();
   const [months, setMonths] = useState<{ id: string; name: string }[]>([]);
   // form state
   const [isFormOpen, setIsFormOpen] = useState(false);
@@ -377,14 +381,43 @@ export default function LeaseCharges() {
       <div className="min-h-screen flex w-full">
         <PropertySidebar />
         <SidebarInset className="flex-1">
-          <div className="flex h-16 shrink-0 items-center gap-2 border-b px-4">
-            <SidebarTrigger className="-ml-1" />
-            <Separator orientation="vertical" className="mr-2 h-4" />
+          <header className="flex h-16 shrink-0 items-center justify-between border-b border-sidebar-border px-4">
+            {/* LEFT SIDE */}
             <div className="flex items-center gap-2">
+              <SidebarTrigger className="-ml-1" />
+              <Separator orientation="vertical" className="mr-2 h-4" />
               <Receipt className="h-5 w-5 text-muted-foreground" />
               <h1 className="text-lg font-semibold">Lease Charges</h1>
             </div>
-          </div>
+
+            {/* RIGHT SIDE */}
+            <div className="flex items-center gap-4">
+              <div className="flex items-center gap-3">
+                <Avatar>
+                  <AvatarFallback className="bg-gradient-primary text-white">
+                    {user.name.charAt(0)}
+                  </AvatarFallback>
+                </Avatar>
+
+                <div className="text-right">
+                  <p className="text-sm font-medium">{user.name}</p>
+                  <p className="text-xs text-muted-foreground">
+                    {user.account_type}
+                  </p>
+                </div>
+              </div>
+
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={handleLogout}
+                className="text-muted-foreground hover:text-destructive"
+              >
+                <LogOut className="w-4 h-4 mr-2" />
+                Logout
+              </Button>
+            </div>
+          </header>
 
           <div className="flex-1 space-y-6 p-6">
             {/* Dashboard cards (org-wide from backend) */}
@@ -604,7 +637,7 @@ export default function LeaseCharges() {
                         <CardHeader>
                           <div className="flex items-center justify-between">
                             <div>
-                              <CardTitle className="text-lg flex items-center gap-2">
+                              <CardTitle className="text-lg flex items-center gap-2 mb-1">
                                 <Badge
                                   className={getChargeCodeColor(
                                     charge.charge_code
@@ -612,17 +645,23 @@ export default function LeaseCharges() {
                                 >
                                   {charge.charge_code}
                                 </Badge>
-                                {getChargeCodeName(charge.charge_code)}
+                                {charge.tenant_name}
                               </CardTitle>
-                              <CardDescription>
-                                Lease {charge.tenant_name} • {""}
-                                {new Date(
-                                  charge.period_start
-                                ).toLocaleDateString()}{" "}
-                                -{" "}
-                                {new Date(
-                                  charge.period_end
-                                ).toLocaleDateString()}
+                              <CardDescription className="space-y-1">
+                                <div>
+                                  Period -{" "}
+                                  {new Date(
+                                    charge.period_start
+                                  ).toLocaleDateString()}{" "}
+                                  -{" "}
+                                  {new Date(
+                                    charge.period_end
+                                  ).toLocaleDateString()}
+                                </div>
+                                <div className="flex items-center gap-1">
+                                  <MapPin className="h-4 w-4 text-muted-foreground" />
+                                  {charge.space_name} • {charge.site_name}
+                                </div>
                               </CardDescription>
                             </div>
                             <div className="flex items-center gap-2">

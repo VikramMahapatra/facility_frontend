@@ -4,6 +4,13 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 import { PropertySidebar } from "@/components/PropertySidebar";
 import { SidebarProvider, SidebarInset, SidebarTrigger } from "@/components/ui/sidebar";
 import { SpaceGroupForm } from "@/components/SpaceGroupForm";
@@ -16,6 +23,8 @@ import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, 
 import { useSkipFirstEffect } from "@/hooks/use-skipfirst-effect";
 import { useAuth } from "../context/AuthContext";
 import { useLoader } from "@/context/LoaderContext";
+import { LogOut, } from "lucide-react";
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import LoaderOverlay from "@/components/LoaderOverlay";
 import ContentContainer from "@/components/ContentContainer";
 
@@ -47,6 +56,7 @@ export default function SpaceGroups() {
   const [deleteSpaceGroupId, setDeleteSpaceGroupId] = useState<string | null>(null);
   const { canRead, canWrite, canDelete } = useAuth();
   const { withLoader } = useLoader();
+  const { user, handleLogout } = useAuth();
   const resource = "space_groups";
 
   const getKindIcon = (kind: SpaceKind) => {
@@ -214,11 +224,38 @@ export default function SpaceGroups() {
       <div className="flex min-h-screen w-full">
         <PropertySidebar />
         <SidebarInset className="flex-1">
-          <header className="flex h-16 shrink-0 items-center gap-2 border-b border-sidebar-border px-4">
-            <SidebarTrigger className="-ml-1" />
+          <header className="flex h-16 shrink-0 items-center justify-between border-b border-sidebar-border px-4">
             <div className="flex items-center gap-2">
+            <SidebarTrigger className="-ml-1" />
+            
               <Package className="h-5 w-5 text-sidebar-primary" />
               <h1 className="text-lg font-semibold text-sidebar-primary">Space Groups & Categories</h1>
+            </div>
+            <div className="flex items-center gap-4">
+              <div className="flex items-center gap-3">
+                <Avatar>
+                  <AvatarFallback className="bg-gradient-primary text-white">
+                    {user.name.charAt(0)}
+                  </AvatarFallback>
+                </Avatar>
+
+                <div className="text-right">
+                  <p className="text-sm font-medium">{user.name}</p>
+                  <p className="text-xs text-muted-foreground">
+                    {user.account_type}
+                  </p>
+                </div>
+              </div>
+
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={handleLogout}
+                className="text-muted-foreground hover:text-destructive"
+              >
+                <LogOut className="w-4 h-4 mr-2" />
+                Logout
+              </Button>
             </div>
           </header>
 
@@ -247,27 +284,35 @@ export default function SpaceGroups() {
                   className="max-w-sm"
                 />
 
-                <select
+                <Select
                   value={selectedSite}
-                  onChange={(e) => setSelectedSite(e.target.value)}
-                  className="rounded-md border border-input bg-background px-3 py-2 text-sm"
+                  onValueChange={setSelectedSite}
                 >
-                  <option value="all">All Sites</option>
-                  {siteList.map(site => (
-                    <option key={site.id} value={site.id}>{site.name}</option>
-                  ))}
-                </select>
+                  <SelectTrigger className="w-[180px]">
+                    <SelectValue placeholder="All Sites" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="all">All Sites</SelectItem>
+                    {siteList.map(site => (
+                      <SelectItem key={site.id} value={site.id}>{site.name}</SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
 
-                <select
+                <Select
                   value={selectedKind}
-                  onChange={(e) => setSelectedKind(e.target.value)}
-                  className="rounded-md border border-input bg-background px-3 py-2 text-sm"
+                  onValueChange={setSelectedKind}
                 >
-                  <option value="all">All Types</option>
-                  {spaceKinds.map(kind => (
-                    <option key={kind} value={kind}>{kind.replace('_', ' ').replace(/\b\w/g, l => l.toUpperCase())}</option>
-                  ))}
-                </select>
+                  <SelectTrigger className="w-[180px]">
+                    <SelectValue placeholder="All Types" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="all">All Types</SelectItem>
+                    {spaceKinds.map(kind => (
+                      <SelectItem key={kind} value={kind}>{kind.replace('_', ' ').replace(/\b\w/g, l => l.toUpperCase())}</SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
               </div>
 
               <ContentContainer>

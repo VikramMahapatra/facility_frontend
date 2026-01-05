@@ -93,10 +93,10 @@ export function RevenueChart() {
         </ResponsiveContainer>
         </CardContent>
       </ContentContainer>
-      {/* Coming soon overlay */}
+      {/* Coming soon overlay 
       <div className="absolute inset-0 bg-background/70 backdrop-blur-sm flex items-center justify-center text-muted-foreground font-semibold pointer-events-none">
         Not Available
-      </div>
+      </div>*/}
     </Card>
   );
 }
@@ -306,10 +306,10 @@ export function EnergyChart() {
         </ResponsiveContainer>
         </CardContent>
       </ContentContainer>
-      {/* Coming soon overlay */}
+      {/* Coming soon overlay 
       <div className="absolute inset-0 bg-background/70 backdrop-blur-sm flex items-center justify-center text-muted-foreground font-semibold pointer-events-none">
         Not Available
-      </div>
+      </div>*/}
     </Card>
   );
 }

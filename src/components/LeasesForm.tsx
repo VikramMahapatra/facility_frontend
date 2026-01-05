@@ -23,6 +23,7 @@ import { zodResolver } from "@hookform/resolvers/zod";
 import { leaseSchema, LeaseFormValues } from "@/schemas/lease.schema";
 import { siteApiService } from "@/services/spaces_sites/sitesapi";
 import { spacesApiService } from "@/services/spaces_sites/spacesapi";
+import { buildingApiService } from "@/services/spaces_sites/buildingsapi";
 import { Lease } from "@/interfaces/leasing_tenants_interface";
 import { leasesApiService } from "@/services/leasing_tenants/leasesapi";
 
@@ -37,6 +38,7 @@ interface LeaseFormProps {
 const emptyFormData: Partial<Lease> = {
   kind: "commercial",
   site_id: "",
+  building_id: "",
   space_id: "",
   partner_id: "",
   tenant_id: "",
@@ -71,6 +73,7 @@ export function LeaseForm({
     defaultValues: {
       kind: "commercial",
       site_id: "",
+      building_id: "",
       space_id: "",
       partner_id: "",
       tenant_id: "",
@@ -87,6 +90,7 @@ export function LeaseForm({
   });
   const [formLoading, setFormLoading] = useState(true);
   const [siteList, setSiteList] = useState<any[]>([]);
+  const [buildingList, setBuildingList] = useState<any[]>([]);
   const [spaceList, setSpaceList] = useState<any[]>([]);
   const [leasePartnerList, setLeasePartnerList] = useState<any[]>([]);
   const isReadOnly = mode === "view";
@@ -94,12 +98,31 @@ export function LeaseForm({
   const loadAll = async () => {
     setFormLoading(true);
 
-    await Promise.all([loadSites(), loadLeasePartners(), loadSpaces()]);
+    await Promise.all([loadSites(), loadLeasePartners()]);
+
+    const leaseSiteId = lease && mode !== "create" ? lease.site_id : undefined;
+    const leaseBuildingId =
+      lease && mode !== "create"
+        ? (lease as any).building_id || (lease as any).building_block_id
+        : undefined;
+
+    if (leaseSiteId) {
+      await loadBuildingLookup(leaseSiteId);
+      if (leaseSiteId) {
+        const spaces = await spacesApiService.getSpaceLookup(
+          leaseSiteId,
+          leaseBuildingId
+        );
+        if (spaces.success) setSpaceList(spaces.data || []);
+      }
+    }
+
     reset(
       lease
         ? {
             kind: (lease.kind as any) || "commercial",
             site_id: lease.site_id || "",
+            building_id: leaseBuildingId || "",
             space_id: lease.space_id || "",
             partner_id: lease.partner_id ? String(lease.partner_id) : "",
             tenant_id: lease.tenant_id ? String(lease.tenant_id) : "",
@@ -124,10 +147,29 @@ export function LeaseForm({
   }, [lease, mode, reset]);
 
   const selectedSiteId = watch("site_id");
+  const selectedBuildingId = watch("building_id");
   const selectedKind = watch("kind");
 
+  // Load buildings when site changes
   useEffect(() => {
-    loadSpaces();
+    if (selectedSiteId) {
+      loadBuildingLookup(selectedSiteId);
+    } else {
+      setBuildingList([]);
+      setSpaceList([]);
+    }
+  }, [selectedSiteId]);
+
+  // Load spaces when site or building changes
+  useEffect(() => {
+    if (selectedSiteId) {
+      loadSpaces();
+    } else {
+      setSpaceList([]);
+    }
+  }, [selectedSiteId, selectedBuildingId]);
+
+  useEffect(() => {
     loadLeasePartners();
   }, [selectedSiteId, selectedKind]);
 
@@ -147,9 +189,17 @@ export function LeaseForm({
     }
   }, [leasePartnerList, lease, setValue, clearErrors, trigger]);
 
+  const loadBuildingLookup = async (siteId: string) => {
+    const lookup = await buildingApiService.getBuildingLookup(siteId);
+    if (lookup.success) setBuildingList(lookup.data || []);
+  };
+
   const loadSpaces = async () => {
     if (selectedSiteId) {
-      const spaces = await spacesApiService.getSpaceLookup(selectedSiteId);
+      const spaces = await spacesApiService.getSpaceLookup(
+        selectedSiteId,
+        selectedBuildingId
+      );
       if (spaces.success) setSpaceList(spaces.data || []);
     }
   };
@@ -179,6 +229,7 @@ export function LeaseForm({
 
   const handleClose = () => {
     reset(emptyFormData);
+    setBuildingList([]);
     setSpaceList([]);
     setLeasePartnerList([]);
     onClose();
@@ -205,16 +256,21 @@ export function LeaseForm({
             <p className="text-center">Loading...</p>
           ) : (
             <div className="space-y-4">
-              <div className="grid grid-cols-2 gap-4">
-                <div>
-                  <Label>Site *</Label>
-                  <Controller
-                    name="site_id"
-                    control={control}
-                    render={({ field }) => (
+              <div className="grid grid-cols-3 gap-4">
+                <Controller
+                  name="site_id"
+                  control={control}
+                  render={({ field }) => (
+                    <div className="space-y-2">
+                      <Label htmlFor="site_id">Site *</Label>
                       <Select
-                        value={field.value}
-                        onValueChange={field.onChange}
+                        value={field.value || ""}
+                        onValueChange={(value) => {
+                          field.onChange(value);
+                          // Reset building and space when site changes
+                          setValue("building_id", "");
+                          setValue("space_id", "");
+                        }}
                         disabled={isReadOnly}
                       >
                         <SelectTrigger
@@ -223,60 +279,96 @@ export function LeaseForm({
                           <SelectValue placeholder="Select site" />
                         </SelectTrigger>
                         <SelectContent>
-                          {siteList.map((s: any) => (
-                            <SelectItem key={s.id} value={s.id}>
-                              {s.name}
+                          {siteList.map((site: any) => (
+                            <SelectItem key={site.id} value={site.id}>
+                              {site.name}
                             </SelectItem>
                           ))}
                         </SelectContent>
                       </Select>
-                    )}
-                  />
-                  {errors.site_id && (
-                    <p className="text-sm text-red-500">
-                      {errors.site_id.message as any}
-                    </p>
+                      {errors.site_id && (
+                        <p className="text-sm text-red-500">
+                          {errors.site_id.message as any}
+                        </p>
+                      )}
+                    </div>
                   )}
-                </div>
+                />
 
-                <div>
-                  <Label>Space *</Label>
-                  <Controller
-                    name="space_id"
-                    control={control}
-                    render={({ field }) => (
+                <Controller
+                  name="building_id"
+                  control={control}
+                  render={({ field }) => (
+                    <div className="space-y-2">
+                      <Label htmlFor="building_id">Building</Label>
                       <Select
-                        value={field.value}
+                        value={field.value || ""}
+                        onValueChange={(value) => {
+                          field.onChange(value);
+                          // Reset space when building changes
+                          setValue("space_id", "");
+                        }}
+                        disabled={isReadOnly || !selectedSiteId}
+                      >
+                        <SelectTrigger>
+                          <SelectValue
+                            placeholder={
+                              !selectedSiteId
+                                ? "Select site first"
+                                : "Select building"
+                            }
+                          />
+                        </SelectTrigger>
+                        <SelectContent>
+                          {buildingList.map((building: any) => (
+                            <SelectItem key={building.id} value={building.id}>
+                              {building.name}
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                    </div>
+                  )}
+                />
+
+                <Controller
+                  name="space_id"
+                  control={control}
+                  render={({ field }) => (
+                    <div className="space-y-2">
+                      <Label htmlFor="space_id">Space *</Label>
+                      <Select
+                        value={field.value || ""}
                         onValueChange={field.onChange}
-                        disabled={isReadOnly}
+                        disabled={isReadOnly || !selectedSiteId}
                       >
                         <SelectTrigger
                           className={errors.space_id ? "border-red-500" : ""}
                         >
                           <SelectValue
                             placeholder={
-                              selectedSiteId
-                                ? "Select space"
-                                : "Select site first"
+                              !selectedSiteId
+                                ? "Select site first"
+                                : "Select space"
                             }
                           />
                         </SelectTrigger>
                         <SelectContent>
-                          {spaceList.map((s: any) => (
-                            <SelectItem key={s.id} value={s.id}>
-                              {s.name}
+                          {spaceList.map((space: any) => (
+                            <SelectItem key={space.id} value={space.id}>
+                              {space.name || space.code}
                             </SelectItem>
                           ))}
                         </SelectContent>
                       </Select>
-                    )}
-                  />
-                  {errors.space_id && (
-                    <p className="text-sm text-red-500">
-                      {errors.space_id.message as any}
-                    </p>
+                      {errors.space_id && (
+                        <p className="text-sm text-red-500">
+                          {errors.space_id.message as any}
+                        </p>
+                      )}
+                    </div>
                   )}
-                </div>
+                />
               </div>
 
               <div className="grid grid-cols-2 gap-4">
