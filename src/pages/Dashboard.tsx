@@ -11,17 +11,18 @@ import {
   MaintenanceOverview,
   AccessOverview,
   FinancialSummary,
-  EnergyOverview
+  EnergyOverview,
 } from "@/components/DashboardCards";
 import {
   RevenueChart,
   OccupancyChart,
   MaintenanceChart,
   EnergyChart,
-  FloorOccupancyChart
+  FloorOccupancyChart,
 } from "@/components/DashboardCharts";
 import { dashboardApiService } from "@/services/dashboardapi";
 import { useAuth } from "@/context/AuthContext";
+import { useSettings } from "@/context/SettingsContext";
 
 interface User {
   id: string;
@@ -34,7 +35,7 @@ interface User {
 
 const Dashboard = () => {
   const { user, handleLogout } = useAuth();
-
+  const { systemName } = useSettings();
 
   if (!user) {
     return (
@@ -65,7 +66,7 @@ const Dashboard = () => {
                     <span className="text-white font-bold">F</span>
                   </div>
                   <div>
-                    <h1 className="text-xl font-bold">FacilityOS</h1>
+                    <h1 className="text-xl font-bold">{systemName}</h1>
                     <p className="text-sm text-muted-foreground">
                       {user.organization_name || user.account_type} Dashboard
                     </p>
@@ -82,7 +83,9 @@ const Dashboard = () => {
                   </Avatar>
                   <div className="text-right">
                     <p className="text-sm font-medium">{user.name}</p>
-                    <p className="text-xs text-muted-foreground">{user.account_type}</p>
+                    <p className="text-xs text-muted-foreground">
+                      {user.account_type}
+                    </p>
                   </div>
                 </div>
 
@@ -109,8 +112,7 @@ const Dashboard = () => {
                 <p className="text-muted-foreground">
                   {user.organization_name
                     ? `Managing facilities for ${user.organization_name}`
-                    : "Your comprehensive property management dashboard"
-                  }
+                    : "Your comprehensive property management dashboard"}
                 </p>
               </div>
 
