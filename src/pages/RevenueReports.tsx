@@ -71,6 +71,7 @@ export default function RevenueReports() {
   const [selectedSite, setSelectedSite] = useState<string>("all");
   const [siteList, setSiteList] = useState<any[]>([]);
   const [trendData, setTrendData] = useState<any[]>([]);
+  const [chargeCodes, setChargeCodes] = useState<string[]>([]);
   const [sourceData, setSourceData] = useState<any[]>([]);
   const [outstandingReceivablesData, setOutstandingReceivablesData] = useState<
     any[]
@@ -127,7 +128,45 @@ export default function RevenueReports() {
     const trendData = await withLoader(async () => {
       return await revenueReportsApiService.getRevenueReportsByTrend(params);
     });
-    if (trendData?.success) setTrendData(trendData.data || []);
+    if (trendData?.success) {
+      const data = trendData.data || [];
+      if (data.length > 0) {
+        // Get all charge code fields from the first item (excluding metadata fields)
+        const firstItem = data[0];
+        const metadataFields = [
+          "month",
+          "total",
+          "collected",
+          "outstanding",
+          "penalties",
+        ];
+        const allChargeCodes = Object.keys(firstItem).filter(
+          (key) => !metadataFields.includes(key.toLowerCase())
+        );
+
+        // Store charge codes for dynamic rendering
+        setChargeCodes(allChargeCodes);
+
+        // Transform the data: convert strings to numbers
+        const transformedData = data.map((item: any) => {
+          const transformed: any = {
+            month: item.month,
+          };
+
+          // Process each charge code - convert to numbers
+          allChargeCodes.forEach((code) => {
+            const codeLower = code.toLowerCase();
+            transformed[codeLower] = Number(item[code] || 0);
+          });
+
+          return transformed;
+        });
+        setTrendData(transformedData);
+      } else {
+        setChargeCodes([]);
+        setTrendData([]);
+      }
+    }
   };
 
   const loadRevenueReportsBySource = async () => {
@@ -399,27 +438,51 @@ export default function RevenueReports() {
                           <YAxis />
                           <Tooltip />
                           <Legend />
-                          <Area
-                            type="monotone"
-                            dataKey="rent"
-                            stackId="1"
-                            stroke="#8884d8"
-                            fill="#8884d8"
-                          />
-                          <Area
-                            type="monotone"
-                            dataKey="cam"
-                            stackId="1"
-                            stroke="#82ca9d"
-                            fill="#82ca9d"
-                          />
-                          <Area
-                            type="monotone"
-                            dataKey="utilities"
-                            stackId="1"
-                            stroke="#ffc658"
-                            fill="#ffc658"
-                          />
+                          {chargeCodes.map((code, index) => {
+                            // Color palette for dynamic assignment
+                            const colors = [
+                              "#8884d8", // Purple
+                              "#82ca9d", // Green
+                              "#ffc658", // Yellow
+                              "#ff6b6b", // Red
+                              "#4ecdc4", // Teal
+                              "#ffa500", // Orange
+                              "#9b59b6", // Purple
+                              "#3498db", // Blue
+                              "#e74c3c", // Red
+                              "#1abc9c", // Turquoise
+                              "#f39c12", // Orange
+                              "#34495e", // Dark Gray
+                            ];
+                            const color = colors[index % colors.length];
+                            const dataKey = code.toLowerCase();
+
+                            // Format charge code name for display
+                            const formatChargeCodeName = (code: string) => {
+                              const codeLower = code.toLowerCase();
+                              const nameMap: Record<string, string> = {
+                                rent: "Rent",
+                                cam: "CAM",
+                                utilities: "Utilities",
+                                elec: "Electricity",
+                                parking: "Parking",
+                                penalties: "Penalties",
+                              };
+                              return nameMap[codeLower] || code.toUpperCase();
+                            };
+
+                            return (
+                              <Area
+                                key={code}
+                                type="monotone"
+                                dataKey={dataKey}
+                                stackId="1"
+                                stroke={color}
+                                fill={color}
+                                name={formatChargeCodeName(code)}
+                              />
+                            );
+                          })}
                         </AreaChart>
                       </ResponsiveContainer>
                     </CardContent>
