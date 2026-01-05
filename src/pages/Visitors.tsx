@@ -42,6 +42,7 @@ import { useAuth } from "../context/AuthContext";
 import { Visitor } from "@/interfaces/parking_access_interface";
 import { Card, CardContent, CardHeader } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
+import { PageHeader } from "@/components/PageHeader";
 
 export default function Visitors() {
   const [isFormOpen, setIsFormOpen] = useState(false);
@@ -211,12 +212,8 @@ export default function Visitors() {
         <PropertySidebar />
         <SidebarInset className="flex-1">
           <header className="flex h-16 shrink-0 items-center justify-between border-b border-sidebar-border px-4">
-            <div className="flex items-center gap-2">
-            <SidebarTrigger className="-ml-1" />
-            
-              <UserCheck className="h-5 w-5 text-sidebar-primary" />
-              <h1 className="text-lg font-semibold text-sidebar-primary">Visitor Management</h1>
-            </div>
+             {/* LEFT SIDE - Page Title*/}
+            <PageHeader />
             <div className="flex items-center gap-4">
               <div className="flex items-center gap-3">
                 <Avatar>

@@ -70,7 +70,7 @@ export function PropertySidebar() {
       }))
       .filter((section) => section.items.length > 0);
 
-    console.log("filetered pages:", filteredRoleWiseNavigationItems);
+    console.log("filtered pages:", filteredRoleWiseNavigationItems);
 
     setRoleWiseNavigationItems(filteredRoleWiseNavigationItems);
 

@@ -40,6 +40,7 @@ import { LeaseChargeCodeForm } from "@/components/LeaseChargeCodeForm";
 import LoaderOverlay from "@/components/LoaderOverlay";
 import ContentContainer from "@/components/ContentContainer";
 import { useAuth } from "@/context/AuthContext";
+import { PageHeader } from "@/components/PageHeader";
 
 interface LeaseChargeCode {
   id?: string;
@@ -171,14 +172,8 @@ export default function LeaseChargeCode() {
         <PropertySidebar />
         <SidebarInset className="flex-1">
           <header className="flex h-16 shrink-0 items-center justify-between border-b border-sidebar-border px-4">
-            <div className="flex items-center gap-2">
-            <SidebarTrigger className="-ml-1" />
-            
-              <h1 className="text-lg font-semibold text-sidebar-primary">
-                <Key className="inline-block h-5 w-5 mr-2" />
-                Lease Charge Codes
-              </h1>
-            </div>
+            {/* LEFT SIDE - Page Title*/}
+            <PageHeader />
             <div className="flex items-center gap-4">
               <div className="flex items-center gap-3">
                 <Avatar>

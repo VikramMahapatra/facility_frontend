@@ -63,6 +63,7 @@ import {
 import { useLoader } from "@/context/LoaderContext";
 import LoaderOverlay from "@/components/LoaderOverlay";
 import ContentContainer from "@/components/ContentContainer";
+import { PageHeader } from "@/components/PageHeader";
 
 const getMeterIcon = (kind: string) => {
   switch (kind) {
@@ -426,25 +427,9 @@ export default function MetersReadings() {
         <PropertySidebar />
         <div className="flex-1">
           <header className="flex h-16 shrink-0 items-center justify-between border-b border-sidebar-border px-4">
-            {/* LEFT SIDE */}
-            <div className="flex items-start gap-3">
-              <SidebarTrigger className="-ml-1 mt-1" />
-
-              <div className="flex flex-col">
-                <div className="flex items-center gap-2">
-                  {/* ICON */}
-                  <Gauge className="h-5 w-5 text-muted-foreground" />
-
-                  {/* TITLE */}
-                  <h1 className="text-lg font-semibold">Meters & Readings</h1>
-                </div>
-
-                {/* SUBTITLE */}
-                <p className="text-sm text-muted-foreground">
-                  Monitor and manage utility meters and consumption data
-                </p>
-              </div>
-            </div>
+             {/* LEFT SIDE - Page Title*/}
+             <PageHeader />
+            
 
             {/* RIGHT SIDE */}
             <div className="flex items-center gap-4">
@@ -476,6 +461,16 @@ export default function MetersReadings() {
           </header>
 
           <main className="flex-1 space-y-6 p-6">
+             <div className="flex items-center justify-between">
+                <div>
+                  <h2 className="text-3xl font-bold text-sidebar-primary">
+                    Meters & Readings
+                  </h2>
+                  <p className="text-muted-foreground">
+                     Monitor and manage utility meters and consumption data
+                  </p>
+                </div>
+              </div>
             <div className="space-y-6">
               {/* Stats Cards */}
               <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">

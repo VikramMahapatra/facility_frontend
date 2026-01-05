@@ -28,6 +28,7 @@ import { useLoader } from "@/context/LoaderContext";
 import LoaderOverlay from "@/components/LoaderOverlay";
 import ContentContainer from "@/components/ContentContainer";
 import { useAuth } from "@/context/AuthContext";
+import { PageHeader } from "@/components/PageHeader";
 
 interface SpaceAssignment {
   id: string;
@@ -220,12 +221,8 @@ export default function SpaceAssignments() {
         <PropertySidebar />
         <SidebarInset className="flex-1">
           <header className="flex h-16 shrink-0 items-center justify-between border-b border-sidebar-border px-4">
-            <div className="flex items-center gap-2">
-            <SidebarTrigger className="-ml-1" />
-            
-              <Link2 className="h-5 w-5 text-sidebar-primary" />
-              <h1 className="text-lg font-semibold text-sidebar-primary">Space Group Assignments</h1>
-            </div>
+            {/* LEFT SIDE - Page Title*/}
+             <PageHeader />
              <div className="flex items-center gap-4">
               <div className="flex items-center gap-3">
                 <Avatar>

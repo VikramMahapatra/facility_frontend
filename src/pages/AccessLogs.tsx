@@ -45,6 +45,7 @@ import { useLoader } from "@/context/LoaderContext";
 import { useAuth } from "../context/AuthContext";
 import LoaderOverlay from "@/components/LoaderOverlay";
 import ContentContainer from "@/components/ContentContainer";
+import { PageHeader } from "@/components/PageHeader";
 
 export default function AccessLogs() {
   const [searchTerm, setSearchTerm] = useState("");
@@ -140,14 +141,8 @@ export default function AccessLogs() {
         <PropertySidebar />
         <SidebarInset className="flex-1">
           <header className="flex h-16 shrink-0 items-center justify-between border-b border-sidebar-border px-4">
-            <div className="flex items-center gap-2">
-            <SidebarTrigger className="-ml-1" />
-            
-              <Key className="h-5 w-5 text-sidebar-primary" />
-              <h1 className="text-lg font-semibold text-sidebar-primary">
-                Access Logs
-              </h1>
-            </div>
+             {/* LEFT SIDE - Page Title*/}
+            <PageHeader />
             <div className="flex items-center gap-4">
               <div className="flex items-center gap-3">
                 <Avatar>
@@ -178,21 +173,14 @@ export default function AccessLogs() {
 
           <main className="flex-1 p-6">
             <div className="space-y-6">
-              {/* Header */}
-              <div className="flex items-center justify-between">
-                <div>
-                  <h2 className="text-2xl font-bold text-sidebar-primary">
-                    Access Logs
+              <div>
+                  <h2 className="text-3xl font-bold text-sidebar-primary">
+                    All Logs
                   </h2>
                   <p className="text-muted-foreground">
-                    Monitor entry and exit activities
+                    Manage all access events.
                   </p>
                 </div>
-                <Button variant="outline" className="gap-2">
-                  <Download className="h-4 w-4" />
-                  Export Logs
-                </Button>
-              </div>
 
               {/* Stats */}
               <div className="grid gap-4 md:grid-cols-4">
