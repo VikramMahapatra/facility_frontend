@@ -63,6 +63,7 @@ import LoaderOverlay from "@/components/LoaderOverlay";
 import { useLoader } from "@/context/LoaderContext";
 import { useAuth } from "../context/AuthContext";
 import { SLAPolicy } from "@/interfaces/sla_policy_interface";
+import { PageHeader } from "@/components/PageHeader";
 
 export default function SLAPolicies() {
   const [isFormOpen, setIsFormOpen] = useState(false);
@@ -226,15 +227,8 @@ export default function SLAPolicies() {
 
         <SidebarInset>
           <header className="flex h-16 shrink-0 items-center justify-between border-b border-sidebar-border px-4">
-            <div className="flex items-center gap-2">
-              <SidebarTrigger />
-              <div className="flex items-center gap-2">
-                <ShieldCheck className="h-5 w-5 text-sidebar-primary" />
-                <h1 className="text-lg font-semibold text-sidebar-primary">
-                  Ticket Category SLA
-                </h1>
-              </div>
-            </div>
+           {/* LEFT SIDE - Page Title*/}
+            <PageHeader />
             <div className="flex items-center gap-4">
               <div className="flex items-center gap-3">
                 <Avatar>

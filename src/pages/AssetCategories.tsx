@@ -44,6 +44,7 @@ import ContentContainer from "@/components/ContentContainer";
 import { Pagination } from "@/components/Pagination";
 import { useSkipFirstEffect } from "@/hooks/use-skipfirst-effect";
 import { useAuth } from "@/context/AuthContext";
+import { PageHeader } from "@/components/PageHeader";
 
 export default function AssetCategories() {
   const [isFormOpen, setIsFormOpen] = useState(false);
@@ -176,14 +177,8 @@ export default function AssetCategories() {
         <PropertySidebar />
         <SidebarInset className="flex-1">
           <header className="flex h-16 shrink-0 items-center justify-between border-b border-sidebar-border px-4">
-            <div className="flex items-center gap-2">
-            <SidebarTrigger className="-ml-1" />
-            
-              <FolderTree className="h-5 w-5 text-sidebar-primary" />
-              <h1 className="text-lg font-semibold text-sidebar-primary">
-                Asset Categories
-              </h1>
-            </div>
+             {/* LEFT SIDE - Page Title*/}
+                        <PageHeader />
              <div className="flex items-center gap-4">
               <div className="flex items-center gap-3">
                 <Avatar>

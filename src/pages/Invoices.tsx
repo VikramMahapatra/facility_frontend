@@ -65,6 +65,7 @@ import { InvoiceForm } from "@/components/InvoiceForm";
 import { useSkipFirstEffect } from "@/hooks/use-skipfirst-effect";
 import { useAuth } from "../context/AuthContext";
 import ContentContainer from "@/components/ContentContainer";
+import { PageHeader } from "@/components/PageHeader";
 
 export default function Invoices() {
   const [searchTerm, setSearchTerm] = useState("");
@@ -330,13 +331,8 @@ export default function Invoices() {
         <PropertySidebar />
         <SidebarInset className="flex-1">
           <header className="flex h-16 shrink-0 items-center justify-between border-b border-sidebar-border px-4">
-            {/* LEFT SIDE */}
-            <div className="flex items-center gap-2">
-              <SidebarTrigger className="-ml-1" />
-              <Separator orientation="vertical" className="mr-2 h-4" />
-              <FileText className="h-5 w-5 text-muted-foreground" />
-              <h1 className="text-lg font-semibold">Invoices</h1>
-            </div>
+            {/* LEFT SIDE - Page Title*/}
+                        <PageHeader />
 
             {/* RIGHT SIDE */}
             <div className="flex items-center gap-4">
@@ -496,7 +492,7 @@ export default function Invoices() {
                 </CardContent>
               </Card>
 
-              <div className="relative rounded-md border">
+              <div className="relative ">
                 <ContentContainer>
                   <div className="space-y-6">
                     {/* Invoices Table */}

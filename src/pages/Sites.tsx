@@ -52,6 +52,9 @@ import { useLoader } from "@/context/LoaderContext";
 import LoaderOverlay from "@/components/LoaderOverlay";
 import ContentContainer from "@/components/ContentContainer";
 import { toast } from "sonner";
+import { useLocation } from "react-router-dom";
+import { getPageMetaByPath } from "@/helpers/navigationUtils";
+import { PageHeader } from "@/components/PageHeader";
 
 export interface Site {
   id: string;
@@ -95,6 +98,7 @@ export default function Sites() {
   const resource = "sites"; // must match resource name from backend policies
   const { withLoader } = useLoader();
   const { user, handleLogout } = useAuth();
+
 
   useSkipFirstEffect(() => {
     loadSites();
@@ -231,14 +235,8 @@ export default function Sites() {
         <SidebarInset className="flex-1">
           <header className="flex h-16 shrink-0 items-center justify-between border-b border-sidebar-border px-4">
 
-            {/* LEFT SIDE */}
-            <div className="flex items-center gap-2">
-              <SidebarTrigger className="-ml-1" />
-              <Building2 className="h-5 w-5 text-sidebar-primary" />
-              <h1 className="text-lg font-semibold text-sidebar-primary">
-                Sites & Buildings
-              </h1>
-            </div>
+            {/* LEFT SIDE - Page Title*/}
+            <PageHeader />
 
             {/* RIGHT SIDE */}
             <div className="flex items-center gap-4">

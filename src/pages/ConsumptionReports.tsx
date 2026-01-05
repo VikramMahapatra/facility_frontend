@@ -51,6 +51,7 @@ import { consumptionApiService } from "@/services/energy_iot/consumptionapi";
 import { useLoader } from "@/context/LoaderContext";
 import ContentContainer from "@/components/ContentContainer";
 import { useAuth } from "@/context/AuthContext";
+import { PageHeader } from "@/components/PageHeader";
 
 const getTrendIcon = (trend: string) => {
   switch (trend) {
@@ -243,23 +244,9 @@ export default function ConsumptionReports() {
         <PropertySidebar />
         <div className="flex-1">
           <header className="flex h-16 shrink-0 items-center justify-between border-b border-sidebar-border px-4">
-            {/* LEFT SIDE */}
-            <div className="flex items-start gap-3">
-              <SidebarTrigger className="-ml-1 mt-1" />
-
-              <div className="flex flex-col">
-                {/* ICON + TITLE */}
-                <div className="flex items-center gap-2">
-                  <BarChart3 className="h-5 w-5 text-muted-foreground" />
-                  <h1 className="text-lg font-semibold">Consumption Reports</h1>
-                </div>
-
-                {/* SUBTITLE */}
-                <p className="text-sm text-muted-foreground">
-                  Analyze utility consumption patterns and costs
-                </p>
-              </div>
-            </div>
+            {/* LEFT SIDE - Page Title*/}
+            <PageHeader />
+           
 
             {/* RIGHT SIDE */}
             <div className="flex items-center gap-4">
@@ -291,7 +278,18 @@ export default function ConsumptionReports() {
           </header>
 
           <main className="flex-1 space-y-6 p-6">
+             <div className="flex items-center justify-between">
+                <div>
+                  <h2 className="text-3xl font-bold text-sidebar-primary">
+                    Consumption Reports
+                  </h2>
+                  <p className="text-muted-foreground">
+                     Analyze utility consumption patterns and costs
+                  </p>
+                </div>
+              </div>
             <ContentContainer>
+             
               <div className="space-y-6">
                 {/* Stats Cards */}
                 <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
