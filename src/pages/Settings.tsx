@@ -338,7 +338,7 @@ export default function Settings() {
               onValueChange={setActiveTab}
               className="space-y-6"
             >
-              <TabsList className="grid w-full grid-cols-2">
+              <TabsList className="grid w-full grid-cols-3">
                 <TabsTrigger value="general">
                   <Building className="h-4 w-4 mr-2" />
                   General
@@ -347,11 +347,11 @@ export default function Settings() {
                   <Shield className="h-4 w-4 mr-2" />
                   Security
                 </TabsTrigger>
-                {/*
                 <TabsTrigger value="integrations">
                   <Zap className="h-4 w-4 mr-2" />
                   Integrations
                 </TabsTrigger>
+                {/*
                 <TabsTrigger value="appearance">
                   <Palette className="h-4 w-4 mr-2" />
                   Appearance
@@ -647,7 +647,7 @@ export default function Settings() {
                       </CardContent>
                     </Card>
                   </TabsContent>
-                  {/*
+
                   <TabsContent value="integrations" className="space-y-6">
                     <Card>
                       <CardHeader>
@@ -695,6 +695,7 @@ export default function Settings() {
                       </CardContent>
                     </Card>
                   </TabsContent>
+                  {/*
 
                   <TabsContent value="appearance" className="space-y-6">
                     <Card>
