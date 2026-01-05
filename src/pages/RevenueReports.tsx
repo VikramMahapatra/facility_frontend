@@ -11,7 +11,13 @@ import { siteApiService } from "@/services/spaces_sites/sitesapi";
 import { useToast } from "@/hooks/use-toast";
 import { LogOut } from "lucide-react";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
-//import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 import {
   Download,
   TrendingUp,
@@ -61,7 +67,7 @@ export default function RevenueReports() {
   const { toast } = useToast();
   const { withLoader } = useLoader();
   const { user, handleLogout } = useAuth();
-  const [selectedPeriod, setSelectedPeriod] = useState<string>("all");
+  const [selectedPeriod, setSelectedPeriod] = useState<string>("");
   const [selectedSite, setSelectedSite] = useState<string>("all");
   const [siteList, setSiteList] = useState<any[]>([]);
   const [trendData, setTrendData] = useState<any[]>([]);
@@ -89,7 +95,15 @@ export default function RevenueReports() {
       return await revenueReportsApiService.getRevenueReportsMonthLookup();
     });
     if (response?.success && response.data) {
-      setSelectedPeriod(response.data);
+      const validPeriods = [
+        "Last_Month",
+        "Last_3_Months",
+        "Last_6_Months",
+        "Last_Year",
+      ];
+      if (validPeriods.includes(response.data)) {
+        setSelectedPeriod(response.data);
+      }
     }
   };
 
@@ -263,28 +277,37 @@ export default function RevenueReports() {
               <div className="space-y-6">
                 {/* Filters */}
                 <div className="flex flex-col sm:flex-row gap-4">
-                  <select
-                    value={selectedPeriod}
-                    onChange={(e) => setSelectedPeriod(e.target.value)}
-                    className="rounded-md border border-input bg-background px-3 py-2 text-sm"
+                  <Select
+                    value={selectedPeriod || undefined}
+                    onValueChange={setSelectedPeriod}
                   >
-                    <option value="Last_Month">Last Month</option>
-                    <option value="Last_3_Months">Last 3 Months</option>
-                    <option value="Last_6_Months">Last 6 Months</option>
-                    <option value="Last_Year">Last Year</option>
-                  </select>
-                  <select
-                    value={selectedSite}
-                    onChange={(e) => setSelectedSite(e.target.value)}
-                    className="rounded-md border border-input bg-background px-3 py-2 text-sm"
-                  >
-                    <option value="all">All Sites</option>
-                    {siteList.map((s: any) => (
-                      <option key={s.id} value={s.id}>
-                        {s.name}
-                      </option>
-                    ))}
-                  </select>
+                    <SelectTrigger className="w-[180px]">
+                      <SelectValue placeholder="Select Period" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="Last_Month">Last Month</SelectItem>
+                      <SelectItem value="Last_3_Months">
+                        Last 3 Months
+                      </SelectItem>
+                      <SelectItem value="Last_6_Months">
+                        Last 6 Months
+                      </SelectItem>
+                      <SelectItem value="Last_Year">Last Year</SelectItem>
+                    </SelectContent>
+                  </Select>
+                  <Select value={selectedSite} onValueChange={setSelectedSite}>
+                    <SelectTrigger className="w-[180px]">
+                      <SelectValue placeholder="All Sites" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="all">All Sites</SelectItem>
+                      {siteList.map((s: any) => (
+                        <SelectItem key={s.id} value={s.id}>
+                          {s.name}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
                 </div>
 
                 {/* Key Metrics */}
@@ -421,9 +444,7 @@ export default function RevenueReports() {
                             cx="50%"
                             cy="50%"
                             labelLine={false}
-                            label={({ name, percent }) =>
-                              `${name} ${(percent * 100).toFixed(0)}%`
-                            }
+                            label={false}
                             outerRadius={80}
                             fill="#8884d8"
                             dataKey="value"
@@ -437,6 +458,8 @@ export default function RevenueReports() {
                                 "#00C49F",
                                 "#FFBB28",
                                 "#FF8042",
+                                "#FF6B9D",
+                                "#C44569",
                               ];
                               return (
                                 <Cell
@@ -449,6 +472,85 @@ export default function RevenueReports() {
                           <Tooltip />
                         </PieChart>
                       </ResponsiveContainer>
+                      {/* Custom Legend with grouped labels */}
+                      {sourceData && sourceData.length > 0 && (
+                        <div className="mt-4">
+                          <div className="flex flex-wrap justify-center gap-x-6 gap-y-2">
+                            {(() => {
+                              const data = sourceData;
+                              const total = data.reduce(
+                                (sum: number, d: any) => sum + d.value,
+                                0
+                              );
+                              const colors = [
+                                "#0088FE",
+                                "#00C49F",
+                                "#FFBB28",
+                                "#FF8042",
+                                "#FF6B9D",
+                                "#C44569",
+                              ];
+
+                              // Group entries by percentage
+                              const groupedByPercent = data.reduce(
+                                (acc: any, entry: any, index: number) => {
+                                  const percent = Math.round(
+                                    (entry.value / total) * 100
+                                  );
+                                  if (!acc[percent]) {
+                                    acc[percent] = [];
+                                  }
+                                  acc[percent].push({
+                                    ...entry,
+                                    color: colors[index % colors.length],
+                                  });
+                                  return acc;
+                                },
+                                {}
+                              );
+
+                              // Sort by percentage descending
+                              const sortedGroups = Object.keys(groupedByPercent)
+                                .sort((a, b) => Number(b) - Number(a))
+                                .map((percent) => ({
+                                  percent: Number(percent),
+                                  entries: groupedByPercent[percent],
+                                }));
+
+                              return sortedGroups.map((group) => (
+                                <div
+                                  key={group.percent}
+                                  className="flex items-center gap-2 flex-wrap"
+                                >
+                                  {group.entries.map(
+                                    (entry: any, idx: number) => (
+                                      <div
+                                        key={`${entry.name}-${idx}`}
+                                        className="flex items-center gap-1.5"
+                                      >
+                                        <div
+                                          className="w-3 h-3 rounded-full"
+                                          style={{
+                                            backgroundColor: entry.color,
+                                          }}
+                                        />
+                                        <span className="text-sm text-muted-foreground">
+                                          {entry.name}
+                                        </span>
+                                        {idx === group.entries.length - 1 && (
+                                          <span className="text-sm font-medium">
+                                            {group.percent}%
+                                          </span>
+                                        )}
+                                      </div>
+                                    )
+                                  )}
+                                </div>
+                              ));
+                            })()}
+                          </div>
+                        </div>
+                      )}
                     </CardContent>
                   </Card>
                 </div>
