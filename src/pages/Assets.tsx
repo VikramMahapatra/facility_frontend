@@ -31,7 +31,7 @@ export default function Assets() {
   const [statusFilter, setStatusFilter] = useState("all");
   const { canRead, canWrite, canDelete } = useAuth();
   const resource = "assets";
- 
+
   const [categoryOptions, setCategoryOptions] = useState([]);
   const [statusOptions, setStatusOptions] = useState([]);
 
@@ -108,7 +108,7 @@ export default function Assets() {
     const response = await withLoader(async () => {
       return await assetApiService.getAssets(params);
     });
-    
+
     if (response?.success) {
       setAssets(response.data?.assets || []);
       setTotalItems(response.data?.total || 0);
@@ -147,12 +147,12 @@ export default function Assets() {
     }
   };
 
- const handleSave = async (values: Partial<Asset>) => {
+  const handleSave = async (values: Partial<Asset>) => {
     let response;
     if (formMode === 'create') {
       response = await assetApiService.addAsset(values);
       if (response.success) updateAssetPage()
-        loadAssetOverView();
+      loadAssetOverView();
     } else if (formMode === 'edit' && selectedAsset) {
       const updatedAsset = {
         ...selectedAsset,
@@ -197,40 +197,7 @@ export default function Assets() {
       <div className="min-h-screen flex w-full">
         <PropertySidebar />
         <SidebarInset className="flex-1">
-          <header className="flex h-16 shrink-0 items-center justify-between border-b border-sidebar-border px-4">
-
-             {/* LEFT SIDE - Page Title*/}
-            <PageHeader />
-
-            {/* RIGHT SIDE */}
-            <div className="flex items-center gap-4">
-              <div className="flex items-center gap-3">
-                <Avatar>
-                  <AvatarFallback className="bg-gradient-primary text-white">
-                    {user.name.charAt(0)}
-                  </AvatarFallback>
-                </Avatar>
-
-                <div className="text-right">
-                  <p className="text-sm font-medium">{user.name}</p>
-                  <p className="text-xs text-muted-foreground">
-                    {user.account_type}
-                  </p>
-                </div>
-              </div>
-
-              <Button
-                variant="ghost"
-                size="sm"
-                onClick={handleLogout}
-                className="text-muted-foreground hover:text-destructive"
-              >
-                <LogOut className="w-4 h-4 mr-2" />
-                Logout
-              </Button>
-            </div>
-
-          </header>
+          <PageHeader />
 
 
           <div className="flex-1 space-y-6 p-6">
@@ -238,7 +205,7 @@ export default function Assets() {
             <div className="flex items-center justify-between">
               <div>
                 <h2 className="text-2xl font-bold text-sidebar-primary">
-                 All Assets
+                  All Assets
                 </h2>
                 <p className="text-muted-foreground">
                   Manage facility assets and equipment
@@ -330,17 +297,17 @@ export default function Assets() {
                       <SelectTrigger className="w-48">
                         <SelectValue placeholder="All Categories" />
                       </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="all">All Categories</SelectItem>
-                      {categoryOptions.map((c) => (
-                        <SelectItem
-                          key={c.id}
-                          value={c.name || c.id}
-                        >
-                          {c.name}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
+                      <SelectContent>
+                        <SelectItem value="all">All Categories</SelectItem>
+                        {categoryOptions.map((c) => (
+                          <SelectItem
+                            key={c.id}
+                            value={c.name || c.id}
+                          >
+                            {c.name}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
                     </Select>
 
                     <Select value={statusFilter} onValueChange={setStatusFilter}>
@@ -360,73 +327,73 @@ export default function Assets() {
                     <ContentContainer>
                       <LoaderOverlay />
                       <Table>
-                    <TableHeader>
-                      <TableRow>
-                        <TableHead>Asset Tag</TableHead>
-                        <TableHead>Name</TableHead>
-                        <TableHead>Category</TableHead>
-                        <TableHead>Location</TableHead>
-                        <TableHead>Status</TableHead>
-                        <TableHead>Cost</TableHead>
-                        <TableHead>Warranty</TableHead>
-                        <TableHead className="text-right">Actions</TableHead>
-                      </TableRow>
-                    </TableHeader>
-                    <TableBody>
-                      {assets.map((asset) => {
-                        const isWarrantyExpired =
-                          asset.warranty_expiry && new Date(asset.warranty_expiry) < new Date();
+                        <TableHeader>
+                          <TableRow>
+                            <TableHead>Asset Tag</TableHead>
+                            <TableHead>Name</TableHead>
+                            <TableHead>Category</TableHead>
+                            <TableHead>Location</TableHead>
+                            <TableHead>Status</TableHead>
+                            <TableHead>Cost</TableHead>
+                            <TableHead>Warranty</TableHead>
+                            <TableHead className="text-right">Actions</TableHead>
+                          </TableRow>
+                        </TableHeader>
+                        <TableBody>
+                          {assets.map((asset) => {
+                            const isWarrantyExpired =
+                              asset.warranty_expiry && new Date(asset.warranty_expiry) < new Date();
 
-                        return (
-                          <TableRow key={asset.id}>
-                            <TableCell className="font-mono font-medium">{asset.tag}</TableCell>
-                            <TableCell>
-                              <div>
-                                <div className="font-medium">{asset.name}</div>
-                                {asset.model && <div className="text-sm text-muted-foreground">{asset.model}</div>}
-                              </div>
-                            </TableCell>
-                            <TableCell>{(asset as any).category?.name || (asset as any).category_name || 'Unknown'}</TableCell>
-                            <TableCell>{asset.location || '-'}</TableCell>
-                            <TableCell>{getStatusBadge(asset.status)}</TableCell>
-                            <TableCell>₹{asset.cost?.toLocaleString() || 'N/A'}</TableCell>
-                            <TableCell>
-                              {asset.warranty_expiry ? (
-                                <div className={`text-sm ${isWarrantyExpired ? 'text-red-600' : ''}`}>
-                                  {new Date(asset.warranty_expiry).toLocaleDateString()}
-                                  {isWarrantyExpired && <div className="text-xs">Expired</div>}
-                                </div>
-                              ) : (
-                                'N/A'
-                              )}
-                            </TableCell>
-                            <TableCell className="text-right">
-                              <div className="flex items-center justify-end gap-2">
-                                <Button variant="ghost" size="sm" onClick={() => handleView(asset)}>
-                                  <Eye className="h-4 w-4" />
-                                </Button>
-                                {canWrite(resource) && <Button variant="ghost" size="sm" onClick={() => handleEdit(asset)}>
-                                  <Edit className="h-4 w-4" />
-                                </Button>
-                                }
-                                {/* <Button variant="ghost" size="sm">
+                            return (
+                              <TableRow key={asset.id}>
+                                <TableCell className="font-mono font-medium">{asset.tag}</TableCell>
+                                <TableCell>
+                                  <div>
+                                    <div className="font-medium">{asset.name}</div>
+                                    {asset.model && <div className="text-sm text-muted-foreground">{asset.model}</div>}
+                                  </div>
+                                </TableCell>
+                                <TableCell>{(asset as any).category?.name || (asset as any).category_name || 'Unknown'}</TableCell>
+                                <TableCell>{asset.location || '-'}</TableCell>
+                                <TableCell>{getStatusBadge(asset.status)}</TableCell>
+                                <TableCell>₹{asset.cost?.toLocaleString() || 'N/A'}</TableCell>
+                                <TableCell>
+                                  {asset.warranty_expiry ? (
+                                    <div className={`text-sm ${isWarrantyExpired ? 'text-red-600' : ''}`}>
+                                      {new Date(asset.warranty_expiry).toLocaleDateString()}
+                                      {isWarrantyExpired && <div className="text-xs">Expired</div>}
+                                    </div>
+                                  ) : (
+                                    'N/A'
+                                  )}
+                                </TableCell>
+                                <TableCell className="text-right">
+                                  <div className="flex items-center justify-end gap-2">
+                                    <Button variant="ghost" size="sm" onClick={() => handleView(asset)}>
+                                      <Eye className="h-4 w-4" />
+                                    </Button>
+                                    {canWrite(resource) && <Button variant="ghost" size="sm" onClick={() => handleEdit(asset)}>
+                                      <Edit className="h-4 w-4" />
+                                    </Button>
+                                    }
+                                    {/* <Button variant="ghost" size="sm">
                                   <Wrench className="h-4 w-4" />
                                 </Button> */}
-                                {canDelete(resource) && <Button
-                                  variant="ghost"
-                                  size="sm"
-                                  className="text-destructive"
-                                  onClick={() => handleDelete(asset.id)}
-                                >
-                                  <Trash2 className="h-4 w-4" />
-                                </Button>
-                                }
-                              </div>
-                            </TableCell>
-                          </TableRow>
-                        );
-                      })}
-                    </TableBody>
+                                    {canDelete(resource) && <Button
+                                      variant="ghost"
+                                      size="sm"
+                                      className="text-destructive"
+                                      onClick={() => handleDelete(asset.id)}
+                                    >
+                                      <Trash2 className="h-4 w-4" />
+                                    </Button>
+                                    }
+                                  </div>
+                                </TableCell>
+                              </TableRow>
+                            );
+                          })}
+                        </TableBody>
                       </Table>
 
                       <Pagination

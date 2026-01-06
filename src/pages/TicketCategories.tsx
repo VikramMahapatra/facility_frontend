@@ -186,10 +186,10 @@ export default function TicketCategories() {
       if (response.success) {
         // Success case
         updateTicketCategoriesPage();
-          setDeleteCategoryId(null);
+        setDeleteCategoryId(null);
         toast.success("Ticket category has been deleted successfully.");
-        }
       }
+    }
   };
 
   return (
@@ -197,36 +197,7 @@ export default function TicketCategories() {
       <div className="flex min-h-screen w-full">
         <PropertySidebar />
         <SidebarInset className="flex-1">
-          <header className="flex h-16 shrink-0 items-center justify-between border-b border-sidebar-border px-4">
-            {/* LEFT SIDE - Page Title*/}
-            <PageHeader />
-            <div className="flex items-center gap-4">
-              <div className="flex items-center gap-3">
-                <Avatar>
-                  <AvatarFallback className="bg-gradient-primary text-white">
-                    {user.name.charAt(0)}
-                  </AvatarFallback>
-                </Avatar>
-
-                <div className="text-right">
-                  <p className="text-sm font-medium">{user.name}</p>
-                  <p className="text-xs text-muted-foreground">
-                    {user.account_type}
-                  </p>
-                </div>
-              </div>
-
-              <Button
-                variant="ghost"
-                size="sm"
-                onClick={handleLogout}
-                className="text-muted-foreground hover:text-destructive"
-              >
-                <LogOut className="w-4 h-4 mr-2" />
-                Logout
-              </Button>
-            </div>
-          </header>
+          <PageHeader />
 
           <main className="flex-1 p-6">
             <div className="space-y-6">
@@ -306,64 +277,64 @@ export default function TicketCategories() {
                             </TableRow>
                           ) : (
                             categories.map((category) => {
-                            const site = siteList.find(
-                              (s: any) => s.id === category.site_id
-                            );
-                            return (
-                              <TableRow
-                                key={category.id || category.category_id}
-                              >
-                                <TableCell className="font-medium">
-                                  {category.category_name}
-                                </TableCell>
-                                <TableCell>
-                                  {site ? site.name : category.site_id || "-"}
-                                </TableCell>
-                                <TableCell>
-                                  <Badge variant="outline">
-                                    {category.auto_assign_role}
-                                  </Badge>
-                                </TableCell>
-                                <TableCell>{category.sla_hours}h</TableCell>
-                                <TableCell>
-                                  <Badge
-                                    variant={
-                                      category.is_active
-                                        ? "default"
-                                        : "secondary"
-                                    }
-                                  >
-                                    {category.is_active ? "Active" : "Inactive"}
-                                  </Badge>
-                                </TableCell>
-                                <TableCell className="text-right">
-                                  <div className="flex justify-end gap-2">
-                                    {canWrite(resource) && (
-                                      <Button
-                                        variant="ghost"
-                                        size="sm"
-                                        onClick={() => handleEdit(category)}
-                                      >
-                                        <Edit className="w-4 h-4" />
-                                      </Button>
-                                    )}
-                                    {canDelete(resource) && (
-                                      <Button
-                                        variant="ghost"
-                                        size="sm"
-                                        onClick={() =>
-                                          handleDelete(
-                                            category.id || category.category_id
-                                          )
-                                        }
-                                      >
-                                        <Trash2 className="w-4 h-4" />
-                                      </Button>
-                                    )}
-                                  </div>
-                                </TableCell>
-                              </TableRow>
-                            );
+                              const site = siteList.find(
+                                (s: any) => s.id === category.site_id
+                              );
+                              return (
+                                <TableRow
+                                  key={category.id || category.category_id}
+                                >
+                                  <TableCell className="font-medium">
+                                    {category.category_name}
+                                  </TableCell>
+                                  <TableCell>
+                                    {site ? site.name : category.site_id || "-"}
+                                  </TableCell>
+                                  <TableCell>
+                                    <Badge variant="outline">
+                                      {category.auto_assign_role}
+                                    </Badge>
+                                  </TableCell>
+                                  <TableCell>{category.sla_hours}h</TableCell>
+                                  <TableCell>
+                                    <Badge
+                                      variant={
+                                        category.is_active
+                                          ? "default"
+                                          : "secondary"
+                                      }
+                                    >
+                                      {category.is_active ? "Active" : "Inactive"}
+                                    </Badge>
+                                  </TableCell>
+                                  <TableCell className="text-right">
+                                    <div className="flex justify-end gap-2">
+                                      {canWrite(resource) && (
+                                        <Button
+                                          variant="ghost"
+                                          size="sm"
+                                          onClick={() => handleEdit(category)}
+                                        >
+                                          <Edit className="w-4 h-4" />
+                                        </Button>
+                                      )}
+                                      {canDelete(resource) && (
+                                        <Button
+                                          variant="ghost"
+                                          size="sm"
+                                          onClick={() =>
+                                            handleDelete(
+                                              category.id || category.category_id
+                                            )
+                                          }
+                                        >
+                                          <Trash2 className="w-4 h-4" />
+                                        </Button>
+                                      )}
+                                    </div>
+                                  </TableCell>
+                                </TableRow>
+                              );
                             })
                           )}
                         </TableBody>
@@ -397,11 +368,11 @@ export default function TicketCategories() {
               {formMode === "create" ? "Create Ticket Category" : formMode === "edit" ? "Edit Ticket Category" : "Ticket Category Details"}
             </DialogTitle>
             <DialogDescription>
-              {formMode === "create" 
+              {formMode === "create"
                 ? "Add a new ticket category for service requests."
                 : formMode === "edit"
-                ? "Update ticket category details."
-                : "View ticket category details."}
+                  ? "Update ticket category details."
+                  : "View ticket category details."}
             </DialogDescription>
           </DialogHeader>
           <TicketCategoryForm

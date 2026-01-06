@@ -60,7 +60,7 @@ export default function TicketWorkload() {
   const [newAssignee, setNewAssignee] = useState("");
   const [employeeList, setEmployeeList] = useState<any[]>([]);
   const { user, handleLogout } = useAuth();
-  
+
   const [loadingEmployees, setLoadingEmployees] = useState(false);
   const [assignedTicketsPage, setAssignedTicketsPage] = useState(1);
   const [assignedTicketsPageSize] = useState(7);
@@ -267,36 +267,7 @@ export default function TicketWorkload() {
       <div className="flex min-h-screen w-full">
         <PropertySidebar />
         <SidebarInset className="flex-1">
-          <header className="flex h-16 shrink-0 items-center justify-between border-b border-sidebar-border px-4">
-            {/* LEFT SIDE - Page Title*/}
-            <PageHeader />
-            <div className="flex items-center gap-4">
-              <div className="flex items-center gap-3">
-                <Avatar>
-                  <AvatarFallback className="bg-gradient-primary text-white">
-                    {user.name.charAt(0)}
-                  </AvatarFallback>
-                </Avatar>
-
-                <div className="text-right">
-                  <p className="text-sm font-medium">{user.name}</p>
-                  <p className="text-xs text-muted-foreground">
-                    {user.account_type}
-                  </p>
-                </div>
-              </div>
-
-              <Button
-                variant="ghost"
-                size="sm"
-                onClick={handleLogout}
-                className="text-muted-foreground hover:text-destructive"
-              >
-                <LogOut className="w-4 h-4 mr-2" />
-                Logout
-              </Button>
-            </div>
-          </header>
+          <PageHeader />
 
           <main className="flex-1 p-6">
             <div className="space-y-6">
@@ -441,28 +412,27 @@ export default function TicketWorkload() {
                                 <div className="flex gap-2">
                                   {ticket.status?.toUpperCase() ===
                                     "RETURNED" && (
-                                    <Button
-                                      size="sm"
-                                      variant="outline"
-                                      onClick={() =>
-                                        handleReassign(
-                                          ticket.id || ticket.ticket_id,
-                                          ticket.ticket_no,
-                                          ticket.assigned_to
-                                        )
-                                      }
-                                    >
-                                      <RefreshCw className="h-3 w-3 mr-1" />
-                                      Reassign
-                                    </Button>
-                                  )}
+                                      <Button
+                                        size="sm"
+                                        variant="outline"
+                                        onClick={() =>
+                                          handleReassign(
+                                            ticket.id || ticket.ticket_id,
+                                            ticket.ticket_no,
+                                            ticket.assigned_to
+                                          )
+                                        }
+                                      >
+                                        <RefreshCw className="h-3 w-3 mr-1" />
+                                        Reassign
+                                      </Button>
+                                    )}
                                   <Button
                                     size="sm"
                                     variant="ghost"
                                     onClick={() =>
                                       navigate(
-                                        `/tickets/${
-                                          ticket.id || ticket.ticket_id
+                                        `/tickets/${ticket.id || ticket.ticket_id
                                         }`
                                       )
                                     }
@@ -611,7 +581,7 @@ export default function TicketWorkload() {
                 </SelectContent>
               </Select>
             </div>
-    
+
             {!loadingEmployees && (
               <div className="flex justify-end gap-2">
                 <Button

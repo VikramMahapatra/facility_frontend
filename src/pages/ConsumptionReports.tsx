@@ -243,53 +243,21 @@ export default function ConsumptionReports() {
       <div className="flex min-h-screen w-full">
         <PropertySidebar />
         <div className="flex-1">
-          <header className="flex h-16 shrink-0 items-center justify-between border-b border-sidebar-border px-4">
-            {/* LEFT SIDE - Page Title*/}
-            <PageHeader />
-           
-
-            {/* RIGHT SIDE */}
-            <div className="flex items-center gap-4">
-              <div className="flex items-center gap-3">
-                <Avatar>
-                  <AvatarFallback className="bg-gradient-primary text-white">
-                    {user.name.charAt(0)}
-                  </AvatarFallback>
-                </Avatar>
-
-                <div className="text-right">
-                  <p className="text-sm font-medium">{user.name}</p>
-                  <p className="text-xs text-muted-foreground">
-                    {user.account_type}
-                  </p>
-                </div>
-              </div>
-
-              <Button
-                variant="ghost"
-                size="sm"
-                onClick={handleLogout}
-                className="text-muted-foreground hover:text-destructive"
-              >
-                <LogOut className="w-4 h-4 mr-2" />
-                Logout
-              </Button>
-            </div>
-          </header>
+          <PageHeader />
 
           <main className="flex-1 space-y-6 p-6">
-             <div className="flex items-center justify-between">
-                <div>
-                  <h2 className="text-3xl font-bold text-sidebar-primary">
-                    Consumption Reports
-                  </h2>
-                  <p className="text-muted-foreground">
-                     Analyze utility consumption patterns and costs
-                  </p>
-                </div>
+            <div className="flex items-center justify-between">
+              <div>
+                <h2 className="text-3xl font-bold text-sidebar-primary">
+                  Consumption Reports
+                </h2>
+                <p className="text-muted-foreground">
+                  Analyze utility consumption patterns and costs
+                </p>
               </div>
+            </div>
             <ContentContainer>
-             
+
               <div className="space-y-6">
                 {/* Stats Cards */}
                 <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
@@ -565,27 +533,23 @@ export default function ConsumptionReports() {
                                 </TableCell>
                                 <TableCell>
                                   {report.total_consumption !== undefined
-                                    ? `${report.total_consumption} ${
-                                        report.unit || ""
-                                      }`
+                                    ? `${report.total_consumption} ${report.unit || ""
+                                    }`
                                     : report.consumption !== undefined
-                                    ? `${report.consumption} ${
-                                        report.unit || ""
+                                      ? `${report.consumption} ${report.unit || ""
                                       }`
-                                    : "-"}
+                                      : "-"}
                                 </TableCell>
                                 <TableCell>
                                   {report.daily_average !== undefined
-                                    ? `${report.daily_average} ${
-                                        report.unit || ""
-                                      }`
+                                    ? `${report.daily_average} ${report.unit || ""
+                                    }`
                                     : "-"}
                                 </TableCell>
                                 <TableCell>
                                   {report.peak_usage !== undefined
-                                    ? `${report.peak_usage} ${
-                                        report.unit || ""
-                                      }`
+                                    ? `${report.peak_usage} ${report.unit || ""
+                                    }`
                                     : "-"}
                                 </TableCell>
                                 <TableCell>
@@ -599,10 +563,10 @@ export default function ConsumptionReports() {
                                       {getTrendIcon(report.trend)}
                                       {report.trend_percentage !==
                                         undefined && (
-                                        <span className="text-xs">
-                                          {report.trend_percentage}%
-                                        </span>
-                                      )}
+                                          <span className="text-xs">
+                                            {report.trend_percentage}%
+                                          </span>
+                                        )}
                                     </div>
                                   ) : (
                                     "-"

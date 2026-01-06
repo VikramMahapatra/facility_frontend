@@ -41,8 +41,8 @@ export default function Tickets() {
   const [siteList, setSiteList] = useState<any[]>([]);
   const [priorityList, setPriorityList] = useState<any[]>([]);
   const [statusList, setStatusList] = useState<any[]>([]);
-  const [page, setPage] = useState(1); 
-  const [pageSize] = useState(10); 
+  const [page, setPage] = useState(1);
+  const [pageSize] = useState(10);
   const { user, handleLogout } = useAuth();
   const [totalItems, setTotalItems] = useState(0);
 
@@ -60,7 +60,7 @@ export default function Tickets() {
     if (page === 1) {
       loadTickets();
     } else {
-      setPage(1); 
+      setPage(1);
     }
   }, [statusFilter, priorityFilter, selectedSite, searchTerm]);
 
@@ -128,7 +128,7 @@ export default function Tickets() {
       loadTickets();
       toast.success("Service ticket has been updated successfully.");
     }
- 
+
     return response;
   };
 
@@ -180,36 +180,7 @@ export default function Tickets() {
       <div className="flex min-h-screen w-full">
         <PropertySidebar />
         <SidebarInset className="flex-1">
-          <header className="flex h-16 shrink-0 items-center justify-between border-b border-sidebar-border px-4">
-            {/* LEFT SIDE - Page Title*/}
-            <PageHeader />
-            <div className="flex items-center gap-4">
-              <div className="flex items-center gap-3">
-                <Avatar>
-                  <AvatarFallback className="bg-gradient-primary text-white">
-                    {user.name.charAt(0)}
-                  </AvatarFallback>
-                </Avatar>
-
-                <div className="text-right">
-                  <p className="text-sm font-medium">{user.name}</p>
-                  <p className="text-xs text-muted-foreground">
-                    {user.account_type}
-                  </p>
-                </div>
-              </div>
-
-              <Button
-                variant="ghost"
-                size="sm"
-                onClick={handleLogout}
-                className="text-muted-foreground hover:text-destructive"
-              >
-                <LogOut className="w-4 h-4 mr-2" />
-                Logout
-              </Button>
-            </div>
-          </header>
+          <PageHeader />
 
           <main className="flex-1 p-6">
             <div className="space-y-6">
@@ -228,129 +199,129 @@ export default function Tickets() {
                 )}
               </div>
 
-            <Card>
-              <CardHeader>
-                <div className="flex flex-wrap items-center gap-2">
-                  <div className="relative flex-1 min-w-[200px] max-w-sm">
-                    <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground h-4 w-4" />
-                    <Input
-                      placeholder="Search tickets..."
-                      value={searchTerm}
-                      onChange={(e) => setSearchTerm(e.target.value)}
-                      className="pl-10"
-                    />
+              <Card>
+                <CardHeader>
+                  <div className="flex flex-wrap items-center gap-2">
+                    <div className="relative flex-1 min-w-[200px] max-w-sm">
+                      <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground h-4 w-4" />
+                      <Input
+                        placeholder="Search tickets..."
+                        value={searchTerm}
+                        onChange={(e) => setSearchTerm(e.target.value)}
+                        className="pl-10"
+                      />
+                    </div>
+                    <Select value={selectedSite} onValueChange={setSelectedSite}>
+                      <SelectTrigger className="w-[150px]">
+                        <SelectValue placeholder="Site" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="all">All Sites</SelectItem>
+                        {siteList.map((site: any) => (
+                          <SelectItem key={site.id} value={site.id}>
+                            {site.name}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                    <Select value={statusFilter} onValueChange={setStatusFilter}>
+                      <SelectTrigger className="w-[150px]">
+                        <SelectValue placeholder="Status" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="ALL">All Status</SelectItem>
+                        {statusList.map((status: any) => (
+                          <SelectItem key={status.id} value={status.id}>
+                            {status.name}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                    <Select value={priorityFilter} onValueChange={setPriorityFilter}>
+                      <SelectTrigger className="w-[150px]">
+                        <SelectValue placeholder="Priority" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="ALL">All Priority</SelectItem>
+                        {priorityList.map((priority: any) => (
+                          <SelectItem key={priority.id} value={priority.id}>
+                            {priority.name}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
                   </div>
-                  <Select value={selectedSite} onValueChange={setSelectedSite}>
-                    <SelectTrigger className="w-[150px]">
-                      <SelectValue placeholder="Site" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="all">All Sites</SelectItem>
-                      {siteList.map((site: any) => (
-                        <SelectItem key={site.id} value={site.id}>
-                          {site.name}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                  <Select value={statusFilter} onValueChange={setStatusFilter}>
-                    <SelectTrigger className="w-[150px]">
-                      <SelectValue placeholder="Status" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="ALL">All Status</SelectItem>
-                      {statusList.map((status: any) => (
-                        <SelectItem key={status.id} value={status.id}>
-                          {status.name}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                  <Select value={priorityFilter} onValueChange={setPriorityFilter}>
-                    <SelectTrigger className="w-[150px]">
-                      <SelectValue placeholder="Priority" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="ALL">All Priority</SelectItem>
-                      {priorityList.map((priority: any) => (
-                        <SelectItem key={priority.id} value={priority.id}>
-                          {priority.name}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                </div>
-              </CardHeader>
-              <CardContent>
-                <div className="relative rounded-md border">
-                  <ContentContainer>
-                    <LoaderOverlay />
-                    <Table>
-                    <TableHeader>
-                      <TableRow>
-                        <TableHead>ID</TableHead>
-                        <TableHead>Title</TableHead>
-                        <TableHead>Category</TableHead>
-                        <TableHead>Priority</TableHead>
-                        <TableHead>Status</TableHead>
-                        <TableHead>Type</TableHead>
-                        <TableHead>Created</TableHead>
-                        <TableHead className="text-right">Actions</TableHead>
-                      </TableRow>
-                    </TableHeader>
-                    <TableBody>
-                      {tickets.length === 0 ? (
-                        <TableRow>
-                          <TableCell
-                            colSpan={8}
-                            className="text-center text-muted-foreground h-32"
-                          >
-                            No tickets found
-                          </TableCell>
-                        </TableRow>
-                      ) : (
-                        tickets.map((ticket) => (
-                          <TableRow key={ticket.id || ticket.ticket_id}>
-                            <TableCell className="font-medium">#{ticket.ticket_no}</TableCell>
-                            <TableCell className="max-w-xs truncate">{ticket.title}</TableCell>
-                            <TableCell>
-                              <Badge variant="outline">{ticket.category}</Badge>
-                            </TableCell>
-                            <TableCell>
-                              <Badge className={getPriorityColor(ticket.priority)}>{ticket.priority}</Badge>
-                            </TableCell>
-                            <TableCell>
-                              <Badge className={getStatusColor(ticket.status)}>{ticket.status}</Badge>
-                            </TableCell>
-                            <TableCell>
-                              <Badge variant="secondary">{ticket.request_type}</Badge>
-                            </TableCell>
-                            <TableCell>{new Date(ticket.created_at).toLocaleDateString()}</TableCell>
-                            <TableCell className="text-right">
-                              <div className="flex justify-end gap-2">
-                                <Button variant="ghost" size="sm" onClick={() => handleView(ticket.id || ticket.ticket_id)}>
-                                  <Eye className="w-4 h-4" />
-                                </Button>
-                                {/* <Button variant="ghost" size="sm" onClick={() => handleEdit(ticket)}>
+                </CardHeader>
+                <CardContent>
+                  <div className="relative rounded-md border">
+                    <ContentContainer>
+                      <LoaderOverlay />
+                      <Table>
+                        <TableHeader>
+                          <TableRow>
+                            <TableHead>ID</TableHead>
+                            <TableHead>Title</TableHead>
+                            <TableHead>Category</TableHead>
+                            <TableHead>Priority</TableHead>
+                            <TableHead>Status</TableHead>
+                            <TableHead>Type</TableHead>
+                            <TableHead>Created</TableHead>
+                            <TableHead className="text-right">Actions</TableHead>
+                          </TableRow>
+                        </TableHeader>
+                        <TableBody>
+                          {tickets.length === 0 ? (
+                            <TableRow>
+                              <TableCell
+                                colSpan={8}
+                                className="text-center text-muted-foreground h-32"
+                              >
+                                No tickets found
+                              </TableCell>
+                            </TableRow>
+                          ) : (
+                            tickets.map((ticket) => (
+                              <TableRow key={ticket.id || ticket.ticket_id}>
+                                <TableCell className="font-medium">#{ticket.ticket_no}</TableCell>
+                                <TableCell className="max-w-xs truncate">{ticket.title}</TableCell>
+                                <TableCell>
+                                  <Badge variant="outline">{ticket.category}</Badge>
+                                </TableCell>
+                                <TableCell>
+                                  <Badge className={getPriorityColor(ticket.priority)}>{ticket.priority}</Badge>
+                                </TableCell>
+                                <TableCell>
+                                  <Badge className={getStatusColor(ticket.status)}>{ticket.status}</Badge>
+                                </TableCell>
+                                <TableCell>
+                                  <Badge variant="secondary">{ticket.request_type}</Badge>
+                                </TableCell>
+                                <TableCell>{new Date(ticket.created_at).toLocaleDateString()}</TableCell>
+                                <TableCell className="text-right">
+                                  <div className="flex justify-end gap-2">
+                                    <Button variant="ghost" size="sm" onClick={() => handleView(ticket.id || ticket.ticket_id)}>
+                                      <Eye className="w-4 h-4" />
+                                    </Button>
+                                    {/* <Button variant="ghost" size="sm" onClick={() => handleEdit(ticket)}>
                                   <Edit className="w-4 h-4" />
                                 </Button> */}
-                              </div>
-                            </TableCell>
-                          </TableRow>
-                        ))
-                      )}
-                    </TableBody>
-                    </Table>
-                    <Pagination
-                      page={page}
-                      pageSize={pageSize}
-                      totalItems={totalItems}
-                      onPageChange={(newPage) => setPage(newPage)}
-                    />
-                  </ContentContainer>
-                </div>
-              </CardContent>
-            </Card>
+                                  </div>
+                                </TableCell>
+                              </TableRow>
+                            ))
+                          )}
+                        </TableBody>
+                      </Table>
+                      <Pagination
+                        page={page}
+                        pageSize={pageSize}
+                        totalItems={totalItems}
+                        onPageChange={(newPage) => setPage(newPage)}
+                      />
+                    </ContentContainer>
+                  </div>
+                </CardContent>
+              </Card>
             </div>
           </main>
         </SidebarInset>

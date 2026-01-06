@@ -140,47 +140,18 @@ export default function AccessLogs() {
       <div className="flex min-h-screen w-full">
         <PropertySidebar />
         <SidebarInset className="flex-1">
-          <header className="flex h-16 shrink-0 items-center justify-between border-b border-sidebar-border px-4">
-             {/* LEFT SIDE - Page Title*/}
-            <PageHeader />
-            <div className="flex items-center gap-4">
-              <div className="flex items-center gap-3">
-                <Avatar>
-                  <AvatarFallback className="bg-gradient-primary text-white">
-                    {user.name.charAt(0)}
-                  </AvatarFallback>
-                </Avatar>
-
-                <div className="text-right">
-                  <p className="text-sm font-medium">{user.name}</p>
-                  <p className="text-xs text-muted-foreground">
-                    {user.account_type}
-                  </p>
-                </div>
-              </div>
-
-              <Button
-                variant="ghost"
-                size="sm"
-                onClick={handleLogout}
-                className="text-muted-foreground hover:text-destructive"
-              >
-                <LogOut className="w-4 h-4 mr-2" />
-                Logout
-              </Button>
-            </div>
-          </header>
+          <PageHeader />
 
           <main className="flex-1 p-6">
             <div className="space-y-6">
               <div>
-                  <h2 className="text-3xl font-bold text-sidebar-primary">
-                    All Logs
-                  </h2>
-                  <p className="text-muted-foreground">
-                    Manage all access events.
-                  </p>
-                </div>
+                <h2 className="text-3xl font-bold text-sidebar-primary">
+                  All Logs
+                </h2>
+                <p className="text-muted-foreground">
+                  Manage all access events.
+                </p>
+              </div>
 
               {/* Stats */}
               <div className="grid gap-4 md:grid-cols-4">
