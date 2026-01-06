@@ -348,12 +348,12 @@ export const navigationItems = [
         icon: Settings,
         resource: "settings",
       },
-      {
-        title: "Documentation",
-        url: "/documentation",
-        icon: FileText,
-        resource: "documentation",
-      },
+      // {
+      //   title: "Documentation",
+      //   url: "/documentation",
+      //   icon: FileText,
+      //   resource: "documentation",
+      // },
     ],
   },
 ];

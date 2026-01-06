@@ -85,14 +85,34 @@ const Login = () => {
       toast.error("Please enter username/email and password");
       return;
     }
-
     setIsLoading(true);
     try {
       // TODO: Replace with actual email/password login endpoint when available
-      // const response = await authApiService.login(usernameOrEmail, password);
+      const response = await authApiService.login(usernameOrEmail, password);
       // For now, show error that this method is not yet implemented
-      toast.error("Try Another Login Method");
-      setIsLoading(false);
+      if (response?.success) {
+        const authResponse = response.data;
+          setUser(authResponse?.user);
+          if (
+            authResponse?.user?.status?.toLowerCase() === "pending_approval"
+          ) {
+            const user = authResponse.user;
+            navigate("/registration-status", {
+              state: {
+                userData: {
+                  email: user.email,
+                  name: user.full_name,
+                },
+              },
+            });
+          } else {
+            navigate("/dashboard");
+          }
+          toast.success("Login successful");
+        }
+        else{
+          setIsLoading(false);
+        }        
     } catch (error) {
       toast.error("Login failed. Please try again.");
       setIsLoading(false);
