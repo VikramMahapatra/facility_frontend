@@ -26,11 +26,10 @@ import {
   LeaseChargeFormValues,
 } from "@/schemas/leaseCharge.schema";
 
-
 export interface LeaseCharge {
   id: string;
   lease_id: string;
-  charge_code:  string;
+  charge_code: string;
   period_start: string; // yyyy-mm-dd
   period_end: string; // yyyy-mm-dd
   amount: number;
@@ -104,7 +103,6 @@ export function LeaseChargeForm({
     }
   }, [periodStart, periodEnd, trigger]);
 
- 
   useEffect(() => {
     if (isOpen) {
       loadAll();
@@ -167,180 +165,180 @@ export function LeaseChargeForm({
         {formLoading ? (
           <p className="text-center py-8">Loading...</p>
         ) : (
-        <form
-          onSubmit={isSubmitting ? undefined : handleSubmit(onSubmitForm)}
-          className="space-y-4"
-        >
-          {/* Lease */}
-          <div>
-            <Label htmlFor="lease">Lease *</Label>
-            <Controller
-              name="lease_id"
-              control={control}
-              render={({ field }) => (
-                <Select
-                  value={field.value}
-                  onValueChange={field.onChange}
-                  disabled={isReadOnly}
-                >
-                  <SelectTrigger
-                    className={errors.lease_id ? "border-red-500" : ""}
+          <form
+            onSubmit={isSubmitting ? undefined : handleSubmit(onSubmitForm)}
+            className="space-y-4"
+          >
+            {/* Lease */}
+            <div>
+              <Label htmlFor="lease">Lease *</Label>
+              <Controller
+                name="lease_id"
+                control={control}
+                render={({ field }) => (
+                  <Select
+                    value={field.value}
+                    onValueChange={field.onChange}
+                    disabled={isReadOnly}
                   >
-                    <SelectValue placeholder="Select lease" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {leaseList.map((lease: any) => (
-                      <SelectItem key={lease.id} value={lease.id}>
-                        {lease.name}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
+                    <SelectTrigger
+                      className={errors.lease_id ? "border-red-500" : ""}
+                    >
+                      <SelectValue placeholder="Select lease" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {leaseList.map((lease: any) => (
+                        <SelectItem key={lease.id} value={lease.id}>
+                          {lease.name}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                )}
+              />
+              {errors.lease_id && (
+                <p className="text-sm text-red-500">
+                  {errors.lease_id.message as any}
+                </p>
               )}
-            />
-            {errors.lease_id && (
-              <p className="text-sm text-red-500">
-                {errors.lease_id.message as any}
-              </p>
-            )}
-          </div>
+            </div>
 
-          {/* Charge Code */}
-          <div>
-            <Label htmlFor="charge_code">Charge Code *</Label>
-            <Controller
-              name="charge_code"
-              control={control}
-              render={({ field }) => (
-                <Select
-                  value={field.value}
-                  onValueChange={field.onChange}
-                  disabled={isReadOnly}
-                >
-                  <SelectTrigger
-                    className={errors.charge_code ? "border-red-500" : ""}
+            {/* Charge Code */}
+            <div>
+              <Label htmlFor="charge_code">Charge Code *</Label>
+              <Controller
+                name="charge_code"
+                control={control}
+                render={({ field }) => (
+                  <Select
+                    value={field.value}
+                    onValueChange={field.onChange}
+                    disabled={isReadOnly}
                   >
-                    <SelectValue placeholder="Select type" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {chargeCodeList.map((code: any) => (
-                      <SelectItem key={code.id} value={code.id}>
-                        {code.name}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
+                    <SelectTrigger
+                      className={errors.charge_code ? "border-red-500" : ""}
+                    >
+                      <SelectValue placeholder="Select type" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {chargeCodeList.map((code: any) => (
+                        <SelectItem key={code.id} value={code.id}>
+                          {code.name}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                )}
+              />
+              {errors.charge_code && (
+                <p className="text-sm text-red-500">
+                  {errors.charge_code.message as any}
+                </p>
               )}
-            />
-            {errors.charge_code && (
-              <p className="text-sm text-red-500">
-                {errors.charge_code.message as any}
-              </p>
-            )}
-          </div>
+            </div>
 
-          {/* Dates */}
-          <div className="grid grid-cols-2 gap-4">
-            <div>
-              <Label>Period Start *</Label>
-              <Input
-                type="date"
-                disabled={isReadOnly}
-                {...register("period_start", {
-                  onBlur: () => {
-                    if (periodEnd) trigger("period_end");
-                  }
-                })}
-                className={errors.period_start ? "border-red-500" : ""}
-              />
-              {errors.period_start && (
-                <p className="text-sm text-red-500">
-                  {errors.period_start.message as any}
-                </p>
-              )}
+            {/* Dates */}
+            <div className="grid grid-cols-2 gap-4">
+              <div>
+                <Label>Period Start *</Label>
+                <Input
+                  type="date"
+                  disabled={isReadOnly}
+                  {...register("period_start", {
+                    onBlur: () => {
+                      if (periodEnd) trigger("period_end");
+                    },
+                  })}
+                  className={errors.period_start ? "border-red-500" : ""}
+                />
+                {errors.period_start && (
+                  <p className="text-sm text-red-500">
+                    {errors.period_start.message as any}
+                  </p>
+                )}
+              </div>
+              <div>
+                <Label>Period End *</Label>
+                <Input
+                  type="date"
+                  disabled={isReadOnly}
+                  {...register("period_end", {
+                    onBlur: () => {
+                      if (periodStart) trigger("period_end");
+                    },
+                  })}
+                  className={errors.period_end ? "border-red-500" : ""}
+                />
+                {errors.period_end && (
+                  <p className="text-sm text-red-500">
+                    {errors.period_end.message as any}
+                  </p>
+                )}
+              </div>
             </div>
-            <div>
-              <Label>Period End *</Label>
-              <Input
-                type="date"
-                disabled={isReadOnly}
-                {...register("period_end", {
-                  onBlur: () => {
-                    if (periodStart) trigger("period_end");
-                  }
-                })}
-                className={errors.period_end ? "border-red-500" : ""}
-              />
-              {errors.period_end && (
-                <p className="text-sm text-red-500">
-                  {errors.period_end.message as any}
-                </p>
-              )}
-            </div>
-          </div>
 
-          {/* Amounts */}
-          <div className="grid grid-cols-2 gap-4">
-            <div>
-              <Label htmlFor="amount">Amount *</Label>
-              <Input
-                id="amount"
-                type="number"
-                step="any"
-                {...register("amount", {
-                  setValueAs: (v) => (v === "" ? undefined : Number(v)),
-                })}
-                disabled={isReadOnly}
-                className={errors.amount ? "border-red-500" : ""}
-                min="0"
-              />
-              {errors.amount && (
-                <p className="text-sm text-red-500">
-                  {errors.amount.message as any}
-                </p>
-              )}
+            {/* Amounts */}
+            <div className="grid grid-cols-2 gap-4">
+              <div>
+                <Label htmlFor="amount">Amount *</Label>
+                <Input
+                  id="amount"
+                  type="number"
+                  step="any"
+                  {...register("amount", {
+                    setValueAs: (v) => (v === "" ? undefined : Number(v)),
+                  })}
+                  disabled={isReadOnly}
+                  className={errors.amount ? "border-red-500" : ""}
+                  min="0"
+                />
+                {errors.amount && (
+                  <p className="text-sm text-red-500">
+                    {errors.amount.message as any}
+                  </p>
+                )}
+              </div>
+              <div>
+                <Label htmlFor="tax_pct">Tax %</Label>
+                <Input
+                  id="tax_pct"
+                  type="number"
+                  step="any"
+                  {...register("tax_pct", {
+                    setValueAs: (v) => (v === "" ? undefined : Number(v)),
+                  })}
+                  disabled={isReadOnly}
+                  className={errors.tax_pct ? "border-red-500" : ""}
+                  min="0"
+                />
+                {errors.tax_pct && (
+                  <p className="text-sm text-red-500">
+                    {errors.tax_pct.message as any}
+                  </p>
+                )}
+              </div>
             </div>
-            <div>
-              <Label htmlFor="tax_pct">Tax %</Label>
-              <Input
-                id="tax_pct"
-                type="number"
-                step="any"
-                {...register("tax_pct", {
-                  setValueAs: (v) => (v === "" ? undefined : Number(v)),
-                })}
-                disabled={isReadOnly}
-                className={errors.tax_pct ? "border-red-500" : ""}
-                min="0"
-              />
-              {errors.tax_pct && (
-                <p className="text-sm text-red-500">
-                  {errors.tax_pct.message as any}
-                </p>
-              )}
-            </div>
-          </div>
 
-          <DialogFooter>
-            <Button
-              type="button"
-              variant="outline"
-              onClick={onClose}
-              disabled={isSubmitting}
-            >
-              {mode === "view" ? "Close" : "Cancel"}
-            </Button>
-            {mode !== "view" && (
-              <Button type="submit" disabled={isSubmitting}>
-                {isSubmitting
-                  ? "Saving..."
-                  : mode === "create"
-                  ? "Create Charge"
-                  : "Update Charge"}
+            <DialogFooter>
+              <Button
+                type="button"
+                variant="outline"
+                onClick={onClose}
+                disabled={isSubmitting}
+              >
+                {mode === "view" ? "Close" : "Cancel"}
               </Button>
-            )}
-          </DialogFooter>
-        </form>
+              {mode !== "view" && (
+                <Button type="submit" disabled={isSubmitting}>
+                  {isSubmitting
+                    ? "Saving..."
+                    : mode === "create"
+                    ? "Create Charge"
+                    : "Update Charge"}
+                </Button>
+              )}
+            </DialogFooter>
+          </form>
         )}
       </DialogContent>
     </Dialog>
