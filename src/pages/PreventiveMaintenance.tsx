@@ -148,7 +148,7 @@ export default function PreventiveMaintenance() {
       loadTemplates();
       loadTemplateOverview();
     } else {
-      setPage(1); 
+      setPage(1);
     }
   };
 
@@ -161,17 +161,17 @@ export default function PreventiveMaintenance() {
 
     if (selectedStatus && selectedStatus !== "all")
       params.append("status", selectedStatus);
-    
+
     if (selectedFrequency && selectedFrequency !== "all")
       params.append("frequency", selectedFrequency);
-    
+
     const response = await preventiveMaintenanceApiService.getPreventiveMaintenanceOverview(params);
     if (response?.success) setTemplateOverview(response.data || {});
   };
 
   const loadStatusLookup = async () => {
-      const lookup = await preventiveMaintenanceApiService.getPmFilterStatusLookup();
-      if (lookup.success) setStatusList(lookup.data || []); 
+    const lookup = await preventiveMaintenanceApiService.getPmFilterStatusLookup();
+    if (lookup.success) setStatusList(lookup.data || []);
   };
 
   const loadFrequencyLookup = async () => {
@@ -191,7 +191,7 @@ export default function PreventiveMaintenance() {
     // build query params
     const params = new URLSearchParams();
     if (searchTerm) params.append("search", searchTerm);
-    
+
     if (selectedCategory && selectedCategory !== "all")
 
       params.append("category_id", selectedCategory);
@@ -252,7 +252,7 @@ export default function PreventiveMaintenance() {
     if (formMode === "create") {
       response = await preventiveMaintenanceApiService.addPreventiveMaintenance(templateData);
       if (response.success) updateTemplatePage();
-      loadTemplateOverview(); 
+      loadTemplateOverview();
     } else if (formMode === "edit" && selectedTemplate) {
       const updatedTemplate = {
         ...selectedTemplate,
@@ -270,8 +270,7 @@ export default function PreventiveMaintenance() {
     if (response.success) {
       setIsFormOpen(false);
       toast.success(
-        `PM Template has been ${
-          formMode === "create" ? "created" : "updated"
+        `PM Template has been ${formMode === "create" ? "created" : "updated"
         } successfully.`
       );
     }
@@ -296,40 +295,7 @@ export default function PreventiveMaintenance() {
       <div className="min-h-screen flex w-full">
         <PropertySidebar />
         <SidebarInset className="flex-1">
-          <header className="flex h-16 shrink-0 items-center justify-between border-b border-sidebar-border px-4">
-
-            {/* LEFT SIDE - Page Title*/}
-                       <PageHeader />
-
-            {/* RIGHT SIDE */}
-            <div className="flex items-center gap-4">
-              <div className="flex items-center gap-3">
-                <Avatar>
-                  <AvatarFallback className="bg-gradient-primary text-white">
-                    {user.name.charAt(0)}
-                  </AvatarFallback>
-                </Avatar>
-
-                <div className="text-right">
-                  <p className="text-sm font-medium">{user.name}</p>
-                  <p className="text-xs text-muted-foreground">
-                    {user.account_type}
-                  </p>
-                </div>
-              </div>
-
-              <Button
-                variant="ghost"
-                size="sm"
-                onClick={handleLogout}
-                className="text-muted-foreground hover:text-destructive"
-              >
-                <LogOut className="w-4 h-4 mr-2" />
-                Logout
-              </Button>
-            </div>
-
-          </header>
+          <PageHeader />
 
 
           <div className="flex-1 space-y-6 p-6">
@@ -472,138 +438,138 @@ export default function PreventiveMaintenance() {
                   {/* PM Templates Table */}
                   <div className="relative rounded-md border min-h-[200px]">
                     <Card className="border-0 shadow-none">
-                    <CardHeader>
-                      <CardTitle>PM Templates</CardTitle>
-                      <CardDescription>
-                        Schedule and manage maintenance templates
-                      </CardDescription>
-                    </CardHeader>
-                    <CardContent>
-                      <Table>
-                        <TableHeader>
-                          <TableRow>
-                            <TableHead>Template</TableHead>
-                            <TableHead>Category</TableHead>
-                            <TableHead>Categories</TableHead>
-                            <TableHead>Frequency</TableHead>
-                            <TableHead>SLA</TableHead>
-                            <TableHead>Next Due</TableHead>
-                            <TableHead>Status</TableHead>
-                            <TableHead>Actions</TableHead>
-                          </TableRow>
-                        </TableHeader>
-                        <TableBody>
-                          {templates.map((template) => (
-                            <TableRow key={template.id}>
-                              <TableCell>
-                                <div>
-                                  <div className="font-medium">{template.name}</div>
-                                  <div className="text-sm text-muted-foreground">
-                                    #{template.pm_no || template.id}
-                                  </div>
-                                </div>
-                              </TableCell>
-                              <TableCell>
-                                <Badge variant="outline">{template.asset_category || "No Category"}</Badge>
-                              </TableCell>
-                              <TableCell>
-                                <div className="space-y-1">
-                                  {template.checklist && Array.isArray(template.checklist) && template.checklist.length > 0 ? (
-                                    template.checklist.map((item, index) => (
-                                      <div key={index} className="text-xs">
-                                        <span className="font-medium">Step {item.step}:</span> {item.instruction}
-                                      </div>
-                                    ))
-                                  ) : (
-                                    <span className="text-muted-foreground text-sm">No checklist items</span>
-                                  )}
-                                </div>
-                              </TableCell>
-                              <TableCell>
-                                <div className="flex items-center">
-                                  <Calendar className="w-4 h-4 mr-2" />
-                                  {template.frequency || "No Frequency"}
-                                </div>
-                              </TableCell>
-                              <TableCell>
-                                <div className="space-y-1">
-                                  {template.sla ? (
-                                    <>
-                                      {template.sla.priority && (
-                                        <Badge variant="outline" className="text-xs">
-                                          {template.sla.priority}
-                                        </Badge>
-                                      )}
-                                      {template.sla.response_hrs && (
-                                        <div className="text-xs text-muted-foreground">
-                                          Response: {template.sla.response_hrs}h
-                                        </div>
-                                      )}
-                                      {template.sla.resolve_hrs && (
-                                        <div className="text-xs text-muted-foreground">
-                                          Resolve: {template.sla.resolve_hrs}h
-                                        </div>
-                                      )}
-                                    </>
-                                  ) : (
-                                    <span className="text-muted-foreground text-sm">No SLA</span>
-                                  )}
-                                </div>
-                              </TableCell>
-                              <TableCell>
-                                <div className="flex items-center">
-                                  <Calendar className="w-4 h-4 mr-2" />
-                                  {template.next_due
-                                    ? new Date(template.next_due).toLocaleDateString()
-                                    : "No Due Date"}
-                                </div>
-                              </TableCell>
-                              <TableCell>
-                                <Badge
-                                  variant={
-                                    template.status === "active"
-                                      ? "default"
-                                      : template.status === "completed"
-                                      ? "secondary"
-                                      : "outline"
-                                  }
-                                >
-                                  {template.status || "inactive"}
-                                </Badge>
-                              </TableCell>
-                              <TableCell>
-                                <div className="flex space-x-2">
-                                  <Button
-                                    variant="ghost"
-                                    size="sm"
-                                    onClick={() => handleView(template)}
-                                  >
-                                    <Eye className="w-4 h-4" />
-                                  </Button>
-                                  {/*canWrite(resource) &&*/ }<Button
-                                    variant="ghost"
-                                    size="sm"
-                                    onClick={() => handleEdit(template)}
-                                  >
-                                    <Edit className="w-4 h-4" />
-                                  </Button>
-                                  {/*}*/ }
-                                  {/*canDelete(resource) &&*/ }<Button
-                                    variant="ghost"
-                                    size="sm"
-                                    onClick={() => handleDelete(template.id)}
-                                  >
-                                    <Trash2 className="w-4 h-4" />
-                                  </Button>
-                                  {/*}*/ }
-                                </div>
-                              </TableCell>
+                      <CardHeader>
+                        <CardTitle>PM Templates</CardTitle>
+                        <CardDescription>
+                          Schedule and manage maintenance templates
+                        </CardDescription>
+                      </CardHeader>
+                      <CardContent>
+                        <Table>
+                          <TableHeader>
+                            <TableRow>
+                              <TableHead>Template</TableHead>
+                              <TableHead>Category</TableHead>
+                              <TableHead>Categories</TableHead>
+                              <TableHead>Frequency</TableHead>
+                              <TableHead>SLA</TableHead>
+                              <TableHead>Next Due</TableHead>
+                              <TableHead>Status</TableHead>
+                              <TableHead>Actions</TableHead>
                             </TableRow>
-                          ))}
-                        </TableBody>
-                      </Table>
-                    </CardContent>
-                  </Card>
+                          </TableHeader>
+                          <TableBody>
+                            {templates.map((template) => (
+                              <TableRow key={template.id}>
+                                <TableCell>
+                                  <div>
+                                    <div className="font-medium">{template.name}</div>
+                                    <div className="text-sm text-muted-foreground">
+                                      #{template.pm_no || template.id}
+                                    </div>
+                                  </div>
+                                </TableCell>
+                                <TableCell>
+                                  <Badge variant="outline">{template.asset_category || "No Category"}</Badge>
+                                </TableCell>
+                                <TableCell>
+                                  <div className="space-y-1">
+                                    {template.checklist && Array.isArray(template.checklist) && template.checklist.length > 0 ? (
+                                      template.checklist.map((item, index) => (
+                                        <div key={index} className="text-xs">
+                                          <span className="font-medium">Step {item.step}:</span> {item.instruction}
+                                        </div>
+                                      ))
+                                    ) : (
+                                      <span className="text-muted-foreground text-sm">No checklist items</span>
+                                    )}
+                                  </div>
+                                </TableCell>
+                                <TableCell>
+                                  <div className="flex items-center">
+                                    <Calendar className="w-4 h-4 mr-2" />
+                                    {template.frequency || "No Frequency"}
+                                  </div>
+                                </TableCell>
+                                <TableCell>
+                                  <div className="space-y-1">
+                                    {template.sla ? (
+                                      <>
+                                        {template.sla.priority && (
+                                          <Badge variant="outline" className="text-xs">
+                                            {template.sla.priority}
+                                          </Badge>
+                                        )}
+                                        {template.sla.response_hrs && (
+                                          <div className="text-xs text-muted-foreground">
+                                            Response: {template.sla.response_hrs}h
+                                          </div>
+                                        )}
+                                        {template.sla.resolve_hrs && (
+                                          <div className="text-xs text-muted-foreground">
+                                            Resolve: {template.sla.resolve_hrs}h
+                                          </div>
+                                        )}
+                                      </>
+                                    ) : (
+                                      <span className="text-muted-foreground text-sm">No SLA</span>
+                                    )}
+                                  </div>
+                                </TableCell>
+                                <TableCell>
+                                  <div className="flex items-center">
+                                    <Calendar className="w-4 h-4 mr-2" />
+                                    {template.next_due
+                                      ? new Date(template.next_due).toLocaleDateString()
+                                      : "No Due Date"}
+                                  </div>
+                                </TableCell>
+                                <TableCell>
+                                  <Badge
+                                    variant={
+                                      template.status === "active"
+                                        ? "default"
+                                        : template.status === "completed"
+                                          ? "secondary"
+                                          : "outline"
+                                    }
+                                  >
+                                    {template.status || "inactive"}
+                                  </Badge>
+                                </TableCell>
+                                <TableCell>
+                                  <div className="flex space-x-2">
+                                    <Button
+                                      variant="ghost"
+                                      size="sm"
+                                      onClick={() => handleView(template)}
+                                    >
+                                      <Eye className="w-4 h-4" />
+                                    </Button>
+                                    {/*canWrite(resource) &&*/}<Button
+                                      variant="ghost"
+                                      size="sm"
+                                      onClick={() => handleEdit(template)}
+                                    >
+                                      <Edit className="w-4 h-4" />
+                                    </Button>
+                                    {/*}*/}
+                                    {/*canDelete(resource) &&*/}<Button
+                                      variant="ghost"
+                                      size="sm"
+                                      onClick={() => handleDelete(template.id)}
+                                    >
+                                      <Trash2 className="w-4 h-4" />
+                                    </Button>
+                                    {/*}*/}
+                                  </div>
+                                </TableCell>
+                              </TableRow>
+                            ))}
+                          </TableBody>
+                        </Table>
+                      </CardContent>
+                    </Card>
                   </div>
 
                   {/* Pagination */}

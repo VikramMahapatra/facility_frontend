@@ -92,7 +92,7 @@ export default function LeaseChargeCode() {
     });
 
     if (response?.success) {
-      setChargeCodes( response.data || []);
+      setChargeCodes(response.data || []);
       setTotalItems(response.data?.total || response.data?.data?.length || 0);
     }
   };
@@ -123,7 +123,7 @@ export default function LeaseChargeCode() {
       });
 
       if (response?.success) loadChargeCodes();
-      
+
     } else if (formMode === "edit" && selectedChargeCode) {
       const updatedCode = {
         ...selectedChargeCode,
@@ -141,8 +141,7 @@ export default function LeaseChargeCode() {
     if (response?.success) {
       setShowForm(false);
       toast.success(
-        `Charge code ${codeData.code} has been ${
-          formMode === "create" ? "created" : "updated"
+        `Charge code ${codeData.code} has been ${formMode === "create" ? "created" : "updated"
         } successfully.`
       );
     }
@@ -171,36 +170,7 @@ export default function LeaseChargeCode() {
       <div className="flex min-h-screen w-full">
         <PropertySidebar />
         <SidebarInset className="flex-1">
-          <header className="flex h-16 shrink-0 items-center justify-between border-b border-sidebar-border px-4">
-            {/* LEFT SIDE - Page Title*/}
-            <PageHeader />
-            <div className="flex items-center gap-4">
-              <div className="flex items-center gap-3">
-                <Avatar>
-                  <AvatarFallback className="bg-gradient-primary text-white">
-                    {user.name.charAt(0)}
-                  </AvatarFallback>
-                </Avatar>
-
-                <div className="text-right">
-                  <p className="text-sm font-medium">{user.name}</p>
-                  <p className="text-xs text-muted-foreground">
-                    {user.account_type}
-                  </p>
-                </div>
-              </div>
-
-              <Button
-                variant="ghost"
-                size="sm"
-                onClick={handleLogout}
-                className="text-muted-foreground hover:text-destructive"
-              >
-                <LogOut className="w-4 h-4 mr-2" />
-                Logout
-              </Button>
-            </div>
-          </header>
+          <PageHeader />
 
           <main className="flex-1 p-6">
             <div className="space-y-6">
@@ -214,10 +184,10 @@ export default function LeaseChargeCode() {
                   </p>
                 </div>
                 {/* {canWrite(resource) && ( */}
-                  <Button className="gap-2" onClick={handleCreate}>
-                    <Plus className="h-4 w-4" />
-                    Add Charge Code
-                  </Button>
+                <Button className="gap-2" onClick={handleCreate}>
+                  <Plus className="h-4 w-4" />
+                  Add Charge Code
+                </Button>
                 {/* )} */}
               </div>
 
@@ -241,72 +211,72 @@ export default function LeaseChargeCode() {
                       <CardTitle>Charge Codes</CardTitle>
                     </CardHeader>
                     <CardContent>
-                  <Table>
-                    <TableHeader>
-                      <TableRow>
-                        <TableHead>Code</TableHead>
-                        <TableHead className="text-right">Actions</TableHead>
-                      </TableRow>
-                    </TableHeader>
-                    <TableBody>
-                      {chargeCodes.length === 0 ? (
-                        <TableRow>
-                          <TableCell
-                            colSpan={2}
-                            className="text-center text-muted-foreground h-32"
-                          >
-                            No charge codes found
-                          </TableCell>
-                        </TableRow>
-                      ) : (
-                        chargeCodes.map((code, index) => (
-                          <TableRow key={code.id || code.code || index}>
-                            <TableCell className="font-medium">
-                              {code.code}
-                            </TableCell>
-                            <TableCell className="text-right">
-                              <div className="flex justify-end gap-2">
-                                <Button
-                                  variant="ghost"
-                                  size="sm"
-                                  onClick={() => handleView(code)}
-                                >
-                                  <Eye className="w-4 h-4" />
-                                </Button>
-                                {/* {canWrite(resource) && ( */}
-                                  <Button
-                                    variant="ghost"
-                                    size="sm"
-                                    onClick={() => handleEdit(code)}
-                                  >
-                                    <Edit className="w-4 h-4" />
-                                  </Button>
-                                {/* )} */}
-                                {/* {canDelete(resource) && ( */}
-                                  <Button
-                                    variant="ghost"
-                                    size="sm"
-                                    className="text-destructive hover:text-destructive"
-                                    onClick={() => handleDelete(code.id || "")}
-                                  >
-                                    <Trash2 className="w-4 h-4" />
-                                  </Button>
-                                {/* )} */}
-                              </div>
-                            </TableCell>
+                      <Table>
+                        <TableHeader>
+                          <TableRow>
+                            <TableHead>Code</TableHead>
+                            <TableHead className="text-right">Actions</TableHead>
                           </TableRow>
-                        ))
+                        </TableHeader>
+                        <TableBody>
+                          {chargeCodes.length === 0 ? (
+                            <TableRow>
+                              <TableCell
+                                colSpan={2}
+                                className="text-center text-muted-foreground h-32"
+                              >
+                                No charge codes found
+                              </TableCell>
+                            </TableRow>
+                          ) : (
+                            chargeCodes.map((code, index) => (
+                              <TableRow key={code.id || code.code || index}>
+                                <TableCell className="font-medium">
+                                  {code.code}
+                                </TableCell>
+                                <TableCell className="text-right">
+                                  <div className="flex justify-end gap-2">
+                                    <Button
+                                      variant="ghost"
+                                      size="sm"
+                                      onClick={() => handleView(code)}
+                                    >
+                                      <Eye className="w-4 h-4" />
+                                    </Button>
+                                    {/* {canWrite(resource) && ( */}
+                                    <Button
+                                      variant="ghost"
+                                      size="sm"
+                                      onClick={() => handleEdit(code)}
+                                    >
+                                      <Edit className="w-4 h-4" />
+                                    </Button>
+                                    {/* )} */}
+                                    {/* {canDelete(resource) && ( */}
+                                    <Button
+                                      variant="ghost"
+                                      size="sm"
+                                      className="text-destructive hover:text-destructive"
+                                      onClick={() => handleDelete(code.id || "")}
+                                    >
+                                      <Trash2 className="w-4 h-4" />
+                                    </Button>
+                                    {/* )} */}
+                                  </div>
+                                </TableCell>
+                              </TableRow>
+                            ))
+                          )}
+                        </TableBody>
+                      </Table>
+                      {totalItems > 0 && (
+                        <Pagination
+                          page={page}
+                          pageSize={pageSize}
+                          totalItems={totalItems}
+                          onPageChange={setPage}
+                        />
                       )}
-                    </TableBody>
-                  </Table>
-                  {totalItems > 0 && (
-                    <Pagination
-                      page={page}
-                      pageSize={pageSize}
-                      totalItems={totalItems}
-                      onPageChange={setPage}
-                    />
-                  )}
                     </CardContent>
                   </Card>
                 </ContentContainer>

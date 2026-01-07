@@ -87,7 +87,7 @@ export default function Contracts() {
     const response = await withLoader(async () => {
       return await contractApiService.getContracts(params);
     });
-    
+
     if (response?.success) {
       setContracts(response.data?.contracts || []);
       setTotalItems(response.data?.total || 0);
@@ -103,7 +103,7 @@ export default function Contracts() {
     const response = await withLoader(async () => {
       return await contractApiService.getContractsOverview(params);
     });
-    
+
     // Map API response to expected format
     const overviewData = {
       total_contracts: response?.data?.totalContracts || response?.data?.total_contracts || 0,
@@ -111,7 +111,7 @@ export default function Contracts() {
       expiring_soon: response?.data?.expiringSoon || response?.data?.expiring_soon || 0,
       total_value: response?.data?.totalValue || response?.data?.total_value || 0
     };
-    
+
     setOverview(overviewData);
   };
 
@@ -134,7 +134,7 @@ export default function Contracts() {
       return await vendorsApiService.getVendorLookup();
     });
     if (response?.success) setVendorList(response.data || []);
-    
+
   };
 
   const getVendorName = (vendorId: string) => {
@@ -161,61 +161,61 @@ export default function Contracts() {
     setIsCreateDialogOpen(true);
   };
 
- const handleDelete = (contractId: string) => {
-  setDeleteContractId(contractId);
-};
+  const handleDelete = (contractId: string) => {
+    setDeleteContractId(contractId);
+  };
 
-const confirmDelete = async () => {
-  if (deleteContractId) {
-    const response = await contractApiService.deleteContract(deleteContractId);
+  const confirmDelete = async () => {
+    if (deleteContractId) {
+      const response = await contractApiService.deleteContract(deleteContractId);
 
-    if (response.success) {
-      // Success - refresh data
-      updateContractsPage();
+      if (response.success) {
+        // Success - refresh data
+        updateContractsPage();
+        setDeleteContractId(null);
+        toast.success("Contract has been deleted successfully.");
+      } else {
+        const errorMessage = response?.data?.message || "Failed to delete contract";
+        toast.error(errorMessage);
+      }
+
       setDeleteContractId(null);
-      toast.success("Contract has been deleted successfully.");
-    } else {
-      const errorMessage = response?.data?.message || "Failed to delete contract";
-      toast.error(errorMessage);
     }
-
-    setDeleteContractId(null);
-  }
-};
+  };
 
   const handleSave = async (contractData: any) => {
-  let response;
-  if (formMode === "create") {
-    response = await contractApiService.addContract(contractData);
+    let response;
+    if (formMode === "create") {
+      response = await contractApiService.addContract(contractData);
 
-    if (response.success)
-      updateContractsPage();
-  } else if (formMode === "edit" && selectedContract) {
-    const updatedContract = {
-      ...selectedContract,
-      ...contractData,
-      updated_at: new Date().toISOString(),
-    };
-    response = await contractApiService.updateContract(updatedContract);
+      if (response.success)
+        updateContractsPage();
+    } else if (formMode === "edit" && selectedContract) {
+      const updatedContract = {
+        ...selectedContract,
+        ...contractData,
+        updated_at: new Date().toISOString(),
+      };
+      response = await contractApiService.updateContract(updatedContract);
 
-    if (response.success) {
-      // Update the edited contract in local state
-      setContracts((prev) =>
-        prev.map((c) => (c.id === updatedContract.id ? response.data : c))
+      if (response.success) {
+        // Update the edited contract in local state
+        setContracts((prev) =>
+          prev.map((c) => (c.id === updatedContract.id ? response.data : c))
+        );
+      }
+    }
+
+    if (response?.success) {
+      setIsCreateDialogOpen(false);
+      setSelectedContract(undefined);
+      setFormMode("create");
+      toast.success(
+        `Contract ${contractData.title || contractData.code || contractData.contract_number || ""} has been ${formMode === "create" ? "created" : "updated"} successfully.`
       );
     }
-  }
-
-  if (response?.success) {
-    setIsCreateDialogOpen(false);
-    setSelectedContract(undefined);
-    setFormMode("create");
-    toast.success(
-      `Contract ${contractData.title || contractData.code || contractData.contract_number || ""} has been ${formMode === "create" ? "created" : "updated"} successfully.`
-    );
-  }
-  return response;
-};
+    return response;
+  };
 
   const getStatusBadge = (status: string) => {
     const variants: Record<string, 'default' | 'secondary' | 'destructive'> = {
@@ -223,7 +223,7 @@ const confirmDelete = async () => {
       expired: 'destructive',
       terminated: 'secondary'
     };
-    
+
     return (
       <Badge variant={variants[status] || 'secondary'}>
         {status}
@@ -262,40 +262,7 @@ const confirmDelete = async () => {
       <div className="min-h-screen flex w-full">
         <PropertySidebar />
         <SidebarInset className="flex-1">
-          <header className="flex h-16 shrink-0 items-center justify-between border-b border-sidebar-border px-4">
-
-            {/* LEFT SIDE - Page Title*/}
-            <PageHeader />
-
-            {/* RIGHT SIDE */}
-            <div className="flex items-center gap-4">
-              <div className="flex items-center gap-3">
-                <Avatar>
-                  <AvatarFallback className="bg-gradient-primary text-white">
-                    {user.name.charAt(0)}
-                  </AvatarFallback>
-                </Avatar>
-
-                <div className="text-right">
-                  <p className="text-sm font-medium">{user.name}</p>
-                  <p className="text-xs text-muted-foreground">
-                    {user.account_type}
-                  </p>
-                </div>
-              </div>
-
-              <Button
-                variant="ghost"
-                size="sm"
-                onClick={handleLogout}
-                className="text-muted-foreground hover:text-destructive"
-              >
-                <LogOut className="w-4 h-4 mr-2" />
-                Logout
-              </Button>
-            </div>
-
-          </header>
+          <PageHeader />
 
 
           <div className="flex-1 space-y-6 p-6">
@@ -362,148 +329,148 @@ const confirmDelete = async () => {
                 <LoaderOverlay />
                 <div className="space-y-6">
                   {/* Stats Cards */}
-                <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
-                  <Card>
-                    <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                      <CardTitle className="text-sm font-medium">Total Contracts</CardTitle>
-                      <FileText className="h-4 w-4 text-muted-foreground" />
-                    </CardHeader>
-                    <CardContent>
-                      <div className="text-2xl font-bold">{overview.total_contracts}</div>
-                    </CardContent>
-                  </Card>
-                  <Card>
-                    <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                      <CardTitle className="text-sm font-medium">Active Contracts</CardTitle>
-                      <CheckCircle className="h-4 w-4 text-muted-foreground" />
-                    </CardHeader>
-                    <CardContent>
-                      <div className="text-2xl font-bold">{overview.active_contracts}</div>
-                    </CardContent>
-                  </Card>
-                  <Card>
-                    <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                      <CardTitle className="text-sm font-medium">Expiring Soon</CardTitle>
-                      <AlertCircle className="h-4 w-4 text-muted-foreground" />
-                    </CardHeader>
-                    <CardContent>
-                      <div className="text-2xl font-bold">{overview.expiring_soon}</div>
-                    </CardContent>
-                  </Card>
-                  <Card>
-                    <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                      <CardTitle className="text-sm font-medium">Total Value</CardTitle>
-                      <Building className="h-4 w-4 text-muted-foreground" />
-                    </CardHeader>
-                    <CardContent>
-                      <div className="text-2xl font-bold">{formatCurrency(overview.total_value)}</div>
-                    </CardContent>
-                  </Card>
-                </div>
+                  <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+                    <Card>
+                      <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                        <CardTitle className="text-sm font-medium">Total Contracts</CardTitle>
+                        <FileText className="h-4 w-4 text-muted-foreground" />
+                      </CardHeader>
+                      <CardContent>
+                        <div className="text-2xl font-bold">{overview.total_contracts}</div>
+                      </CardContent>
+                    </Card>
+                    <Card>
+                      <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                        <CardTitle className="text-sm font-medium">Active Contracts</CardTitle>
+                        <CheckCircle className="h-4 w-4 text-muted-foreground" />
+                      </CardHeader>
+                      <CardContent>
+                        <div className="text-2xl font-bold">{overview.active_contracts}</div>
+                      </CardContent>
+                    </Card>
+                    <Card>
+                      <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                        <CardTitle className="text-sm font-medium">Expiring Soon</CardTitle>
+                        <AlertCircle className="h-4 w-4 text-muted-foreground" />
+                      </CardHeader>
+                      <CardContent>
+                        <div className="text-2xl font-bold">{overview.expiring_soon}</div>
+                      </CardContent>
+                    </Card>
+                    <Card>
+                      <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                        <CardTitle className="text-sm font-medium">Total Value</CardTitle>
+                        <Building className="h-4 w-4 text-muted-foreground" />
+                      </CardHeader>
+                      <CardContent>
+                        <div className="text-2xl font-bold">{formatCurrency(overview.total_value)}</div>
+                      </CardContent>
+                    </Card>
+                  </div>
 
-                {/* Contracts Table */}
-                <Card>
-                  <CardHeader>
-                    <CardTitle>Contract Management</CardTitle>
-                    <CardDescription>
-                      Showing {contracts.length} contracts
-                    </CardDescription>
-                  </CardHeader>
-                  <CardContent>
-                    <Table>
-                      <TableHeader>
-                        <TableRow>
-                          <TableHead>Contract</TableHead>
-                          <TableHead>Vendor</TableHead>
-                          <TableHead>Type</TableHead>
-                          <TableHead>Duration</TableHead>
-                          <TableHead>Value</TableHead>
-                          <TableHead>Status</TableHead>
-                          <TableHead>Actions</TableHead>
-                        </TableRow>
-                      </TableHeader>
-                      <TableBody>
-                        {contracts.map((contract) => (
-                          <TableRow key={contract.id}>
-                            <TableCell>
-                              <div>
-                                <div className="font-medium">{contract.title}</div>
-                                <div className="text-sm text-muted-foreground flex items-center">
-                                  <FileText className="w-3 h-3 mr-1" />
-                                  {contract.documents?.length || 0} document(s)
-                                </div>
-                              </div>
-                            </TableCell>
-                            <TableCell>
-                              <div>
-                                <div className="font-medium">{getVendorName(contract.vendor_name)}</div>
-                                <div className="text-sm text-muted-foreground">
-                                  SLA: {contract.terms?.sla?.response_hrs || 'N/A'}h response
-                                </div>
-                              </div>
-                            </TableCell>
-                            <TableCell>
-                              <Badge variant="outline">{contract.type}</Badge>
-                            </TableCell>
-                            <TableCell>
-                              <div className="text-sm">
-                                <div>{formatDate(contract.start_date)}</div>
-                                <div className="text-muted-foreground">to {formatDate(contract.end_date)}</div>
-                                {contract.status === 'active' && (
-                                  <div className="text-xs text-muted-foreground mt-1">
-                                    {getDaysUntilExpiry(contract.end_date)} days left
-                                  </div>
-                                )}
-                              </div>
-                            </TableCell>
-                            <TableCell>
-                              <div className="font-medium">
-                                {formatCurrency(contract.value)}
-                              </div>
-                            </TableCell>
-                            <TableCell>
-                              <div className="flex items-center space-x-2">
-                                {getStatusIcon(contract.status)}
-                                {getStatusBadge(contract.status)}
-                              </div>
-                            </TableCell>
-                            <TableCell>
-                              <div className="flex space-x-2">
-                                <Button variant="ghost" size="sm" onClick={() => handleView(contract)}>
-                                  <Eye className="w-4 h-4" />
-                                </Button>
-                                {canWrite(resource) &&<Button variant="ghost" size="sm" onClick={() => handleEdit(contract)}>
-                                  <Edit className="w-4 h-4" />
-                                </Button>
-                                 }
-                                 {canDelete(resource) &&
-                                <Button
-                                  variant="ghost"
-                                  size="sm"
-                                  className="text-destructive hover:text-destructive"
-                                  onClick={() => handleDelete(contract.id)}
-                                >
-                                  <Trash2 className="w-4 h-4" />
-                                </Button>
-                                 }
-                              </div>
-                            </TableCell>
+                  {/* Contracts Table */}
+                  <Card>
+                    <CardHeader>
+                      <CardTitle>Contract Management</CardTitle>
+                      <CardDescription>
+                        Showing {contracts.length} contracts
+                      </CardDescription>
+                    </CardHeader>
+                    <CardContent>
+                      <Table>
+                        <TableHeader>
+                          <TableRow>
+                            <TableHead>Contract</TableHead>
+                            <TableHead>Vendor</TableHead>
+                            <TableHead>Type</TableHead>
+                            <TableHead>Duration</TableHead>
+                            <TableHead>Value</TableHead>
+                            <TableHead>Status</TableHead>
+                            <TableHead>Actions</TableHead>
                           </TableRow>
-                        ))}
-                      </TableBody>
-                    </Table>
+                        </TableHeader>
+                        <TableBody>
+                          {contracts.map((contract) => (
+                            <TableRow key={contract.id}>
+                              <TableCell>
+                                <div>
+                                  <div className="font-medium">{contract.title}</div>
+                                  <div className="text-sm text-muted-foreground flex items-center">
+                                    <FileText className="w-3 h-3 mr-1" />
+                                    {contract.documents?.length || 0} document(s)
+                                  </div>
+                                </div>
+                              </TableCell>
+                              <TableCell>
+                                <div>
+                                  <div className="font-medium">{getVendorName(contract.vendor_name)}</div>
+                                  <div className="text-sm text-muted-foreground">
+                                    SLA: {contract.terms?.sla?.response_hrs || 'N/A'}h response
+                                  </div>
+                                </div>
+                              </TableCell>
+                              <TableCell>
+                                <Badge variant="outline">{contract.type}</Badge>
+                              </TableCell>
+                              <TableCell>
+                                <div className="text-sm">
+                                  <div>{formatDate(contract.start_date)}</div>
+                                  <div className="text-muted-foreground">to {formatDate(contract.end_date)}</div>
+                                  {contract.status === 'active' && (
+                                    <div className="text-xs text-muted-foreground mt-1">
+                                      {getDaysUntilExpiry(contract.end_date)} days left
+                                    </div>
+                                  )}
+                                </div>
+                              </TableCell>
+                              <TableCell>
+                                <div className="font-medium">
+                                  {formatCurrency(contract.value)}
+                                </div>
+                              </TableCell>
+                              <TableCell>
+                                <div className="flex items-center space-x-2">
+                                  {getStatusIcon(contract.status)}
+                                  {getStatusBadge(contract.status)}
+                                </div>
+                              </TableCell>
+                              <TableCell>
+                                <div className="flex space-x-2">
+                                  <Button variant="ghost" size="sm" onClick={() => handleView(contract)}>
+                                    <Eye className="w-4 h-4" />
+                                  </Button>
+                                  {canWrite(resource) && <Button variant="ghost" size="sm" onClick={() => handleEdit(contract)}>
+                                    <Edit className="w-4 h-4" />
+                                  </Button>
+                                  }
+                                  {canDelete(resource) &&
+                                    <Button
+                                      variant="ghost"
+                                      size="sm"
+                                      className="text-destructive hover:text-destructive"
+                                      onClick={() => handleDelete(contract.id)}
+                                    >
+                                      <Trash2 className="w-4 h-4" />
+                                    </Button>
+                                  }
+                                </div>
+                              </TableCell>
+                            </TableRow>
+                          ))}
+                        </TableBody>
+                      </Table>
 
-                    {/* Pagination */}
-                    <div className="mt-4">
-                      <Pagination
-                        page={page}
-                        pageSize={pageSize}
-                        totalItems={totalItems}
-                        onPageChange={setPage}
-                      />
-                    </div>
-                  </CardContent>
-                </Card>
+                      {/* Pagination */}
+                      <div className="mt-4">
+                        <Pagination
+                          page={page}
+                          pageSize={pageSize}
+                          totalItems={totalItems}
+                          onPageChange={setPage}
+                        />
+                      </div>
+                    </CardContent>
+                  </Card>
                 </div>
               </ContentContainer>
             </div>

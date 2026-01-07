@@ -209,7 +209,7 @@ export default function SpaceAssignments() {
 
   const handleDelete = (assignmentId: string) => {
     if (Array.isArray(assignments)) {
-    setAssignments(assignments.filter(assignment => assignment.id !== assignmentId));
+      setAssignments(assignments.filter(assignment => assignment.id !== assignmentId));
       toast.success("Space assignment has been removed successfully.");
     }
   };
@@ -220,36 +220,7 @@ export default function SpaceAssignments() {
       <div className="flex min-h-screen w-full">
         <PropertySidebar />
         <SidebarInset className="flex-1">
-          <header className="flex h-16 shrink-0 items-center justify-between border-b border-sidebar-border px-4">
-            {/* LEFT SIDE - Page Title*/}
-             <PageHeader />
-             <div className="flex items-center gap-4">
-              <div className="flex items-center gap-3">
-                <Avatar>
-                  <AvatarFallback className="bg-gradient-primary text-white">
-                    {user.name.charAt(0)}
-                  </AvatarFallback>
-                </Avatar>
-
-                <div className="text-right">
-                  <p className="text-sm font-medium">{user.name}</p>
-                  <p className="text-xs text-muted-foreground">
-                    {user.account_type}
-                  </p>
-                </div>
-              </div>
-
-              <Button
-                variant="ghost"
-                size="sm"
-                onClick={handleLogout}
-                className="text-muted-foreground hover:text-destructive"
-              >
-                <LogOut className="w-4 h-4 mr-2" />
-                Logout
-              </Button>
-            </div>
-          </header>
+          <PageHeader />
 
           <main className="flex-1 p-6">
             <div className="space-y-6">
@@ -323,120 +294,120 @@ export default function SpaceAssignments() {
               {/* Assignments Grid */}
               <ContentContainer>
                 <LoaderOverlay />
-              <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
-                {Array.isArray(assignments) && assignments.map((assignment) => {
-                  const { space, group } = getAssignmentDetails(assignment);
+                <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
+                  {Array.isArray(assignments) && assignments.map((assignment) => {
+                    const { space, group } = getAssignmentDetails(assignment);
 
-                  if (!space || !group) return null;
+                    if (!space || !group) return null;
 
-                  return (
-                    <Card key={assignment.id} className="hover:shadow-lg transition-shadow">
-                      <CardHeader className="pb-3">
-                        <div className="flex items-start justify-between">
-                          <div className="space-y-1">
-                            <CardTitle className="text-lg flex items-center gap-2">
-                              <Link2 className="h-5 w-5 text-sidebar-primary" />
-                              {space.code}
-                            </CardTitle>
-                            <p className="text-sm text-muted-foreground">{space.name || 'Unnamed Space'}</p>
+                    return (
+                      <Card key={assignment.id} className="hover:shadow-lg transition-shadow">
+                        <CardHeader className="pb-3">
+                          <div className="flex items-start justify-between">
+                            <div className="space-y-1">
+                              <CardTitle className="text-lg flex items-center gap-2">
+                                <Link2 className="h-5 w-5 text-sidebar-primary" />
+                                {space.code}
+                              </CardTitle>
+                              <p className="text-sm text-muted-foreground">{space.name || 'Unnamed Space'}</p>
+                            </div>
+                            <Badge className={getKindColor(space.kind)}>
+                              {space.kind.replace('_', ' ')}
+                            </Badge>
                           </div>
-                          <Badge className={getKindColor(space.kind)}>
-                            {space.kind.replace('_', ' ')}
-                          </Badge>
-                        </div>
-                      </CardHeader>
+                        </CardHeader>
 
-                      <CardContent className="space-y-4">
-                        {/* Group Info */}
-                        <div className="space-y-2">
-                          <div className="flex items-center gap-2">
-                            <Users className="h-4 w-4 text-muted-foreground" />
-                            <span className="font-medium text-sm">{group.name}</span>
+                        <CardContent className="space-y-4">
+                          {/* Group Info */}
+                          <div className="space-y-2">
+                            <div className="flex items-center gap-2">
+                              <Users className="h-4 w-4 text-muted-foreground" />
+                              <span className="font-medium text-sm">{group.name}</span>
+                            </div>
+
+                            <div className="flex items-center gap-2">
+                              <Building2 className="h-4 w-4 text-muted-foreground" />
+                              <span className="text-sm text-muted-foreground">{assignment.site_name}</span>
+                            </div>
+
+                            <div className="flex items-center gap-2">
+                              <MapPin className="h-4 w-4 text-muted-foreground" />
+                              <span className="text-sm text-muted-foreground">
+                                {space.building_block && `${space.building_block}, `}
+                                {space.floor && `Floor ${space.floor}`}
+                              </span>
+                            </div>
                           </div>
 
-                          <div className="flex items-center gap-2">
-                            <Building2 className="h-4 w-4 text-muted-foreground" />
-                            <span className="text-sm text-muted-foreground">{assignment.site_name}</span>
-                          </div>
-
-                          <div className="flex items-center gap-2">
-                            <MapPin className="h-4 w-4 text-muted-foreground" />
-                            <span className="text-sm text-muted-foreground">
-                              {space.building_block && `${space.building_block}, `}
-                              {space.floor && `Floor ${space.floor}`}
-                            </span>
-                          </div>
-                        </div>
-
-                        {/* Space Details */}
-                        <div className="grid grid-cols-2 gap-2 text-sm">
-                          <div className="text-center p-2 bg-muted rounded">
-                            <p className="font-semibold">{space.area_sqft || 'N/A'}</p>
-                            <p className="text-muted-foreground text-xs">Sq Ft</p>
-                          </div>
-                          {space.beds && (
+                          {/* Space Details */}
+                          <div className="grid grid-cols-2 gap-2 text-sm">
                             <div className="text-center p-2 bg-muted rounded">
-                              <p className="font-semibold">{space.beds}BR/{space.baths}BA</p>
-                              <p className="text-muted-foreground text-xs">Config</p>
+                              <p className="font-semibold">{space.area_sqft || 'N/A'}</p>
+                              <p className="text-muted-foreground text-xs">Sq Ft</p>
+                            </div>
+                            {space.beds && (
+                              <div className="text-center p-2 bg-muted rounded">
+                                <p className="font-semibold">{space.beds}BR/{space.baths}BA</p>
+                                <p className="text-muted-foreground text-xs">Config</p>
+                              </div>
+                            )}
+                          </div>
+
+                          {/* Group Pricing */}
+                          {group.specs.base_rate > 0 && (
+                            <div className="text-sm">
+                              <span className="text-muted-foreground">Base Rate: </span>
+                              <span className="font-medium">
+                                ₹{group.specs.base_rate}
+                                {space.kind === 'apartment' ? '/month' : '/month'}
+                              </span>
                             </div>
                           )}
-                        </div>
 
-                        {/* Group Pricing */}
-                        {group.specs.base_rate > 0 && (
-                          <div className="text-sm">
-                            <span className="text-muted-foreground">Base Rate: </span>
-                            <span className="font-medium">
-                              ₹{group.specs.base_rate}
-                              {space.kind === 'apartment' ? '/month' : '/month'}
-                            </span>
+                          {/* Assignment Metadata */}
+                          <div className="text-xs text-muted-foreground">
+                            <div>Assigned: {new Date(assignment.assigned_date).toLocaleDateString()}</div>
+                            {assignment.assigned_by && <div>By: {assignment.assigned_by}</div>}
                           </div>
-                        )}
 
-                        {/* Assignment Metadata */}
-                        <div className="text-xs text-muted-foreground">
-                          <div>Assigned: {new Date(assignment.assigned_date).toLocaleDateString()}</div>
-                          {assignment.assigned_by && <div>By: {assignment.assigned_by}</div>}
-                        </div>
-
-                        {/* Actions */}
-                        <div className="flex items-center justify-end gap-2 pt-2">
-                          <Button size="sm" variant="outline" onClick={() => handleView(assignment)}>
-                            <Eye className="h-3 w-3" />
-                          </Button>
-                          <Button size="sm" variant="outline" onClick={() => handleEdit(assignment)}>
-                            <Edit className="h-3 w-3" />
-                          </Button>
-                          <AlertDialog>
-                            <AlertDialogTrigger asChild>
-                              <Button size="sm" variant="outline" className="text-destructive hover:text-destructive">
-                                <Trash2 className="h-3 w-3" />
-                              </Button>
-                            </AlertDialogTrigger>
-                            <AlertDialogContent>
-                              <AlertDialogHeader>
-                                <AlertDialogTitle>Remove Assignment</AlertDialogTitle>
-                                <AlertDialogDescription>
-                                  Are you sure you want to remove this assignment? This will unlink {space.code} from {group.name}.
-                                </AlertDialogDescription>
-                              </AlertDialogHeader>
-                              <AlertDialogFooter>
-                                <AlertDialogCancel>Cancel</AlertDialogCancel>
-                                <AlertDialogAction
-                                  onClick={() => handleDelete(assignment.id)}
-                                  className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
-                                >
-                                  Remove
-                                </AlertDialogAction>
-                              </AlertDialogFooter>
-                            </AlertDialogContent>
-                          </AlertDialog>
-                        </div>
-                      </CardContent>
-                    </Card>
-                  );
-                })}
-              </div>
+                          {/* Actions */}
+                          <div className="flex items-center justify-end gap-2 pt-2">
+                            <Button size="sm" variant="outline" onClick={() => handleView(assignment)}>
+                              <Eye className="h-3 w-3" />
+                            </Button>
+                            <Button size="sm" variant="outline" onClick={() => handleEdit(assignment)}>
+                              <Edit className="h-3 w-3" />
+                            </Button>
+                            <AlertDialog>
+                              <AlertDialogTrigger asChild>
+                                <Button size="sm" variant="outline" className="text-destructive hover:text-destructive">
+                                  <Trash2 className="h-3 w-3" />
+                                </Button>
+                              </AlertDialogTrigger>
+                              <AlertDialogContent>
+                                <AlertDialogHeader>
+                                  <AlertDialogTitle>Remove Assignment</AlertDialogTitle>
+                                  <AlertDialogDescription>
+                                    Are you sure you want to remove this assignment? This will unlink {space.code} from {group.name}.
+                                  </AlertDialogDescription>
+                                </AlertDialogHeader>
+                                <AlertDialogFooter>
+                                  <AlertDialogCancel>Cancel</AlertDialogCancel>
+                                  <AlertDialogAction
+                                    onClick={() => handleDelete(assignment.id)}
+                                    className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+                                  >
+                                    Remove
+                                  </AlertDialogAction>
+                                </AlertDialogFooter>
+                              </AlertDialogContent>
+                            </AlertDialog>
+                          </div>
+                        </CardContent>
+                      </Card>
+                    );
+                  })}
+                </div>
               </ContentContainer>
               <Pagination
                 page={page}

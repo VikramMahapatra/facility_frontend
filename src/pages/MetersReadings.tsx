@@ -271,8 +271,7 @@ export default function MetersReadings() {
     if (response.success) {
       setIsMeterFormOpen(false);
       toast.success(
-        `Meter has been ${
-          meterFormMode === "create" ? "created" : "updated"
+        `Meter has been ${meterFormMode === "create" ? "created" : "updated"
         } successfully.`
       );
     }
@@ -328,8 +327,7 @@ export default function MetersReadings() {
     if (response?.success) {
       setIsMeterReadingFormOpen(false);
       toast.success(
-        `Meter reading has been ${
-          meterReadingFormMode === "create" ? "added" : "updated"
+        `Meter reading has been ${meterReadingFormMode === "create" ? "added" : "updated"
         } successfully.`
       );
     }
@@ -367,8 +365,7 @@ export default function MetersReadings() {
         toast.success("The meter reading has been removed successfully.");
       } else {
         toast.error(
-          `Cannot Delete Meter Reading\n${
-            response?.message || "Unknown error"
+          `Cannot Delete Meter Reading\n${response?.message || "Unknown error"
           }`,
           {
             style: { whiteSpace: "pre-line" },
@@ -426,51 +423,19 @@ export default function MetersReadings() {
       <div className="flex min-h-screen w-full">
         <PropertySidebar />
         <div className="flex-1">
-          <header className="flex h-16 shrink-0 items-center justify-between border-b border-sidebar-border px-4">
-             {/* LEFT SIDE - Page Title*/}
-             <PageHeader />
-            
-
-            {/* RIGHT SIDE */}
-            <div className="flex items-center gap-4">
-              <div className="flex items-center gap-3">
-                <Avatar>
-                  <AvatarFallback className="bg-gradient-primary text-white">
-                    {user.name.charAt(0)}
-                  </AvatarFallback>
-                </Avatar>
-
-                <div className="text-right">
-                  <p className="text-sm font-medium">{user.name}</p>
-                  <p className="text-xs text-muted-foreground">
-                    {user.account_type}
-                  </p>
-                </div>
-              </div>
-
-              <Button
-                variant="ghost"
-                size="sm"
-                onClick={handleLogout}
-                className="text-muted-foreground hover:text-destructive"
-              >
-                <LogOut className="w-4 h-4 mr-2" />
-                Logout
-              </Button>
-            </div>
-          </header>
+          <PageHeader />
 
           <main className="flex-1 space-y-6 p-6">
-             <div className="flex items-center justify-between">
-                <div>
-                  <h2 className="text-3xl font-bold text-sidebar-primary">
-                    Meters & Readings
-                  </h2>
-                  <p className="text-muted-foreground">
-                     Monitor and manage utility meters and consumption data
-                  </p>
-                </div>
+            <div className="flex items-center justify-between">
+              <div>
+                <h2 className="text-3xl font-bold text-sidebar-primary">
+                  Meters & Readings
+                </h2>
+                <p className="text-muted-foreground">
+                  Monitor and manage utility meters and consumption data
+                </p>
               </div>
+            </div>
             <div className="space-y-6">
               {/* Stats Cards */}
               <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
@@ -586,17 +551,17 @@ export default function MetersReadings() {
                       />
                       {activeTab === "meters"
                         ? canWrite(resource) && (
-                            <Button size="sm" onClick={onCreateMeter}>
-                              <Plus className="h-4 w-4 mr-2" />
-                              Add Meter
-                            </Button>
-                          )
+                          <Button size="sm" onClick={onCreateMeter}>
+                            <Plus className="h-4 w-4 mr-2" />
+                            Add Meter
+                          </Button>
+                        )
                         : canWrite(resourceReadings) && (
-                            <Button size="sm" onClick={onCreateMeterReading}>
-                              <Plus className="h-4 w-4 mr-2" />
-                              Add Reading
-                            </Button>
-                          )}
+                          <Button size="sm" onClick={onCreateMeterReading}>
+                            <Plus className="h-4 w-4 mr-2" />
+                            Add Reading
+                          </Button>
+                        )}
                     </div>
                   </div>
 

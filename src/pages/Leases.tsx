@@ -198,8 +198,7 @@ export default function Leases() {
     if (response?.success) {
       setIsFormOpen(false);
       toast.success(
-        `Lease has been ${
-          formMode === "create" ? "created" : "updated"
+        `Lease has been ${formMode === "create" ? "created" : "updated"
         } successfully.`
       );
     }
@@ -230,37 +229,7 @@ export default function Leases() {
       <div className="flex min-h-screen w-full">
         <PropertySidebar />
         <SidebarInset className="flex-1">
-           <header className="flex h-16 shrink-0 items-center justify-between border-b border-sidebar-border px-4">
-            {/* LEFT SIDE - Page Title*/}
-            <PageHeader />
-            <div className="flex items-center gap-4">
-              <div className="flex items-center gap-3">
-                <Avatar>
-                  <AvatarFallback className="bg-gradient-primary text-white">
-                    {user.name.charAt(0)}
-                  </AvatarFallback>
-                </Avatar>
-
-                <div className="text-right">
-                  <p className="text-sm font-medium">{user.name}</p>
-                  <p className="text-xs text-muted-foreground">
-                    {user.account_type}
-                  </p>
-                </div>
-              </div>
-
-              <Button
-                variant="ghost"
-                size="sm"
-                onClick={handleLogout}
-                className="text-muted-foreground hover:text-destructive"
-              >
-                <LogOut className="w-4 h-4 mr-2" />
-                Logout
-              </Button>
-            </div>
-          </header>
-
+          <PageHeader />
           <main className="flex-1 p-6">
             <div className="space-y-6">
               <div className="flex items-center justify-between">
@@ -378,11 +347,11 @@ export default function Leases() {
                       <div className="text-2xl font-bold text-blue-600">
                         {leaseOverview.avgLeaseTermMonths < 12
                           ? `${leaseOverview.avgLeaseTermMonths.toFixed(
-                              0
-                            )} months`
+                            0
+                          )} months`
                           : `${(leaseOverview.avgLeaseTermMonths / 12).toFixed(
-                              1
-                            )} years`}
+                            1
+                          )} years`}
                       </div>
                       <p className="text-sm text-muted-foreground">
                         Avg Lease Term

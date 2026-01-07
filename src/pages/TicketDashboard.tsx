@@ -124,36 +124,7 @@ export default function TicketDashboard() {
       <div className="flex min-h-screen w-full">
         <PropertySidebar />
         <SidebarInset className="flex-1">
-          <header className="flex h-16 shrink-0 items-center justify-between border-b border-sidebar-border px-4">
-           {/* LEFT SIDE - Page Title*/}
-            <PageHeader />
-             <div className="flex items-center gap-4">
-              <div className="flex items-center gap-3">
-                <Avatar>
-                  <AvatarFallback className="bg-gradient-primary text-white">
-                    {user.name.charAt(0)}
-                  </AvatarFallback>
-                </Avatar>
-
-                <div className="text-right">
-                  <p className="text-sm font-medium">{user.name}</p>
-                  <p className="text-xs text-muted-foreground">
-                    {user.account_type}
-                  </p>
-                </div>
-              </div>
-
-              <Button
-                variant="ghost"
-                size="sm"
-                onClick={handleLogout}
-                className="text-muted-foreground hover:text-destructive"
-              >
-                <LogOut className="w-4 h-4 mr-2" />
-                Logout
-              </Button>
-            </div>
-          </header>
+          <PageHeader />
 
           <main className="flex-1 p-6">
             <div className="flex items-center justify-between mb-6">
@@ -378,9 +349,8 @@ export default function TicketDashboard() {
                           <div className="space-y-1">
                             <p className="text-sm font-medium">
                               {workload.technician_name ||
-                                `Technician ${
-                                  workload.technician_name?.substring(0, 8) ||
-                                  "N/A"
+                                `Technician ${workload.technician_name?.substring(0, 8) ||
+                                "N/A"
                                 }`}
                             </p>
                             <div className="flex gap-4 text-xs text-muted-foreground">
@@ -436,11 +406,10 @@ export default function TicketDashboard() {
                                 <div
                                   className="h-full bg-primary"
                                   style={{
-                                    width: `${
-                                      totalTickets > 0
+                                    width: `${totalTickets > 0
                                         ? (ticket_count / totalTickets) * 100
                                         : 0
-                                    }%`,
+                                      }%`,
                                   }}
                                 />
                               </div>
@@ -485,39 +454,37 @@ export default function TicketDashboard() {
                           </div>
                           <div className="flex items-center gap-2">
                             <span
-                              className={`text-xs px-2 py-1 rounded-full ${
-                                ticket.priority === "HIGH" ||
-                                ticket.priority === "high"
+                              className={`text-xs px-2 py-1 rounded-full ${ticket.priority === "HIGH" ||
+                                  ticket.priority === "high"
                                   ? "bg-red-100 text-red-800"
                                   : ticket.priority === "MEDIUM" ||
                                     ticket.priority === "medium"
-                                  ? "bg-yellow-100 text-yellow-800"
-                                  : "bg-green-100 text-green-800"
-                              }`}
+                                    ? "bg-yellow-100 text-yellow-800"
+                                    : "bg-green-100 text-green-800"
+                                }`}
                             >
                               {ticket.priority}
                             </span>
                             <span
-                              className={`text-xs px-2 py-1 rounded-full ${
-                                ticket.status === "ESCALATED" ||
-                                ticket.status === "escalated"
+                              className={`text-xs px-2 py-1 rounded-full ${ticket.status === "ESCALATED" ||
+                                  ticket.status === "escalated"
                                   ? "bg-red-100 text-red-800"
                                   : ticket.status === "IN_PROGRESS" ||
                                     ticket.status === "in_progress"
-                                  ? "bg-blue-100 text-blue-800"
-                                  : ticket.status === "CLOSED" ||
-                                    ticket.status === "closed"
-                                  ? "bg-green-100 text-green-800"
-                                  : ticket.status === "ON_HOLD" ||
-                                    ticket.status === "on_hold" ||
-                                    ticket.status === "ON HOLD" ||
-                                    ticket.status === "on hold"
-                                  ? "bg-orange-100 text-orange-800"
-                                  : ticket.status === "OPEN" ||
-                                    ticket.status === "open"
-                                  ? "bg-blue-100 text-blue-800"
-                                  : "bg-gray-100 text-gray-800"
-                              }`}
+                                    ? "bg-blue-100 text-blue-800"
+                                    : ticket.status === "CLOSED" ||
+                                      ticket.status === "closed"
+                                      ? "bg-green-100 text-green-800"
+                                      : ticket.status === "ON_HOLD" ||
+                                        ticket.status === "on_hold" ||
+                                        ticket.status === "ON HOLD" ||
+                                        ticket.status === "on hold"
+                                        ? "bg-orange-100 text-orange-800"
+                                        : ticket.status === "OPEN" ||
+                                          ticket.status === "open"
+                                          ? "bg-blue-100 text-blue-800"
+                                          : "bg-gray-100 text-gray-800"
+                                }`}
                             >
                               {ticket.status}
                             </span>

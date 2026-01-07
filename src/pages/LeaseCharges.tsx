@@ -343,8 +343,7 @@ export default function LeaseCharges() {
     if (response.success) {
       setIsFormOpen(false);
       toast.success(
-        `Lease Charge ${data.charge_code} has been ${
-          formMode === "create" ? "created" : "updated"
+        `Lease Charge ${data.charge_code} has been ${formMode === "create" ? "created" : "updated"
         } successfully.`
       );
     }
@@ -365,8 +364,7 @@ export default function LeaseCharges() {
         } else {
           // Show error popup from backend
           toast.error(
-            `Cannot Delete Lease Charge\n${
-              authResponse?.message || "Unknown error"
+            `Cannot Delete Lease Charge\n${authResponse?.message || "Unknown error"
             }`,
             {
               style: { whiteSpace: "pre-line" },
@@ -382,39 +380,7 @@ export default function LeaseCharges() {
       <div className="min-h-screen flex w-full">
         <PropertySidebar />
         <SidebarInset className="flex-1">
-          <header className="flex h-16 shrink-0 items-center justify-between border-b border-sidebar-border px-4">
-            {/* LEFT SIDE - Page Title*/}
-            <PageHeader />
-
-            {/* RIGHT SIDE */}
-            <div className="flex items-center gap-4">
-              <div className="flex items-center gap-3">
-                <Avatar>
-                  <AvatarFallback className="bg-gradient-primary text-white">
-                    {user.name.charAt(0)}
-                  </AvatarFallback>
-                </Avatar>
-
-                <div className="text-right">
-                  <p className="text-sm font-medium">{user.name}</p>
-                  <p className="text-xs text-muted-foreground">
-                    {user.account_type}
-                  </p>
-                </div>
-              </div>
-
-              <Button
-                variant="ghost"
-                size="sm"
-                onClick={handleLogout}
-                className="text-muted-foreground hover:text-destructive"
-              >
-                <LogOut className="w-4 h-4 mr-2" />
-                Logout
-              </Button>
-            </div>
-          </header>
-
+          <PageHeader />
           <div className="flex-1 space-y-6 p-6">
             {/* Dashboard cards (org-wide from backend) */}
             <div className="grid gap-4 md:grid-cols-4">
@@ -518,9 +484,9 @@ export default function LeaseCharges() {
                           <div className="text-xs text-muted-foreground">
                             {leaseChargeOverview.total_charges
                               ? (
-                                  (amount / leaseChargeOverview.total_charges) *
-                                  100
-                                ).toFixed(1)
+                                (amount / leaseChargeOverview.total_charges) *
+                                100
+                              ).toFixed(1)
                               : "0.0"}
                             %
                           </div>
@@ -733,7 +699,7 @@ export default function LeaseCharges() {
                                 {Math.ceil(
                                   (new Date(charge.period_end).getTime() -
                                     new Date(charge.period_start).getTime()) /
-                                    (1000 * 60 * 60 * 24)
+                                  (1000 * 60 * 60 * 24)
                                 )}{" "}
                                 days
                               </div>

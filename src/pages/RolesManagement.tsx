@@ -41,7 +41,7 @@ export default function RolesManagement() {
   const [totalItems, setTotalItems] = useState(0);
   const { withLoader } = useLoader();
   const { user, handleLogout } = useAuth();
-  
+
 
   useSkipFirstEffect(() => {
     loadRoleManagement();
@@ -67,7 +67,7 @@ export default function RolesManagement() {
     if (searchTerm) params.append("search", searchTerm);
     params.append("skip", skip.toString());
     params.append("limit", limit.toString());
-    
+
     const response = await withLoader(async () => {
       return await roleManagementApiService.getRoleManagement(params);
     });
@@ -155,42 +155,9 @@ export default function RolesManagement() {
     <SidebarProvider>
       <div className="min-h-screen flex w-full bg-background">
         <PropertySidebar />
-        
+
         <div className="flex-1 flex flex-col">
-          <header className="flex h-16 shrink-0 items-center justify-between border-b border-sidebar-border px-4">
-
-            {/* LEFT SIDE - Page Title*/}
-                        <PageHeader />
-
-            {/* RIGHT SIDE */}
-            <div className="flex items-center gap-4">
-              <div className="flex items-center gap-3">
-                <Avatar>
-                  <AvatarFallback className="bg-gradient-primary text-white">
-                    {user.name.charAt(0)}
-                  </AvatarFallback>
-                </Avatar>
-
-                <div className="text-right">
-                  <p className="text-sm font-medium">{user.name}</p>
-                  <p className="text-xs text-muted-foreground">
-                    {user.account_type}
-                  </p>
-                </div>
-              </div>
-
-              <Button
-                variant="ghost"
-                size="sm"
-                onClick={handleLogout}
-                className="text-muted-foreground hover:text-destructive"
-              >
-                <LogOut className="w-4 h-4 mr-2" />
-                Logout
-              </Button>
-            </div>
-
-          </header>
+          <PageHeader />
 
 
           <main className="relative  flex-1 p-6 overflow-auto">
@@ -233,54 +200,54 @@ export default function RolesManagement() {
                     <ContentContainer>
                       <LoaderOverlay />
                       <Table>
-                          <TableHeader>
+                        <TableHeader>
+                          <TableRow>
+                            <TableHead>Role Name</TableHead>
+                            <TableHead>Description</TableHead>
+                            <TableHead className="text-right">Actions</TableHead>
+                          </TableRow>
+                        </TableHeader>
+                        <TableBody>
+                          {roles.length === 0 ? (
                             <TableRow>
-                              <TableHead>Role Name</TableHead>
-                              <TableHead>Description</TableHead>
-                              <TableHead className="text-right">Actions</TableHead>
+                              <TableCell colSpan={3} className="text-center text-muted-foreground">
+                                No roles found
+                              </TableCell>
                             </TableRow>
-                          </TableHeader>
-                          <TableBody>
-                            {roles.length === 0 ? (
-                              <TableRow>
-                                <TableCell colSpan={3} className="text-center text-muted-foreground">
-                                  No roles found
+                          ) : (
+                            roles.map((role) => (
+                              <TableRow key={role.id}>
+                                <TableCell>
+                                  <Badge variant="outline" className="font-medium">
+                                    {role.name}
+                                  </Badge>
+                                </TableCell>
+                                <TableCell className="text-muted-foreground">
+                                  {role.description || "No description"}
+                                </TableCell>
+                                <TableCell className="text-right">
+                                  <div className="flex justify-end gap-2">
+                                    <Button
+                                      variant="ghost"
+                                      size="icon"
+                                      onClick={() => handleEdit(role)}
+                                    >
+                                      <Pencil className="h-4 w-4" />
+                                    </Button>
+                                    <Button
+                                      variant="ghost"
+                                      size="icon"
+                                      onClick={() => handleDelete(role.id)}
+                                    >
+                                      <Trash2 className="h-4 w-4 text-destructive" />
+                                    </Button>
+                                  </div>
                                 </TableCell>
                               </TableRow>
-                            ) : (
-                              roles.map((role) => (
-                                <TableRow key={role.id}>
-                                  <TableCell>
-                                    <Badge variant="outline" className="font-medium">
-                                      {role.name}
-                                    </Badge>
-                                  </TableCell>
-                                  <TableCell className="text-muted-foreground">
-                                    {role.description || "No description"}
-                                  </TableCell>
-                                  <TableCell className="text-right">
-                                    <div className="flex justify-end gap-2">
-                                      <Button
-                                        variant="ghost"
-                                        size="icon"
-                                        onClick={() => handleEdit(role)}
-                                      >
-                                        <Pencil className="h-4 w-4" />
-                                      </Button>
-                                      <Button
-                                        variant="ghost"
-                                        size="icon"
-                                        onClick={() => handleDelete(role.id)}
-                                      >
-                                        <Trash2 className="h-4 w-4 text-destructive" />
-                                      </Button>
-                                    </div>
-                                  </TableCell>
-                                </TableRow>
-                              ))
-                            )}
-                          </TableBody>
-                        </Table>
+                            ))
+                          )}
+                        </TableBody>
+                      </Table>
                     </ContentContainer>
                   </div>
 
@@ -296,12 +263,12 @@ export default function RolesManagement() {
                 </CardContent>
               </Card>
             </div>
-            
+
             <RoleForm
               role={selectedRole}
               isOpen={isFormOpen}
               onClose={() => setIsFormOpen(false)}
-              onSave={handleSave} mode={"view"}            />
+              onSave={handleSave} mode={"view"} />
 
             {/* Delete Confirmation Dialog */}
             <AlertDialog open={!!deleteRoleId} onOpenChange={() => setDeleteRoleId(null)}>

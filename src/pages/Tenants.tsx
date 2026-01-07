@@ -235,8 +235,7 @@ const Tenants = () => {
     if (response?.success) {
       setIsFormOpen(false);
       toast.success(
-        `Tenant ${tenantData.name} has been ${
-          formMode === "create" ? "created" : "updated"
+        `Tenant ${tenantData.name} has been ${formMode === "create" ? "created" : "updated"
         } successfully.`
       );
     }
@@ -278,40 +277,7 @@ const Tenants = () => {
       <div className="min-h-screen flex w-full">
         <PropertySidebar />
         <SidebarInset className="flex-1">
-      <header className="flex h-16 shrink-0 items-center justify-between border-b border-sidebar-border px-4">
-
-        {/* LEFT SIDE - Page Title*/}
-            <PageHeader />
-
-        {/* RIGHT SIDE */}
-        <div className="flex items-center gap-4">
-          <div className="flex items-center gap-3">
-            <Avatar>
-              <AvatarFallback className="bg-gradient-primary text-white">
-                {user.name.charAt(0)}
-              </AvatarFallback>
-            </Avatar>
-
-            <div className="text-right">
-              <p className="text-sm font-medium">{user.name}</p>
-              <p className="text-xs text-muted-foreground">
-                {user.account_type}
-              </p>
-            </div>
-          </div>
-
-          <Button
-            variant="ghost"
-            size="sm"
-            onClick={handleLogout}
-            className="text-muted-foreground hover:text-destructive"
-          >
-            <LogOut className="w-4 h-4 mr-2" />
-            Logout
-          </Button>
-        </div>
-
-      </header>
+          <PageHeader />
 
 
           <div className="flex-1 space-y-6 p-6">
@@ -570,38 +536,38 @@ const Tenants = () => {
                                   <Phone className="h-4 w-4 text-muted-foreground" />
                                   <span>{tenant.phone}</span>
                                 </div>
-                                {tenant.contact_info?.address && 
-                                  (tenant.contact_info.address.line1 || 
-                                   tenant.contact_info.address.city || 
-                                   tenant.contact_info.address.state || 
-                                   tenant.contact_info.address.pincode) && (
-                                  <div className="flex items-start gap-2 text-sm">
-                                    <MapPin className="h-4 w-4 text-muted-foreground mt-0.5" />
-                                    <div>
-                                      {tenant.contact_info.address.line1 && (
-                                        <div>
-                                          {tenant.contact_info.address.line1}
-                                        </div>
-                                      )}
-                                      {tenant.contact_info.address.line2 && (
-                                        <div>
-                                          {tenant.contact_info.address.line2}
-                                        </div>
-                                      )}
-                                      {(tenant.contact_info.address.city || 
-                                        tenant.contact_info.address.state || 
-                                        tenant.contact_info.address.pincode) && (
-                                        <div>
-                                          {[
-                                            tenant.contact_info.address.city,
-                                            tenant.contact_info.address.state,
-                                            tenant.contact_info.address.pincode
-                                          ].filter(Boolean).join(", ")}
-                                        </div>
-                                      )}
+                                {tenant.contact_info?.address &&
+                                  (tenant.contact_info.address.line1 ||
+                                    tenant.contact_info.address.city ||
+                                    tenant.contact_info.address.state ||
+                                    tenant.contact_info.address.pincode) && (
+                                    <div className="flex items-start gap-2 text-sm">
+                                      <MapPin className="h-4 w-4 text-muted-foreground mt-0.5" />
+                                      <div>
+                                        {tenant.contact_info.address.line1 && (
+                                          <div>
+                                            {tenant.contact_info.address.line1}
+                                          </div>
+                                        )}
+                                        {tenant.contact_info.address.line2 && (
+                                          <div>
+                                            {tenant.contact_info.address.line2}
+                                          </div>
+                                        )}
+                                        {(tenant.contact_info.address.city ||
+                                          tenant.contact_info.address.state ||
+                                          tenant.contact_info.address.pincode) && (
+                                            <div>
+                                              {[
+                                                tenant.contact_info.address.city,
+                                                tenant.contact_info.address.state,
+                                                tenant.contact_info.address.pincode
+                                              ].filter(Boolean).join(", ")}
+                                            </div>
+                                          )}
+                                      </div>
                                     </div>
-                                  </div>
-                                )}
+                                  )}
                               </div>
                             </div>
 
