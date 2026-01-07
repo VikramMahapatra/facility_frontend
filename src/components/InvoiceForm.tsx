@@ -93,6 +93,26 @@ export function InvoiceForm({
           ? "work_order"
           : "lease_charge";
       await loadBillableItemLookup(billableType, invoice.site_id);
+
+      if (invoice.billable_item_id && invoice.billable_item_name) {
+        setBillableItemList((prev) => {
+          const exists = prev.some(
+            (item: any) => item.id === invoice.billable_item_id
+          );
+          if (!exists) {
+            return [
+              ...prev,
+              {
+                id: invoice.billable_item_id,
+                name: invoice.billable_item_name,
+              },
+            ];
+          }
+          return prev;
+        });
+
+        await new Promise((resolve) => setTimeout(resolve, 50));
+      }
     }
 
     reset(
@@ -134,20 +154,21 @@ export function InvoiceForm({
   }, [invoice, mode, isOpen, reset]);
 
   useEffect(() => {
-    if (watchedBillableType && watchedSiteId) {
-      loadBillableItemLookup(watchedBillableType, watchedSiteId);
-    } else {
-      setBillableItemList([]);
-      setValue("billable_item_id", "");
+    if (mode === "create") {
+      if (watchedBillableType && watchedSiteId && siteList.length > 0) {
+        loadBillableItemLookup(watchedBillableType, watchedSiteId);
+      } else if (!watchedBillableType || !watchedSiteId) {
+        setBillableItemList([]);
+        setValue("billable_item_id", "");
+      }
     }
-  }, [watchedBillableType, watchedSiteId, setValue]);
+  }, [watchedBillableType, watchedSiteId, setValue, mode, siteList.length]);
 
   // Load invoice totals when billable item is selected
   useEffect(() => {
     if (watchedBillableType && watchedBillableItemId && mode === "create") {
       loadInvoiceTotals(watchedBillableType, watchedBillableItemId);
     } else {
-      // Reset totals if billable item is cleared or in edit/view mode
       if (
         mode === "create" &&
         (!watchedBillableItemId || !watchedBillableType)

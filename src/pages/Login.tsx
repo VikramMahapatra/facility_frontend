@@ -5,7 +5,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import Navigation from "@/components/Navigation";
 import { useNavigate } from "react-router-dom";
-import { Chrome, Phone, Mail, Eye, EyeOff } from "lucide-react";
+import { Chrome, Phone, Mail, Eye, EyeOff, Loader2 } from "lucide-react";
 import { useGoogleLogin } from "@react-oauth/google";
 import { authApiService } from "@/services/authapi";
 import { useAuth } from "@/context/AuthContext";
@@ -20,6 +20,7 @@ const Login = () => {
   const [password, setPassword] = useState("");
   const [showPassword, setShowPassword] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
+  const [isGoogleLoading, setIsGoogleLoading] = useState(false);
   const [isMobileLoading, setIsMobileLoading] = useState(false);
   const [mobileNumber, setMobileNumber] = useState("");
   const [showOtp, setShowOtp] = useState(false);
@@ -35,47 +36,65 @@ const Login = () => {
 
   const googleLogin = useGoogleLogin({
     onSuccess: async (tokenResponse) => {
-      const response = await authApiService.authenticateGoogle(
-        tokenResponse.access_token
-      );
+      // Show loader only after user selects their Google account
+      setIsGoogleLoading(true);
+      try {
+        const response = await authApiService.authenticateGoogle(
+          tokenResponse.access_token
+        );
 
-      if (response.success) {
-        const authResponse = response.data;
-        setTimeout(() => {
-          if (authResponse.needs_registration) {
-            navigate("/signup", {
-              state: {
-                googleData: {
-                  email: authResponse.email,
-                  name: authResponse.name,
-                  picture: authResponse.picture,
-                },
-              },
-            });
-          } else {
-            setUser(authResponse.user);
-            if (authResponse.user.status.toLowerCase() === "pending_approval") {
-              const user = authResponse.user;
-              navigate("/registration-status", {
+        if (response.success) {
+          const authResponse = response.data;
+          setTimeout(() => {
+            if (authResponse.needs_registration) {
+              navigate("/signup", {
                 state: {
-                  userData: {
-                    email: user.email,
-                    name: user.full_name,
+                  googleData: {
+                    email: authResponse.email,
+                    name: authResponse.name,
+                    picture: authResponse.picture,
                   },
                 },
               });
             } else {
-              navigate("/dashboard");
+              setUser(authResponse.user);
+              if (
+                authResponse.user.status.toLowerCase() === "pending_approval"
+              ) {
+                const user = authResponse.user;
+                navigate("/registration-status", {
+                  state: {
+                    userData: {
+                      email: user.email,
+                      name: user.full_name,
+                    },
+                  },
+                });
+              } else {
+                navigate("/dashboard");
+              }
             }
-          }
-          setIsLoading(false);
-        }, 1000);
-      } else {
-        setIsLoading(false);
+            setIsGoogleLoading(false);
+          }, 1000);
+        } else {
+          setIsGoogleLoading(false);
+          toast.error("Google login failed. Please try again.");
+        }
+      } catch (error) {
+        setIsGoogleLoading(false);
+        toast.error("Google login failed. Please try again.");
       }
     },
-    onError: () => {
-      console.error("Google login failed");
+    onError: (error) => {
+      console.error("Google login failed or cancelled", error);
+      setIsGoogleLoading(false);
+      const errorMessage = error?.toString() || "";
+      if (
+        !errorMessage.includes("popup_closed") &&
+        !errorMessage.includes("user_cancelled")
+      ) {
+        toast.error("Google login failed. Please try again.");
+      }
     },
   });
 
@@ -317,7 +336,7 @@ const Login = () => {
                     </div>
                     <Button
                       type="submit"
-                      disabled={isLoading}
+                      disabled={isLoading || isGoogleLoading}
                       size="lg"
                       className="w-full h-11 bg-foreground text-background hover:bg-foreground/90"
                     >
@@ -342,10 +361,20 @@ const Login = () => {
                     onClick={handleGoogleLogin}
                     variant="outline"
                     size="lg"
+                    disabled={isGoogleLoading || isLoading}
                     className="w-full border border-input bg-background hover:bg-accent h-11"
                   >
-                    <Chrome className="w-5 h-5 mr-2" />
-                    Login with Google
+                    {isGoogleLoading ? (
+                      <>
+                        <Loader2 className="w-5 h-5 mr-2 animate-spin" />
+                        Signing in...
+                      </>
+                    ) : (
+                      <>
+                        <Chrome className="w-5 h-5 mr-2" />
+                        Login with Google
+                      </>
+                    )}
                   </Button>
 
                   {/* Phone Login Button */}
@@ -353,6 +382,7 @@ const Login = () => {
                     onClick={handlePhoneLoginClick}
                     variant="outline"
                     size="lg"
+                    disabled={isGoogleLoading || isLoading}
                     className="w-full border border-input bg-background hover:bg-accent h-11"
                   >
                     <Phone className="w-5 h-5 mr-2" />
