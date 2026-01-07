@@ -22,6 +22,7 @@ import { invoiceApiService } from "@/services/financials/invoicesapi";
 import { useForm, Controller } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { invoiceSchema, InvoiceFormValues } from "@/schemas/invoice.schema";
+import { Plus, Trash2 } from "lucide-react";
 
 interface InvoiceFormProps {
   invoice?: Invoice;
@@ -45,6 +46,7 @@ export function InvoiceForm({
     reset,
     watch,
     setValue,
+    getValues,
     formState: { errors, isSubmitting, isValid },
   } = useForm<InvoiceFormValues>({
     resolver: zodResolver(invoiceSchema),
@@ -58,6 +60,7 @@ export function InvoiceForm({
       billable_item_type: "lease_charge",
       billable_item_id: "",
       totals: { sub: 0, tax: 0, grand: 0 },
+      payment_modes: [{ payment_type: "", amount: "" }],
     },
   });
 
@@ -131,6 +134,12 @@ export function InvoiceForm({
                 : "lease_charge",
             billable_item_id: invoice.billable_item_id || "",
             totals: invoice.totals || { sub: 0, tax: 0, grand: 0 },
+            payment_modes:
+              (invoice as any).payment_modes &&
+              Array.isArray((invoice as any).payment_modes) &&
+              (invoice as any).payment_modes.length > 0
+                ? (invoice as any).payment_modes
+                : [{ payment_type: "", amount: "" }],
           }
         : {
             site_id: "",
@@ -141,6 +150,7 @@ export function InvoiceForm({
             billable_item_type: "lease_charge",
             billable_item_id: "",
             totals: { sub: 0, tax: 0, grand: 0 },
+            payment_modes: [{ payment_type: "", amount: "" }],
           }
     );
 
@@ -298,6 +308,35 @@ export function InvoiceForm({
     return false;
   };
 
+  // Payment mode helpers: add, remove multiple payment modes
+  const paymentModes = watch("payment_modes") || [];
+
+  const addPaymentMode = () => {
+    const currentPaymentModes = getValues("payment_modes") || [];
+    const newPaymentMode = { payment_type: "", amount: "" };
+    setValue("payment_modes", [...currentPaymentModes, newPaymentMode]);
+  };
+
+  const removePaymentMode = (index: number) => {
+    const currentPaymentModes = getValues("payment_modes") || [];
+    const remaining = currentPaymentModes.filter((_, i) => i !== index);
+    // Ensure at least one entry remains
+    const ensured =
+      remaining.length === 0 ? [{ payment_type: "", amount: "" }] : remaining;
+    setValue("payment_modes", ensured);
+  };
+
+  const updatePaymentMode = (
+    index: number,
+    field: "payment_type" | "amount",
+    value: string
+  ) => {
+    const currentPaymentModes = getValues("payment_modes") || [];
+    const updated = [...currentPaymentModes];
+    updated[index] = { ...updated[index], [field]: value };
+    setValue("payment_modes", updated);
+  };
+
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
       <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
@@ -435,8 +474,8 @@ export function InvoiceForm({
                 </div>
               </div>
 
-              {/* Dates */}
-              <div className="grid grid-cols-2 gap-4">
+              {/* Invoice Date - Due Date - Currency (third row, 3 columns) */}
+              <div className="grid grid-cols-3 gap-4">
                 <div className="space-y-2">
                   <Label htmlFor="date">Invoice Date *</Label>
                   <Input
@@ -468,35 +507,6 @@ export function InvoiceForm({
                     </p>
                   )}
                 </div>
-              </div>
-
-              {/* Status + Currency */}
-              <div className="grid grid-cols-2 gap-4">
-                <div className="space-y-2">
-                  <Label htmlFor="status">Status</Label>
-                  <Controller
-                    name="status"
-                    control={control}
-                    render={({ field }) => (
-                      <Select
-                        value={field.value || "draft"}
-                        onValueChange={field.onChange}
-                        disabled={isFieldDisabled("status")}
-                      >
-                        <SelectTrigger>
-                          <SelectValue />
-                        </SelectTrigger>
-                        <SelectContent>
-                          <SelectItem value="draft">Draft</SelectItem>
-                          <SelectItem value="issued">Issued</SelectItem>
-                          <SelectItem value="paid">Paid</SelectItem>
-                          <SelectItem value="partial">Partial</SelectItem>
-                          <SelectItem value="void">Void</SelectItem>
-                        </SelectContent>
-                      </Select>
-                    )}
-                  />
-                </div>
                 <div className="space-y-2">
                   <Label htmlFor="currency">Currency</Label>
                   <Input
@@ -506,6 +516,33 @@ export function InvoiceForm({
                   />
                 </div>
               </div>
+
+              {/* Status*/}
+              {/* <div className="space-y-2">
+                <Label htmlFor="status">Status</Label>
+                <Controller
+                  name="status"
+                  control={control}
+                  render={({ field }) => (
+                    <Select
+                      value={field.value || "draft"}
+                      onValueChange={field.onChange}
+                      disabled={isFieldDisabled("status")}
+                    >
+                      <SelectTrigger>
+                        <SelectValue />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="draft">Draft</SelectItem>
+                        <SelectItem value="issued">Issued</SelectItem>
+                        <SelectItem value="paid">Paid</SelectItem>
+                        <SelectItem value="partial">Partial</SelectItem>
+                        <SelectItem value="void">Void</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  )}
+                />
+              </div> */}
 
               {watchedBillableType && watchedBillableItemId && (
                 <div className="grid grid-cols-3 gap-4">
@@ -544,6 +581,86 @@ export function InvoiceForm({
                   </div>
                 </div>
               )}
+
+              {/* Payment Mode Section */}
+              <div className="space-y-4 border rounded-lg p-4">
+                <div className="flex items-center justify-between">
+                  <Label>Payment Mode</Label>
+                  {!isReadOnly && (
+                    <Button
+                      type="button"
+                      variant="default"
+                      size="sm"
+                      onClick={addPaymentMode}
+                    >
+                      <Plus className="mr-2 h-4 w-4" /> Add Payment
+                    </Button>
+                  )}
+                </div>
+                <div className="border rounded-md">
+                  {/* Header row with labels */}
+                  <div className="grid grid-cols-[1fr_1fr_auto] gap-4 p-4 border-b bg-muted/50">
+                    <Label>Payment Type</Label>
+                    <Label>Amount</Label>
+                    <div></div>
+                  </div>
+                  {/* Data rows */}
+                  {paymentModes.map((paymentMode, index) => (
+                    <div
+                      key={index}
+                      className="grid grid-cols-[1fr_1fr_auto] gap-4 p-4 border-b last:border-b-0"
+                    >
+                      <Controller
+                        name={`payment_modes.${index}.payment_type` as any}
+                        control={control}
+                        render={({ field }) => (
+                          <Select
+                            value={field.value || ""}
+                            onValueChange={(value) => {
+                              updatePaymentMode(index, "payment_type", value);
+                            }}
+                            disabled={isReadOnly}
+                          >
+                            <SelectTrigger>
+                              <SelectValue placeholder="Select payment type" />
+                            </SelectTrigger>
+                            <SelectContent>
+                              <SelectItem value="cash">Cash</SelectItem>
+                              <SelectItem value="card">Card</SelectItem>
+                              <SelectItem value="bank_transfer">
+                                Bank Transfer
+                              </SelectItem>
+                              <SelectItem value="cheque">Cheque</SelectItem>
+                              <SelectItem value="upi">UPI</SelectItem>
+                              <SelectItem value="other">Other</SelectItem>
+                            </SelectContent>
+                          </Select>
+                        )}
+                      />
+                      <Input
+                        type="text"
+                        placeholder="Enter amount"
+                        value={paymentMode.amount || ""}
+                        onChange={(e) => {
+                          updatePaymentMode(index, "amount", e.target.value);
+                        }}
+                        disabled={isReadOnly}
+                      />
+                      {!isReadOnly && (
+                        <Button
+                          type="button"
+                          variant="ghost"
+                          size="sm"
+                          onClick={() => removePaymentMode(index)}
+                          disabled={paymentModes.length === 1}
+                        >
+                          <Trash2 className="h-4 w-4 text-destructive" />
+                        </Button>
+                      )}
+                    </div>
+                  ))}
+                </div>
+              </div>
 
               {/* Footer */}
               <DialogFooter>
