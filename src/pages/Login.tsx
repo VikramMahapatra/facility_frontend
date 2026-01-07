@@ -139,7 +139,6 @@ const Login = () => {
   };
 
   const handleGoogleLogin = async () => {
-    setIsLoading(true);
     googleLogin();
   };
 
