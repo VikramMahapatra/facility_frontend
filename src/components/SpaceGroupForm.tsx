@@ -1,16 +1,36 @@
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogFooter,
+} from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 import { useState, useEffect } from "react";
 import { Controller, useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
-import { SpaceGroupFormValues, spaceGroupSchema } from "@/schemas/spaceGroup.schema";
+import {
+  SpaceGroupFormValues,
+  spaceGroupSchema,
+} from "@/schemas/spaceGroup.schema";
 import { SpaceGroup } from "@/pages/SpaceGroups";
 import { toast } from "sonner";
 import { siteApiService } from "@/services/spaces_sites/sitesapi";
-import { amenitiesByKind, SpaceAmenities, SpaceKind, spaceKinds } from "@/interfaces/spaces_interfaces";
+import {
+  amenitiesByKind,
+  SpaceAmenities,
+  SpaceKind,
+  spaceKinds,
+} from "@/interfaces/spaces_interfaces";
 
 interface Props {
   group?: SpaceGroup;
@@ -26,11 +46,17 @@ const emptyFormData: SpaceGroupFormValues = {
   kind: "apartment",
   specs: {
     base_rate: 0,
-    amenities: []
-  }
+    amenities: [],
+  },
 };
 
-export function SpaceGroupForm({ group, isOpen, onClose, onSave, mode }: Props) {
+export function SpaceGroupForm({
+  group,
+  isOpen,
+  onClose,
+  onSave,
+  mode,
+}: Props) {
   const {
     register,
     handleSubmit,
@@ -53,6 +79,11 @@ export function SpaceGroupForm({ group, isOpen, onClose, onSave, mode }: Props) 
   }, []);
 
   useEffect(() => {
+    if (!isOpen) {
+      reset(emptyFormData);
+      return;
+    }
+
     if (group && mode !== "create") {
       reset({
         name: group.name || "",
@@ -60,17 +91,17 @@ export function SpaceGroupForm({ group, isOpen, onClose, onSave, mode }: Props) 
         kind: group.kind || "apartment",
         specs: {
           base_rate: group.specs?.base_rate || 0,
-          amenities: group.specs?.amenities || []
-        }
+          amenities: group.specs?.amenities || [],
+        },
       });
     } else {
       reset(emptyFormData);
     }
-  }, [group, mode, reset]);
+  }, [group, mode, isOpen, reset]);
 
   const loadSiteLookup = async () => {
-      const lookup = await siteApiService.getSiteLookup();
-      if (lookup.success) setSiteList(lookup.data || []);
+    const lookup = await siteApiService.getSiteLookup();
+    if (lookup.success) setSiteList(lookup.data || []);
   };
 
   const onSubmitForm = async (data: SpaceGroupFormValues) => {
@@ -82,16 +113,29 @@ export function SpaceGroupForm({ group, isOpen, onClose, onSave, mode }: Props) 
 
   const isView = mode === "view";
 
+  const handleClose = () => {
+    // Reset all fields when closing (Cancel / Close)
+    reset(emptyFormData);
+    onClose();
+  };
+
   return (
-    <Dialog open={isOpen} onOpenChange={onClose}>
+    <Dialog open={isOpen} onOpenChange={handleClose}>
       <DialogContent>
         <DialogHeader>
           <DialogTitle>
-            {mode === "create" ? "Create New Group" : mode === "edit" ? "Edit Group" : "View Group"}
+            {mode === "create"
+              ? "Create New Group"
+              : mode === "edit"
+              ? "Edit Group"
+              : "View Group"}
           </DialogTitle>
         </DialogHeader>
 
-        <form onSubmit={isSubmitting ? undefined : handleSubmit(onSubmitForm)} className="space-y-4">
+        <form
+          onSubmit={isSubmitting ? undefined : handleSubmit(onSubmitForm)}
+          className="space-y-4"
+        >
           <div className="space-y-2">
             <Label htmlFor="name">Group Name *</Label>
             <Input
@@ -99,7 +143,7 @@ export function SpaceGroupForm({ group, isOpen, onClose, onSave, mode }: Props) 
               {...register("name")}
               placeholder="Group Name"
               disabled={isView}
-              className={errors.name ? 'border-red-500' : ''}
+              className={errors.name ? "border-red-500" : ""}
             />
             {errors.name && (
               <p className="text-sm text-red-500">{errors.name.message}</p>
@@ -117,14 +161,18 @@ export function SpaceGroupForm({ group, isOpen, onClose, onSave, mode }: Props) 
                   onValueChange={field.onChange}
                   disabled={isView}
                 >
-                  <SelectTrigger className={errors.site_id ? 'border-red-500' : ''}>
+                  <SelectTrigger
+                    className={errors.site_id ? "border-red-500" : ""}
+                  >
                     <SelectValue placeholder="Select Site" />
                   </SelectTrigger>
                   <SelectContent>
                     {siteList.length === 0 ? (
-                      <SelectItem value="none" disabled>No sites available</SelectItem>
+                      <SelectItem value="none" disabled>
+                        No sites available
+                      </SelectItem>
                     ) : (
-                      siteList.map(site => (
+                      siteList.map((site) => (
                         <SelectItem key={site.id} value={site.id}>
                           {site.name}
                         </SelectItem>
@@ -133,7 +181,9 @@ export function SpaceGroupForm({ group, isOpen, onClose, onSave, mode }: Props) 
                   </SelectContent>
                 </Select>
                 {errors.site_id && (
-                  <p className="text-sm text-red-500">{errors.site_id.message}</p>
+                  <p className="text-sm text-red-500">
+                    {errors.site_id.message}
+                  </p>
                 )}
               </div>
             )}
@@ -150,13 +200,17 @@ export function SpaceGroupForm({ group, isOpen, onClose, onSave, mode }: Props) 
                   onValueChange={field.onChange}
                   disabled={isView}
                 >
-                  <SelectTrigger className={errors.kind ? 'border-red-500' : ''}>
+                  <SelectTrigger
+                    className={errors.kind ? "border-red-500" : ""}
+                  >
                     <SelectValue placeholder="Select Kind" />
                   </SelectTrigger>
                   <SelectContent>
                     {spaceKinds.map((kind) => (
                       <SelectItem key={kind} value={kind}>
-                        {kind.replace('_', ' ').replace(/\b\w/g, l => l.toUpperCase())}
+                        {kind
+                          .replace("_", " ")
+                          .replace(/\b\w/g, (l) => l.toUpperCase())}
                       </SelectItem>
                     ))}
                   </SelectContent>
@@ -176,11 +230,13 @@ export function SpaceGroupForm({ group, isOpen, onClose, onSave, mode }: Props) 
               {...register("specs.base_rate", { valueAsNumber: true })}
               placeholder="Base Rate"
               disabled={isView}
-              className={errors.specs?.base_rate ? 'border-red-500' : ''}
+              className={errors.specs?.base_rate ? "border-red-500" : ""}
               min="0"
             />
             {errors.specs?.base_rate && (
-              <p className="text-sm text-red-500">{errors.specs.base_rate.message}</p>
+              <p className="text-sm text-red-500">
+                {errors.specs.base_rate.message}
+              </p>
             )}
           </div>
 
@@ -194,30 +250,47 @@ export function SpaceGroupForm({ group, isOpen, onClose, onSave, mode }: Props) 
                   multiple
                   value={field.value || []}
                   onChange={(e) => {
-                    const selected = Array.from(e.target.selectedOptions, (option) => option.value);
+                    const selected = Array.from(
+                      e.target.selectedOptions,
+                      (option) => option.value
+                    );
                     field.onChange(selected);
                   }}
                   disabled={isView}
                   className="w-full border rounded p-2 h-32"
                 >
-                  <option value="" disabled>Select Amenities</option>
-                  {selectedKind && amenitiesByKind[selectedKind as SpaceKind]?.map((amenity) => (
-                    <option key={amenity} value={amenity}>
-                      {amenity.replace(/_/g, " ").toUpperCase()}
-                    </option>
-                  ))}
+                  <option value="" disabled>
+                    Select Amenities
+                  </option>
+                  {selectedKind &&
+                    amenitiesByKind[selectedKind as SpaceKind]?.map(
+                      (amenity) => (
+                        <option key={amenity} value={amenity}>
+                          {amenity.replace(/_/g, " ").toUpperCase()}
+                        </option>
+                      )
+                    )}
                 </select>
               </div>
             )}
           />
 
           <DialogFooter>
-            <Button type="button" variant="outline" onClick={onClose} disabled={isSubmitting}>
+            <Button
+              type="button"
+              variant="outline"
+              onClick={onClose}
+              disabled={isSubmitting}
+            >
               {isView ? "Close" : "Cancel"}
             </Button>
             {!isView && (
               <Button type="submit" disabled={isSubmitting}>
-                {isSubmitting ? "Saving..." : mode === "create" ? "Create Space Group " : "Update Space Group"}
+                {isSubmitting
+                  ? "Saving..."
+                  : mode === "create"
+                  ? "Create Space Group "
+                  : "Update Space Group"}
               </Button>
             )}
           </DialogFooter>
