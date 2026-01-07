@@ -193,173 +193,157 @@ export default function TicketCategories() {
   };
 
   return (
-    <SidebarProvider>
-      <div className="flex min-h-screen w-full">
-        <PropertySidebar />
-        <SidebarInset className="flex-1">
-          <PageHeader />
-
-          <main className="flex-1 p-6">
-            <div className="space-y-6">
-              <div className="flex items-center justify-between">
-                <div>
-                  <h2 className="text-3xl font-bold text-sidebar-primary">
-                    Ticket Categories
-                  </h2>
-                  <p className="text-muted-foreground">
-                    Manage service ticket categories and SLA policies
-                  </p>
-                </div>
-                {canWrite(resource) && (
-                  <Button onClick={handleCreate} className="gap-2">
-                    <Plus className="h-4 w-4" />
-                    Add Category
-                  </Button>
-                )}
-              </div>
-
-              <Card>
-                <CardHeader>
-                  <div className="flex items-center gap-4">
-                    <div className="relative flex-1 max-w-sm">
-                      <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground h-4 w-4" />
-                      <Input
-                        placeholder="Search categories..."
-                        value={searchTerm}
-                        onChange={(e) => setSearchTerm(e.target.value)}
-                        className="pl-10"
-                      />
-                    </div>
-                    <Select
-                      value={selectedSite}
-                      onValueChange={setSelectedSite}
+    <div>
+      <div className="space-y-6">
+        <div className="flex items-center justify-between">
+          <div>
+            <h2 className="text-3xl font-bold text-sidebar-primary">
+              Ticket Categories
+            </h2>
+            <p className="text-muted-foreground">
+              Manage service ticket categories and SLA policies
+            </p>
+          </div>
+          {canWrite(resource) && (
+            <Button onClick={handleCreate} className="gap-2">
+              <Plus className="h-4 w-4" />
+              Add Category
+            </Button>
+          )}
+        </div>
+        <div className="flex items-center gap-4">
+          <div className="relative flex-1 max-w-sm">
+            <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground h-4 w-4" />
+            <Input
+              placeholder="Search categories..."
+              value={searchTerm}
+              onChange={(e) => setSearchTerm(e.target.value)}
+              className="pl-10"
+            />
+          </div>
+          <Select
+            value={selectedSite}
+            onValueChange={setSelectedSite}
+          >
+            <SelectTrigger className="w-[160px]">
+              <SelectValue placeholder="All Sites" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="all">All Sites</SelectItem>
+              {siteList.map((site: any) => (
+                <SelectItem key={site.id} value={site.id}>
+                  {site.name}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+        </div>
+        <div className="relative rounded-md border">
+          <ContentContainer>
+            <LoaderOverlay />
+            <Table>
+              <TableHeader>
+                <TableRow>
+                  <TableHead>Category Name</TableHead>
+                  <TableHead>Site</TableHead>
+                  <TableHead>Auto-Assign Role</TableHead>
+                  <TableHead>SLA Hours</TableHead>
+                  <TableHead>Status</TableHead>
+                  <TableHead className="text-right">
+                    Actions
+                  </TableHead>
+                </TableRow>
+              </TableHeader>
+              <TableBody>
+                {categories.length === 0 ? (
+                  <TableRow>
+                    <TableCell
+                      colSpan={6}
+                      className="text-center text-muted-foreground h-32"
                     >
-                      <SelectTrigger className="w-[160px]">
-                        <SelectValue placeholder="All Sites" />
-                      </SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value="all">All Sites</SelectItem>
-                        {siteList.map((site: any) => (
-                          <SelectItem key={site.id} value={site.id}>
-                            {site.name}
-                          </SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
-                  </div>
-                </CardHeader>
-                <CardContent>
-                  <div className="relative rounded-md border">
-                    <ContentContainer>
-                      <LoaderOverlay />
-                      <Table>
-                        <TableHeader>
-                          <TableRow>
-                            <TableHead>Category Name</TableHead>
-                            <TableHead>Site</TableHead>
-                            <TableHead>Auto-Assign Role</TableHead>
-                            <TableHead>SLA Hours</TableHead>
-                            <TableHead>Status</TableHead>
-                            <TableHead className="text-right">
-                              Actions
-                            </TableHead>
-                          </TableRow>
-                        </TableHeader>
-                        <TableBody>
-                          {categories.length === 0 ? (
-                            <TableRow>
-                              <TableCell
-                                colSpan={6}
-                                className="text-center text-muted-foreground h-32"
+                      No categories found
+                    </TableCell>
+                  </TableRow>
+                ) : (
+                  categories.map((category) => {
+                    const site = siteList.find(
+                      (s: any) => s.id === category.site_id
+                    );
+                    return (
+                      <TableRow
+                        key={category.id || category.category_id}
+                      >
+                        <TableCell className="font-medium">
+                          {category.category_name}
+                        </TableCell>
+                        <TableCell>
+                          {site ? site.name : category.site_id || "-"}
+                        </TableCell>
+                        <TableCell>
+                          <Badge variant="outline">
+                            {category.auto_assign_role}
+                          </Badge>
+                        </TableCell>
+                        <TableCell>{category.sla_hours}h</TableCell>
+                        <TableCell>
+                          <Badge
+                            variant={
+                              category.is_active
+                                ? "default"
+                                : "secondary"
+                            }
+                          >
+                            {category.is_active ? "Active" : "Inactive"}
+                          </Badge>
+                        </TableCell>
+                        <TableCell className="text-right">
+                          <div className="flex justify-end gap-2">
+                            {canWrite(resource) && (
+                              <Button
+                                variant="ghost"
+                                size="sm"
+                                onClick={() => handleEdit(category)}
                               >
-                                No categories found
-                              </TableCell>
-                            </TableRow>
-                          ) : (
-                            categories.map((category) => {
-                              const site = siteList.find(
-                                (s: any) => s.id === category.site_id
-                              );
-                              return (
-                                <TableRow
-                                  key={category.id || category.category_id}
-                                >
-                                  <TableCell className="font-medium">
-                                    {category.category_name}
-                                  </TableCell>
-                                  <TableCell>
-                                    {site ? site.name : category.site_id || "-"}
-                                  </TableCell>
-                                  <TableCell>
-                                    <Badge variant="outline">
-                                      {category.auto_assign_role}
-                                    </Badge>
-                                  </TableCell>
-                                  <TableCell>{category.sla_hours}h</TableCell>
-                                  <TableCell>
-                                    <Badge
-                                      variant={
-                                        category.is_active
-                                          ? "default"
-                                          : "secondary"
-                                      }
-                                    >
-                                      {category.is_active ? "Active" : "Inactive"}
-                                    </Badge>
-                                  </TableCell>
-                                  <TableCell className="text-right">
-                                    <div className="flex justify-end gap-2">
-                                      {canWrite(resource) && (
-                                        <Button
-                                          variant="ghost"
-                                          size="sm"
-                                          onClick={() => handleEdit(category)}
-                                        >
-                                          <Edit className="w-4 h-4" />
-                                        </Button>
-                                      )}
-                                      {canDelete(resource) && (
-                                        <Button
-                                          variant="ghost"
-                                          size="sm"
-                                          onClick={() =>
-                                            handleDelete(
-                                              category.id || category.category_id
-                                            )
-                                          }
-                                        >
-                                          <Trash2 className="w-4 h-4" />
-                                        </Button>
-                                      )}
-                                    </div>
-                                  </TableCell>
-                                </TableRow>
-                              );
-                            })
-                          )}
-                        </TableBody>
-                      </Table>
-                    </ContentContainer>
-                  </div>
+                                <Edit className="w-4 h-4" />
+                              </Button>
+                            )}
+                            {canDelete(resource) && (
+                              <Button
+                                variant="ghost"
+                                size="sm"
+                                onClick={() =>
+                                  handleDelete(
+                                    category.id || category.category_id
+                                  )
+                                }
+                              >
+                                <Trash2 className="w-4 h-4" />
+                              </Button>
+                            )}
+                          </div>
+                        </TableCell>
+                      </TableRow>
+                    );
+                  })
+                )}
+              </TableBody>
+            </Table>
+          </ContentContainer>
+        </div>
 
-                  {/* Pagination */}
-                  {categories.length > 0 && (
-                    <div className="mt-4">
-                      <Pagination
-                        page={page}
-                        pageSize={pageSize}
-                        totalItems={totalItems}
-                        onPageChange={setPage}
-                      />
-                    </div>
-                  )}
-                </CardContent>
-              </Card>
-            </div>
-          </main>
-        </SidebarInset>
+        {/* Pagination */}
+        {categories.length > 0 && (
+          <div className="mt-4">
+            <Pagination
+              page={page}
+              pageSize={pageSize}
+              totalItems={totalItems}
+              onPageChange={setPage}
+            />
+          </div>
+        )}
+
       </div>
-
       {/* Create Category Dialog */}
       <Dialog open={isFormOpen} onOpenChange={setIsFormOpen}>
         <DialogContent className="max-w-2xl">
@@ -411,6 +395,6 @@ export default function TicketCategories() {
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
-    </SidebarProvider>
+    </div>
   );
 }

@@ -67,6 +67,7 @@ import { GoogleOAuthProvider } from "@react-oauth/google";
 import ProtectedLayout from "./components/ProtectedLayout";
 import ProtectedRoute from "./components/ProtectedRoute";
 import RegistrationStatus from "./pages/RegistrationStatus";
+import MainLayout from "./layouts/MainLayout";
 
 const queryClient = new QueryClient();
 
@@ -94,58 +95,61 @@ const App = () => {
 
                   {/* All protected pages go inside */}
                   <Route element={<ProtectedRoute></ProtectedRoute>}>
-                    <Route path="/dashboard" element={<Dashboard />} />
-                    <Route path="/analytics" element={<Analytics />} />
-                    <Route path="/ai-predictions" element={<AiPredictions />} />
-                    <Route path="/organizations" element={<Organizations />} />
-                    <Route path="/sites" element={<Sites />} />
-                    <Route path="/buildings" element={<Buildings />} />
-                    <Route path="/spaces" element={<Spaces />} />
-                    <Route path="/spaces/:kind" element={<SpacesByKind />} />
-                    <Route path="/space-groups" element={<SpaceGroups />} />
-                    <Route path="/space-assignments" element={<SpaceAssignments />} />
-                    <Route path="/leases" element={<Leases />} />
-                    <Route path="/tenants" element={<Tenants />} />
-                    <Route path="/lease-charges" element={<LeaseCharges />} />
-                    <Route path="/lease-charge-codes" element={<LeaseChargeCode />} />
-                    <Route path="/invoices" element={<Invoices />} />
-                    <Route path="/revenue-reports" element={<RevenueReports />} />
-                    <Route path="/tax-management" element={<TaxManagement />} />
-                    <Route path="/assets" element={<Assets />} />
-                    <Route path="/asset-categories" element={<AssetCategories />} />
-                    <Route path="/work-orders" element={<WorkOrders />} />
-                    <Route path="/service-requests" element={<ServiceRequests />} />
-                    <Route path="/service-requests/:id" element={<ServiceRequestDetail />} />
-                    <Route path="/preventive-maintenance" element={<PreventiveMaintenance />} />
-                    <Route path="/vendors" element={<Vendors />} />
-                    <Route path="/contracts" element={<Contracts />} />
-                    <Route path="/meters" element={<MetersReadings />} />
-                    <Route path="/consumption" element={<ConsumptionReports />} />
-                    <Route path="/bookings" element={<Bookings />} />
-                    <Route path="/rates" element={<RatePlans />} />
-                    <Route path="/guests" element={<Guests />} />
-                    {/* <Route path="/folios" element={<Folios />} /> */}
-                    <Route path="/housekeeping" element={<Housekeeping />} />
-                    <Route path="/chatbot" element={<ChatBot />} />
-                    <Route path="/parking-zones" element={<ParkingZones />} />
-                    <Route path="/parking-passes" element={<ParkingPasses />} />
-                    <Route path="/access-logs" element={<AccessLogs />} />
-                    <Route path="/visitors" element={<Visitors />} />
-                    <Route path="/notifications" element={<Notifications />} />
-                    <Route path="/settings" element={<Settings />} />
-                    <Route path="/documentation" element={<Documentation />} />
-                    <Route path="/roles" element={<RolesManagement />} />
-                    <Route path="/role-policies" element={<RolePolicies />} />
-                    <Route path="/users-management" element={<UsersManagement />} />
-                    <Route path="/pending-approvals" element={<PendingApprovals />} />
-                    <Route path="/ticket-dashboard" element={<TicketDashboard />} />
-                    <Route path="/tickets" element={<Tickets />} />
-                    <Route path="/tickets/:ticketId" element={<TicketDetail />} />
-                    <Route path="/ticket-categories" element={<TicketCategories />} />
-                    <Route path="/sla-policies" element={<SLAPolicies />} />
-                    <Route path="/ticket-work-orders" element={<TicketWorkOrders />} />
-                    <Route path="/ticket-workload" element={<TicketWorkload />} />
-                    <Route path="/approval-rules" element={<ApprovalRules />} />
+                    {/* Layout mounted ONCE */}
+                    <Route element={<MainLayout />}>
+                      <Route path="/dashboard" element={<Dashboard />} />
+                      <Route path="/analytics" element={<Analytics />} />
+                      <Route path="/ai-predictions" element={<AiPredictions />} />
+                      <Route path="/organizations" element={<Organizations />} />
+                      <Route path="/sites" element={<Sites />} />
+                      <Route path="/buildings" element={<Buildings />} />
+                      <Route path="/spaces" element={<Spaces />} />
+                      <Route path="/spaces/:kind" element={<SpacesByKind />} />
+                      <Route path="/space-groups" element={<SpaceGroups />} />
+                      <Route path="/space-assignments" element={<SpaceAssignments />} />
+                      <Route path="/leases" element={<Leases />} />
+                      <Route path="/tenants" element={<Tenants />} />
+                      <Route path="/lease-charges" element={<LeaseCharges />} />
+                      <Route path="/lease-charge-codes" element={<LeaseChargeCode />} />
+                      <Route path="/invoices" element={<Invoices />} />
+                      <Route path="/revenue-reports" element={<RevenueReports />} />
+                      <Route path="/tax-management" element={<TaxManagement />} />
+                      <Route path="/assets" element={<Assets />} />
+                      <Route path="/asset-categories" element={<AssetCategories />} />
+                      <Route path="/work-orders" element={<WorkOrders />} />
+                      <Route path="/service-requests" element={<ServiceRequests />} />
+                      <Route path="/service-requests/:id" element={<ServiceRequestDetail />} />
+                      <Route path="/preventive-maintenance" element={<PreventiveMaintenance />} />
+                      <Route path="/vendors" element={<Vendors />} />
+                      <Route path="/contracts" element={<Contracts />} />
+                      <Route path="/meters" element={<MetersReadings />} />
+                      <Route path="/consumption" element={<ConsumptionReports />} />
+                      <Route path="/bookings" element={<Bookings />} />
+                      <Route path="/rates" element={<RatePlans />} />
+                      <Route path="/guests" element={<Guests />} />
+                      {/* <Route path="/folios" element={<Folios />} /> */}
+                      <Route path="/housekeeping" element={<Housekeeping />} />
+                      <Route path="/chatbot" element={<ChatBot />} />
+                      <Route path="/parking-zones" element={<ParkingZones />} />
+                      <Route path="/parking-passes" element={<ParkingPasses />} />
+                      <Route path="/access-logs" element={<AccessLogs />} />
+                      <Route path="/visitors" element={<Visitors />} />
+                      <Route path="/notifications" element={<Notifications />} />
+                      <Route path="/settings" element={<Settings />} />
+                      <Route path="/documentation" element={<Documentation />} />
+                      <Route path="/roles" element={<RolesManagement />} />
+                      <Route path="/role-policies" element={<RolePolicies />} />
+                      <Route path="/users-management" element={<UsersManagement />} />
+                      <Route path="/pending-approvals" element={<PendingApprovals />} />
+                      <Route path="/ticket-dashboard" element={<TicketDashboard />} />
+                      <Route path="/tickets" element={<Tickets />} />
+                      <Route path="/tickets/:ticketId" element={<TicketDetail />} />
+                      <Route path="/ticket-categories" element={<TicketCategories />} />
+                      <Route path="/sla-policies" element={<SLAPolicies />} />
+                      <Route path="/ticket-work-orders" element={<TicketWorkOrders />} />
+                      <Route path="/ticket-workload" element={<TicketWorkload />} />
+                      <Route path="/approval-rules" element={<ApprovalRules />} />
+                    </Route>
                   </Route>
                   {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
                   <Route path="*" element={<NotFound />} />

@@ -299,268 +299,247 @@ export default function TicketWorkOrders() {
   };
 
   return (
-    <SidebarProvider>
-      <div className="min-h-screen flex w-full">
-        <PropertySidebar />
-        <SidebarInset className="flex-1">
-          <PageHeader />
-
-
-          <div className="flex-1 space-y-6 p-6">
-            {/* Header Actions */}
-            <div className="flex items-center justify-between">
-              <div>
-                <h2 className="text-2xl font-bold text-sidebar-primary">
-                  Ticket Work Orders
-                </h2>
-                <p className="text-muted-foreground">
-                  Manage work orders generated from service tickets
-                </p>
-              </div>
-              {canWrite(resource) && (
-                <Button onClick={handleCreate} className="gap-2">
-                  <Plus className="h-4 w-4" />
-                  Create Work Order
-                </Button>
-              )}
-            </div>
-
-            <div className="space-y-6">
-              {/* Filters */}
-              <div className="flex flex-col sm:flex-row gap-4">
-                <div className="relative flex-1">
-                  <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground w-4 h-4" />
-                  <Input
-                    placeholder="Search work orders..."
-                    value={searchTerm}
-                    onChange={(e) => setSearchTerm(e.target.value)}
-                    className="pl-10"
-                  />
-                </div>
-                <Select
-                  value={selectedSite}
-                  onValueChange={setSelectedSite}
-                >
-                  <SelectTrigger className="w-[180px]">
-                    <SelectValue placeholder="All Sites" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="all">All Sites</SelectItem>
-                    {siteList.map((site) => (
-                      <SelectItem key={site.id} value={site.id}>
-                        {site.name}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-                <Select
-                  value={selectedStatus}
-                  onValueChange={setSelectedStatus}
-                >
-                  <SelectTrigger className="w-[180px]">
-                    <SelectValue placeholder="All Status" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="all">All Status</SelectItem>
-                    {statusList.map((status) => (
-                      <SelectItem key={status.id} value={status.id}>
-                        {status.name}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-              </div>
-
-              {/* Content with Loader - Stats Cards and Table */}
-              <ContentContainer>
-                <LoaderOverlay />
-                <div className="space-y-6">
-                  {/* Stats Cards */}
-                  <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
-                    <Card>
-                      <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                        <CardTitle className="text-sm font-medium">
-                          Total Work Orders
-                        </CardTitle>
-                        <Wrench className="h-4 w-4 text-muted-foreground" />
-                      </CardHeader>
-                      <CardContent>
-                        <div className="text-2xl font-bold">
-                          {workOrderOverview.total_work_orders}
-                        </div>
-                      </CardContent>
-                    </Card>
-                    <Card>
-                      <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                        <CardTitle className="text-sm font-medium">
-                          Pending
-                        </CardTitle>
-                        <Clock className="h-4 w-4 text-muted-foreground" />
-                      </CardHeader>
-                      <CardContent>
-                        <div className="text-2xl font-bold">
-                          {workOrderOverview.pending}
-                        </div>
-                      </CardContent>
-                    </Card>
-                    <Card>
-                      <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                        <CardTitle className="text-sm font-medium">
-                          In Progress
-                        </CardTitle>
-                        <Play className="h-4 w-4 text-muted-foreground" />
-                      </CardHeader>
-                      <CardContent>
-                        <div className="text-2xl font-bold">
-                          {workOrderOverview.in_progress}
-                        </div>
-                      </CardContent>
-                    </Card>
-                    <Card>
-                      <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                        <CardTitle className="text-sm font-medium">
-                          Completed
-                        </CardTitle>
-                        <AlertTriangle className="h-4 w-4 text-muted-foreground" />
-                      </CardHeader>
-                      <CardContent>
-                        <div className="text-2xl font-bold">
-                          {workOrderOverview.completed}
-                        </div>
-                      </CardContent>
-                    </Card>
-                  </div>
-
-                  {/* Work Orders Table */}
-                  <div className="relative rounded-md border min-h-[200px]">
-                    <Card className="border-0 shadow-none">
-                      <CardHeader>
-                        <CardTitle>Ticket Work Orders</CardTitle>
-                        <CardDescription>
-                          Work orders generated from service tickets
-                        </CardDescription>
-                      </CardHeader>
-                      <CardContent>
-                        <Table>
-                          <TableHeader>
-                            <TableRow>
-                              <TableHead>Ticket ID</TableHead>
-                              <TableHead>Description</TableHead>
-                              <TableHead>Assigned To (Staff)</TableHead>
-                              <TableHead>Assigned To (Vendor)</TableHead>
-                              <TableHead>Status</TableHead>
-                              <TableHead>Created At</TableHead>
-                              <TableHead>Actions</TableHead>
-                            </TableRow>
-                          </TableHeader>
-                          <TableBody>
-                            {workOrders.length === 0 ? (
-                              <TableRow>
-                                <TableCell
-                                  colSpan={6}
-                                  className="text-center text-muted-foreground h-32"
-                                >
-                                  No ticket work orders found
-                                </TableCell>
-                              </TableRow>
-                            ) : (
-                              workOrders.map((workOrder) => (
-                                <TableRow key={workOrder.id}>
-                                  <TableCell className="font-medium">
-                                    {workOrder.ticket_no || workOrder.ticket_id}
-                                  </TableCell>
-                                  <TableCell className="max-w-md">
-                                    {workOrder.description}
-                                  </TableCell>
-                                  <TableCell>
-                                    <div className="flex items-center">
-                                      <User className="w-4 h-4 mr-2" />
-
-                                      {workOrder.assigned_to_name ||
-                                        "Unassigned"}
-                                    </div>
-                                  </TableCell>
-                                  <TableCell>
-                                    <div className="flex items-center">
-                                      <User className="w-4 h-4 mr-2" />
-                                      {/* Backend sends vendors in assigned_to_name for now */}
-                                      {workOrder.vendor_name || "Unassigned"}
-                                    </div>
-                                  </TableCell>
-                                  <TableCell>
-                                    <span
-                                      className={`inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-semibold ${getStatusColor(
-                                        workOrder.status
-                                      )}`}
-                                    >
-                                      {getStatusLabel(workOrder.status)}
-                                    </span>
-                                  </TableCell>
-                                  <TableCell>
-                                    <div className="flex items-center">
-                                      <Calendar className="w-4 h-4 mr-2" />
-                                      {new Date(
-                                        workOrder.created_at
-                                      ).toLocaleDateString()}
-                                    </div>
-                                  </TableCell>
-                                  <TableCell>
-                                    <div className="flex space-x-2">
-                                      <Button
-                                        variant="ghost"
-                                        size="sm"
-                                        onClick={() => handleView(workOrder)}
-                                      >
-                                        <Eye className="w-4 h-4" />
-                                      </Button>
-                                      {canWrite(resource) && (
-                                        <Button
-                                          variant="ghost"
-                                          size="sm"
-                                          onClick={() => handleEdit(workOrder)}
-                                        >
-                                          <Edit className="w-4 h-4" />
-                                        </Button>
-                                      )}
-                                      {canDelete(resource) && (
-                                        <Button
-                                          variant="ghost"
-                                          size="sm"
-                                          className="text-destructive hover:text-destructive"
-                                          onClick={() =>
-                                            handleDelete(workOrder.id!)
-                                          }
-                                        >
-                                          <Trash2 className="w-4 h-4" />
-                                        </Button>
-                                      )}
-                                    </div>
-                                  </TableCell>
-                                </TableRow>
-                              ))
-                            )}
-                          </TableBody>
-                        </Table>
-                      </CardContent>
-                    </Card>
-                  </div>
-
-                  {/* Pagination */}
-                  <div className="mt-4">
-                    <Pagination
-                      page={page}
-                      pageSize={pageSize}
-                      totalItems={totalItems}
-                      onPageChange={setPage}
-                    />
-                  </div>
-                </div>
-              </ContentContainer>
-            </div>
-          </div>
-        </SidebarInset>
+    <div className="flex-1 space-y-6">
+      {/* Header Actions */}
+      <div className="flex items-center justify-between">
+        <div>
+          <h2 className="text-2xl font-bold text-sidebar-primary">
+            Ticket Work Orders
+          </h2>
+          <p className="text-muted-foreground">
+            Manage work orders generated from service tickets
+          </p>
+        </div>
+        {canWrite(resource) && (
+          <Button onClick={handleCreate} className="gap-2">
+            <Plus className="h-4 w-4" />
+            Create Work Order
+          </Button>
+        )}
       </div>
 
+      <div className="space-y-6">
+        {/* Filters */}
+        <div className="flex flex-col sm:flex-row gap-4">
+          <div className="relative flex-1">
+            <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground w-4 h-4" />
+            <Input
+              placeholder="Search work orders..."
+              value={searchTerm}
+              onChange={(e) => setSearchTerm(e.target.value)}
+              className="pl-10"
+            />
+          </div>
+          <Select
+            value={selectedSite}
+            onValueChange={setSelectedSite}
+          >
+            <SelectTrigger className="w-[180px]">
+              <SelectValue placeholder="All Sites" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="all">All Sites</SelectItem>
+              {siteList.map((site) => (
+                <SelectItem key={site.id} value={site.id}>
+                  {site.name}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+          <Select
+            value={selectedStatus}
+            onValueChange={setSelectedStatus}
+          >
+            <SelectTrigger className="w-[180px]">
+              <SelectValue placeholder="All Status" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="all">All Status</SelectItem>
+              {statusList.map((status) => (
+                <SelectItem key={status.id} value={status.id}>
+                  {status.name}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+        </div>
+
+        {/* Content with Loader - Stats Cards and Table */}
+        <ContentContainer>
+          <LoaderOverlay />
+          <div className="space-y-6">
+            {/* Stats Cards */}
+            <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+              <Card>
+                <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                  <CardTitle className="text-sm font-medium">
+                    Total Work Orders
+                  </CardTitle>
+                  <Wrench className="h-4 w-4 text-muted-foreground" />
+                </CardHeader>
+                <CardContent>
+                  <div className="text-2xl font-bold">
+                    {workOrderOverview.total_work_orders}
+                  </div>
+                </CardContent>
+              </Card>
+              <Card>
+                <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                  <CardTitle className="text-sm font-medium">
+                    Pending
+                  </CardTitle>
+                  <Clock className="h-4 w-4 text-muted-foreground" />
+                </CardHeader>
+                <CardContent>
+                  <div className="text-2xl font-bold">
+                    {workOrderOverview.pending}
+                  </div>
+                </CardContent>
+              </Card>
+              <Card>
+                <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                  <CardTitle className="text-sm font-medium">
+                    In Progress
+                  </CardTitle>
+                  <Play className="h-4 w-4 text-muted-foreground" />
+                </CardHeader>
+                <CardContent>
+                  <div className="text-2xl font-bold">
+                    {workOrderOverview.in_progress}
+                  </div>
+                </CardContent>
+              </Card>
+              <Card>
+                <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                  <CardTitle className="text-sm font-medium">
+                    Completed
+                  </CardTitle>
+                  <AlertTriangle className="h-4 w-4 text-muted-foreground" />
+                </CardHeader>
+                <CardContent>
+                  <div className="text-2xl font-bold">
+                    {workOrderOverview.completed}
+                  </div>
+                </CardContent>
+              </Card>
+            </div>
+
+            {/* Work Orders Table */}
+            <div className="relative rounded-md border min-h-[200px]">
+              <Table>
+                <TableHeader>
+                  <TableRow>
+                    <TableHead>Ticket ID</TableHead>
+                    <TableHead>Description</TableHead>
+                    <TableHead>Assigned To (Staff)</TableHead>
+                    <TableHead>Assigned To (Vendor)</TableHead>
+                    <TableHead>Status</TableHead>
+                    <TableHead>Created At</TableHead>
+                    <TableHead>Actions</TableHead>
+                  </TableRow>
+                </TableHeader>
+                <TableBody>
+                  {workOrders.length === 0 ? (
+                    <TableRow>
+                      <TableCell
+                        colSpan={6}
+                        className="text-center text-muted-foreground h-32"
+                      >
+                        No ticket work orders found
+                      </TableCell>
+                    </TableRow>
+                  ) : (
+                    workOrders.map((workOrder) => (
+                      <TableRow key={workOrder.id}>
+                        <TableCell className="font-medium">
+                          {workOrder.ticket_no || workOrder.ticket_id}
+                        </TableCell>
+                        <TableCell className="max-w-md">
+                          {workOrder.description}
+                        </TableCell>
+                        <TableCell>
+                          <div className="flex items-center">
+                            <User className="w-4 h-4 mr-2" />
+
+                            {workOrder.assigned_to_name ||
+                              "Unassigned"}
+                          </div>
+                        </TableCell>
+                        <TableCell>
+                          <div className="flex items-center">
+                            <User className="w-4 h-4 mr-2" />
+                            {/* Backend sends vendors in assigned_to_name for now */}
+                            {workOrder.vendor_name || "Unassigned"}
+                          </div>
+                        </TableCell>
+                        <TableCell>
+                          <span
+                            className={`inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-semibold ${getStatusColor(
+                              workOrder.status
+                            )}`}
+                          >
+                            {getStatusLabel(workOrder.status)}
+                          </span>
+                        </TableCell>
+                        <TableCell>
+                          <div className="flex items-center">
+                            <Calendar className="w-4 h-4 mr-2" />
+                            {new Date(
+                              workOrder.created_at
+                            ).toLocaleDateString()}
+                          </div>
+                        </TableCell>
+                        <TableCell>
+                          <div className="flex space-x-2">
+                            <Button
+                              variant="ghost"
+                              size="sm"
+                              onClick={() => handleView(workOrder)}
+                            >
+                              <Eye className="w-4 h-4" />
+                            </Button>
+                            {canWrite(resource) && (
+                              <Button
+                                variant="ghost"
+                                size="sm"
+                                onClick={() => handleEdit(workOrder)}
+                              >
+                                <Edit className="w-4 h-4" />
+                              </Button>
+                            )}
+                            {canDelete(resource) && (
+                              <Button
+                                variant="ghost"
+                                size="sm"
+                                className="text-destructive hover:text-destructive"
+                                onClick={() =>
+                                  handleDelete(workOrder.id!)
+                                }
+                              >
+                                <Trash2 className="w-4 h-4" />
+                              </Button>
+                            )}
+                          </div>
+                        </TableCell>
+                      </TableRow>
+                    ))
+                  )}
+                </TableBody>
+              </Table>
+            </div>
+
+            {/* Pagination */}
+            <div className="mt-4">
+              <Pagination
+                page={page}
+                pageSize={pageSize}
+                totalItems={totalItems}
+                onPageChange={setPage}
+              />
+            </div>
+          </div>
+        </ContentContainer>
+      </div>
       {/* Work Order Form Dialog */}
       <TicketWorkOrderForm
         isOpen={isFormOpen}
@@ -593,6 +572,6 @@ export default function TicketWorkOrders() {
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
-    </SidebarProvider>
+    </div>
   );
 }

@@ -4,30 +4,59 @@ import { Separator } from "@/components/ui/separator";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { useAuth } from "../context/AuthContext";
 import { Button } from "@/components/ui/button";
-import { Bell, LogOut } from "lucide-react";
+import { Bell, LogOut, ChevronRight, Home } from "lucide-react";
 import { useNavigate } from "react-router-dom";
+import { notificationsApiService } from "@/services/system/notificationsapi";
+import { useEffect, useState } from "react";
 
 export const PageHeader = () => {
-    const { title, icon: Icon } = usePageHeader();
+    const [notiCount, setNotiCount] = useState(0);
+    const { title, icon: Icon, breadcrumb } = usePageHeader();
     const { user, handleLogout } = useAuth();
     const navigate = useNavigate();
+
+    useEffect(() => {
+        loadNotificationCount();
+    }, []);
 
     const handleNotificationClick = () => {
         navigate("/notifications");
     };
 
+    const loadNotificationCount = async () => {
+        const response = await notificationsApiService.getNotificationCount();
+        if (response?.success) setNotiCount(response.data || 0);
+    }
+
     return (
-        <header className="flex h-16 shrink-0 items-center justify-between border-b border-sidebar-border px-4">
+        <header className="sticky top-0 z-40 flex h-16 shrink-0 items-center justify-between border-b bg-background px-4">
             <div className="flex items-center gap-2">
                 <SidebarTrigger className="-ml-1" />
                 <Separator orientation="vertical" className="mr-2 h-4" />
-                {Icon && (
-                    <Icon className="h-5 w-5 text-sidebar-primary" />
+                {breadcrumb ? (
+                    <div className="flex items-center gap-2 text-sm text-muted-foreground">
+                        <Home className="h-4 w-4" />
+                        {breadcrumb.parent && (
+                            <>
+                                <span className="font-medium">{breadcrumb.parent.label}</span>
+                                <ChevronRight className="h-4 w-4" />
+                            </>
+                        )}
+                        {breadcrumb?.current?.icon && (
+                            <breadcrumb.current.icon className="h-4 w-4 " />
+                        )}
+                        <span className="font-medium ">
+                            {breadcrumb.current.label}
+                        </span>
+                    </div>
+                ) : (
+                    <>
+                        {Icon && <Icon className="h-5 w-5 text-sidebar-primary" />}
+                        <h1 className="text-lg font-semibold text-sidebar-primary">
+                            {title}
+                        </h1>
+                    </>
                 )}
-
-                <h1 className="text-lg font-semibold text-sidebar-primary">
-                    {title}
-                </h1>
             </div>
             <div className="flex items-center gap-4">
                 {/* Notifications */}
@@ -39,7 +68,7 @@ export const PageHeader = () => {
                 >
                     <Bell className="h-5 w-5" />
                     <span className="absolute -top-1 -right-1 flex h-4 w-4 items-center justify-center rounded-full bg-destructive text-[10px] font-medium text-white">
-                        3
+                        {notiCount}
                     </span>
                 </Button>
                 {/* User */}

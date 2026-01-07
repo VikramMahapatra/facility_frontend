@@ -83,7 +83,7 @@ export default function Vendors() {
   const [statusList, setStatusList] = useState<any[]>([]);
   const [categoriesList, setCategoriesList] = useState<any[]>([]);
   const [page, setPage] = useState(1);
-  const [pageSize] = useState(7);
+  const [pageSize] = useState(5);
   const [totalItems, setTotalItems] = useState(0);
   const [formMode, setFormMode] = useState<"create" | "edit" | "view">(
     "create"
@@ -141,9 +141,7 @@ export default function Vendors() {
   };
 
   const loadOverview = async () => {
-    const response = await withLoader(async () => {
-      return await vendorsApiService.getVendorsOverview();
-    });
+    const response = await vendorsApiService.getVendorsOverview();
 
     if (response?.success) {
       // Map API response to expected format
@@ -158,16 +156,12 @@ export default function Vendors() {
     }
   };
   const loadStatusLookup = async () => {
-    const lookup = await withLoader(async () => {
-      return await vendorsApiService.getStatusLookup();
-    });
+    const lookup = await vendorsApiService.getStatusLookup();
     if (lookup?.success) setStatusList(lookup.data || []);
   };
 
   const loadCategoriesLookup = async () => {
-    const lookup = await withLoader(async () => {
-      return await vendorsApiService.getCategoriesLookup();
-    });
+    const lookup = await vendorsApiService.getCategoriesLookup();
     if (lookup?.success) setCategoriesList(lookup.data || []);
   };
 
@@ -263,8 +257,8 @@ export default function Vendors() {
           <Star
             key={i}
             className={`w-4 h-4 ${i < Math.floor(rating)
-                ? "text-primary fill-primary"
-                : "text-muted-foreground"
+              ? "text-primary fill-primary"
+              : "text-muted-foreground"
               }`}
           />
         ))}
@@ -274,281 +268,276 @@ export default function Vendors() {
   };
 
   return (
-    <SidebarProvider>
-      <div className="min-h-screen flex w-full">
-        <PropertySidebar />
-        <SidebarInset className="flex-1">
-          <PageHeader />
-
-          <div className="flex-1 space-y-6 p-6">
-            {/* Header Actions */}
-            <div className="flex items-center justify-between">
-              <div>
-                <h2 className="text-2xl font-bold text-sidebar-primary">
-                  All Vendors
-                </h2>
-                <p className="text-muted-foreground">
-                  Manage your vendor relationships
-                </p>
-              </div>
-              {canWrite(resource) && (
-                <Button onClick={handleCreate} className="gap-2">
-                  <Plus className="h-4 w-4" />
-                  Add Vendor
-                </Button>
-              )}
-            </div>
-
-            <div className="space-y-6">
-              {/* Filters */}
-              <div className="flex flex-col sm:flex-row gap-4">
-                <div className="relative flex-1">
-                  <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground w-4 h-4" />
-                  <Input
-                    placeholder="Search vendors..."
-                    value={searchTerm}
-                    onChange={(e) => setSearchTerm(e.target.value)}
-                    className="pl-10"
-                  />
-                </div>
-                <Select value={statusFilter} onValueChange={setStatusFilter}>
-                  <SelectTrigger className="w-[180px]">
-                    <SelectValue placeholder="All Status" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="all">All Status</SelectItem>
-                    {statusList.map((status: any) => (
-                      <SelectItem key={status.id} value={status.id}>
-                        {status.name}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-                <Select
-                  value={categoryFilter}
-                  onValueChange={setCategoryFilter}
-                >
-                  <SelectTrigger className="w-[180px]">
-                    <SelectValue placeholder="All Categories" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="all">All Categories</SelectItem>
-                    {categoriesList.map((cat: any) => (
-                      <SelectItem key={cat.id} value={cat.id}>
-                        {cat.name}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-              </div>
-
-              <ContentContainer>
-                <LoaderOverlay />
-                <div className="space-y-6">
-                  {/* Stats Cards */}
-                  <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
-                    <Card>
-                      <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                        <CardTitle className="text-sm font-medium">
-                          Total Vendors
-                        </CardTitle>
-                        <Building className="h-4 w-4 text-muted-foreground" />
-                      </CardHeader>
-                      <CardContent>
-                        <div className="text-2xl font-bold">
-                          {overview.total_vendors}
-                        </div>
-                      </CardContent>
-                    </Card>
-                    <Card>
-                      <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                        <CardTitle className="text-sm font-medium">
-                          Active Vendors
-                        </CardTitle>
-                        <Building className="h-4 w-4 text-muted-foreground" />
-                      </CardHeader>
-                      <CardContent>
-                        <div className="text-2xl font-bold">
-                          {overview.active_vendors}
-                        </div>
-                      </CardContent>
-                    </Card>
-                    <Card>
-                      <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                        <CardTitle className="text-sm font-medium">
-                          Avg Rating
-                        </CardTitle>
-                        <Star className="h-4 w-4 text-muted-foreground" />
-                      </CardHeader>
-                      <CardContent>
-                        <div className="text-2xl font-bold">
-                          {overview.avg_rating}
-                        </div>
-                      </CardContent>
-                    </Card>
-                    <Card>
-                      <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                        <CardTitle className="text-sm font-medium">
-                          Categories
-                        </CardTitle>
-                        <Building className="h-4 w-4 text-muted-foreground" />
-                      </CardHeader>
-                      <CardContent>
-                        <div className="text-2xl font-bold">
-                          {overview.distinct_categories}
-                        </div>
-                      </CardContent>
-                    </Card>
-                  </div>
-
-                  {/* Vendors Table */}
-                  <Card>
-                    <CardHeader>
-                      <CardTitle>Vendor Directory</CardTitle>
-                      <CardDescription>
-                        Showing {vendors.length} vendors
-                      </CardDescription>
-                    </CardHeader>
-                    <CardContent>
-                      <Table>
-                        <TableHeader>
-                          <TableRow>
-                            <TableHead>Vendor</TableHead>
-                            <TableHead>Contact</TableHead>
-                            <TableHead>Categories</TableHead>
-                            <TableHead>Rating</TableHead>
-                            <TableHead>Status</TableHead>
-                            <TableHead>Actions</TableHead>
-                          </TableRow>
-                        </TableHeader>
-                        <TableBody>
-                          {vendors.map((vendor) => (
-                            <TableRow key={vendor.id}>
-                              <TableCell>
-                                <div>
-                                  <div className="font-medium">
-                                    {vendor.name}
-                                  </div>
-                                  <div className="text-sm text-muted-foreground">
-                                    {vendor.gst_vat_id}
-                                  </div>
-                                </div>
-                              </TableCell>
-                              <TableCell>
-                                <div className="space-y-1">
-                                  {vendor.contact.name && (
-                                    <div className="flex items-center text-sm font-medium">
-                                      <User className="w-3 h-3 mr-1" />
-                                      {vendor.contact.name}
-                                    </div>
-                                  )}
-                                  {vendor.contact.email && (
-                                    <div className="flex items-center text-sm">
-                                      <Mail className="w-3 h-3 mr-1" />
-                                      {vendor.contact.email}
-                                    </div>
-                                  )}
-                                  {vendor.contact.phone && (
-                                    <div className="flex items-center text-sm">
-                                      <Phone className="w-3 h-3 mr-1" />
-                                      {vendor.contact.phone}
-                                    </div>
-                                  )}
-                                  {vendor.contact.address && (
-                                    <div className="flex items-center text-sm text-muted-foreground">
-                                      <MapPin className="w-3 h-3 mr-1" />
-                                      <span
-                                        className="truncate max-w-[200px]"
-                                        title={vendor.contact.address}
-                                      >
-                                        {vendor.contact.address}
-                                      </span>
-                                    </div>
-                                  )}
-                                </div>
-                              </TableCell>
-                              <TableCell>
-                                <div className="flex flex-wrap gap-1">
-                                  {Array.isArray(vendor.categories) &&
-                                    vendor.categories
-                                      .slice(0, 2)
-                                      .map((category) => (
-                                        <Badge
-                                          key={category}
-                                          variant="outline"
-                                          className="text-xs"
-                                        >
-                                          {category}
-                                        </Badge>
-                                      ))}
-                                  {Array.isArray(vendor.categories) &&
-                                    vendor.categories.length > 2 && (
-                                      <Badge
-                                        variant="outline"
-                                        className="text-xs"
-                                      >
-                                        +{vendor.categories.length - 2}
-                                      </Badge>
-                                    )}
-                                </div>
-                              </TableCell>
-                              <TableCell>
-                                {getRatingStars(vendor.rating)}
-                              </TableCell>
-                              <TableCell>
-                                {getStatusBadge(vendor.status)}
-                              </TableCell>
-                              <TableCell>
-                                <div className="flex space-x-2">
-                                  <Button
-                                    variant="ghost"
-                                    size="sm"
-                                    onClick={() => handleView(vendor)}
-                                  >
-                                    <Eye className="w-4 h-4" />
-                                  </Button>
-                                  {canWrite(resource) && (
-                                    <Button
-                                      size="sm"
-                                      variant="outline"
-                                      onClick={() => handleEdit(vendor)}
-                                    >
-                                      <Edit className="w-4 h-4" />
-                                    </Button>
-                                  )}
-                                  {canDelete(resource) && (
-                                    <Button
-                                      variant="ghost"
-                                      size="sm"
-                                      className="text-destructive hover:text-destructive"
-                                      onClick={() => handleDelete(vendor.id)}
-                                    >
-                                      <Trash2 className="w-4 h-4" />
-                                    </Button>
-                                  )}
-                                </div>
-                              </TableCell>
-                            </TableRow>
-                          ))}
-                        </TableBody>
-                      </Table>
-                    </CardContent>
-                  </Card>
-
-                  {/* Pagination */}
-                  <Pagination
-                    page={page}
-                    pageSize={pageSize}
-                    totalItems={totalItems}
-                    onPageChange={setPage}
-                  />
-                </div>
-              </ContentContainer>
-            </div>
-          </div>
-        </SidebarInset>
+    <div className="flex-1 space-y-6">
+      {/* Header Actions */}
+      <div className="flex items-center justify-between">
+        <div>
+          <h2 className="text-2xl font-bold text-sidebar-primary">
+            All Vendors
+          </h2>
+          <p className="text-muted-foreground">
+            Manage your vendor relationships
+          </p>
+        </div>
+        {canWrite(resource) && (
+          <Button onClick={handleCreate} className="gap-2">
+            <Plus className="h-4 w-4" />
+            Add Vendor
+          </Button>
+        )}
       </div>
 
+      <div className="space-y-6">
+        {/* Filters */}
+        <div className="flex flex-col sm:flex-row gap-4">
+          <div className="relative flex-1">
+            <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground w-4 h-4" />
+            <Input
+              placeholder="Search vendors..."
+              value={searchTerm}
+              onChange={(e) => setSearchTerm(e.target.value)}
+              className="pl-10"
+            />
+          </div>
+          <Select value={statusFilter} onValueChange={setStatusFilter}>
+            <SelectTrigger className="w-[180px]">
+              <SelectValue placeholder="All Status" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="all">All Status</SelectItem>
+              {statusList.map((status: any) => (
+                <SelectItem key={status.id} value={status.id}>
+                  {status.name}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+          <Select
+            value={categoryFilter}
+            onValueChange={setCategoryFilter}
+          >
+            <SelectTrigger className="w-[180px]">
+              <SelectValue placeholder="All Categories" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="all">All Categories</SelectItem>
+              {categoriesList.map((cat: any) => (
+                <SelectItem key={cat.id} value={cat.id}>
+                  {cat.name}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+        </div>
+
+        <ContentContainer>
+          <LoaderOverlay />
+          <div className="space-y-6">
+            {/* Stats Cards */}
+            <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+              <Card>
+                <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                  <CardTitle className="text-sm font-medium">
+                    Total Vendors
+                  </CardTitle>
+                  <Building className="h-4 w-4 text-muted-foreground" />
+                </CardHeader>
+                <CardContent>
+                  <div className="text-2xl font-bold">
+                    {overview.total_vendors}
+                  </div>
+                </CardContent>
+              </Card>
+              <Card>
+                <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                  <CardTitle className="text-sm font-medium">
+                    Active Vendors
+                  </CardTitle>
+                  <Building className="h-4 w-4 text-muted-foreground" />
+                </CardHeader>
+                <CardContent>
+                  <div className="text-2xl font-bold">
+                    {overview.active_vendors}
+                  </div>
+                </CardContent>
+              </Card>
+              <Card>
+                <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                  <CardTitle className="text-sm font-medium">
+                    Avg Rating
+                  </CardTitle>
+                  <Star className="h-4 w-4 text-muted-foreground" />
+                </CardHeader>
+                <CardContent>
+                  <div className="text-2xl font-bold">
+                    {overview.avg_rating}
+                  </div>
+                </CardContent>
+              </Card>
+              <Card>
+                <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                  <CardTitle className="text-sm font-medium">
+                    Categories
+                  </CardTitle>
+                  <Building className="h-4 w-4 text-muted-foreground" />
+                </CardHeader>
+                <CardContent>
+                  <div className="text-2xl font-bold">
+                    {overview.distinct_categories}
+                  </div>
+                </CardContent>
+              </Card>
+            </div>
+
+            {/* Vendors Table */}
+            <div className="relative rounded-md border">
+              <Table>
+                <TableHeader>
+                  <TableRow>
+                    <TableHead>Vendor</TableHead>
+                    <TableHead>Contact</TableHead>
+                    <TableHead>Categories</TableHead>
+                    <TableHead>Rating</TableHead>
+                    <TableHead>Status</TableHead>
+                    <TableHead>Actions</TableHead>
+                  </TableRow>
+                </TableHeader>
+                <TableBody>
+                  {
+                    vendors.length === 0 ? (
+                      <TableRow>
+                        <TableCell
+                          colSpan={8}
+                          className="text-center text-muted-foreground h-32"
+                        >
+                          No vendors found
+                        </TableCell>
+                      </TableRow>
+                    ) : (
+                      vendors.map((vendor) => (
+                        <TableRow key={vendor.id}>
+                          <TableCell>
+                            <div>
+                              <div className="font-medium">
+                                {vendor.name}
+                              </div>
+                              <div className="text-sm text-muted-foreground">
+                                {vendor.gst_vat_id}
+                              </div>
+                            </div>
+                          </TableCell>
+                          <TableCell>
+                            <div className="space-y-1">
+                              {vendor.contact.name && (
+                                <div className="flex items-center text-sm font-medium">
+                                  <User className="w-3 h-3 mr-1" />
+                                  {vendor.contact.name}
+                                </div>
+                              )}
+                              {vendor.contact.email && (
+                                <div className="flex items-center text-sm">
+                                  <Mail className="w-3 h-3 mr-1" />
+                                  {vendor.contact.email}
+                                </div>
+                              )}
+                              {vendor.contact.phone && (
+                                <div className="flex items-center text-sm">
+                                  <Phone className="w-3 h-3 mr-1" />
+                                  {vendor.contact.phone}
+                                </div>
+                              )}
+                              {vendor.contact.address && (
+                                <div className="flex items-center text-sm text-muted-foreground">
+                                  <MapPin className="w-3 h-3 mr-1" />
+                                  <span
+                                    className="truncate max-w-[200px]"
+                                    title={vendor.contact.address}
+                                  >
+                                    {vendor.contact.address}
+                                  </span>
+                                </div>
+                              )}
+                            </div>
+                          </TableCell>
+                          <TableCell>
+                            <div className="flex flex-wrap gap-1">
+                              {Array.isArray(vendor.categories) &&
+                                vendor.categories
+                                  .slice(0, 2)
+                                  .map((category) => (
+                                    <Badge
+                                      key={category}
+                                      variant="outline"
+                                      className="text-xs"
+                                    >
+                                      {category}
+                                    </Badge>
+                                  ))}
+                              {Array.isArray(vendor.categories) &&
+                                vendor.categories.length > 2 && (
+                                  <Badge
+                                    variant="outline"
+                                    className="text-xs"
+                                  >
+                                    +{vendor.categories.length - 2}
+                                  </Badge>
+                                )}
+                            </div>
+                          </TableCell>
+                          <TableCell>
+                            {getRatingStars(vendor.rating)}
+                          </TableCell>
+                          <TableCell>
+                            {getStatusBadge(vendor.status)}
+                          </TableCell>
+                          <TableCell>
+                            <div className="flex space-x-2">
+                              <Button
+                                variant="ghost"
+                                size="sm"
+                                onClick={() => handleView(vendor)}
+                              >
+                                <Eye className="w-4 h-4" />
+                              </Button>
+                              {canWrite(resource) && (
+                                <Button
+                                  size="sm"
+                                  variant="outline"
+                                  onClick={() => handleEdit(vendor)}
+                                >
+                                  <Edit className="w-4 h-4" />
+                                </Button>
+                              )}
+                              {canDelete(resource) && (
+                                <Button
+                                  variant="ghost"
+                                  size="sm"
+                                  className="text-destructive hover:text-destructive"
+                                  onClick={() => handleDelete(vendor.id)}
+                                >
+                                  <Trash2 className="w-4 h-4" />
+                                </Button>
+                              )}
+                            </div>
+                          </TableCell>
+                        </TableRow>
+                      ))
+                    )
+                  }
+                </TableBody>
+              </Table>
+            </div>
+
+            {/* Pagination */}
+            <Pagination
+              page={page}
+              pageSize={pageSize}
+              totalItems={totalItems}
+              onPageChange={setPage}
+            />
+          </div>
+        </ContentContainer>
+      </div>
       <VendorForm
         vendor={selectedVendor}
         isOpen={isCreateDialogOpen}
@@ -580,6 +569,6 @@ export default function Vendors() {
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
-    </SidebarProvider>
+    </div>
   );
 }

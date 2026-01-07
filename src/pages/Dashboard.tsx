@@ -52,64 +52,52 @@ const Dashboard = () => {
   // Stats are now imported from mock data
 
   return (
-    <SidebarProvider>
-      <div className="min-h-screen flex w-full bg-background">
-        <PropertySidebar />
+    <div>
+      <div className="max-w-7xl mx-auto space-y-8">
+        <div className="mb-8">
+          <h2 className="text-3xl font-bold mb-2">
+            Welcome back, {user.name}!
+          </h2>
+          <p className="text-muted-foreground">
+            {user.organization_name
+              ? `Managing facilities for ${user.organization_name}`
+              : "Your comprehensive property management dashboard"}
+          </p>
+        </div>
 
-        <div className="flex-1 flex flex-col">
-          {/* Header */}
-          <PageHeader />
+        {/* Stats Grid */}
+        <StatsGrid />
 
-          {/* Main Content */}
-          <main className="flex-1 p-6 overflow-auto">
-            <div className="max-w-7xl mx-auto space-y-8">
-              <div className="mb-8">
-                <h2 className="text-3xl font-bold mb-2">
-                  Welcome back, {user.name}!
-                </h2>
-                <p className="text-muted-foreground">
-                  {user.organization_name
-                    ? `Managing facilities for ${user.organization_name}`
-                    : "Your comprehensive property management dashboard"}
-                </p>
-              </div>
+        {/* Overview Cards */}
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+          <LeasingOverview />
+          <MaintenanceOverview />
+          <AccessOverview />
+          <FinancialSummary />
+        </div>
 
-              {/* Stats Grid */}
-              <StatsGrid />
+        {/* Charts Section */}
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+          <RevenueChart />
+          <OccupancyChart />
+        </div>
 
-              {/* Overview Cards */}
-              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-                <LeasingOverview />
-                <MaintenanceOverview />
-                <AccessOverview />
-                <FinancialSummary />
-              </div>
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+          <MaintenanceChart />
+          <EnergyChart />
+        </div>
 
-              {/* Charts Section */}
-              <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-                <RevenueChart />
-                <OccupancyChart />
-              </div>
+        <FloorOccupancyChart />
 
-              <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-                <MaintenanceChart />
-                <EnergyChart />
-              </div>
-
-              <FloorOccupancyChart />
-
-              {/* Energy Overview */}
-              <div className="grid grid-cols-1 lg:grid-cols-4 gap-6">
-                <EnergyOverview />
-                <div className="lg:col-span-3">
-                  {/* Additional content area */}
-                </div>
-              </div>
-            </div>
-          </main>
+        {/* Energy Overview */}
+        <div className="grid grid-cols-1 lg:grid-cols-4 gap-6">
+          <EnergyOverview />
+          <div className="lg:col-span-3">
+            {/* Additional content area */}
+          </div>
         </div>
       </div>
-    </SidebarProvider>
+    </div>
   );
 };
 

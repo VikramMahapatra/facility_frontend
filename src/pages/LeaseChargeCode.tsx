@@ -166,126 +166,116 @@ export default function LeaseChargeCode() {
   };
 
   return (
-    <SidebarProvider>
-      <div className="flex min-h-screen w-full">
-        <PropertySidebar />
-        <SidebarInset className="flex-1">
-          <PageHeader />
+    <div>
+      <div className="space-y-6">
+        <div className="flex items-center justify-between">
+          <div>
+            <h2 className="text-2xl font-bold text-sidebar-primary">
+              All Charge Codes
+            </h2>
+            <p className="text-muted-foreground">
+              Manage lease charge codes
+            </p>
+          </div>
+          {/* {canWrite(resource) && ( */}
+          <Button className="gap-2" onClick={handleCreate}>
+            <Plus className="h-4 w-4" />
+            Add Charge Code
+          </Button>
+          {/* )} */}
+        </div>
 
-          <main className="flex-1 p-6">
-            <div className="space-y-6">
-              <div className="flex items-center justify-between">
-                <div>
-                  <h2 className="text-2xl font-bold text-sidebar-primary">
-                    All Charge Codes
-                  </h2>
-                  <p className="text-muted-foreground">
-                    Manage lease charge codes
-                  </p>
-                </div>
-                {/* {canWrite(resource) && ( */}
-                <Button className="gap-2" onClick={handleCreate}>
-                  <Plus className="h-4 w-4" />
-                  Add Charge Code
-                </Button>
-                {/* )} */}
-              </div>
+        <div className="flex items-center gap-4">
+          <div className="relative flex-1 max-w-sm">
+            <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground h-4 w-4" />
+            <Input
+              placeholder="Search charge codes..."
+              value={searchTerm}
+              onChange={(e) => setSearchTerm(e.target.value)}
+              className="pl-10"
+            />
+          </div>
+        </div>
 
-              <div className="flex items-center gap-4">
-                <div className="relative flex-1 max-w-sm">
-                  <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground h-4 w-4" />
-                  <Input
-                    placeholder="Search charge codes..."
-                    value={searchTerm}
-                    onChange={(e) => setSearchTerm(e.target.value)}
-                    className="pl-10"
-                  />
-                </div>
-              </div>
-
-              <div className="relative rounded-md border">
-                <ContentContainer>
-                  <LoaderOverlay />
-                  <Card>
-                    <CardHeader>
-                      <CardTitle>Charge Codes</CardTitle>
-                    </CardHeader>
-                    <CardContent>
-                      <Table>
-                        <TableHeader>
-                          <TableRow>
-                            <TableHead>Code</TableHead>
-                            <TableHead className="text-right">Actions</TableHead>
-                          </TableRow>
-                        </TableHeader>
-                        <TableBody>
-                          {chargeCodes.length === 0 ? (
-                            <TableRow>
-                              <TableCell
-                                colSpan={2}
-                                className="text-center text-muted-foreground h-32"
+        <div className="relative rounded-md border">
+          <ContentContainer>
+            <LoaderOverlay />
+            <Card>
+              <CardHeader>
+                <CardTitle>Charge Codes</CardTitle>
+              </CardHeader>
+              <CardContent>
+                <Table>
+                  <TableHeader>
+                    <TableRow>
+                      <TableHead>Code</TableHead>
+                      <TableHead className="text-right">Actions</TableHead>
+                    </TableRow>
+                  </TableHeader>
+                  <TableBody>
+                    {chargeCodes.length === 0 ? (
+                      <TableRow>
+                        <TableCell
+                          colSpan={2}
+                          className="text-center text-muted-foreground h-32"
+                        >
+                          No charge codes found
+                        </TableCell>
+                      </TableRow>
+                    ) : (
+                      chargeCodes.map((code, index) => (
+                        <TableRow key={code.id || code.code || index}>
+                          <TableCell className="font-medium">
+                            {code.code}
+                          </TableCell>
+                          <TableCell className="text-right">
+                            <div className="flex justify-end gap-2">
+                              <Button
+                                variant="ghost"
+                                size="sm"
+                                onClick={() => handleView(code)}
                               >
-                                No charge codes found
-                              </TableCell>
-                            </TableRow>
-                          ) : (
-                            chargeCodes.map((code, index) => (
-                              <TableRow key={code.id || code.code || index}>
-                                <TableCell className="font-medium">
-                                  {code.code}
-                                </TableCell>
-                                <TableCell className="text-right">
-                                  <div className="flex justify-end gap-2">
-                                    <Button
-                                      variant="ghost"
-                                      size="sm"
-                                      onClick={() => handleView(code)}
-                                    >
-                                      <Eye className="w-4 h-4" />
-                                    </Button>
-                                    {/* {canWrite(resource) && ( */}
-                                    <Button
-                                      variant="ghost"
-                                      size="sm"
-                                      onClick={() => handleEdit(code)}
-                                    >
-                                      <Edit className="w-4 h-4" />
-                                    </Button>
-                                    {/* )} */}
-                                    {/* {canDelete(resource) && ( */}
-                                    <Button
-                                      variant="ghost"
-                                      size="sm"
-                                      className="text-destructive hover:text-destructive"
-                                      onClick={() => handleDelete(code.id || "")}
-                                    >
-                                      <Trash2 className="w-4 h-4" />
-                                    </Button>
-                                    {/* )} */}
-                                  </div>
-                                </TableCell>
-                              </TableRow>
-                            ))
-                          )}
-                        </TableBody>
-                      </Table>
-                      {totalItems > 0 && (
-                        <Pagination
-                          page={page}
-                          pageSize={pageSize}
-                          totalItems={totalItems}
-                          onPageChange={setPage}
-                        />
-                      )}
-                    </CardContent>
-                  </Card>
-                </ContentContainer>
-              </div>
-            </div>
-          </main>
-        </SidebarInset>
+                                <Eye className="w-4 h-4" />
+                              </Button>
+                              {/* {canWrite(resource) && ( */}
+                              <Button
+                                variant="ghost"
+                                size="sm"
+                                onClick={() => handleEdit(code)}
+                              >
+                                <Edit className="w-4 h-4" />
+                              </Button>
+                              {/* )} */}
+                              {/* {canDelete(resource) && ( */}
+                              <Button
+                                variant="ghost"
+                                size="sm"
+                                className="text-destructive hover:text-destructive"
+                                onClick={() => handleDelete(code.id || "")}
+                              >
+                                <Trash2 className="w-4 h-4" />
+                              </Button>
+                              {/* )} */}
+                            </div>
+                          </TableCell>
+                        </TableRow>
+                      ))
+                    )}
+                  </TableBody>
+                </Table>
+                {totalItems > 0 && (
+                  <Pagination
+                    page={page}
+                    pageSize={pageSize}
+                    totalItems={totalItems}
+                    onPageChange={setPage}
+                  />
+                )}
+              </CardContent>
+            </Card>
+          </ContentContainer>
+        </div>
       </div>
-
       {/* Create/Edit/View Form */}
       <LeaseChargeCodeForm
         leaseChargeCode={selectedChargeCode}
@@ -319,6 +309,6 @@ export default function LeaseChargeCode() {
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
-    </SidebarProvider>
+    </div>
   );
 }

@@ -263,290 +263,280 @@ export default function TicketWorkload() {
   };
 
   return (
-    <SidebarProvider>
-      <div className="flex min-h-screen w-full">
-        <PropertySidebar />
-        <SidebarInset className="flex-1">
-          <PageHeader />
+    <div>
+      <div className="space-y-6">
+        <div className="flex items-center justify-between">
+          <div>
+            <h2 className="text-3xl font-bold text-sidebar-primary">
+              Team Workload
+            </h2>
+            <p className="text-muted-foreground">
+              View and manage ticket assignments across your team
+            </p>
+          </div>
+          <Select
+            value={selectedSiteId}
+            onValueChange={setSelectedSiteId}
+          >
+            <SelectTrigger className="w-[200px]">
+              <SelectValue placeholder="Select Site" />
+            </SelectTrigger>
+            <SelectContent>
+              {siteList.map((site: any) => (
+                <SelectItem key={site.id} value={site.id}>
+                  {site.name}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+        </div>
 
-          <main className="flex-1 p-6">
-            <div className="space-y-6">
-              <div className="flex items-center justify-between">
-                <div>
-                  <h2 className="text-3xl font-bold text-sidebar-primary">
-                    Team Workload
-                  </h2>
-                  <p className="text-muted-foreground">
-                    View and manage ticket assignments across your team
-                  </p>
-                </div>
-                <Select
-                  value={selectedSiteId}
-                  onValueChange={setSelectedSiteId}
+        <ContentContainer>
+          <LoaderOverlay />
+          <div className="space-y-6">
+            {/* Assignee Overview */}
+            <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
+              {technicianWorkloads.map((technician: any) => (
+                <Card
+                  key={
+                    technician.technician_name || technician.technician_id
+                  }
                 >
-                  <SelectTrigger className="w-[200px]">
-                    <SelectValue placeholder="Select Site" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {siteList.map((site: any) => (
-                      <SelectItem key={site.id} value={site.id}>
-                        {site.name}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-              </div>
-
-              <ContentContainer>
-                <LoaderOverlay />
-                <div className="space-y-6">
-                  {/* Assignee Overview */}
-                  <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
-                    {technicianWorkloads.map((technician: any) => (
-                      <Card
-                        key={
-                          technician.technician_name || technician.technician_id
-                        }
-                      >
-                        <CardHeader className="pb-3">
-                          <CardTitle className="text-sm font-medium">
-                            {technician.technician_name ||
-                              ` ${technician.technician_id?.substring(0, 8)}`}
-                          </CardTitle>
-                        </CardHeader>
-                        <CardContent>
-                          <div className="space-y-2">
-                            <div className="flex justify-between text-sm">
-                              <span className="text-muted-foreground">
-                                Total:
-                              </span>
-                              <span className="font-bold">
-                                {technician.total_tickets}
-                              </span>
-                            </div>
-                            <div className="flex justify-between text-sm">
-                              <span className="text-muted-foreground">
-                                Open:
-                              </span>
-                              <span>{technician.open_tickets}</span>
-                            </div>
-                            <div className="flex justify-between text-sm">
-                              <span className="text-muted-foreground">
-                                In Progress:
-                              </span>
-                              <span>{technician.in_progress_tickets}</span>
-                            </div>
-                            {technician.escalated_tickets > 0 && (
-                              <div className="flex justify-between text-sm">
-                                <span className="text-red-600">Escalated:</span>
-                                <span className="font-bold text-red-600">
-                                  {technician.escalated_tickets}
-                                </span>
-                              </div>
-                            )}
-                          </div>
-                        </CardContent>
-                      </Card>
-                    ))}
-                    {technicianWorkloads.length === 0 && (
-                      <div className="col-span-full text-center py-8 text-muted-foreground">
-                        <UserX className="h-12 w-12 mx-auto mb-2 opacity-50" />
-                        <p>No technician workload data available</p>
+                  <CardHeader className="pb-3">
+                    <CardTitle className="text-sm font-medium">
+                      {technician.technician_name ||
+                        ` ${technician.technician_id?.substring(0, 8)}`}
+                    </CardTitle>
+                  </CardHeader>
+                  <CardContent>
+                    <div className="space-y-2">
+                      <div className="flex justify-between text-sm">
+                        <span className="text-muted-foreground">
+                          Total:
+                        </span>
+                        <span className="font-bold">
+                          {technician.total_tickets}
+                        </span>
                       </div>
-                    )}
-                  </div>
-
-                  {/* Detailed Ticket List */}
-                  <Card>
-                    <CardHeader>
-                      <CardTitle>All Assigned Tickets</CardTitle>
-                    </CardHeader>
-                    <CardContent>
-                      <Table>
-                        <TableHeader>
-                          <TableRow>
-                            <TableHead>Ticket ID</TableHead>
-                            <TableHead>Title</TableHead>
-                            <TableHead>Category</TableHead>
-                            <TableHead>Assigned To</TableHead>
-                            <TableHead>Status</TableHead>
-                            <TableHead>Priority</TableHead>
-                            <TableHead>Created</TableHead>
-                            <TableHead>Actions</TableHead>
-                          </TableRow>
-                        </TableHeader>
-                        <TableBody>
-                          {paginatedAssignedTickets.map((ticket: any) => (
-                            <TableRow key={ticket.id || ticket.ticket_id}>
-                              <TableCell>
-                                #{ticket.ticket_no || ticket.ticket_id}
-                              </TableCell>
-                              <TableCell className="font-medium">
-                                {ticket.title}
-                              </TableCell>
-                              <TableCell>
-                                {ticket.category_name || ticket.category}
-                              </TableCell>
-                              <TableCell>
-                                {ticket.assigned_to_name ||
-                                  getTechnicianName(ticket.assigned_to) ||
-                                  ticket.assigned_to ||
-                                  "Unassigned"}
-                              </TableCell>
-                              <TableCell>
-                                <Badge
-                                  className={getStatusColor(ticket.status)}
-                                >
-                                  {ticket.status}
-                                </Badge>
-                              </TableCell>
-                              <TableCell>
-                                {getPriorityBadge(ticket.priority)}
-                              </TableCell>
-                              <TableCell>
-                                {new Date(
-                                  ticket.created_at
-                                ).toLocaleDateString()}
-                              </TableCell>
-                              <TableCell>
-                                <div className="flex gap-2">
-                                  {ticket.status?.toUpperCase() ===
-                                    "RETURNED" && (
-                                      <Button
-                                        size="sm"
-                                        variant="outline"
-                                        onClick={() =>
-                                          handleReassign(
-                                            ticket.id || ticket.ticket_id,
-                                            ticket.ticket_no,
-                                            ticket.assigned_to
-                                          )
-                                        }
-                                      >
-                                        <RefreshCw className="h-3 w-3 mr-1" />
-                                        Reassign
-                                      </Button>
-                                    )}
-                                  <Button
-                                    size="sm"
-                                    variant="ghost"
-                                    onClick={() =>
-                                      navigate(
-                                        `/tickets/${ticket.id || ticket.ticket_id
-                                        }`
-                                      )
-                                    }
-                                  >
-                                    View
-                                  </Button>
-                                </div>
-                              </TableCell>
-                            </TableRow>
-                          ))}
-                        </TableBody>
-                      </Table>
-                      {assignedTickets.length === 0 && (
-                        <div className="text-center py-8 text-muted-foreground">
-                          <UserX className="h-12 w-12 mx-auto mb-2 opacity-50" />
-                          <p>No assigned tickets for this site</p>
+                      <div className="flex justify-between text-sm">
+                        <span className="text-muted-foreground">
+                          Open:
+                        </span>
+                        <span>{technician.open_tickets}</span>
+                      </div>
+                      <div className="flex justify-between text-sm">
+                        <span className="text-muted-foreground">
+                          In Progress:
+                        </span>
+                        <span>{technician.in_progress_tickets}</span>
+                      </div>
+                      {technician.escalated_tickets > 0 && (
+                        <div className="flex justify-between text-sm">
+                          <span className="text-red-600">Escalated:</span>
+                          <span className="font-bold text-red-600">
+                            {technician.escalated_tickets}
+                          </span>
                         </div>
                       )}
-                      {assignedTickets.length > 0 && (
-                        <Pagination
-                          page={assignedTicketsPage}
-                          pageSize={assignedTicketsPageSize}
-                          totalItems={assignedTickets.length}
-                          onPageChange={setAssignedTicketsPage}
-                        />
-                      )}
-                    </CardContent>
-                  </Card>
+                    </div>
+                  </CardContent>
+                </Card>
+              ))}
+              {technicianWorkloads.length === 0 && (
+                <div className="col-span-full text-center py-8 text-muted-foreground">
+                  <UserX className="h-12 w-12 mx-auto mb-2 opacity-50" />
+                  <p>No technician workload data available</p>
+                </div>
+              )}
+            </div>
 
-                  {/* Unassigned Tickets */}
-                  <Card>
-                    <CardHeader>
-                      <CardTitle>Unassigned Tickets</CardTitle>
-                    </CardHeader>
-                    <CardContent>
-                      <Table>
-                        <TableHeader>
-                          <TableRow>
-                            <TableHead>Ticket ID</TableHead>
-                            <TableHead>Title</TableHead>
-                            <TableHead>Category</TableHead>
-                            <TableHead>Status</TableHead>
-                            <TableHead>Priority</TableHead>
-                            <TableHead>Created</TableHead>
-                            <TableHead>Actions</TableHead>
-                          </TableRow>
-                        </TableHeader>
-                        <TableBody>
-                          {paginatedUnassignedTickets.map((ticket: any) => (
-                            <TableRow key={ticket.id || ticket.ticket_id}>
-                              <TableCell>
-                                #{ticket.ticket_no || ticket.ticket_id}
-                              </TableCell>
-                              <TableCell className="font-medium">
-                                {ticket.title}
-                              </TableCell>
-                              <TableCell>
-                                {ticket.category_name || ticket.category}
-                              </TableCell>
-                              <TableCell>
-                                <Badge
-                                  className={getStatusColor(ticket.status)}
-                                >
-                                  {ticket.status}
-                                </Badge>
-                              </TableCell>
-                              <TableCell>
-                                {getPriorityBadge(ticket.priority)}
-                              </TableCell>
-                              <TableCell>
-                                {new Date(
-                                  ticket.created_at
-                                ).toLocaleDateString()}
-                              </TableCell>
-                              <TableCell>
+            {/* Detailed Ticket List */}
+            <Card>
+              <CardHeader>
+                <CardTitle>All Assigned Tickets</CardTitle>
+              </CardHeader>
+              <CardContent>
+                <Table>
+                  <TableHeader>
+                    <TableRow>
+                      <TableHead>Ticket ID</TableHead>
+                      <TableHead>Title</TableHead>
+                      <TableHead>Category</TableHead>
+                      <TableHead>Assigned To</TableHead>
+                      <TableHead>Status</TableHead>
+                      <TableHead>Priority</TableHead>
+                      <TableHead>Created</TableHead>
+                      <TableHead>Actions</TableHead>
+                    </TableRow>
+                  </TableHeader>
+                  <TableBody>
+                    {paginatedAssignedTickets.map((ticket: any) => (
+                      <TableRow key={ticket.id || ticket.ticket_id}>
+                        <TableCell>
+                          #{ticket.ticket_no || ticket.ticket_id}
+                        </TableCell>
+                        <TableCell className="font-medium">
+                          {ticket.title}
+                        </TableCell>
+                        <TableCell>
+                          {ticket.category_name || ticket.category}
+                        </TableCell>
+                        <TableCell>
+                          {ticket.assigned_to_name ||
+                            getTechnicianName(ticket.assigned_to) ||
+                            ticket.assigned_to ||
+                            "Unassigned"}
+                        </TableCell>
+                        <TableCell>
+                          <Badge
+                            className={getStatusColor(ticket.status)}
+                          >
+                            {ticket.status}
+                          </Badge>
+                        </TableCell>
+                        <TableCell>
+                          {getPriorityBadge(ticket.priority)}
+                        </TableCell>
+                        <TableCell>
+                          {new Date(
+                            ticket.created_at
+                          ).toLocaleDateString()}
+                        </TableCell>
+                        <TableCell>
+                          <div className="flex gap-2">
+                            {ticket.status?.toUpperCase() ===
+                              "RETURNED" && (
                                 <Button
                                   size="sm"
+                                  variant="outline"
                                   onClick={() =>
                                     handleReassign(
                                       ticket.id || ticket.ticket_id,
-                                      ticket.ticket_no
+                                      ticket.ticket_no,
+                                      ticket.assigned_to
                                     )
                                   }
-                                  disabled={isAssigning || (selectedTicket?.id === (ticket.id || ticket.ticket_id))}
                                 >
-                                  {isAssigning && selectedTicket?.id === (ticket.id || ticket.ticket_id) ? "Assigning..." : "Assign"}
+                                  <RefreshCw className="h-3 w-3 mr-1" />
+                                  Reassign
                                 </Button>
-                              </TableCell>
-                            </TableRow>
-                          ))}
-                        </TableBody>
-                      </Table>
-                      {unassignedTickets.length === 0 && (
-                        <p className="text-center py-8 text-muted-foreground">
-                          All tickets have been assigned
-                        </p>
-                      )}
-                      {unassignedTickets.length > 0 && (
-                        <Pagination
-                          page={unassignedTicketsPage}
-                          pageSize={unassignedTicketsPageSize}
-                          totalItems={unassignedTickets.length}
-                          onPageChange={setUnassignedTicketsPage}
-                        />
-                      )}
-                    </CardContent>
-                  </Card>
-                </div>
-              </ContentContainer>
-            </div>
-          </main>
-        </SidebarInset>
-      </div>
+                              )}
+                            <Button
+                              size="sm"
+                              variant="ghost"
+                              onClick={() =>
+                                navigate(
+                                  `/tickets/${ticket.id || ticket.ticket_id
+                                  }`
+                                )
+                              }
+                            >
+                              View
+                            </Button>
+                          </div>
+                        </TableCell>
+                      </TableRow>
+                    ))}
+                  </TableBody>
+                </Table>
+                {assignedTickets.length === 0 && (
+                  <div className="text-center py-8 text-muted-foreground">
+                    <UserX className="h-12 w-12 mx-auto mb-2 opacity-50" />
+                    <p>No assigned tickets for this site</p>
+                  </div>
+                )}
+                {assignedTickets.length > 0 && (
+                  <Pagination
+                    page={assignedTicketsPage}
+                    pageSize={assignedTicketsPageSize}
+                    totalItems={assignedTickets.length}
+                    onPageChange={setAssignedTicketsPage}
+                  />
+                )}
+              </CardContent>
+            </Card>
 
+            {/* Unassigned Tickets */}
+            <Card>
+              <CardHeader>
+                <CardTitle>Unassigned Tickets</CardTitle>
+              </CardHeader>
+              <CardContent>
+                <Table>
+                  <TableHeader>
+                    <TableRow>
+                      <TableHead>Ticket ID</TableHead>
+                      <TableHead>Title</TableHead>
+                      <TableHead>Category</TableHead>
+                      <TableHead>Status</TableHead>
+                      <TableHead>Priority</TableHead>
+                      <TableHead>Created</TableHead>
+                      <TableHead>Actions</TableHead>
+                    </TableRow>
+                  </TableHeader>
+                  <TableBody>
+                    {paginatedUnassignedTickets.map((ticket: any) => (
+                      <TableRow key={ticket.id || ticket.ticket_id}>
+                        <TableCell>
+                          #{ticket.ticket_no || ticket.ticket_id}
+                        </TableCell>
+                        <TableCell className="font-medium">
+                          {ticket.title}
+                        </TableCell>
+                        <TableCell>
+                          {ticket.category_name || ticket.category}
+                        </TableCell>
+                        <TableCell>
+                          <Badge
+                            className={getStatusColor(ticket.status)}
+                          >
+                            {ticket.status}
+                          </Badge>
+                        </TableCell>
+                        <TableCell>
+                          {getPriorityBadge(ticket.priority)}
+                        </TableCell>
+                        <TableCell>
+                          {new Date(
+                            ticket.created_at
+                          ).toLocaleDateString()}
+                        </TableCell>
+                        <TableCell>
+                          <Button
+                            size="sm"
+                            onClick={() =>
+                              handleReassign(
+                                ticket.id || ticket.ticket_id,
+                                ticket.ticket_no
+                              )
+                            }
+                            disabled={isAssigning || (selectedTicket?.id === (ticket.id || ticket.ticket_id))}
+                          >
+                            {isAssigning && selectedTicket?.id === (ticket.id || ticket.ticket_id) ? "Assigning..." : "Assign"}
+                          </Button>
+                        </TableCell>
+                      </TableRow>
+                    ))}
+                  </TableBody>
+                </Table>
+                {unassignedTickets.length === 0 && (
+                  <p className="text-center py-8 text-muted-foreground">
+                    All tickets have been assigned
+                  </p>
+                )}
+                {unassignedTickets.length > 0 && (
+                  <Pagination
+                    page={unassignedTicketsPage}
+                    pageSize={unassignedTicketsPageSize}
+                    totalItems={unassignedTickets.length}
+                    onPageChange={setUnassignedTicketsPage}
+                  />
+                )}
+              </CardContent>
+            </Card>
+          </div>
+        </ContentContainer>
+      </div>
       {/* Reassign Dialog */}
       <Dialog open={isReassignOpen} onOpenChange={setIsReassignOpen}>
         <DialogContent>
@@ -607,6 +597,6 @@ export default function TicketWorkload() {
           </div>
         </DialogContent>
       </Dialog>
-    </SidebarProvider>
+    </div>
   );
 }

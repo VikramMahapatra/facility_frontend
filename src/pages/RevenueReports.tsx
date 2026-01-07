@@ -253,368 +253,359 @@ export default function RevenueReports() {
   }, [selectedPeriod, selectedSite]);
 
   return (
-    <SidebarProvider>
-      <div className="min-h-screen flex w-full">
-        <PropertySidebar />
-        <SidebarInset className="flex-1">
-          <PageHeader />
+    <div className="flex-1 space-y-6">
+      {/* Header Actions */}
+      <div className="flex items-center justify-between">
+        <div>
+          <h2 className="text-2xl font-bold text-sidebar-primary">
+            Revenue Reports
+          </h2>
+          <p className="text-muted-foreground">
+            Financial performance and analytics
+          </p>
+        </div>
+        <Button variant="outline" className="gap-2">
+          <Download className="h-4 w-4" />
+          Export Report
+        </Button>
+      </div>
 
-          <div className="flex-1 space-y-6 p-6">
-            {/* Header Actions */}
-            <div className="flex items-center justify-between">
-              <div>
-                <h2 className="text-2xl font-bold text-sidebar-primary">
-                  Revenue Reports
-                </h2>
-                <p className="text-muted-foreground">
-                  Financial performance and analytics
-                </p>
-              </div>
-              <Button variant="outline" className="gap-2">
-                <Download className="h-4 w-4" />
-                Export Report
-              </Button>
-            </div>
+      <ContentContainer>
+        <LoaderOverlay />
+        <div className="space-y-6">
+          {/* Filters */}
+          <div className="flex flex-col sm:flex-row gap-4">
+            <Select
+              value={selectedPeriod || undefined}
+              onValueChange={setSelectedPeriod}
+            >
+              <SelectTrigger className="w-[180px]">
+                <SelectValue placeholder="Select Period" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="Last_Month">Last Month</SelectItem>
+                <SelectItem value="Last_3_Months">
+                  Last 3 Months
+                </SelectItem>
+                <SelectItem value="Last_6_Months">
+                  Last 6 Months
+                </SelectItem>
+                <SelectItem value="Last_Year">Last Year</SelectItem>
+              </SelectContent>
+            </Select>
+            <Select value={selectedSite} onValueChange={setSelectedSite}>
+              <SelectTrigger className="w-[180px]">
+                <SelectValue placeholder="All Sites" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">All Sites</SelectItem>
+                {siteList.map((s: any) => (
+                  <SelectItem key={s.id} value={s.id}>
+                    {s.name}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
 
-            <ContentContainer>
-              <LoaderOverlay />
-              <div className="space-y-6">
-                {/* Filters */}
-                <div className="flex flex-col sm:flex-row gap-4">
-                  <Select
-                    value={selectedPeriod || undefined}
-                    onValueChange={setSelectedPeriod}
-                  >
-                    <SelectTrigger className="w-[180px]">
-                      <SelectValue placeholder="Select Period" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="Last_Month">Last Month</SelectItem>
-                      <SelectItem value="Last_3_Months">
-                        Last 3 Months
-                      </SelectItem>
-                      <SelectItem value="Last_6_Months">
-                        Last 6 Months
-                      </SelectItem>
-                      <SelectItem value="Last_Year">Last Year</SelectItem>
-                    </SelectContent>
-                  </Select>
-                  <Select value={selectedSite} onValueChange={setSelectedSite}>
-                    <SelectTrigger className="w-[180px]">
-                      <SelectValue placeholder="All Sites" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="all">All Sites</SelectItem>
-                      {siteList.map((s: any) => (
-                        <SelectItem key={s.id} value={s.id}>
-                          {s.name}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
+          {/* Key Metrics */}
+          <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+            <Card>
+              <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                <CardTitle className="text-sm font-medium">
+                  Total Revenue
+                </CardTitle>
+                <DollarSign className="h-4 w-4 text-muted-foreground" />
+              </CardHeader>
+              <CardContent>
+                <div className="text-2xl font-bold">
+                  ₹{revenueReportsOverview.TotalRevenue}
                 </div>
-
-                {/* Key Metrics */}
-                <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
-                  <Card>
-                    <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                      <CardTitle className="text-sm font-medium">
-                        Total Revenue
-                      </CardTitle>
-                      <DollarSign className="h-4 w-4 text-muted-foreground" />
-                    </CardHeader>
-                    <CardContent>
-                      <div className="text-2xl font-bold">
-                        ₹{revenueReportsOverview.TotalRevenue}
-                      </div>
-                      {/* <p className="text-xs text-muted-foreground flex items-center">
+                {/* <p className="text-xs text-muted-foreground flex items-center">
                         <TrendingUp className="w-3 h-3 mr-1 text-green-500" />
                         +12.5% from last period
                       </p>*/}
-                    </CardContent>
-                  </Card>
-                  <Card>
-                    <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                      <CardTitle className="text-sm font-medium">
-                        Rent Revenue
-                      </CardTitle>
-                      <FileText className="h-4 w-4 text-muted-foreground" />
-                    </CardHeader>
-                    <CardContent>
-                      <div className="text-2xl font-bold">
-                        ₹{revenueReportsOverview.RENTRevenue}
-                      </div>
-                      {/* <p className="text-xs text-muted-foreground flex items-center">
+              </CardContent>
+            </Card>
+            <Card>
+              <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                <CardTitle className="text-sm font-medium">
+                  Rent Revenue
+                </CardTitle>
+                <FileText className="h-4 w-4 text-muted-foreground" />
+              </CardHeader>
+              <CardContent>
+                <div className="text-2xl font-bold">
+                  ₹{revenueReportsOverview.RENTRevenue}
+                </div>
+                {/* <p className="text-xs text-muted-foreground flex items-center">
                         <TrendingUp className="w-3 h-3 mr-1 text-green-500" />
                         +8.3% from last period
                       </p>*/}
-                    </CardContent>
-                  </Card>
-                  <Card>
-                    <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                      <CardTitle className="text-sm font-medium">
-                        CAM Revenue
-                      </CardTitle>
-                      <Target className="h-4 w-4 text-muted-foreground" />
-                    </CardHeader>
-                    <CardContent>
-                      <div className="text-2xl font-bold">
-                        ₹{revenueReportsOverview.CAMRevenue}
-                      </div>
-                      {/* <p className="text-xs text-muted-foreground flex items-center">
+              </CardContent>
+            </Card>
+            <Card>
+              <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                <CardTitle className="text-sm font-medium">
+                  CAM Revenue
+                </CardTitle>
+                <Target className="h-4 w-4 text-muted-foreground" />
+              </CardHeader>
+              <CardContent>
+                <div className="text-2xl font-bold">
+                  ₹{revenueReportsOverview.CAMRevenue}
+                </div>
+                {/* <p className="text-xs text-muted-foreground flex items-center">
                         <TrendingDown className="w-3 h-3 mr-1 text-red-500" />
                         -2.1% from last period
                       </p>*/}
-                    </CardContent>
-                  </Card>
-                  <Card>
-                    <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                      <CardTitle className="text-sm font-medium">
-                        Collection Rate
-                      </CardTitle>
-                      <TrendingUp className="h-4 w-4 text-muted-foreground" />
-                    </CardHeader>
-                    <CardContent>
-                      <div className="text-2xl font-bold">
-                        {revenueReportsOverview.CollectionRate}%
-                      </div>
-                      {/* <p className="text-xs text-muted-foreground flex items-center">
+              </CardContent>
+            </Card>
+            <Card>
+              <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                <CardTitle className="text-sm font-medium">
+                  Collection Rate
+                </CardTitle>
+                <TrendingUp className="h-4 w-4 text-muted-foreground" />
+              </CardHeader>
+              <CardContent>
+                <div className="text-2xl font-bold">
+                  {revenueReportsOverview.CollectionRate}%
+                </div>
+                {/* <p className="text-xs text-muted-foreground flex items-center">
                         <TrendingUp className="w-3 h-3 mr-1 text-green-500" />
                         +3.2% from last period
                       </p>*/}
-                    </CardContent>
-                  </Card>
-                </div>
+              </CardContent>
+            </Card>
+          </div>
 
-                {/* Revenue Trend Chart */}
-                <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-                  <Card>
-                    <CardHeader>
-                      <CardTitle>Revenue Trend</CardTitle>
-                      <CardDescription>
-                        Monthly revenue breakdown
-                      </CardDescription>
-                    </CardHeader>
-                    <CardContent>
-                      <ResponsiveContainer width="100%" height={300}>
-                        <AreaChart data={trendData}>
-                          <CartesianGrid strokeDasharray="3 3" />
-                          <XAxis dataKey="month" />
-                          <YAxis />
-                          <Tooltip />
-                          <Legend />
-                          {chargeCodes.map((code, index) => {
-                            // Color palette for dynamic assignment
-                            const colors = [
-                              "#8884d8", // Purple
-                              "#82ca9d", // Green
-                              "#ffc658", // Yellow
-                              "#ff6b6b", // Red
-                              "#4ecdc4", // Teal
-                              "#ffa500", // Orange
-                              "#9b59b6", // Purple
-                              "#3498db", // Blue
-                              "#e74c3c", // Red
-                              "#1abc9c", // Turquoise
-                              "#f39c12", // Orange
-                              "#34495e", // Dark Gray
-                            ];
-                            const color = colors[index % colors.length];
-                            const dataKey = code.toLowerCase();
+          {/* Revenue Trend Chart */}
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+            <Card>
+              <CardHeader>
+                <CardTitle>Revenue Trend</CardTitle>
+                <CardDescription>
+                  Monthly revenue breakdown
+                </CardDescription>
+              </CardHeader>
+              <CardContent>
+                <ResponsiveContainer width="100%" height={300}>
+                  <AreaChart data={trendData}>
+                    <CartesianGrid strokeDasharray="3 3" />
+                    <XAxis dataKey="month" />
+                    <YAxis />
+                    <Tooltip />
+                    <Legend />
+                    {chargeCodes.map((code, index) => {
+                      // Color palette for dynamic assignment
+                      const colors = [
+                        "#8884d8", // Purple
+                        "#82ca9d", // Green
+                        "#ffc658", // Yellow
+                        "#ff6b6b", // Red
+                        "#4ecdc4", // Teal
+                        "#ffa500", // Orange
+                        "#9b59b6", // Purple
+                        "#3498db", // Blue
+                        "#e74c3c", // Red
+                        "#1abc9c", // Turquoise
+                        "#f39c12", // Orange
+                        "#34495e", // Dark Gray
+                      ];
+                      const color = colors[index % colors.length];
+                      const dataKey = code.toLowerCase();
 
-                            // Format charge code name for display
-                            const formatChargeCodeName = (code: string) => {
-                              const codeLower = code.toLowerCase();
-                              const nameMap: Record<string, string> = {
-                                rent: "Rent",
-                                cam: "CAM",
-                                utilities: "Utilities",
-                                elec: "Electricity",
-                                parking: "Parking",
-                                penalties: "Penalties",
-                              };
-                              return nameMap[codeLower] || code.toUpperCase();
-                            };
+                      // Format charge code name for display
+                      const formatChargeCodeName = (code: string) => {
+                        const codeLower = code.toLowerCase();
+                        const nameMap: Record<string, string> = {
+                          rent: "Rent",
+                          cam: "CAM",
+                          utilities: "Utilities",
+                          elec: "Electricity",
+                          parking: "Parking",
+                          penalties: "Penalties",
+                        };
+                        return nameMap[codeLower] || code.toUpperCase();
+                      };
 
-                            return (
-                              <Area
-                                key={code}
-                                type="monotone"
-                                dataKey={dataKey}
-                                stackId="1"
-                                stroke={color}
-                                fill={color}
-                                name={formatChargeCodeName(code)}
-                              />
+                      return (
+                        <Area
+                          key={code}
+                          type="monotone"
+                          dataKey={dataKey}
+                          stackId="1"
+                          stroke={color}
+                          fill={color}
+                          name={formatChargeCodeName(code)}
+                        />
+                      );
+                    })}
+                  </AreaChart>
+                </ResponsiveContainer>
+              </CardContent>
+            </Card>
+
+            <Card>
+              <CardHeader>
+                <CardTitle>Revenue by Source</CardTitle>
+                <CardDescription>
+                  Current period breakdown
+                </CardDescription>
+              </CardHeader>
+              <CardContent>
+                <ResponsiveContainer width="100%" height={300}>
+                  <PieChart>
+                    <Pie
+                      data={
+                        sourceData && sourceData.length > 0
+                          ? sourceData
+                          : []
+                      }
+                      cx="50%"
+                      cy="50%"
+                      labelLine={false}
+                      label={false}
+                      outerRadius={80}
+                      fill="#8884d8"
+                      dataKey="value"
+                    >
+                      {(sourceData && sourceData.length > 0
+                        ? sourceData
+                        : []
+                      ).map((entry, index) => {
+                        const colors = [
+                          "#0088FE",
+                          "#00C49F",
+                          "#FFBB28",
+                          "#FF8042",
+                          "#FF6B9D",
+                          "#C44569",
+                        ];
+                        return (
+                          <Cell
+                            key={`cell-${index}`}
+                            fill={colors[index % colors.length]}
+                          />
+                        );
+                      })}
+                    </Pie>
+                    <Tooltip />
+                  </PieChart>
+                </ResponsiveContainer>
+                {/* Custom Legend with grouped labels */}
+                {sourceData && sourceData.length > 0 && (
+                  <div className="mt-4">
+                    <div className="flex flex-wrap justify-center gap-x-6 gap-y-2">
+                      {(() => {
+                        const data = sourceData;
+                        const total = data.reduce(
+                          (sum: number, d: any) => sum + d.value,
+                          0
+                        );
+                        const colors = [
+                          "#0088FE",
+                          "#00C49F",
+                          "#FFBB28",
+                          "#FF8042",
+                          "#FF6B9D",
+                          "#C44569",
+                        ];
+
+                        // Group entries by percentage
+                        const groupedByPercent = data.reduce(
+                          (acc: any, entry: any, index: number) => {
+                            const percent = Math.round(
+                              (entry.value / total) * 100
                             );
-                          })}
-                        </AreaChart>
-                      </ResponsiveContainer>
-                    </CardContent>
-                  </Card>
-
-                  <Card>
-                    <CardHeader>
-                      <CardTitle>Revenue by Source</CardTitle>
-                      <CardDescription>
-                        Current period breakdown
-                      </CardDescription>
-                    </CardHeader>
-                    <CardContent>
-                      <ResponsiveContainer width="100%" height={300}>
-                        <PieChart>
-                          <Pie
-                            data={
-                              sourceData && sourceData.length > 0
-                                ? sourceData
-                                : []
+                            if (!acc[percent]) {
+                              acc[percent] = [];
                             }
-                            cx="50%"
-                            cy="50%"
-                            labelLine={false}
-                            label={false}
-                            outerRadius={80}
-                            fill="#8884d8"
-                            dataKey="value"
+                            acc[percent].push({
+                              ...entry,
+                              color: colors[index % colors.length],
+                            });
+                            return acc;
+                          },
+                          {}
+                        );
+
+                        // Sort by percentage descending
+                        const sortedGroups = Object.keys(groupedByPercent)
+                          .sort((a, b) => Number(b) - Number(a))
+                          .map((percent) => ({
+                            percent: Number(percent),
+                            entries: groupedByPercent[percent],
+                          }));
+
+                        return sortedGroups.map((group) => (
+                          <div
+                            key={group.percent}
+                            className="flex items-center gap-2 flex-wrap"
                           >
-                            {(sourceData && sourceData.length > 0
-                              ? sourceData
-                              : []
-                            ).map((entry, index) => {
-                              const colors = [
-                                "#0088FE",
-                                "#00C49F",
-                                "#FFBB28",
-                                "#FF8042",
-                                "#FF6B9D",
-                                "#C44569",
-                              ];
-                              return (
-                                <Cell
-                                  key={`cell-${index}`}
-                                  fill={colors[index % colors.length]}
-                                />
-                              );
-                            })}
-                          </Pie>
-                          <Tooltip />
-                        </PieChart>
-                      </ResponsiveContainer>
-                      {/* Custom Legend with grouped labels */}
-                      {sourceData && sourceData.length > 0 && (
-                        <div className="mt-4">
-                          <div className="flex flex-wrap justify-center gap-x-6 gap-y-2">
-                            {(() => {
-                              const data = sourceData;
-                              const total = data.reduce(
-                                (sum: number, d: any) => sum + d.value,
-                                0
-                              );
-                              const colors = [
-                                "#0088FE",
-                                "#00C49F",
-                                "#FFBB28",
-                                "#FF8042",
-                                "#FF6B9D",
-                                "#C44569",
-                              ];
-
-                              // Group entries by percentage
-                              const groupedByPercent = data.reduce(
-                                (acc: any, entry: any, index: number) => {
-                                  const percent = Math.round(
-                                    (entry.value / total) * 100
-                                  );
-                                  if (!acc[percent]) {
-                                    acc[percent] = [];
-                                  }
-                                  acc[percent].push({
-                                    ...entry,
-                                    color: colors[index % colors.length],
-                                  });
-                                  return acc;
-                                },
-                                {}
-                              );
-
-                              // Sort by percentage descending
-                              const sortedGroups = Object.keys(groupedByPercent)
-                                .sort((a, b) => Number(b) - Number(a))
-                                .map((percent) => ({
-                                  percent: Number(percent),
-                                  entries: groupedByPercent[percent],
-                                }));
-
-                              return sortedGroups.map((group) => (
+                            {group.entries.map(
+                              (entry: any, idx: number) => (
                                 <div
-                                  key={group.percent}
-                                  className="flex items-center gap-2 flex-wrap"
+                                  key={`${entry.name}-${idx}`}
+                                  className="flex items-center gap-1.5"
                                 >
-                                  {group.entries.map(
-                                    (entry: any, idx: number) => (
-                                      <div
-                                        key={`${entry.name}-${idx}`}
-                                        className="flex items-center gap-1.5"
-                                      >
-                                        <div
-                                          className="w-3 h-3 rounded-full"
-                                          style={{
-                                            backgroundColor: entry.color,
-                                          }}
-                                        />
-                                        <span className="text-sm text-muted-foreground">
-                                          {entry.name}
-                                        </span>
-                                        {idx === group.entries.length - 1 && (
-                                          <span className="text-sm font-medium">
-                                            {group.percent}%
-                                          </span>
-                                        )}
-                                      </div>
-                                    )
+                                  <div
+                                    className="w-3 h-3 rounded-full"
+                                    style={{
+                                      backgroundColor: entry.color,
+                                    }}
+                                  />
+                                  <span className="text-sm text-muted-foreground">
+                                    {entry.name}
+                                  </span>
+                                  {idx === group.entries.length - 1 && (
+                                    <span className="text-sm font-medium">
+                                      {group.percent}%
+                                    </span>
                                   )}
                                 </div>
-                              ));
-                            })()}
+                              )
+                            )}
                           </div>
-                        </div>
-                      )}
-                    </CardContent>
-                  </Card>
-                </div>
-
-                {/* Outstanding Receivables */}
-                <Card>
-                  <CardHeader>
-                    <CardTitle>Outstanding Receivables</CardTitle>
-                    <CardDescription>
-                      Aging analysis of pending payments
-                    </CardDescription>
-                  </CardHeader>
-                  <CardContent>
-                    <ResponsiveContainer width="100%" height={300}>
-                      <BarChart
-                        data={
-                          outstandingReceivablesData &&
-                            outstandingReceivablesData.length > 0
-                            ? outstandingReceivablesData
-                            : []
-                        }
-                      >
-                        <CartesianGrid strokeDasharray="3 3" />
-                        <XAxis dataKey="period" />
-                        <YAxis />
-                        <Tooltip />
-                        <Bar dataKey="amount" fill="#8884d8" />
-                      </BarChart>
-                    </ResponsiveContainer>
-                  </CardContent>
-                </Card>
-              </div>
-            </ContentContainer>
+                        ));
+                      })()}
+                    </div>
+                  </div>
+                )}
+              </CardContent>
+            </Card>
           </div>
-        </SidebarInset>
-      </div>
-    </SidebarProvider>
+
+          {/* Outstanding Receivables */}
+          <Card>
+            <CardHeader>
+              <CardTitle>Outstanding Receivables</CardTitle>
+              <CardDescription>
+                Aging analysis of pending payments
+              </CardDescription>
+            </CardHeader>
+            <CardContent>
+              <ResponsiveContainer width="100%" height={300}>
+                <BarChart
+                  data={
+                    outstandingReceivablesData &&
+                      outstandingReceivablesData.length > 0
+                      ? outstandingReceivablesData
+                      : []
+                  }
+                >
+                  <CartesianGrid strokeDasharray="3 3" />
+                  <XAxis dataKey="period" />
+                  <YAxis />
+                  <Tooltip />
+                  <Bar dataKey="amount" fill="#8884d8" />
+                </BarChart>
+              </ResponsiveContainer>
+            </CardContent>
+          </Card>
+        </div>
+      </ContentContainer>
+    </div>
   );
 }

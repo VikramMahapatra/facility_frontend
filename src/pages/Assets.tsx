@@ -76,16 +76,12 @@ export default function Assets() {
   };
 
   const loadCategories = async () => {
-    const response = await withLoader(async () => {
-      return await assetApiService.getCategories();
-    });
+    const response = await assetApiService.getCategories();
     if (response?.success) setCategoryOptions(response.data);
   }
 
   const loadStatuses = async () => {
-    const response = await withLoader(async () => {
-      return await assetApiService.getStatuses();
-    });
+    const response = await assetApiService.getStatuses();
     if (response?.success) setStatusOptions(response.data);
   }
 
@@ -193,224 +189,203 @@ export default function Assets() {
   };
 
   return (
-    <SidebarProvider>
-      <div className="min-h-screen flex w-full">
-        <PropertySidebar />
-        <SidebarInset className="flex-1">
-          <PageHeader />
-
-
-          <div className="flex-1 space-y-6 p-6">
-            {/* Header Actions */}
-            <div className="flex items-center justify-between">
-              <div>
-                <h2 className="text-2xl font-bold text-sidebar-primary">
-                  All Assets
-                </h2>
-                <p className="text-muted-foreground">
-                  Manage facility assets and equipment
-                </p>
-              </div>
-              <Button onClick={handleCreate} className="gap-2">
-                <Plus className="h-4 w-4" />
-                Add Asset
-              </Button>
-            </div>
-
-            <div className="space-y-6">
-              {/* Summary Cards */}
-              <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
-                <Card>
-                  <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                    <CardTitle className="text-sm font-medium">Total Assets</CardTitle>
-                    <Package className="h-4 w-4 text-muted-foreground" />
-                  </CardHeader>
-                  <CardContent>
-                    <div className="text-2xl font-bold">{assetOverview.totalAssets}</div>
-                    <p className="text-xs text-muted-foreground">
-                      +{assetOverview.lastMonthAssetPercentage}% from last month
-                    </p>
-                  </CardContent>
-                </Card>
-
-                <Card>
-                  <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                    <CardTitle className="text-sm font-medium">Active Assets</CardTitle>
-                    <CheckCircle className="h-4 w-4 text-muted-foreground" />
-                  </CardHeader>
-                  <CardContent>
-                    <div className="text-2xl font-bold text-green-600">{assetOverview.activeAssets}</div>
-                    <p className="text-xs text-muted-foreground">
-                      {assetOverview.totalAssets
-                        ? ((assetOverview.activeAssets / assetOverview.totalAssets) * 100).toFixed(1)
-                        : 0}
-                      % of total
-                    </p>
-                  </CardContent>
-                </Card>
-
-                <Card>
-                  <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                    <CardTitle className="text-sm font-medium">Total Value</CardTitle>
-                    <DollarSign className="h-4 w-4 text-muted-foreground" />
-                  </CardHeader>
-                  <CardContent>
-                    <div className="text-2xl font-bold">₹{assetOverview.totalValue.toLocaleString()}</div>
-                    <p className="text-xs text-muted-foreground">Asset book value</p>
-                  </CardContent>
-                </Card>
-
-                <Card>
-                  <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                    <CardTitle className="text-sm font-medium">Needs Attention</CardTitle>
-                    <AlertTriangle className="h-4 w-4 text-muted-foreground" />
-                  </CardHeader>
-                  <CardContent>
-                    <div className="text-2xl font-bold text-orange-600">{assetOverview.assetsNeedingMaintenance}</div>
-                    <p className="text-xs text-muted-foreground">Warranty expired</p>
-                  </CardContent>
-                </Card>
-              </div>
-
-              {/* Inventory */}
-              <Card>
-                <CardHeader>
-                  <CardTitle>Asset Inventory</CardTitle>
-                  <CardDescription>Complete list of facility assets and equipment</CardDescription>
-                </CardHeader>
-                <CardContent className="space-y-4">
-                  {/* Search & Filters */}
-                  <div className="flex flex-col sm:flex-row gap-4">
-                    <div className="flex-1">
-                      <div className="relative">
-                        <Search className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
-                        <Input
-                          placeholder="Search assets..."
-                          className="pl-10"
-                          value={searchTerm}
-                          onChange={(e) => setSearchTerm(e.target.value)}
-                        />
-                      </div>
-                    </div>
-
-                    <Select value={categoryFilter} onValueChange={setCategoryFilter}>
-                      <SelectTrigger className="w-48">
-                        <SelectValue placeholder="All Categories" />
-                      </SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value="all">All Categories</SelectItem>
-                        {categoryOptions.map((c) => (
-                          <SelectItem
-                            key={c.id}
-                            value={c.name || c.id}
-                          >
-                            {c.name}
-                          </SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
-
-                    <Select value={statusFilter} onValueChange={setStatusFilter}>
-                      <SelectTrigger className="w-40">
-                        <SelectValue placeholder="All Status" />
-                      </SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value="all">All Status</SelectItem>
-                        {statusOptions.map((c) => (
-                          <SelectItem key={c.id} value={c.id}>{c.name}</SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
-                  </div>
-
-                  <div className="relative rounded-md border">
-                    <ContentContainer>
-                      <LoaderOverlay />
-                      <Table>
-                        <TableHeader>
-                          <TableRow>
-                            <TableHead>Asset Tag</TableHead>
-                            <TableHead>Name</TableHead>
-                            <TableHead>Category</TableHead>
-                            <TableHead>Location</TableHead>
-                            <TableHead>Status</TableHead>
-                            <TableHead>Cost</TableHead>
-                            <TableHead>Warranty</TableHead>
-                            <TableHead className="text-right">Actions</TableHead>
-                          </TableRow>
-                        </TableHeader>
-                        <TableBody>
-                          {assets.map((asset) => {
-                            const isWarrantyExpired =
-                              asset.warranty_expiry && new Date(asset.warranty_expiry) < new Date();
-
-                            return (
-                              <TableRow key={asset.id}>
-                                <TableCell className="font-mono font-medium">{asset.tag}</TableCell>
-                                <TableCell>
-                                  <div>
-                                    <div className="font-medium">{asset.name}</div>
-                                    {asset.model && <div className="text-sm text-muted-foreground">{asset.model}</div>}
-                                  </div>
-                                </TableCell>
-                                <TableCell>{(asset as any).category?.name || (asset as any).category_name || 'Unknown'}</TableCell>
-                                <TableCell>{asset.location || '-'}</TableCell>
-                                <TableCell>{getStatusBadge(asset.status)}</TableCell>
-                                <TableCell>₹{asset.cost?.toLocaleString() || 'N/A'}</TableCell>
-                                <TableCell>
-                                  {asset.warranty_expiry ? (
-                                    <div className={`text-sm ${isWarrantyExpired ? 'text-red-600' : ''}`}>
-                                      {new Date(asset.warranty_expiry).toLocaleDateString()}
-                                      {isWarrantyExpired && <div className="text-xs">Expired</div>}
-                                    </div>
-                                  ) : (
-                                    'N/A'
-                                  )}
-                                </TableCell>
-                                <TableCell className="text-right">
-                                  <div className="flex items-center justify-end gap-2">
-                                    <Button variant="ghost" size="sm" onClick={() => handleView(asset)}>
-                                      <Eye className="h-4 w-4" />
-                                    </Button>
-                                    {canWrite(resource) && <Button variant="ghost" size="sm" onClick={() => handleEdit(asset)}>
-                                      <Edit className="h-4 w-4" />
-                                    </Button>
-                                    }
-                                    {/* <Button variant="ghost" size="sm">
-                                  <Wrench className="h-4 w-4" />
-                                </Button> */}
-                                    {canDelete(resource) && <Button
-                                      variant="ghost"
-                                      size="sm"
-                                      className="text-destructive"
-                                      onClick={() => handleDelete(asset.id)}
-                                    >
-                                      <Trash2 className="h-4 w-4" />
-                                    </Button>
-                                    }
-                                  </div>
-                                </TableCell>
-                              </TableRow>
-                            );
-                          })}
-                        </TableBody>
-                      </Table>
-
-                      <Pagination
-                        page={page}
-                        pageSize={pageSize}
-                        totalItems={totalItems}
-                        onPageChange={(newPage) => setPage(newPage)}
-                      />
-                    </ContentContainer>
-                  </div>
-                </CardContent>
-              </Card>
-            </div>
-          </div>
-        </SidebarInset>
+    <div className="flex-1 space-y-6">
+      {/* Header Actions */}
+      <div className="flex items-center justify-between">
+        <div>
+          <h2 className="text-2xl font-bold text-sidebar-primary">
+            All Assets
+          </h2>
+          <p className="text-muted-foreground">
+            Manage facility assets and equipment
+          </p>
+        </div>
+        <Button onClick={handleCreate} className="gap-2">
+          <Plus className="h-4 w-4" />
+          Add Asset
+        </Button>
       </div>
 
+      <div className="space-y-6">
+        {/* Summary Cards */}
+        <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
+          <Card>
+            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+              <CardTitle className="text-sm font-medium">Total Assets</CardTitle>
+              <Package className="h-4 w-4 text-muted-foreground" />
+            </CardHeader>
+            <CardContent>
+              <div className="text-2xl font-bold">{assetOverview.totalAssets}</div>
+              <p className="text-xs text-muted-foreground">
+                +{assetOverview.lastMonthAssetPercentage}% from last month
+              </p>
+            </CardContent>
+          </Card>
+
+          <Card>
+            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+              <CardTitle className="text-sm font-medium">Active Assets</CardTitle>
+              <CheckCircle className="h-4 w-4 text-muted-foreground" />
+            </CardHeader>
+            <CardContent>
+              <div className="text-2xl font-bold text-green-600">{assetOverview.activeAssets}</div>
+              <p className="text-xs text-muted-foreground">
+                {assetOverview.totalAssets
+                  ? ((assetOverview.activeAssets / assetOverview.totalAssets) * 100).toFixed(1)
+                  : 0}
+                % of total
+              </p>
+            </CardContent>
+          </Card>
+
+          <Card>
+            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+              <CardTitle className="text-sm font-medium">Total Value</CardTitle>
+              <DollarSign className="h-4 w-4 text-muted-foreground" />
+            </CardHeader>
+            <CardContent>
+              <div className="text-2xl font-bold">₹{assetOverview.totalValue.toLocaleString()}</div>
+              <p className="text-xs text-muted-foreground">Asset book value</p>
+            </CardContent>
+          </Card>
+
+          <Card>
+            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+              <CardTitle className="text-sm font-medium">Needs Attention</CardTitle>
+              <AlertTriangle className="h-4 w-4 text-muted-foreground" />
+            </CardHeader>
+            <CardContent>
+              <div className="text-2xl font-bold text-orange-600">{assetOverview.assetsNeedingMaintenance}</div>
+              <p className="text-xs text-muted-foreground">Warranty expired</p>
+            </CardContent>
+          </Card>
+        </div>
+
+        {/* Inventory */}
+        {/* Search & Filters */}
+        <div className="flex flex-col sm:flex-row gap-4">
+          <div className="flex-1">
+            <div className="relative">
+              <Search className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
+              <Input
+                placeholder="Search assets..."
+                className="pl-10"
+                value={searchTerm}
+                onChange={(e) => setSearchTerm(e.target.value)}
+              />
+            </div>
+          </div>
+
+          <Select value={categoryFilter} onValueChange={setCategoryFilter}>
+            <SelectTrigger className="w-48">
+              <SelectValue placeholder="All Categories" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="all">All Categories</SelectItem>
+              {categoryOptions.map((c) => (
+                <SelectItem
+                  key={c.id}
+                  value={c.name || c.id}
+                >
+                  {c.name}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+
+          <Select value={statusFilter} onValueChange={setStatusFilter}>
+            <SelectTrigger className="w-40">
+              <SelectValue placeholder="All Status" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="all">All Status</SelectItem>
+              {statusOptions.map((c) => (
+                <SelectItem key={c.id} value={c.id}>{c.name}</SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+        </div>
+        <ContentContainer>
+          <LoaderOverlay />
+          <div className="relative rounded-md border">
+            <Table>
+              <TableHeader>
+                <TableRow>
+                  <TableHead>Asset Tag</TableHead>
+                  <TableHead>Name</TableHead>
+                  <TableHead>Category</TableHead>
+                  <TableHead>Location</TableHead>
+                  <TableHead>Status</TableHead>
+                  <TableHead>Cost</TableHead>
+                  <TableHead>Warranty</TableHead>
+                  <TableHead className="text-right">Actions</TableHead>
+                </TableRow>
+              </TableHeader>
+              <TableBody>
+                {assets.map((asset) => {
+                  const isWarrantyExpired =
+                    asset.warranty_expiry && new Date(asset.warranty_expiry) < new Date();
+
+                  return (
+                    <TableRow key={asset.id}>
+                      <TableCell className="font-mono font-medium">{asset.tag}</TableCell>
+                      <TableCell>
+                        <div>
+                          <div className="font-medium">{asset.name}</div>
+                          {asset.model && <div className="text-sm text-muted-foreground">{asset.model}</div>}
+                        </div>
+                      </TableCell>
+                      <TableCell>{(asset as any).category?.name || (asset as any).category_name || 'Unknown'}</TableCell>
+                      <TableCell>{asset.location || '-'}</TableCell>
+                      <TableCell>{getStatusBadge(asset.status)}</TableCell>
+                      <TableCell>₹{asset.cost?.toLocaleString() || 'N/A'}</TableCell>
+                      <TableCell>
+                        {asset.warranty_expiry ? (
+                          <div className={`text-sm ${isWarrantyExpired ? 'text-red-600' : ''}`}>
+                            {new Date(asset.warranty_expiry).toLocaleDateString()}
+                            {isWarrantyExpired && <div className="text-xs">Expired</div>}
+                          </div>
+                        ) : (
+                          'N/A'
+                        )}
+                      </TableCell>
+                      <TableCell className="text-right">
+                        <div className="flex items-center justify-end gap-2">
+                          <Button variant="ghost" size="sm" onClick={() => handleView(asset)}>
+                            <Eye className="h-4 w-4" />
+                          </Button>
+                          {canWrite(resource) && <Button variant="ghost" size="sm" onClick={() => handleEdit(asset)}>
+                            <Edit className="h-4 w-4" />
+                          </Button>
+                          }
+                          {/* <Button variant="ghost" size="sm">
+                                  <Wrench className="h-4 w-4" />
+                                </Button> */}
+                          {canDelete(resource) && <Button
+                            variant="ghost"
+                            size="sm"
+                            className="text-destructive"
+                            onClick={() => handleDelete(asset.id)}
+                          >
+                            <Trash2 className="h-4 w-4" />
+                          </Button>
+                          }
+                        </div>
+                      </TableCell>
+                    </TableRow>
+                  );
+                })}
+              </TableBody>
+            </Table>
+          </div>
+        </ContentContainer>
+        <Pagination
+          page={page}
+          pageSize={pageSize}
+          totalItems={totalItems}
+          onPageChange={(newPage) => setPage(newPage)}
+        />
+      </div>
       {/* Delete dialog */}
       <AlertDialog open={!!deleteAssetId} onOpenChange={() => setDeleteAssetId(null)}>
         <AlertDialogContent>
@@ -437,6 +412,6 @@ export default function Assets() {
         onClose={() => setIsFormOpen(false)}
         onSave={handleSave}
       />
-    </SidebarProvider>
+    </div>
   );
 }

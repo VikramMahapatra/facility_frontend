@@ -157,159 +157,149 @@ export default function Organizations() {
   };
 
   return (
-    <SidebarProvider>
-      <div className="flex min-h-screen w-full">
-        <PropertySidebar />
-        <SidebarInset className="flex-1">
-          <PageHeader />
+    <div>
+      <div className="space-y-6">
+        {/* Header Actions */}
+        <div className="flex items-center justify-between">
+          <div>
+            <h2 className="text-2xl font-bold text-sidebar-primary">Organizations</h2>
+            <p className="text-muted-foreground">Manage hotel chains and property companies</p>
+          </div>
+          {canWrite(resource) && (
+            <Button onClick={handleCreate} className="gap-2" disabled>
+              <Plus className="h-4 w-4" />
+              Add New Organization
+            </Button>
+          )}
+        </div>
 
-          <main className="flex-1 p-6">
-            <div className="space-y-6">
-              {/* Header Actions */}
-              <div className="flex items-center justify-between">
-                <div>
-                  <h2 className="text-2xl font-bold text-sidebar-primary">Organizations</h2>
-                  <p className="text-muted-foreground">Manage hotel chains and property companies</p>
-                </div>
-                {canWrite(resource) && (
-                  <Button onClick={handleCreate} className="gap-2" disabled>
-                    <Plus className="h-4 w-4" />
-                    Add New Organization
-                  </Button>
-                )}
+        {/* Filters */}
+        <div className="flex items-center gap-4">
+          <Input
+            placeholder="Search organizations..."
+            value={searchTerm}
+            onChange={(e) => setSearchTerm(e.target.value)}
+            className="max-w-sm"
+          />
+
+          <Select
+            value={selectedPlan}
+            onValueChange={setSelectedPlan}
+          >
+            <SelectTrigger className="w-[180px]">
+              <SelectValue placeholder="All Plans" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="all">All Plans</SelectItem>
+              <SelectItem value="basic">Basic</SelectItem>
+              <SelectItem value="pro">Pro</SelectItem>
+              <SelectItem value="enterprise">Enterprise</SelectItem>
+            </SelectContent>
+          </Select>
+        </div>
+
+        {/* Summary Stats */}
+        <div className="grid gap-4 md:grid-cols-4">
+          <Card>
+            <CardContent className="p-4">
+              <div className="text-2xl font-bold text-sidebar-primary">{organizations.length}</div>
+              <p className="text-sm text-muted-foreground">Total Organizations</p>
+            </CardContent>
+          </Card>
+          <Card>
+            <CardContent className="p-4">
+              <div className="text-2xl font-bold text-green-600">
+                {organizations.filter(org => org.status === 'active').length}
               </div>
-
-              {/* Filters */}
-              <div className="flex items-center gap-4">
-                <Input
-                  placeholder="Search organizations..."
-                  value={searchTerm}
-                  onChange={(e) => setSearchTerm(e.target.value)}
-                  className="max-w-sm"
-                />
-
-                <Select
-                  value={selectedPlan}
-                  onValueChange={setSelectedPlan}
-                >
-                  <SelectTrigger className="w-[180px]">
-                    <SelectValue placeholder="All Plans" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="all">All Plans</SelectItem>
-                    <SelectItem value="basic">Basic</SelectItem>
-                    <SelectItem value="pro">Pro</SelectItem>
-                    <SelectItem value="enterprise">Enterprise</SelectItem>
-                  </SelectContent>
-                </Select>
+              <p className="text-sm text-muted-foreground">Active</p>
+            </CardContent>
+          </Card>
+          <Card>
+            <CardContent className="p-4">
+              <div className="text-2xl font-bold text-purple-600">
+                {organizations.filter(org => org.plan === 'enterprise').length}
               </div>
-
-              {/* Summary Stats */}
-              <div className="grid gap-4 md:grid-cols-4">
-                <Card>
-                  <CardContent className="p-4">
-                    <div className="text-2xl font-bold text-sidebar-primary">{organizations.length}</div>
-                    <p className="text-sm text-muted-foreground">Total Organizations</p>
-                  </CardContent>
-                </Card>
-                <Card>
-                  <CardContent className="p-4">
-                    <div className="text-2xl font-bold text-green-600">
-                      {organizations.filter(org => org.status === 'active').length}
-                    </div>
-                    <p className="text-sm text-muted-foreground">Active</p>
-                  </CardContent>
-                </Card>
-                <Card>
-                  <CardContent className="p-4">
-                    <div className="text-2xl font-bold text-purple-600">
-                      {organizations.filter(org => org.plan === 'enterprise').length}
-                    </div>
-                    <p className="text-sm text-muted-foreground">Enterprise</p>
-                  </CardContent>
-                </Card>
-                <Card>
-                  <CardContent className="p-4">
-                    <div className="text-2xl font-bold text-blue-600">
-                      {organizations.filter(org => org.plan === 'pro').length}
-                    </div>
-                    <p className="text-sm text-muted-foreground">Pro Plans</p>
-                  </CardContent>
-                </Card>
+              <p className="text-sm text-muted-foreground">Enterprise</p>
+            </CardContent>
+          </Card>
+          <Card>
+            <CardContent className="p-4">
+              <div className="text-2xl font-bold text-blue-600">
+                {organizations.filter(org => org.plan === 'pro').length}
               </div>
+              <p className="text-sm text-muted-foreground">Pro Plans</p>
+            </CardContent>
+          </Card>
+        </div>
 
 
-              {/* Only show the Gera organization, with edit option */}
-              <div className="relative max-w-xl mx-auto">
-                <ContentContainer>
-                  <LoaderOverlay />
-                  {filteredOrganizations.length > 0 ? (
-                    <Card className="hover:shadow-lg transition-shadow">
-                      <CardHeader className="pb-3">
-                        <div className="flex items-start justify-between">
-                          <div className="space-y-1">
-                            <CardTitle className="text-lg flex items-center gap-2">
-                              <Building2 className="h-5 w-5 text-sidebar-primary" />
-                              {filteredOrganizations[0].name}
-                            </CardTitle>
-                            <p className="text-sm text-muted-foreground">{filteredOrganizations[0].legal_name}</p>
-                          </div>
-                          <div className="flex flex-col gap-1">
-                            <Badge className={getPlanColor(filteredOrganizations[0].plan)}>
-                              {filteredOrganizations[0].plan}
-                            </Badge>
-                            <Badge className={getStatusColor(filteredOrganizations[0].status)}>
-                              {filteredOrganizations[0].status}
-                            </Badge>
-                          </div>
-                        </div>
-                      </CardHeader>
-                      <CardContent className="space-y-4">
-                        <div className="space-y-2">
-                          <div className="flex items-center gap-2 text-sm">
-                            <Mail className="h-3 w-3 text-muted-foreground" />
-                            <span className="text-muted-foreground">{filteredOrganizations[0].billing_email}</span>
-                          </div>
-                          {filteredOrganizations[0].contact_phone && (
-                            <div className="flex items-center gap-2 text-sm">
-                              <Phone className="h-3 w-3 text-muted-foreground" />
-                              <span className="text-muted-foreground">{filteredOrganizations[0].contact_phone}</span>
-                            </div>
-                          )}
-                          {filteredOrganizations[0].gst_vat_id && (
-                            <div className="flex items-center gap-2 text-sm">
-                              <MapPin className="h-3 w-3 text-muted-foreground" />
-                              <span className="text-muted-foreground">GST: {filteredOrganizations[0].gst_vat_id}</span>
-                            </div>
-                          )}
-                        </div>
-                        <div className="flex items-center gap-2 text-xs text-muted-foreground">
-                          <Calendar className="h-3 w-3" />
-                          <span>Created: {new Date(filteredOrganizations[0].created_at).toLocaleDateString()}</span>
-                        </div>
-                        <div className="flex items-center justify-end gap-2 pt-2">
-                          {canWrite(resource) && (
-                            <Button size="sm" variant="outline" onClick={() => handleEdit(filteredOrganizations[0])}>
-                              <Edit className="h-3 w-3" /> Edit
-                            </Button>
-                          )}
-                        </div>
-                      </CardContent>
-                    </Card>
-                  ) : (
-                    <div className="text-center py-12">
-                      <Building2 className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
-                      <h3 className="text-lg font-semibold text-sidebar-primary mb-2">No organizations found</h3>
-                      <p className="text-muted-foreground">You have not been assigned to any organization yet.</p>
+        {/* Only show the Gera organization, with edit option */}
+        <div className="relative max-w-xl mx-auto">
+          <ContentContainer>
+            <LoaderOverlay />
+            {filteredOrganizations.length > 0 ? (
+              <Card className="hover:shadow-lg transition-shadow">
+                <CardHeader className="pb-3">
+                  <div className="flex items-start justify-between">
+                    <div className="space-y-1">
+                      <CardTitle className="text-lg flex items-center gap-2">
+                        <Building2 className="h-5 w-5 text-sidebar-primary" />
+                        {filteredOrganizations[0].name}
+                      </CardTitle>
+                      <p className="text-sm text-muted-foreground">{filteredOrganizations[0].legal_name}</p>
                     </div>
-                  )}
-                </ContentContainer>
+                    <div className="flex flex-col gap-1">
+                      <Badge className={getPlanColor(filteredOrganizations[0].plan)}>
+                        {filteredOrganizations[0].plan}
+                      </Badge>
+                      <Badge className={getStatusColor(filteredOrganizations[0].status)}>
+                        {filteredOrganizations[0].status}
+                      </Badge>
+                    </div>
+                  </div>
+                </CardHeader>
+                <CardContent className="space-y-4">
+                  <div className="space-y-2">
+                    <div className="flex items-center gap-2 text-sm">
+                      <Mail className="h-3 w-3 text-muted-foreground" />
+                      <span className="text-muted-foreground">{filteredOrganizations[0].billing_email}</span>
+                    </div>
+                    {filteredOrganizations[0].contact_phone && (
+                      <div className="flex items-center gap-2 text-sm">
+                        <Phone className="h-3 w-3 text-muted-foreground" />
+                        <span className="text-muted-foreground">{filteredOrganizations[0].contact_phone}</span>
+                      </div>
+                    )}
+                    {filteredOrganizations[0].gst_vat_id && (
+                      <div className="flex items-center gap-2 text-sm">
+                        <MapPin className="h-3 w-3 text-muted-foreground" />
+                        <span className="text-muted-foreground">GST: {filteredOrganizations[0].gst_vat_id}</span>
+                      </div>
+                    )}
+                  </div>
+                  <div className="flex items-center gap-2 text-xs text-muted-foreground">
+                    <Calendar className="h-3 w-3" />
+                    <span>Created: {new Date(filteredOrganizations[0].created_at).toLocaleDateString()}</span>
+                  </div>
+                  <div className="flex items-center justify-end gap-2 pt-2">
+                    {canWrite(resource) && (
+                      <Button size="sm" variant="outline" onClick={() => handleEdit(filteredOrganizations[0])}>
+                        <Edit className="h-3 w-3" /> Edit
+                      </Button>
+                    )}
+                  </div>
+                </CardContent>
+              </Card>
+            ) : (
+              <div className="text-center py-12">
+                <Building2 className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
+                <h3 className="text-lg font-semibold text-sidebar-primary mb-2">No organizations found</h3>
+                <p className="text-muted-foreground">You have not been assigned to any organization yet.</p>
               </div>
-            </div>
-          </main>
-        </SidebarInset>
+            )}
+          </ContentContainer>
+        </div>
       </div>
-
       <OrganizationForm
         organization={selectedOrg}
         isOpen={showForm}
@@ -318,6 +308,7 @@ export default function Organizations() {
         mode={formMode}
 
       />
-    </SidebarProvider>
+    </div>
+
   );
 }

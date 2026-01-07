@@ -169,164 +169,156 @@ export default function Notifications() {
   const unreadCount = notifications.filter(n => !n.read).length;
 
   return (
-    <SidebarProvider>
-      <div className="min-h-screen flex w-full bg-background">
-        <PropertySidebar />
-        <SidebarInset className="flex-1">
-          <PageHeader />
-          <main className="flex-1 p-6">
-            <div className="space-y-6">
-              <div className="flex items-center justify-between">
-                <div>
-                  <h1 className="text-3xl font-bold text-foreground">Notifications</h1>
-                  <p className="text-muted-foreground mt-2">
-                    Manage your system notifications and preferences
-                  </p>
-                </div>
-                <div className="flex items-center gap-2">
-                  {unreadCount > 0 && (
-                    <Badge variant="secondary" className="mr-2">
-                      {unreadCount} unread
-                    </Badge>
-                  )}
-                  <Button variant="outline" onClick={markAllAsRead} disabled={unreadCount === 0}>
-                    Mark All Read
-                  </Button>
-                  <Button variant="destructive" onClick={clearAllNotifications} disabled={notifications.length === 0}>
-                    Clear All
-                  </Button>
-                </div>
-              </div>
+    <div className="flex-1">
+      <div className="space-y-6">
+        <div className="flex items-center justify-between">
+          <div>
+            <h1 className="text-3xl font-bold text-foreground">Notifications</h1>
+            <p className="text-muted-foreground mt-2">
+              Manage your system notifications and preferences
+            </p>
+          </div>
+          <div className="flex items-center gap-2">
+            {unreadCount > 0 && (
+              <Badge variant="secondary" className="mr-2">
+                {unreadCount} unread
+              </Badge>
+            )}
+            <Button variant="outline" onClick={markAllAsRead} disabled={unreadCount === 0}>
+              Mark All Read
+            </Button>
+            <Button variant="destructive" onClick={clearAllNotifications} disabled={notifications.length === 0}>
+              Clear All
+            </Button>
+          </div>
+        </div>
 
-              <Tabs defaultValue="notifications" className="space-y-6">
-                <TabsList className="grid w-full grid-cols-2">
-                  <TabsTrigger value="notifications">Notifications</TabsTrigger>
-                  {/* <TabsTrigger value="settings">Settings</TabsTrigger> */}
-                </TabsList>
+        <Tabs defaultValue="notifications" className="space-y-6">
+          <TabsList className="grid w-full grid-cols-2">
+            <TabsTrigger value="notifications">Notifications</TabsTrigger>
+            {/* <TabsTrigger value="settings">Settings</TabsTrigger> */}
+          </TabsList>
 
-                <TabsContent value="notifications" className="space-y-4">
-                  {/* Search Input */}
-                  <div className="relative">
-                    <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground w-4 h-4" />
-                    <Input
-                      placeholder="Search notifications..."
-                      value={searchTerm}
-                      onChange={(e) => setSearchTerm(e.target.value)}
-                      className="pl-10"
-                    />
-                  </div>
+          <TabsContent value="notifications" className="space-y-4">
+            {/* Search Input */}
+            <div className="relative">
+              <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground w-4 h-4" />
+              <Input
+                placeholder="Search notifications..."
+                value={searchTerm}
+                onChange={(e) => setSearchTerm(e.target.value)}
+                className="pl-10"
+              />
+            </div>
 
-                  <div className="relative rounded-md border">
-                    <ContentContainer>
-                      <LoaderOverlay />
-                      {notifications.length === 0 ? (
-                        <Card>
-                          <CardContent className="flex flex-col items-center justify-center py-12">
-                            <Bell className="h-12 w-12 text-muted-foreground mb-4" />
-                            <h3 className="text-lg font-medium text-foreground mb-2">No notifications</h3>
-                            <p className="text-muted-foreground text-center max-w-sm">
-                              You're all caught up! New notifications will appear here when they arrive.
-                            </p>
-                          </CardContent>
-                        </Card>
-                      ) : (
-                        <div className="space-y-3 p-4">
-                          {notifications.map((notification) => (
-                            <Card key={notification.id} className={`transition-all hover:shadow-md ${!notification.read ? 'border-l-4 border-l-primary bg-muted/30' : ''}`}>
-                              <CardContent className="p-4">
-                                <div className="flex items-start gap-4">
-                                  <div className="flex-shrink-0 mt-1">
-                                    {getNotificationIcon(notification.type)}
-                                  </div>
-
-                                  <div className="flex-1 min-w-0">
-                                    <div className="flex items-center gap-2 mb-1">
-                                      <h4 className={`font-medium ${!notification.read ? 'text-foreground' : 'text-muted-foreground'}`}>
-                                        {notification.title}
-                                      </h4>
-                                      {getPriorityBadge(notification.priority)}
-                                    </div>
-
-                                    <p className="text-sm text-muted-foreground mb-2">
-                                      {notification.message}
-                                    </p>
-
-                                    <p className="text-xs text-muted-foreground">
-                                      {notification.timestamp}
-                                    </p>
-                                  </div>
-
-                                  <div className="flex items-center gap-2">
-                                    {!notification.read && (
-                                      <Button
-                                        variant="ghost"
-                                        size="sm"
-                                        onClick={() => markAsRead(notification.id)}
-                                        className="text-xs"
-                                      >
-                                        Mark Read
-                                      </Button>
-                                    )}
-                                    <Button
-                                      variant="ghost"
-                                      size="sm"
-                                      onClick={() => deleteNotification(notification.id)}
-                                      className="text-destructive hover:text-destructive"
-                                    >
-                                      <Trash2 className="h-4 w-4" />
-                                    </Button>
-                                  </div>
-                                </div>
-                              </CardContent>
-                            </Card>
-                          ))}
-                        </div>
-                      )}
-                    </ContentContainer>
-                  </div>
-
-                  {/* Pagination */}
-                  {notifications.length > 0 && (
-                    <div className="mt-4">
-                      <Pagination
-                        page={page}
-                        pageSize={pageSize}
-                        totalItems={totalItems}
-                        onPageChange={setPage}
-                      />
-                    </div>
-                  )}
-                </TabsContent>
-
-                <TabsContent value="settings" className="space-y-6">
+            <div className="relative rounded-md border">
+              <ContentContainer>
+                <LoaderOverlay />
+                {notifications.length === 0 ? (
                   <Card>
-                    <CardHeader>
-                      <CardTitle>Notification Preferences</CardTitle>
-                      <CardDescription>
-                        Choose which notifications you want to receive and how you want to receive them.
-                      </CardDescription>
-                    </CardHeader>
-                    <CardContent className="space-y-6">
-                      {settings.map((setting) => (
-                        <div key={setting.id} className="flex items-center justify-between p-4 border border-border rounded-lg">
-                          <div className="flex-1">
-                            <h4 className="font-medium text-foreground">{setting.label}</h4>
-                            <p className="text-sm text-muted-foreground">{setting.description}</p>
-                          </div>
-                          <Switch
-                            checked={setting.enabled}
-                            onCheckedChange={() => toggleSetting(setting.id)}
-                          />
-                        </div>
-                      ))}
+                    <CardContent className="flex flex-col items-center justify-center py-12">
+                      <Bell className="h-12 w-12 text-muted-foreground mb-4" />
+                      <h3 className="text-lg font-medium text-foreground mb-2">No notifications</h3>
+                      <p className="text-muted-foreground text-center max-w-sm">
+                        You're all caught up! New notifications will appear here when they arrive.
+                      </p>
                     </CardContent>
                   </Card>
-                </TabsContent>
-              </Tabs>
+                ) : (
+                  <div className="space-y-3 p-4">
+                    {notifications.map((notification) => (
+                      <Card key={notification.id} className={`transition-all hover:shadow-md ${!notification.read ? 'border-l-4 border-l-primary bg-muted/30' : ''}`}>
+                        <CardContent className="p-4">
+                          <div className="flex items-start gap-4">
+                            <div className="flex-shrink-0 mt-1">
+                              {getNotificationIcon(notification.type)}
+                            </div>
+
+                            <div className="flex-1 min-w-0">
+                              <div className="flex items-center gap-2 mb-1">
+                                <h4 className={`font-medium ${!notification.read ? 'text-foreground' : 'text-muted-foreground'}`}>
+                                  {notification.title}
+                                </h4>
+                                {getPriorityBadge(notification.priority)}
+                              </div>
+
+                              <p className="text-sm text-muted-foreground mb-2">
+                                {notification.message}
+                              </p>
+
+                              <p className="text-xs text-muted-foreground">
+                                {notification.timestamp}
+                              </p>
+                            </div>
+
+                            <div className="flex items-center gap-2">
+                              {!notification.read && (
+                                <Button
+                                  variant="ghost"
+                                  size="sm"
+                                  onClick={() => markAsRead(notification.id)}
+                                  className="text-xs"
+                                >
+                                  Mark Read
+                                </Button>
+                              )}
+                              <Button
+                                variant="ghost"
+                                size="sm"
+                                onClick={() => deleteNotification(notification.id)}
+                                className="text-destructive hover:text-destructive"
+                              >
+                                <Trash2 className="h-4 w-4" />
+                              </Button>
+                            </div>
+                          </div>
+                        </CardContent>
+                      </Card>
+                    ))}
+                  </div>
+                )}
+              </ContentContainer>
             </div>
-          </main>
-        </SidebarInset>
+
+            {/* Pagination */}
+            {notifications.length > 0 && (
+              <div className="mt-4">
+                <Pagination
+                  page={page}
+                  pageSize={pageSize}
+                  totalItems={totalItems}
+                  onPageChange={setPage}
+                />
+              </div>
+            )}
+          </TabsContent>
+
+          <TabsContent value="settings" className="space-y-6">
+            <Card>
+              <CardHeader>
+                <CardTitle>Notification Preferences</CardTitle>
+                <CardDescription>
+                  Choose which notifications you want to receive and how you want to receive them.
+                </CardDescription>
+              </CardHeader>
+              <CardContent className="space-y-6">
+                {settings.map((setting) => (
+                  <div key={setting.id} className="flex items-center justify-between p-4 border border-border rounded-lg">
+                    <div className="flex-1">
+                      <h4 className="font-medium text-foreground">{setting.label}</h4>
+                      <p className="text-sm text-muted-foreground">{setting.description}</p>
+                    </div>
+                    <Switch
+                      checked={setting.enabled}
+                      onCheckedChange={() => toggleSetting(setting.id)}
+                    />
+                  </div>
+                ))}
+              </CardContent>
+            </Card>
+          </TabsContent>
+        </Tabs>
       </div>
-    </SidebarProvider>
+    </div>
   );
 }

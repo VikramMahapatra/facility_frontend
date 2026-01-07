@@ -222,180 +222,170 @@ export default function Buildings() {
   };
 
   return (
-    <SidebarProvider>
-      <div className="flex min-h-screen w-full">
-        <PropertySidebar />
-        <SidebarInset className="flex-1">
-          <PageHeader />
+    <div>
+      <div className="space-y-6">
+        {/* Header Actions */}
+        <div className="flex items-center justify-between">
+          <div>
+            <h2 className="text-2xl font-bold text-sidebar-primary">
+              Buildings & Blocks
+            </h2>
+            <p className="text-muted-foreground">
+              Manage building structures and floor layouts
+            </p>
+          </div>
+          {canWrite(resource) && (
+            <Button className="gap-2" onClick={handleCreate}>
+              <Plus className="h-4 w-4" />
+              Add New Building
+            </Button>
+          )}
+        </div>
 
-          <main className="flex-1 p-6">
-            <div className="space-y-6">
-              {/* Header Actions */}
-              <div className="flex items-center justify-between">
-                <div>
-                  <h2 className="text-2xl font-bold text-sidebar-primary">
-                    Buildings & Blocks
-                  </h2>
-                  <p className="text-muted-foreground">
-                    Manage building structures and floor layouts
-                  </p>
-                </div>
-                {canWrite(resource) && (
-                  <Button className="gap-2" onClick={handleCreate}>
-                    <Plus className="h-4 w-4" />
-                    Add New Building
-                  </Button>
-                )}
-              </div>
+        {/* Filters */}
+        <div className="flex items-center gap-4">
+          <Input
+            placeholder="Search buildings..."
+            value={searchTerm}
+            onChange={(e) => setSearchTerm(e.target.value)}
+            className="max-w-sm"
+          />
 
-              {/* Filters */}
-              <div className="flex items-center gap-4">
-                <Input
-                  placeholder="Search buildings..."
-                  value={searchTerm}
-                  onChange={(e) => setSearchTerm(e.target.value)}
-                  className="max-w-sm"
-                />
+          <Select
+            value={selectedSite}
+            onValueChange={setSelectedSite}
+          >
+            <SelectTrigger className="w-[180px]">
+              <SelectValue placeholder="All Sites" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="all">All Sites</SelectItem>
+              {siteList.map((site) => (
+                <SelectItem key={site.id} value={site.id}>
+                  {site.name}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+        </div>
 
-                <Select
-                  value={selectedSite}
-                  onValueChange={setSelectedSite}
+        <ContentContainer>
+          <LoaderOverlay />
+          {/* Buildings Grid */}
+          <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
+            {buildings.map((building, index) => {
+              return (
+                <Card
+                  key={`${building.site_id}-${building.name}-${index}`}
+                  className="hover:shadow-lg transition-shadow"
                 >
-                  <SelectTrigger className="w-[180px]">
-                    <SelectValue placeholder="All Sites" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="all">All Sites</SelectItem>
-                    {siteList.map((site) => (
-                      <SelectItem key={site.id} value={site.id}>
-                        {site.name}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-              </div>
-
-              <ContentContainer>
-                <LoaderOverlay />
-                {/* Buildings Grid */}
-                <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
-                  {buildings.map((building, index) => {
-                    return (
-                      <Card
-                        key={`${building.site_id}-${building.name}-${index}`}
-                        className="hover:shadow-lg transition-shadow"
+                  <CardHeader className="pb-3">
+                    <div className="flex items-start justify-between">
+                      <div className="space-y-1">
+                        <CardTitle className="text-lg flex items-center gap-2">
+                          <Building className="h-5 w-5 text-sidebar-primary" />
+                          {building.name}
+                        </CardTitle>
+                        <div className="flex items-center gap-1 text-sm text-muted-foreground">
+                          <MapPin className="h-3 w-3" />
+                          {building.site_name}
+                        </div>
+                      </div>
+                      <Badge
+                        className={getSiteKindColor(building.site_kind)}
                       >
-                        <CardHeader className="pb-3">
-                          <div className="flex items-start justify-between">
-                            <div className="space-y-1">
-                              <CardTitle className="text-lg flex items-center gap-2">
-                                <Building className="h-5 w-5 text-sidebar-primary" />
-                                {building.name}
-                              </CardTitle>
-                              <div className="flex items-center gap-1 text-sm text-muted-foreground">
-                                <MapPin className="h-3 w-3" />
-                                {building.site_name}
-                              </div>
-                            </div>
-                            <Badge
-                              className={getSiteKindColor(building.site_kind)}
-                            >
-                              {building.site_kind}
-                            </Badge>
-                          </div>
-                        </CardHeader>
+                        {building.site_kind}
+                      </Badge>
+                    </div>
+                  </CardHeader>
 
-                        <CardContent className="space-y-4">
-                          {/* Stats */}
-                          <div className="grid grid-cols-3 gap-4 text-sm">
-                            <div className="text-center">
-                              <p className="font-semibold text-sidebar-primary">
-                                {building.total_spaces}
-                              </p>
-                              <p className="text-muted-foreground">Total</p>
-                            </div>
-                            <div className="text-center">
-                              <p className="font-semibold text-green-600">
-                                {building.occupied_spaces}
-                              </p>
-                              <p className="text-muted-foreground">Occupied</p>
-                            </div>
-                            <div className="text-center">
-                              <p
-                                className={`font-semibold ${getOccupancyColor(
-                                  building.occupancy_rate || 0
-                                )}`}
-                              >
-                                {building.occupancy_rate || 0}%
-                              </p>
-                              <p className="text-muted-foreground">Rate</p>
-                            </div>
-                          </div>
+                  <CardContent className="space-y-4">
+                    {/* Stats */}
+                    <div className="grid grid-cols-3 gap-4 text-sm">
+                      <div className="text-center">
+                        <p className="font-semibold text-sidebar-primary">
+                          {building.total_spaces}
+                        </p>
+                        <p className="text-muted-foreground">Total</p>
+                      </div>
+                      <div className="text-center">
+                        <p className="font-semibold text-green-600">
+                          {building.occupied_spaces}
+                        </p>
+                        <p className="text-muted-foreground">Occupied</p>
+                      </div>
+                      <div className="text-center">
+                        <p
+                          className={`font-semibold ${getOccupancyColor(
+                            building.occupancy_rate || 0
+                          )}`}
+                        >
+                          {building.occupancy_rate || 0}%
+                        </p>
+                        <p className="text-muted-foreground">Rate</p>
+                      </div>
+                    </div>
 
-                          {/* Floors */}
-                          <div>
-                            <p className="text-sm font-medium text-sidebar-primary mb-2">
-                              Floors ({building.floors})
-                            </p>
-                          </div>
+                    {/* Floors */}
+                    <div>
+                      <p className="text-sm font-medium text-sidebar-primary mb-2">
+                        Floors ({building.floors})
+                      </p>
+                    </div>
 
-                          {/* Actions */}
-                          <div className="flex items-center justify-end gap-2 pt-2">
-                            <Button
-                              size="sm"
-                              variant="outline"
-                              onClick={() => handleView(building)}
-                            >
-                              <Eye className="h-3 w-3" />
-                            </Button>
-                            {canWrite(resource) && (
-                              <Button
-                                size="sm"
-                                variant="outline"
-                                onClick={() => handleEdit(building)}
-                              >
-                                <Edit className="h-3 w-3" />
-                              </Button>
-                            )}
-                            {canDelete(resource) && (
-                              <Button
-                                size="sm"
-                                variant="outline"
-                                className="text-destructive hover:text-destructive"
-                                onClick={() => handleDelete(building.id)}
-                              >
-                                <Trash2 className="h-3 w-3" />
-                              </Button>
-                            )}
-                          </div>
-                        </CardContent>
-                      </Card>
-                    );
-                  })}
-                </div>
-                <Pagination
-                  page={page}
-                  pageSize={pageSize}
-                  totalItems={totalItems}
-                  onPageChange={(newPage) => setPage(newPage)}
-                />
-                {buildings.length === 0 && (
-                  <div className="text-center py-12">
-                    <Building className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
-                    <h3 className="text-lg font-semibold text-sidebar-primary mb-2">
-                      No buildings found
-                    </h3>
-                    <p className="text-muted-foreground">
-                      Try adjusting your search criteria or add a new building.
-                    </p>
-                  </div>
-                )}
-              </ContentContainer>
+                    {/* Actions */}
+                    <div className="flex items-center justify-end gap-2 pt-2">
+                      <Button
+                        size="sm"
+                        variant="outline"
+                        onClick={() => handleView(building)}
+                      >
+                        <Eye className="h-3 w-3" />
+                      </Button>
+                      {canWrite(resource) && (
+                        <Button
+                          size="sm"
+                          variant="outline"
+                          onClick={() => handleEdit(building)}
+                        >
+                          <Edit className="h-3 w-3" />
+                        </Button>
+                      )}
+                      {canDelete(resource) && (
+                        <Button
+                          size="sm"
+                          variant="outline"
+                          className="text-destructive hover:text-destructive"
+                          onClick={() => handleDelete(building.id)}
+                        >
+                          <Trash2 className="h-3 w-3" />
+                        </Button>
+                      )}
+                    </div>
+                  </CardContent>
+                </Card>
+              );
+            })}
+          </div>
+          <Pagination
+            page={page}
+            pageSize={pageSize}
+            totalItems={totalItems}
+            onPageChange={(newPage) => setPage(newPage)}
+          />
+          {buildings.length === 0 && (
+            <div className="text-center py-12">
+              <Building className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
+              <h3 className="text-lg font-semibold text-sidebar-primary mb-2">
+                No buildings found
+              </h3>
+              <p className="text-muted-foreground">
+                Try adjusting your search criteria or add a new building.
+              </p>
             </div>
-          </main>
-        </SidebarInset>
+          )}
+        </ContentContainer>
       </div>
-
       {/* Building Form Modal */}
       <BuildingForm
         building={selectedBuilding}
@@ -428,6 +418,6 @@ export default function Buildings() {
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
-    </SidebarProvider>
+    </div>
   );
 }

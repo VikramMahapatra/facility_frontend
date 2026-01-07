@@ -125,110 +125,99 @@ export default function ApprovalRules() {
   }, {} as Record<string, ApprovalRule[]>);
 
   return (
-    <SidebarProvider>
-      <div className="min-h-screen flex w-full bg-background">
-        <PropertySidebar />
+    <div className="flex-1">
+      <div className="max-w-7xl mx-auto space-y-6">
+        <ContentContainer>
+          <LoaderOverlay />
+          <div className="space-y-6">
+            <div className="flex items-center justify-between">
+              <div>
+                <h1 className="text-3xl font-bold text-foreground">Approval Rules</h1>
+                <p className="text-muted-foreground mt-1">
+                  Define which types can approve user signups for other types
+                </p>
+              </div>
+              <Button onClick={() => setIsDialogOpen(true)}>
+                <Plus className="h-4 w-4 mr-2" />
+                Add Rule
+              </Button>
+            </div>
 
-        <div className="flex-1 flex flex-col">
-          <PageHeader />
-
-          <main className="flex-1 p-6 overflow-auto">
-            <div className="max-w-7xl mx-auto space-y-6">
-              <ContentContainer>
-                <LoaderOverlay />
-                <div className="space-y-6">
-                  <div className="flex items-center justify-between">
-                    <div>
-                      <h1 className="text-3xl font-bold text-foreground">Approval Rules</h1>
-                      <p className="text-muted-foreground mt-1">
-                        Define which types can approve user signups for other types
-                      </p>
+            <Card>
+              <CardHeader>
+                <CardTitle>Approval Hierarchy</CardTitle>
+                <CardDescription>
+                  Configure type-based approval permissions for new user signups
+                </CardDescription>
+              </CardHeader>
+              <CardContent className="space-y-6">
+                {Object.entries(groupedRules).map(([approverType, typeRules]) => (
+                  <div key={approverType} className="space-y-3">
+                    <div className="flex items-center gap-2 pb-2 border-b">
+                      <Shield className="h-4 w-4 text-primary" />
+                      <h3 className="font-semibold text-foreground capitalize">
+                        {approverType}
+                      </h3>
+                      <span className="text-xs text-muted-foreground">
+                        can approve:
+                      </span>
                     </div>
+
+                    <div className="rounded-md border">
+                      <Table>
+                        <TableHeader>
+                          <TableRow>
+                            <TableHead>Can Approve Type</TableHead>
+                            <TableHead>Created Date</TableHead>
+                            <TableHead className="text-right">Actions</TableHead>
+                          </TableRow>
+                        </TableHeader>
+                        <TableBody>
+                          {typeRules.map((rule) => (
+                            <TableRow key={rule.id}>
+                              <TableCell className="font-medium capitalize">
+                                {rule.can_approve_type}
+                              </TableCell>
+                              <TableCell className="text-muted-foreground text-sm">
+                                {new Date(rule.created_at).toLocaleDateString()}
+                              </TableCell>
+                              <TableCell className="text-right">
+                                <Button
+                                  variant="ghost"
+                                  size="icon"
+                                  onClick={() => handleDeleteRule(rule.id)}
+                                >
+                                  <Trash2 className="h-4 w-4 text-destructive" />
+                                </Button>
+                              </TableCell>
+                            </TableRow>
+                          ))}
+                        </TableBody>
+                      </Table>
+                    </div>
+                  </div>
+                ))}
+
+                {Object.keys(groupedRules).length === 0 && (
+                  <div className="text-center py-12">
+                    <Shield className="h-16 w-16 text-muted-foreground mx-auto mb-4" />
+                    <h3 className="text-lg font-medium text-foreground mb-2">
+                      No Approval Rules
+                    </h3>
+                    <p className="text-muted-foreground mb-4">
+                      Create rules to define approval permissions
+                    </p>
                     <Button onClick={() => setIsDialogOpen(true)}>
                       <Plus className="h-4 w-4 mr-2" />
-                      Add Rule
+                      Add First Rule
                     </Button>
                   </div>
-
-                  <Card>
-                    <CardHeader>
-                      <CardTitle>Approval Hierarchy</CardTitle>
-                      <CardDescription>
-                        Configure type-based approval permissions for new user signups
-                      </CardDescription>
-                    </CardHeader>
-                    <CardContent className="space-y-6">
-                      {Object.entries(groupedRules).map(([approverType, typeRules]) => (
-                        <div key={approverType} className="space-y-3">
-                          <div className="flex items-center gap-2 pb-2 border-b">
-                            <Shield className="h-4 w-4 text-primary" />
-                            <h3 className="font-semibold text-foreground capitalize">
-                              {approverType}
-                            </h3>
-                            <span className="text-xs text-muted-foreground">
-                              can approve:
-                            </span>
-                          </div>
-
-                          <div className="rounded-md border">
-                            <Table>
-                              <TableHeader>
-                                <TableRow>
-                                  <TableHead>Can Approve Type</TableHead>
-                                  <TableHead>Created Date</TableHead>
-                                  <TableHead className="text-right">Actions</TableHead>
-                                </TableRow>
-                              </TableHeader>
-                              <TableBody>
-                                {typeRules.map((rule) => (
-                                  <TableRow key={rule.id}>
-                                    <TableCell className="font-medium capitalize">
-                                      {rule.can_approve_type}
-                                    </TableCell>
-                                    <TableCell className="text-muted-foreground text-sm">
-                                      {new Date(rule.created_at).toLocaleDateString()}
-                                    </TableCell>
-                                    <TableCell className="text-right">
-                                      <Button
-                                        variant="ghost"
-                                        size="icon"
-                                        onClick={() => handleDeleteRule(rule.id)}
-                                      >
-                                        <Trash2 className="h-4 w-4 text-destructive" />
-                                      </Button>
-                                    </TableCell>
-                                  </TableRow>
-                                ))}
-                              </TableBody>
-                            </Table>
-                          </div>
-                        </div>
-                      ))}
-
-                      {Object.keys(groupedRules).length === 0 && (
-                        <div className="text-center py-12">
-                          <Shield className="h-16 w-16 text-muted-foreground mx-auto mb-4" />
-                          <h3 className="text-lg font-medium text-foreground mb-2">
-                            No Approval Rules
-                          </h3>
-                          <p className="text-muted-foreground mb-4">
-                            Create rules to define approval permissions
-                          </p>
-                          <Button onClick={() => setIsDialogOpen(true)}>
-                            <Plus className="h-4 w-4 mr-2" />
-                            Add First Rule
-                          </Button>
-                        </div>
-                      )}
-                    </CardContent>
-                  </Card>
-                </div>
-              </ContentContainer>
-            </div>
-          </main>
-        </div>
+                )}
+              </CardContent>
+            </Card>
+          </div>
+        </ContentContainer>
       </div>
-
       <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
         <DialogContent>
           <DialogHeader>
@@ -282,6 +271,6 @@ export default function ApprovalRules() {
           </DialogFooter>
         </DialogContent>
       </Dialog>
-    </SidebarProvider>
+    </div>
   );
 }
