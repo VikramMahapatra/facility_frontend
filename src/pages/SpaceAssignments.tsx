@@ -216,217 +216,207 @@ export default function SpaceAssignments() {
 
 
   return (
-    <SidebarProvider>
-      <div className="flex min-h-screen w-full">
-        <PropertySidebar />
-        <SidebarInset className="flex-1">
-          <PageHeader />
+    <div>
+      <div className="space-y-6">
+        {/* Header Actions */}
+        <div className="flex items-center justify-between">
+          <div>
+            <h2 className="text-2xl font-bold text-sidebar-primary">Space Group Assignments</h2>
+            <p className="text-muted-foreground">Link spaces to their respective groups and templates</p>
+          </div>
+          <Button onClick={handleCreate} className="gap-2">
+            <Plus className="h-4 w-4" />
+            Create Assignment
+          </Button>
+        </div>
 
-          <main className="flex-1 p-6">
-            <div className="space-y-6">
-              {/* Header Actions */}
-              <div className="flex items-center justify-between">
-                <div>
-                  <h2 className="text-2xl font-bold text-sidebar-primary">Space Group Assignments</h2>
-                  <p className="text-muted-foreground">Link spaces to their respective groups and templates</p>
-                </div>
-                <Button onClick={handleCreate} className="gap-2">
-                  <Plus className="h-4 w-4" />
-                  Create Assignment
-                </Button>
+        {/* Filters */}
+        <div className="flex items-center gap-4">
+          <Input
+            placeholder="Search assignments..."
+            value={searchTerm}
+            onChange={(e) => setSearchTerm(e.target.value)}
+            className="max-w-sm"
+          />
+
+          <Select
+            value={selectedSite}
+            onValueChange={setSelectedSite}
+          >
+            <SelectTrigger className="w-[180px]">
+              <SelectValue placeholder="All Sites" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="all">All Sites</SelectItem>
+              {Array.isArray(siteList) && siteList.map(site => (
+                <SelectItem key={site.id} value={site.id}>{site.name}</SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+        </div>
+
+        {/* Summary Stats */}
+        <div className="grid gap-4 md:grid-cols-4">
+          <Card>
+            <CardContent className="p-4">
+              <div className="text-2xl font-bold text-sidebar-primary">{Array.isArray(assignments) ? assignments.length : 0}</div>
+              <p className="text-sm text-muted-foreground">Total Assignments</p>
+            </CardContent>
+          </Card>
+          <Card>
+            <CardContent className="p-4">
+              <div className="text-2xl font-bold text-blue-600">{memberOverview.groupUsed}</div>
+              <p className="text-sm text-muted-foreground">Groups Used</p>
+            </CardContent>
+          </Card>
+          <Card>
+            <CardContent className="p-4">
+              <div className="text-2xl font-bold text-green-600">{memberOverview.spaceAssigned}</div>
+              <p className="text-sm text-muted-foreground">Spaces Assigned</p>
+            </CardContent>
+          </Card>
+          <Card>
+            <CardContent className="p-4">
+              <div className="text-2xl font-bold text-purple-600">
+                {memberOverview.assignmentRate}%
               </div>
+              <p className="text-sm text-muted-foreground">Assignment Rate</p>
+            </CardContent>
+          </Card>
+        </div>
 
-              {/* Filters */}
-              <div className="flex items-center gap-4">
-                <Input
-                  placeholder="Search assignments..."
-                  value={searchTerm}
-                  onChange={(e) => setSearchTerm(e.target.value)}
-                  className="max-w-sm"
-                />
+        {/* Assignments Grid */}
+        <ContentContainer>
+          <LoaderOverlay />
+          <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
+            {Array.isArray(assignments) && assignments.map((assignment) => {
+              const { space, group } = getAssignmentDetails(assignment);
 
-                <Select
-                  value={selectedSite}
-                  onValueChange={setSelectedSite}
-                >
-                  <SelectTrigger className="w-[180px]">
-                    <SelectValue placeholder="All Sites" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="all">All Sites</SelectItem>
-                    {Array.isArray(siteList) && siteList.map(site => (
-                      <SelectItem key={site.id} value={site.id}>{site.name}</SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-              </div>
+              if (!space || !group) return null;
 
-              {/* Summary Stats */}
-              <div className="grid gap-4 md:grid-cols-4">
-                <Card>
-                  <CardContent className="p-4">
-                    <div className="text-2xl font-bold text-sidebar-primary">{Array.isArray(assignments) ? assignments.length : 0}</div>
-                    <p className="text-sm text-muted-foreground">Total Assignments</p>
-                  </CardContent>
-                </Card>
-                <Card>
-                  <CardContent className="p-4">
-                    <div className="text-2xl font-bold text-blue-600">{memberOverview.groupUsed}</div>
-                    <p className="text-sm text-muted-foreground">Groups Used</p>
-                  </CardContent>
-                </Card>
-                <Card>
-                  <CardContent className="p-4">
-                    <div className="text-2xl font-bold text-green-600">{memberOverview.spaceAssigned}</div>
-                    <p className="text-sm text-muted-foreground">Spaces Assigned</p>
-                  </CardContent>
-                </Card>
-                <Card>
-                  <CardContent className="p-4">
-                    <div className="text-2xl font-bold text-purple-600">
-                      {memberOverview.assignmentRate}%
+              return (
+                <Card key={assignment.id} className="hover:shadow-lg transition-shadow">
+                  <CardHeader className="pb-3">
+                    <div className="flex items-start justify-between">
+                      <div className="space-y-1">
+                        <CardTitle className="text-lg flex items-center gap-2">
+                          <Link2 className="h-5 w-5 text-sidebar-primary" />
+                          {space.code}
+                        </CardTitle>
+                        <p className="text-sm text-muted-foreground">{space.name || 'Unnamed Space'}</p>
+                      </div>
+                      <Badge className={getKindColor(space.kind)}>
+                        {space.kind.replace('_', ' ')}
+                      </Badge>
                     </div>
-                    <p className="text-sm text-muted-foreground">Assignment Rate</p>
+                  </CardHeader>
+
+                  <CardContent className="space-y-4">
+                    {/* Group Info */}
+                    <div className="space-y-2">
+                      <div className="flex items-center gap-2">
+                        <Users className="h-4 w-4 text-muted-foreground" />
+                        <span className="font-medium text-sm">{group.name}</span>
+                      </div>
+
+                      <div className="flex items-center gap-2">
+                        <Building2 className="h-4 w-4 text-muted-foreground" />
+                        <span className="text-sm text-muted-foreground">{assignment.site_name}</span>
+                      </div>
+
+                      <div className="flex items-center gap-2">
+                        <MapPin className="h-4 w-4 text-muted-foreground" />
+                        <span className="text-sm text-muted-foreground">
+                          {space.building_block && `${space.building_block}, `}
+                          {space.floor && `Floor ${space.floor}`}
+                        </span>
+                      </div>
+                    </div>
+
+                    {/* Space Details */}
+                    <div className="grid grid-cols-2 gap-2 text-sm">
+                      <div className="text-center p-2 bg-muted rounded">
+                        <p className="font-semibold">{space.area_sqft || 'N/A'}</p>
+                        <p className="text-muted-foreground text-xs">Sq Ft</p>
+                      </div>
+                      {space.beds && (
+                        <div className="text-center p-2 bg-muted rounded">
+                          <p className="font-semibold">{space.beds}BR/{space.baths}BA</p>
+                          <p className="text-muted-foreground text-xs">Config</p>
+                        </div>
+                      )}
+                    </div>
+
+                    {/* Group Pricing */}
+                    {group.specs.base_rate > 0 && (
+                      <div className="text-sm">
+                        <span className="text-muted-foreground">Base Rate: </span>
+                        <span className="font-medium">
+                          ₹{group.specs.base_rate}
+                          {space.kind === 'apartment' ? '/month' : '/month'}
+                        </span>
+                      </div>
+                    )}
+
+                    {/* Assignment Metadata */}
+                    <div className="text-xs text-muted-foreground">
+                      <div>Assigned: {new Date(assignment.assigned_date).toLocaleDateString()}</div>
+                      {assignment.assigned_by && <div>By: {assignment.assigned_by}</div>}
+                    </div>
+
+                    {/* Actions */}
+                    <div className="flex items-center justify-end gap-2 pt-2">
+                      <Button size="sm" variant="outline" onClick={() => handleView(assignment)}>
+                        <Eye className="h-3 w-3" />
+                      </Button>
+                      <Button size="sm" variant="outline" onClick={() => handleEdit(assignment)}>
+                        <Edit className="h-3 w-3" />
+                      </Button>
+                      <AlertDialog>
+                        <AlertDialogTrigger asChild>
+                          <Button size="sm" variant="outline" className="text-destructive hover:text-destructive">
+                            <Trash2 className="h-3 w-3" />
+                          </Button>
+                        </AlertDialogTrigger>
+                        <AlertDialogContent>
+                          <AlertDialogHeader>
+                            <AlertDialogTitle>Remove Assignment</AlertDialogTitle>
+                            <AlertDialogDescription>
+                              Are you sure you want to remove this assignment? This will unlink {space.code} from {group.name}.
+                            </AlertDialogDescription>
+                          </AlertDialogHeader>
+                          <AlertDialogFooter>
+                            <AlertDialogCancel>Cancel</AlertDialogCancel>
+                            <AlertDialogAction
+                              onClick={() => handleDelete(assignment.id)}
+                              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+                            >
+                              Remove
+                            </AlertDialogAction>
+                          </AlertDialogFooter>
+                        </AlertDialogContent>
+                      </AlertDialog>
+                    </div>
                   </CardContent>
                 </Card>
-              </div>
-
-              {/* Assignments Grid */}
-              <ContentContainer>
-                <LoaderOverlay />
-                <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
-                  {Array.isArray(assignments) && assignments.map((assignment) => {
-                    const { space, group } = getAssignmentDetails(assignment);
-
-                    if (!space || !group) return null;
-
-                    return (
-                      <Card key={assignment.id} className="hover:shadow-lg transition-shadow">
-                        <CardHeader className="pb-3">
-                          <div className="flex items-start justify-between">
-                            <div className="space-y-1">
-                              <CardTitle className="text-lg flex items-center gap-2">
-                                <Link2 className="h-5 w-5 text-sidebar-primary" />
-                                {space.code}
-                              </CardTitle>
-                              <p className="text-sm text-muted-foreground">{space.name || 'Unnamed Space'}</p>
-                            </div>
-                            <Badge className={getKindColor(space.kind)}>
-                              {space.kind.replace('_', ' ')}
-                            </Badge>
-                          </div>
-                        </CardHeader>
-
-                        <CardContent className="space-y-4">
-                          {/* Group Info */}
-                          <div className="space-y-2">
-                            <div className="flex items-center gap-2">
-                              <Users className="h-4 w-4 text-muted-foreground" />
-                              <span className="font-medium text-sm">{group.name}</span>
-                            </div>
-
-                            <div className="flex items-center gap-2">
-                              <Building2 className="h-4 w-4 text-muted-foreground" />
-                              <span className="text-sm text-muted-foreground">{assignment.site_name}</span>
-                            </div>
-
-                            <div className="flex items-center gap-2">
-                              <MapPin className="h-4 w-4 text-muted-foreground" />
-                              <span className="text-sm text-muted-foreground">
-                                {space.building_block && `${space.building_block}, `}
-                                {space.floor && `Floor ${space.floor}`}
-                              </span>
-                            </div>
-                          </div>
-
-                          {/* Space Details */}
-                          <div className="grid grid-cols-2 gap-2 text-sm">
-                            <div className="text-center p-2 bg-muted rounded">
-                              <p className="font-semibold">{space.area_sqft || 'N/A'}</p>
-                              <p className="text-muted-foreground text-xs">Sq Ft</p>
-                            </div>
-                            {space.beds && (
-                              <div className="text-center p-2 bg-muted rounded">
-                                <p className="font-semibold">{space.beds}BR/{space.baths}BA</p>
-                                <p className="text-muted-foreground text-xs">Config</p>
-                              </div>
-                            )}
-                          </div>
-
-                          {/* Group Pricing */}
-                          {group.specs.base_rate > 0 && (
-                            <div className="text-sm">
-                              <span className="text-muted-foreground">Base Rate: </span>
-                              <span className="font-medium">
-                                ₹{group.specs.base_rate}
-                                {space.kind === 'apartment' ? '/month' : '/month'}
-                              </span>
-                            </div>
-                          )}
-
-                          {/* Assignment Metadata */}
-                          <div className="text-xs text-muted-foreground">
-                            <div>Assigned: {new Date(assignment.assigned_date).toLocaleDateString()}</div>
-                            {assignment.assigned_by && <div>By: {assignment.assigned_by}</div>}
-                          </div>
-
-                          {/* Actions */}
-                          <div className="flex items-center justify-end gap-2 pt-2">
-                            <Button size="sm" variant="outline" onClick={() => handleView(assignment)}>
-                              <Eye className="h-3 w-3" />
-                            </Button>
-                            <Button size="sm" variant="outline" onClick={() => handleEdit(assignment)}>
-                              <Edit className="h-3 w-3" />
-                            </Button>
-                            <AlertDialog>
-                              <AlertDialogTrigger asChild>
-                                <Button size="sm" variant="outline" className="text-destructive hover:text-destructive">
-                                  <Trash2 className="h-3 w-3" />
-                                </Button>
-                              </AlertDialogTrigger>
-                              <AlertDialogContent>
-                                <AlertDialogHeader>
-                                  <AlertDialogTitle>Remove Assignment</AlertDialogTitle>
-                                  <AlertDialogDescription>
-                                    Are you sure you want to remove this assignment? This will unlink {space.code} from {group.name}.
-                                  </AlertDialogDescription>
-                                </AlertDialogHeader>
-                                <AlertDialogFooter>
-                                  <AlertDialogCancel>Cancel</AlertDialogCancel>
-                                  <AlertDialogAction
-                                    onClick={() => handleDelete(assignment.id)}
-                                    className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
-                                  >
-                                    Remove
-                                  </AlertDialogAction>
-                                </AlertDialogFooter>
-                              </AlertDialogContent>
-                            </AlertDialog>
-                          </div>
-                        </CardContent>
-                      </Card>
-                    );
-                  })}
-                </div>
-              </ContentContainer>
-              <Pagination
-                page={page}
-                pageSize={pageSize}
-                totalItems={totalItems}
-                onPageChange={(newPage) => setPage(newPage)}
-              />
-              {(!Array.isArray(assignments) || assignments.length === 0) && (
-                <div className="text-center py-12">
-                  <Link2 className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
-                  <h3 className="text-lg font-semibold text-sidebar-primary mb-2">No assignments found</h3>
-                  <p className="text-muted-foreground">Try adjusting your search criteria or create a new assignment.</p>
-                </div>
-              )}
-            </div>
-          </main>
-        </SidebarInset>
+              );
+            })}
+          </div>
+        </ContentContainer>
+        <Pagination
+          page={page}
+          pageSize={pageSize}
+          totalItems={totalItems}
+          onPageChange={(newPage) => setPage(newPage)}
+        />
+        {(!Array.isArray(assignments) || assignments.length === 0) && (
+          <div className="text-center py-12">
+            <Link2 className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
+            <h3 className="text-lg font-semibold text-sidebar-primary mb-2">No assignments found</h3>
+            <p className="text-muted-foreground">Try adjusting your search criteria or create a new assignment.</p>
+          </div>
+        )}
       </div>
-
       <SpaceAssignmentForm
         assignment={selectedAssignment}
         isOpen={showForm}
@@ -434,6 +424,6 @@ export default function SpaceAssignments() {
         onSave={handleSave}
         mode={formMode}
       />
-    </SidebarProvider>
+    </div>
   );
 }

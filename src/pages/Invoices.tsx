@@ -325,380 +325,363 @@ export default function Invoices() {
   };
 
   return (
-    <SidebarProvider>
-      <div className="min-h-screen flex w-full">
-        <PropertySidebar />
-        <SidebarInset className="flex-1">
-          <PageHeader />
+    <div className="flex-1 space-y-6">
+      {/* Header Actions */}
+      <div className="flex items-center justify-between">
+        <div>
+          <h2 className="text-2xl font-bold text-sidebar-primary">
+            Invoices & Payments
+          </h2>
+          <p className="text-muted-foreground">
+            Manage billing and payment collection
+          </p>
+        </div>
+        <div className="flex gap-2">
+          <Button variant="outline" className="gap-2">
+            <Download className="h-4 w-4" />
+            Export
+          </Button>
+          <Button onClick={handleCreate} className="gap-2">
+            <Plus className="h-4 w-4" />
+            Create Invoice
+          </Button>
+        </div>
+      </div>
 
-          <div className="flex-1 space-y-6 p-6">
-            {/* Header Actions */}
-            <div className="flex items-center justify-between">
-              <div>
-                <h2 className="text-2xl font-bold text-sidebar-primary">
-                  Invoices & Payments
-                </h2>
-                <p className="text-muted-foreground">
-                  Manage billing and payment collection
-                </p>
+      <div className="space-y-6">
+        {/* Summary Cards */}
+        <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+          <Card>
+            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+              <CardTitle className="text-sm font-medium">
+                Total Invoices
+              </CardTitle>
+              <FileText className="h-4 w-4 text-muted-foreground" />
+            </CardHeader>
+            <CardContent>
+              <div className="text-2xl font-bold">
+                {invoiceOverview.totalInvoices}
               </div>
-              <div className="flex gap-2">
-                <Button variant="outline" className="gap-2">
-                  <Download className="h-4 w-4" />
-                  Export
-                </Button>
-                <Button onClick={handleCreate} className="gap-2">
-                  <Plus className="h-4 w-4" />
-                  Create Invoice
-                </Button>
-              </div>
-            </div>
+              <p className="text-xs text-muted-foreground">All time</p>
+            </CardContent>
+          </Card>
 
+          <Card>
+            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+              <CardTitle className="text-sm font-medium">
+                Total Amount
+              </CardTitle>
+              <TrendingUp className="h-4 w-4 text-muted-foreground" />
+            </CardHeader>
+            <CardContent>
+              <div className="text-2xl font-bold">
+                ₹{invoiceOverview.totalAmount.toLocaleString()}
+              </div>
+              <p className="text-xs text-muted-foreground">
+                Invoiced amount
+              </p>
+            </CardContent>
+          </Card>
+
+          <Card>
+            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+              <CardTitle className="text-sm font-medium">
+                Collected
+              </CardTitle>
+              <CreditCard className="h-4 w-4 text-muted-foreground" />
+            </CardHeader>
+            <CardContent>
+              <div className="text-2xl font-bold text-green-600">
+                ₹{invoiceOverview.paidAmount.toLocaleString()}
+              </div>
+              <p className="text-xs text-muted-foreground">
+                Paid invoices
+              </p>
+            </CardContent>
+          </Card>
+
+          <Card>
+            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+              <CardTitle className="text-sm font-medium">
+                Outstanding
+              </CardTitle>
+              <AlertTriangle className="h-4 w-4 text-muted-foreground" />
+            </CardHeader>
+            <CardContent>
+              <div className="text-2xl font-bold text-orange-600">
+                ₹{invoiceOverview.outstandingAmount.toLocaleString()}
+              </div>
+              <p className="text-xs text-muted-foreground">
+                Pending payment
+              </p>
+            </CardContent>
+          </Card>
+        </div>
+
+        {/* Filters */}
+        <div className="flex flex-wrap gap-4">
+          <div className="relative">
+            <Search className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
+            <Input
+              placeholder="Search by invoice number or customer..."
+              value={searchTerm}
+              onChange={(e) => setSearchTerm(e.target.value)}
+              className="pl-10"
+            />
+          </div>
+          <Select
+            value={statusFilter}
+            onValueChange={setStatusFilter}
+          >
+            <SelectTrigger className="w-[180px]">
+              <SelectValue placeholder="Filter by status" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="all">All Status</SelectItem>
+              <SelectItem value="draft">Draft</SelectItem>
+              <SelectItem value="issued">Issued</SelectItem>
+              <SelectItem value="paid">Paid</SelectItem>
+              <SelectItem value="partial">Partial</SelectItem>
+              <SelectItem value="void">Void</SelectItem>
+            </SelectContent>
+          </Select>
+        </div>
+
+        <div className="relative ">
+          <ContentContainer>
             <div className="space-y-6">
-              {/* Summary Cards */}
-              <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
-                <Card>
-                  <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                    <CardTitle className="text-sm font-medium">
-                      Total Invoices
-                    </CardTitle>
-                    <FileText className="h-4 w-4 text-muted-foreground" />
-                  </CardHeader>
-                  <CardContent>
-                    <div className="text-2xl font-bold">
-                      {invoiceOverview.totalInvoices}
-                    </div>
-                    <p className="text-xs text-muted-foreground">All time</p>
-                  </CardContent>
-                </Card>
-
-                <Card>
-                  <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                    <CardTitle className="text-sm font-medium">
-                      Total Amount
-                    </CardTitle>
-                    <TrendingUp className="h-4 w-4 text-muted-foreground" />
-                  </CardHeader>
-                  <CardContent>
-                    <div className="text-2xl font-bold">
-                      ₹{invoiceOverview.totalAmount.toLocaleString()}
-                    </div>
-                    <p className="text-xs text-muted-foreground">
-                      Invoiced amount
-                    </p>
-                  </CardContent>
-                </Card>
-
-                <Card>
-                  <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                    <CardTitle className="text-sm font-medium">
-                      Collected
-                    </CardTitle>
-                    <CreditCard className="h-4 w-4 text-muted-foreground" />
-                  </CardHeader>
-                  <CardContent>
-                    <div className="text-2xl font-bold text-green-600">
-                      ₹{invoiceOverview.paidAmount.toLocaleString()}
-                    </div>
-                    <p className="text-xs text-muted-foreground">
-                      Paid invoices
-                    </p>
-                  </CardContent>
-                </Card>
-
-                <Card>
-                  <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                    <CardTitle className="text-sm font-medium">
-                      Outstanding
-                    </CardTitle>
-                    <AlertTriangle className="h-4 w-4 text-muted-foreground" />
-                  </CardHeader>
-                  <CardContent>
-                    <div className="text-2xl font-bold text-orange-600">
-                      ₹{invoiceOverview.outstandingAmount.toLocaleString()}
-                    </div>
-                    <p className="text-xs text-muted-foreground">
-                      Pending payment
-                    </p>
-                  </CardContent>
-                </Card>
-              </div>
-
-              {/* Filters */}
-              <Card>
+              {/* Invoices Table */}
+              <Card className="relative">
+                {loadingLeaseInvoices && (
+                  <div className="absolute inset-0 bg-background/50 backdrop-blur-sm z-20 flex items-center justify-center rounded-lg">
+                    <div className="animate-spin w-10 h-10 border-4 border-primary border-t-transparent rounded-full"></div>
+                  </div>
+                )}
                 <CardHeader>
-                  <CardTitle>Filters</CardTitle>
+                  <CardTitle>Lease Invoices</CardTitle>
+                  <CardDescription>
+                    {totalItems} invoice(s) found
+                  </CardDescription>
                 </CardHeader>
                 <CardContent>
-                  <div className="flex flex-wrap gap-4">
-                    <div className="relative">
-                      <Search className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
-                      <Input
-                        placeholder="Search by invoice number or customer..."
-                        value={searchTerm}
-                        onChange={(e) => setSearchTerm(e.target.value)}
-                        className="pl-10 w-[500px]"
-                      />
-                    </div>
-                    <Select
-                      value={statusFilter}
-                      onValueChange={setStatusFilter}
-                    >
-                      <SelectTrigger className="w-[180px]">
-                        <SelectValue placeholder="Filter by status" />
-                      </SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value="all">All Status</SelectItem>
-                        <SelectItem value="draft">Draft</SelectItem>
-                        <SelectItem value="issued">Issued</SelectItem>
-                        <SelectItem value="paid">Paid</SelectItem>
-                        <SelectItem value="partial">Partial</SelectItem>
-                        <SelectItem value="void">Void</SelectItem>
-                      </SelectContent>
-                    </Select>
-                  </div>
+                  <Table>
+                    <TableHeader>
+                      <TableRow>
+                        <TableHead>Invoice No.</TableHead>
+                        <TableHead>Lease Charge</TableHead>
+                        <TableHead>Site Name</TableHead>
+                        <TableHead>Date</TableHead>
+                        <TableHead>Due Date</TableHead>
+                        <TableHead>Amount</TableHead>
+                        <TableHead>Status</TableHead>
+                        <TableHead>Actions</TableHead>
+                      </TableRow>
+                    </TableHeader>
+                    <TableBody>
+                      {invoices.map((invoice) => (
+                        <TableRow key={invoice.id}>
+                          <TableCell className="font-medium">
+                            {invoice.invoice_no}
+                          </TableCell>
+                          <TableCell>
+                            {invoice.billable_item_name}
+                          </TableCell>
+                          <TableCell>
+                            {invoice.site_name || "-"}
+                          </TableCell>
+                          <TableCell>
+                            {new Date(invoice.date).toLocaleDateString()}
+                          </TableCell>
+                          <TableCell>
+                            {new Date(
+                              invoice.due_date
+                            ).toLocaleDateString()}
+                          </TableCell>
+                          <TableCell>
+                            ₹{invoice?.totals?.grand ?? 0}
+                          </TableCell>
+                          <TableCell>
+                            {getStatusBadge(invoice.status)}
+                          </TableCell>
+                          <TableCell>
+                            <div className="flex gap-1">
+                              <Button
+                                variant="ghost"
+                                size="sm"
+                                onClick={() => handleView(invoice)}
+                              >
+                                <Eye className="h-4 w-4" />
+                              </Button>
+                              {canWrite(resource) &&
+                                invoice.status !== "paid" && (
+                                  <Button
+                                    variant="ghost"
+                                    size="sm"
+                                    onClick={() => handleEdit(invoice)}
+                                  >
+                                    <Edit className="h-4 w-4" />
+                                  </Button>
+                                )}
+                              {canDelete(resource) && (
+                                <Button
+                                  variant="ghost"
+                                  size="sm"
+                                  className="text-destructive hover:text-destructive"
+                                  onClick={() => handleDelete(invoice.id)}
+                                >
+                                  <Trash2 className="h-4 w-4" />
+                                </Button>
+                              )}
+                              {invoice.status === "issued" &&
+                                canWrite(resource) && (
+                                  <Button
+                                    size="sm"
+                                    onClick={() =>
+                                      handleMarkAsPaid(invoice)
+                                    }
+                                    disabled={
+                                      markingPaidId === invoice.id
+                                    }
+                                    className="bg-primary text-primary-foreground hover:bg-primary/90"
+                                  >
+                                    Mark as Paid
+                                  </Button>
+                                )}
+                            </div>
+                          </TableCell>
+                        </TableRow>
+                      ))}
+                    </TableBody>
+                  </Table>
+                  <Pagination
+                    page={page}
+                    pageSize={pageSize}
+                    totalItems={totalItems}
+                    onPageChange={(newPage) => setPage(newPage)}
+                  />
                 </CardContent>
               </Card>
 
-              <div className="relative ">
-                <ContentContainer>
-                  <div className="space-y-6">
-                    {/* Invoices Table */}
-                    <Card className="relative">
-                      {loadingLeaseInvoices && (
-                        <div className="absolute inset-0 bg-background/50 backdrop-blur-sm z-20 flex items-center justify-center rounded-lg">
-                          <div className="animate-spin w-10 h-10 border-4 border-primary border-t-transparent rounded-full"></div>
-                        </div>
-                      )}
-                      <CardHeader>
-                        <CardTitle>Lease Invoices</CardTitle>
-                        <CardDescription>
-                          {totalItems} invoice(s) found
-                        </CardDescription>
-                      </CardHeader>
-                      <CardContent>
-                        <Table>
-                          <TableHeader>
-                            <TableRow>
-                              <TableHead>Invoice No.</TableHead>
-                              <TableHead>Lease Charge</TableHead>
-                              <TableHead>Site Name</TableHead>
-                              <TableHead>Date</TableHead>
-                              <TableHead>Due Date</TableHead>
-                              <TableHead>Amount</TableHead>
-                              <TableHead>Status</TableHead>
-                              <TableHead>Actions</TableHead>
-                            </TableRow>
-                          </TableHeader>
-                          <TableBody>
-                            {invoices.map((invoice) => (
-                              <TableRow key={invoice.id}>
-                                <TableCell className="font-medium">
-                                  {invoice.invoice_no}
-                                </TableCell>
-                                <TableCell>
-                                  {invoice.billable_item_name}
-                                </TableCell>
-                                <TableCell>
-                                  {invoice.site_name || "-"}
-                                </TableCell>
-                                <TableCell>
-                                  {new Date(invoice.date).toLocaleDateString()}
-                                </TableCell>
-                                <TableCell>
-                                  {new Date(
-                                    invoice.due_date
-                                  ).toLocaleDateString()}
-                                </TableCell>
-                                <TableCell>
-                                  ₹{invoice?.totals?.grand ?? 0}
-                                </TableCell>
-                                <TableCell>
-                                  {getStatusBadge(invoice.status)}
-                                </TableCell>
-                                <TableCell>
-                                  <div className="flex gap-1">
-                                    <Button
-                                      variant="ghost"
-                                      size="sm"
-                                      onClick={() => handleView(invoice)}
-                                    >
-                                      <Eye className="h-4 w-4" />
-                                    </Button>
-                                    {canWrite(resource) &&
-                                      invoice.status !== "paid" && (
-                                        <Button
-                                          variant="ghost"
-                                          size="sm"
-                                          onClick={() => handleEdit(invoice)}
-                                        >
-                                          <Edit className="h-4 w-4" />
-                                        </Button>
-                                      )}
-                                    {canDelete(resource) && (
-                                      <Button
-                                        variant="ghost"
-                                        size="sm"
-                                        className="text-destructive hover:text-destructive"
-                                        onClick={() => handleDelete(invoice.id)}
-                                      >
-                                        <Trash2 className="h-4 w-4" />
-                                      </Button>
-                                    )}
-                                    {invoice.status === "issued" &&
-                                      canWrite(resource) && (
-                                        <Button
-                                          size="sm"
-                                          onClick={() =>
-                                            handleMarkAsPaid(invoice)
-                                          }
-                                          disabled={
-                                            markingPaidId === invoice.id
-                                          }
-                                          className="bg-primary text-primary-foreground hover:bg-primary/90"
-                                        >
-                                          Mark as Paid
-                                        </Button>
-                                      )}
-                                  </div>
-                                </TableCell>
-                              </TableRow>
-                            ))}
-                          </TableBody>
-                        </Table>
-                        <Pagination
-                          page={page}
-                          pageSize={pageSize}
-                          totalItems={totalItems}
-                          onPageChange={(newPage) => setPage(newPage)}
-                        />
-                      </CardContent>
-                    </Card>
-
-                    {/* Work Order Invoices */}
-                    <Card className="relative">
-                      {loadingWorkOrderInvoices && (
-                        <div className="absolute inset-0 bg-background/50 backdrop-blur-sm z-20 flex items-center justify-center rounded-lg">
-                          <div className="animate-spin w-10 h-10 border-4 border-primary border-t-transparent rounded-full"></div>
-                        </div>
-                      )}
-                      <CardHeader>
-                        <CardTitle>Work Order Invoices</CardTitle>
-                        <CardDescription>
-                          {totalWorkOrderInvoiceItems} invoice(s) found
-                        </CardDescription>
-                      </CardHeader>
-                      <CardContent>
-                        <Table>
-                          <TableHeader>
-                            <TableRow>
-                              <TableHead>Invoice No.</TableHead>
-                              <TableHead>Work Order</TableHead>
-                              <TableHead>Site Name</TableHead>
-                              <TableHead>Date</TableHead>
-                              <TableHead>Due Date</TableHead>
-                              <TableHead>Amount</TableHead>
-                              <TableHead>Status</TableHead>
-                              <TableHead>Actions</TableHead>
-                            </TableRow>
-                          </TableHeader>
-                          <TableBody>
-                            {workOrderInvoices.map((invoice) => (
-                              <TableRow key={invoice.id}>
-                                <TableCell className="font-medium">
-                                  {invoice.invoice_no}
-                                </TableCell>
-                                <TableCell>
-                                  {invoice.billable_item_name || "-"}
-                                </TableCell>
-                                <TableCell>
-                                  {invoice.site_name || "-"}
-                                </TableCell>
-                                <TableCell>
-                                  {new Date(invoice.date).toLocaleDateString()}
-                                </TableCell>
-                                <TableCell>
-                                  {new Date(
-                                    invoice.due_date
-                                  ).toLocaleDateString()}
-                                </TableCell>
-                                <TableCell>
-                                  ₹
-                                  {Number(
-                                    invoice?.totals?.grand ?? 0
-                                  ).toLocaleString()}
-                                </TableCell>
-                                <TableCell>
-                                  {getStatusBadge(invoice.status)}
-                                </TableCell>
-                                <TableCell>
-                                  <div className="flex gap-1">
-                                    <Button
-                                      variant="ghost"
-                                      size="sm"
-                                      onClick={() => handleView(invoice)}
-                                    >
-                                      <Eye className="h-4 w-4" />
-                                    </Button>
-                                    {canWrite(resource) &&
-                                      invoice.status !== "paid" && (
-                                        <Button
-                                          variant="ghost"
-                                          size="sm"
-                                          onClick={() => handleEdit(invoice)}
-                                        >
-                                          <Edit className="h-4 w-4" />
-                                        </Button>
-                                      )}
-                                    {canDelete(resource) && (
-                                      <Button
-                                        variant="ghost"
-                                        size="sm"
-                                        className="text-destructive hover:text-destructive"
-                                        onClick={() => handleDelete(invoice.id)}
-                                      >
-                                        <Trash2 className="h-4 w-4" />
-                                      </Button>
-                                    )}
-                                    {invoice.status === "issued" &&
-                                      canWrite(resource) && (
-                                        <Button
-                                          size="sm"
-                                          onClick={() =>
-                                            handleMarkAsPaid(invoice)
-                                          }
-                                          disabled={
-                                            markingPaidId === invoice.id
-                                          }
-                                          className="bg-primary text-primary-foreground hover:bg-primary/90"
-                                        >
-                                          Mark as Paid
-                                        </Button>
-                                      )}
-                                  </div>
-                                </TableCell>
-                              </TableRow>
-                            ))}
-                          </TableBody>
-                        </Table>
-                        <Pagination
-                          page={workOrderInvoicePage}
-                          pageSize={workOrderInvoicePageSize}
-                          totalItems={totalWorkOrderInvoiceItems}
-                          onPageChange={(newPage) =>
-                            setWorkOrderInvoicePage(newPage)
-                          }
-                        />
-                      </CardContent>
-                    </Card>
+              {/* Work Order Invoices */}
+              <Card className="relative">
+                {loadingWorkOrderInvoices && (
+                  <div className="absolute inset-0 bg-background/50 backdrop-blur-sm z-20 flex items-center justify-center rounded-lg">
+                    <div className="animate-spin w-10 h-10 border-4 border-primary border-t-transparent rounded-full"></div>
                   </div>
-                </ContentContainer>
-              </div>
+                )}
+                <CardHeader>
+                  <CardTitle>Work Order Invoices</CardTitle>
+                  <CardDescription>
+                    {totalWorkOrderInvoiceItems} invoice(s) found
+                  </CardDescription>
+                </CardHeader>
+                <CardContent>
+                  <Table>
+                    <TableHeader>
+                      <TableRow>
+                        <TableHead>Invoice No.</TableHead>
+                        <TableHead>Work Order</TableHead>
+                        <TableHead>Site Name</TableHead>
+                        <TableHead>Date</TableHead>
+                        <TableHead>Due Date</TableHead>
+                        <TableHead>Amount</TableHead>
+                        <TableHead>Status</TableHead>
+                        <TableHead>Actions</TableHead>
+                      </TableRow>
+                    </TableHeader>
+                    <TableBody>
+                      {workOrderInvoices.map((invoice) => (
+                        <TableRow key={invoice.id}>
+                          <TableCell className="font-medium">
+                            {invoice.invoice_no}
+                          </TableCell>
+                          <TableCell>
+                            {invoice.billable_item_name || "-"}
+                          </TableCell>
+                          <TableCell>
+                            {invoice.site_name || "-"}
+                          </TableCell>
+                          <TableCell>
+                            {new Date(invoice.date).toLocaleDateString()}
+                          </TableCell>
+                          <TableCell>
+                            {new Date(
+                              invoice.due_date
+                            ).toLocaleDateString()}
+                          </TableCell>
+                          <TableCell>
+                            ₹
+                            {Number(
+                              invoice?.totals?.grand ?? 0
+                            ).toLocaleString()}
+                          </TableCell>
+                          <TableCell>
+                            {getStatusBadge(invoice.status)}
+                          </TableCell>
+                          <TableCell>
+                            <div className="flex gap-1">
+                              <Button
+                                variant="ghost"
+                                size="sm"
+                                onClick={() => handleView(invoice)}
+                              >
+                                <Eye className="h-4 w-4" />
+                              </Button>
+                              {canWrite(resource) &&
+                                invoice.status !== "paid" && (
+                                  <Button
+                                    variant="ghost"
+                                    size="sm"
+                                    onClick={() => handleEdit(invoice)}
+                                  >
+                                    <Edit className="h-4 w-4" />
+                                  </Button>
+                                )}
+                              {canDelete(resource) && (
+                                <Button
+                                  variant="ghost"
+                                  size="sm"
+                                  className="text-destructive hover:text-destructive"
+                                  onClick={() => handleDelete(invoice.id)}
+                                >
+                                  <Trash2 className="h-4 w-4" />
+                                </Button>
+                              )}
+                              {invoice.status === "issued" &&
+                                canWrite(resource) && (
+                                  <Button
+                                    size="sm"
+                                    onClick={() =>
+                                      handleMarkAsPaid(invoice)
+                                    }
+                                    disabled={
+                                      markingPaidId === invoice.id
+                                    }
+                                    className="bg-primary text-primary-foreground hover:bg-primary/90"
+                                  >
+                                    Mark as Paid
+                                  </Button>
+                                )}
+                            </div>
+                          </TableCell>
+                        </TableRow>
+                      ))}
+                    </TableBody>
+                  </Table>
+                  <Pagination
+                    page={workOrderInvoicePage}
+                    pageSize={workOrderInvoicePageSize}
+                    totalItems={totalWorkOrderInvoiceItems}
+                    onPageChange={(newPage) =>
+                      setWorkOrderInvoicePage(newPage)
+                    }
+                  />
+                </CardContent>
+              </Card>
             </div>
-          </div>
-        </SidebarInset>
+          </ContentContainer>
+        </div>
       </div>
-
       <InvoiceForm
         invoice={selectedInvoice}
         isOpen={isFormOpen}
@@ -730,6 +713,6 @@ export default function Invoices() {
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
-    </SidebarProvider>
+    </div>
   );
 }

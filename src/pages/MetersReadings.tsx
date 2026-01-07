@@ -419,379 +419,360 @@ export default function MetersReadings() {
   ];
 
   return (
-    <SidebarProvider>
-      <div className="flex min-h-screen w-full">
-        <PropertySidebar />
-        <div className="flex-1">
-          <PageHeader />
-
-          <main className="flex-1 space-y-6 p-6">
-            <div className="flex items-center justify-between">
-              <div>
-                <h2 className="text-3xl font-bold text-sidebar-primary">
-                  Meters & Readings
-                </h2>
-                <p className="text-muted-foreground">
-                  Monitor and manage utility meters and consumption data
-                </p>
-              </div>
-            </div>
-            <div className="space-y-6">
-              {/* Stats Cards */}
-              <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
-                <Card>
-                  <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                    <CardTitle className="text-sm font-medium">
-                      Total Meters
-                    </CardTitle>
-                    <Gauge className="h-4 w-4" />
-                  </CardHeader>
-                  <CardContent>
-                    <div className="text-2xl font-bold">
-                      {meterReadingOverview.totalMeters}
-                    </div>
-                  </CardContent>
-                </Card>
-                <Card>
-                  <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                    <CardTitle className="text-sm font-medium">
-                      Active Meters
-                    </CardTitle>
-                    <Zap className="h-4 w-4 text-green-500" />
-                  </CardHeader>
-                  <CardContent>
-                    <div className="text-2xl font-bold">
-                      {meterReadingOverview.activeMeters}
-                    </div>
-                  </CardContent>
-                </Card>
-                <Card>
-                  <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                    <CardTitle className="text-sm font-medium">
-                      Latest Readings
-                    </CardTitle>
-                    <Eye className="h-4 w-4" />
-                  </CardHeader>
-                  <CardContent>
-                    <div className="text-2xl font-bold">
-                      {meterReadingOverview.latestReadings}
-                    </div>
-                  </CardContent>
-                </Card>
-                <Card>
-                  <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                    <CardTitle className="text-sm font-medium">
-                      IoT Connected
-                    </CardTitle>
-                    <Users className="h-4 w-4 text-blue-500" />
-                  </CardHeader>
-                  <CardContent>
-                    <div className="text-2xl font-bold">
-                      {meterReadingOverview.iotConnected}
-                    </div>
-                  </CardContent>
-                </Card>
-              </div>
-
-              {/* Main Content */}
-              <Card>
-                <CardHeader>
-                  <div className="flex items-center justify-between">
-                    <div className="space-y-1">
-                      <CardTitle>Energy & Utility Management</CardTitle>
-                      <CardDescription>
-                        Manage meters and track consumption readings
-                      </CardDescription>
-                    </div>
-                    <div className="flex gap-2">
-                      <Button
-                        variant={activeTab === "meters" ? "default" : "outline"}
-                        onClick={() => setActiveTab("meters")}
-                      >
-                        Meters
-                      </Button>
-                      <Button
-                        variant={
-                          activeTab === "readings" ? "default" : "outline"
-                        }
-                        onClick={() => setActiveTab("readings")}
-                      >
-                        Readings
-                      </Button>
-                    </div>
-                  </div>
-                </CardHeader>
-                <CardContent>
-                  {/* Search and Actions */}
-                  <div className="flex items-center justify-between space-y-2 mb-6">
-                    <div className="flex flex-1 items-center space-x-2 max-w-sm">
-                      <Search className="h-4 w-4 text-muted-foreground" />
-                      <Input
-                        placeholder={`Search ${activeTab}...`}
-                        value={searchTerm}
-                        onChange={(e) => setSearchTerm(e.target.value)}
-                      />
-                    </div>
-                    <div className="flex items-center space-x-2">
-                      <Button variant="outline" size="sm">
-                        <Filter className="h-4 w-4 mr-2" />
-                        Filter
-                      </Button>
-                      <Button
-                        variant="outline"
-                        size="sm"
-                        onClick={() => onExport()}
-                      >
-                        <Download className="h-4 w-4 mr-2" />
-                        Export
-                      </Button>
-                      <BulkUploadDialog
-                        type={activeTab}
-                        onImport={handleBulkImport}
-                      />
-                      {activeTab === "meters"
-                        ? canWrite(resource) && (
-                          <Button size="sm" onClick={onCreateMeter}>
-                            <Plus className="h-4 w-4 mr-2" />
-                            Add Meter
-                          </Button>
-                        )
-                        : canWrite(resourceReadings) && (
-                          <Button size="sm" onClick={onCreateMeterReading}>
-                            <Plus className="h-4 w-4 mr-2" />
-                            Add Reading
-                          </Button>
-                        )}
-                    </div>
-                  </div>
-
-                  <div className="relative rounded-md border">
-                    <ContentContainer>
-                      <LoaderOverlay />
-                      {/* Content Tables */}
-                      {activeTab === "meters" ? (
-                        <div>
-                          <Table>
-                            <TableHeader>
-                              <TableRow>
-                                <TableHead>Type</TableHead>
-                                <TableHead>Code</TableHead>
-                                <TableHead>Site</TableHead>
-                                <TableHead>Location</TableHead>
-                                <TableHead>Unit</TableHead>
-                                <TableHead>Last Reading</TableHead>
-                                <TableHead>Status</TableHead>
-                                <TableHead>Actions</TableHead>
-                              </TableRow>
-                            </TableHeader>
-                            <TableBody>
-                              {meters.map((meter) => (
-                                <TableRow key={meter.id}>
-                                  <TableCell>
-                                    <div className="flex items-center gap-2">
-                                      {getMeterIcon(meter.kind)}
-                                      <span className="capitalize">
-                                        {meter.kind}
-                                      </span>
-                                    </div>
-                                  </TableCell>
-                                  <TableCell className="font-medium">
-                                    {meter.code}
-                                  </TableCell>
-                                  <TableCell>{meter.site_name}</TableCell>
-                                  <TableCell>
-                                    {meter.space_name ||
-                                      meter.asset_name ||
-                                      "General"}
-                                  </TableCell>
-                                  <TableCell>{meter.unit}</TableCell>
-                                  <TableCell>
-                                    {meter.last_reading ? (
-                                      <div>
-                                        <div className="font-medium">
-                                          {meter.last_reading} {meter.unit}
-                                        </div>
-                                        <div className="text-xs text-muted-foreground">
-                                          {new Date(
-                                            meter.last_reading_date!
-                                          ).toLocaleDateString()}
-                                        </div>
-                                      </div>
-                                    ) : (
-                                      "No readings"
-                                    )}
-                                  </TableCell>
-                                  <TableCell>
-                                    {getStatusBadge(meter.status)}
-                                  </TableCell>
-                                  <TableCell>
-                                    <div className="flex items-center gap-2">
-                                      <Button
-                                        variant="ghost"
-                                        size="sm"
-                                        onClick={() => onViewMeter(meter)}
-                                      >
-                                        <Eye className="h-4 w-4" />
-                                      </Button>
-                                      {canWrite(resource) && (
-                                        <Button
-                                          variant="ghost"
-                                          size="sm"
-                                          onClick={() => onEditMeter(meter)}
-                                        >
-                                          <Edit className="h-4 w-4" />
-                                        </Button>
-                                      )}
-                                      {canDelete(resource) && (
-                                        <Button
-                                          variant="ghost"
-                                          size="sm"
-                                          onClick={() => handleDelete(meter.id)}
-                                        >
-                                          <Trash2 className="h-4 w-4" />
-                                        </Button>
-                                      )}
-                                    </div>
-                                  </TableCell>
-                                </TableRow>
-                              ))}
-                            </TableBody>
-                          </Table>
-                          <Pagination
-                            page={page}
-                            pageSize={pageSize}
-                            totalItems={totalItems}
-                            onPageChange={(newPage) => setPage(newPage)}
-                          />
-                        </div>
-                      ) : (
-                        <div>
-                          <Table>
-                            <TableHeader>
-                              <TableRow>
-                                <TableHead>Meter</TableHead>
-                                <TableHead>Type</TableHead>
-                                <TableHead>Reading</TableHead>
-                                <TableHead>Delta</TableHead>
-                                <TableHead>Source</TableHead>
-                                <TableHead>Timestamp</TableHead>
-                                <TableHead>Actions</TableHead>
-                              </TableRow>
-                            </TableHeader>
-                            <TableBody>
-                              {meterReadings.map((reading) => (
-                                <TableRow key={reading.id}>
-                                  <TableCell>
-                                    <div>
-                                      <div className="font-medium">
-                                        {reading.meter_code}
-                                      </div>
-                                      <div className="text-sm text-muted-foreground capitalize">
-                                        {reading.meter_kind}
-                                      </div>
-                                    </div>
-                                  </TableCell>
-                                  <TableCell>
-                                    <div className="flex items-center gap-2">
-                                      {getMeterIcon(reading.meter_kind)}
-                                      <span className="capitalize">
-                                        {reading.meter_kind}
-                                      </span>
-                                    </div>
-                                  </TableCell>
-                                  <TableCell>
-                                    <span className="font-medium">
-                                      {reading.reading} {reading.unit}
-                                    </span>
-                                  </TableCell>
-                                  <TableCell>
-                                    {reading.delta ? (
-                                      <span className="text-blue-600">
-                                        +{reading.delta} {reading.unit}
-                                      </span>
-                                    ) : (
-                                      "-"
-                                    )}
-                                  </TableCell>
-                                  <TableCell>
-                                    <Badge
-                                      variant={
-                                        reading.source === "iot"
-                                          ? "default"
-                                          : "secondary"
-                                      }
-                                    >
-                                      {reading.source}
-                                    </Badge>
-                                  </TableCell>
-                                  <TableCell>
-                                    <div className="text-sm">
-                                      {new Date(
-                                        reading.ts
-                                      ).toLocaleDateString()}
-                                      <div className="text-xs text-muted-foreground">
-                                        {new Date(
-                                          reading.ts
-                                        ).toLocaleTimeString()}
-                                      </div>
-                                    </div>
-                                  </TableCell>
-                                  <TableCell>
-                                    <div className="flex items-center gap-2">
-                                      <Button
-                                        variant="ghost"
-                                        size="sm"
-                                        onClick={() =>
-                                          onViewMeterReading(reading)
-                                        }
-                                      >
-                                        <Eye className="h-4 w-4" />
-                                      </Button>
-                                      {canWrite(resourceReadings) && (
-                                        <Button
-                                          variant="ghost"
-                                          size="sm"
-                                          onClick={() =>
-                                            onEditMeterReading(reading)
-                                          }
-                                        >
-                                          <Edit className="h-4 w-4" />
-                                        </Button>
-                                      )}
-                                      {canDelete(resourceReadings) && (
-                                        <Button
-                                          variant="ghost"
-                                          size="sm"
-                                          onClick={() =>
-                                            onDeleteMeterReading(reading)
-                                          }
-                                        >
-                                          <Trash2 className="h-4 w-4" />
-                                        </Button>
-                                      )}
-                                    </div>
-                                  </TableCell>
-                                </TableRow>
-                              ))}
-                            </TableBody>
-                          </Table>
-                          <Pagination
-                            page={readingsPage}
-                            pageSize={readingsPageSize}
-                            totalItems={totalReadingsItems}
-                            onPageChange={(newPage) => setReadingsPage(newPage)}
-                          />
-                        </div>
-                      )}
-                    </ContentContainer>
-                  </div>
-                </CardContent>
-              </Card>
-            </div>
-          </main>
+    <div className="flex-1 space-y-6 ">
+      <div className="flex items-center justify-between">
+        <div>
+          <h2 className="text-3xl font-bold text-sidebar-primary">
+            Energy & Utility Management
+          </h2>
+          <p className="text-muted-foreground">
+            Monitor and manage utility meters and consumption data
+          </p>
         </div>
       </div>
+      <div className="space-y-6">
+        {/* Stats Cards */}
+        <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
+          <Card>
+            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+              <CardTitle className="text-sm font-medium">
+                Total Meters
+              </CardTitle>
+              <Gauge className="h-4 w-4" />
+            </CardHeader>
+            <CardContent>
+              <div className="text-2xl font-bold">
+                {meterReadingOverview.totalMeters}
+              </div>
+            </CardContent>
+          </Card>
+          <Card>
+            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+              <CardTitle className="text-sm font-medium">
+                Active Meters
+              </CardTitle>
+              <Zap className="h-4 w-4 text-green-500" />
+            </CardHeader>
+            <CardContent>
+              <div className="text-2xl font-bold">
+                {meterReadingOverview.activeMeters}
+              </div>
+            </CardContent>
+          </Card>
+          <Card>
+            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+              <CardTitle className="text-sm font-medium">
+                Latest Readings
+              </CardTitle>
+              <Eye className="h-4 w-4" />
+            </CardHeader>
+            <CardContent>
+              <div className="text-2xl font-bold">
+                {meterReadingOverview.latestReadings}
+              </div>
+            </CardContent>
+          </Card>
+          <Card>
+            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+              <CardTitle className="text-sm font-medium">
+                IoT Connected
+              </CardTitle>
+              <Users className="h-4 w-4 text-blue-500" />
+            </CardHeader>
+            <CardContent>
+              <div className="text-2xl font-bold">
+                {meterReadingOverview.iotConnected}
+              </div>
+            </CardContent>
+          </Card>
+        </div>
 
+        {/* Main Content */}
+        <div className="flex items-center justify-between">
+          <div className="space-y-1">
+          </div>
+          <div className="flex gap-2">
+            <Button
+              variant={activeTab === "meters" ? "default" : "outline"}
+              onClick={() => setActiveTab("meters")}
+            >
+              Meters
+            </Button>
+            <Button
+              variant={
+                activeTab === "readings" ? "default" : "outline"
+              }
+              onClick={() => setActiveTab("readings")}
+            >
+              Readings
+            </Button>
+          </div>
+        </div>
+        {/* Search and Actions */}
+        <div className="flex items-center justify-between space-y-2 mb-6">
+          <div className="flex flex-1 items-center space-x-2 max-w-sm">
+            <Search className="h-4 w-4 text-muted-foreground" />
+            <Input
+              placeholder={`Search ${activeTab}...`}
+              value={searchTerm}
+              onChange={(e) => setSearchTerm(e.target.value)}
+            />
+          </div>
+          <div className="flex items-center space-x-2">
+            <Button variant="outline" size="sm">
+              <Filter className="h-4 w-4 mr-2" />
+              Filter
+            </Button>
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => onExport()}
+            >
+              <Download className="h-4 w-4 mr-2" />
+              Export
+            </Button>
+            <BulkUploadDialog
+              type={activeTab}
+              onImport={handleBulkImport}
+            />
+            {activeTab === "meters"
+              ? canWrite(resource) && (
+                <Button size="sm" onClick={onCreateMeter}>
+                  <Plus className="h-4 w-4 mr-2" />
+                  Add Meter
+                </Button>
+              )
+              : canWrite(resourceReadings) && (
+                <Button size="sm" onClick={onCreateMeterReading}>
+                  <Plus className="h-4 w-4 mr-2" />
+                  Add Reading
+                </Button>
+              )}
+          </div>
+        </div>
+
+        <div >
+          <ContentContainer>
+            <LoaderOverlay />
+            {/* Content Tables */}
+            {activeTab === "meters" ? (
+              <div >
+                <Table className="relative rounded-md border">
+                  <TableHeader>
+                    <TableRow>
+                      <TableHead>Type</TableHead>
+                      <TableHead>Code</TableHead>
+                      <TableHead>Site</TableHead>
+                      <TableHead>Location</TableHead>
+                      <TableHead>Unit</TableHead>
+                      <TableHead>Last Reading</TableHead>
+                      <TableHead>Status</TableHead>
+                      <TableHead>Actions</TableHead>
+                    </TableRow>
+                  </TableHeader>
+                  <TableBody>
+                    {meters.map((meter) => (
+                      <TableRow key={meter.id}>
+                        <TableCell>
+                          <div className="flex items-center gap-2">
+                            {getMeterIcon(meter.kind)}
+                            <span className="capitalize">
+                              {meter.kind}
+                            </span>
+                          </div>
+                        </TableCell>
+                        <TableCell className="font-medium">
+                          {meter.code}
+                        </TableCell>
+                        <TableCell>{meter.site_name}</TableCell>
+                        <TableCell>
+                          {meter.space_name ||
+                            meter.asset_name ||
+                            "General"}
+                        </TableCell>
+                        <TableCell>{meter.unit}</TableCell>
+                        <TableCell>
+                          {meter.last_reading ? (
+                            <div>
+                              <div className="font-medium">
+                                {meter.last_reading} {meter.unit}
+                              </div>
+                              <div className="text-xs text-muted-foreground">
+                                {new Date(
+                                  meter.last_reading_date!
+                                ).toLocaleDateString()}
+                              </div>
+                            </div>
+                          ) : (
+                            "No readings"
+                          )}
+                        </TableCell>
+                        <TableCell>
+                          {getStatusBadge(meter.status)}
+                        </TableCell>
+                        <TableCell>
+                          <div className="flex items-center gap-2">
+                            <Button
+                              variant="ghost"
+                              size="sm"
+                              onClick={() => onViewMeter(meter)}
+                            >
+                              <Eye className="h-4 w-4" />
+                            </Button>
+                            {canWrite(resource) && (
+                              <Button
+                                variant="ghost"
+                                size="sm"
+                                onClick={() => onEditMeter(meter)}
+                              >
+                                <Edit className="h-4 w-4" />
+                              </Button>
+                            )}
+                            {canDelete(resource) && (
+                              <Button
+                                variant="ghost"
+                                size="sm"
+                                onClick={() => handleDelete(meter.id)}
+                              >
+                                <Trash2 className="h-4 w-4" />
+                              </Button>
+                            )}
+                          </div>
+                        </TableCell>
+                      </TableRow>
+                    ))}
+                  </TableBody>
+                </Table>
+                <Pagination
+                  page={page}
+                  pageSize={pageSize}
+                  totalItems={totalItems}
+                  onPageChange={(newPage) => setPage(newPage)}
+                />
+              </div>
+            ) : (
+              <div>
+                <Table className="relative rounded-md border">
+                  <TableHeader>
+                    <TableRow>
+                      <TableHead>Meter</TableHead>
+                      <TableHead>Type</TableHead>
+                      <TableHead>Reading</TableHead>
+                      <TableHead>Delta</TableHead>
+                      <TableHead>Source</TableHead>
+                      <TableHead>Timestamp</TableHead>
+                      <TableHead>Actions</TableHead>
+                    </TableRow>
+                  </TableHeader>
+                  <TableBody>
+                    {meterReadings.map((reading) => (
+                      <TableRow key={reading.id}>
+                        <TableCell>
+                          <div>
+                            <div className="font-medium">
+                              {reading.meter_code}
+                            </div>
+                            <div className="text-sm text-muted-foreground capitalize">
+                              {reading.meter_kind}
+                            </div>
+                          </div>
+                        </TableCell>
+                        <TableCell>
+                          <div className="flex items-center gap-2">
+                            {getMeterIcon(reading.meter_kind)}
+                            <span className="capitalize">
+                              {reading.meter_kind}
+                            </span>
+                          </div>
+                        </TableCell>
+                        <TableCell>
+                          <span className="font-medium">
+                            {reading.reading} {reading.unit}
+                          </span>
+                        </TableCell>
+                        <TableCell>
+                          {reading.delta ? (
+                            <span className="text-blue-600">
+                              +{reading.delta} {reading.unit}
+                            </span>
+                          ) : (
+                            "-"
+                          )}
+                        </TableCell>
+                        <TableCell>
+                          <Badge
+                            variant={
+                              reading.source === "iot"
+                                ? "default"
+                                : "secondary"
+                            }
+                          >
+                            {reading.source}
+                          </Badge>
+                        </TableCell>
+                        <TableCell>
+                          <div className="text-sm">
+                            {new Date(
+                              reading.ts
+                            ).toLocaleDateString()}
+                            <div className="text-xs text-muted-foreground">
+                              {new Date(
+                                reading.ts
+                              ).toLocaleTimeString()}
+                            </div>
+                          </div>
+                        </TableCell>
+                        <TableCell>
+                          <div className="flex items-center gap-2">
+                            <Button
+                              variant="ghost"
+                              size="sm"
+                              onClick={() =>
+                                onViewMeterReading(reading)
+                              }
+                            >
+                              <Eye className="h-4 w-4" />
+                            </Button>
+                            {canWrite(resourceReadings) && (
+                              <Button
+                                variant="ghost"
+                                size="sm"
+                                onClick={() =>
+                                  onEditMeterReading(reading)
+                                }
+                              >
+                                <Edit className="h-4 w-4" />
+                              </Button>
+                            )}
+                            {canDelete(resourceReadings) && (
+                              <Button
+                                variant="ghost"
+                                size="sm"
+                                onClick={() =>
+                                  onDeleteMeterReading(reading)
+                                }
+                              >
+                                <Trash2 className="h-4 w-4" />
+                              </Button>
+                            )}
+                          </div>
+                        </TableCell>
+                      </TableRow>
+                    ))}
+                  </TableBody>
+                </Table>
+                <Pagination
+                  page={readingsPage}
+                  pageSize={readingsPageSize}
+                  totalItems={totalReadingsItems}
+                  onPageChange={(newPage) => setReadingsPage(newPage)}
+                />
+              </div>
+
+            )}
+          </ContentContainer>
+        </div>
+      </div>
       {/* Meter Form */}
       <MeterForm
         meter={selectedMeter || undefined}
@@ -859,6 +840,6 @@ export default function MetersReadings() {
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
-    </SidebarProvider>
+    </div>
   );
 }

@@ -295,313 +295,297 @@ export default function ParkingPasses() {
   };
 
   return (
-    <SidebarProvider>
-      <div className="min-h-screen flex w-full bg-background">
-        <PropertySidebar />
-        <SidebarInset className="flex-1">
-          <PageHeader />
+    <div className="flex-1 ">
+      <div className="space-y-6">
+        <div className="flex items-center justify-between">
+          <div>
+            <h2 className="text-3xl font-bold text-sidebar-primary">
+              Parking Passes
+            </h2>
+            <p className="text-muted-foreground">
+              Manage parking passes for tenants and vehicles.
+            </p>
+          </div>
+          {canWrite(resource) && (
+            <Button onClick={handleCreate}>
+              <Plus className="h-4 w-4 mr-2" />
+              Create Pass
+            </Button>
+          )}
+        </div>
 
-          <main className="flex-1 p-6">
-            <div className="space-y-6">
-              <div className="flex items-center justify-between">
-                <div>
-                  <h2 className="text-3xl font-bold text-sidebar-primary">
-                    Parking Passes
-                  </h2>
-                  <p className="text-muted-foreground">
-                    Manage parking passes for tenants and vehicles.
-                  </p>
-                </div>
-                {canWrite(resource) && (
-                  <Button onClick={handleCreate}>
-                    <Plus className="h-4 w-4 mr-2" />
-                    Create Pass
-                  </Button>
-                )}
+        {/* Summary Cards */}
+        <div className="grid grid-cols-4 gap-4">
+          <Card>
+            <CardContent className="pt-6">
+              <p className="text-sm font-bold text-muted-foreground mb-3">
+                Total Passes
+              </p>
+              <div className="text-3xl font-bold text-sidebar-primary mb-1">
+                {totalPasses}
               </div>
-
-              {/* Summary Cards */}
-              <div className="grid grid-cols-4 gap-4">
-                <Card>
-                  <CardContent className="pt-6">
-                    <p className="text-sm font-bold text-muted-foreground mb-3">
-                      Total Passes
-                    </p>
-                    <div className="text-3xl font-bold text-sidebar-primary mb-1">
-                      {totalPasses}
-                    </div>
-                    <p className="text-sm text-blue-600">All passes</p>
-                  </CardContent>
-                </Card>
-                <Card>
-                  <CardContent className="pt-6">
-                    <p className="text-sm font-bold text-muted-foreground mb-3">
-                      Active Passes
-                    </p>
-                    <div className="text-3xl font-bold text-sidebar-primary mb-1">
-                      {activePasses}
-                    </div>
-                    <p className="text-sm text-blue-600">Currently active</p>
-                  </CardContent>
-                </Card>
-                <Card>
-                  <CardContent className="pt-6">
-                    <p className="text-sm font-bold text-muted-foreground mb-3">
-                      Expired Passes
-                    </p>
-                    <div className="text-3xl font-bold text-sidebar-primary mb-1">
-                      {expiredPasses}
-                    </div>
-                    <p className="text-sm text-blue-600">Require renewal</p>
-                  </CardContent>
-                </Card>
-                <Card>
-                  <CardContent className="pt-6">
-                    <p className="text-sm font-bold text-muted-foreground mb-3">
-                      Blocked Passes
-                    </p>
-                    <div className="text-3xl font-bold text-sidebar-primary mb-1">
-                      {blockedPasses}
-                    </div>
-                    <p className="text-sm text-blue-600">Currently blocked</p>
-                  </CardContent>
-                </Card>
+              <p className="text-sm text-blue-600">All passes</p>
+            </CardContent>
+          </Card>
+          <Card>
+            <CardContent className="pt-6">
+              <p className="text-sm font-bold text-muted-foreground mb-3">
+                Active Passes
+              </p>
+              <div className="text-3xl font-bold text-sidebar-primary mb-1">
+                {activePasses}
               </div>
-
-              <Card>
-                <CardHeader>
-                  <div className="flex items-center gap-4">
-                    <div className="relative flex-1 max-w-sm">
-                      <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground h-4 w-4" />
-                      <Input
-                        type="text"
-                        placeholder="Search by pass number, tenant, vehicle..."
-                        value={searchQuery}
-                        onChange={(e) => setSearchQuery(e.target.value)}
-                        className="pl-10"
-                      />
-                    </div>
-                    <Select
-                      value={selectedSite}
-                      onValueChange={setSelectedSite}
-                    >
-                      <SelectTrigger className="w-[180px]">
-                        <SelectValue placeholder="All Sites" />
-                      </SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value="all">All Sites</SelectItem>
-                        {siteList.map((site: any) => (
-                          <SelectItem key={site.id} value={site.id}>
-                            {site.name}
-                          </SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
-                    <Select
-                      value={selectedStatus}
-                      onValueChange={setSelectedStatus}
-                    >
-                      <SelectTrigger className="w-[180px]">
-                        <SelectValue placeholder="All Status" />
-                      </SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value="all">All Status</SelectItem>
-                        {statusList.map((status: any) => (
-                          <SelectItem key={status.id} value={status.id}>
-                            {status.name}
-                          </SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
-                    <Select
-                      value={selectedZone}
-                      onValueChange={setSelectedZone}
-                    >
-                      <SelectTrigger className="w-[180px]">
-                        <SelectValue placeholder="All Zones" />
-                      </SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value="all">All Zones</SelectItem>
-                        {zoneList.map((zone: any) => (
-                          <SelectItem key={zone.id} value={zone.id}>
-                            {zone.name}
-                          </SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
-                  </div>
-                </CardHeader>
-                <CardContent>
-                  <div className="relative rounded-md border">
-                    <ContentContainer>
-                      <LoaderOverlay />
-                      <Table>
-                        <TableHeader>
-                          <TableRow>
-                            <TableHead>Pass No</TableHead>
-                            <TableHead>Site</TableHead>
-                            <TableHead>Space</TableHead>
-                            <TableHead>Zone</TableHead>
-                            <TableHead>Tenant</TableHead>
-                            <TableHead>Pass Holder</TableHead>
-                            <TableHead>Vehicle No.</TableHead>
-                            <TableHead>Valid From and To</TableHead>
-                            <TableHead>Status</TableHead>
-                            <TableHead className="text-right">
-                              Actions
-                            </TableHead>
-                          </TableRow>
-                        </TableHeader>
-                        <TableBody>
-                          {passes.length === 0 ? (
-                            <TableRow>
-                              <TableCell
-                                colSpan={10}
-                                className="text-center text-muted-foreground"
-                              >
-                                No parking passes found
-                              </TableCell>
-                            </TableRow>
-                          ) : (
-                            passes.map((pass) => (
-                              <TableRow key={pass.id}>
-                                <TableCell className="font-medium">
-                                  <div className="flex items-center gap-2">
-                                    <Ticket className="h-4 w-4 text-muted-foreground" />
-                                    {pass.pass_no || "-"}
-                                  </div>
-                                </TableCell>
-                                <TableCell>{pass.site_name || "-"}</TableCell>
-                                <TableCell>{pass.space_name || "-"}</TableCell>
-                                <TableCell>
-                                  <div className="flex items-center gap-2">
-                                    <Car className="h-4 w-4 text-muted-foreground" />
-                                    {pass.zone_name}
-                                  </div>
-                                </TableCell>
-                                <TableCell>
-                                  <div className="flex items-center gap-2">
-                                    <User className="h-4 w-4 text-muted-foreground" />
-                                    {pass.partner_name || "-"}
-                                  </div>
-                                </TableCell>
-                                <TableCell>
-                                  <div className="font-medium">
-                                    {pass.pass_holder_name || "-"}
-                                  </div>
-                                </TableCell>
-                                <TableCell>
-                                  <div className="font-medium">
-                                    {pass.vehicle_no || "-"}
-                                  </div>
-                                </TableCell>
-                                <TableCell>
-                                  <div className="flex flex-col gap-1">
-                                    <div className="flex items-center gap-1">
-                                      <Calendar className="h-3 w-3 text-blue-500" />
-                                      <span className="text-sm">
-                                        {formatDate(pass.valid_from)}
-                                      </span>
-                                    </div>
-                                    <div className="flex items-center gap-1">
-                                      <Calendar className="h-3 w-3 text-orange-500" />
-                                      <span className="text-sm">
-                                        {formatDate(pass.valid_to)}
-                                      </span>
-                                    </div>
-                                  </div>
-                                </TableCell>
-                                <TableCell>
-                                  {getStatusBadge(pass.status)}
-                                </TableCell>
-                                <TableCell className="text-right">
-                                  <div className="flex justify-end gap-2">
-                                    {canRead(resource) && (
-                                      <Button
-                                        variant="ghost"
-                                        size="icon"
-                                        onClick={() => handleView(pass)}
-                                      >
-                                        <Eye className="h-4 w-4" />
-                                      </Button>
-                                    )}
-                                    {canWrite(resource) && (
-                                      <Button
-                                        variant="ghost"
-                                        size="icon"
-                                        onClick={() => handleEdit(pass)}
-                                      >
-                                        <Pencil className="h-4 w-4" />
-                                      </Button>
-                                    )}
-                                    {canDelete(resource) && (
-                                      <Button
-                                        variant="ghost"
-                                        size="icon"
-                                        onClick={() => handleDelete(pass.id)}
-                                      >
-                                        <Trash2 className="h-4 w-4 text-destructive" />
-                                      </Button>
-                                    )}
-                                  </div>
-                                </TableCell>
-                              </TableRow>
-                            ))
-                          )}
-                        </TableBody>
-                      </Table>
-                    </ContentContainer>
-                  </div>
-                </CardContent>
-              </Card>
-
-              {/* Pagination */}
-              <Pagination
-                page={page}
-                pageSize={pageSize}
-                totalItems={totalItems}
-                onPageChange={setPage}
-              />
-            </div>
-
-            {/* Form Dialog */}
-            <ParkingPassForm
-              pass={selectedPass}
-              isOpen={isFormOpen}
-              onClose={() => {
-                setIsFormOpen(false);
-                setSelectedPass(null);
-              }}
-              onSave={handleSave}
-              mode={formMode}
+              <p className="text-sm text-blue-600">Currently active</p>
+            </CardContent>
+          </Card>
+          <Card>
+            <CardContent className="pt-6">
+              <p className="text-sm font-bold text-muted-foreground mb-3">
+                Expired Passes
+              </p>
+              <div className="text-3xl font-bold text-sidebar-primary mb-1">
+                {expiredPasses}
+              </div>
+              <p className="text-sm text-blue-600">Require renewal</p>
+            </CardContent>
+          </Card>
+          <Card>
+            <CardContent className="pt-6">
+              <p className="text-sm font-bold text-muted-foreground mb-3">
+                Blocked Passes
+              </p>
+              <div className="text-3xl font-bold text-sidebar-primary mb-1">
+                {blockedPasses}
+              </div>
+              <p className="text-sm text-blue-600">Currently blocked</p>
+            </CardContent>
+          </Card>
+        </div>
+        <div className="flex items-center gap-4">
+          <div className="relative flex-1 max-w-sm">
+            <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground h-4 w-4" />
+            <Input
+              type="text"
+              placeholder="Search by pass number, tenant, vehicle..."
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+              className="pl-10"
             />
+          </div>
+          <Select
+            value={selectedSite}
+            onValueChange={setSelectedSite}
+          >
+            <SelectTrigger className="w-[180px]">
+              <SelectValue placeholder="All Sites" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="all">All Sites</SelectItem>
+              {siteList.map((site: any) => (
+                <SelectItem key={site.id} value={site.id}>
+                  {site.name}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+          <Select
+            value={selectedStatus}
+            onValueChange={setSelectedStatus}
+          >
+            <SelectTrigger className="w-[180px]">
+              <SelectValue placeholder="All Status" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="all">All Status</SelectItem>
+              {statusList.map((status: any) => (
+                <SelectItem key={status.id} value={status.id}>
+                  {status.name}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+          <Select
+            value={selectedZone}
+            onValueChange={setSelectedZone}
+          >
+            <SelectTrigger className="w-[180px]">
+              <SelectValue placeholder="All Zones" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="all">All Zones</SelectItem>
+              {zoneList.map((zone: any) => (
+                <SelectItem key={zone.id} value={zone.id}>
+                  {zone.name}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+        </div>
+        <div className="relative rounded-md border">
+          <ContentContainer>
+            <LoaderOverlay />
+            <Table>
+              <TableHeader>
+                <TableRow>
+                  <TableHead>Pass No</TableHead>
+                  <TableHead>Site</TableHead>
+                  <TableHead>Space</TableHead>
+                  <TableHead>Zone</TableHead>
+                  <TableHead>Tenant</TableHead>
+                  <TableHead>Pass Holder</TableHead>
+                  <TableHead>Vehicle No.</TableHead>
+                  <TableHead>Valid From and To</TableHead>
+                  <TableHead>Status</TableHead>
+                  <TableHead className="text-right">
+                    Actions
+                  </TableHead>
+                </TableRow>
+              </TableHeader>
+              <TableBody>
+                {passes.length === 0 ? (
+                  <TableRow>
+                    <TableCell
+                      colSpan={10}
+                      className="text-center text-muted-foreground"
+                    >
+                      No parking passes found
+                    </TableCell>
+                  </TableRow>
+                ) : (
+                  passes.map((pass) => (
+                    <TableRow key={pass.id}>
+                      <TableCell className="font-medium">
+                        <div className="flex items-center gap-2">
+                          <Ticket className="h-4 w-4 text-muted-foreground" />
+                          {pass.pass_no || "-"}
+                        </div>
+                      </TableCell>
+                      <TableCell>{pass.site_name || "-"}</TableCell>
+                      <TableCell>{pass.space_name || "-"}</TableCell>
+                      <TableCell>
+                        <div className="flex items-center gap-2">
+                          <Car className="h-4 w-4 text-muted-foreground" />
+                          {pass.zone_name}
+                        </div>
+                      </TableCell>
+                      <TableCell>
+                        <div className="flex items-center gap-2">
+                          <User className="h-4 w-4 text-muted-foreground" />
+                          {pass.partner_name || "-"}
+                        </div>
+                      </TableCell>
+                      <TableCell>
+                        <div className="font-medium">
+                          {pass.pass_holder_name || "-"}
+                        </div>
+                      </TableCell>
+                      <TableCell>
+                        <div className="font-medium">
+                          {pass.vehicle_no || "-"}
+                        </div>
+                      </TableCell>
+                      <TableCell>
+                        <div className="flex flex-col gap-1">
+                          <div className="flex items-center gap-1">
+                            <Calendar className="h-3 w-3 text-blue-500" />
+                            <span className="text-sm">
+                              {formatDate(pass.valid_from)}
+                            </span>
+                          </div>
+                          <div className="flex items-center gap-1">
+                            <Calendar className="h-3 w-3 text-orange-500" />
+                            <span className="text-sm">
+                              {formatDate(pass.valid_to)}
+                            </span>
+                          </div>
+                        </div>
+                      </TableCell>
+                      <TableCell>
+                        {getStatusBadge(pass.status)}
+                      </TableCell>
+                      <TableCell className="text-right">
+                        <div className="flex justify-end gap-2">
+                          {canRead(resource) && (
+                            <Button
+                              variant="ghost"
+                              size="icon"
+                              onClick={() => handleView(pass)}
+                            >
+                              <Eye className="h-4 w-4" />
+                            </Button>
+                          )}
+                          {canWrite(resource) && (
+                            <Button
+                              variant="ghost"
+                              size="icon"
+                              onClick={() => handleEdit(pass)}
+                            >
+                              <Pencil className="h-4 w-4" />
+                            </Button>
+                          )}
+                          {canDelete(resource) && (
+                            <Button
+                              variant="ghost"
+                              size="icon"
+                              onClick={() => handleDelete(pass.id)}
+                            >
+                              <Trash2 className="h-4 w-4 text-destructive" />
+                            </Button>
+                          )}
+                        </div>
+                      </TableCell>
+                    </TableRow>
+                  ))
+                )}
+              </TableBody>
+            </Table>
+          </ContentContainer>
+        </div>
 
-            <AlertDialog
-              open={!!deletePassId}
-              onOpenChange={() => setDeletePassId(null)}
-            >
-              <AlertDialogContent>
-                <AlertDialogHeader>
-                  <AlertDialogTitle>Delete Parking Pass</AlertDialogTitle>
-                  <AlertDialogDescription>
-                    Are you sure you want to delete this parking pass? This
-                    action cannot be undone.
-                  </AlertDialogDescription>
-                </AlertDialogHeader>
-                <AlertDialogFooter>
-                  <AlertDialogCancel>Cancel</AlertDialogCancel>
-                  <AlertDialogAction
-                    onClick={confirmDelete}
-                    className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
-                  >
-                    Delete
-                  </AlertDialogAction>
-                </AlertDialogFooter>
-              </AlertDialogContent>
-            </AlertDialog>
-          </main>
-        </SidebarInset>
+        {/* Pagination */}
+        <Pagination
+          page={page}
+          pageSize={pageSize}
+          totalItems={totalItems}
+          onPageChange={setPage}
+        />
       </div>
-    </SidebarProvider>
+
+      {/* Form Dialog */}
+      <ParkingPassForm
+        pass={selectedPass}
+        isOpen={isFormOpen}
+        onClose={() => {
+          setIsFormOpen(false);
+          setSelectedPass(null);
+        }}
+        onSave={handleSave}
+        mode={formMode}
+      />
+
+      <AlertDialog
+        open={!!deletePassId}
+        onOpenChange={() => setDeletePassId(null)}
+      >
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Delete Parking Pass</AlertDialogTitle>
+            <AlertDialogDescription>
+              Are you sure you want to delete this parking pass? This
+              action cannot be undone.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancel</AlertDialogCancel>
+            <AlertDialogAction
+              onClick={confirmDelete}
+              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+            >
+              Delete
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+    </div>
   );
 }

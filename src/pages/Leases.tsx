@@ -225,283 +225,274 @@ export default function Leases() {
   };
 
   return (
-    <SidebarProvider>
-      <div className="flex min-h-screen w-full">
-        <PropertySidebar />
-        <SidebarInset className="flex-1">
-          <PageHeader />
-          <main className="flex-1 p-6">
-            <div className="space-y-6">
-              <div className="flex items-center justify-between">
-                <div>
-                  <h2 className="text-2xl font-bold text-sidebar-primary">
-                    All Leases
-                  </h2>
-                  <p className="text-muted-foreground">
-                    Manage lease agreements
-                  </p>
+    <div>
+      <div className="space-y-6">
+        <div className="flex items-center justify-between">
+          <div>
+            <h2 className="text-2xl font-bold text-sidebar-primary">
+              All Leases
+            </h2>
+            <p className="text-muted-foreground">
+              Manage lease agreements
+            </p>
+          </div>
+          {canWrite(resource) && (
+            <Button onClick={handleCreate} className="gap-2">
+              <Plus className="h-4 w-4" /> Add Lease
+            </Button>
+          )}
+        </div>
+
+        {/* Filters */}
+        <div className="flex flex-wrap items-center gap-4">
+          <div className="flex items-center gap-2">
+            <Search className="h-4 w-4 text-muted-foreground" />
+            <Input
+              placeholder="Search leases..."
+              value={searchTerm}
+              onChange={(e) => setSearchTerm(e.target.value)}
+              className="w-64"
+            />
+          </div>
+
+          <Select
+            value={selectedSite}
+            onValueChange={setSelectedSite}
+          >
+            <SelectTrigger className="w-[180px]">
+              <SelectValue placeholder="All Sites" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="all">All Sites</SelectItem>
+              {siteList.map((s: any) => (
+                <SelectItem key={s.id} value={s.id}>
+                  {s.name}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+
+          <Select
+            value={selectedKind}
+            onValueChange={setSelectedKind}
+          >
+            <SelectTrigger className="w-[180px]">
+              <SelectValue placeholder="All Types" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="all">All Types</SelectItem>
+              <SelectItem value="commercial">Commercial</SelectItem>
+              <SelectItem value="residential">Residential</SelectItem>
+            </SelectContent>
+          </Select>
+
+          <Select
+            value={selectedStatus}
+            onValueChange={setSelectedStatus}
+          >
+            <SelectTrigger className="w-[180px]">
+              <SelectValue placeholder="All Status" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="all">All Status</SelectItem>
+              <SelectItem value="active">Active</SelectItem>
+              <SelectItem value="expired">Expired</SelectItem>
+              <SelectItem value="terminated">Terminated</SelectItem>
+              <SelectItem value="draft">Draft</SelectItem>
+            </SelectContent>
+          </Select>
+        </div>
+
+        <ContentContainer>
+          <LoaderOverlay />
+          {/* Overview */}
+          <div className="grid gap-4 md:grid-cols-4">
+            <Card>
+              <CardContent className="p-4">
+                <div className="text-2xl font-bold text-sidebar-primary">
+                  {leaseOverview.activeLeases}
                 </div>
-                {canWrite(resource) && (
-                  <Button onClick={handleCreate} className="gap-2">
-                    <Plus className="h-4 w-4" /> Add Lease
-                  </Button>
-                )}
-              </div>
-
-              {/* Filters */}
-              <div className="flex flex-wrap items-center gap-4">
-                <div className="flex items-center gap-2">
-                  <Search className="h-4 w-4 text-muted-foreground" />
-                  <Input
-                    placeholder="Search leases..."
-                    value={searchTerm}
-                    onChange={(e) => setSearchTerm(e.target.value)}
-                    className="w-64"
-                  />
+                <p className="text-sm text-muted-foreground">
+                  Active Leases
+                </p>
+              </CardContent>
+            </Card>
+            <Card>
+              <CardContent className="p-4">
+                <div className="text-2xl font-bold text-green-600">
+                  {formatCurrency(leaseOverview.monthlyRentValue)}
                 </div>
-
-                <Select
-                  value={selectedSite}
-                  onValueChange={setSelectedSite}
-                >
-                  <SelectTrigger className="w-[180px]">
-                    <SelectValue placeholder="All Sites" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="all">All Sites</SelectItem>
-                    {siteList.map((s: any) => (
-                      <SelectItem key={s.id} value={s.id}>
-                        {s.name}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-
-                <Select
-                  value={selectedKind}
-                  onValueChange={setSelectedKind}
-                >
-                  <SelectTrigger className="w-[180px]">
-                    <SelectValue placeholder="All Types" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="all">All Types</SelectItem>
-                    <SelectItem value="commercial">Commercial</SelectItem>
-                    <SelectItem value="residential">Residential</SelectItem>
-                  </SelectContent>
-                </Select>
-
-                <Select
-                  value={selectedStatus}
-                  onValueChange={setSelectedStatus}
-                >
-                  <SelectTrigger className="w-[180px]">
-                    <SelectValue placeholder="All Status" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="all">All Status</SelectItem>
-                    <SelectItem value="active">Active</SelectItem>
-                    <SelectItem value="expired">Expired</SelectItem>
-                    <SelectItem value="terminated">Terminated</SelectItem>
-                    <SelectItem value="draft">Draft</SelectItem>
-                  </SelectContent>
-                </Select>
-              </div>
-
-              <ContentContainer>
-                <LoaderOverlay />
-                {/* Overview */}
-                <div className="grid gap-4 md:grid-cols-4">
-                  <Card>
-                    <CardContent className="p-4">
-                      <div className="text-2xl font-bold text-sidebar-primary">
-                        {leaseOverview.activeLeases}
-                      </div>
-                      <p className="text-sm text-muted-foreground">
-                        Active Leases
-                      </p>
-                    </CardContent>
-                  </Card>
-                  <Card>
-                    <CardContent className="p-4">
-                      <div className="text-2xl font-bold text-green-600">
-                        {formatCurrency(leaseOverview.monthlyRentValue)}
-                      </div>
-                      <p className="text-sm text-muted-foreground">
-                        Monthly Rent Value
-                      </p>
-                    </CardContent>
-                  </Card>
-                  <Card>
-                    <CardContent className="p-4">
-                      <div className="text-2xl font-bold text-orange-600">
-                        {leaseOverview.expiringSoon}
-                      </div>
-                      <p className="text-sm text-muted-foreground">
-                        Expiring Soon
-                      </p>
-                    </CardContent>
-                  </Card>
-                  <Card>
-                    <CardContent className="p-4">
-                      <div className="text-2xl font-bold text-blue-600">
-                        {leaseOverview.avgLeaseTermMonths < 12
-                          ? `${leaseOverview.avgLeaseTermMonths.toFixed(
-                            0
-                          )} months`
-                          : `${(leaseOverview.avgLeaseTermMonths / 12).toFixed(
-                            1
-                          )} years`}
-                      </div>
-                      <p className="text-sm text-muted-foreground">
-                        Avg Lease Term
-                      </p>
-                    </CardContent>
-                  </Card>
+                <p className="text-sm text-muted-foreground">
+                  Monthly Rent Value
+                </p>
+              </CardContent>
+            </Card>
+            <Card>
+              <CardContent className="p-4">
+                <div className="text-2xl font-bold text-orange-600">
+                  {leaseOverview.expiringSoon}
                 </div>
-
-                {/* Grid */}
-                <div className="grid gap-4 mt-6">
-                  {leases.map((lease) => (
-                    <Card
-                      key={lease.id}
-                      className="hover:shadow-lg transition-shadow"
-                    >
-                      <CardHeader className="pb-3">
-                        <div className="flex items-start justify-between">
-                          <div className="space-y-1">
-                            <CardTitle className="text-lg">
-                              {lease.tenant_name}
-                            </CardTitle>
-                            <p className="text-sm text-muted-foreground">
-                              <div className="flex items-center gap-1">
-                                <MapPin className="h-4 w-4 text-muted-foreground" />
-                                {lease.space_name} • {lease.site_name}
-                              </div>
-                            </p>
-                          </div>
-                          <Badge className={getStatusColor(lease.status)}>
-                            {lease.status}
-                          </Badge>
-                        </div>
-                      </CardHeader>
-
-                      <CardContent className="space-y-4">
-                        <div className="grid grid-cols-2 gap-4 text-sm">
-                          <div>
-                            <div className="font-medium text-muted-foreground">
-                              Rent Amount
-                            </div>
-                            <div className="text-lg font-bold">
-                              {formatCurrency(lease.rent_amount)}
-                            </div>
-                            <div className="text-xs text-muted-foreground">
-                              per month
-                            </div>
-                          </div>
-                          <div>
-                            <div className="font-medium text-muted-foreground">
-                              Lease Term
-                            </div>
-                            <div className="text-sm">
-                              {lease.start_date} - {lease.end_date}
-                            </div>
-                          </div>
-                        </div>
-
-                        <div className="grid grid-cols-2 gap-4 text-sm">
-                          <div>
-                            <div className="font-medium text-muted-foreground">
-                              Deposit
-                            </div>
-                            <div>
-                              {formatCurrency(lease.deposit_amount as any)}
-                            </div>
-                          </div>
-                          <div>
-                            <div className="font-medium text-muted-foreground">
-                              CAM Rate
-                            </div>
-                            <div>
-                              {lease.cam_rate
-                                ? `₹${lease.cam_rate}/sq ft`
-                                : "-"}
-                            </div>
-                          </div>
-                        </div>
-
-                        {lease.utilities && (
-                          <div>
-                            <div className="font-medium text-muted-foreground">
-                              Utilities
-                            </div>
-                            <div className="text-sm">
-                              {Object.entries(lease.utilities).map(([k, v]) => (
-                                <span key={k} className="mr-4">
-                                  {k}: {String(v)}
-                                </span>
-                              ))}
-                            </div>
-                          </div>
-                        )}
-
-                        <div className="flex items-center justify-end gap-2 pt-2">
-                          <Button
-                            size="sm"
-                            variant="outline"
-                            onClick={() => handleView(lease)}
-                          >
-                            <Eye className="h-3 w-3" />
-                          </Button>
-                          {canWrite(resource) && (
-                            <Button
-                              size="sm"
-                              variant="outline"
-                              onClick={() => handleEdit(lease)}
-                            >
-                              <Edit className="h-3 w-3" />
-                            </Button>
-                          )}
-                          {canDelete(resource) && (
-                            <Button
-                              size="sm"
-                              variant="outline"
-                              className="text-destructive hover:text-destructive"
-                              onClick={() => handleDelete(lease.id)}
-                            >
-                              <Trash2 className="h-3 w-3" />
-                            </Button>
-                          )}
-                        </div>
-                      </CardContent>
-                    </Card>
-                  ))}
+                <p className="text-sm text-muted-foreground">
+                  Expiring Soon
+                </p>
+              </CardContent>
+            </Card>
+            <Card>
+              <CardContent className="p-4">
+                <div className="text-2xl font-bold text-blue-600">
+                  {leaseOverview.avgLeaseTermMonths < 12
+                    ? `${leaseOverview.avgLeaseTermMonths.toFixed(
+                      0
+                    )} months`
+                    : `${(leaseOverview.avgLeaseTermMonths / 12).toFixed(
+                      1
+                    )} years`}
                 </div>
+                <p className="text-sm text-muted-foreground">
+                  Avg Lease Term
+                </p>
+              </CardContent>
+            </Card>
+          </div>
 
-                <Pagination
-                  page={page}
-                  pageSize={pageSize}
-                  totalItems={totalItems}
-                  onPageChange={(newPage) => setPage(newPage)}
-                />
-
-                {leases.length === 0 && (
-                  <div className="text-center py-12">
-                    <Home className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
-                    <h3 className="text-lg font-semibold text-sidebar-primary mb-2">
-                      No leases found
-                    </h3>
-                    <p className="text-muted-foreground">
-                      Try adjusting your search criteria or add a new lease.
-                    </p>
+          {/* Grid */}
+          <div className="grid gap-4 mt-6">
+            {leases.map((lease) => (
+              <Card
+                key={lease.id}
+                className="hover:shadow-lg transition-shadow"
+              >
+                <CardHeader className="pb-3">
+                  <div className="flex items-start justify-between">
+                    <div className="space-y-1">
+                      <CardTitle className="text-lg">
+                        {lease.tenant_name}
+                      </CardTitle>
+                      <p className="text-sm text-muted-foreground">
+                        <div className="flex items-center gap-1">
+                          <MapPin className="h-4 w-4 text-muted-foreground" />
+                          {lease.space_name} • {lease.site_name}
+                        </div>
+                      </p>
+                    </div>
+                    <Badge className={getStatusColor(lease.status)}>
+                      {lease.status}
+                    </Badge>
                   </div>
-                )}
-              </ContentContainer>
-            </div>
-          </main>
-        </SidebarInset>
-      </div>
+                </CardHeader>
 
+                <CardContent className="space-y-4">
+                  <div className="grid grid-cols-2 gap-4 text-sm">
+                    <div>
+                      <div className="font-medium text-muted-foreground">
+                        Rent Amount
+                      </div>
+                      <div className="text-lg font-bold">
+                        {formatCurrency(lease.rent_amount)}
+                      </div>
+                      <div className="text-xs text-muted-foreground">
+                        per month
+                      </div>
+                    </div>
+                    <div>
+                      <div className="font-medium text-muted-foreground">
+                        Lease Term
+                      </div>
+                      <div className="text-sm">
+                        {lease.start_date} - {lease.end_date}
+                      </div>
+                    </div>
+                  </div>
+
+                  <div className="grid grid-cols-2 gap-4 text-sm">
+                    <div>
+                      <div className="font-medium text-muted-foreground">
+                        Deposit
+                      </div>
+                      <div>
+                        {formatCurrency(lease.deposit_amount as any)}
+                      </div>
+                    </div>
+                    <div>
+                      <div className="font-medium text-muted-foreground">
+                        CAM Rate
+                      </div>
+                      <div>
+                        {lease.cam_rate
+                          ? `₹${lease.cam_rate}/sq ft`
+                          : "-"}
+                      </div>
+                    </div>
+                  </div>
+
+                  {lease.utilities && (
+                    <div>
+                      <div className="font-medium text-muted-foreground">
+                        Utilities
+                      </div>
+                      <div className="text-sm">
+                        {Object.entries(lease.utilities).map(([k, v]) => (
+                          <span key={k} className="mr-4">
+                            {k}: {String(v)}
+                          </span>
+                        ))}
+                      </div>
+                    </div>
+                  )}
+
+                  <div className="flex items-center justify-end gap-2 pt-2">
+                    <Button
+                      size="sm"
+                      variant="outline"
+                      onClick={() => handleView(lease)}
+                    >
+                      <Eye className="h-3 w-3" />
+                    </Button>
+                    {canWrite(resource) && (
+                      <Button
+                        size="sm"
+                        variant="outline"
+                        onClick={() => handleEdit(lease)}
+                      >
+                        <Edit className="h-3 w-3" />
+                      </Button>
+                    )}
+                    {canDelete(resource) && (
+                      <Button
+                        size="sm"
+                        variant="outline"
+                        className="text-destructive hover:text-destructive"
+                        onClick={() => handleDelete(lease.id)}
+                      >
+                        <Trash2 className="h-3 w-3" />
+                      </Button>
+                    )}
+                  </div>
+                </CardContent>
+              </Card>
+            ))}
+          </div>
+
+          <Pagination
+            page={page}
+            pageSize={pageSize}
+            totalItems={totalItems}
+            onPageChange={(newPage) => setPage(newPage)}
+          />
+
+          {leases.length === 0 && (
+            <div className="text-center py-12">
+              <Home className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
+              <h3 className="text-lg font-semibold text-sidebar-primary mb-2">
+                No leases found
+              </h3>
+              <p className="text-muted-foreground">
+                Try adjusting your search criteria or add a new lease.
+              </p>
+            </div>
+          )}
+        </ContentContainer>
+      </div>
       <LeaseForm
         lease={selectedLease}
         isOpen={isFormOpen}
@@ -533,6 +524,6 @@ export default function Leases() {
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
-    </SidebarProvider>
+    </div>
   );
 }

@@ -376,385 +376,376 @@ export default function LeaseCharges() {
   };
 
   return (
-    <SidebarProvider>
-      <div className="min-h-screen flex w-full">
-        <PropertySidebar />
-        <SidebarInset className="flex-1">
-          <PageHeader />
-          <div className="flex-1 space-y-6 p-6">
-            {/* Dashboard cards (org-wide from backend) */}
-            <div className="grid gap-4 md:grid-cols-4">
-              <Card>
-                <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                  <CardTitle className="text-sm font-medium">
-                    Total Charges (All)
-                  </CardTitle>
-                  <DollarSign className="h-4 w-4 text-muted-foreground" />
-                </CardHeader>
-                <CardContent>
-                  <div className="text-2xl font-bold">
-                    {formatCurrency(leaseChargeOverview.total_charges)}
-                  </div>
-                  <p className="text-xs text-muted-foreground">
-                    Across entire org
-                  </p>
-                </CardContent>
-              </Card>
-
-              <Card>
-                <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                  <CardTitle className="text-sm font-medium">
-                    Tax Amount (All)
-                  </CardTitle>
-                  <TrendingUp className="h-4 w-4 text-muted-foreground" />
-                </CardHeader>
-                <CardContent>
-                  <div className="text-2xl font-bold">
-                    {formatCurrency(leaseChargeOverview.tax_amount)}
-                  </div>
-                  <p className="text-xs text-muted-foreground">
-                    Total tax collected
-                  </p>
-                </CardContent>
-              </Card>
-
-              <Card>
-                <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                  <CardTitle className="text-sm font-medium">
-                    This Month (All)
-                  </CardTitle>
-                  <Calendar className="h-4 w-4 text-muted-foreground" />
-                </CardHeader>
-                <CardContent>
-                  <div className="text-2xl font-bold">
-                    {leaseChargeOverview.this_month}
-                  </div>
-                  <p className="text-xs text-muted-foreground">
-                    Charges generated
-                  </p>
-                </CardContent>
-              </Card>
-
-              <Card>
-                <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                  <CardTitle className="text-sm font-medium">
-                    Avg Charge (All)
-                  </CardTitle>
-                  <Receipt className="h-4 w-4 text-muted-foreground" />
-                </CardHeader>
-                <CardContent>
-                  <div className="text-2xl font-bold">
-                    {formatCurrency(leaseChargeOverview.avg_charge)}
-                  </div>
-                  <p className="text-xs text-muted-foreground">
-                    Average per charge
-                  </p>
-                </CardContent>
-              </Card>
+    <div className="flex-1 space-y-6">
+      {/* Dashboard cards (org-wide from backend) */}
+      <div className="grid gap-4 md:grid-cols-4">
+        <Card>
+          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+            <CardTitle className="text-sm font-medium">
+              Total Charges (All)
+            </CardTitle>
+            <DollarSign className="h-4 w-4 text-muted-foreground" />
+          </CardHeader>
+          <CardContent>
+            <div className="text-2xl font-bold">
+              {formatCurrency(leaseChargeOverview.total_charges)}
             </div>
+            <p className="text-xs text-muted-foreground">
+              Across entire org
+            </p>
+          </CardContent>
+        </Card>
 
-            {/* Charges by Type summary (current list) */}
-            {Object.keys(chargesByType).length > 0 && (
-              <Card>
-                <CardHeader>
-                  <CardTitle className="text-lg">Charges by Type</CardTitle>
-                  <CardDescription>
-                    Breakdown for the current list
-                  </CardDescription>
-                </CardHeader>
-                <CardContent>
-                  <div className="grid gap-4 md:grid-cols-3 lg:grid-cols-4">
-                    {Object.entries(chargesByType).map(([code, amount]) => (
-                      <div
-                        key={code}
-                        className="flex items-center justify-between p-3 bg-muted rounded-lg"
-                      >
-                        <div>
-                          <Badge className={getChargeCodeColor(code)}>
-                            {code}
-                          </Badge>
-                          <div className="text-xs text-muted-foreground mt-1">
-                            {getChargeCodeName(code)}
-                          </div>
-                        </div>
-                        <div className="text-right">
-                          <div className="font-semibold">
-                            {formatCurrency(amount)}
-                          </div>
-                          <div className="text-xs text-muted-foreground">
-                            {leaseChargeOverview.total_charges
-                              ? (
-                                (amount / leaseChargeOverview.total_charges) *
-                                100
-                              ).toFixed(1)
-                              : "0.0"}
-                            %
-                          </div>
-                        </div>
-                      </div>
-                    ))}
-                  </div>
-                </CardContent>
-              </Card>
-            )}
-
-            {/* Filters + actions */}
-            <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
-              <div className="flex flex-1 gap-4">
-                <div className="relative flex-1 max-w-sm">
-                  <Search className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
-                  <Input
-                    placeholder="Search charges..."
-                    value={searchTerm}
-                    onChange={(e) => setSearchTerm(e.target.value)}
-                    className="pl-9"
-                  />
-                </div>
-
-                {/* Type */}
-                {/* Charge Code Select */}
-                <Select
-                  value={selectedChargeCode}
-                  onValueChange={setSelectedChargeCode}
-                >
-                  <SelectTrigger className="w-[150px]">
-                    <SelectValue placeholder="All Types" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="all">All Types</SelectItem>
-                    {chargeCodeList.map((m: { id: string; name: string }) => (
-                      <SelectItem key={m.id} value={m.id}>
-                        {m.name}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-
-                {/* Month (full name; service converts to 1..12) */}
-                {/* Month Select */}
-                <Select value={selectedMonth} onValueChange={setSelectedMonth}>
-                  <SelectTrigger className="w-[150px]">
-                    <SelectValue placeholder="All Months" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="all">All Months</SelectItem>
-                    {months.map((m: { id: string; name: string }) => (
-                      <SelectItem key={m.id} value={m.id}>
-                        {m.name}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-              </div>
-
-              <div className="flex gap-2">
-                <Button variant="outline" size="sm">
-                  <Filter className="mr-2 h-4 w-4" />
-                  More Filters
-                </Button>
-                {canWrite(resource) && (
-                  <Button size="sm" onClick={handleCreate}>
-                    <Plus className="mr-2 h-4 w-4" />
-                    Add Charge
-                  </Button>
-                )}
-              </div>
+        <Card>
+          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+            <CardTitle className="text-sm font-medium">
+              Tax Amount (All)
+            </CardTitle>
+            <TrendingUp className="h-4 w-4 text-muted-foreground" />
+          </CardHeader>
+          <CardContent>
+            <div className="text-2xl font-bold">
+              {formatCurrency(leaseChargeOverview.tax_amount)}
             </div>
+            <p className="text-xs text-muted-foreground">
+              Total tax collected
+            </p>
+          </CardContent>
+        </Card>
 
-            <ContentContainer>
-              <LoaderOverlay />
-              {/* List */}
-              <div className="grid gap-6">
-                {leaseCharges.length === 0 ? (
-                  <Card>
-                    <CardContent className="flex flex-col items-center justify-center py-16">
-                      <Receipt className="h-12 w-12 text-muted-foreground mb-4" />
-                      <h3 className="text-lg font-semibold mb-2">
-                        No charges found
-                      </h3>
-                      <p className="text-muted-foreground text-center mb-4">
-                        No charges match your current filters. Try adjusting
-                        your search criteria.
-                      </p>
-                      {canWrite(resource) && (
-                        <Button onClick={handleCreate}>
-                          <Plus className="mr-2 h-4 w-4" />
-                          Add First Charge
-                        </Button>
-                      )}
-                    </CardContent>
-                  </Card>
-                ) : (
-                  leaseCharges.map((charge) => {
-                    const amount = Number(charge.amount) || 0;
-                    const taxPct = Number(charge.tax_pct) || 0;
-                    const taxAmount = (amount * taxPct) / 100;
-                    const totalAmount = amount + taxAmount;
+        <Card>
+          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+            <CardTitle className="text-sm font-medium">
+              This Month (All)
+            </CardTitle>
+            <Calendar className="h-4 w-4 text-muted-foreground" />
+          </CardHeader>
+          <CardContent>
+            <div className="text-2xl font-bold">
+              {leaseChargeOverview.this_month}
+            </div>
+            <p className="text-xs text-muted-foreground">
+              Charges generated
+            </p>
+          </CardContent>
+        </Card>
 
-                    return (
-                      <Card
-                        key={charge.id}
-                        className="hover:shadow-md transition-shadow"
-                      >
-                        <CardHeader>
-                          <div className="flex items-center justify-between">
-                            <div>
-                              <CardTitle className="text-lg flex items-center gap-2 mb-1">
-                                <Badge
-                                  className={getChargeCodeColor(
-                                    charge.charge_code
-                                  )}
-                                >
-                                  {charge.charge_code}
-                                </Badge>
-                                {charge.tenant_name}
-                              </CardTitle>
-                              <CardDescription className="space-y-1">
-                                <div>
-                                  Period -{" "}
-                                  {new Date(
-                                    charge.period_start
-                                  ).toLocaleDateString()}{" "}
-                                  -{" "}
-                                  {new Date(
-                                    charge.period_end
-                                  ).toLocaleDateString()}
-                                </div>
-                                <div className="flex items-center gap-1">
-                                  <MapPin className="h-4 w-4 text-muted-foreground" />
-                                  {charge.space_name} • {charge.site_name}
-                                </div>
-                              </CardDescription>
-                            </div>
-                            <div className="flex items-center gap-2">
-                              <div className="text-right">
-                                <div className="text-lg font-bold">
-                                  {formatCurrency(totalAmount)}
-                                </div>
-                                {charge.tax_pct > 0 && (
-                                  <div className="text-xs text-muted-foreground">
-                                    +{charge.tax_pct}% tax
-                                  </div>
-                                )}
-                              </div>
-                              <div className="flex gap-1">
-                                <Button
-                                  variant="ghost"
-                                  size="sm"
-                                  onClick={() => {
-                                    handleView(charge);
-                                  }}
-                                >
-                                  <Eye className="h-4 w-4" />
-                                </Button>
-                                {canWrite(resource) && (
-                                  <Button
-                                    variant="ghost"
-                                    size="sm"
-                                    onClick={() => handleEdit(charge)}
-                                  >
-                                    <Edit className="h-4 w-4" />
-                                  </Button>
-                                )}
-                                {canDelete(resource) && (
-                                  <Button
-                                    variant="ghost"
-                                    size="sm"
-                                    onClick={() => setDeleteId(charge.id)}
-                                  >
-                                    <Trash2 className="h-4 w-4" />
-                                  </Button>
-                                )}
-                              </div>
-                            </div>
-                          </div>
-                        </CardHeader>
-                        <CardContent>
-                          <div className="grid gap-4 md:grid-cols-3">
-                            <div>
-                              <div className="text-sm font-medium text-muted-foreground">
-                                Base Amount
-                              </div>
-                              <div className="text-lg font-semibold">
-                                {formatCurrency(charge.amount)}
-                              </div>
-                            </div>
-
-                            {charge.tax_pct > 0 && (
-                              <div>
-                                <div className="text-sm font-medium text-muted-foreground">
-                                  Tax ({charge.tax_pct}%)
-                                </div>
-                                <div className="text-lg font-semibold">
-                                  {formatCurrency(taxAmount)}
-                                </div>
-                              </div>
-                            )}
-
-                            <div>
-                              <div className="text-sm font-medium text-muted-foreground">
-                                Period
-                              </div>
-                              <div className="text-sm">
-                                {Math.ceil(
-                                  (new Date(charge.period_end).getTime() -
-                                    new Date(charge.period_start).getTime()) /
-                                  (1000 * 60 * 60 * 24)
-                                )}{" "}
-                                days
-                              </div>
-                            </div>
-                          </div>
-
-                          {charge.metadata && (
-                            <div className="mt-4 p-3 bg-muted rounded-lg">
-                              <div className="text-sm font-medium mb-2">
-                                Details
-                              </div>
-                              {charge.metadata?.description && (
-                                <div className="text-sm text-muted-foreground mb-1">
-                                  {charge.metadata.description}
-                                </div>
-                              )}
-                              {charge.metadata?.units &&
-                                charge.metadata?.rate && (
-                                  <div className="text-sm text-muted-foreground">
-                                    {charge.metadata.units} units × ₹
-                                    {charge.metadata.rate} per unit
-                                  </div>
-                                )}
-                            </div>
-                          )}
-
-                          {charge.created_at && (
-                            <div className="mt-4 text-xs text-muted-foreground">
-                              Generated on{" "}
-                              {new Date(charge.created_at).toLocaleDateString()}
-                            </div>
-                          )}
-                        </CardContent>
-                      </Card>
-                    );
-                  })
-                )}
-              </div>
-
-              {/* Pagination */}
-              {leaseCharges.length > 0 && (
-                <div className="mt-4">
-                  <Pagination
-                    page={page}
-                    pageSize={pageSize}
-                    totalItems={totalItems}
-                    onPageChange={setPage}
-                  />
-                </div>
-              )}
-            </ContentContainer>
-          </div>
-        </SidebarInset>
+        <Card>
+          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+            <CardTitle className="text-sm font-medium">
+              Avg Charge (All)
+            </CardTitle>
+            <Receipt className="h-4 w-4 text-muted-foreground" />
+          </CardHeader>
+          <CardContent>
+            <div className="text-2xl font-bold">
+              {formatCurrency(leaseChargeOverview.avg_charge)}
+            </div>
+            <p className="text-xs text-muted-foreground">
+              Average per charge
+            </p>
+          </CardContent>
+        </Card>
       </div>
 
+      {/* Charges by Type summary (current list) */}
+      {Object.keys(chargesByType).length > 0 && (
+        <Card>
+          <CardHeader>
+            <CardTitle className="text-lg">Charges by Type</CardTitle>
+            <CardDescription>
+              Breakdown for the current list
+            </CardDescription>
+          </CardHeader>
+          <CardContent>
+            <div className="grid gap-4 md:grid-cols-3 lg:grid-cols-4">
+              {Object.entries(chargesByType).map(([code, amount]) => (
+                <div
+                  key={code}
+                  className="flex items-center justify-between p-3 bg-muted rounded-lg"
+                >
+                  <div>
+                    <Badge className={getChargeCodeColor(code)}>
+                      {code}
+                    </Badge>
+                    <div className="text-xs text-muted-foreground mt-1">
+                      {getChargeCodeName(code)}
+                    </div>
+                  </div>
+                  <div className="text-right">
+                    <div className="font-semibold">
+                      {formatCurrency(amount)}
+                    </div>
+                    <div className="text-xs text-muted-foreground">
+                      {leaseChargeOverview.total_charges
+                        ? (
+                          (amount / leaseChargeOverview.total_charges) *
+                          100
+                        ).toFixed(1)
+                        : "0.0"}
+                      %
+                    </div>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </CardContent>
+        </Card>
+      )}
+
+      {/* Filters + actions */}
+      <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
+        <div className="flex flex-1 gap-4">
+          <div className="relative flex-1 max-w-sm">
+            <Search className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
+            <Input
+              placeholder="Search charges..."
+              value={searchTerm}
+              onChange={(e) => setSearchTerm(e.target.value)}
+              className="pl-9"
+            />
+          </div>
+
+          {/* Type */}
+          {/* Charge Code Select */}
+          <Select
+            value={selectedChargeCode}
+            onValueChange={setSelectedChargeCode}
+          >
+            <SelectTrigger className="w-[150px]">
+              <SelectValue placeholder="All Types" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="all">All Types</SelectItem>
+              {chargeCodeList.map((m: { id: string; name: string }) => (
+                <SelectItem key={m.id} value={m.id}>
+                  {m.name}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+
+          {/* Month (full name; service converts to 1..12) */}
+          {/* Month Select */}
+          <Select value={selectedMonth} onValueChange={setSelectedMonth}>
+            <SelectTrigger className="w-[150px]">
+              <SelectValue placeholder="All Months" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="all">All Months</SelectItem>
+              {months.map((m: { id: string; name: string }) => (
+                <SelectItem key={m.id} value={m.id}>
+                  {m.name}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+        </div>
+
+        <div className="flex gap-2">
+          <Button variant="outline" size="sm">
+            <Filter className="mr-2 h-4 w-4" />
+            More Filters
+          </Button>
+          {canWrite(resource) && (
+            <Button size="sm" onClick={handleCreate}>
+              <Plus className="mr-2 h-4 w-4" />
+              Add Charge
+            </Button>
+          )}
+        </div>
+      </div>
+
+      <ContentContainer>
+        <LoaderOverlay />
+        {/* List */}
+        <div className="grid gap-6">
+          {leaseCharges.length === 0 ? (
+            <Card>
+              <CardContent className="flex flex-col items-center justify-center py-16">
+                <Receipt className="h-12 w-12 text-muted-foreground mb-4" />
+                <h3 className="text-lg font-semibold mb-2">
+                  No charges found
+                </h3>
+                <p className="text-muted-foreground text-center mb-4">
+                  No charges match your current filters. Try adjusting
+                  your search criteria.
+                </p>
+                {canWrite(resource) && (
+                  <Button onClick={handleCreate}>
+                    <Plus className="mr-2 h-4 w-4" />
+                    Add First Charge
+                  </Button>
+                )}
+              </CardContent>
+            </Card>
+          ) : (
+            leaseCharges.map((charge) => {
+              const amount = Number(charge.amount) || 0;
+              const taxPct = Number(charge.tax_pct) || 0;
+              const taxAmount = (amount * taxPct) / 100;
+              const totalAmount = amount + taxAmount;
+
+              return (
+                <Card
+                  key={charge.id}
+                  className="hover:shadow-md transition-shadow"
+                >
+                  <CardHeader>
+                    <div className="flex items-center justify-between">
+                      <div>
+                        <CardTitle className="text-lg flex items-center gap-2 mb-1">
+                          <Badge
+                            className={getChargeCodeColor(
+                              charge.charge_code
+                            )}
+                          >
+                            {charge.charge_code}
+                          </Badge>
+                          {charge.tenant_name}
+                        </CardTitle>
+                        <CardDescription className="space-y-1">
+                          <div>
+                            Period -{" "}
+                            {new Date(
+                              charge.period_start
+                            ).toLocaleDateString()}{" "}
+                            -{" "}
+                            {new Date(
+                              charge.period_end
+                            ).toLocaleDateString()}
+                          </div>
+                          <div className="flex items-center gap-1">
+                            <MapPin className="h-4 w-4 text-muted-foreground" />
+                            {charge.space_name} • {charge.site_name}
+                          </div>
+                        </CardDescription>
+                      </div>
+                      <div className="flex items-center gap-2">
+                        <div className="text-right">
+                          <div className="text-lg font-bold">
+                            {formatCurrency(totalAmount)}
+                          </div>
+                          {charge.tax_pct > 0 && (
+                            <div className="text-xs text-muted-foreground">
+                              +{charge.tax_pct}% tax
+                            </div>
+                          )}
+                        </div>
+                        <div className="flex gap-1">
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            onClick={() => {
+                              handleView(charge);
+                            }}
+                          >
+                            <Eye className="h-4 w-4" />
+                          </Button>
+                          {canWrite(resource) && (
+                            <Button
+                              variant="ghost"
+                              size="sm"
+                              onClick={() => handleEdit(charge)}
+                            >
+                              <Edit className="h-4 w-4" />
+                            </Button>
+                          )}
+                          {canDelete(resource) && (
+                            <Button
+                              variant="ghost"
+                              size="sm"
+                              onClick={() => setDeleteId(charge.id)}
+                            >
+                              <Trash2 className="h-4 w-4" />
+                            </Button>
+                          )}
+                        </div>
+                      </div>
+                    </div>
+                  </CardHeader>
+                  <CardContent>
+                    <div className="grid gap-4 md:grid-cols-3">
+                      <div>
+                        <div className="text-sm font-medium text-muted-foreground">
+                          Base Amount
+                        </div>
+                        <div className="text-lg font-semibold">
+                          {formatCurrency(charge.amount)}
+                        </div>
+                      </div>
+
+                      {charge.tax_pct > 0 && (
+                        <div>
+                          <div className="text-sm font-medium text-muted-foreground">
+                            Tax ({charge.tax_pct}%)
+                          </div>
+                          <div className="text-lg font-semibold">
+                            {formatCurrency(taxAmount)}
+                          </div>
+                        </div>
+                      )}
+
+                      <div>
+                        <div className="text-sm font-medium text-muted-foreground">
+                          Period
+                        </div>
+                        <div className="text-sm">
+                          {Math.ceil(
+                            (new Date(charge.period_end).getTime() -
+                              new Date(charge.period_start).getTime()) /
+                            (1000 * 60 * 60 * 24)
+                          )}{" "}
+                          days
+                        </div>
+                      </div>
+                    </div>
+
+                    {charge.metadata && (
+                      <div className="mt-4 p-3 bg-muted rounded-lg">
+                        <div className="text-sm font-medium mb-2">
+                          Details
+                        </div>
+                        {charge.metadata?.description && (
+                          <div className="text-sm text-muted-foreground mb-1">
+                            {charge.metadata.description}
+                          </div>
+                        )}
+                        {charge.metadata?.units &&
+                          charge.metadata?.rate && (
+                            <div className="text-sm text-muted-foreground">
+                              {charge.metadata.units} units × ₹
+                              {charge.metadata.rate} per unit
+                            </div>
+                          )}
+                      </div>
+                    )}
+
+                    {charge.created_at && (
+                      <div className="mt-4 text-xs text-muted-foreground">
+                        Generated on{" "}
+                        {new Date(charge.created_at).toLocaleDateString()}
+                      </div>
+                    )}
+                  </CardContent>
+                </Card>
+              );
+            })
+          )}
+        </div>
+
+        {/* Pagination */}
+        {leaseCharges.length > 0 && (
+          <div className="mt-4">
+            <Pagination
+              page={page}
+              pageSize={pageSize}
+              totalItems={totalItems}
+              onPageChange={setPage}
+            />
+          </div>
+        )}
+      </ContentContainer>
       {/* Delete confirm */}
       <AlertDialog open={!!deleteId} onOpenChange={() => setDeleteId(null)}>
         <AlertDialogContent>
@@ -785,6 +776,6 @@ export default function LeaseCharges() {
         onSave={handleSave}
         mode={formMode}
       />
-    </SidebarProvider>
+    </div>
   );
 }
