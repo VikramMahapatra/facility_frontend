@@ -25,6 +25,14 @@ export const invoiceSchema = z
           .optional(),
       })
       .optional(),
+    payment_modes: z
+      .array(
+        z.object({
+          payment_type: z.string().optional(),
+          amount: z.string().optional(),
+        })
+      )
+      .optional(),
   })
   .refine(
     (data) => {

@@ -384,7 +384,7 @@ export function UserForm({
                           type="email"
                           {...register("email")}
                           placeholder="john@example.com"
-                          disabled={isReadOnly}
+                          disabled={isReadOnly || mode === "edit"}
                           className={errors.email ? "border-red-500" : ""}
                         />
                         {errors.email && (
@@ -448,7 +448,7 @@ export function UserForm({
                                 console.log("cleaned no :", finalValue);
                                 field.onChange(finalValue);
                               }}
-                              disabled={isReadOnly}
+                              disabled={isReadOnly || mode === "edit"}
                               inputProps={{
                                 name: "phone",
                                 required: true,
@@ -616,7 +616,7 @@ export function UserForm({
                           type="email"
                           {...register("email")}
                           placeholder="john@example.com"
-                          disabled={isReadOnly}
+                          disabled={isReadOnly || mode === "edit"}
                           className={errors.email ? "border-red-500" : ""}
                         />
                         {errors.email && (
@@ -680,7 +680,7 @@ export function UserForm({
                                 console.log("cleaned no :", finalValue);
                                 field.onChange(finalValue);
                               }}
-                              disabled={isReadOnly}
+                              disabled={isReadOnly || mode === "edit"}
                               inputProps={{
                                 name: "phone",
                                 required: true,
@@ -828,7 +828,7 @@ export function UserForm({
                           type="email"
                           {...register("email")}
                           placeholder="john@example.com"
-                          disabled={isReadOnly}
+                          disabled={isReadOnly || mode === "edit"}
                           className={errors.email ? "border-red-500" : ""}
                         />
                         {errors.email && (
@@ -892,7 +892,7 @@ export function UserForm({
                                 console.log("cleaned no :", finalValue);
                                 field.onChange(finalValue);
                               }}
-                              disabled={isReadOnly}
+                              disabled={isReadOnly || mode === "edit"}
                               inputProps={{
                                 name: "phone",
                                 required: true,
@@ -986,7 +986,7 @@ export function UserForm({
                           type="email"
                           {...register("email")}
                           placeholder="john@example.com"
-                          disabled={isReadOnly}
+                          disabled={isReadOnly || mode === "edit"}
                           className={errors.email ? "border-red-500" : ""}
                         />
                         {errors.email && (
@@ -1050,7 +1050,7 @@ export function UserForm({
                                 console.log("cleaned no :", finalValue);
                                 field.onChange(finalValue);
                               }}
-                              disabled={isReadOnly}
+                              disabled={isReadOnly || mode === "edit"}
                               inputProps={{
                                 name: "phone",
                                 required: true,
