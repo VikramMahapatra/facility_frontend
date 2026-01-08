@@ -68,6 +68,7 @@ import ProtectedLayout from "./components/ProtectedLayout";
 import ProtectedRoute from "./components/ProtectedRoute";
 import RegistrationStatus from "./pages/RegistrationStatus";
 import MainLayout from "./layouts/MainLayout";
+import "./App.css";
 
 const queryClient = new QueryClient();
 

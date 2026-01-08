@@ -111,27 +111,27 @@ const Login = () => {
       // For now, show error that this method is not yet implemented
       if (response?.success) {
         const authResponse = response.data;
-          setUser(authResponse?.user);
-          if (
-            authResponse?.user?.status?.toLowerCase() === "pending_approval"
-          ) {
-            const user = authResponse.user;
-            navigate("/registration-status", {
-              state: {
-                userData: {
-                  email: user.email,
-                  name: user.full_name,
-                },
+        setUser(authResponse?.user);
+        if (
+          authResponse?.user?.status?.toLowerCase() === "pending_approval"
+        ) {
+          const user = authResponse.user;
+          navigate("/registration-status", {
+            state: {
+              userData: {
+                email: user.email,
+                name: user.full_name,
               },
-            });
-          } else {
-            navigate("/dashboard");
-          }
-          toast.success("Login successful");
+            },
+          });
+        } else {
+          navigate("/dashboard");
         }
-        else{
-          setIsLoading(false);
-        }        
+        toast.success("Login successful");
+      }
+      else {
+        setIsLoading(false);
+      }
     } catch (error) {
       toast.error("Login failed. Please try again.");
       setIsLoading(false);
@@ -324,7 +324,7 @@ const Login = () => {
                         <Label htmlFor="password">Password</Label>
                         <button
                           type="button"
-                          onClick={() => {}}
+                          onClick={() => { }}
                           className="text-sm text-muted-foreground hover:text-foreground"
                         >
                           Forgot?
@@ -355,9 +355,10 @@ const Login = () => {
                     </div>
                     <Button
                       type="submit"
+                      variant="default"
                       disabled={isLoading || isGoogleLoading}
                       size="lg"
-                      className="w-full h-11 bg-foreground text-background hover:bg-foreground/90"
+                      className="w-full h-11 shadow-sm text-background"
                     >
                       {isLoading ? "Signing in..." : "Sign In"}
                     </Button>
@@ -391,7 +392,7 @@ const Login = () => {
                     ) : (
                       <>
                         <Chrome className="w-5 h-5 mr-2" />
-                        Login with Google
+                        Continue with Google
                       </>
                     )}
                   </Button>

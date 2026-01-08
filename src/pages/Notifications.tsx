@@ -36,6 +36,7 @@ export default function Notifications() {
   const [page, setPage] = useState(1);
   const [pageSize] = useState(10);
   const [totalItems, setTotalItems] = useState(0);
+  const [notiCount, setNotiCount] = useState(0);
   const { withLoader } = useLoader();
 
 
@@ -73,6 +74,12 @@ export default function Notifications() {
       setTotalItems(response.data?.total || 0);
     }
   };
+
+
+  const loadUnreadNotificationCount = async () => {
+    const response = await notificationsApiService.getNotificationCount();
+    if (response?.success) setNotiCount(response.data || 0);
+  }
 
   const markAsRead = async (id: number | string) => {
     const data = await notificationsApiService.markAsRead(String(id));
@@ -166,8 +173,6 @@ export default function Notifications() {
     }
   };
 
-  const unreadCount = notifications.filter(n => !n.read).length;
-
   return (
     <div className="flex-1">
       <div className="space-y-6">
@@ -179,12 +184,12 @@ export default function Notifications() {
             </p>
           </div>
           <div className="flex items-center gap-2">
-            {unreadCount > 0 && (
+            {notiCount > 0 && (
               <Badge variant="secondary" className="mr-2">
-                {unreadCount} unread
+                {notiCount} unread
               </Badge>
             )}
-            <Button variant="outline" onClick={markAllAsRead} disabled={unreadCount === 0}>
+            <Button variant="outline" onClick={markAllAsRead} disabled={notiCount === 0}>
               Mark All Read
             </Button>
             <Button variant="destructive" onClick={clearAllNotifications} disabled={notifications.length === 0}>

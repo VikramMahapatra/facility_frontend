@@ -58,7 +58,7 @@ import {
 import { Separator } from "@/components/ui/separator";
 import { PropertySidebar } from "@/components/PropertySidebar";
 import { invoiceApiService } from "@/services/financials/invoicesapi";
-import { Invoice, InvoiceOverview } from "@/interfaces/invoices_interfaces";
+import { Invoice, InvoiceOverview, Payment } from "@/interfaces/invoices_interfaces";
 import { Pagination } from "@/components/Pagination";
 import { toast } from "sonner";
 import { InvoiceForm } from "@/components/InvoiceForm";
@@ -72,7 +72,7 @@ export default function Invoices() {
   const [statusFilter, setStatusFilter] = useState("all");
   //const [customerTypeFilter, setCustomerTypeFilter] = useState("all");
   const [invoices, setInvoices] = useState<Invoice[]>([]);
-  const [workOrderInvoices, setWorkOrderInvoices] = useState<Invoice[]>([]);
+  const [payments, setPayments] = useState<Payment[]>([]);
   const [selectedInvoice, setSelectedInvoice] = useState<Invoice | undefined>();
   const [formMode, setFormMode] = useState<"create" | "edit" | "view">(
     "create"
@@ -89,21 +89,19 @@ export default function Invoices() {
     outstandingAmount: 0,
   });
   const [page, setPage] = useState(1); // current page
-  const [pageSize] = useState(6); // items per page
+  const [pageSize] = useState(5); // items per page
   const [totalItems, setTotalItems] = useState(0);
-  const { user, handleLogout } = useAuth();
 
-  const [workOrderInvoicePage, setWorkOrderInvoicePage] = useState(1); // current page
-  const [workOrderInvoicePageSize] = useState(6); // items per page
-  const [totalWorkOrderInvoiceItems, setTotalWorkOrderInvoiceItems] =
-    useState(0);
-  const [loadingLeaseInvoices, setLoadingLeaseInvoices] = useState(false);
-  const [loadingWorkOrderInvoices, setLoadingWorkOrderInvoices] =
-    useState(false);
+  const [paymentPage, setPaymentPage] = useState(1); // current page
+  const [paymentPageSize] = useState(5); // items per page
+  const [totalPaymentItems, setTotalPaymentItems] = useState(0);
+  const [loadingInvoices, setLoadingInvoices] = useState(false);
+  const [loadingPayments, setLoadingPayments] = useState(false);
 
   useEffect(() => {
     loadInvoicesOverView();
-    loadWorkOrderInvoices();
+    loadInvoices();
+    loadPayments();
   }, []);
 
   useSkipFirstEffect(() => {
@@ -111,15 +109,15 @@ export default function Invoices() {
   }, [page]);
 
   useSkipFirstEffect(() => {
-    loadWorkOrderInvoices();
-  }, [workOrderInvoicePage]);
+    loadPayments();
+  }, [paymentPage]);
 
-  useEffect(() => {
+  useSkipFirstEffect(() => {
     updateInvoicesPage();
-    if (workOrderInvoicePage === 1) {
-      loadWorkOrderInvoices();
+    if (paymentPage === 1) {
+      loadPayments();
     } else {
-      setWorkOrderInvoicePage(1);
+      setPaymentPage(1);
     }
   }, [searchTerm, statusFilter]);
 
@@ -146,25 +144,25 @@ export default function Invoices() {
     params.append("skip", skip.toString());
     params.append("limit", limit.toString());
 
-    setLoadingLeaseInvoices(true);
+    setLoadingInvoices(true);
     try {
-      const response = await invoiceApiService.getLeaseChargeInvoices(params);
+      const response = await invoiceApiService.getInvoices(params);
 
       if (response?.success) {
         const invoices =
           response.data?.data?.invoices || response.data?.invoices || [];
-        const total = response.data?.data?.total || response.data?.total || 0;
+        const total = response.data?.total || response.data?.total || 0;
         setInvoices(invoices);
         setTotalItems(total);
       }
     } finally {
-      setLoadingLeaseInvoices(false);
+      setLoadingInvoices(false);
     }
   };
 
-  const loadWorkOrderInvoices = async () => {
-    const skip = (workOrderInvoicePage - 1) * workOrderInvoicePageSize;
-    const limit = workOrderInvoicePageSize;
+  const loadPayments = async () => {
+    const skip = (paymentPage - 1) * paymentPageSize;
+    const limit = paymentPageSize;
 
     const params = new URLSearchParams();
     if (searchTerm) params.append("search", searchTerm);
@@ -173,19 +171,19 @@ export default function Invoices() {
     params.append("skip", skip.toString());
     params.append("limit", limit.toString());
 
-    setLoadingWorkOrderInvoices(true);
+    setLoadingPayments(true);
     try {
-      const response = await invoiceApiService.getWorkOrderInvoices(params);
+      const response = await invoiceApiService.getPayments(params);
 
       if (response?.success) {
         const invoices =
-          response.data?.data?.invoices || response.data?.invoices || [];
-        const total = response.data?.data?.total || response.data?.total || 0;
-        setWorkOrderInvoices(invoices);
-        setTotalWorkOrderInvoiceItems(total);
+          response.data?.data?.payments || response.data?.payments || [];
+        const total = response.data?.total || response.data?.total || 0;
+        setPayments(invoices);
+        setTotalPaymentItems(total);
       }
     } finally {
-      setLoadingWorkOrderInvoices(false);
+      setLoadingPayments(false);
     }
   };
 
@@ -236,14 +234,11 @@ export default function Invoices() {
       const authResponse = response.data;
       if (authResponse?.success) {
         setInvoices((prev) => prev.filter((inv) => inv.id !== deleteInvoiceId));
-        setWorkOrderInvoices((prev) =>
-          prev.filter((inv) => inv.id !== deleteInvoiceId)
-        );
+        setPayments((prev) => prev.filter((inv) => inv.id !== deleteInvoiceId));
 
         toast.success("The invoice has been deleted successfully.");
         setDeleteInvoiceId(null);
         updateInvoicesPage();
-        loadWorkOrderInvoices();
         loadInvoicesOverView();
       } else {
         toast.error(`Cannot Delete Invoice\n${authResponse?.message}`, {
@@ -253,46 +248,14 @@ export default function Invoices() {
     }
   };
 
-  const handleMarkAsPaid = async (invoice: Invoice) => {
-    if (markingPaidId) return;
-
-    setMarkingPaidId(invoice.id);
-
-    const updatedInvoice: Invoice = {
-      ...invoice,
-      status: "paid",
-      is_paid: true,
-      updated_at: new Date().toISOString(),
-    };
-
-    try {
-      const response = await invoiceApiService.updateInvoice(updatedInvoice);
-
-      if (response.success) {
-        setInvoices((prev) =>
-          prev.map((inv) =>
-            inv.id === updatedInvoice.id ? updatedInvoice : inv
-          )
-        );
-        setWorkOrderInvoices((prev) =>
-          prev.map((inv) =>
-            inv.id === updatedInvoice.id ? updatedInvoice : inv
-          )
-        );
-        loadInvoicesOverView();
-        toast.success(`Invoice ${invoice.invoice_no} has been marked as paid.`);
-      }
-    } finally {
-      setMarkingPaidId(null);
-    }
-  };
-
   const handleSave = async (invoiceData: Partial<Invoice>) => {
     let response;
     if (formMode === "create") {
       response = await invoiceApiService.addInvoice(invoiceData);
-      if (response.success) updateInvoicesPage();
-      loadWorkOrderInvoices();
+      if (response.success) {
+        updateInvoicesPage();
+        loadPayments()
+      }
     } else if (formMode === "edit" && selectedInvoice) {
       const updatedInvoice = {
         ...selectedInvoice,
@@ -302,11 +265,6 @@ export default function Invoices() {
       if (response.success) {
         loadInvoicesOverView();
         setInvoices((prev) =>
-          prev.map((inv) =>
-            inv.id === updatedInvoice.id ? response.data : inv
-          )
-        );
-        setWorkOrderInvoices((prev) =>
           prev.map((inv) =>
             inv.id === updatedInvoice.id ? response.data : inv
           )
@@ -420,8 +378,8 @@ export default function Invoices() {
 
         {/* Filters */}
         <div className="flex flex-wrap gap-4">
-          <div className="relative">
-            <Search className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
+          <div className="relative flex-1 max-w-sm">
+            <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground h-4 w-4" />
             <Input
               placeholder="Search by invoice number or customer..."
               value={searchTerm}
@@ -448,238 +406,151 @@ export default function Invoices() {
         </div>
 
         <div className="relative ">
-          <ContentContainer>
-            <div className="space-y-6">
-              {/* Invoices Table */}
-              <Card className="relative">
-                {loadingLeaseInvoices && (
-                  <div className="absolute inset-0 bg-background/50 backdrop-blur-sm z-20 flex items-center justify-center rounded-lg">
-                    <div className="animate-spin w-10 h-10 border-4 border-primary border-t-transparent rounded-full"></div>
-                  </div>
-                )}
-                <CardHeader>
-                  <CardTitle>Lease Invoices</CardTitle>
-                  <CardDescription>
-                    {totalItems} invoice(s) found
-                  </CardDescription>
-                </CardHeader>
-                <CardContent>
-                  <Table>
-                    <TableHeader>
-                      <TableRow>
-                        <TableHead>Invoice No.</TableHead>
-                        <TableHead>Lease Charge</TableHead>
-                        <TableHead>Site Name</TableHead>
-                        <TableHead>Date</TableHead>
-                        <TableHead>Due Date</TableHead>
-                        <TableHead>Amount</TableHead>
-                        <TableHead>Status</TableHead>
-                        <TableHead>Actions</TableHead>
-                      </TableRow>
-                    </TableHeader>
-                    <TableBody>
-                      {invoices.map((invoice) => (
-                        <TableRow key={invoice.id}>
-                          <TableCell className="font-medium">
-                            {invoice.invoice_no}
-                          </TableCell>
-                          <TableCell>
-                            {invoice.billable_item_name}
-                          </TableCell>
-                          <TableCell>
-                            {invoice.site_name || "-"}
-                          </TableCell>
-                          <TableCell>
-                            {new Date(invoice.date).toLocaleDateString()}
-                          </TableCell>
-                          <TableCell>
-                            {new Date(
-                              invoice.due_date
-                            ).toLocaleDateString()}
-                          </TableCell>
-                          <TableCell>
-                            ₹{invoice?.totals?.grand ?? 0}
-                          </TableCell>
-                          <TableCell>
-                            {getStatusBadge(invoice.status)}
-                          </TableCell>
-                          <TableCell>
-                            <div className="flex gap-1">
-                              <Button
-                                variant="ghost"
-                                size="sm"
-                                onClick={() => handleView(invoice)}
-                              >
-                                <Eye className="h-4 w-4" />
-                              </Button>
-                              {canWrite(resource) &&
-                                invoice.status !== "paid" && (
-                                  <Button
-                                    variant="ghost"
-                                    size="sm"
-                                    onClick={() => handleEdit(invoice)}
-                                  >
-                                    <Edit className="h-4 w-4" />
-                                  </Button>
-                                )}
-                              {canDelete(resource) && (
+          <div className="space-y-6">
+            {/* Invoices Table */}
+            <Card className="relative">
+              {loadingInvoices && (
+                <div className="absolute inset-0 bg-background/50 backdrop-blur-sm z-20 flex items-center justify-center rounded-lg">
+                  <div className="animate-spin w-10 h-10 border-4 border-primary border-t-transparent rounded-full"></div>
+                </div>
+              )}
+              <CardHeader>
+                <CardTitle>Invoices</CardTitle>
+                <CardDescription>
+                  {totalItems} invoice(s) found
+                </CardDescription>
+              </CardHeader>
+              <CardContent>
+                <Table>
+                  <TableHeader>
+                    <TableRow>
+                      <TableHead>Invoice No.</TableHead>
+                      <TableHead>Lease Charge</TableHead>
+                      <TableHead>Site Name</TableHead>
+                      <TableHead>Date</TableHead>
+                      <TableHead>Due Date</TableHead>
+                      <TableHead>Amount</TableHead>
+                      <TableHead>Status</TableHead>
+                      <TableHead>Actions</TableHead>
+                    </TableRow>
+                  </TableHeader>
+                  <TableBody>
+                    {invoices.map((invoice) => (
+                      <TableRow key={invoice.id}>
+                        <TableCell className="font-medium">
+                          {invoice.invoice_no}
+                        </TableCell>
+                        <TableCell>
+                          {invoice.billable_item_name}
+                        </TableCell>
+                        <TableCell>
+                          {invoice.site_name || "-"}
+                        </TableCell>
+                        <TableCell>
+                          {new Date(invoice.date).toLocaleDateString()}
+                        </TableCell>
+                        <TableCell>
+                          {new Date(
+                            invoice.due_date
+                          ).toLocaleDateString()}
+                        </TableCell>
+                        <TableCell>
+                          ₹{invoice?.totals?.grand ?? 0}
+                        </TableCell>
+                        <TableCell>
+                          {getStatusBadge(invoice.status)}
+                        </TableCell>
+                        <TableCell>
+                          <div className="flex gap-1">
+                            <Button
+                              variant="ghost"
+                              size="sm"
+                              onClick={() => handleView(invoice)}
+                            >
+                              <Eye className="h-4 w-4" />
+                            </Button>
+                            {canWrite(resource) &&
+                              invoice.status !== "paid" && (
                                 <Button
                                   variant="ghost"
                                   size="sm"
-                                  className="text-destructive hover:text-destructive"
-                                  onClick={() => handleDelete(invoice.id)}
+                                  onClick={() => handleEdit(invoice)}
                                 >
-                                  <Trash2 className="h-4 w-4" />
+                                  <Edit className="h-4 w-4" />
                                 </Button>
                               )}
-                              {invoice.status === "issued" &&
-                                canWrite(resource) && (
-                                  <Button
-                                    size="sm"
-                                    onClick={() =>
-                                      handleMarkAsPaid(invoice)
-                                    }
-                                    disabled={
-                                      markingPaidId === invoice.id
-                                    }
-                                    className="bg-primary text-primary-foreground hover:bg-primary/90"
-                                  >
-                                    Mark as Paid
-                                  </Button>
-                                )}
-                            </div>
-                          </TableCell>
-                        </TableRow>
-                      ))}
-                    </TableBody>
-                  </Table>
-                  <Pagination
-                    page={page}
-                    pageSize={pageSize}
-                    totalItems={totalItems}
-                    onPageChange={(newPage) => setPage(newPage)}
-                  />
-                </CardContent>
-              </Card>
+                            {canDelete(resource) && (
+                              <Button
+                                variant="ghost"
+                                size="sm"
+                                className="text-destructive hover:text-destructive"
+                                onClick={() => handleDelete(invoice.id)}
+                              >
+                                <Trash2 className="h-4 w-4" />
+                              </Button>
+                            )}
+                          </div>
+                        </TableCell>
+                      </TableRow>
+                    ))}
+                  </TableBody>
+                </Table>
+                <Pagination
+                  page={page}
+                  pageSize={pageSize}
+                  totalItems={totalItems}
+                  onPageChange={(newPage) => setPage(newPage)}
+                />
+              </CardContent>
+            </Card>
 
-              {/* Work Order Invoices */}
-              <Card className="relative">
-                {loadingWorkOrderInvoices && (
-                  <div className="absolute inset-0 bg-background/50 backdrop-blur-sm z-20 flex items-center justify-center rounded-lg">
-                    <div className="animate-spin w-10 h-10 border-4 border-primary border-t-transparent rounded-full"></div>
-                  </div>
-                )}
-                <CardHeader>
-                  <CardTitle>Work Order Invoices</CardTitle>
-                  <CardDescription>
-                    {totalWorkOrderInvoiceItems} invoice(s) found
-                  </CardDescription>
-                </CardHeader>
-                <CardContent>
-                  <Table>
-                    <TableHeader>
-                      <TableRow>
-                        <TableHead>Invoice No.</TableHead>
-                        <TableHead>Work Order</TableHead>
-                        <TableHead>Site Name</TableHead>
-                        <TableHead>Date</TableHead>
-                        <TableHead>Due Date</TableHead>
-                        <TableHead>Amount</TableHead>
-                        <TableHead>Status</TableHead>
-                        <TableHead>Actions</TableHead>
+            {/* Recent Payments */}
+            <Card className="relative">
+              {loadingPayments && (
+                <div className="absolute inset-0 bg-background/50 backdrop-blur-sm z-20 flex items-center justify-center rounded-lg">
+                  <div className="animate-spin w-10 h-10 border-4 border-primary border-t-transparent rounded-full"></div>
+                </div>
+              )}
+              <CardHeader>
+                <CardTitle>Payments</CardTitle>
+                <CardDescription>{totalPaymentItems} payment(s) found</CardDescription>
+              </CardHeader>
+              <CardContent>
+                <Table>
+                  <TableHeader>
+                    <TableRow>
+                      <TableHead>Invoice No.</TableHead>
+                      <TableHead>Customer</TableHead>
+                      <TableHead>Method</TableHead>
+                      <TableHead>Reference</TableHead>
+                      <TableHead>Amount</TableHead>
+                      <TableHead>Date</TableHead>
+                    </TableRow>
+                  </TableHeader>
+                  <TableBody>
+                    {payments.map((payment) => (
+                      <TableRow key={payment.id}>
+                        <TableCell className="font-medium">{payment.invoice_no}</TableCell>
+                        <TableCell>{payment.customer_name}</TableCell>
+                        <TableCell>
+                          <Badge variant="outline">{payment.method.toUpperCase()}</Badge>
+                        </TableCell>
+                        <TableCell className="font-mono text-sm">{payment.ref_no}</TableCell>
+                        <TableCell>₹{payment.amount.toLocaleString()}</TableCell>
+                        <TableCell>{new Date(payment.paid_at).toLocaleDateString()}</TableCell>
                       </TableRow>
-                    </TableHeader>
-                    <TableBody>
-                      {workOrderInvoices.map((invoice) => (
-                        <TableRow key={invoice.id}>
-                          <TableCell className="font-medium">
-                            {invoice.invoice_no}
-                          </TableCell>
-                          <TableCell>
-                            {invoice.billable_item_name || "-"}
-                          </TableCell>
-                          <TableCell>
-                            {invoice.site_name || "-"}
-                          </TableCell>
-                          <TableCell>
-                            {new Date(invoice.date).toLocaleDateString()}
-                          </TableCell>
-                          <TableCell>
-                            {new Date(
-                              invoice.due_date
-                            ).toLocaleDateString()}
-                          </TableCell>
-                          <TableCell>
-                            ₹
-                            {Number(
-                              invoice?.totals?.grand ?? 0
-                            ).toLocaleString()}
-                          </TableCell>
-                          <TableCell>
-                            {getStatusBadge(invoice.status)}
-                          </TableCell>
-                          <TableCell>
-                            <div className="flex gap-1">
-                              <Button
-                                variant="ghost"
-                                size="sm"
-                                onClick={() => handleView(invoice)}
-                              >
-                                <Eye className="h-4 w-4" />
-                              </Button>
-                              {canWrite(resource) &&
-                                invoice.status !== "paid" && (
-                                  <Button
-                                    variant="ghost"
-                                    size="sm"
-                                    onClick={() => handleEdit(invoice)}
-                                  >
-                                    <Edit className="h-4 w-4" />
-                                  </Button>
-                                )}
-                              {canDelete(resource) && (
-                                <Button
-                                  variant="ghost"
-                                  size="sm"
-                                  className="text-destructive hover:text-destructive"
-                                  onClick={() => handleDelete(invoice.id)}
-                                >
-                                  <Trash2 className="h-4 w-4" />
-                                </Button>
-                              )}
-                              {invoice.status === "issued" &&
-                                canWrite(resource) && (
-                                  <Button
-                                    size="sm"
-                                    onClick={() =>
-                                      handleMarkAsPaid(invoice)
-                                    }
-                                    disabled={
-                                      markingPaidId === invoice.id
-                                    }
-                                    className="bg-primary text-primary-foreground hover:bg-primary/90"
-                                  >
-                                    Mark as Paid
-                                  </Button>
-                                )}
-                            </div>
-                          </TableCell>
-                        </TableRow>
-                      ))}
-                    </TableBody>
-                  </Table>
-                  <Pagination
-                    page={workOrderInvoicePage}
-                    pageSize={workOrderInvoicePageSize}
-                    totalItems={totalWorkOrderInvoiceItems}
-                    onPageChange={(newPage) =>
-                      setWorkOrderInvoicePage(newPage)
-                    }
-                  />
-                </CardContent>
-              </Card>
-            </div>
-          </ContentContainer>
+                    ))}
+                  </TableBody>
+                </Table>
+                <Pagination
+                  page={paymentPage}
+                  pageSize={paymentPageSize}
+                  totalItems={totalPaymentItems}
+                  onPageChange={(newPage) => setPaymentPage(newPage)}
+                />
+              </CardContent>
+            </Card>
+          </div>
         </div>
       </div>
       <InvoiceForm

@@ -42,6 +42,7 @@ import { useLoader } from "@/context/LoaderContext";
 import LoaderOverlay from "@/components/LoaderOverlay";
 import ContentContainer from "@/components/ContentContainer";
 import { PageHeader } from "@/components/PageHeader";
+import { useSkipFirstEffect } from "@/hooks/use-skipfirst-effect";
 
 export default function Leases() {
   const [searchTerm, setSearchTerm] = useState("");
@@ -78,7 +79,7 @@ export default function Leases() {
     loadLeaseOverview();
   }, [page]);
 
-  useEffect(() => {
+  useSkipFirstEffect(() => {
     updateLeasePage();
   }, [searchTerm, selectedSite, selectedKind, selectedStatus]);
 

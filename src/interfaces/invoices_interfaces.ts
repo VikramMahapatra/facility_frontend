@@ -1,11 +1,11 @@
 export interface Invoice {
-    id: string;
-    org_id: string;
+    id?: string;
+    org_id?: string;
     site_id: string;
     site_name?: string;
     customer_kind: 'resident' | 'merchant' | 'guest' | 'staff' | 'other'; // ✅ Match service request types
-    customer_id: string;
-    customer_name: string;
+    customer_id?: string;
+    customer_name?: string;
     billable_item_name?: string;
     billable_item_type?: string;
     billable_item_id?: string;
@@ -24,6 +24,7 @@ export interface Invoice {
     lines?: InvoiceLine[];
     created_at?: string;
     updated_at?: string;
+    payments?: PaymentInput[];
 }
 
 export interface InvoiceLine {
@@ -34,6 +35,13 @@ export interface InvoiceLine {
     qty: number;
     price: number;
     taxPct: number;
+}
+
+export interface PaymentInput {
+    method?: 'upi' | 'card' | 'bank' | 'cash' | 'cheque' | 'gateway';
+    ref_no?: string;
+    amount?: number;
+    paid_at: string;
 }
 
 export interface Payment {
