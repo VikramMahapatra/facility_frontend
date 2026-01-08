@@ -24,6 +24,19 @@ class AuthApiService {
         return response;
     }
 
+     async login(username: string, password: string) {
+        const response = await apiService.request('/auth/login', {
+            method: 'POST',
+            body: JSON.stringify({
+                username,
+                password
+            }),
+        });
+
+        this.updateTokens(response);
+        return response;
+    }
+
     async authenticateGoogle(access_token: string) {
         const response = await apiService.request('/auth/google', {
             method: 'POST',

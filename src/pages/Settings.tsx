@@ -44,6 +44,7 @@ import { toast } from "sonner";
 import { settingsApiService } from "@/services/system/settingsapi";
 import { any } from "zod";
 import { useLoader } from "@/context/LoaderContext";
+import { useSettings } from "@/context/SettingsContext";
 import LoaderOverlay from "@/components/LoaderOverlay";
 import ContentContainer from "@/components/ContentContainer";
 
@@ -155,6 +156,7 @@ export default function Settings() {
   const [activeTab, setActiveTab] = useState("general");
   const [isSaving, setIsSaving] = useState(false);
   const { withLoader } = useLoader();
+  const { refreshSettings } = useSettings();
 
   const loadSettings = async () => {
     const response = await withLoader(async () => {
@@ -237,6 +239,7 @@ export default function Settings() {
     if (response?.success) {
       toast.success("Settings saved successfully.");
       loadSettings();
+      await refreshSettings();
     } else {
       toast.error("Failed to save settings. Please try again.");
     }

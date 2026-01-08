@@ -45,6 +45,7 @@ import { useLoader } from "@/context/LoaderContext";
 import LoaderOverlay from "@/components/LoaderOverlay";
 import ContentContainer from "@/components/ContentContainer";
 import { useAuth } from "@/context/AuthContext";
+import { PageHeader } from "@/components/PageHeader";
 
 
 export default function PendingApprovals() {
@@ -62,7 +63,7 @@ export default function PendingApprovals() {
   const [totalItems, setTotalItems] = useState(0);
   const { withLoader } = useLoader();
   const { user, handleLogout } = useAuth();
-  
+
 
   useSkipFirstEffect(() => {
     loadUsersForApproval();
@@ -194,177 +195,125 @@ export default function PendingApprovals() {
   };
 
   return (
-    <SidebarProvider>
-      <div className="min-h-screen flex w-full bg-background">
-        <PropertySidebar />
-
-        <div className="flex-1 flex flex-col">
-          <header className="flex h-16 shrink-0 items-center justify-between border-b border-sidebar-border px-4">
-            <div className="flex items-center gap-2">
-              <Clock className="h-5 w-5 text-muted-foreground" />
-              <h2 className="text-lg font-semibold">Pending User Approvals</h2>
-            </div>
-            <div className="flex items-center gap-4">
-              <div className="flex items-center gap-3">
-                <Avatar>
-                  <AvatarFallback className="bg-gradient-primary text-white">
-                    {user.name.charAt(0)}
-                  </AvatarFallback>
-                </Avatar>
-
-                <div className="text-right">
-                  <p className="text-sm font-medium">{user.name}</p>
-                  <p className="text-xs text-muted-foreground">
-                    {user.account_type}
-                  </p>
-                </div>
-              </div>
-
-              <Button
-                variant="ghost"
-                size="sm"
-                onClick={handleLogout}
-                className="text-muted-foreground hover:text-destructive"
-              >
-                <LogOut className="w-4 h-4 mr-2" />
-                Logout
-              </Button>
-            </div>
-          </header>
-
-          <main className="relative  flex-1 p-6 overflow-auto">
-            <div className="max-w-7xl mx-auto space-y-6">
-              <div className="flex items-center justify-between">
-                <div>
-                  <h1 className="text-3xl font-bold text-foreground">Pending Approvals</h1>
-                  <p className="text-muted-foreground mt-1">
-                    Review and approve new user registration requests
-                  </p>
-                </div>
-                <Badge variant="secondary" className="text-lg px-4 py-2">
-                  {users.length} Pending
-                </Badge>
-              </div>
-
-              <Card>
-                <CardHeader>
-                  <CardTitle>User Approval Queue</CardTitle>
-                  <CardDescription>
-                    Users awaiting approval to access the system
-                  </CardDescription>
-                </CardHeader>
-                <CardContent>
-                  {users.length === 0 ? (
-                    <div className="text-center py-12">
-                      <Check className="h-16 w-16 text-muted-foreground mx-auto mb-4" />
-                      <h3 className="text-lg font-medium text-foreground mb-2">
-                        All Caught Up!
-                      </h3>
-                      <p className="text-muted-foreground">
-                        No pending user approvals at this time
-                      </p>
-                    </div>
-                  ) : (
-                    <div className="relative rounded-md border">
-                      <ContentContainer>
-                        <LoaderOverlay />
-                        <Table>
-                          <TableHeader>
-                            <TableRow>
-                              <TableHead>User</TableHead>
-                              <TableHead>Contact</TableHead>
-                              <TableHead>Requested Type</TableHead>
-                              <TableHead>Requested Date</TableHead>
-                              <TableHead className="text-right">Actions</TableHead>
-                            </TableRow>
-                          </TableHeader>
-                          <TableBody>
-                            {users.map((user) => {
-                              const userCanApprove = canApprove(user);
-                              return (
-                                <TableRow key={user.id}>
-                                  <TableCell>
-                                    <div className="flex items-center gap-3">
-                                      <Avatar>
-                                        <AvatarFallback>
-                                          {getInitials(user.full_name)}
-                                        </AvatarFallback>
-                                      </Avatar>
-                                      <div>
-                                        <div className="font-medium">{user.full_name}</div>
-                                        <div className="text-xs text-muted-foreground">
-                                          {user.email}
-                                        </div>
-                                      </div>
-                                    </div>
-                                  </TableCell>
-                                  <TableCell className="text-muted-foreground">
-                                    {user.phone || "—"}
-                                  </TableCell>
-                                  <TableCell>
-                                    <div className="flex flex-wrap gap-1">
-                                      <Badge variant="outline">
-                                        {user.account_type}
-                                      </Badge>
-                                    </div>
-                                  </TableCell>
-                                  <TableCell className="text-muted-foreground text-sm">
-                                    {new Date(user.created_at).toLocaleDateString()}
-                                  </TableCell>
-                                  <TableCell className="text-right">
-                                    <div className="flex justify-end gap-2">
-                                      {userCanApprove ? (
-                                        <>
-                                          <Button
-                                            variant="default"
-                                            size="sm"
-                                            onClick={() => handleApprove(user)}
-                                          >
-                                            <Check className="h-4 w-4 mr-1" />
-                                            Approve
-                                          </Button>
-                                          <Button
-                                            variant="destructive"
-                                            size="sm"
-                                            onClick={() => handleReject(user)}
-                                          >
-                                            <X className="h-4 w-4 mr-1" />
-                                            Reject
-                                          </Button>
-                                        </>
-                                      ) : (
-                                        <Badge variant="secondary">
-                                          No Permission
-                                        </Badge>
-                                      )}
-                                    </div>
-                                  </TableCell>
-                                </TableRow>
-                              );
-                            })}
-                          </TableBody>
-                        </Table>
-                      </ContentContainer>
-                    </div>
-                  )}
-
-                  {users.length > 0 && (
-                    <div className="mt-4">
-                      <Pagination
-                        page={page}
-                        pageSize={pageSize}
-                        totalItems={totalItems}
-                        onPageChange={setPage}
-                      />
-                    </div>
-                  )}
-                </CardContent>
-              </Card>
-            </div>
-          </main>
+    <div className="relative  flex-1 ">
+      <div className="space-y-6">
+        <div className="flex items-center justify-between">
+          <div>
+            <h1 className="text-3xl font-bold text-foreground">User Approval Queue</h1>
+            <p className="text-muted-foreground mt-1">
+              Review and approve new user registration requests
+            </p>
+          </div>
+          <Badge variant="secondary" className="text-lg px-4 py-2">
+            {users.length} Pending
+          </Badge>
         </div>
-      </div>
 
+        {users.length === 0 ? (
+          <div className="text-center py-12">
+            <Check className="h-16 w-16 text-muted-foreground mx-auto mb-4" />
+            <h3 className="text-lg font-medium text-foreground mb-2">
+              All Caught Up!
+            </h3>
+            <p className="text-muted-foreground">
+              No pending user approvals at this time
+            </p>
+          </div>
+        ) : (
+          <div className="relative rounded-md border">
+            <ContentContainer>
+              <LoaderOverlay />
+              <Table>
+                <TableHeader>
+                  <TableRow>
+                    <TableHead>User</TableHead>
+                    <TableHead>Contact</TableHead>
+                    <TableHead>Requested Type</TableHead>
+                    <TableHead>Requested Date</TableHead>
+                    <TableHead className="text-right">Actions</TableHead>
+                  </TableRow>
+                </TableHeader>
+                <TableBody>
+                  {users.map((user) => {
+                    const userCanApprove = canApprove(user);
+                    return (
+                      <TableRow key={user.id}>
+                        <TableCell>
+                          <div className="flex items-center gap-3">
+                            <Avatar>
+                              <AvatarFallback>
+                                {getInitials(user.full_name)}
+                              </AvatarFallback>
+                            </Avatar>
+                            <div>
+                              <div className="font-medium">{user.full_name}</div>
+                              <div className="text-xs text-muted-foreground">
+                                {user.email}
+                              </div>
+                            </div>
+                          </div>
+                        </TableCell>
+                        <TableCell className="text-muted-foreground">
+                          {user.phone || "—"}
+                        </TableCell>
+                        <TableCell>
+                          <div className="flex flex-wrap gap-1">
+                            <Badge variant="outline">
+                              {user.account_type}
+                            </Badge>
+                          </div>
+                        </TableCell>
+                        <TableCell className="text-muted-foreground text-sm">
+                          {new Date(user.created_at).toLocaleDateString()}
+                        </TableCell>
+                        <TableCell className="text-right">
+                          <div className="flex justify-end gap-2">
+                            {userCanApprove ? (
+                              <>
+                                <Button
+                                  variant="default"
+                                  size="sm"
+                                  onClick={() => handleApprove(user)}
+                                >
+                                  <Check className="h-4 w-4 mr-1" />
+                                  Approve
+                                </Button>
+                                <Button
+                                  variant="destructive"
+                                  size="sm"
+                                  onClick={() => handleReject(user)}
+                                >
+                                  <X className="h-4 w-4 mr-1" />
+                                  Reject
+                                </Button>
+                              </>
+                            ) : (
+                              <Badge variant="secondary">
+                                No Permission
+                              </Badge>
+                            )}
+                          </div>
+                        </TableCell>
+                      </TableRow>
+                    );
+                  })}
+                </TableBody>
+              </Table>
+            </ContentContainer>
+          </div>
+        )}
+
+        {users.length > 0 && (
+          <div className="mt-4">
+            <Pagination
+              page={page}
+              pageSize={pageSize}
+              totalItems={totalItems}
+              onPageChange={setPage}
+            />
+          </div>
+        )}
+      </div>
       {/* Approve Dialog with Role Selection */}
       <Dialog open={isApproveDialogOpen} onOpenChange={(open) => {
         setIsApproveDialogOpen(open);
@@ -468,6 +417,6 @@ export default function PendingApprovals() {
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
-    </SidebarProvider>
+    </div>
   );
 }

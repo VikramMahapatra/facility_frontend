@@ -7,7 +7,11 @@ class NotificationsApiService {
             body: JSON.stringify(data),
         });
     }
-    
+
+    async getNotificationCount() {
+        return await apiService.request('/notifications/count');
+    }
+
     async markAsRead(notification_id: string) {
         return await apiService.request(`/notifications/${notification_id}/read`, {
             method: 'PUT',

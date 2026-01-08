@@ -1,5 +1,13 @@
 import { useState, useEffect } from "react";
-import { Package, Plus, Eye, Edit, Trash2, Users, DollarSign } from "lucide-react";
+import {
+  Package,
+  Plus,
+  Eye,
+  Edit,
+  Trash2,
+  Users,
+  DollarSign,
+} from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -12,22 +20,35 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { PropertySidebar } from "@/components/PropertySidebar";
-import { SidebarProvider, SidebarInset, SidebarTrigger } from "@/components/ui/sidebar";
+import {
+  SidebarProvider,
+  SidebarInset,
+  SidebarTrigger,
+} from "@/components/ui/sidebar";
 import { SpaceGroupForm } from "@/components/SpaceGroupForm";
 import { toast } from "sonner";
 import { Pagination } from "@/components/Pagination";
 import { spaceGroupsApiService } from "@/services/spaces_sites/spacegroupsapi";
 import { siteApiService } from "@/services/spaces_sites/sitesapi";
 import { SpaceKind, spaceKinds } from "@/interfaces/spaces_interfaces";
-import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
 import { useSkipFirstEffect } from "@/hooks/use-skipfirst-effect";
 import { useAuth } from "../context/AuthContext";
 import { useLoader } from "@/context/LoaderContext";
-import { LogOut, } from "lucide-react";
+import { LogOut } from "lucide-react";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import LoaderOverlay from "@/components/LoaderOverlay";
 import ContentContainer from "@/components/ContentContainer";
-
+import { PageHeader } from "@/components/PageHeader";
 
 export interface SpaceGroup {
   id: string;
@@ -38,7 +59,7 @@ export interface SpaceGroup {
     base_rate: number;
     amenities: string[];
   };
-  group_members?: number
+  group_members?: number;
 }
 
 export default function SpaceGroups() {
@@ -47,13 +68,17 @@ export default function SpaceGroups() {
   const [selectedKind, setSelectedKind] = useState<string>("all");
   const [selectedSite, setSelectedSite] = useState<string>("all");
   const [showForm, setShowForm] = useState(false);
-  const [formMode, setFormMode] = useState<"create" | "edit" | "view">("create");
+  const [formMode, setFormMode] = useState<"create" | "edit" | "view">(
+    "create"
+  );
   const [selectedGroup, setSelectedGroup] = useState<SpaceGroup | undefined>();
   const [siteList, setSiteList] = useState([]);
   const [page, setPage] = useState(1); // current page
   const [pageSize] = useState(6); // items per page
   const [totalItems, setTotalItems] = useState(0);
-  const [deleteSpaceGroupId, setDeleteSpaceGroupId] = useState<string | null>(null);
+  const [deleteSpaceGroupId, setDeleteSpaceGroupId] = useState<string | null>(
+    null
+  );
   const { canRead, canWrite, canDelete } = useAuth();
   const { withLoader } = useLoader();
   const { user, handleLogout } = useAuth();
@@ -69,7 +94,7 @@ export default function SpaceGroups() {
       meeting_room: "🏛️",
       hall: "🎭",
       common_area: "🌳",
-      parking: "🚗"
+      parking: "🚗",
     };
     return icons[kind] || "📍";
   };
@@ -82,7 +107,7 @@ export default function SpaceGroups() {
     if (page === 1) {
       loadSpaceGroups();
     } else {
-      setPage(1);    // triggers the page effect
+      setPage(1); // triggers the page effect
     }
   }, [searchTerm, selectedSite, selectedKind]);
 
@@ -101,7 +126,7 @@ export default function SpaceGroups() {
     if (selectedKind) params.append("kind", selectedKind);
     params.append("skip", skip.toString());
     params.append("limit", limit.toString());
-    
+
     const response = await withLoader(async () => {
       return await spaceGroupsApiService.getSpaceGroups(params);
     });
@@ -109,7 +134,7 @@ export default function SpaceGroups() {
       setGroups(response.data?.spaceGroups || []);
       setTotalItems(response.data?.total || 0);
     }
-  }
+  };
 
   const getKindColor = (kind: SpaceKind) => {
     const colors = {
@@ -121,7 +146,7 @@ export default function SpaceGroups() {
       meeting_room: "bg-indigo-100 text-indigo-800",
       hall: "bg-pink-100 text-pink-800",
       common_area: "bg-teal-100 text-teal-800",
-      parking: "bg-yellow-100 text-yellow-800"
+      parking: "bg-yellow-100 text-yellow-800",
     };
     return colors[kind] || "bg-gray-100 text-gray-800";
   };
@@ -129,18 +154,18 @@ export default function SpaceGroups() {
   const loadSiteLookup = async () => {
     const lookup = await siteApiService.getSiteLookup();
     if (lookup.success) setSiteList(lookup.data || []);
-  }
+  };
 
   const getSiteName = (siteId: string) => {
-    const site = siteList.find(s => s.id === siteId);
-    return site ? site.name : 'Unknown Site';
+    const site = siteList.find((s) => s.id === siteId);
+    return site ? site.name : "Unknown Site";
   };
 
   const formatCurrency = (amount: number) => {
-    return new Intl.NumberFormat('en-IN', {
-      style: 'currency',
-      currency: 'INR',
-      maximumFractionDigits: 0
+    return new Intl.NumberFormat("en-IN", {
+      style: "currency",
+      currency: "INR",
+      maximumFractionDigits: 0,
     }).format(amount);
   };
 
@@ -169,7 +194,9 @@ export default function SpaceGroups() {
 
   const confirmDelete = async () => {
     if (deleteSpaceGroupId) {
-      const response = await spaceGroupsApiService.deleteSpaceGroup(deleteSpaceGroupId);
+      const response = await spaceGroupsApiService.deleteSpaceGroup(
+        deleteSpaceGroupId
+      );
       if (response.success) {
         const authResponse = response.data;
         if (authResponse?.success) {
@@ -179,9 +206,13 @@ export default function SpaceGroups() {
           toast.success("The space group has been removed successfully.");
         } else {
           // Show error popup from backend
-          toast.error(`Cannot Delete Space Group\n${authResponse?.message || "Unknown error"}`, {
-            style: { whiteSpace: "pre-line" },
-          });
+          toast.error(
+            `Cannot Delete Space Group\n${authResponse?.message || "Unknown error"
+            }`,
+            {
+              style: { whiteSpace: "pre-line" },
+            }
+          );
         }
       }
     }
@@ -191,8 +222,7 @@ export default function SpaceGroups() {
     if (formMode === "create") {
       response = await spaceGroupsApiService.addSpaceGroup(data);
 
-      if (response.success)
-        loadSpaceGroups();
+      if (response.success) loadSpaceGroups();
     } else if (formMode === "edit" && selectedGroup) {
       const updatedGroup = {
         ...selectedGroup,
@@ -212,187 +242,176 @@ export default function SpaceGroups() {
     if (response.success) {
       setShowForm(false);
       toast.success(
-        `Group ${data.name} has been ${formMode === "create" ? "created" : "updated"} successfully.`
+        `Group ${data.name} has been ${formMode === "create" ? "created" : "updated"
+        } successfully.`
       );
     }
     return response;
   };
 
-
   return (
-    <SidebarProvider>
-      <div className="flex min-h-screen w-full">
-        <PropertySidebar />
-        <SidebarInset className="flex-1">
-          <header className="flex h-16 shrink-0 items-center justify-between border-b border-sidebar-border px-4">
-            <div className="flex items-center gap-2">
-            <SidebarTrigger className="-ml-1" />
-            
-              <Package className="h-5 w-5 text-sidebar-primary" />
-              <h1 className="text-lg font-semibold text-sidebar-primary">Space Groups & Categories</h1>
-            </div>
-            <div className="flex items-center gap-4">
-              <div className="flex items-center gap-3">
-                <Avatar>
-                  <AvatarFallback className="bg-gradient-primary text-white">
-                    {user.name.charAt(0)}
-                  </AvatarFallback>
-                </Avatar>
+    <div>
+      <div className="space-y-6">
+        {/* Header Actions */}
+        <div className="flex items-center justify-between">
+          <div>
+            <h2 className="text-2xl font-bold text-sidebar-primary">
+              Space Groups
+            </h2>
+            <p className="text-muted-foreground">
+              Manage space categories and pricing groups
+            </p>
+          </div>
+          {canWrite(resource) && (
+            <Button className="gap-2" onClick={handleCreate}>
+              <Plus className="h-4 w-4" />
+              Create New Group
+            </Button>
+          )}
+        </div>
 
-                <div className="text-right">
-                  <p className="text-sm font-medium">{user.name}</p>
-                  <p className="text-xs text-muted-foreground">
-                    {user.account_type}
-                  </p>
-                </div>
-              </div>
+        {/* Filters */}
+        <div className="flex items-center gap-4">
+          <Input
+            placeholder="Search groups..."
+            value={searchTerm}
+            onChange={(e) => setSearchTerm(e.target.value)}
+            className="max-w-sm"
+          />
 
-              <Button
-                variant="ghost"
-                size="sm"
-                onClick={handleLogout}
-                className="text-muted-foreground hover:text-destructive"
-              >
-                <LogOut className="w-4 h-4 mr-2" />
-                Logout
-              </Button>
-            </div>
-          </header>
+          <Select value={selectedSite} onValueChange={setSelectedSite}>
+            <SelectTrigger className="w-[180px]">
+              <SelectValue placeholder="All Sites" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="all">All Sites</SelectItem>
+              {siteList.map((site) => (
+                <SelectItem key={site.id} value={site.id}>
+                  {site.name}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
 
-          <main className="flex-1 p-6">
-            <div className="space-y-6">
-              {/* Header Actions */}
-              <div className="flex items-center justify-between">
-                <div>
-                  <h2 className="text-2xl font-bold text-sidebar-primary">Space Groups</h2>
-                  <p className="text-muted-foreground">Manage space categories and pricing groups</p>
-                </div>
-                {canWrite(resource) && (
-                  <Button className="gap-2" onClick={handleCreate}>
-                    <Plus className="h-4 w-4" />
-                    Create New Group
-                  </Button>
-                )}
-              </div>
+          <Select value={selectedKind} onValueChange={setSelectedKind}>
+            <SelectTrigger className="w-[180px]">
+              <SelectValue placeholder="All Types" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="all">All Types</SelectItem>
+              {spaceKinds.map((kind) => (
+                <SelectItem key={kind} value={kind}>
+                  {kind
+                    .replace("_", " ")
+                    .replace(/\b\w/g, (l) => l.toUpperCase())}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+        </div>
 
-              {/* Filters */}
-              <div className="flex items-center gap-4">
-                <Input
-                  placeholder="Search groups..."
-                  value={searchTerm}
-                  onChange={(e) => setSearchTerm(e.target.value)}
-                  className="max-w-sm"
-                />
-
-                <Select
-                  value={selectedSite}
-                  onValueChange={setSelectedSite}
+        <ContentContainer>
+          <LoaderOverlay />
+          {/* Groups Grid */}
+          <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
+            {groups.map((group) => {
+              return (
+                <Card
+                  key={group.id}
+                  className="hover:shadow-lg transition-shadow"
                 >
-                  <SelectTrigger className="w-[180px]">
-                    <SelectValue placeholder="All Sites" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="all">All Sites</SelectItem>
-                    {siteList.map(site => (
-                      <SelectItem key={site.id} value={site.id}>{site.name}</SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
+                  <CardHeader className="pb-3">
+                    <div className="flex items-start justify-between">
+                      <div className="space-y-1">
+                        <CardTitle className="text-lg flex items-center gap-2">
+                          <span className="text-xl">
+                            {getKindIcon(group.kind)}
+                          </span>
+                          {group.name}
+                        </CardTitle>
+                        <p className="text-sm text-muted-foreground">
+                          {getSiteName(group.site_id)}
+                        </p>
+                      </div>
+                      <Badge className={getKindColor(group.kind)}>
+                        {group.kind.replace("_", " ")}
+                      </Badge>
+                    </div>
+                  </CardHeader>
 
-                <Select
-                  value={selectedKind}
-                  onValueChange={setSelectedKind}
-                >
-                  <SelectTrigger className="w-[180px]">
-                    <SelectValue placeholder="All Types" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="all">All Types</SelectItem>
-                    {spaceKinds.map(kind => (
-                      <SelectItem key={kind} value={kind}>{kind.replace('_', ' ').replace(/\b\w/g, l => l.toUpperCase())}</SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-              </div>
+                  <CardContent className="space-y-4">
+                    {/* Member Count */}
+                    <div className="flex items-center gap-2">
+                      <Users className="h-4 w-4 text-muted-foreground" />
+                      <span className="text-sm font-medium">
+                        {group.group_members} assignments in this group
+                      </span>
+                    </div>
 
-              <ContentContainer>
-                <LoaderOverlay />
-                {/* Groups Grid */}
-                <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
-                  {groups.map((group) => {
-                    return (
-                      <Card key={group.id} className="hover:shadow-lg transition-shadow">
-                        <CardHeader className="pb-3">
-                          <div className="flex items-start justify-between">
-                            <div className="space-y-1">
-                              <CardTitle className="text-lg flex items-center gap-2">
-                                <span className="text-xl">{getKindIcon(group.kind)}</span>
-                                {group.name}
-                              </CardTitle>
-                              <p className="text-sm text-muted-foreground">{getSiteName(group.site_id)}</p>
-                            </div>
-                            <Badge className={getKindColor(group.kind)}>
-                              {group.kind.replace('_', ' ')}
-                            </Badge>
-                          </div>
-                        </CardHeader>
+                    {/* Base Rate */}
+                    {group.specs.base_rate > 0 && (
+                      <div className="flex items-center gap-2">
+                        <DollarSign className="h-4 w-4 text-muted-foreground" />
+                        <span className="text-sm font-medium">
+                          Base Rate:{" "}
+                          {formatCurrency(group.specs.base_rate)}/month
+                        </span>
+                      </div>
+                    )}
 
-                        <CardContent className="space-y-4">
-                          {/* Member Count */}
-                          <div className="flex items-center gap-2">
-                            <Users className="h-4 w-4 text-muted-foreground" />
-                            <span className="text-sm font-medium">{group.group_members} assignments in this group</span>
-                          </div>
-
-                          {/* Base Rate */}
-                          {group.specs.base_rate > 0 && (
-                            <div className="flex items-center gap-2">
-                              <DollarSign className="h-4 w-4 text-muted-foreground" />
-                              <span className="text-sm font-medium">
-                                Base Rate: {formatCurrency(group.specs.base_rate)}/month
-                              </span>
-                            </div>
-                          )}
-
-                          {/* Actions */}
-                          <div className="flex items-center justify-end gap-2 pt-2">
-                            <Button size="sm" variant="outline" onClick={() => handleView(group)}>
-                              <Eye className="h-3 w-3" />
-                            </Button>
-                            {canWrite(resource) && <Button size="sm" variant="outline" onClick={() => handleEdit(group)}>
-                              <Edit className="h-3 w-3" />
-                            </Button>
-                            }
-                            {canDelete(resource) && <Button size="sm" variant="outline" className="text-destructive hover:text-destructive" onClick={() => handleDelete(group.id)}>
-
-                              <Trash2 className="h-3 w-3" />
-                            </Button>
-                            }
-                          </div>
-                        </CardContent>
-                      </Card>
-                    );
-                  })}
-                </div>
-                <Pagination
-                  page={page}
-                  pageSize={pageSize}
-                  totalItems={totalItems}
-                  onPageChange={(newPage) => setPage(newPage)}
-                />
-                {groups.length === 0 && (
-                  <div className="text-center py-12">
-                    <Package className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
-                    <h3 className="text-lg font-semibold text-sidebar-primary mb-2">No space groups found</h3>
-                    <p className="text-muted-foreground">Try adjusting your search criteria or create a new group.</p>
-                  </div>
-                )}
-              </ContentContainer>
+                    {/* Actions */}
+                    <div className="flex items-center justify-end gap-2 pt-2">
+                      <Button
+                        size="sm"
+                        variant="outline"
+                        onClick={() => handleView(group)}
+                      >
+                        <Eye className="h-3 w-3" />
+                      </Button>
+                      {canWrite(resource) && (
+                        <Button
+                          size="sm"
+                          variant="outline"
+                          onClick={() => handleEdit(group)}
+                        >
+                          <Edit className="h-3 w-3" />
+                        </Button>
+                      )}
+                      {canDelete(resource) && (
+                        <Button
+                          size="sm"
+                          variant="outline"
+                          className="text-destructive hover:text-destructive"
+                          onClick={() => handleDelete(group.id)}
+                        >
+                          <Trash2 className="h-3 w-3" />
+                        </Button>
+                      )}
+                    </div>
+                  </CardContent>
+                </Card>
+              );
+            })}
+          </div>
+          <Pagination
+            page={page}
+            pageSize={pageSize}
+            totalItems={totalItems}
+            onPageChange={(newPage) => setPage(newPage)}
+          />
+          {groups.length === 0 && (
+            <div className="text-center py-12">
+              <Package className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
+              <h3 className="text-lg font-semibold text-sidebar-primary mb-2">
+                No space groups found
+              </h3>
+              <p className="text-muted-foreground">
+                Try adjusting your search criteria or create a new group.
+              </p>
             </div>
-          </main>
-        </SidebarInset>
+          )}
+        </ContentContainer>
       </div>
-
       <SpaceGroupForm
         group={selectedGroup}
         isOpen={showForm}
@@ -400,22 +419,29 @@ export default function SpaceGroups() {
         onClose={() => setShowForm(false)}
         onSave={handleSave}
       />
-      <AlertDialog open={!!deleteSpaceGroupId} onOpenChange={() => setDeleteSpaceGroupId(null)}>
+      <AlertDialog
+        open={!!deleteSpaceGroupId}
+        onOpenChange={() => setDeleteSpaceGroupId(null)}
+      >
         <AlertDialogContent>
           <AlertDialogHeader>
             <AlertDialogTitle>Delete Space</AlertDialogTitle>
             <AlertDialogDescription>
-              Are you sure you want to delete this space group? This action cannot be undone.
+              Are you sure you want to delete this space group? This action
+              cannot be undone.
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
             <AlertDialogCancel>Cancel</AlertDialogCancel>
-            <AlertDialogAction onClick={confirmDelete} className="bg-destructive text-destructive-foreground">
+            <AlertDialogAction
+              onClick={confirmDelete}
+              className="bg-destructive text-destructive-foreground"
+            >
               Delete
             </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
-    </SidebarProvider>
+    </div>
   );
 }

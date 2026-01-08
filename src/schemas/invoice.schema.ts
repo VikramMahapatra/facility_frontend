@@ -1,5 +1,35 @@
 import * as z from "zod";
 
+const paymentSchema = z
+  .object({
+    method: z.enum(
+      ["upi", "card", "bank", "cash", "cheque", "gateway"],
+      {
+        required_error: "Payment method is required",
+      }
+    ),
+
+    ref_no: z.string().optional(),
+
+    paid_at: z.string().min(1, "Payment date is required"),
+
+    amount: z
+      .coerce
+      .number()
+      .positive("Payment amount must be greater than zero")
+  })
+  .refine(
+    (data) => {
+      // Reference number required for non-cash payments
+      if (data.method === "cash") return true;
+      return !!data.ref_no && data.ref_no.trim().length > 0;
+    },
+    {
+      message: "Reference number is required for this payment method",
+      path: ["ref_no"],
+    }
+  );
+
 export const invoiceSchema = z
   .object({
     site_id: z.string().min(1, "Site is required"),
@@ -25,6 +55,7 @@ export const invoiceSchema = z
           .optional(),
       })
       .optional(),
+    payments: z.array(paymentSchema).optional(),
   })
   .refine(
     (data) => {
@@ -38,5 +69,8 @@ export const invoiceSchema = z
       path: ["due_date"],
     }
   );
+
+
+
 
 export type InvoiceFormValues = z.infer<typeof invoiceSchema>;

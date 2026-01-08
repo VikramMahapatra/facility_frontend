@@ -42,6 +42,7 @@ import { useAuth } from "../context/AuthContext";
 import { Visitor } from "@/interfaces/parking_access_interface";
 import { Card, CardContent, CardHeader } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
+import { PageHeader } from "@/components/PageHeader";
 
 export default function Visitors() {
   const [isFormOpen, setIsFormOpen] = useState(false);
@@ -169,8 +170,7 @@ export default function Visitors() {
     if (response.success) {
       setIsFormOpen(false);
       toast.success(
-        `Visitor has been ${
-          formMode === "create" ? "created" : "updated"
+        `Visitor has been ${formMode === "create" ? "created" : "updated"
         } successfully.`
       );
     }
@@ -206,292 +206,242 @@ export default function Visitors() {
   };
 
   return (
-    <SidebarProvider>
-      <div className="min-h-screen flex w-full bg-background">
-        <PropertySidebar />
-        <SidebarInset className="flex-1">
-          <header className="flex h-16 shrink-0 items-center justify-between border-b border-sidebar-border px-4">
-            <div className="flex items-center gap-2">
-            <SidebarTrigger className="-ml-1" />
-            
-              <UserCheck className="h-5 w-5 text-sidebar-primary" />
-              <h1 className="text-lg font-semibold text-sidebar-primary">Visitor Management</h1>
-            </div>
-            <div className="flex items-center gap-4">
-              <div className="flex items-center gap-3">
-                <Avatar>
-                  <AvatarFallback className="bg-gradient-primary text-white">
-                    {user.name.charAt(0)}
-                  </AvatarFallback>
-                </Avatar>
+    <main className="flex-1">
+      <div className="space-y-6">
+        <div className="flex items-center justify-between">
+          <div>
+            <h2 className="text-3xl font-bold text-sidebar-primary">
+              Visitor Management
+            </h2>
+            <p className="text-muted-foreground">
+              Track and manage visitor access.
+            </p>
+          </div>
+          {canWrite(resource) && (
+            <Button onClick={handleCreate}>
+              <Plus className="h-4 w-4 mr-2" />
+              Create Visitor
+            </Button>
+          )}
+        </div>
 
-                <div className="text-right">
-                  <p className="text-sm font-medium">{user.name}</p>
-                  <p className="text-xs text-muted-foreground">
-                    {user.account_type}
-                  </p>
-                </div>
+        {/* Summary Cards */}
+        <div className="grid grid-cols-3 gap-4">
+          <Card>
+            <CardContent className="pt-6">
+              <p className="text-sm font-bold text-muted-foreground mb-3">
+                Checked In Today
+              </p>
+              <div className="text-3xl font-bold text-sidebar-primary mb-1">
+                {checkedInToday}
               </div>
-
-              <Button
-                variant="ghost"
-                size="sm"
-                onClick={handleLogout}
-                className="text-muted-foreground hover:text-destructive"
-              >
-                <LogOut className="w-4 h-4 mr-2" />
-                Logout
-              </Button>
-            </div>
-
-          </header>
-
-          <main className="flex-1 p-6">
-            <div className="space-y-6">
-              <div className="flex items-center justify-between">
-                <div>
-                  <h2 className="text-3xl font-bold text-sidebar-primary">
-                    Visitor Management
-                  </h2>
-                  <p className="text-muted-foreground">
-                    Track and manage visitor access.
-                  </p>
-                </div>
-                {canWrite(resource) && (
-                  <Button onClick={handleCreate}>
-                    <Plus className="h-4 w-4 mr-2" />
-                    Create Visitor
-                  </Button>
-                )}
+              <p className="text-sm text-blue-600">Active visitors</p>
+            </CardContent>
+          </Card>
+          <Card>
+            <CardContent className="pt-6">
+              <p className="text-sm font-bold text-muted-foreground mb-3">
+                Expected Today
+              </p>
+              <div className="text-3xl font-bold text-sidebar-primary mb-1">
+                {expectedToday}
               </div>
-
-              {/* Summary Cards */}
-              <div className="grid grid-cols-3 gap-4">
-                <Card>
-                  <CardContent className="pt-6">
-                    <p className="text-sm font-bold text-muted-foreground mb-3">
-                      Checked In Today
-                    </p>
-                    <div className="text-3xl font-bold text-sidebar-primary mb-1">
-                      {checkedInToday}
-                    </div>
-                    <p className="text-sm text-blue-600">Active visitors</p>
-                  </CardContent>
-                </Card>
-                <Card>
-                  <CardContent className="pt-6">
-                    <p className="text-sm font-bold text-muted-foreground mb-3">
-                      Expected Today
-                    </p>
-                    <div className="text-3xl font-bold text-sidebar-primary mb-1">
-                      {expectedToday}
-                    </div>
-                    <p className="text-sm text-blue-600">Scheduled visitors</p>
-                  </CardContent>
-                </Card>
-                <Card>
-                  <CardContent className="pt-6">
-                    <p className="text-sm font-bold text-muted-foreground mb-3">
-                      Total Visitors
-                    </p>
-                    <div className="text-3xl font-bold text-sidebar-primary mb-1">
-                      {totalVisitors}
-                    </div>
-                    <p className="text-sm text-blue-600">All visitor records</p>
-                  </CardContent>
-                </Card>
+              <p className="text-sm text-blue-600">Scheduled visitors</p>
+            </CardContent>
+          </Card>
+          <Card>
+            <CardContent className="pt-6">
+              <p className="text-sm font-bold text-muted-foreground mb-3">
+                Total Visitors
+              </p>
+              <div className="text-3xl font-bold text-sidebar-primary mb-1">
+                {totalVisitors}
               </div>
+              <p className="text-sm text-blue-600">All visitor records</p>
+            </CardContent>
+          </Card>
+        </div>
 
-              <Card>
-                <CardHeader>
-                  <div className="flex items-center gap-4">
-                    <div className="relative flex-1 max-w-sm">
-                      <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground h-4 w-4" />
-                      <Input
-                        type="text"
-                        placeholder="Search by name, phone, or purpose..."
-                        value={searchQuery}
-                        onChange={(e) => setSearchQuery(e.target.value)}
-                        className="pl-10"
-                      />
-                    </div>
-                    <Select
-                      value={selectedSite}
-                      onValueChange={setSelectedSite}
-                    >
-                      <SelectTrigger className="w-[180px]">
-                        <SelectValue placeholder="All Sites" />
-                      </SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value="all">All Sites</SelectItem>
-                        {siteList.map((site: any) => (
-                          <SelectItem key={site.id} value={site.id}>
-                            {site.name}
-                          </SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
-                    <Select
-                      value={selectedStatus}
-                      onValueChange={setSelectedStatus}
-                    >
-                      <SelectTrigger className="w-[180px]">
-                        <SelectValue placeholder="All Status" />
-                      </SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value="all">All Status</SelectItem>
-                        <SelectItem value="checked_in">Checked In</SelectItem>
-                        <SelectItem value="checked_out">Checked Out</SelectItem>
-                        <SelectItem value="expected">Expected</SelectItem>
-                      </SelectContent>
-                    </Select>
-                  </div>
-                </CardHeader>
-                <CardContent>
-                  <div className="relative rounded-md border">
-                    <ContentContainer>
-                      <LoaderOverlay />
-                      <Table>
-                        <TableHeader>
-                          <TableRow>
-                            <TableHead>Visitor</TableHead>
-                            <TableHead>Visiting</TableHead>
-                            <TableHead>Purpose</TableHead>
-                            <TableHead>Entry Time</TableHead>
-                            <TableHead>Status</TableHead>
-                            <TableHead>Vehicle</TableHead>
-                            <TableHead className="text-right">
-                              Actions
-                            </TableHead>
-                          </TableRow>
-                        </TableHeader>
-                        <TableBody>
-                          {visitors.length === 0 ? (
-                            <TableRow>
-                              <TableCell
-                                colSpan={7}
-                                className="text-center text-muted-foreground"
-                              >
-                                No visitors found
-                              </TableCell>
-                            </TableRow>
-                          ) : (
-                            visitors.map((visitor) => (
-                              <TableRow key={visitor.id}>
-                                <TableCell>
-                                  <div>
-                                    <div className="font-medium">
-                                      {visitor.name}
-                                    </div>
-                                    <div className="text-sm text-muted-foreground">
-                                      {visitor.phone}
-                                    </div>
-                                  </div>
-                                </TableCell>
-                                <TableCell>{visitor.visiting}</TableCell>
-                                <TableCell>{visitor.purpose}</TableCell>
-                                <TableCell>
-                                  <div className="flex items-center gap-2">
-                                    <Clock className="h-3 w-3 text-muted-foreground" />
-                                    {formatDateTime(visitor.entry_time)}
-                                  </div>
-                                </TableCell>
-                                <TableCell>
-                                  <Badge
-                                    className={getStatusColor(visitor.status)}
-                                  >
-                                    {visitor.status.replace("_", " ")}
-                                  </Badge>
-                                </TableCell>
-                                <TableCell>
-                                  {visitor.vehicle_no ? (
-                                    <Badge variant="outline">
-                                      {visitor.vehicle_no}
-                                    </Badge>
-                                  ) : (
-                                    <span className="text-muted-foreground">
-                                      -
-                                    </span>
-                                  )}
-                                </TableCell>
-                                <TableCell className="text-right">
-                                  <div className="flex justify-end gap-2">
-                                    {canWrite(resource) && (
-                                      <Button
-                                        variant="ghost"
-                                        size="icon"
-                                        onClick={() => handleEdit(visitor)}
-                                      >
-                                        <Pencil className="h-4 w-4" />
-                                      </Button>
-                                    )}
-                                    {canDelete(resource) && (
-                                      <Button
-                                        variant="ghost"
-                                        size="icon"
-                                        onClick={() => handleDelete(visitor.id)}
-                                      >
-                                        <Trash2 className="h-4 w-4 text-destructive" />
-                                      </Button>
-                                    )}
-                                  </div>
-                                </TableCell>
-                              </TableRow>
-                            ))
-                          )}
-                        </TableBody>
-                      </Table>
-                    </ContentContainer>
-                  </div>
-                </CardContent>
-              </Card>
-
-              {/* Pagination */}
-              <Pagination
-                page={page}
-                pageSize={pageSize}
-                totalItems={totalItems}
-                onPageChange={setPage}
-              />
-            </div>
-
-            <VisitorForm
-              visitor={selectedVisitor}
-              isOpen={isFormOpen}
-              onClose={() => {
-                setIsFormOpen(false);
-                setSelectedVisitor(null);
-              }}
-              onSave={handleSave}
-              mode={formMode}
+        <div className="flex items-center gap-4">
+          <div className="relative flex-1 max-w-sm">
+            <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground h-4 w-4" />
+            <Input
+              type="text"
+              placeholder="Search by name, phone, or purpose..."
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+              className="pl-10"
             />
-
-            <AlertDialog
-              open={!!deleteVisitorId}
-              onOpenChange={() => setDeleteVisitorId(null)}
-            >
-              <AlertDialogContent>
-                <AlertDialogHeader>
-                  <AlertDialogTitle>Delete Visitor</AlertDialogTitle>
-                  <AlertDialogDescription>
-                    Are you sure you want to delete this visitor? This action
-                    cannot be undone.
-                  </AlertDialogDescription>
-                </AlertDialogHeader>
-                <AlertDialogFooter>
-                  <AlertDialogCancel>Cancel</AlertDialogCancel>
-                  <AlertDialogAction
-                    onClick={confirmDelete}
-                    className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
-                  >
-                    Delete
-                  </AlertDialogAction>
-                </AlertDialogFooter>
-              </AlertDialogContent>
-            </AlertDialog>
-          </main>
-        </SidebarInset>
+          </div>
+          <Select
+            value={selectedSite}
+            onValueChange={setSelectedSite}
+          >
+            <SelectTrigger className="w-[180px]">
+              <SelectValue placeholder="All Sites" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="all">All Sites</SelectItem>
+              {siteList.map((site: any) => (
+                <SelectItem key={site.id} value={site.id}>
+                  {site.name}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+          <Select
+            value={selectedStatus}
+            onValueChange={setSelectedStatus}
+          >
+            <SelectTrigger className="w-[180px]">
+              <SelectValue placeholder="All Status" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="all">All Status</SelectItem>
+              <SelectItem value="checked_in">Checked In</SelectItem>
+              <SelectItem value="checked_out">Checked Out</SelectItem>
+              <SelectItem value="expected">Expected</SelectItem>
+            </SelectContent>
+          </Select>
+        </div>
+        <div className="relative rounded-md border">
+          <ContentContainer>
+            <LoaderOverlay />
+            <Table>
+              <TableHeader>
+                <TableRow>
+                  <TableHead>Visitor</TableHead>
+                  <TableHead>Visiting</TableHead>
+                  <TableHead>Purpose</TableHead>
+                  <TableHead>Entry Time</TableHead>
+                  <TableHead>Status</TableHead>
+                  <TableHead>Vehicle</TableHead>
+                  <TableHead className="text-right">
+                    Actions
+                  </TableHead>
+                </TableRow>
+              </TableHeader>
+              <TableBody>
+                {visitors.length === 0 ? (
+                  <TableRow>
+                    <TableCell
+                      colSpan={7}
+                      className="text-center text-muted-foreground"
+                    >
+                      No visitors found
+                    </TableCell>
+                  </TableRow>
+                ) : (
+                  visitors.map((visitor) => (
+                    <TableRow key={visitor.id}>
+                      <TableCell>
+                        <div>
+                          <div className="font-medium">
+                            {visitor.name}
+                          </div>
+                          <div className="text-sm text-muted-foreground">
+                            {visitor.phone}
+                          </div>
+                        </div>
+                      </TableCell>
+                      <TableCell>{visitor.visiting}</TableCell>
+                      <TableCell>{visitor.purpose}</TableCell>
+                      <TableCell>
+                        <div className="flex items-center gap-2">
+                          <Clock className="h-3 w-3 text-muted-foreground" />
+                          {formatDateTime(visitor.entry_time)}
+                        </div>
+                      </TableCell>
+                      <TableCell>
+                        <Badge
+                          className={getStatusColor(visitor.status)}
+                        >
+                          {visitor.status.replace("_", " ")}
+                        </Badge>
+                      </TableCell>
+                      <TableCell>
+                        {visitor.vehicle_no ? (
+                          <Badge variant="outline">
+                            {visitor.vehicle_no}
+                          </Badge>
+                        ) : (
+                          <span className="text-muted-foreground">
+                            -
+                          </span>
+                        )}
+                      </TableCell>
+                      <TableCell className="text-right">
+                        <div className="flex justify-end gap-2">
+                          {canWrite(resource) && (
+                            <Button
+                              variant="ghost"
+                              size="icon"
+                              onClick={() => handleEdit(visitor)}
+                            >
+                              <Pencil className="h-4 w-4" />
+                            </Button>
+                          )}
+                          {canDelete(resource) && (
+                            <Button
+                              variant="ghost"
+                              size="icon"
+                              onClick={() => handleDelete(visitor.id)}
+                            >
+                              <Trash2 className="h-4 w-4 text-destructive" />
+                            </Button>
+                          )}
+                        </div>
+                      </TableCell>
+                    </TableRow>
+                  ))
+                )}
+              </TableBody>
+            </Table>
+          </ContentContainer>
+        </div>
+        {/* Pagination */}
+        <Pagination
+          page={page}
+          pageSize={pageSize}
+          totalItems={totalItems}
+          onPageChange={setPage}
+        />
       </div>
-    </SidebarProvider>
+
+      <VisitorForm
+        visitor={selectedVisitor}
+        isOpen={isFormOpen}
+        onClose={() => {
+          setIsFormOpen(false);
+          setSelectedVisitor(null);
+        }}
+        onSave={handleSave}
+        mode={formMode}
+      />
+
+      <AlertDialog
+        open={!!deleteVisitorId}
+        onOpenChange={() => setDeleteVisitorId(null)}
+      >
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Delete Visitor</AlertDialogTitle>
+            <AlertDialogDescription>
+              Are you sure you want to delete this visitor? This action
+              cannot be undone.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancel</AlertDialogCancel>
+            <AlertDialogAction
+              onClick={confirmDelete}
+              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+            >
+              Delete
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+    </main>
   );
 }

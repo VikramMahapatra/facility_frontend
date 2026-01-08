@@ -44,6 +44,7 @@ import ContentContainer from "@/components/ContentContainer";
 import { Pagination } from "@/components/Pagination";
 import { useSkipFirstEffect } from "@/hooks/use-skipfirst-effect";
 import { useAuth } from "@/context/AuthContext";
+import { PageHeader } from "@/components/PageHeader";
 
 export default function AssetCategories() {
   const [isFormOpen, setIsFormOpen] = useState(false);
@@ -135,17 +136,16 @@ export default function AssetCategories() {
           prev.map((cat) =>
             cat.id === updatedCategory.id ? response.data : cat
           )
-        
+
         );
       }
-      
+
     }
 
     if (response?.success) {
       setIsFormOpen(false);
       toast.success(
-        `Asset category has been ${
-          formMode === "create" ? "created" : "updated"
+        `Asset category has been ${formMode === "create" ? "created" : "updated"
         } successfully.`
       );
     }
@@ -171,151 +171,89 @@ export default function AssetCategories() {
   };
 
   return (
-    <SidebarProvider>
-      <div className="flex min-h-screen w-full">
-        <PropertySidebar />
-        <SidebarInset className="flex-1">
-          <header className="flex h-16 shrink-0 items-center justify-between border-b border-sidebar-border px-4">
-            <div className="flex items-center gap-2">
-            <SidebarTrigger className="-ml-1" />
-            
-              <FolderTree className="h-5 w-5 text-sidebar-primary" />
-              <h1 className="text-lg font-semibold text-sidebar-primary">
-                Asset Categories
-              </h1>
-            </div>
-             <div className="flex items-center gap-4">
-              <div className="flex items-center gap-3">
-                <Avatar>
-                  <AvatarFallback className="bg-gradient-primary text-white">
-                    {user.name.charAt(0)}
-                  </AvatarFallback>
-                </Avatar>
+    <div className="flex-1">
+      <div className="space-y-6">
+        <div className="flex items-center justify-between">
+          <div>
+            <h2 className="text-3xl font-bold text-sidebar-primary">
+              Asset Categories
+            </h2>
+            <p className="text-muted-foreground">
+              Manage asset categories
+            </p>
+          </div>
+          <Button onClick={handleCreate} className="gap-2">
+            <Plus className="h-4 w-4" />
+            Add Category
+          </Button>
+        </div>
 
-                <div className="text-right">
-                  <p className="text-sm font-medium">{user.name}</p>
-                  <p className="text-xs text-muted-foreground">
-                    {user.account_type}
-                  </p>
-                </div>
-              </div>
+        <div className="relative rounded-md border">
+          <ContentContainer>
+            <LoaderOverlay />
+            <Table>
+              <TableHeader>
+                <TableRow>
+                  <TableHead>Name</TableHead>
+                  <TableHead>Code</TableHead>
+                  <TableHead className="text-right">
+                    Actions
+                  </TableHead>
+                </TableRow>
+              </TableHeader>
+              <TableBody>
+                {categories.length === 0 ? (
+                  <TableRow>
+                    <TableCell
+                      colSpan={3}
+                      className="text-center text-muted-foreground h-32"
+                    >
+                      No categories found
+                    </TableCell>
+                  </TableRow>
+                ) : (
+                  categories.map((category) => (
+                    <TableRow key={category.id}>
+                      <TableCell className="font-medium">
+                        {category.name}
+                      </TableCell>
+                      <TableCell>{category.code || "-"}</TableCell>
+                      <TableCell className="text-right">
+                        <div className="flex justify-end gap-2">
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            onClick={() => handleEdit(category)}
+                          >
+                            <Edit className="w-4 h-4" />
+                          </Button>
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            onClick={() => handleDelete(category.id)}
+                          >
+                            <Trash2 className="w-4 h-4" />
+                          </Button>
+                        </div>
+                      </TableCell>
+                    </TableRow>
+                  ))
+                )}
+              </TableBody>
+            </Table>
+          </ContentContainer>
+        </div>
 
-              <Button
-                variant="ghost"
-                size="sm"
-                onClick={handleLogout}
-                className="text-muted-foreground hover:text-destructive"
-              >
-                <LogOut className="w-4 h-4 mr-2" />
-                Logout
-              </Button>
-            </div>
-
-          </header>
-
-          <main className="flex-1 p-6">
-            <div className="space-y-6">
-              <div className="flex items-center justify-between">
-                <div>
-                  <h2 className="text-3xl font-bold text-sidebar-primary">
-                    Asset Categories
-                  </h2>
-                  <p className="text-muted-foreground">
-                    Manage asset categories
-                  </p>
-                </div>
-                <Button onClick={handleCreate} className="gap-2">
-                  <Plus className="h-4 w-4" />
-                  Add Category
-                </Button>
-              </div>
-
-              <Card>
-                <CardHeader>
-                  <div className="flex items-center gap-4">
-                    <div className="relative flex-1 max-w-sm">
-                      <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground h-4 w-4" />
-                      <Input
-                        placeholder="Search categories..."
-                        value={searchTerm}
-                        onChange={(e) => setSearchTerm(e.target.value)}
-                        className="pl-10"
-                      />
-                    </div>
-                  </div>
-                </CardHeader>
-                <CardContent>
-                  <div className="relative rounded-md border">
-                    <ContentContainer>
-                      <LoaderOverlay />
-                      <Table>
-                        <TableHeader>
-                          <TableRow>
-                            <TableHead>Name</TableHead>
-                            <TableHead>Code</TableHead>
-                            <TableHead className="text-right">
-                              Actions
-                            </TableHead>
-                          </TableRow>
-                        </TableHeader>
-                        <TableBody>
-                          {categories.length === 0 ? (
-                            <TableRow>
-                              <TableCell
-                                colSpan={3}
-                                className="text-center text-muted-foreground h-32"
-                              >
-                                No categories found
-                              </TableCell>
-                            </TableRow>
-                          ) : (
-                            categories.map((category) => (
-                              <TableRow key={category.id}>
-                                <TableCell className="font-medium">
-                                  {category.name}
-                                </TableCell>
-                                <TableCell>{category.code || "-"}</TableCell>
-                                <TableCell className="text-right">
-                                  <div className="flex justify-end gap-2">
-                                    <Button
-                                      variant="ghost"
-                                      size="sm"
-                                      onClick={() => handleEdit(category)}
-                                    >
-                                      <Edit className="w-4 h-4" />
-                                    </Button>
-                                    <Button
-                                      variant="ghost"
-                                      size="sm"
-                                      onClick={() => handleDelete(category.id)}
-                                    >
-                                      <Trash2 className="w-4 h-4" />
-                                    </Button>
-                                  </div>
-                                </TableCell>
-                              </TableRow>
-                            ))
-                          )}
-                        </TableBody>
-                      </Table>
-                    </ContentContainer>
-                  </div>
-
-                  {categories.length > 0 && (
-                    <div className="mt-4">
-                      <Pagination
-                        page={page}
-                        pageSize={pageSize}
-                        totalItems={totalItems}
-                        onPageChange={setPage}
-                      />
-                    </div>
-                  )}
-                </CardContent>
-              </Card>
-            </div>
-          </main>
-        </SidebarInset>
+        {categories.length > 0 && (
+          <div className="mt-4">
+            <Pagination
+              page={page}
+              pageSize={pageSize}
+              totalItems={totalItems}
+              onPageChange={setPage}
+            />
+          </div>
+        )}
       </div>
       <Dialog open={isFormOpen} onOpenChange={setIsFormOpen}>
         <DialogContent className="max-w-2xl">
@@ -324,8 +262,8 @@ export default function AssetCategories() {
               {formMode === "create"
                 ? "Create Asset Category"
                 : formMode === "edit"
-                ? "Edit Asset Category"
-                : "Asset Category Details"}
+                  ? "Edit Asset Category"
+                  : "Asset Category Details"}
             </DialogTitle>
           </DialogHeader>
           <AssetCategoryForm
@@ -364,6 +302,6 @@ export default function AssetCategories() {
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
-    </SidebarProvider>
+    </div>
   );
 }

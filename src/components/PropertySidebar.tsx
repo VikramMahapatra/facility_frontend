@@ -1,9 +1,34 @@
 import { useState, useEffect } from "react";
 import { NavLink, useLocation } from "react-router-dom";
 import {
-  Building2, Users, FileText, BarChart3, Wrench, Car, Zap, UserCheck,
-  Hotel, ShoppingCart, Settings, Bell, Shield, Home, Calendar, CreditCard,
-  Briefcase, Package, MapPin, AlertTriangle, TrendingUp, Archive, Key, Receipt, Bot, Search, UserCog, FolderTree
+  Building2,
+  Users,
+  FileText,
+  BarChart3,
+  Wrench,
+  Car,
+  Zap,
+  UserCheck,
+  Hotel,
+  ShoppingCart,
+  Settings,
+  Bell,
+  Shield,
+  Home,
+  Calendar,
+  CreditCard,
+  Briefcase,
+  Package,
+  MapPin,
+  AlertTriangle,
+  TrendingUp,
+  Archive,
+  Key,
+  Receipt,
+  Bot,
+  Search,
+  UserCog,
+  FolderTree,
 } from "lucide-react";
 import {
   Sidebar,
@@ -19,9 +44,8 @@ import {
 } from "@/components/ui/sidebar";
 import { Input } from "@/components/ui/input";
 import { useAuth } from "../context/AuthContext";
+import { useSettings } from "@/context/SettingsContext";
 import { navigationItems } from "@/data/navigationItems";
-
-
 
 export function PropertySidebar() {
   const { state } = useSidebar();
@@ -29,8 +53,11 @@ export function PropertySidebar() {
   const currentPath = location.pathname;
   const [expandedGroups, setExpandedGroups] = useState<string[]>(["Overview"]);
   const [searchQuery, setSearchQuery] = useState("");
-  const [roleWiseNavigationItems, setRoleWiseNavigationItems] = useState<any[]>([]);
+  const [roleWiseNavigationItems, setRoleWiseNavigationItems] = useState<any[]>(
+    []
+  );
   const { canRead } = useAuth();
+  const { systemName } = useSettings();
 
   // Ensure the group containing the current route is always expanded
   useEffect(() => {
@@ -39,12 +66,11 @@ export function PropertySidebar() {
     const filteredRoleWiseNavigationItems = navigationItems
       .map((section) => ({
         ...section,
-        items: section.items
-          .filter((item) => canRead(item.resource))
+        items: section.items.filter((item) => canRead(item.resource)),
       }))
       .filter((section) => section.items.length > 0);
 
-    console.log("filetered pages:", filteredRoleWiseNavigationItems);
+    console.log("filtered pages:", filteredRoleWiseNavigationItems);
 
     setRoleWiseNavigationItems(filteredRoleWiseNavigationItems);
 
@@ -68,20 +94,22 @@ export function PropertySidebar() {
       : "hover:bg-sidebar-accent/50 text-sidebar-foreground";
 
   const toggleGroup = (groupTitle: string) => {
-    setExpandedGroups(prev =>
+    setExpandedGroups((prev) =>
       prev.includes(groupTitle)
-        ? prev.filter(g => g !== groupTitle)
+        ? prev.filter((g) => g !== groupTitle)
         : [...prev, groupTitle]
     );
   };
 
   // Filter navigation items based on search query
-  const filteredNavigationItems = roleWiseNavigationItems.map(section => ({
-    ...section,
-    items: section.items.filter(item =>
-      item.title.toLowerCase().includes(searchQuery.toLowerCase())
-    )
-  })).filter(section => section.items.length > 0);
+  const filteredNavigationItems = roleWiseNavigationItems
+    .map((section) => ({
+      ...section,
+      items: section.items.filter((item) =>
+        item.title.toLowerCase().includes(searchQuery.toLowerCase())
+      ),
+    }))
+    .filter((section) => section.items.length > 0);
 
   return (
     <Sidebar className={isCollapsed ? "w-16" : "w-64"} collapsible="icon">
@@ -92,8 +120,12 @@ export function PropertySidebar() {
               <Building2 className="w-4 h-4 text-white" />
             </div>
             <div>
-              <h2 className="font-semibold text-sidebar-primary">FacilityOS</h2>
-              <p className="text-xs text-sidebar-foreground">Property Management</p>
+              <h2 className="font-semibold text-sidebar-primary">
+                {systemName}
+              </h2>
+              <p className="text-xs text-sidebar-foreground">
+                Property Management
+              </p>
             </div>
           </div>
         )}
@@ -147,7 +179,9 @@ export function PropertySidebar() {
                           title={isCollapsed ? item.title : undefined}
                         >
                           <item.icon className="h-4 w-4" />
-                          {!isCollapsed && <span className="ml-2 text-sm">{item.title}</span>}
+                          {!isCollapsed && (
+                            <span className="ml-2 text-sm">{item.title}</span>
+                          )}
                         </NavLink>
                       </SidebarMenuButton>
                     </SidebarMenuItem>

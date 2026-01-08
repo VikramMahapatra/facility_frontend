@@ -22,6 +22,7 @@ import { invoiceApiService } from "@/services/financials/invoicesapi";
 import { useForm, Controller } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { invoiceSchema, InvoiceFormValues } from "@/schemas/invoice.schema";
+import { Plus, Trash2 } from "lucide-react";
 
 interface InvoiceFormProps {
   invoice?: Invoice;
@@ -45,6 +46,7 @@ export function InvoiceForm({
     reset,
     watch,
     setValue,
+    getValues,
     formState: { errors, isSubmitting, isValid },
   } = useForm<InvoiceFormValues>({
     resolver: zodResolver(invoiceSchema),
@@ -58,6 +60,7 @@ export function InvoiceForm({
       billable_item_type: "lease_charge",
       billable_item_id: "",
       totals: { sub: 0, tax: 0, grand: 0 },
+      payments: [{ method: "upi", ref_no: "", paid_at: "", amount: 0 }],
     },
   });
 
@@ -90,38 +93,65 @@ export function InvoiceForm({
         invoice.billable_item_type === "lease charge"
           ? "lease_charge"
           : invoice.billable_item_type === "work order"
-          ? "work_order"
-          : "lease_charge";
+            ? "work_order"
+            : "lease_charge";
       await loadBillableItemLookup(billableType, invoice.site_id);
+
+      if (invoice.billable_item_id && invoice.billable_item_name) {
+        setBillableItemList((prev) => {
+          const exists = prev.some(
+            (item: any) => item.id === invoice.billable_item_id
+          );
+          if (!exists) {
+            return [
+              ...prev,
+              {
+                id: invoice.billable_item_id,
+                name: invoice.billable_item_name,
+              },
+            ];
+          }
+          return prev;
+        });
+
+        await new Promise((resolve) => setTimeout(resolve, 50));
+      }
     }
 
     reset(
       invoice && mode !== "create"
         ? {
-            site_id: invoice.site_id || "",
-            date: invoice.date || new Date().toISOString().split("T")[0],
-            due_date: invoice.due_date || "",
-            status: invoice.status || "draft",
-            currency: invoice.currency || "INR",
-            billable_item_type:
-              invoice.billable_item_type === "lease charge"
-                ? "lease_charge"
-                : invoice.billable_item_type === "work order"
+          site_id: invoice.site_id || "",
+          date: invoice.date || new Date().toISOString().split("T")[0],
+          due_date: invoice.due_date || "",
+          status: invoice.status || "draft",
+          currency: invoice.currency || "INR",
+          billable_item_type:
+            invoice.billable_item_type === "lease charge"
+              ? "lease_charge"
+              : invoice.billable_item_type === "work order"
                 ? "work_order"
                 : "lease_charge",
-            billable_item_id: invoice.billable_item_id || "",
-            totals: invoice.totals || { sub: 0, tax: 0, grand: 0 },
-          }
+          billable_item_id: invoice.billable_item_id || "",
+          totals: invoice.totals || { sub: 0, tax: 0, grand: 0 },
+          payments:
+            (invoice as any).payments &&
+              Array.isArray((invoice as any).payments) &&
+              (invoice as any).payments.length > 0
+              ? (invoice as any).payments
+              : [{ method: "upi" as any, ref_no: "", paid_at: "", amount: 0 }],
+        }
         : {
-            site_id: "",
-            date: new Date().toISOString().split("T")[0],
-            due_date: "",
-            status: "draft",
-            currency: "INR",
-            billable_item_type: "lease_charge",
-            billable_item_id: "",
-            totals: { sub: 0, tax: 0, grand: 0 },
-          }
+          site_id: "",
+          date: new Date().toISOString().split("T")[0],
+          due_date: "",
+          status: "draft",
+          currency: "INR",
+          billable_item_type: "lease_charge",
+          billable_item_id: "",
+          totals: { sub: 0, tax: 0, grand: 0 },
+          payments: [{ method: "", ref_no: "", paid_at: "", amount: "" }],
+        }
     );
 
     setFormLoading(false);
@@ -134,20 +164,21 @@ export function InvoiceForm({
   }, [invoice, mode, isOpen, reset]);
 
   useEffect(() => {
-    if (watchedBillableType && watchedSiteId) {
-      loadBillableItemLookup(watchedBillableType, watchedSiteId);
-    } else {
-      setBillableItemList([]);
-      setValue("billable_item_id", "");
+    if (mode === "create") {
+      if (watchedBillableType && watchedSiteId && siteList.length > 0) {
+        loadBillableItemLookup(watchedBillableType, watchedSiteId);
+      } else if (!watchedBillableType || !watchedSiteId) {
+        setBillableItemList([]);
+        setValue("billable_item_id", "");
+      }
     }
-  }, [watchedBillableType, watchedSiteId, setValue]);
+  }, [watchedBillableType, watchedSiteId, setValue, mode, siteList.length]);
 
   // Load invoice totals when billable item is selected
   useEffect(() => {
     if (watchedBillableType && watchedBillableItemId && mode === "create") {
       loadInvoiceTotals(watchedBillableType, watchedBillableItemId);
     } else {
-      // Reset totals if billable item is cleared or in edit/view mode
       if (
         mode === "create" &&
         (!watchedBillableItemId || !watchedBillableType)
@@ -252,6 +283,7 @@ export function InvoiceForm({
         tax: data.totals?.tax ?? 0,
         grand: data.totals?.grand ?? 0,
       },
+      payments: data.payments as any,
       updated_at: new Date().toISOString(),
     };
     await onSave(payload);
@@ -277,9 +309,39 @@ export function InvoiceForm({
     return false;
   };
 
+  // Payment mode helpers: add, remove multiple payment modes
+  const paymentModes = watch("payments") || [];
+  console.log("Payments", paymentModes);
+
+  const addPaymentMode = () => {
+    const currentPaymentModes = getValues("payments") || [];
+    const newPaymentMode = { method: "upi" as any, ref_no: "", paid_at: "", amount: 0 };
+    setValue("payments", [...currentPaymentModes, newPaymentMode]);
+  };
+
+  const removePaymentMode = (index: number) => {
+    const currentPaymentModes = getValues("payments") || [];
+    const remaining = currentPaymentModes.filter((_, i) => i !== index);
+    // Ensure at least one entry remains
+    const ensured =
+      remaining.length === 0 ? [{ method: "upi" as any, ref_no: "", paid_at: "", amount: 0 }] : remaining;
+    setValue("payments", ensured);
+  };
+
+  const updatePaymentMode = (
+    index: number,
+    field: "method" | "ref_no" | "paid_at" | "amount",
+    value: string
+  ) => {
+    const currentPaymentModes = getValues("payments") || [];
+    const updated = [...currentPaymentModes];
+    updated[index] = { ...updated[index], [field]: value };
+    setValue("payments", updated);
+  };
+
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
-      <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
+      <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
         <DialogHeader>
           <DialogTitle>
             {mode === "create" && "Create New Invoice"}
@@ -296,44 +358,45 @@ export function InvoiceForm({
             <p className="text-center">Loading...</p>
           ) : (
             <div className="space-y-4">
-              {/* Site */}
-              <div className="space-y-2">
-                <Label htmlFor="site_id">Site *</Label>
-                <Controller
-                  name="site_id"
-                  control={control}
-                  render={({ field }) => (
-                    <Select
-                      value={field.value || ""}
-                      onValueChange={(value) => {
-                        field.onChange(value);
-                      }}
-                      disabled={isFieldDisabled("site_id")}
-                    >
-                      <SelectTrigger
-                        className={errors.site_id ? "border-red-500" : ""}
-                      >
-                        <SelectValue placeholder="Select site" />
-                      </SelectTrigger>
-                      <SelectContent>
-                        {siteList.map((site) => (
-                          <SelectItem key={site.id} value={site.id}>
-                            {site.name}
-                          </SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
-                  )}
-                />
-                {errors.site_id && (
-                  <p className="text-sm text-red-500">
-                    {errors.site_id.message}
-                  </p>
-                )}
-              </div>
+
 
               {/* Invoice Type + Billable Item */}
-              <div className="grid grid-cols-2 gap-4">
+              <div className="grid grid-cols-3 gap-4">
+                {/* Site */}
+                <div className="space-y-2">
+                  <Label htmlFor="site_id">Site *</Label>
+                  <Controller
+                    name="site_id"
+                    control={control}
+                    render={({ field }) => (
+                      <Select
+                        value={field.value || ""}
+                        onValueChange={(value) => {
+                          field.onChange(value);
+                        }}
+                        disabled={isFieldDisabled("site_id")}
+                      >
+                        <SelectTrigger
+                          className={errors.site_id ? "border-red-500" : ""}
+                        >
+                          <SelectValue placeholder="Select site" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          {siteList.map((site) => (
+                            <SelectItem key={site.id} value={site.id}>
+                              {site.name}
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                    )}
+                  />
+                  {errors.site_id && (
+                    <p className="text-sm text-red-500">
+                      {errors.site_id.message}
+                    </p>
+                  )}
+                </div>
                 <div className="space-y-2">
                   <Label htmlFor="billable_item_type">Invoice Type *</Label>
                   <Controller
@@ -414,8 +477,8 @@ export function InvoiceForm({
                 </div>
               </div>
 
-              {/* Dates */}
-              <div className="grid grid-cols-2 gap-4">
+              {/* Invoice Date - Due Date - Currency (third row, 3 columns) */}
+              <div className="grid grid-cols-3 gap-4">
                 <div className="space-y-2">
                   <Label htmlFor="date">Invoice Date *</Label>
                   <Input
@@ -447,35 +510,6 @@ export function InvoiceForm({
                     </p>
                   )}
                 </div>
-              </div>
-
-              {/* Status + Currency */}
-              <div className="grid grid-cols-2 gap-4">
-                <div className="space-y-2">
-                  <Label htmlFor="status">Status</Label>
-                  <Controller
-                    name="status"
-                    control={control}
-                    render={({ field }) => (
-                      <Select
-                        value={field.value || "draft"}
-                        onValueChange={field.onChange}
-                        disabled={isFieldDisabled("status")}
-                      >
-                        <SelectTrigger>
-                          <SelectValue />
-                        </SelectTrigger>
-                        <SelectContent>
-                          <SelectItem value="draft">Draft</SelectItem>
-                          <SelectItem value="issued">Issued</SelectItem>
-                          <SelectItem value="paid">Paid</SelectItem>
-                          <SelectItem value="partial">Partial</SelectItem>
-                          <SelectItem value="void">Void</SelectItem>
-                        </SelectContent>
-                      </Select>
-                    )}
-                  />
-                </div>
                 <div className="space-y-2">
                   <Label htmlFor="currency">Currency</Label>
                   <Input
@@ -485,6 +519,33 @@ export function InvoiceForm({
                   />
                 </div>
               </div>
+
+              {/* Status*/}
+              {/* <div className="space-y-2">
+                <Label htmlFor="status">Status</Label>
+                <Controller
+                  name="status"
+                  control={control}
+                  render={({ field }) => (
+                    <Select
+                      value={field.value || "draft"}
+                      onValueChange={field.onChange}
+                      disabled={isFieldDisabled("status")}
+                    >
+                      <SelectTrigger>
+                        <SelectValue />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="draft">Draft</SelectItem>
+                        <SelectItem value="issued">Issued</SelectItem>
+                        <SelectItem value="paid">Paid</SelectItem>
+                        <SelectItem value="partial">Partial</SelectItem>
+                        <SelectItem value="void">Void</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  )}
+                />
+              </div> */}
 
               {watchedBillableType && watchedBillableItemId && (
                 <div className="grid grid-cols-3 gap-4">
@@ -524,6 +585,103 @@ export function InvoiceForm({
                 </div>
               )}
 
+              {/* Payment Mode Section */}
+              <div className="space-y-4 border rounded-lg p-4">
+                <div className="flex items-center justify-between">
+                  <Label>Payment Details</Label>
+                  {!isReadOnly && (
+                    <Button
+                      type="button"
+                      variant="default"
+                      size="sm"
+                      onClick={addPaymentMode}
+                    >
+                      <Plus className="mr-2 h-4 w-4" /> Add Payment
+                    </Button>
+                  )}
+                </div>
+                <div className="border rounded-md">
+                  {/* Header row with labels */}
+                  <div className="grid grid-cols-5 gap-4 p-4 border-b bg-muted/50">
+                    <Label>Mode</Label>
+                    <Label>Reference No.</Label>
+                    <Label>Date</Label>
+                    <Label>Amount</Label>
+                    <div></div>
+                  </div>
+                  {/* Data rows */}
+                  {paymentModes.map((paymentMode, index) => (
+                    <div
+                      key={index}
+                      className="grid grid-cols-5 gap-4 p-4 border-b last:border-b-0"
+                    >
+                      <Controller
+                        name={`payments.${index}.method` as any}
+                        control={control}
+                        render={({ field }) => (
+                          <Select
+                            value={field.value || ""}
+                            onValueChange={(value) => {
+                              updatePaymentMode(index, "method", value);
+                            }}
+                            disabled={isReadOnly}
+                          >
+                            <SelectTrigger>
+                              <SelectValue placeholder="Select payment type" />
+                            </SelectTrigger>
+                            <SelectContent>
+                              <SelectItem value="cash">Cash</SelectItem>
+                              <SelectItem value="card">Card</SelectItem>
+                              <SelectItem value="bank">Bank Transfer</SelectItem>
+                              <SelectItem value="cheque">Cheque</SelectItem>
+                              <SelectItem value="upi">UPI</SelectItem>
+                              <SelectItem value="other">Other</SelectItem>
+                            </SelectContent>
+                          </Select>
+                        )}
+                      />
+                      <Input
+                        type="text"
+                        placeholder="Enter Ref No"
+                        value={paymentMode.ref_no || ""}
+                        onChange={(e) => {
+                          updatePaymentMode(index, "ref_no", e.target.value);
+                        }}
+                        disabled={isReadOnly}
+                      />
+                      <Input
+                        type="date"
+                        min={paymentMode.paid_at || undefined}
+                        disabled={isReadOnly}
+                        onChange={(e) => {
+                          updatePaymentMode(index, "paid_at", e.target.value);
+                        }}
+                      />
+                      <Input
+                        type="text"
+                        placeholder="Enter amount"
+                        value={paymentMode.amount || ""}
+                        onChange={(e) => {
+                          updatePaymentMode(index, "amount", e.target.value);
+                        }}
+                        disabled={isReadOnly}
+                      />
+                      {!isReadOnly && (
+                        <Button
+                          type="button"
+                          variant="ghost"
+                          size="sm"
+                          onClick={() => removePaymentMode(index)}
+                          disabled={paymentModes.length === 1}
+                        >
+                          <Trash2 className="h-4 w-4 text-destructive" />
+                        </Button>
+                      )}
+                    </div>
+                  ))}
+                </div>
+              </div>
+
               {/* Footer */}
               <DialogFooter>
                 <Button
@@ -539,8 +697,8 @@ export function InvoiceForm({
                     {isSubmitting
                       ? "Saving..."
                       : mode === "create"
-                      ? "Create"
-                      : "Update"}
+                        ? "Create"
+                        : "Update"}
                   </Button>
                 )}
               </DialogFooter>

@@ -69,6 +69,7 @@ import { useLoader } from "@/context/LoaderContext";
 import LoaderOverlay from "@/components/LoaderOverlay";
 import ContentContainer from "@/components/ContentContainer";
 import { useAuth } from "@/context/AuthContext";
+import { PageHeader } from "@/components/PageHeader";
 interface PMTemplate {
   id: string;
   name: string;
@@ -121,7 +122,7 @@ export default function PreventiveMaintenance() {
   const [frequencyList, setFrequencyList] = useState([]);
   const [categoryList, setCategoryList] = useState([]);
   const [page, setPage] = useState(1); // current page
-  const [pageSize] = useState(6); // items per page
+  const [pageSize] = useState(5); // items per page
   const [totalItems, setTotalItems] = useState(0);
   const { withLoader } = useLoader();
   const { user, handleLogout } = useAuth();
@@ -147,7 +148,7 @@ export default function PreventiveMaintenance() {
       loadTemplates();
       loadTemplateOverview();
     } else {
-      setPage(1); 
+      setPage(1);
     }
   };
 
@@ -160,17 +161,17 @@ export default function PreventiveMaintenance() {
 
     if (selectedStatus && selectedStatus !== "all")
       params.append("status", selectedStatus);
-    
+
     if (selectedFrequency && selectedFrequency !== "all")
       params.append("frequency", selectedFrequency);
-    
+
     const response = await preventiveMaintenanceApiService.getPreventiveMaintenanceOverview(params);
     if (response?.success) setTemplateOverview(response.data || {});
   };
 
   const loadStatusLookup = async () => {
-      const lookup = await preventiveMaintenanceApiService.getPmFilterStatusLookup();
-      if (lookup.success) setStatusList(lookup.data || []); 
+    const lookup = await preventiveMaintenanceApiService.getPmFilterStatusLookup();
+    if (lookup.success) setStatusList(lookup.data || []);
   };
 
   const loadFrequencyLookup = async () => {
@@ -190,7 +191,7 @@ export default function PreventiveMaintenance() {
     // build query params
     const params = new URLSearchParams();
     if (searchTerm) params.append("search", searchTerm);
-    
+
     if (selectedCategory && selectedCategory !== "all")
 
       params.append("category_id", selectedCategory);
@@ -251,7 +252,7 @@ export default function PreventiveMaintenance() {
     if (formMode === "create") {
       response = await preventiveMaintenanceApiService.addPreventiveMaintenance(templateData);
       if (response.success) updateTemplatePage();
-      loadTemplateOverview(); 
+      loadTemplateOverview();
     } else if (formMode === "edit" && selectedTemplate) {
       const updatedTemplate = {
         ...selectedTemplate,
@@ -269,8 +270,7 @@ export default function PreventiveMaintenance() {
     if (response.success) {
       setIsFormOpen(false);
       toast.success(
-        `PM Template has been ${
-          formMode === "create" ? "created" : "updated"
+        `PM Template has been ${formMode === "create" ? "created" : "updated"
         } successfully.`
       );
     }
@@ -291,343 +291,282 @@ export default function PreventiveMaintenance() {
   };
 
   return (
-    <SidebarProvider>
-      <div className="min-h-screen flex w-full">
-        <PropertySidebar />
-        <SidebarInset className="flex-1">
-          <header className="flex h-16 shrink-0 items-center justify-between border-b border-sidebar-border px-4">
-
-            {/* LEFT SIDE */}
-            <div className="flex items-center gap-2">
-              <SidebarTrigger className="-ml-1" />
-              <Separator orientation="vertical" className="mr-2 h-4" />
-              <FileText className="h-5 w-5 text-muted-foreground" />
-              <h1 className="text-lg font-semibold">
-                Preventive Maintenance
-              </h1>
-            </div>
-
-            {/* RIGHT SIDE */}
-            <div className="flex items-center gap-4">
-              <div className="flex items-center gap-3">
-                <Avatar>
-                  <AvatarFallback className="bg-gradient-primary text-white">
-                    {user.name.charAt(0)}
-                  </AvatarFallback>
-                </Avatar>
-
-                <div className="text-right">
-                  <p className="text-sm font-medium">{user.name}</p>
-                  <p className="text-xs text-muted-foreground">
-                    {user.account_type}
-                  </p>
-                </div>
-              </div>
-
-              <Button
-                variant="ghost"
-                size="sm"
-                onClick={handleLogout}
-                className="text-muted-foreground hover:text-destructive"
-              >
-                <LogOut className="w-4 h-4 mr-2" />
-                Logout
-              </Button>
-            </div>
-
-          </header>
-
-
-          <div className="flex-1 space-y-6 p-6">
-            {/* Header Actions */}
-            <div className="flex items-center justify-between">
-              <div>
-                <h2 className="text-2xl font-bold text-sidebar-primary">
-                  Preventive Maintenance
-                </h2>
-                <p className="text-muted-foreground">
-                  Schedule and manage maintenance templates
-                </p>
-              </div>
-              <Button onClick={handleCreate} className="gap-2">
-                <Plus className="h-4 w-4" />
-                Create Template
-              </Button>
-            </div>
-
-            <div className="space-y-6">
-              {/* Filters */}
-              <div className="flex flex-col sm:flex-row gap-4">
-                <div className="relative flex-1">
-                  <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground w-4 h-4" />
-                  <Input
-                    placeholder="Search PM templates..."
-                    value={searchTerm}
-                    onChange={(e) => setSearchTerm(e.target.value)}
-                    className="pl-10"
-                  />
-                </div>
-                <Select
-                  value={selectedStatus}
-                  onValueChange={setSelectedStatus}
-                >
-                  <SelectTrigger className="w-[180px]">
-                    <SelectValue placeholder="All Status" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="all">All Status</SelectItem>
-                    {statusList.map((status) => (
-                      <SelectItem key={status.id} value={status.id}>
-                        {status.name}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-                <Select
-                  value={selectedFrequency}
-                  onValueChange={setSelectedFrequency}
-                >
-                  <SelectTrigger className="w-[180px]">
-                    <SelectValue placeholder="All Frequency" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="all">All Frequency</SelectItem>
-                    {frequencyList.map((frequency) => (
-                      <SelectItem key={frequency.id} value={frequency.id}>
-                        {frequency.name}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-                <Select
-                  value={selectedCategory}
-                  onValueChange={setSelectedCategory}
-                >
-                  <SelectTrigger className="w-[180px]">
-                    <SelectValue placeholder="All Categories" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="all">All Categories</SelectItem>
-                    {categoryList.map((category) => (
-                      <SelectItem key={category.id} value={category.id}>
-                        {category.name}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-              </div>
-
-              {/* Content with Loader - Stats Cards and Table */}
-              <ContentContainer>
-                <LoaderOverlay />
-                <div className="space-y-6">
-                  {/* Stats Cards */}
-                  <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
-                    <Card>
-                      <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                        <CardTitle className="text-sm font-medium">
-                          Total Templates
-                        </CardTitle>
-                        <FileText className="h-4 w-4 text-muted-foreground" />
-                      </CardHeader>
-                      <CardContent>
-                        <div className="text-2xl font-bold">
-                          {templateOverview.total_templates}
-                        </div>
-                      </CardContent>
-                    </Card>
-                    <Card>
-                      <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                        <CardTitle className="text-sm font-medium">Active</CardTitle>
-                        <CheckCircle className="h-4 w-4 text-muted-foreground" />
-                      </CardHeader>
-                      <CardContent>
-                        <div className="text-2xl font-bold">
-                          {templateOverview.active_templates}
-                        </div>
-                      </CardContent>
-                    </Card>
-                    <Card>
-                      <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                        <CardTitle className="text-sm font-medium">
-                          Due This Week
-                        </CardTitle>
-                        <Calendar className="h-4 w-4 text-muted-foreground" />
-                      </CardHeader>
-                      <CardContent>
-                        <div className="text-2xl font-bold">
-                          {templateOverview.due_this_week}
-                        </div>
-                      </CardContent>
-                    </Card>
-                    <Card>
-                      <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                        <CardTitle className="text-sm font-medium">
-                          Completion Rate
-                        </CardTitle>
-                        <TrendingUp className="h-4 w-4 text-muted-foreground" />
-                      </CardHeader>
-                      <CardContent>
-                        <div className="text-2xl font-bold">
-                          {templateOverview.completion_rate}%
-                        </div>
-                      </CardContent>
-                    </Card>
-                  </div>
-
-                  {/* PM Templates Table */}
-                  <div className="relative rounded-md border min-h-[200px]">
-                    <Card className="border-0 shadow-none">
-                    <CardHeader>
-                      <CardTitle>PM Templates</CardTitle>
-                      <CardDescription>
-                        Schedule and manage maintenance templates
-                      </CardDescription>
-                    </CardHeader>
-                    <CardContent>
-                      <Table>
-                        <TableHeader>
-                          <TableRow>
-                            <TableHead>Template</TableHead>
-                            <TableHead>Category</TableHead>
-                            <TableHead>Categories</TableHead>
-                            <TableHead>Frequency</TableHead>
-                            <TableHead>SLA</TableHead>
-                            <TableHead>Next Due</TableHead>
-                            <TableHead>Status</TableHead>
-                            <TableHead>Actions</TableHead>
-                          </TableRow>
-                        </TableHeader>
-                        <TableBody>
-                          {templates.map((template) => (
-                            <TableRow key={template.id}>
-                              <TableCell>
-                                <div>
-                                  <div className="font-medium">{template.name}</div>
-                                  <div className="text-sm text-muted-foreground">
-                                    #{template.pm_no || template.id}
-                                  </div>
-                                </div>
-                              </TableCell>
-                              <TableCell>
-                                <Badge variant="outline">{template.asset_category || "No Category"}</Badge>
-                              </TableCell>
-                              <TableCell>
-                                <div className="space-y-1">
-                                  {template.checklist && Array.isArray(template.checklist) && template.checklist.length > 0 ? (
-                                    template.checklist.map((item, index) => (
-                                      <div key={index} className="text-xs">
-                                        <span className="font-medium">Step {item.step}:</span> {item.instruction}
-                                      </div>
-                                    ))
-                                  ) : (
-                                    <span className="text-muted-foreground text-sm">No checklist items</span>
-                                  )}
-                                </div>
-                              </TableCell>
-                              <TableCell>
-                                <div className="flex items-center">
-                                  <Calendar className="w-4 h-4 mr-2" />
-                                  {template.frequency || "No Frequency"}
-                                </div>
-                              </TableCell>
-                              <TableCell>
-                                <div className="space-y-1">
-                                  {template.sla ? (
-                                    <>
-                                      {template.sla.priority && (
-                                        <Badge variant="outline" className="text-xs">
-                                          {template.sla.priority}
-                                        </Badge>
-                                      )}
-                                      {template.sla.response_hrs && (
-                                        <div className="text-xs text-muted-foreground">
-                                          Response: {template.sla.response_hrs}h
-                                        </div>
-                                      )}
-                                      {template.sla.resolve_hrs && (
-                                        <div className="text-xs text-muted-foreground">
-                                          Resolve: {template.sla.resolve_hrs}h
-                                        </div>
-                                      )}
-                                    </>
-                                  ) : (
-                                    <span className="text-muted-foreground text-sm">No SLA</span>
-                                  )}
-                                </div>
-                              </TableCell>
-                              <TableCell>
-                                <div className="flex items-center">
-                                  <Calendar className="w-4 h-4 mr-2" />
-                                  {template.next_due
-                                    ? new Date(template.next_due).toLocaleDateString()
-                                    : "No Due Date"}
-                                </div>
-                              </TableCell>
-                              <TableCell>
-                                <Badge
-                                  variant={
-                                    template.status === "active"
-                                      ? "default"
-                                      : template.status === "completed"
-                                      ? "secondary"
-                                      : "outline"
-                                  }
-                                >
-                                  {template.status || "inactive"}
-                                </Badge>
-                              </TableCell>
-                              <TableCell>
-                                <div className="flex space-x-2">
-                                  <Button
-                                    variant="ghost"
-                                    size="sm"
-                                    onClick={() => handleView(template)}
-                                  >
-                                    <Eye className="w-4 h-4" />
-                                  </Button>
-                                  {/*canWrite(resource) &&*/ }<Button
-                                    variant="ghost"
-                                    size="sm"
-                                    onClick={() => handleEdit(template)}
-                                  >
-                                    <Edit className="w-4 h-4" />
-                                  </Button>
-                                  {/*}*/ }
-                                  {/*canDelete(resource) &&*/ }<Button
-                                    variant="ghost"
-                                    size="sm"
-                                    onClick={() => handleDelete(template.id)}
-                                  >
-                                    <Trash2 className="w-4 h-4" />
-                                  </Button>
-                                  {/*}*/ }
-                                </div>
-                              </TableCell>
-                            </TableRow>
-                          ))}
-                        </TableBody>
-                      </Table>
-                    </CardContent>
-                  </Card>
-                  </div>
-
-                  {/* Pagination */}
-                  <div className="mt-4">
-                    <Pagination
-                      page={page}
-                      pageSize={pageSize}
-                      totalItems={totalItems}
-                      onPageChange={(newPage) => setPage(newPage)}
-                    />
-                  </div>
-                </div>
-              </ContentContainer>
-            </div>
-          </div>
-        </SidebarInset>
+    <div className="flex-1 space-y-6 ">
+      {/* Header Actions */}
+      <div className="flex items-center justify-between">
+        <div>
+          <h2 className="text-2xl font-bold text-sidebar-primary">
+            Preventive Maintenance
+          </h2>
+          <p className="text-muted-foreground">
+            Schedule and manage maintenance templates
+          </p>
+        </div>
+        <Button onClick={handleCreate} className="gap-2">
+          <Plus className="h-4 w-4" />
+          Create Template
+        </Button>
       </div>
 
+      <div className="space-y-6">
+        {/* Filters */}
+        <div className="flex flex-col sm:flex-row gap-4">
+          <div className="relative flex-1">
+            <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground w-4 h-4" />
+            <Input
+              placeholder="Search PM templates..."
+              value={searchTerm}
+              onChange={(e) => setSearchTerm(e.target.value)}
+              className="pl-10"
+            />
+          </div>
+          <Select
+            value={selectedStatus}
+            onValueChange={setSelectedStatus}
+          >
+            <SelectTrigger className="w-[180px]">
+              <SelectValue placeholder="All Status" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="all">All Status</SelectItem>
+              {statusList.map((status) => (
+                <SelectItem key={status.id} value={status.id}>
+                  {status.name}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+          <Select
+            value={selectedFrequency}
+            onValueChange={setSelectedFrequency}
+          >
+            <SelectTrigger className="w-[180px]">
+              <SelectValue placeholder="All Frequency" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="all">All Frequency</SelectItem>
+              {frequencyList.map((frequency) => (
+                <SelectItem key={frequency.id} value={frequency.id}>
+                  {frequency.name}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+          <Select
+            value={selectedCategory}
+            onValueChange={setSelectedCategory}
+          >
+            <SelectTrigger className="w-[180px]">
+              <SelectValue placeholder="All Categories" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="all">All Categories</SelectItem>
+              {categoryList.map((category) => (
+                <SelectItem key={category.id} value={category.id}>
+                  {category.name}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+        </div>
+
+        {/* Content with Loader - Stats Cards and Table */}
+        <ContentContainer>
+          <LoaderOverlay />
+          <div className="space-y-6">
+            {/* Stats Cards */}
+            <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+              <Card>
+                <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                  <CardTitle className="text-sm font-medium">
+                    Total Templates
+                  </CardTitle>
+                  <FileText className="h-4 w-4 text-muted-foreground" />
+                </CardHeader>
+                <CardContent>
+                  <div className="text-2xl font-bold">
+                    {templateOverview.total_templates}
+                  </div>
+                </CardContent>
+              </Card>
+              <Card>
+                <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                  <CardTitle className="text-sm font-medium">Active</CardTitle>
+                  <CheckCircle className="h-4 w-4 text-muted-foreground" />
+                </CardHeader>
+                <CardContent>
+                  <div className="text-2xl font-bold">
+                    {templateOverview.active_templates}
+                  </div>
+                </CardContent>
+              </Card>
+              <Card>
+                <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                  <CardTitle className="text-sm font-medium">
+                    Due This Week
+                  </CardTitle>
+                  <Calendar className="h-4 w-4 text-muted-foreground" />
+                </CardHeader>
+                <CardContent>
+                  <div className="text-2xl font-bold">
+                    {templateOverview.due_this_week}
+                  </div>
+                </CardContent>
+              </Card>
+              <Card>
+                <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                  <CardTitle className="text-sm font-medium">
+                    Completion Rate
+                  </CardTitle>
+                  <TrendingUp className="h-4 w-4 text-muted-foreground" />
+                </CardHeader>
+                <CardContent>
+                  <div className="text-2xl font-bold">
+                    {templateOverview.completion_rate}%
+                  </div>
+                </CardContent>
+              </Card>
+            </div>
+
+            {/* PM Templates Table */}
+            <div className="relative rounded-md border min-h-[200px]">
+              <Table>
+                <TableHeader>
+                  <TableRow>
+                    <TableHead>Template</TableHead>
+                    <TableHead>Category</TableHead>
+                    <TableHead>Categories</TableHead>
+                    <TableHead>Frequency</TableHead>
+                    <TableHead>SLA</TableHead>
+                    <TableHead>Next Due</TableHead>
+                    <TableHead>Status</TableHead>
+                    <TableHead>Actions</TableHead>
+                  </TableRow>
+                </TableHeader>
+                <TableBody>
+                  {templates.map((template) => (
+                    <TableRow key={template.id}>
+                      <TableCell>
+                        <div>
+                          <div className="font-medium">{template.name}</div>
+                          <div className="text-sm text-muted-foreground">
+                            #{template.pm_no || template.id}
+                          </div>
+                        </div>
+                      </TableCell>
+                      <TableCell>
+                        <Badge variant="outline">{template.asset_category || "No Category"}</Badge>
+                      </TableCell>
+                      <TableCell>
+                        <div className="space-y-1">
+                          {template.checklist && Array.isArray(template.checklist) && template.checklist.length > 0 ? (
+                            template.checklist.map((item, index) => (
+                              <div key={index} className="text-xs">
+                                <span className="font-medium">Step {item.step}:</span> {item.instruction}
+                              </div>
+                            ))
+                          ) : (
+                            <span className="text-muted-foreground text-sm">No checklist items</span>
+                          )}
+                        </div>
+                      </TableCell>
+                      <TableCell>
+                        <div className="flex items-center">
+                          <Calendar className="w-4 h-4 mr-2" />
+                          {template.frequency || "No Frequency"}
+                        </div>
+                      </TableCell>
+                      <TableCell>
+                        <div className="space-y-1">
+                          {template.sla ? (
+                            <>
+                              {template.sla.priority && (
+                                <Badge variant="outline" className="text-xs">
+                                  {template.sla.priority}
+                                </Badge>
+                              )}
+                              {template.sla.response_hrs && (
+                                <div className="text-xs text-muted-foreground">
+                                  Response: {template.sla.response_hrs}h
+                                </div>
+                              )}
+                              {template.sla.resolve_hrs && (
+                                <div className="text-xs text-muted-foreground">
+                                  Resolve: {template.sla.resolve_hrs}h
+                                </div>
+                              )}
+                            </>
+                          ) : (
+                            <span className="text-muted-foreground text-sm">No SLA</span>
+                          )}
+                        </div>
+                      </TableCell>
+                      <TableCell>
+                        <div className="flex items-center">
+                          <Calendar className="w-4 h-4 mr-2" />
+                          {template.next_due
+                            ? new Date(template.next_due).toLocaleDateString()
+                            : "No Due Date"}
+                        </div>
+                      </TableCell>
+                      <TableCell>
+                        <Badge
+                          variant={
+                            template.status === "active"
+                              ? "default"
+                              : template.status === "completed"
+                                ? "secondary"
+                                : "outline"
+                          }
+                        >
+                          {template.status || "inactive"}
+                        </Badge>
+                      </TableCell>
+                      <TableCell>
+                        <div className="flex space-x-2">
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            onClick={() => handleView(template)}
+                          >
+                            <Eye className="w-4 h-4" />
+                          </Button>
+                          {/*canWrite(resource) &&*/}<Button
+                            variant="ghost"
+                            size="sm"
+                            onClick={() => handleEdit(template)}
+                          >
+                            <Edit className="w-4 h-4" />
+                          </Button>
+                          {/*}*/}
+                          {/*canDelete(resource) &&*/}<Button
+                            variant="ghost"
+                            size="sm"
+                            onClick={() => handleDelete(template.id)}
+                          >
+                            <Trash2 className="w-4 h-4" />
+                          </Button>
+                          {/*}*/}
+                        </div>
+                      </TableCell>
+                    </TableRow>
+                  ))}
+                </TableBody>
+              </Table>
+            </div>
+
+            {/* Pagination */}
+            <div className="mt-4">
+              <Pagination
+                page={page}
+                pageSize={pageSize}
+                totalItems={totalItems}
+                onPageChange={(newPage) => setPage(newPage)}
+              />
+            </div>
+          </div>
+        </ContentContainer>
+      </div>
       {/* PM Template Form */}
       <PMTemplateForm
         template={selectedTemplate}
@@ -654,6 +593,6 @@ export default function PreventiveMaintenance() {
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
-    </SidebarProvider>
+    </div>
   );
 }

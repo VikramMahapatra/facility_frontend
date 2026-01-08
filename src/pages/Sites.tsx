@@ -52,6 +52,9 @@ import { useLoader } from "@/context/LoaderContext";
 import LoaderOverlay from "@/components/LoaderOverlay";
 import ContentContainer from "@/components/ContentContainer";
 import { toast } from "sonner";
+import { useLocation } from "react-router-dom";
+import { getPageMetaByPath } from "@/helpers/navigationUtils";
+import { PageHeader } from "@/components/PageHeader";
 
 export interface Site {
   id: string;
@@ -95,6 +98,7 @@ export default function Sites() {
   const resource = "sites"; // must match resource name from backend policies
   const { withLoader } = useLoader();
   const { user, handleLogout } = useAuth();
+
 
   useSkipFirstEffect(() => {
     loadSites();
@@ -190,8 +194,7 @@ export default function Sites() {
     if (response.success) {
       setShowForm(false);
       toast.success(
-        `Site ${siteData.code} has been ${
-          formMode === "create" ? "created" : "updated"
+        `Site ${siteData.code} has been ${formMode === "create" ? "created" : "updated"
         } successfully.`
       );
     }
@@ -225,242 +228,192 @@ export default function Sites() {
   };
 
   return (
-    <SidebarProvider>
-      <div className="flex min-h-screen w-full">
-        <PropertySidebar />
-        <SidebarInset className="flex-1">
-          <header className="flex h-16 shrink-0 items-center justify-between border-b border-sidebar-border px-4">
+    <div>
+      <div className="space-y-6">
+        {/* Header Actions */}
+        <div className="flex items-center justify-between">
+          <div>
+            <h2 className="text-2xl font-bold text-sidebar-primary">
+              All Sites
+            </h2>
+            <p className="text-muted-foreground">
+              Manage your properties and locations
+            </p>
+          </div>
+          {canWrite(resource) && (
+            <Button className="gap-2" onClick={handleCreate}>
+              <Plus className="h-4 w-4" />
+              Add New Site
+            </Button>
+          )}
+        </div>
 
-            {/* LEFT SIDE */}
-            <div className="flex items-center gap-2">
-              <SidebarTrigger className="-ml-1" />
-              <Building2 className="h-5 w-5 text-sidebar-primary" />
-              <h1 className="text-lg font-semibold text-sidebar-primary">
-                Sites & Buildings
-              </h1>
-            </div>
+        {/* Filters */}
+        <div className="flex items-center gap-4">
+          <Input
+            placeholder="Search sites..."
+            value={searchTerm}
+            onChange={(e) => setSearchTerm(e.target.value)}
+            className="max-w-sm"
+          />
+          <Select
+            value={selectedKind}
+            onValueChange={setSelectedKind}
+          >
+            <SelectTrigger className="w-[180px]">
+              <SelectValue placeholder="All Types" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="all">All Types</SelectItem>
+              <SelectItem value="residential">Residential</SelectItem>
+              <SelectItem value="commercial">Commercial</SelectItem>
+              <SelectItem value="hotel">Hotel</SelectItem>
+              <SelectItem value="mall">Mall</SelectItem>
+              <SelectItem value="mixed">Mixed</SelectItem>
+              <SelectItem value="campus">Campus</SelectItem>
+            </SelectContent>
+          </Select>
+        </div>
 
-            {/* RIGHT SIDE */}
-            <div className="flex items-center gap-4">
-              <div className="flex items-center gap-3">
-                <Avatar>
-                  <AvatarFallback className="bg-gradient-primary text-white">
-                    {user.name.charAt(0)}
-                  </AvatarFallback>
-                </Avatar>
-
-                <div className="text-right">
-                  <p className="text-sm font-medium">{user.name}</p>
-                  <p className="text-xs text-muted-foreground">
-                    {user.account_type}
-                  </p>
-                </div>
-              </div>
-
-              <Button
-                variant="ghost"
-                size="sm"
-                onClick={handleLogout}
-                className="text-muted-foreground hover:text-destructive"
-              >
-                <LogOut className="w-4 h-4 mr-2" />
-                Logout
-              </Button>
-            </div>
-
-          </header>
-
-
-          <main className="flex-1 p-6">
-            <div className="space-y-6">
-              {/* Header Actions */}
-              <div className="flex items-center justify-between">
-                <div>
-                  <h2 className="text-2xl font-bold text-sidebar-primary">
-                    All Sites
-                  </h2>
-                  <p className="text-muted-foreground">
-                    Manage your properties and locations
-                  </p>
-                </div>
-                {canWrite(resource) && (
-                  <Button className="gap-2" onClick={handleCreate}>
-                    <Plus className="h-4 w-4" />
-                    Add New Site
-                  </Button>
-                )}
-              </div>
-
-              {/* Filters */}
-              <div className="flex items-center gap-4">
-                <Input
-                  placeholder="Search sites..."
-                  value={searchTerm}
-                  onChange={(e) => setSearchTerm(e.target.value)}
-                  className="max-w-sm"
-                />
-                <Select
-                  value={selectedKind}
-                  onValueChange={setSelectedKind}
+        <ContentContainer>
+          <LoaderOverlay />
+          {/* Sites Grid */}
+          <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
+            {sites.map((site) => {
+              return (
+                <Card
+                  key={site.id}
+                  className="hover:shadow-lg transition-shadow"
                 >
-                  <SelectTrigger className="w-[180px]">
-                    <SelectValue placeholder="All Types" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="all">All Types</SelectItem>
-                    <SelectItem value="residential">Residential</SelectItem>
-                    <SelectItem value="commercial">Commercial</SelectItem>
-                    <SelectItem value="hotel">Hotel</SelectItem>
-                    <SelectItem value="mall">Mall</SelectItem>
-                    <SelectItem value="mixed">Mixed</SelectItem>
-                    <SelectItem value="campus">Campus</SelectItem>
-                  </SelectContent>
-                </Select>
-              </div>
+                  <CardHeader className="pb-3">
+                    <div className="flex items-start justify-between">
+                      <div className="space-y-1">
+                        <CardTitle className="text-lg">
+                          {site.name}
+                        </CardTitle>
+                        <p className="text-sm text-muted-foreground">
+                          {site.code}
+                        </p>
+                      </div>
+                      <div className="flex items-center gap-1">
+                        <div
+                          className={`w-3 h-3 rounded-full ${getKindColor(
+                            site.kind
+                          )}`}
+                        />
+                        <Badge
+                          variant="secondary"
+                          className="text-xs capitalize"
+                        >
+                          {site.kind}
+                        </Badge>
+                      </div>
+                    </div>
+                  </CardHeader>
 
-              <ContentContainer>
-                <LoaderOverlay />
-                {/* Sites Grid */}
-                <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
-                  {sites.map((site) => {
-                    return (
-                      <Card
-                        key={site.id}
-                        className="hover:shadow-lg transition-shadow"
+                  <CardContent className="space-y-4">
+                    {/* Address */}
+                    <div className="flex items-start gap-2">
+                      <MapPin className="h-4 w-4 text-muted-foreground mt-0.5" />
+                      <div className="text-sm text-muted-foreground">
+                        <p>{site.address.line1}</p>
+                        <p>
+                          {site.address.city}, {site.address.state}{" "}
+                          {site.address.pincode}
+                        </p>
+                      </div>
+                    </div>
+
+                    {/* Stats */}
+                    <div className="grid grid-cols-3 gap-4 text-sm">
+                      <div className="text-center">
+                        <p className="font-semibold text-sidebar-primary">
+                          {site.total_spaces}
+                        </p>
+                        <p className="text-muted-foreground">Spaces</p>
+                      </div>
+                      <div className="text-center">
+                        <p className="font-semibold text-sidebar-primary">
+                          {site.buildings}
+                        </p>
+                        <p className="text-muted-foreground">Buildings</p>
+                      </div>
+                      <div className="text-center">
+                        <p className="font-semibold text-sidebar-primary">
+                          {site.occupied_percent}%
+                        </p>
+                        <p className="text-muted-foreground">Occupied</p>
+                      </div>
+                    </div>
+
+                    {/* Status and Date */}
+                    <div className="flex items-center justify-between text-xs">
+                      <Badge className={getStatusColor(site.status)}>
+                        {site.status}
+                      </Badge>
+                      {site.opened_on && (
+                        <div className="flex items-center gap-1 text-muted-foreground">
+                          <Calendar className="h-3 w-3" />
+                          Opened{" "}
+                          {new Date(site.opened_on).toLocaleDateString()}
+                        </div>
+                      )}
+                    </div>
+
+                    {/* Actions */}
+                    <div className="flex items-center justify-end gap-2 pt-2">
+                      <Button
+                        size="sm"
+                        variant="outline"
+                        onClick={() => handleView(site)}
                       >
-                        <CardHeader className="pb-3">
-                          <div className="flex items-start justify-between">
-                            <div className="space-y-1">
-                              <CardTitle className="text-lg">
-                                {site.name}
-                              </CardTitle>
-                              <p className="text-sm text-muted-foreground">
-                                {site.code}
-                              </p>
-                            </div>
-                            <div className="flex items-center gap-1">
-                              <div
-                                className={`w-3 h-3 rounded-full ${getKindColor(
-                                  site.kind
-                                )}`}
-                              />
-                              <Badge
-                                variant="secondary"
-                                className="text-xs capitalize"
-                              >
-                                {site.kind}
-                              </Badge>
-                            </div>
-                          </div>
-                        </CardHeader>
+                        <Eye className="h-3 w-3" />
+                      </Button>
+                      {canWrite(resource) && (
+                        <Button
+                          size="sm"
+                          variant="outline"
+                          onClick={() => handleEdit(site)}
+                        >
+                          <Edit className="h-3 w-3" />
+                        </Button>
+                      )}
+                      {canDelete(resource) && (
+                        <Button
+                          size="sm"
+                          variant="outline"
+                          className="text-destructive hover:text-destructive"
+                          onClick={() => handleDelete(site.id)}
+                        >
+                          <Trash2 className="h-3 w-3" />
+                        </Button>
+                      )}
+                    </div>
+                  </CardContent>
+                </Card>
+              );
+            })}
+          </div>
+          <Pagination
+            page={page}
+            pageSize={pageSize}
+            totalItems={totalItems}
+            onPageChange={(newPage) => setPage(newPage)}
+          />
 
-                        <CardContent className="space-y-4">
-                          {/* Address */}
-                          <div className="flex items-start gap-2">
-                            <MapPin className="h-4 w-4 text-muted-foreground mt-0.5" />
-                            <div className="text-sm text-muted-foreground">
-                              <p>{site.address.line1}</p>
-                              <p>
-                                {site.address.city}, {site.address.state}{" "}
-                                {site.address.pincode}
-                              </p>
-                            </div>
-                          </div>
-
-                          {/* Stats */}
-                          <div className="grid grid-cols-3 gap-4 text-sm">
-                            <div className="text-center">
-                              <p className="font-semibold text-sidebar-primary">
-                                {site.total_spaces}
-                              </p>
-                              <p className="text-muted-foreground">Spaces</p>
-                            </div>
-                            <div className="text-center">
-                              <p className="font-semibold text-sidebar-primary">
-                                {site.buildings}
-                              </p>
-                              <p className="text-muted-foreground">Buildings</p>
-                            </div>
-                            <div className="text-center">
-                              <p className="font-semibold text-sidebar-primary">
-                                {site.occupied_percent}%
-                              </p>
-                              <p className="text-muted-foreground">Occupied</p>
-                            </div>
-                          </div>
-
-                          {/* Status and Date */}
-                          <div className="flex items-center justify-between text-xs">
-                            <Badge className={getStatusColor(site.status)}>
-                              {site.status}
-                            </Badge>
-                            {site.opened_on && (
-                              <div className="flex items-center gap-1 text-muted-foreground">
-                                <Calendar className="h-3 w-3" />
-                                Opened{" "}
-                                {new Date(site.opened_on).toLocaleDateString()}
-                              </div>
-                            )}
-                          </div>
-
-                          {/* Actions */}
-                          <div className="flex items-center justify-end gap-2 pt-2">
-                            <Button
-                              size="sm"
-                              variant="outline"
-                              onClick={() => handleView(site)}
-                            >
-                              <Eye className="h-3 w-3" />
-                            </Button>
-                            {canWrite(resource) && (
-                              <Button
-                                size="sm"
-                                variant="outline"
-                                onClick={() => handleEdit(site)}
-                              >
-                                <Edit className="h-3 w-3" />
-                              </Button>
-                            )}
-                            {canDelete(resource) && (
-                              <Button
-                                size="sm"
-                                variant="outline"
-                                className="text-destructive hover:text-destructive"
-                                onClick={() => handleDelete(site.id)}
-                              >
-                                <Trash2 className="h-3 w-3" />
-                              </Button>
-                            )}
-                          </div>
-                        </CardContent>
-                      </Card>
-                    );
-                  })}
-                </div>
-                <Pagination
-                  page={page}
-                  pageSize={pageSize}
-                  totalItems={totalItems}
-                  onPageChange={(newPage) => setPage(newPage)}
-                />
-
-                {sites.length === 0 && (
-                  <div className="text-center py-12">
-                    <Building2 className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
-                    <h3 className="text-lg font-semibold text-sidebar-primary mb-2">
-                      No sites found
-                    </h3>
-                    <p className="text-muted-foreground">
-                      Try adjusting your search criteria or add a new site.
-                    </p>
-                  </div>
-                )}
-              </ContentContainer>
+          {sites.length === 0 && (
+            <div className="text-center py-12">
+              <Building2 className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
+              <h3 className="text-lg font-semibold text-sidebar-primary mb-2">
+                No sites found
+              </h3>
+              <p className="text-muted-foreground">
+                Try adjusting your search criteria or add a new site.
+              </p>
             </div>
-          </main>
-        </SidebarInset>
+          )}
+        </ContentContainer>
       </div>
-
       {/* Site Form Modal */}
       <SiteForm
         site={selectedSite as any}
@@ -488,6 +441,7 @@ export default function Sites() {
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
-    </SidebarProvider>
+    </div>
+
   );
 }

@@ -63,6 +63,7 @@ import LoaderOverlay from "@/components/LoaderOverlay";
 import { useLoader } from "@/context/LoaderContext";
 import { useAuth } from "../context/AuthContext";
 import { SLAPolicy } from "@/interfaces/sla_policy_interface";
+import { PageHeader } from "@/components/PageHeader";
 
 export default function SLAPolicies() {
   const [isFormOpen, setIsFormOpen] = useState(false);
@@ -183,8 +184,7 @@ export default function SLAPolicies() {
     if (response.success) {
       setIsFormOpen(false);
       toast.success(
-        `SLA Policy has been ${
-          formMode === "create" ? "created" : "updated"
+        `SLA Policy has been ${formMode === "create" ? "created" : "updated"
         } successfully.`
       );
     }
@@ -220,320 +220,260 @@ export default function SLAPolicies() {
   };
 
   return (
-    <SidebarProvider>
-      <div className="min-h-screen flex w-full bg-background">
-        <PropertySidebar />
+    <div>
+      <div className="space-y-6">
+        <div className="flex items-center justify-between">
+          <div>
+            <h2 className="text-3xl font-bold text-sidebar-primary">
+              Ticket Category SLA
+            </h2>
+            <p className="text-muted-foreground">
+              Manage service level agreements for ticket categories.
+            </p>
+          </div>
+          {canWrite(resource) && (
+            <Button onClick={handleCreate}>
+              <Plus className="h-4 w-4 mr-2" />
+              Create Policy
+            </Button>
+          )}
+        </div>
 
-        <SidebarInset>
-          <header className="flex h-16 shrink-0 items-center justify-between border-b border-sidebar-border px-4">
-            <div className="flex items-center gap-2">
-              <SidebarTrigger />
-              <div className="flex items-center gap-2">
-                <ShieldCheck className="h-5 w-5 text-sidebar-primary" />
-                <h1 className="text-lg font-semibold text-sidebar-primary">
-                  Ticket Category SLA
-                </h1>
+        {/* Summary Cards */}
+        <div className="grid grid-cols-3 gap-4">
+          <Card>
+            <CardContent className="pt-6">
+              <p className="text-sm font-bold text-muted-foreground mb-3">
+                Total SLA Policies
+              </p>
+              <div className="text-3xl font-bold text-sidebar-primary mb-1">
+                {totalPolicies}
               </div>
-            </div>
-            <div className="flex items-center gap-4">
-              <div className="flex items-center gap-3">
-                <Avatar>
-                  <AvatarFallback className="bg-gradient-primary text-white">
-                    {user.name.charAt(0)}
-                  </AvatarFallback>
-                </Avatar>
-
-                <div className="text-right">
-                  <p className="text-sm font-medium">{user.name}</p>
-                  <p className="text-xs text-muted-foreground">
-                    {user.account_type}
-                  </p>
-                </div>
+              <p className="text-sm text-blue-600">All policies</p>
+            </CardContent>
+          </Card>
+          <Card>
+            <CardContent className="pt-6">
+              <p className="text-sm font-bold text-muted-foreground mb-3">
+                Active SLA Policies
+              </p>
+              <div className="text-3xl font-bold text-sidebar-primary mb-1">
+                {activeslapolicies}
               </div>
-
-              <Button
-                variant="ghost"
-                size="sm"
-                onClick={handleLogout}
-                className="text-muted-foreground hover:text-destructive"
-              >
-                <LogOut className="w-4 h-4 mr-2" />
-                Logout
-              </Button>
-            </div>
-          </header>
-
-          <main className="flex-1 p-6">
-            <div className="space-y-6">
-              <div className="flex items-center justify-between">
-                <div>
-                  <h2 className="text-3xl font-bold text-sidebar-primary">
-                    Ticket Category SLA
-                  </h2>
-                  <p className="text-muted-foreground">
-                    Manage service level agreements for ticket categories.
-                  </p>
-                </div>
-                {canWrite(resource) && (
-                  <Button onClick={handleCreate}>
-                    <Plus className="h-4 w-4 mr-2" />
-                    Create Policy
-                  </Button>
-                )}
+              <p className="text-sm text-blue-600">
+                Total Active SLA Policies
+              </p>
+            </CardContent>
+          </Card>
+          <Card>
+            <CardContent className="pt-6">
+              <p className="text-sm font-bold text-muted-foreground mb-3">
+                Avg Response Time
+              </p>
+              <div className="text-3xl font-bold text-sidebar-primary mb-1">
+                {formatTime(avgResponseTime)}
               </div>
-
-              {/* Summary Cards */}
-              <div className="grid grid-cols-3 gap-4">
-                <Card>
-                  <CardContent className="pt-6">
-                    <p className="text-sm font-bold text-muted-foreground mb-3">
-                      Total SLA Policies
-                    </p>
-                    <div className="text-3xl font-bold text-sidebar-primary mb-1">
-                      {totalPolicies}
-                    </div>
-                    <p className="text-sm text-blue-600">All policies</p>
-                  </CardContent>
-                </Card>
-                <Card>
-                  <CardContent className="pt-6">
-                    <p className="text-sm font-bold text-muted-foreground mb-3">
-                      Active SLA Policies
-                    </p>
-                    <div className="text-3xl font-bold text-sidebar-primary mb-1">
-                      {activeslapolicies}
-                    </div>
-                    <p className="text-sm text-blue-600">
-                      Total Active SLA Policies
-                    </p>
-                  </CardContent>
-                </Card>
-                <Card>
-                  <CardContent className="pt-6">
-                    <p className="text-sm font-bold text-muted-foreground mb-3">
-                      Avg Response Time
-                    </p>
-                    <div className="text-3xl font-bold text-sidebar-primary mb-1">
-                      {formatTime(avgResponseTime)}
-                    </div>
-                    <p className="text-sm text-blue-600">
-                      Average across all policies
-                    </p>
-                  </CardContent>
-                </Card>
-              </div>
-
-              <Card>
-                <CardHeader>
-                  {/* <div>
-                    <CardTitle className="text-2xl font-semibold mb-1">SLA Policies</CardTitle>
-                    <p className="text-sm text-muted-foreground mb-4">
-                      Filter and manage SLA policies by organization and site.
-                    </p>
-                  </div> */}
-                  <div className="flex items-center gap-4">
-                    <div className="relative flex-1 max-w-sm">
-                      <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground h-4 w-4" />
-                      <Input
-                        type="text"
-                        placeholder="Search by category, org, or site..."
-                        value={searchQuery}
-                        onChange={(e) => setSearchQuery(e.target.value)}
-                        className="pl-10"
-                      />
-                    </div>
-                    <Select
-                      value={selectedSite}
-                      onValueChange={setSelectedSite}
+              <p className="text-sm text-blue-600">
+                Average across all policies
+              </p>
+            </CardContent>
+          </Card>
+        </div>
+        <div className="flex items-center gap-4">
+          <div className="relative flex-1 max-w-sm">
+            <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground h-4 w-4" />
+            <Input
+              type="text"
+              placeholder="Search by category, org, or site..."
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+              className="pl-10"
+            />
+          </div>
+          <Select
+            value={selectedSite}
+            onValueChange={setSelectedSite}
+          >
+            <SelectTrigger className="w-[180px]">
+              <SelectValue placeholder="All Sites" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="all">All Sites</SelectItem>
+              {siteList.map((site: any) => (
+                <SelectItem key={site.id} value={site.id}>
+                  {site.name}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+        </div>
+        <div className="relative rounded-md border">
+          <ContentContainer>
+            <LoaderOverlay />
+            <Table>
+              <TableHeader>
+                <TableRow>
+                  <TableHead>Site</TableHead>
+                  <TableHead>Service Category</TableHead>
+                  <TableHead>Response Time</TableHead>
+                  <TableHead>Resolution Time</TableHead>
+                  <TableHead>Escalation Time</TableHead>
+                  <TableHead>Reopen Time</TableHead>
+                  <TableHead>Status</TableHead>
+                  <TableHead className="text-right">
+                    Actions
+                  </TableHead>
+                </TableRow>
+              </TableHeader>
+              <TableBody>
+                {policies.length === 0 ? (
+                  <TableRow>
+                    <TableCell
+                      colSpan={8}
+                      className="text-center text-muted-foreground"
                     >
-                      <SelectTrigger className="w-[180px]">
-                        <SelectValue placeholder="All Sites" />
-                      </SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value="all">All Sites</SelectItem>
-                        {siteList.map((site: any) => (
-                          <SelectItem key={site.id} value={site.id}>
-                            {site.name}
-                          </SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
-                  </div>
-                </CardHeader>
-                <CardContent>
-                  <div className="relative rounded-md border">
-                    <ContentContainer>
-                      <LoaderOverlay />
-                      <Table>
-                        <TableHeader>
-                          <TableRow>
-                            <TableHead>Site</TableHead>
-                            <TableHead>Service Category</TableHead>
-                            <TableHead>Response Time</TableHead>
-                            <TableHead>Resolution Time</TableHead>
-                            <TableHead>Escalation Time</TableHead>
-                            <TableHead>Reopen Time</TableHead>
-                            <TableHead>Status</TableHead>
-                            <TableHead className="text-right">
-                              Actions
-                            </TableHead>
-                          </TableRow>
-                        </TableHeader>
-                        <TableBody>
-                          {policies.length === 0 ? (
-                            <TableRow>
-                              <TableCell
-                                colSpan={8}
-                                className="text-center text-muted-foreground"
-                              >
-                                No SLA policies found
-                              </TableCell>
-                            </TableRow>
-                          ) : (
-                            policies.map((policy) => (
-                              <TableRow key={policy.id}>
-                                <TableCell className="font-medium">
-                                  {policy.site_name || "-"}
-                                </TableCell>
-                                <TableCell>
-                                  <div className="flex items-center gap-2">
-                                    <AlertCircle className="h-4 w-4 text-muted-foreground" />
-                                    <span className="text-muted-foreground capitalize">
-                                      {policy.service_category}
-                                    </span>
-                                  </div>
-                                </TableCell>
-                                <TableCell>
-                                  <div className="flex items-center gap-1">
-                                    <Clock className="h-3 w-3 text-blue-500" />
-                                    {formatTime(policy.response_time_mins)}
-                                  </div>
-                                </TableCell>
-                                <TableCell>
-                                  <div className="flex items-center gap-1">
-                                    <Clock className="h-3 w-3 text-green-500" />
-                                    {formatTime(policy.resolution_time_mins)}
-                                  </div>
-                                </TableCell>
-                                <TableCell>
-                                  <div className="flex items-center gap-1">
-                                    <Clock className="h-3 w-3 text-orange-500" />
-                                    {formatTime(policy.escalation_time_mins)}
-                                  </div>
-                                </TableCell>
-                                <TableCell>
-                                  <div className="flex items-center gap-1">
-                                    <Clock className="h-3 w-3 text-purple-500" />
-                                    {formatTime(policy.reopen_time_mins)}
-                                  </div>
-                                </TableCell>
-                                <TableCell>
-                                  <Badge
-                                    variant={
-                                      policy.active ? "default" : "secondary"
-                                    }
-                                  >
-                                    {policy.active ? "Active" : "Inactive"}
-                                  </Badge>
-                                </TableCell>
-                                <TableCell className="text-right">
-                                  <div className="flex justify-end gap-2">
-                                    {canWrite(resource) && (
-                                      <Button
-                                        variant="ghost"
-                                        size="icon"
-                                        onClick={() => handleEdit(policy)}
-                                      >
-                                        <Pencil className="h-4 w-4" />
-                                      </Button>
-                                    )}
-                                    {canDelete(resource) && (
-                                      <Button
-                                        variant="ghost"
-                                        size="icon"
-                                        onClick={() => handleDelete(policy.id)}
-                                      >
-                                        <Trash2 className="h-4 w-4 text-destructive" />
-                                      </Button>
-                                    )}
-                                  </div>
-                                </TableCell>
-                              </TableRow>
-                            ))
+                      No SLA policies found
+                    </TableCell>
+                  </TableRow>
+                ) : (
+                  policies.map((policy) => (
+                    <TableRow key={policy.id}>
+                      <TableCell className="font-medium">
+                        {policy.site_name || "-"}
+                      </TableCell>
+                      <TableCell>
+                        <div className="flex items-center gap-2">
+                          <AlertCircle className="h-4 w-4 text-muted-foreground" />
+                          <span className="text-muted-foreground capitalize">
+                            {policy.service_category}
+                          </span>
+                        </div>
+                      </TableCell>
+                      <TableCell>
+                        <div className="flex items-center gap-1">
+                          <Clock className="h-3 w-3 text-blue-500" />
+                          {formatTime(policy.response_time_mins)}
+                        </div>
+                      </TableCell>
+                      <TableCell>
+                        <div className="flex items-center gap-1">
+                          <Clock className="h-3 w-3 text-green-500" />
+                          {formatTime(policy.resolution_time_mins)}
+                        </div>
+                      </TableCell>
+                      <TableCell>
+                        <div className="flex items-center gap-1">
+                          <Clock className="h-3 w-3 text-orange-500" />
+                          {formatTime(policy.escalation_time_mins)}
+                        </div>
+                      </TableCell>
+                      <TableCell>
+                        <div className="flex items-center gap-1">
+                          <Clock className="h-3 w-3 text-purple-500" />
+                          {formatTime(policy.reopen_time_mins)}
+                        </div>
+                      </TableCell>
+                      <TableCell>
+                        <Badge
+                          variant={
+                            policy.active ? "default" : "secondary"
+                          }
+                        >
+                          {policy.active ? "Active" : "Inactive"}
+                        </Badge>
+                      </TableCell>
+                      <TableCell className="text-right">
+                        <div className="flex justify-end gap-2">
+                          {canWrite(resource) && (
+                            <Button
+                              variant="ghost"
+                              size="icon"
+                              onClick={() => handleEdit(policy)}
+                            >
+                              <Pencil className="h-4 w-4" />
+                            </Button>
                           )}
-                        </TableBody>
-                      </Table>
-                    </ContentContainer>
-                  </div>
-                </CardContent>
-              </Card>
-
-              {/* Pagination */}
-              <Pagination
-                page={page}
-                pageSize={pageSize}
-                totalItems={totalItems}
-                onPageChange={setPage}
-              />
-            </div>
-
-            <Dialog open={isFormOpen} onOpenChange={setIsFormOpen}>
-              <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
-                <DialogHeader>
-                  <DialogTitle>
-                    {formMode === "create"
-                      ? "Create SLA Policy"
-                      : formMode === "edit"
-                      ? "Edit SLA Policy"
-                      : "SLA Policy Details"}
-                  </DialogTitle>
-                  <DialogDescription>
-                    {formMode === "create"
-                      ? "Create a new SLA policy for service categories."
-                      : formMode === "edit"
-                      ? "Update SLA policy details."
-                      : "View SLA policy details."}
-                  </DialogDescription>
-                </DialogHeader>
-                <SLAPolicyForm
-                  policy={selectedPolicy}
-                  isOpen={isFormOpen}
-                  onClose={() => {
-                    setIsFormOpen(false);
-                    setSelectedPolicy(null);
-                  }}
-                  onSave={handleSave}
-                  mode={formMode}
-                />
-              </DialogContent>
-            </Dialog>
-
-            <AlertDialog
-              open={!!deletePolicyId}
-              onOpenChange={() => setDeletePolicyId(null)}
-            >
-              <AlertDialogContent>
-                <AlertDialogHeader>
-                  <AlertDialogTitle>Delete SLA Policy</AlertDialogTitle>
-                  <AlertDialogDescription>
-                    Are you sure you want to delete this SLA policy? This action
-                    cannot be undone.
-                  </AlertDialogDescription>
-                </AlertDialogHeader>
-                <AlertDialogFooter>
-                  <AlertDialogCancel>Cancel</AlertDialogCancel>
-                  <AlertDialogAction
-                    onClick={confirmDelete}
-                    className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
-                  >
-                    Delete
-                  </AlertDialogAction>
-                </AlertDialogFooter>
-              </AlertDialogContent>
-            </AlertDialog>
-          </main>
-        </SidebarInset>
+                          {canDelete(resource) && (
+                            <Button
+                              variant="ghost"
+                              size="icon"
+                              onClick={() => handleDelete(policy.id)}
+                            >
+                              <Trash2 className="h-4 w-4 text-destructive" />
+                            </Button>
+                          )}
+                        </div>
+                      </TableCell>
+                    </TableRow>
+                  ))
+                )}
+              </TableBody>
+            </Table>
+          </ContentContainer>
+        </div>
+        {/* Pagination */}
+        <Pagination
+          page={page}
+          pageSize={pageSize}
+          totalItems={totalItems}
+          onPageChange={setPage}
+        />
       </div>
-    </SidebarProvider>
+
+      <Dialog open={isFormOpen} onOpenChange={setIsFormOpen}>
+        <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
+          <DialogHeader>
+            <DialogTitle>
+              {formMode === "create"
+                ? "Create SLA Policy"
+                : formMode === "edit"
+                  ? "Edit SLA Policy"
+                  : "SLA Policy Details"}
+            </DialogTitle>
+            <DialogDescription>
+              {formMode === "create"
+                ? "Create a new SLA policy for service categories."
+                : formMode === "edit"
+                  ? "Update SLA policy details."
+                  : "View SLA policy details."}
+            </DialogDescription>
+          </DialogHeader>
+          <SLAPolicyForm
+            policy={selectedPolicy}
+            isOpen={isFormOpen}
+            onClose={() => {
+              setIsFormOpen(false);
+              setSelectedPolicy(null);
+            }}
+            onSave={handleSave}
+            mode={formMode}
+          />
+        </DialogContent>
+      </Dialog>
+
+      <AlertDialog
+        open={!!deletePolicyId}
+        onOpenChange={() => setDeletePolicyId(null)}
+      >
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Delete SLA Policy</AlertDialogTitle>
+            <AlertDialogDescription>
+              Are you sure you want to delete this SLA policy? This action
+              cannot be undone.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancel</AlertDialogCancel>
+            <AlertDialogAction
+              onClick={confirmDelete}
+              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+            >
+              Delete
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+    </div>
   );
 }

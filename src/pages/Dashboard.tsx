@@ -11,17 +11,19 @@ import {
   MaintenanceOverview,
   AccessOverview,
   FinancialSummary,
-  EnergyOverview
+  EnergyOverview,
 } from "@/components/DashboardCards";
 import {
   RevenueChart,
   OccupancyChart,
   MaintenanceChart,
   EnergyChart,
-  FloorOccupancyChart
+  FloorOccupancyChart,
 } from "@/components/DashboardCharts";
 import { dashboardApiService } from "@/services/dashboardapi";
 import { useAuth } from "@/context/AuthContext";
+import { useSettings } from "@/context/SettingsContext";
+import { PageHeader } from "@/components/PageHeader";
 
 interface User {
   id: string;
@@ -34,7 +36,7 @@ interface User {
 
 const Dashboard = () => {
   const { user, handleLogout } = useAuth();
-
+  const { systemName } = useSettings();
 
   if (!user) {
     return (
@@ -50,106 +52,52 @@ const Dashboard = () => {
   // Stats are now imported from mock data
 
   return (
-    <SidebarProvider>
-      <div className="min-h-screen flex w-full bg-background">
-        <PropertySidebar />
+    <div>
+      <div className="space-y-8">
+        <div className="mb-8">
+          <h2 className="text-3xl font-bold mb-2">
+            Welcome back, {user.name}!
+          </h2>
+          <p className="text-muted-foreground">
+            {user.organization_name
+              ? `Managing facilities for ${user.organization_name}`
+              : "Your comprehensive property management dashboard"}
+          </p>
+        </div>
 
-        <div className="flex-1 flex flex-col">
-          {/* Header */}
-          <header className="bg-card border-b border-border">
-            <div className="flex items-center justify-between px-6 py-4">
-              <div className="flex items-center space-x-4">
-                <SidebarTrigger />
-                <div className="flex items-center space-x-3">
-                  <div className="w-10 h-10 bg-gradient-primary rounded-lg flex items-center justify-center">
-                    <span className="text-white font-bold">F</span>
-                  </div>
-                  <div>
-                    <h1 className="text-xl font-bold">FacilityOS</h1>
-                    <p className="text-sm text-muted-foreground">
-                      {user.organization_name || user.account_type} Dashboard
-                    </p>
-                  </div>
-                </div>
-              </div>
+        {/* Stats Grid */}
+        <StatsGrid />
 
-              <div className="flex items-center space-x-4">
-                <div className="flex items-center space-x-3">
-                  <Avatar>
-                    <AvatarFallback className="bg-gradient-primary text-white">
-                      {user.name.charAt(0)}
-                    </AvatarFallback>
-                  </Avatar>
-                  <div className="text-right">
-                    <p className="text-sm font-medium">{user.name}</p>
-                    <p className="text-xs text-muted-foreground">{user.account_type}</p>
-                  </div>
-                </div>
+        {/* Overview Cards */}
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+          <LeasingOverview />
+          <MaintenanceOverview />
+          <AccessOverview />
+          <FinancialSummary />
+        </div>
 
-                <Button
-                  variant="ghost"
-                  size="sm"
-                  onClick={handleLogout}
-                  className="text-muted-foreground hover:text-destructive"
-                >
-                  <LogOut className="w-4 h-4 mr-2" />
-                  Logout
-                </Button>
-              </div>
-            </div>
-          </header>
+        {/* Charts Section */}
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+          <RevenueChart />
+          <OccupancyChart />
+        </div>
 
-          {/* Main Content */}
-          <main className="flex-1 p-6 overflow-auto">
-            <div className="max-w-7xl mx-auto space-y-8">
-              <div className="mb-8">
-                <h2 className="text-3xl font-bold mb-2">
-                  Welcome back, {user.name}!
-                </h2>
-                <p className="text-muted-foreground">
-                  {user.organization_name
-                    ? `Managing facilities for ${user.organization_name}`
-                    : "Your comprehensive property management dashboard"
-                  }
-                </p>
-              </div>
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+          <MaintenanceChart />
+          <EnergyChart />
+        </div>
 
-              {/* Stats Grid */}
-              <StatsGrid />
+        <FloorOccupancyChart />
 
-              {/* Overview Cards */}
-              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-                <LeasingOverview />
-                <MaintenanceOverview />
-                <AccessOverview />
-                <FinancialSummary />
-              </div>
-
-              {/* Charts Section */}
-              <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-                <RevenueChart />
-                <OccupancyChart />
-              </div>
-
-              <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-                <MaintenanceChart />
-                <EnergyChart />
-              </div>
-
-              <FloorOccupancyChart />
-
-              {/* Energy Overview */}
-              <div className="grid grid-cols-1 lg:grid-cols-4 gap-6">
-                <EnergyOverview />
-                <div className="lg:col-span-3">
-                  {/* Additional content area */}
-                </div>
-              </div>
-            </div>
-          </main>
+        {/* Energy Overview */}
+        <div className="grid grid-cols-1 lg:grid-cols-4 gap-6">
+          <EnergyOverview />
+          <div className="lg:col-span-3">
+            {/* Additional content area */}
+          </div>
         </div>
       </div>
-    </SidebarProvider>
+    </div>
   );
 };
 
