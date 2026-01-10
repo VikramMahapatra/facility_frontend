@@ -426,20 +426,28 @@ export default function Leases() {
                     </div>
                   </div>
 
-                  {lease.utilities && (
-                    <div>
-                      <div className="font-medium text-muted-foreground">
-                        Utilities
+                  {lease.utilities &&
+                    Object.values(lease.utilities).some(
+                      (v) => v !== null && v !== undefined && v !== ""
+                    ) && (
+                      <div>
+                        <div className="font-medium text-muted-foreground">
+                          Utilities
+                        </div>
+                        <div className="text-sm">
+                          {Object.entries(lease.utilities)
+                            .filter(
+                              ([_, v]) => v !== null && v !== undefined && v !== ""
+                            )
+                            .map(([k, v]) => (
+                              <span key={k} className="mr-4 capitalize">
+                                {k}: {String(v)}
+                              </span>
+                            ))}
+                        </div>
                       </div>
-                      <div className="text-sm">
-                        {Object.entries(lease.utilities).map(([k, v]) => (
-                          <span key={k} className="mr-4">
-                            {k}: {String(v)}
-                          </span>
-                        ))}
-                      </div>
-                    </div>
                   )}
+
 
                   <div className="flex items-center justify-end gap-2 pt-2">
                     <Button

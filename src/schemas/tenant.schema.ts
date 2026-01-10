@@ -22,14 +22,22 @@ export const tenantSchema = z
         message: "Phone number must be exactly 10 digits after country code",
       }
     ),
-    site_id: z.string().min(1, "Site is required"),
-    building_id: z.string().optional(),
-    space_id: z.string().min(1, "Space is required"),
     tenant_type: z.enum(["individual", "commercial"], {
       required_error: "Tenant type is required",
     }),
 
     status: z.coerce.string().min(1, "Status is required"),
+    location_info: z
+      .array(
+        z.object({
+          site_id: z.string().min(1, "Site is required"),
+          building_id: z.string().optional(),
+          space_id: z.string().optional(),
+          role: z.enum(["owner", "component"]).optional(),
+        })
+      )
+      .min(1, "At least one location entry is required")
+      .optional(),
     type: z.string().optional(),
     legal_name: z.string().optional(),
     contact_info: z
