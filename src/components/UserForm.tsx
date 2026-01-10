@@ -168,20 +168,20 @@ export function UserForm({
     reset(
       user && mode !== "create"
         ? {
-            full_name: user.full_name || "",
-            email: user.email || "",
-            password: "", // Don't populate password in edit mode
-            phone: user.phone || "",
-            status: user.status || "active",
-            account_type: user.account_type || "organization",
-            role_ids: user.roles?.map((r) => r.id) || [],
-            site_id: userSiteId || "",
-            building_id: userBuildingId || "",
-            space_id: (user as any).space_id || "",
-            site_ids: (user as any).site_ids || [],
-            tenant_type: (user as any).tenant_type || "individual",
-            staff_role: (user as any).staff_role || "",
-          }
+          full_name: user.full_name || "",
+          email: user.email || "",
+          password: "", // Don't populate password in edit mode
+          phone: user.phone || "",
+          status: user.status || "active",
+          account_type: user.account_type || "organization",
+          role_ids: user.roles?.map((r) => r.id) || [],
+          site_id: userSiteId || "",
+          building_id: userBuildingId || "",
+          space_id: (user as any).space_id || "",
+          site_ids: (user as any).site_ids || [],
+          tenant_type: (user as any).tenant_type || "residential",
+          staff_role: (user as any).staff_role || "",
+        }
         : emptyFormData
     );
     setFormLoading(false);
@@ -542,7 +542,7 @@ export function UserForm({
                           <div className="space-y-2">
                             <Label htmlFor="tenant_type">Tenant Type *</Label>
                             <Select
-                              value={field.value || "individual"}
+                              value={field.value || "residential"}
                               onValueChange={field.onChange}
                               disabled={isReadOnly}
                             >
@@ -554,8 +554,8 @@ export function UserForm({
                                 <SelectValue placeholder="Select tenant type" />
                               </SelectTrigger>
                               <SelectContent>
-                                <SelectItem value="individual">
-                                  Individual
+                                <SelectItem value="residential">
+                                  Residential
                                 </SelectItem>
                                 <SelectItem value="commercial">
                                   Commercial
@@ -1433,8 +1433,8 @@ export function UserForm({
                 {isSubmitting
                   ? "Saving..."
                   : mode === "create"
-                  ? "Create User"
-                  : "Update User"}
+                    ? "Create User"
+                    : "Update User"}
               </Button>
             )}
           </DialogFooter>
