@@ -83,6 +83,7 @@ interface LeaseCharge {
   rent_amount?: number;
   period_days?: number;
   tax_amount?: number;
+  total_amount?: number;
   metadata?: any;
   created_at?: string;
   tenant_name: string;
@@ -584,7 +585,7 @@ export default function LeaseCharges() {
               const amount = Number(charge.amount) || 0;
               const taxPct = Number(charge.tax_pct) || 0;
               const taxAmount = (amount * taxPct) / 100;
-              const totalAmount = amount + taxAmount;
+              const totalAmount = Number(charge.total_amount) || 0;
 
               return (
                 <Card
