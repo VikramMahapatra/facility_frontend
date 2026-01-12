@@ -33,6 +33,10 @@ class LeaseChargeApiService {
         return await apiService.request('/lease-charges/charge-code-lookup');
     }
 
+    async getTaxCodeLookup() {
+        return await apiService.request('/lease-charges/tax-code-lookup');
+    }
+
     async getLeaseMonthLookup() {
         return await apiService.request('/lease-charges/month-lookup');
     }
