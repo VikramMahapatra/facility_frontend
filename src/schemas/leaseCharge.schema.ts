@@ -8,6 +8,8 @@ export const leaseChargeSchema = z
     period_end: z.string().min(1, "End date is required"),
     amount: z.coerce.number({ invalid_type_error: "Expected number" }).min(0, "Amount cannot be negative"),
     tax_pct: z.coerce.number({ invalid_type_error: "Expected number" }).min(0, "Tax cannot be negative").optional(),
+    tax_code_id: z.string().optional(), // ✅ Add this
+    payer_type: z.string().optional(), // ✅ Add this
   })
   .superRefine((val, ctx) => {
     if (val.period_start && val.period_end) {
