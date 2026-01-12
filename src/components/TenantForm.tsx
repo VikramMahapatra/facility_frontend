@@ -43,7 +43,7 @@ const emptyFormData = {
   email: "",
   phone: "",
   tenant_type: "individual" as const,
-  status: "active" as const,
+  status: "inactive" as const,
   location_info: [
     { site_id: "", building_id: "", space_id: "", role: "owner" as any },
   ],
@@ -89,8 +89,8 @@ export function TenantForm({
   });
   const [formLoading, setFormLoading] = useState(true);
   const [siteList, setSiteList] = useState([]);
-  const [buildingList, setBuildingList] = useState([]);
-  const [spaceList, setSpaceList] = useState([]);
+  const [buildingList, setBuildingList] = useState<Record<string, any[]>>({});
+  const [spaceList, setSpaceList] = useState<Record<string, any[]>>({});
   const [statusList, setStatusList] = useState([]);
   const [typeList, setTypeList] = useState([]);
 
@@ -99,8 +99,8 @@ export function TenantForm({
 
     // Clear building and space lists when in create mode
     if (mode === "create") {
-      setBuildingList([]);
-      setSpaceList([]);
+      setBuildingList({});
+      setSpaceList({});
     }
 
     await Promise.all([loadSiteLookup(), loadStatusLookup(), loadTypeLookup()]);
@@ -109,63 +109,82 @@ export function TenantForm({
     reset(
       tenant && mode !== "create"
         ? {
-          name: tenant.name || "",
-          email: tenant.email || "",
-          phone: tenant.phone || "",
-          kind: tenant.kind || "residential",
-          status: tenant.status || "active",
-          tenant_spaces:
-            (tenant as any).tenant_spaces &&
+            name: tenant.name || "",
+            email: tenant.email || "",
+            phone: tenant.phone || "",
+            kind: tenant.kind || "residential",
+            status: tenant.status || "inactive",
+            tenant_spaces:
+              (tenant as any).tenant_spaces &&
               Array.isArray((tenant as any).tenant_spaces) &&
               (tenant as any).tenant_spaces.length > 0
-              ? (tenant as any).tenant_spaces
-              : [
-                {
-                  site_id: "",
-                  building_block_id: "",
-                  space_id: "",
-                  role: "owner",
-                },
-              ],
-          type: tenant.type || "",
-          legal_name: tenant.legal_name || "",
-          contact_info: tenant.contact_info
-            ? {
-              name: tenant.contact_info.name || "",
-              email: tenant.contact_info.email || "",
-              phone: tenant.contact_info.phone || "",
-              address: tenant.contact_info.address
-                ? {
-                  line1: tenant.contact_info.address.line1 || "",
-                  line2: tenant.contact_info.address.line2 || "",
-                  city: tenant.contact_info.address.city || "",
-                  state: tenant.contact_info.address.state || "",
-                  pincode: tenant.contact_info.address.pincode || "",
+                ? (tenant as any).tenant_spaces
+                : [
+                    {
+                      site_id: "",
+                      building_block_id: "",
+                      space_id: "",
+                      role: "owner",
+                    },
+                  ],
+            type: tenant.type || "",
+            legal_name: tenant.legal_name || "",
+            contact_info: tenant.contact_info
+              ? {
+                  name: tenant.contact_info.name || "",
+                  email: tenant.contact_info.email || "",
+                  phone: tenant.contact_info.phone || "",
+                  address: tenant.contact_info.address
+                    ? {
+                        line1: tenant.contact_info.address.line1 || "",
+                        line2: tenant.contact_info.address.line2 || "",
+                        city: tenant.contact_info.address.city || "",
+                        state: tenant.contact_info.address.state || "",
+                        pincode: tenant.contact_info.address.pincode || "",
+                      }
+                    : {},
                 }
-                : {},
-            }
-            : emptyFormData,
-          family_info:
-            (tenant as any).family_info &&
+              : emptyFormData,
+            family_info:
+              (tenant as any).family_info &&
               Array.isArray((tenant as any).family_info) &&
               (tenant as any).family_info.length > 0
-              ? (tenant as any).family_info
-              : (tenant as any).family_info &&
-                typeof (tenant as any).family_info === "object"
+                ? (tenant as any).family_info
+                : (tenant as any).family_info &&
+                  typeof (tenant as any).family_info === "object"
                 ? [(tenant as any).family_info] // Convert old format to array
                 : [{ member: "", relation: "" }], // Default one entry
-          vehicle_info:
-            (tenant as any).vehicle_info &&
+            vehicle_info:
+              (tenant as any).vehicle_info &&
               Array.isArray((tenant as any).vehicle_info) &&
               (tenant as any).vehicle_info.length > 0
-              ? (tenant as any).vehicle_info
-              : (tenant as any).vehicle_info &&
-                typeof (tenant as any).vehicle_info === "object"
+                ? (tenant as any).vehicle_info
+                : (tenant as any).vehicle_info &&
+                  typeof (tenant as any).vehicle_info === "object"
                 ? [(tenant as any).vehicle_info] // Convert old format to array
                 : [{ type: "", number: "" }], // Default one entry
-        }
+          }
         : emptyFormData
     );
+
+    // Preload building and space lists for existing tenant spaces (edit mode)
+    if (tenant && mode !== "create" && (tenant as any).tenant_spaces) {
+      const spaces = (tenant as any).tenant_spaces;
+      if (Array.isArray(spaces) && spaces.length > 0) {
+        const loadPromises = spaces.map(async (space: any) => {
+          if (space.site_id) {
+            await loadBuildingLookup(space.site_id);
+            if (space.building_block_id) {
+              await loadSpaceLookup(space.site_id, space.building_block_id);
+            } else {
+              await loadSpaceLookup(space.site_id);
+            }
+          }
+        });
+        await Promise.all(loadPromises);
+      }
+    }
+
     setFormLoading(false);
     const result = tenantSchema.safeParse(tenant);
 
@@ -189,47 +208,47 @@ export function TenantForm({
   const tenantSpaces = watch("tenant_spaces") || [];
   const familyInfo = watch("family_info") || [];
   const vehicleInfo = watch("vehicle_info") || [];
-  // Get first location's site_id for building/space loading
-  const selectedSiteId = tenantSpaces[0]?.site_id || "";
-  const selectedBuildingId = tenantSpaces[0]?.building_block_id || "";
   const canSubmitCreate = Boolean(
     watchedName &&
-    watchedEmail &&
-    watchedPhone &&
-    tenantSpaces.length > 0 &&
-    tenantSpaces.some((loc: any) => loc.site_id) &&
-    watchedStatus
+      watchedEmail &&
+      watchedPhone &&
+      tenantSpaces.length > 0 &&
+      tenantSpaces.some((loc: any) => loc.site_id) &&
+      watchedStatus
   );
-
-  useEffect(() => {
-    if (selectedSiteId) {
-      loadBuildingLookup();
-      loadSpaceLookup();
-    } else {
-      setBuildingList([]);
-      setSpaceList([]);
-    }
-  }, [selectedSiteId, selectedBuildingId]);
 
   const loadSiteLookup = async () => {
     const lookup = await siteApiService.getSiteLookup();
     if (lookup.success) setSiteList(lookup.data || []);
   };
 
-  const loadBuildingLookup = async () => {
-    if (selectedSiteId) {
-      const lookup = await buildingApiService.getBuildingLookup(selectedSiteId);
-      if (lookup.success) setBuildingList(lookup.data || []);
+  const loadBuildingLookup = async (siteId: string) => {
+    if (siteId && !buildingList[siteId]) {
+      const lookup = await buildingApiService.getBuildingLookup(siteId);
+      if (lookup.success) {
+        setBuildingList((prev) => ({
+          ...prev,
+          [siteId]: lookup.data || [],
+        }));
+      }
     }
   };
 
-  const loadSpaceLookup = async () => {
-    if (selectedSiteId) {
-      const lookup = await spacesApiService.getSpaceLookup(
-        selectedSiteId,
-        selectedBuildingId
-      );
-      if (lookup.success) setSpaceList(lookup.data || []);
+  const loadSpaceLookup = async (siteId: string, buildingId?: string) => {
+    if (siteId) {
+      const key = buildingId ? `${siteId}_${buildingId}` : siteId;
+      if (!spaceList[key]) {
+        const lookup = await spacesApiService.getSpaceLookup(
+          siteId,
+          buildingId || ""
+        );
+        if (lookup.success) {
+          setSpaceList((prev) => ({
+            ...prev,
+            [key]: lookup.data || [],
+          }));
+        }
+      }
     }
   };
 
@@ -244,13 +263,34 @@ export function TenantForm({
   };
 
   const onSubmitForm = async (data: TenantFormValues) => {
-    const formResponse = await onSave(data);
+    // Explicitly get all tenant_spaces entries from form state
+    const allTenantSpaces = getValues("tenant_spaces") || [];
+
+    // Filter out only completely empty entries (no site_id and no space_id)
+    const validTenantSpaces = allTenantSpaces.filter(
+      (space: any) => space.site_id && space.space_id
+    );
+
+    // Ensure we have at least one valid space entry
+    if (validTenantSpaces.length === 0) {
+      toast.error("At least one valid space entry is required");
+      return;
+    }
+
+    // Prepare the data with all valid tenant spaces
+    const formData = {
+      ...data,
+      tenant_spaces: validTenantSpaces,
+    };
+
+    console.log("Submitting tenant data with spaces:", formData);
+    const formResponse = await onSave(formData);
   };
 
   const handleClose = () => {
     reset(emptyFormData);
-    setBuildingList([]);
-    setSpaceList([]);
+    setBuildingList({});
+    setSpaceList({});
     onClose();
   };
 
@@ -316,7 +356,10 @@ export function TenantForm({
       space_id: "",
       role: "owner" as any,
     };
-    setValue("tenant_spaces", [...currentSpaceInfo, newEntry]);
+    setValue("tenant_spaces", [...currentSpaceInfo, newEntry], {
+      shouldValidate: true,
+      shouldDirty: true,
+    });
   };
 
   const removeSpaceEntry = (index: number) => {
@@ -325,9 +368,19 @@ export function TenantForm({
     // Ensure at least one entry remains
     const ensured =
       remaining.length === 0
-        ? [{ site_id: "", building_block_id: "", space_id: "", role: "owner" as any }]
+        ? [
+            {
+              site_id: "",
+              building_block_id: "",
+              space_id: "",
+              role: "owner" as any,
+            },
+          ]
         : remaining;
-    setValue("tenant_spaces", ensured);
+    setValue("tenant_spaces", ensured, {
+      shouldValidate: true,
+      shouldDirty: true,
+    });
   };
 
   const updateSpaceEntry = (
@@ -342,21 +395,25 @@ export function TenantForm({
     if (field === "site_id") {
       updated[index].building_block_id = "";
       updated[index].space_id = "";
-      // Load buildings and spaces for the new site (if it's the first entry)
-      if (value && index === 0) {
-        loadBuildingLookup();
-        loadSpaceLookup();
+      // Load buildings and spaces for the new site (for any entry)
+      if (value) {
+        loadBuildingLookup(value);
+        loadSpaceLookup(value);
       }
     }
     // Reset space when building changes
     if (field === "building_block_id") {
       updated[index].space_id = "";
-      // Load spaces for the site and building (if it's the first entry)
-      if (updated[index].site_id && index === 0) {
-        loadSpaceLookup();
+      // Load spaces for the site and building (for any entry)
+      if (updated[index].site_id) {
+        loadSpaceLookup(updated[index].site_id, value || undefined);
       }
     }
-    setValue("tenant_spaces", updated);
+    // Use setValue with shouldValidate and shouldDirty to ensure form tracks changes
+    setValue("tenant_spaces", updated, {
+      shouldValidate: true,
+      shouldDirty: true,
+    });
   };
 
   const isReadOnly = mode === "view";
@@ -434,8 +491,9 @@ export function TenantForm({
                             required: true,
                           }}
                           containerClass="w-full relative"
-                          inputClass={`!w-full !h-10 !pl-12 !rounded-md !border !border-input !bg-background !px-3 !py-2 !text-base !ring-offset-background placeholder:!text-muted-foreground focus-visible:!outline-none focus-visible:!ring-2 focus-visible:!ring-ring focus-visible:!ring-offset-2 disabled:!cursor-not-allowed disabled:!opacity-50 md:!text-sm ${errors.phone ? "!border-red-500" : ""
-                            }`}
+                          inputClass={`!w-full !h-10 !pl-12 !rounded-md !border !border-input !bg-background !px-3 !py-2 !text-base !ring-offset-background placeholder:!text-muted-foreground focus-visible:!outline-none focus-visible:!ring-2 focus-visible:!ring-ring focus-visible:!ring-offset-2 disabled:!cursor-not-allowed disabled:!opacity-50 md:!text-sm ${
+                            errors.phone ? "!border-red-500" : ""
+                          }`}
                           buttonClass="!border-none !bg-transparent !absolute !left-2 !top-1/2 !-translate-y-1/2 z-10"
                           dropdownClass="!absolute !z-50 !bg-white !border !border-gray-200 !rounded-md !shadow-lg max-h-60 overflow-y-auto"
                           enableSearch={true}
@@ -487,7 +545,7 @@ export function TenantForm({
                         <Select
                           value={field.value}
                           onValueChange={field.onChange}
-                          disabled={isReadOnly}
+                          disabled={isReadOnly || mode === "create"}
                         >
                           <SelectTrigger>
                             <SelectValue placeholder="Select status" />
@@ -662,21 +720,17 @@ export function TenantForm({
                               <Controller
                                 name={`tenant_spaces.${index}.site_id` as any}
                                 control={control}
-                                render={({ field }) => (
+                                render={({ field, fieldState }) => (
                                   <Select
                                     value={field.value || ""}
                                     onValueChange={(value) => {
-                                      updateSpaceEntry(
-                                        index,
-                                        "site_id",
-                                        value
-                                      );
+                                      updateSpaceEntry(index, "site_id", value);
                                     }}
                                     disabled={isReadOnly}
                                   >
                                     <SelectTrigger
                                       className={
-                                        errors.tenant_spaces?.[index]?.site_id
+                                        fieldState.error && fieldState.isTouched
                                           ? "border-red-500"
                                           : ""
                                       }
@@ -731,7 +785,10 @@ export function TenantForm({
                                       <SelectItem value="none">
                                         Select building
                                       </SelectItem>
-                                      {buildingList.map((building) => (
+                                      {(
+                                        buildingList[location?.site_id || ""] ||
+                                        []
+                                      ).map((building) => (
                                         <SelectItem
                                           key={building.id}
                                           value={building.id}
@@ -773,14 +830,24 @@ export function TenantForm({
                                       />
                                     </SelectTrigger>
                                     <SelectContent>
-                                      {spaceList.map((space) => (
-                                        <SelectItem
-                                          key={space.id}
-                                          value={space.id}
-                                        >
-                                          {space.name}
-                                        </SelectItem>
-                                      ))}
+                                      {(() => {
+                                        const siteId = location?.site_id || "";
+                                        const buildingId =
+                                          location?.building_block_id || "";
+                                        const key = buildingId
+                                          ? `${siteId}_${buildingId}`
+                                          : siteId;
+                                        return (spaceList[key] || []).map(
+                                          (space) => (
+                                            <SelectItem
+                                              key={space.id}
+                                              value={space.id}
+                                            >
+                                              {space.name}
+                                            </SelectItem>
+                                          )
+                                        );
+                                      })()}
                                     </SelectContent>
                                   </Select>
                                 )}
@@ -823,7 +890,6 @@ export function TenantForm({
                   </div>
                 </div>
 
-
                 {/* Family Information - Only for Individual tenants */}
                 {selectedTenantType === "residential" && (
                   <div className="space-y-2">
@@ -851,8 +917,9 @@ export function TenantForm({
                       {familyInfo.map((member, index) => (
                         <div
                           key={index}
-                          className={`grid grid-cols-[1fr_1fr_auto] gap-4 items-center p-4 ${index !== familyInfo.length - 1 ? "border-b" : ""
-                            }`}
+                          className={`grid grid-cols-[1fr_1fr_auto] gap-4 items-center p-4 ${
+                            index !== familyInfo.length - 1 ? "border-b" : ""
+                          }`}
                         >
                           <Input
                             value={member.member || ""}
@@ -898,66 +965,67 @@ export function TenantForm({
                 {/* Vehicle Information - Only for Individual tenants */}
                 {(selectedTenantType === "residential" ||
                   selectedTenantType === "commercial") && (
-                    <div className="space-y-2">
-                      <div className="flex items-center justify-between">
-                        <Label htmlFor="vehicle_info">Vehicle Information</Label>
-                        {!isReadOnly && (
-                          <Button
-                            type="button"
-                            variant="default"
-                            size="sm"
-                            onClick={addVehicle}
-                          >
-                            <Plus className="mr-2 h-4 w-4" /> Add Vehicle
-                          </Button>
-                        )}
-                      </div>
-                      <div className="border rounded-md">
-                        {/* Header row with labels */}
-                        <div className="grid grid-cols-[1fr_1fr_auto] gap-4 p-4 border-b bg-muted/50">
-                          <Label>Type of Vehicle</Label>
-                          <Label>Vehicle No.</Label>
-                          <div></div>
-                        </div>
-                        {/* Data rows */}
-                        {vehicleInfo.map((vehicle, index) => (
-                          <div
-                            key={index}
-                            className={`grid grid-cols-[1fr_1fr_auto] gap-4 items-center p-4 ${index !== vehicleInfo.length - 1 ? "border-b" : ""
-                              }`}
-                          >
-                            <Input
-                              value={(vehicle as any).type || ""}
-                              onChange={(e) =>
-                                updateVehicle(index, "type", e.target.value)
-                              }
-                              placeholder="Enter vehicle type"
-                              disabled={isReadOnly}
-                            />
-                            <Input
-                              value={(vehicle as any).number || ""}
-                              onChange={(e) =>
-                                updateVehicle(index, "number", e.target.value)
-                              }
-                              placeholder="Enter vehicle number"
-                              disabled={isReadOnly}
-                            />
-                            {!isReadOnly && (
-                              <Button
-                                type="button"
-                                variant="ghost"
-                                size="icon"
-                                className="text-destructive hover:text-destructive"
-                                onClick={() => removeVehicle(index)}
-                              >
-                                <Trash2 className="h-4 w-4" />
-                              </Button>
-                            )}
-                          </div>
-                        ))}
-                      </div>
+                  <div className="space-y-2">
+                    <div className="flex items-center justify-between">
+                      <Label htmlFor="vehicle_info">Vehicle Information</Label>
+                      {!isReadOnly && (
+                        <Button
+                          type="button"
+                          variant="default"
+                          size="sm"
+                          onClick={addVehicle}
+                        >
+                          <Plus className="mr-2 h-4 w-4" /> Add Vehicle
+                        </Button>
+                      )}
                     </div>
-                  )}
+                    <div className="border rounded-md">
+                      {/* Header row with labels */}
+                      <div className="grid grid-cols-[1fr_1fr_auto] gap-4 p-4 border-b bg-muted/50">
+                        <Label>Type of Vehicle</Label>
+                        <Label>Vehicle No.</Label>
+                        <div></div>
+                      </div>
+                      {/* Data rows */}
+                      {vehicleInfo.map((vehicle, index) => (
+                        <div
+                          key={index}
+                          className={`grid grid-cols-[1fr_1fr_auto] gap-4 items-center p-4 ${
+                            index !== vehicleInfo.length - 1 ? "border-b" : ""
+                          }`}
+                        >
+                          <Input
+                            value={(vehicle as any).type || ""}
+                            onChange={(e) =>
+                              updateVehicle(index, "type", e.target.value)
+                            }
+                            placeholder="Enter vehicle type"
+                            disabled={isReadOnly}
+                          />
+                          <Input
+                            value={(vehicle as any).number || ""}
+                            onChange={(e) =>
+                              updateVehicle(index, "number", e.target.value)
+                            }
+                            placeholder="Enter vehicle number"
+                            disabled={isReadOnly}
+                          />
+                          {!isReadOnly && (
+                            <Button
+                              type="button"
+                              variant="ghost"
+                              size="icon"
+                              className="text-destructive hover:text-destructive"
+                              onClick={() => removeVehicle(index)}
+                            >
+                              <Trash2 className="h-4 w-4" />
+                            </Button>
+                          )}
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                )}
 
                 {/* Address Information - Always at the end */}
                 <div className="space-y-2">
@@ -1046,8 +1114,8 @@ export function TenantForm({
                 {isSubmitting
                   ? "Saving..."
                   : mode === "create"
-                    ? "Create Tenant"
-                    : "Update Tenant"}
+                  ? "Create Tenant"
+                  : "Update Tenant"}
               </Button>
             )}
           </DialogFooter>
