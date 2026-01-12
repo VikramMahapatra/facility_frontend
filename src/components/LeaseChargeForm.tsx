@@ -29,7 +29,7 @@ import {
 export interface LeaseCharge {
   id: string;
   lease_id: string;
-  charge_code: string;
+  charge_code_id: string;
   period_start: string; // yyyy-mm-dd
   period_end: string; // yyyy-mm-dd
   amount: number;
@@ -51,7 +51,7 @@ interface LeaseChargeFormProps {
 // ---- Empty (default) form data, styled like SpaceForm's emptyFormData) ----
 const emptyFormData: Partial<LeaseCharge> = {
   lease_id: "",
-  charge_code: "",
+  charge_code_id: "",
   period_start: "",
   period_end: "",
   amount: undefined as unknown as number,
@@ -79,7 +79,7 @@ export function LeaseChargeForm({
     resolver: zodResolver(leaseChargeSchema),
     defaultValues: {
       lease_id: "",
-      charge_code: "",
+      charge_code_id: "",
       period_start: "",
       period_end: "",
       amount: undefined as any,
@@ -92,7 +92,7 @@ export function LeaseChargeForm({
   });
   const [leaseList, setLeaseList] = useState([]);
   const [chargeCodeList, setChargeCodeList] = useState([]);
-  const [taxCodeList, setTaxCodeList] =  useState<any[]>([]);
+  const [taxCodeList, setTaxCodeList] = useState<any[]>([]);
   const [payerTypeList, setPayerTypeList] = useState<any[]>([]);
   const [formLoading, setFormLoading] = useState(true);
 
@@ -125,7 +125,7 @@ export function LeaseChargeForm({
     if (charge && mode !== "create") {
       reset({
         lease_id: (charge.lease_id as any) || "",
-        charge_code: (charge.charge_code as any) || "",
+        charge_code_id: (charge.charge_code_id as any) || "",
         period_start: charge.period_start || "",
         period_end: charge.period_end || "",
         amount: charge.amount as any,
@@ -136,7 +136,7 @@ export function LeaseChargeForm({
     } else {
       reset({
         lease_id: "",
-        charge_code: "",
+        charge_code_id: "",
         period_start: "",
         period_end: "",
         amount: undefined as any,
@@ -145,6 +145,8 @@ export function LeaseChargeForm({
         payer_type: "", // ✅ Add this
       });
     }
+
+    console.log("Form reset with data:", charge);
 
     setFormLoading(false);
   };
@@ -227,9 +229,9 @@ export function LeaseChargeForm({
 
             {/* Charge Code */}
             <div>
-              <Label htmlFor="charge_code">Charge Code *</Label>
+              <Label htmlFor="charge_code_id">Charge Code *</Label>
               <Controller
-                name="charge_code"
+                name="charge_code_id"
                 control={control}
                 render={({ field }) => (
                   <Select
@@ -238,7 +240,7 @@ export function LeaseChargeForm({
                     disabled={isReadOnly}
                   >
                     <SelectTrigger
-                      className={errors.charge_code ? "border-red-500" : ""}
+                      className={errors.charge_code_id ? "border-red-500" : ""}
                     >
                       <SelectValue placeholder="Select type" />
                     </SelectTrigger>
@@ -252,9 +254,9 @@ export function LeaseChargeForm({
                   </Select>
                 )}
               />
-              {errors.charge_code && (
+              {errors.charge_code_id && (
                 <p className="text-sm text-red-500">
-                  {errors.charge_code.message as any}
+                  {errors.charge_code_id.message as any}
                 </p>
               )}
             </div>
@@ -350,36 +352,36 @@ export function LeaseChargeForm({
                   </p>
                 )}
               </div>
-               <div>
-                  <Label htmlFor="tax_code">Tax Code</Label>
-                  <Controller
-                    name="tax_code_id"
-                    control={control}
-                    render={({ field }) => (
-                      <Select
-                        value={field.value || ""}
-                        onValueChange={field.onChange}
-                        disabled={isReadOnly}
-                      >
-                        <SelectTrigger className={errors.tax_code_id ? "border-red-500" : ""}>
-                          <SelectValue placeholder="Select tax code" />
-                        </SelectTrigger>
-                        <SelectContent>
-                          {/* If you need a "No Tax" option, use a special value like "no-tax" */}
-                          <SelectItem value="no-tax">No Tax</SelectItem>
-                          {taxCodeList.map((tax: any) => (
-                            <SelectItem key={tax.id} value={tax.id}>
-                              {tax.name}
-                            </SelectItem>
-                          ))}
-                        </SelectContent>
-                      </Select>
-                    )}
-                  />
-                  {errors.tax_code_id && (
-                    <p className="text-sm text-red-500">{errors.tax_code_id.message as any}</p>
+              <div>
+                <Label htmlFor="tax_code">Tax Code</Label>
+                <Controller
+                  name="tax_code_id"
+                  control={control}
+                  render={({ field }) => (
+                    <Select
+                      value={field.value || ""}
+                      onValueChange={field.onChange}
+                      disabled={isReadOnly}
+                    >
+                      <SelectTrigger className={errors.tax_code_id ? "border-red-500" : ""}>
+                        <SelectValue placeholder="Select tax code" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {/* If you need a "No Tax" option, use a special value like "no-tax" */}
+                        <SelectItem value="no-tax">No Tax</SelectItem>
+                        {taxCodeList.map((tax: any) => (
+                          <SelectItem key={tax.id} value={tax.id}>
+                            {tax.name}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
                   )}
-                </div>
+                />
+                {errors.tax_code_id && (
+                  <p className="text-sm text-red-500">{errors.tax_code_id.message as any}</p>
+                )}
+              </div>
             </div>
 
             <DialogFooter>
@@ -396,8 +398,8 @@ export function LeaseChargeForm({
                   {isSubmitting
                     ? "Saving..."
                     : mode === "create"
-                    ? "Create Charge"
-                    : "Update Charge"}
+                      ? "Create Charge"
+                      : "Update Charge"}
                 </Button>
               )}
             </DialogFooter>

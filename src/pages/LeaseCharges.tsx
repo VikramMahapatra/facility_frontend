@@ -73,6 +73,7 @@ type ChargeCode =
 interface LeaseCharge {
   id: string;
   lease_id: string;
+  charge_code_id: string;
   charge_code: ChargeCode;
   period_start: string; // ISO date
   period_end: string; // ISO date
@@ -236,6 +237,7 @@ export default function LeaseCharges() {
 
   // helpers
   const getChargeCodeColor = (code: string) => {
+    code = code.toUpperCase();
     switch (code) {
       case "RENT":
         return "bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-200";
@@ -263,6 +265,7 @@ export default function LeaseCharges() {
       maximumFractionDigits: 0,
     }).format(amount || 0);
   const getChargeCodeName = (code: string) => {
+    code = code.toUpperCase();
     switch (code) {
       case "RENT":
         return "Monthly Rent";
@@ -293,7 +296,7 @@ export default function LeaseCharges() {
     setSelectedCharge({
       id: charge.id,
       lease_id: charge.lease_id,
-      charge_code: charge.charge_code,
+      charge_code_id: charge.charge_code_id,
       period_start: charge.period_start?.slice(0, 10),
       period_end: charge.period_end?.slice(0, 10),
       amount: charge.amount,
@@ -473,7 +476,7 @@ export default function LeaseCharges() {
                 >
                   <div>
                     <Badge className={getChargeCodeColor(code)}>
-                      {code}
+                      {code.toLocaleUpperCase()}
                     </Badge>
                     <div className="text-xs text-muted-foreground mt-1">
                       {getChargeCodeName(code)}
@@ -607,7 +610,7 @@ export default function LeaseCharges() {
                               charge.charge_code
                             )}
                           >
-                            {charge.charge_code}
+                            {charge.charge_code.toLocaleUpperCase()}
                           </Badge>
                           {charge.tenant_name}
                         </CardTitle>

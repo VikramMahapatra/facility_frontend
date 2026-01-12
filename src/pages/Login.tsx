@@ -9,7 +9,6 @@ import { Chrome, Phone, Mail, Eye, EyeOff, Loader2 } from "lucide-react";
 import { useGoogleLogin } from "@react-oauth/google";
 import { authApiService } from "@/services/authapi";
 import { useAuth } from "@/context/AuthContext";
-import { useSettings } from "@/context/SettingsContext";
 import PhoneInput from "react-phone-input-2";
 import "react-phone-input-2/lib/style.css";
 import { toast } from "sonner";
@@ -29,7 +28,6 @@ const Login = () => {
   const [isVerifyingOtp, setIsVerifyingOtp] = useState(false);
   const otpInputRefs = useRef<(HTMLInputElement | null)[]>([]);
   const { setUser } = useAuth();
-  const { systemName } = useSettings();
 
   localStorage.removeItem("access_token");
   localStorage.removeItem("loggedInUser");
@@ -292,7 +290,7 @@ const Login = () => {
             <div className="w-16 h-16 bg-gradient-primary rounded-xl flex items-center justify-center mx-auto mb-4">
               <span className="text-white font-bold text-2xl">F</span>
             </div>
-            <h1 className="text-2xl font-bold">Welcome to {systemName}</h1>
+            <h1 className="text-2xl font-bold">Welcome to FacilityOS</h1>
             <p className="text-muted-foreground mt-2">
               Sign in to access your dashboard
             </p>
