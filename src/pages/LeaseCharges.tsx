@@ -88,6 +88,8 @@ interface LeaseCharge {
   tenant_name: string;
   site_name: string;
   space_name: string;
+  tax_code_id?: string;
+  payer_type?: string;
 }
 
 const monthsFull = [
@@ -295,6 +297,8 @@ export default function LeaseCharges() {
       period_end: charge.period_end?.slice(0, 10),
       amount: charge.amount,
       tax_pct: charge.tax_pct,
+      tax_code_id: charge.tax_code_id, // ✅ Add this
+      payer_type: charge.payer_type, // ✅ Add this
     });
 
     setFormMode("edit");
@@ -309,6 +313,8 @@ export default function LeaseCharges() {
       period_end: charge.period_end?.slice(0, 10),
       amount: charge.amount,
       tax_pct: charge.tax_pct,
+      tax_code_id: charge.tax_code_id, // ✅ Add this
+      payer_type: charge.payer_type, // ✅ Add this
     });
     setFormMode("view");
     setIsFormOpen(true);
