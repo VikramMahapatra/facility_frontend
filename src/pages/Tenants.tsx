@@ -330,7 +330,7 @@ const Tenants = () => {
         <Card>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
             <CardTitle className="text-sm font-medium">
-              Individual
+              Residential
             </CardTitle>
             <Users className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
@@ -339,7 +339,7 @@ const Tenants = () => {
               {tenantOverview.individualTenants}
             </div>
             <p className="text-xs text-muted-foreground">
-              Individual tenants
+              Residential tenants
             </p>
           </CardContent>
         </Card>
@@ -378,7 +378,7 @@ const Tenants = () => {
             </SelectTrigger>
             <SelectContent>
               <SelectItem value="all">All Types</SelectItem>
-              <SelectItem value="individual">Individual</SelectItem>
+              <SelectItem value="residential">Residential</SelectItem>
               <SelectItem value="commercial">Commercial</SelectItem>
             </SelectContent>
           </Select>
@@ -439,6 +439,7 @@ const Tenants = () => {
           ) : (
             tenants.map((tenant) => {
               const tenantLeases = tenant.tenant_leases;
+              const tenantSpaces = tenant.tenant_spaces;
 
               return (
                 <Card
@@ -453,12 +454,12 @@ const Tenants = () => {
                           <div className="flex gap-2">
                             <Badge
                               className={getTenantTypeColor(
-                                tenant.tenant_type
+                                tenant.kind
                               )}
                             >
-                              {tenant.tenant_type}
+                              {tenant.kind}
                             </Badge>
-                            {tenant.tenant_type === "commercial" &&
+                            {tenant.kind === "commercial" &&
                               "type" in tenant && (
                                 <Badge
                                   className={getTenantTypeColor(
@@ -468,15 +469,39 @@ const Tenants = () => {
                                   {tenant.type}
                                 </Badge>
                               )}
+
                           </div>
                         </CardTitle>
                         <CardDescription>
-                          <div className="flex items-center gap-1">
-                            <MapPin className="h-4 w-4 text-muted-foreground" />
-                            {[tenant.space_name, tenant.building_name, tenant.site_name]
-                              .filter(Boolean)
-                              .join(" • ")}
-                          </div>
+                          {tenantSpaces.slice(0, 2).map((tenant_space) => {
+                            const isSpaceStatus = tenant_space.status == "current" ? "active" :
+                              (tenant_space.status == "past" ? "inactive" : "suspended");
+                            return (
+                              <>
+                                <div className="flex items-center gap-1">
+
+                                  <MapPin className="h-4 w-4 text-muted-foreground" />
+                                  {[tenant_space.space_name, tenant_space.building_block_name, tenant_space.site_name]
+                                    .filter(Boolean)
+                                    .join(" • ")}
+                                  <div className="text-muted-foreground">
+                                    <Badge className={getTenantTypeColor("default")}>
+                                      {tenant_space.role}
+                                    </Badge>
+                                    <Badge className={getStatusColor(isSpaceStatus)}>
+                                      {tenant_space.status}
+                                    </Badge>
+                                  </div>
+                                </div>
+                              </>
+                            )
+                          })}
+                          {tenantSpaces.length > 2 && (
+                            <div className="text-xs text-muted-foreground">
+                              +{tenantSpaces.length - 2} more space
+                              {tenantSpaces.length - 2 !== 1 ? "s" : ""}
+                            </div>
+                          )}
                         </CardDescription>
                       </div>
                       <div className="flex items-center gap-2">
@@ -609,7 +634,7 @@ const Tenants = () => {
                       </div>
                     </div>
 
-                    {tenant.tenant_type === "commercial" &&
+                    {tenant.kind === "commercial" &&
                       "contact_info" in tenant && (
                         <div className="mt-4 p-3 bg-muted rounded-lg">
                           <div className="text-sm font-medium mb-1">

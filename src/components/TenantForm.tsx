@@ -17,6 +17,7 @@ import {
   DialogTitle,
   DialogFooter,
 } from "@/components/ui/dialog";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { toast } from "sonner";
 import { Controller, useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
@@ -38,14 +39,14 @@ interface TenantFormProps {
 }
 
 const emptyFormData = {
-  site_id: "",
-  building_id: "",
-  space_id: "",
   name: "",
   email: "",
   phone: "",
   tenant_type: "individual" as const,
   status: "active" as const,
+  location_info: [
+    { site_id: "", building_id: "", space_id: "", role: "owner" as any },
+  ],
   contact_info: {
     name: "",
     email: "",
@@ -108,58 +109,70 @@ export function TenantForm({
     reset(
       tenant && mode !== "create"
         ? {
-            name: tenant.name || "",
-            email: tenant.email || "",
-            phone: tenant.phone || "",
-            tenant_type: tenant.tenant_type || "individual",
-            status: tenant.status || "active",
-            site_id: tenant.site_id || "",
-            building_id:
-              tenant.building_block_id ||
-              (tenant as any).building_block_id ||
-              "",
-            space_id: tenant.space_id || "",
-            type: tenant.type || "",
-            legal_name: tenant.legal_name || "",
-            contact_info: tenant.contact_info
-              ? {
-                  name: tenant.contact_info.name || "",
-                  email: tenant.contact_info.email || "",
-                  phone: tenant.contact_info.phone || "",
-                  address: tenant.contact_info.address
-                    ? {
-                        line1: tenant.contact_info.address.line1 || "",
-                        line2: tenant.contact_info.address.line2 || "",
-                        city: tenant.contact_info.address.city || "",
-                        state: tenant.contact_info.address.state || "",
-                        pincode: tenant.contact_info.address.pincode || "",
-                      }
-                    : {},
+          name: tenant.name || "",
+          email: tenant.email || "",
+          phone: tenant.phone || "",
+          kind: tenant.kind || "residential",
+          status: tenant.status || "active",
+          tenant_spaces:
+            (tenant as any).tenant_spaces &&
+              Array.isArray((tenant as any).tenant_spaces) &&
+              (tenant as any).tenant_spaces.length > 0
+              ? (tenant as any).tenant_spaces
+              : [
+                {
+                  site_id: "",
+                  building_block_id: "",
+                  space_id: "",
+                  role: "owner",
+                },
+              ],
+          type: tenant.type || "",
+          legal_name: tenant.legal_name || "",
+          contact_info: tenant.contact_info
+            ? {
+              name: tenant.contact_info.name || "",
+              email: tenant.contact_info.email || "",
+              phone: tenant.contact_info.phone || "",
+              address: tenant.contact_info.address
+                ? {
+                  line1: tenant.contact_info.address.line1 || "",
+                  line2: tenant.contact_info.address.line2 || "",
+                  city: tenant.contact_info.address.city || "",
+                  state: tenant.contact_info.address.state || "",
+                  pincode: tenant.contact_info.address.pincode || "",
                 }
-              : emptyFormData,
-            family_info:
-              (tenant as any).family_info &&
+                : {},
+            }
+            : emptyFormData,
+          family_info:
+            (tenant as any).family_info &&
               Array.isArray((tenant as any).family_info) &&
               (tenant as any).family_info.length > 0
-                ? (tenant as any).family_info
-                : (tenant as any).family_info &&
-                  typeof (tenant as any).family_info === "object"
+              ? (tenant as any).family_info
+              : (tenant as any).family_info &&
+                typeof (tenant as any).family_info === "object"
                 ? [(tenant as any).family_info] // Convert old format to array
                 : [{ member: "", relation: "" }], // Default one entry
-            vehicle_info:
-              (tenant as any).vehicle_info &&
+          vehicle_info:
+            (tenant as any).vehicle_info &&
               Array.isArray((tenant as any).vehicle_info) &&
               (tenant as any).vehicle_info.length > 0
-                ? (tenant as any).vehicle_info
-                : (tenant as any).vehicle_info &&
-                  typeof (tenant as any).vehicle_info === "object"
+              ? (tenant as any).vehicle_info
+              : (tenant as any).vehicle_info &&
+                typeof (tenant as any).vehicle_info === "object"
                 ? [(tenant as any).vehicle_info] // Convert old format to array
                 : [{ type: "", number: "" }], // Default one entry
-          }
+        }
         : emptyFormData
     );
     setFormLoading(false);
-    console.log("tenant data:", tenant);
+    const result = tenantSchema.safeParse(tenant);
+
+    if (!result.success) {
+      console.log("ZOD ERRORS 👉", result.error.format());
+      return;
+    }
   };
 
   useEffect(() => {
@@ -168,53 +181,35 @@ export function TenantForm({
     }
   }, [tenant, mode, isOpen, reset]);
 
-  const selectedSiteId = watch("site_id");
-  const selectedBuildingId = watch("building_id");
-  const selectedTenantType = watch("tenant_type");
+  const selectedTenantType = watch("kind");
   const watchedName = watch("name");
   const watchedEmail = watch("email");
   const watchedPhone = watch("phone");
   const watchedStatus = watch("status");
-  const selectedSpaceId = watch("space_id");
+  const tenantSpaces = watch("tenant_spaces") || [];
   const familyInfo = watch("family_info") || [];
   const vehicleInfo = watch("vehicle_info") || [];
+  // Get first location's site_id for building/space loading
+  const selectedSiteId = tenantSpaces[0]?.site_id || "";
+  const selectedBuildingId = tenantSpaces[0]?.building_block_id || "";
   const canSubmitCreate = Boolean(
     watchedName &&
-      watchedEmail &&
-      watchedPhone &&
-      selectedSiteId &&
-      selectedSpaceId &&
-      watchedStatus
+    watchedEmail &&
+    watchedPhone &&
+    tenantSpaces.length > 0 &&
+    tenantSpaces.some((loc: any) => loc.site_id) &&
+    watchedStatus
   );
 
   useEffect(() => {
     if (selectedSiteId) {
       loadBuildingLookup();
+      loadSpaceLookup();
     } else {
       setBuildingList([]);
       setSpaceList([]);
     }
-  }, [selectedSiteId]);
-
-  useEffect(() => {
-    if (selectedSiteId) {
-      loadSpaceLookup();
-    } else {
-      setSpaceList([]);
-    }
   }, [selectedSiteId, selectedBuildingId]);
-
-  useEffect(() => {
-    if (tenant?.building_block_id && buildingList.length > 0) {
-      setValue("building_id", String(tenant.building_block_id));
-    }
-  }, [buildingList]);
-
-  useEffect(() => {
-    if (tenant && spaceList.length > 0) {
-      setValue("space_id", String(tenant.space_id));
-    }
-  }, [spaceList]);
 
   const loadSiteLookup = async () => {
     const lookup = await siteApiService.getSiteLookup();
@@ -312,6 +307,58 @@ export function TenantForm({
     setValue("vehicle_info", updated);
   };
 
+  // Location info helpers: add, remove multiple location entries
+  const addSpaceEntry = () => {
+    const currentSpaceInfo = getValues("tenant_spaces") || [];
+    const newEntry = {
+      site_id: "",
+      building_block_id: "",
+      space_id: "",
+      role: "owner" as any,
+    };
+    setValue("tenant_spaces", [...currentSpaceInfo, newEntry]);
+  };
+
+  const removeSpaceEntry = (index: number) => {
+    const currentSpaceInfo = getValues("tenant_spaces") || [];
+    const remaining = currentSpaceInfo.filter((_, i) => i !== index);
+    // Ensure at least one entry remains
+    const ensured =
+      remaining.length === 0
+        ? [{ site_id: "", building_block_id: "", space_id: "", role: "owner" as any }]
+        : remaining;
+    setValue("tenant_spaces", ensured);
+  };
+
+  const updateSpaceEntry = (
+    index: number,
+    field: "site_id" | "building_block_id" | "space_id" | "role",
+    value: string
+  ) => {
+    const currentSpaceInfo = getValues("tenant_spaces") || [];
+    const updated = [...currentSpaceInfo];
+    updated[index] = { ...updated[index], [field]: value };
+    // Reset building and space when site changes
+    if (field === "site_id") {
+      updated[index].building_block_id = "";
+      updated[index].space_id = "";
+      // Load buildings and spaces for the new site (if it's the first entry)
+      if (value && index === 0) {
+        loadBuildingLookup();
+        loadSpaceLookup();
+      }
+    }
+    // Reset space when building changes
+    if (field === "building_block_id") {
+      updated[index].space_id = "";
+      // Load spaces for the site and building (if it's the first entry)
+      if (updated[index].site_id && index === 0) {
+        loadSpaceLookup();
+      }
+    }
+    setValue("tenant_spaces", updated);
+  };
+
   const isReadOnly = mode === "view";
 
   return (
@@ -387,9 +434,8 @@ export function TenantForm({
                             required: true,
                           }}
                           containerClass="w-full relative"
-                          inputClass={`!w-full !h-10 !pl-12 !rounded-md !border !border-input !bg-background !px-3 !py-2 !text-base !ring-offset-background placeholder:!text-muted-foreground focus-visible:!outline-none focus-visible:!ring-2 focus-visible:!ring-ring focus-visible:!ring-offset-2 disabled:!cursor-not-allowed disabled:!opacity-50 md:!text-sm ${
-                            errors.phone ? "!border-red-500" : ""
-                          }`}
+                          inputClass={`!w-full !h-10 !pl-12 !rounded-md !border !border-input !bg-background !px-3 !py-2 !text-base !ring-offset-background placeholder:!text-muted-foreground focus-visible:!outline-none focus-visible:!ring-2 focus-visible:!ring-ring focus-visible:!ring-offset-2 disabled:!cursor-not-allowed disabled:!opacity-50 md:!text-sm ${errors.phone ? "!border-red-500" : ""
+                            }`}
                           buttonClass="!border-none !bg-transparent !absolute !left-2 !top-1/2 !-translate-y-1/2 z-10"
                           dropdownClass="!absolute !z-50 !bg-white !border !border-gray-200 !rounded-md !shadow-lg max-h-60 overflow-y-auto"
                           enableSearch={true}
@@ -404,120 +450,10 @@ export function TenantForm({
                   />
                 </div>
 
-                {/* Row 2: Site, Building, Space */}
-                <div className="grid grid-cols-3 gap-4">
-                  <Controller
-                    name="site_id"
-                    control={control}
-                    render={({ field }) => (
-                      <div className="space-y-2">
-                        <Label htmlFor="site">Site *</Label>
-                        <Select
-                          value={field.value}
-                          onValueChange={field.onChange}
-                          disabled={isReadOnly}
-                        >
-                          <SelectTrigger
-                            className={errors.site_id ? "border-red-500" : ""}
-                          >
-                            <SelectValue placeholder="Select site" />
-                          </SelectTrigger>
-                          <SelectContent>
-                            {siteList.map((site) => (
-                              <SelectItem key={site.id} value={site.id}>
-                                {site.name}
-                              </SelectItem>
-                            ))}
-                          </SelectContent>
-                        </Select>
-                        {errors.site_id && (
-                          <p className="text-sm text-red-500">
-                            {errors.site_id.message as any}
-                          </p>
-                        )}
-                      </div>
-                    )}
-                  />
-                  <Controller
-                    name="building_id"
-                    control={control}
-                    render={({ field }) => (
-                      <div className="space-y-2">
-                        <Label htmlFor="building">Building</Label>
-                        <Select
-                          value={field.value ? field.value : "none"}
-                          onValueChange={(v) =>
-                            field.onChange(v === "none" ? "" : v)
-                          }
-                          disabled={isReadOnly || !selectedSiteId}
-                        >
-                          <SelectTrigger>
-                            <SelectValue
-                              placeholder={
-                                selectedSiteId
-                                  ? "Select building"
-                                  : "Select site first"
-                              }
-                            />
-                          </SelectTrigger>
-                          <SelectContent>
-                            <SelectItem value="none">
-                              Select building
-                            </SelectItem>
-                            {buildingList.map((building) => (
-                              <SelectItem key={building.id} value={building.id}>
-                                {building.name}
-                              </SelectItem>
-                            ))}
-                          </SelectContent>
-                        </Select>
-                      </div>
-                    )}
-                  />
-                  <Controller
-                    name="space_id"
-                    control={control}
-                    render={({ field }) => (
-                      <div className="space-y-2">
-                        <Label htmlFor="space">Space *</Label>
-                        <Select
-                          value={field.value || ""}
-                          onValueChange={field.onChange}
-                          disabled={isReadOnly || !selectedSiteId}
-                        >
-                          <SelectTrigger
-                            className={errors.space_id ? "border-red-500" : ""}
-                          >
-                            <SelectValue
-                              placeholder={
-                                !selectedSiteId
-                                  ? "Select site first"
-                                  : "Select space"
-                              }
-                            />
-                          </SelectTrigger>
-                          <SelectContent>
-                            {spaceList.map((space) => (
-                              <SelectItem key={space.id} value={space.id}>
-                                {space.name}
-                              </SelectItem>
-                            ))}
-                          </SelectContent>
-                        </Select>
-                        {errors.space_id && (
-                          <p className="text-sm text-red-500">
-                            {errors.space_id.message as any}
-                          </p>
-                        )}
-                      </div>
-                    )}
-                  />
-                </div>
-
-                {/* Row 3: Tenant Type, Status */}
+                {/* Row 2: Tenant Type, Status */}
                 <div className="grid grid-cols-2 gap-4">
                   <Controller
-                    name="tenant_type"
+                    name="kind"
                     control={control}
                     render={({ field }) => (
                       <div className="space-y-2">
@@ -531,8 +467,8 @@ export function TenantForm({
                             <SelectValue placeholder="Select tenant type" />
                           </SelectTrigger>
                           <SelectContent>
-                            <SelectItem value="individual">
-                              Individual
+                            <SelectItem value="residential">
+                              Residential
                             </SelectItem>
                             <SelectItem value="commercial">
                               Commercial
@@ -568,7 +504,6 @@ export function TenantForm({
                     )}
                   />
                 </div>
-
                 {/* Commercial tenant specific fields */}
                 {selectedTenantType === "commercial" && (
                   <>
@@ -679,8 +614,218 @@ export function TenantForm({
                   </>
                 )}
 
+                {/* Space Information - Multiple Entries */}
+                <div className="space-y-4">
+                  <div className="flex items-center justify-between">
+                    <Label htmlFor="location_info">Space(s)</Label>
+                    {!isReadOnly && (
+                      <Button
+                        type="button"
+                        variant="default"
+                        size="sm"
+                        onClick={addSpaceEntry}
+                      >
+                        <Plus className="mr-2 h-4 w-4" /> Add Space
+                      </Button>
+                    )}
+                  </div>
+
+                  {/* Location Cards */}
+                  <div className="space-y-4">
+                    {tenantSpaces.map((location: any, index: number) => (
+                      <Card key={index} className="relative">
+                        <CardHeader className="pb-3">
+                          <div className="flex items-center justify-between">
+                            <CardTitle className="text-base">
+                              Space #{index + 1}
+                            </CardTitle>
+                            {!isReadOnly && (
+                              <Button
+                                type="button"
+                                variant="ghost"
+                                size="sm"
+                                onClick={() => removeSpaceEntry(index)}
+                                disabled={tenantSpaces.length === 1}
+                                className="text-destructive hover:text-destructive"
+                              >
+                                <Trash2 className="h-4 w-4 mr-2" />
+                                Remove
+                              </Button>
+                            )}
+                          </div>
+                        </CardHeader>
+                        <CardContent>
+                          <div className="grid grid-cols-4 gap-4">
+                            {/* Site */}
+                            <div className="space-y-2">
+                              <Label>Site *</Label>
+                              <Controller
+                                name={`tenant_spaces.${index}.site_id` as any}
+                                control={control}
+                                render={({ field }) => (
+                                  <Select
+                                    value={field.value || ""}
+                                    onValueChange={(value) => {
+                                      updateSpaceEntry(
+                                        index,
+                                        "site_id",
+                                        value
+                                      );
+                                    }}
+                                    disabled={isReadOnly}
+                                  >
+                                    <SelectTrigger
+                                      className={
+                                        errors.tenant_spaces?.[index]?.site_id
+                                          ? "border-red-500"
+                                          : ""
+                                      }
+                                    >
+                                      <SelectValue placeholder="Select site" />
+                                    </SelectTrigger>
+                                    <SelectContent>
+                                      {siteList.map((site) => (
+                                        <SelectItem
+                                          key={site.id}
+                                          value={site.id}
+                                        >
+                                          {site.name}
+                                        </SelectItem>
+                                      ))}
+                                    </SelectContent>
+                                  </Select>
+                                )}
+                              />
+                            </div>
+
+                            {/* Building */}
+                            <div className="space-y-2">
+                              <Label>Building</Label>
+                              <Controller
+                                name={
+                                  `tenant_spaces.${index}.building_block_id` as any
+                                }
+                                control={control}
+                                render={({ field }) => (
+                                  <Select
+                                    value={field.value ? field.value : "none"}
+                                    onValueChange={(v) => {
+                                      updateSpaceEntry(
+                                        index,
+                                        "building_block_id",
+                                        v === "none" ? "" : v
+                                      );
+                                    }}
+                                    disabled={isReadOnly || !location?.site_id}
+                                  >
+                                    <SelectTrigger>
+                                      <SelectValue
+                                        placeholder={
+                                          location?.site_id
+                                            ? "Select building"
+                                            : "Select site first"
+                                        }
+                                      />
+                                    </SelectTrigger>
+                                    <SelectContent>
+                                      <SelectItem value="none">
+                                        Select building
+                                      </SelectItem>
+                                      {buildingList.map((building) => (
+                                        <SelectItem
+                                          key={building.id}
+                                          value={building.id}
+                                        >
+                                          {building.name}
+                                        </SelectItem>
+                                      ))}
+                                    </SelectContent>
+                                  </Select>
+                                )}
+                              />
+                            </div>
+
+                            {/* Space */}
+                            <div className="space-y-2">
+                              <Label>Space</Label>
+                              <Controller
+                                name={`tenant_spaces.${index}.space_id` as any}
+                                control={control}
+                                render={({ field }) => (
+                                  <Select
+                                    value={field.value || ""}
+                                    onValueChange={(value) => {
+                                      updateSpaceEntry(
+                                        index,
+                                        "space_id",
+                                        value
+                                      );
+                                    }}
+                                    disabled={isReadOnly || !location?.site_id}
+                                  >
+                                    <SelectTrigger>
+                                      <SelectValue
+                                        placeholder={
+                                          !location?.site_id
+                                            ? "Select site first"
+                                            : "Select space"
+                                        }
+                                      />
+                                    </SelectTrigger>
+                                    <SelectContent>
+                                      {spaceList.map((space) => (
+                                        <SelectItem
+                                          key={space.id}
+                                          value={space.id}
+                                        >
+                                          {space.name}
+                                        </SelectItem>
+                                      ))}
+                                    </SelectContent>
+                                  </Select>
+                                )}
+                              />
+                            </div>
+
+                            {/* Role */}
+                            <div className="space-y-2">
+                              <Label>Role</Label>
+                              <Controller
+                                name={`tenant_spaces.${index}.role` as any}
+                                control={control}
+                                render={({ field }) => (
+                                  <Select
+                                    value={field.value || "owner"}
+                                    onValueChange={(value) => {
+                                      updateSpaceEntry(index, "role", value);
+                                    }}
+                                    disabled={isReadOnly}
+                                  >
+                                    <SelectTrigger>
+                                      <SelectValue placeholder="Select role" />
+                                    </SelectTrigger>
+                                    <SelectContent>
+                                      <SelectItem value="owner">
+                                        Owner
+                                      </SelectItem>
+                                      <SelectItem value="occupant">
+                                        Occupant
+                                      </SelectItem>
+                                    </SelectContent>
+                                  </Select>
+                                )}
+                              />
+                            </div>
+                          </div>
+                        </CardContent>
+                      </Card>
+                    ))}
+                  </div>
+                </div>
+
+
                 {/* Family Information - Only for Individual tenants */}
-                {selectedTenantType === "individual" && (
+                {selectedTenantType === "residential" && (
                   <div className="space-y-2">
                     <div className="flex items-center justify-between">
                       <Label htmlFor="family_info">Family Information</Label>
@@ -706,44 +851,43 @@ export function TenantForm({
                       {familyInfo.map((member, index) => (
                         <div
                           key={index}
-                          className={`grid grid-cols-[1fr_1fr_auto] gap-4 items-center p-4 ${
-                            index !== familyInfo.length - 1 ? "border-b" : ""
-                          }`}
+                          className={`grid grid-cols-[1fr_1fr_auto] gap-4 items-center p-4 ${index !== familyInfo.length - 1 ? "border-b" : ""
+                            }`}
                         >
-                            <Input
-                              value={member.member || ""}
-                              onChange={(e) =>
-                                updateFamilyMember(
-                                  index,
-                                  "member",
-                                  e.target.value
-                                )
-                              }
-                              placeholder="Enter family member name"
-                              disabled={isReadOnly}
-                            />
-                            <Input
-                              value={member.relation || ""}
-                              onChange={(e) =>
-                                updateFamilyMember(
-                                  index,
-                                  "relation",
-                                  e.target.value
-                                )
-                              }
-                              placeholder="Enter relation"
-                              disabled={isReadOnly}
-                            />
+                          <Input
+                            value={member.member || ""}
+                            onChange={(e) =>
+                              updateFamilyMember(
+                                index,
+                                "member",
+                                e.target.value
+                              )
+                            }
+                            placeholder="Enter family member name"
+                            disabled={isReadOnly}
+                          />
+                          <Input
+                            value={member.relation || ""}
+                            onChange={(e) =>
+                              updateFamilyMember(
+                                index,
+                                "relation",
+                                e.target.value
+                              )
+                            }
+                            placeholder="Enter relation"
+                            disabled={isReadOnly}
+                          />
                           {!isReadOnly && (
-                              <Button
-                                type="button"
+                            <Button
+                              type="button"
                               variant="ghost"
                               size="icon"
                               className="text-destructive hover:text-destructive"
-                                onClick={() => removeFamilyMember(index)}
-                              >
+                              onClick={() => removeFamilyMember(index)}
+                            >
                               <Trash2 className="h-4 w-4" />
-                              </Button>
+                            </Button>
                           )}
                         </div>
                       ))}
@@ -752,69 +896,68 @@ export function TenantForm({
                 )}
 
                 {/* Vehicle Information - Only for Individual tenants */}
-                {(selectedTenantType === "individual" ||
+                {(selectedTenantType === "residential" ||
                   selectedTenantType === "commercial") && (
-                  <div className="space-y-2">
-                    <div className="flex items-center justify-between">
-                      <Label htmlFor="vehicle_info">Vehicle Information</Label>
-                      {!isReadOnly && (
-                        <Button
-                          type="button"
-                          variant="default"
-                          size="sm"
-                          onClick={addVehicle}
-                        >
-                          <Plus className="mr-2 h-4 w-4" /> Add Vehicle
-                        </Button>
-                      )}
-                    </div>
-                    <div className="border rounded-md">
-                      {/* Header row with labels */}
-                      <div className="grid grid-cols-[1fr_1fr_auto] gap-4 p-4 border-b bg-muted/50">
-                        <Label>Type of Vehicle</Label>
-                        <Label>Vehicle No.</Label>
-                        <div></div>
+                    <div className="space-y-2">
+                      <div className="flex items-center justify-between">
+                        <Label htmlFor="vehicle_info">Vehicle Information</Label>
+                        {!isReadOnly && (
+                          <Button
+                            type="button"
+                            variant="default"
+                            size="sm"
+                            onClick={addVehicle}
+                          >
+                            <Plus className="mr-2 h-4 w-4" /> Add Vehicle
+                          </Button>
+                        )}
                       </div>
-                      {/* Data rows */}
-                      {vehicleInfo.map((vehicle, index) => (
-                        <div
-                          key={index}
-                          className={`grid grid-cols-[1fr_1fr_auto] gap-4 items-center p-4 ${
-                            index !== vehicleInfo.length - 1 ? "border-b" : ""
-                          }`}
-                        >
+                      <div className="border rounded-md">
+                        {/* Header row with labels */}
+                        <div className="grid grid-cols-[1fr_1fr_auto] gap-4 p-4 border-b bg-muted/50">
+                          <Label>Type of Vehicle</Label>
+                          <Label>Vehicle No.</Label>
+                          <div></div>
+                        </div>
+                        {/* Data rows */}
+                        {vehicleInfo.map((vehicle, index) => (
+                          <div
+                            key={index}
+                            className={`grid grid-cols-[1fr_1fr_auto] gap-4 items-center p-4 ${index !== vehicleInfo.length - 1 ? "border-b" : ""
+                              }`}
+                          >
                             <Input
-                            value={(vehicle as any).type || ""}
+                              value={(vehicle as any).type || ""}
                               onChange={(e) =>
-                              updateVehicle(index, "type", e.target.value)
+                                updateVehicle(index, "type", e.target.value)
                               }
                               placeholder="Enter vehicle type"
                               disabled={isReadOnly}
                             />
                             <Input
-                            value={(vehicle as any).number || ""}
+                              value={(vehicle as any).number || ""}
                               onChange={(e) =>
-                              updateVehicle(index, "number", e.target.value)
+                                updateVehicle(index, "number", e.target.value)
                               }
                               placeholder="Enter vehicle number"
                               disabled={isReadOnly}
                             />
-                          {!isReadOnly && (
+                            {!isReadOnly && (
                               <Button
                                 type="button"
-                              variant="ghost"
-                              size="icon"
-                              className="text-destructive hover:text-destructive"
+                                variant="ghost"
+                                size="icon"
+                                className="text-destructive hover:text-destructive"
                                 onClick={() => removeVehicle(index)}
                               >
-                              <Trash2 className="h-4 w-4" />
+                                <Trash2 className="h-4 w-4" />
                               </Button>
-                          )}
-                        </div>
-                      ))}
+                            )}
+                          </div>
+                        ))}
+                      </div>
                     </div>
-                  </div>
-                )}
+                  )}
 
                 {/* Address Information - Always at the end */}
                 <div className="space-y-2">
@@ -903,8 +1046,8 @@ export function TenantForm({
                 {isSubmitting
                   ? "Saving..."
                   : mode === "create"
-                  ? "Create Tenant"
-                  : "Update Tenant"}
+                    ? "Create Tenant"
+                    : "Update Tenant"}
               </Button>
             )}
           </DialogFooter>

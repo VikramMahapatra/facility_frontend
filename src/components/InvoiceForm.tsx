@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useMemo } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -16,13 +16,23 @@ import {
   DialogTitle,
   DialogFooter,
 } from "@/components/ui/dialog";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { siteApiService } from "@/services/spaces_sites/sitesapi";
 import { Invoice } from "@/interfaces/invoices_interfaces";
 import { invoiceApiService } from "@/services/financials/invoicesapi";
 import { useForm, Controller } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { invoiceSchema, InvoiceFormValues } from "@/schemas/invoice.schema";
-import { Plus, Trash2 } from "lucide-react";
+import {
+  Plus,
+  Trash2,
+  CreditCard,
+  Wallet,
+  Building2,
+  FileText,
+  Smartphone,
+  Calendar,
+} from "lucide-react";
 
 interface InvoiceFormProps {
   invoice?: Invoice;
@@ -93,8 +103,8 @@ export function InvoiceForm({
         invoice.billable_item_type === "lease charge"
           ? "lease_charge"
           : invoice.billable_item_type === "work order"
-            ? "work_order"
-            : "lease_charge";
+          ? "work_order"
+          : "lease_charge";
       await loadBillableItemLookup(billableType, invoice.site_id);
 
       if (invoice.billable_item_id && invoice.billable_item_name) {
@@ -118,40 +128,45 @@ export function InvoiceForm({
       }
     }
 
+    const invoicePayments = (invoice as any)?.payments;
+    const hasValidPayments =
+      invoicePayments &&
+      Array.isArray(invoicePayments) &&
+      invoicePayments.length > 0;
+
     reset(
       invoice && mode !== "create"
         ? {
-          site_id: invoice.site_id || "",
-          date: invoice.date || new Date().toISOString().split("T")[0],
-          due_date: invoice.due_date || "",
-          status: invoice.status || "draft",
-          currency: invoice.currency || "INR",
-          billable_item_type:
-            invoice.billable_item_type === "lease charge"
-              ? "lease_charge"
-              : invoice.billable_item_type === "work order"
+            site_id: invoice.site_id || "",
+            date: invoice.date || new Date().toISOString().split("T")[0],
+            due_date: invoice.due_date || "",
+            status: invoice.status || "draft",
+            currency: invoice.currency || "INR",
+            billable_item_type:
+              invoice.billable_item_type === "lease charge"
+                ? "lease_charge"
+                : invoice.billable_item_type === "work order"
                 ? "work_order"
                 : "lease_charge",
-          billable_item_id: invoice.billable_item_id || "",
-          totals: invoice.totals || { sub: 0, tax: 0, grand: 0 },
-          payments:
-            (invoice as any).payments &&
-              Array.isArray((invoice as any).payments) &&
-              (invoice as any).payments.length > 0
-              ? (invoice as any).payments
+            billable_item_id: invoice.billable_item_id || "",
+            totals: invoice.totals || { sub: 0, tax: 0, grand: 0 },
+            payments: hasValidPayments
+              ? invoicePayments
               : [{ method: "upi" as any, ref_no: "", paid_at: "", amount: 0 }],
-        }
+          }
         : {
-          site_id: "",
-          date: new Date().toISOString().split("T")[0],
-          due_date: "",
-          status: "draft",
-          currency: "INR",
-          billable_item_type: "lease_charge",
-          billable_item_id: "",
-          totals: { sub: 0, tax: 0, grand: 0 },
-          payments: [{ method: "", ref_no: "", paid_at: "", amount: "" }],
-        }
+            site_id: "",
+            date: new Date().toISOString().split("T")[0],
+            due_date: "",
+            status: "draft",
+            currency: "INR",
+            billable_item_type: "lease_charge",
+            billable_item_id: "",
+            totals: { sub: 0, tax: 0, grand: 0 },
+            payments: [
+              { method: "upi" as any, ref_no: "", paid_at: "", amount: 0 },
+            ],
+          }
     );
 
     setFormLoading(false);
@@ -161,7 +176,7 @@ export function InvoiceForm({
     if (isOpen) {
       loadAll();
     }
-  }, [invoice, mode, isOpen, reset]);
+  }, [invoice?.id, mode, isOpen]);
 
   useEffect(() => {
     if (mode === "create") {
@@ -311,12 +326,82 @@ export function InvoiceForm({
 
   // Payment mode helpers: add, remove multiple payment modes
   const paymentModes = watch("payments") || [];
-  console.log("Payments", paymentModes);
+
+  // Filter out any duplicate payments
+  const uniquePaymentModes = useMemo(() => {
+    const seen = new Set<string>();
+    return paymentModes.filter((payment) => {
+      const key = `${payment.method}-${payment.ref_no}-${payment.paid_at}-${payment.amount}`;
+      if (seen.has(key)) {
+        return false;
+      }
+      seen.add(key);
+      return true;
+    });
+  }, [paymentModes]);
+
+  // Get payment method icon
+  const getPaymentMethodIcon = (method: string) => {
+    switch (method) {
+      case "card":
+        return <CreditCard className="h-4 w-4" />;
+      case "cash":
+        return <Wallet className="h-4 w-4" />;
+      case "bank":
+        return <Building2 className="h-4 w-4" />;
+      case "cheque":
+        return <FileText className="h-4 w-4" />;
+      case "upi":
+        return <Smartphone className="h-4 w-4" />;
+      default:
+        return <CreditCard className="h-4 w-4" />;
+    }
+  };
+
+  // Format currency
+  const formatCurrency = (amount: number | string | undefined) => {
+    const numAmount =
+      typeof amount === "string" ? parseFloat(amount) || 0 : amount || 0;
+    const currency = watch("currency") || "INR";
+    const symbol =
+      currency === "INR"
+        ? "₹"
+        : currency === "USD"
+        ? "$"
+        : currency === "EUR"
+        ? "€"
+        : currency;
+    return `${symbol} ${numAmount.toLocaleString("en-IN", {
+      minimumFractionDigits: 2,
+      maximumFractionDigits: 2,
+    })}`;
+  };
+
+  // Calculate payment summary
+  const invoiceTotal = watch("totals.grand") || 0;
+  const paidAmount = uniquePaymentModes.reduce((sum, payment) => {
+    const amount =
+      typeof payment.amount === "string"
+        ? parseFloat(payment.amount) || 0
+        : payment.amount || 0;
+    return sum + amount;
+  }, 0);
+  const outstanding = invoiceTotal - paidAmount;
+  const paymentStatus =
+    outstanding <= 0 ? "Paid" : paidAmount > 0 ? "Partially Paid" : "Unpaid";
 
   const addPaymentMode = () => {
-    const currentPaymentModes = getValues("payments") || [];
-    const newPaymentMode = { method: "upi" as any, ref_no: "", paid_at: "", amount: 0 };
-    setValue("payments", [...currentPaymentModes, newPaymentMode]);
+    const currentPaymentModes =
+      paymentModes.length > 0 ? paymentModes : getValues("payments") || [];
+    const newPaymentMode = {
+      method: "upi" as any,
+      ref_no: "",
+      paid_at: "",
+      amount: 0,
+    };
+    setValue("payments", [...currentPaymentModes, newPaymentMode], {
+      shouldValidate: true,
+    });
   };
 
   const removePaymentMode = (index: number) => {
@@ -324,7 +409,9 @@ export function InvoiceForm({
     const remaining = currentPaymentModes.filter((_, i) => i !== index);
     // Ensure at least one entry remains
     const ensured =
-      remaining.length === 0 ? [{ method: "upi" as any, ref_no: "", paid_at: "", amount: 0 }] : remaining;
+      remaining.length === 0
+        ? [{ method: "upi" as any, ref_no: "", paid_at: "", amount: 0 }]
+        : remaining;
     setValue("payments", ensured);
   };
 
@@ -358,8 +445,6 @@ export function InvoiceForm({
             <p className="text-center">Loading...</p>
           ) : (
             <div className="space-y-4">
-
-
               {/* Invoice Type + Billable Item */}
               <div className="grid grid-cols-3 gap-4">
                 {/* Site */}
@@ -585,10 +670,10 @@ export function InvoiceForm({
                 </div>
               )}
 
-              {/* Payment Mode Section */}
-              <div className="space-y-4 border rounded-lg p-4">
+              {/* Payment Details Section */}
+              <div className="space-y-4">
                 <div className="flex items-center justify-between">
-                  <Label>Payment Details</Label>
+                  <h3 className="text-lg font-semibold">Payment Details</h3>
                   {!isReadOnly && (
                     <Button
                       type="button"
@@ -600,86 +685,209 @@ export function InvoiceForm({
                     </Button>
                   )}
                 </div>
-                <div className="border rounded-md">
-                  {/* Header row with labels */}
-                  <div className="grid grid-cols-5 gap-4 p-4 border-b bg-muted/50">
-                    <Label>Mode</Label>
-                    <Label>Reference No.</Label>
-                    <Label>Date</Label>
-                    <Label>Amount</Label>
-                    <div></div>
-                  </div>
-                  {/* Data rows */}
-                  {paymentModes.map((paymentMode, index) => (
-                    <div
-                      key={index}
-                      className="grid grid-cols-5 gap-4 p-4 border-b last:border-b-0"
-                    >
-                      <Controller
-                        name={`payments.${index}.method` as any}
-                        control={control}
-                        render={({ field }) => (
-                          <Select
-                            value={field.value || ""}
-                            onValueChange={(value) => {
-                              updatePaymentMode(index, "method", value);
-                            }}
-                            disabled={isReadOnly}
-                          >
-                            <SelectTrigger>
-                              <SelectValue placeholder="Select payment type" />
-                            </SelectTrigger>
-                            <SelectContent>
-                              <SelectItem value="cash">Cash</SelectItem>
-                              <SelectItem value="card">Card</SelectItem>
-                              <SelectItem value="bank">Bank Transfer</SelectItem>
-                              <SelectItem value="cheque">Cheque</SelectItem>
-                              <SelectItem value="upi">UPI</SelectItem>
-                              <SelectItem value="other">Other</SelectItem>
-                            </SelectContent>
-                          </Select>
-                        )}
-                      />
-                      <Input
-                        type="text"
-                        placeholder="Enter Ref No"
-                        value={paymentMode.ref_no || ""}
-                        onChange={(e) => {
-                          updatePaymentMode(index, "ref_no", e.target.value);
-                        }}
-                        disabled={isReadOnly}
-                      />
-                      <Input
-                        type="date"
-                        min={paymentMode.paid_at || undefined}
-                        disabled={isReadOnly}
-                        onChange={(e) => {
-                          updatePaymentMode(index, "paid_at", e.target.value);
-                        }}
-                      />
-                      <Input
-                        type="text"
-                        placeholder="Enter amount"
-                        value={paymentMode.amount || ""}
-                        onChange={(e) => {
-                          updatePaymentMode(index, "amount", e.target.value);
-                        }}
-                        disabled={isReadOnly}
-                      />
-                      {!isReadOnly && (
-                        <Button
-                          type="button"
-                          variant="ghost"
-                          size="sm"
-                          onClick={() => removePaymentMode(index)}
-                          disabled={paymentModes.length === 1}
-                        >
-                          <Trash2 className="h-4 w-4 text-destructive" />
-                        </Button>
-                      )}
-                    </div>
+
+                {/* Payment Cards */}
+                <div className="space-y-4">
+                  {uniquePaymentModes.map((paymentMode, index) => (
+                    <Card key={index} className="relative">
+                      <CardHeader className="pb-3">
+                        <div className="flex items-center justify-between">
+                          <CardTitle className="text-base">
+                            Payment #{index + 1}
+                          </CardTitle>
+                          {!isReadOnly && (
+                            <Button
+                              type="button"
+                              variant="ghost"
+                              size="sm"
+                              onClick={() => removePaymentMode(index)}
+                              disabled={paymentModes.length === 1}
+                              className="text-destructive hover:text-destructive"
+                            >
+                              <Trash2 className="h-4 w-4 mr-2" />
+                              Remove
+                            </Button>
+                          )}
+                        </div>
+                      </CardHeader>
+                      <CardContent>
+                        <div className="grid grid-cols-4 gap-4">
+                          {/* Mode */}
+                          <div className="space-y-2">
+                            <Label>Mode</Label>
+                            <Controller
+                              name={`payments.${index}.method` as any}
+                              control={control}
+                              render={({ field }) => (
+                                <Select
+                                  value={field.value || ""}
+                                  onValueChange={(value) => {
+                                    updatePaymentMode(index, "method", value);
+                                  }}
+                                  disabled={isReadOnly}
+                                >
+                                  <SelectTrigger>
+                                    <div className="flex items-center gap-2">
+                                      {field.value &&
+                                        getPaymentMethodIcon(field.value)}
+                                      <SelectValue placeholder="Select payment type" />
+                                    </div>
+                                  </SelectTrigger>
+                                  <SelectContent>
+                                    <SelectItem value="cash">Cash</SelectItem>
+                                    <SelectItem value="card">Card</SelectItem>
+                                    <SelectItem value="bank">
+                                      Bank Transfer
+                                    </SelectItem>
+                                    <SelectItem value="cheque">
+                                      Cheque
+                                    </SelectItem>
+                                    <SelectItem value="upi">UPI</SelectItem>
+                                    <SelectItem value="other">Other</SelectItem>
+                                  </SelectContent>
+                                </Select>
+                              )}
+                            />
+                          </div>
+
+                          {/* Reference No. */}
+                          <div className="space-y-2">
+                            <Label>Reference No.</Label>
+                            <Input
+                              type="text"
+                              placeholder="Enter Ref No."
+                              value={paymentMode.ref_no || ""}
+                              onChange={(e) => {
+                                updatePaymentMode(
+                                  index,
+                                  "ref_no",
+                                  e.target.value
+                                );
+                              }}
+                              disabled={isReadOnly}
+                            />
+                          </div>
+
+                          {/* Date */}
+                          <div className="space-y-2">
+                            <Label>Date</Label>
+                            <div className="relative">
+                              <Calendar className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground pointer-events-none" />
+                              <Input
+                                type="date"
+                                className="pl-10"
+                                value={paymentMode.paid_at || ""}
+                                disabled={isReadOnly}
+                                onChange={(e) => {
+                                  updatePaymentMode(
+                                    index,
+                                    "paid_at",
+                                    e.target.value
+                                  );
+                                }}
+                              />
+                            </div>
+                          </div>
+
+                          {/* Amount */}
+                          <div className="space-y-2">
+                            <Label>Amount</Label>
+                            <div className="relative">
+                              <span className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground pointer-events-none">
+                                {watch("currency") === "INR"
+                                  ? "₹"
+                                  : watch("currency") === "USD"
+                                  ? "$"
+                                  : watch("currency") === "EUR"
+                                  ? "€"
+                                  : watch("currency") || "₹"}
+                              </span>
+                              <Input
+                                type="number"
+                                placeholder="0.00"
+                                className="pl-8"
+                                value={paymentMode.amount || ""}
+                                onChange={(e) => {
+                                  updatePaymentMode(
+                                    index,
+                                    "amount",
+                                    e.target.value
+                                  );
+                                }}
+                                disabled={isReadOnly}
+                              />
+                            </div>
+                          </div>
+                        </div>
+                      </CardContent>
+                    </Card>
                   ))}
                 </div>
+
+                {/* Payment Summary */}
+                {watchedBillableType &&
+                  watchedBillableItemId &&
+                  invoiceTotal > 0 && (
+                    <Card className="bg-muted/30">
+                      <CardContent className="pt-6">
+                        <div className="space-y-4">
+                          <div className="grid grid-cols-2 gap-4">
+                            <div>
+                              <Label className="text-muted-foreground">
+                                Invoice Total
+                              </Label>
+                              <p className="text-lg font-semibold">
+                                {formatCurrency(invoiceTotal)}
+                              </p>
+                            </div>
+                            <div>
+                              <Label className="text-muted-foreground">
+                                Paid Amount
+                              </Label>
+                              <p className="text-lg font-semibold">
+                                {formatCurrency(paidAmount)}
+                              </p>
+                            </div>
+                          </div>
+                          <div className="grid grid-cols-2 gap-4">
+                            <div>
+                              <Label className="text-muted-foreground">
+                                Outstanding
+                              </Label>
+                              <p
+                                className={`text-lg font-semibold ${
+                                  outstanding > 0
+                                    ? "text-orange-600"
+                                    : "text-green-600"
+                                }`}
+                              >
+                                {formatCurrency(outstanding)}
+                              </p>
+                            </div>
+                            <div className="flex items-end">
+                              <div className="flex items-center gap-2">
+                                <div
+                                  className={`h-2 w-2 rounded-full ${
+                                    paymentStatus === "Paid"
+                                      ? "bg-green-500"
+                                      : paymentStatus === "Partially Paid"
+                                      ? "bg-orange-500"
+                                      : "bg-gray-500"
+                                  }`}
+                                />
+                                <Label className="text-muted-foreground">
+                                  Status:
+                                </Label>
+                                <span className="font-semibold">
+                                  {paymentStatus}
+                                </span>
+                              </div>
+                            </div>
+                          </div>
+                        </div>
+                      </CardContent>
+                    </Card>
+                  )}
               </div>
 
               {/* Footer */}
@@ -697,8 +905,8 @@ export function InvoiceForm({
                     {isSubmitting
                       ? "Saving..."
                       : mode === "create"
-                        ? "Create"
-                        : "Update"}
+                      ? "Create"
+                      : "Update"}
                   </Button>
                 )}
               </DialogFooter>

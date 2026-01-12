@@ -22,14 +22,21 @@ export const tenantSchema = z
         message: "Phone number must be exactly 10 digits after country code",
       }
     ),
-    site_id: z.string().min(1, "Site is required"),
-    building_id: z.string().optional(),
-    space_id: z.string().min(1, "Space is required"),
-    tenant_type: z.enum(["individual", "commercial"], {
+    kind: z.enum(["residential", "commercial"], {
       required_error: "Tenant type is required",
     }),
 
     status: z.coerce.string().min(1, "Status is required"),
+    tenant_spaces: z
+      .array(
+        z.object({
+          site_id: z.string().min(1, "Site is required"),
+          building_block_id: z.string().optional(),
+          space_id: z.string().min(1, "Site is required"),
+          role: z.enum(["owner", "occupant"]).optional(),
+        })
+      )
+      .min(1, "At least one tenant space entry is required"),
     type: z.string().optional(),
     legal_name: z.string().optional(),
     contact_info: z
@@ -101,7 +108,7 @@ export const tenantSchema = z
   .superRefine((val, ctx) => {
     // For commercial tenants, either legal_name or contact name should be present (soft rule)
     if (
-      val.tenant_type === "commercial" &&
+      val.kind === "commercial" &&
       (!val.legal_name || String(val.legal_name).trim() === "")
     ) {
       ctx.addIssue({
