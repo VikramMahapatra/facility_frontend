@@ -42,6 +42,9 @@ class LeasesApiService {
   async getLeaseStatusLookup() {
     return await apiService.request('/leases/status-lookup');
   }
+  async getLeasePayerTypeLookup() {
+    return await apiService.request('/leases/default-payer-lookup');
+  }
 
   async getLeasePartnerLookup(kind: string, site_id: string) {
     const params = new URLSearchParams();
@@ -49,6 +52,7 @@ class LeasesApiService {
     if (site_id) params.append("site_id", site_id);
     return await apiService.request(`/leases/partner-lookup?${params.toString()}`);
   }
+
 
 }
 

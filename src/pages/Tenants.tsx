@@ -9,7 +9,7 @@ import {
 } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
-import { LogOut, } from "lucide-react";
+import { LogOut } from "lucide-react";
 import {
   Select,
   SelectContent,
@@ -227,7 +227,7 @@ const Tenants = () => {
         // FIX: Update with response.data instead of updatedTenant
         loadTenantOverview();
         setTenants((prev) =>
-          prev.map((t) => (t.id === updatedTenant.id ? response.data : t))
+          prev.map((t) => (t.id === response.data.id ? response.data : t))
         );
       }
     }
@@ -278,9 +278,7 @@ const Tenants = () => {
       <div className="grid gap-4 md:grid-cols-4">
         <Card>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">
-              Total Tenants
-            </CardTitle>
+            <CardTitle className="text-sm font-medium">Total Tenants</CardTitle>
             <Users className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
@@ -304,43 +302,33 @@ const Tenants = () => {
             <div className="text-2xl font-bold text-green-600">
               {tenantOverview.activeTenants}
             </div>
-            <p className="text-xs text-muted-foreground">
-              Currently active
-            </p>
+            <p className="text-xs text-muted-foreground">Currently active</p>
           </CardContent>
         </Card>
 
         <Card>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">
-              Commercial
-            </CardTitle>
+            <CardTitle className="text-sm font-medium">Commercial</CardTitle>
             <Building2 className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold">
               {tenantOverview.commercialTenants}
             </div>
-            <p className="text-xs text-muted-foreground">
-              Business tenants
-            </p>
+            <p className="text-xs text-muted-foreground">Business tenants</p>
           </CardContent>
         </Card>
 
         <Card>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">
-              Residential
-            </CardTitle>
+            <CardTitle className="text-sm font-medium">Residential</CardTitle>
             <Users className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold">
               {tenantOverview.individualTenants}
             </div>
-            <p className="text-xs text-muted-foreground">
-              Residential tenants
-            </p>
+            <p className="text-xs text-muted-foreground">Residential tenants</p>
           </CardContent>
         </Card>
       </div>
@@ -383,10 +371,7 @@ const Tenants = () => {
             </SelectContent>
           </Select>
 
-          <Select
-            value={selectedStatus}
-            onValueChange={setSelectedStatus}
-          >
+          <Select value={selectedStatus} onValueChange={setSelectedStatus}>
             <SelectTrigger className="w-[130px]">
               <SelectValue placeholder="Status" />
             </SelectTrigger>
@@ -421,12 +406,10 @@ const Tenants = () => {
             <Card>
               <CardContent className="flex flex-col items-center justify-center py-16">
                 <Users className="h-12 w-12 text-muted-foreground mb-4" />
-                <h3 className="text-lg font-semibold mb-2">
-                  No tenants found
-                </h3>
+                <h3 className="text-lg font-semibold mb-2">No tenants found</h3>
                 <p className="text-muted-foreground text-center mb-4">
-                  No tenants match your current filters. Try adjusting
-                  your search criteria.
+                  No tenants match your current filters. Try adjusting your
+                  search criteria.
                 </p>
                 {canWrite(resource) && (
                   <Button onClick={() => handleCreate()}>
@@ -438,8 +421,8 @@ const Tenants = () => {
             </Card>
           ) : (
             tenants.map((tenant) => {
-              const tenantLeases = tenant.tenant_leases;
-              const tenantSpaces = tenant.tenant_spaces;
+              const tenantLeases = tenant.tenant_leases || [];
+              const tenantSpaces = tenant.tenant_spaces || [];
 
               return (
                 <Card
@@ -452,49 +435,53 @@ const Tenants = () => {
                         <CardTitle className="text-lg flex items-center gap-2">
                           {tenant.name}
                           <div className="flex gap-2">
-                            <Badge
-                              className={getTenantTypeColor(
-                                tenant.kind
-                              )}
-                            >
+                            <Badge className={getTenantTypeColor(tenant.kind)}>
                               {tenant.kind}
                             </Badge>
                             {tenant.kind === "commercial" &&
                               "type" in tenant && (
                                 <Badge
-                                  className={getTenantTypeColor(
-                                    tenant.type
-                                  )}
+                                  className={getTenantTypeColor(tenant.type)}
                                 >
                                   {tenant.type}
                                 </Badge>
                               )}
-
                           </div>
                         </CardTitle>
                         <CardDescription>
                           {tenantSpaces.slice(0, 2).map((tenant_space) => {
-                            const isSpaceStatus = tenant_space.status == "current" ? "active" :
-                              (tenant_space.status == "past" ? "inactive" : "suspended");
+                            const isSpaceStatus =
+                              tenant_space.status == "current"
+                                ? "active"
+                                : tenant_space.status == "past"
+                                  ? "inactive"
+                                  : "suspended";
                             return (
                               <>
                                 <div className="flex items-center gap-1">
-
                                   <MapPin className="h-4 w-4 text-muted-foreground" />
-                                  {[tenant_space.space_name, tenant_space.building_block_name, tenant_space.site_name]
+                                  {[
+                                    tenant_space.space_name,
+                                    tenant_space.building_block_name,
+                                    tenant_space.site_name,
+                                  ]
                                     .filter(Boolean)
                                     .join(" • ")}
                                   <div className="text-muted-foreground">
-                                    <Badge className={getTenantTypeColor("default")}>
+                                    <Badge
+                                      className={getTenantTypeColor("default")}
+                                    >
                                       {tenant_space.role}
                                     </Badge>
-                                    <Badge className={getStatusColor(isSpaceStatus)}>
+                                    <Badge
+                                      className={getStatusColor(isSpaceStatus)}
+                                    >
                                       {tenant_space.status}
                                     </Badge>
                                   </div>
                                 </div>
                               </>
-                            )
+                            );
                           })}
                           {tenantSpaces.length > 2 && (
                             <div className="text-xs text-muted-foreground">
@@ -579,8 +566,10 @@ const Tenants = () => {
                                         {[
                                           tenant.contact_info.address.city,
                                           tenant.contact_info.address.state,
-                                          tenant.contact_info.address.pincode
-                                        ].filter(Boolean).join(", ")}
+                                          tenant.contact_info.address.pincode,
+                                        ]
+                                          .filter(Boolean)
+                                          .join(", ")}
                                       </div>
                                     )}
                                 </div>
@@ -591,9 +580,7 @@ const Tenants = () => {
 
                       {/* Lease Information */}
                       <div className="space-y-3">
-                        <div className="text-sm font-medium">
-                          Active Leases
-                        </div>
+                        <div className="text-sm font-medium">Active Leases</div>
                         {tenantLeases.length > 0 ? (
                           <div className="space-y-2">
                             {tenantLeases.slice(0, 2).map((lease) => (
@@ -602,10 +589,10 @@ const Tenants = () => {
                                 className="p-2 bg-muted rounded text-sm"
                               >
                                 <div className="font-medium">
-                                  Lease {lease.id.slice(-6)}
+                                  #{lease.lease_number} - {lease.space_name}
                                 </div>
                                 <div className="text-muted-foreground">
-                                  ₹{lease.rent_amount.toLocaleString()} •{" "}
+                                  ₹{lease.rent_amount.toLocaleString()} • {" "}
                                   {lease.frequency}
                                 </div>
                                 <div className="text-xs text-muted-foreground">
@@ -674,8 +661,8 @@ const Tenants = () => {
           <AlertDialogHeader>
             <AlertDialogTitle>Delete Tenant</AlertDialogTitle>
             <AlertDialogDescription>
-              Are you sure you want to delete this tenant? This action
-              cannot be undone.
+              Are you sure you want to delete this tenant? This action cannot be
+              undone.
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
