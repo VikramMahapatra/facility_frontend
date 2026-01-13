@@ -235,8 +235,7 @@ const Tenants = () => {
     if (response?.success) {
       setIsFormOpen(false);
       toast.success(
-        `Tenant ${tenantData.name} has been ${
-          formMode === "create" ? "created" : "updated"
+        `Tenant ${tenantData.name} has been ${formMode === "create" ? "created" : "updated"
         } successfully.`
       );
     }
@@ -455,8 +454,8 @@ const Tenants = () => {
                               tenant_space.status == "current"
                                 ? "active"
                                 : tenant_space.status == "past"
-                                ? "inactive"
-                                : "suspended";
+                                  ? "inactive"
+                                  : "suspended";
                             return (
                               <>
                                 <div className="flex items-center gap-1">
@@ -563,16 +562,16 @@ const Tenants = () => {
                                   {(tenant.contact_info.address.city ||
                                     tenant.contact_info.address.state ||
                                     tenant.contact_info.address.pincode) && (
-                                    <div>
-                                      {[
-                                        tenant.contact_info.address.city,
-                                        tenant.contact_info.address.state,
-                                        tenant.contact_info.address.pincode,
-                                      ]
-                                        .filter(Boolean)
-                                        .join(", ")}
-                                    </div>
-                                  )}
+                                      <div>
+                                        {[
+                                          tenant.contact_info.address.city,
+                                          tenant.contact_info.address.state,
+                                          tenant.contact_info.address.pincode,
+                                        ]
+                                          .filter(Boolean)
+                                          .join(", ")}
+                                      </div>
+                                    )}
                                 </div>
                               </div>
                             )}
@@ -590,10 +589,10 @@ const Tenants = () => {
                                 className="p-2 bg-muted rounded text-sm"
                               >
                                 <div className="font-medium">
-                                  Lease {lease.id.slice(-6)}
+                                  #{lease.lease_number} - {lease.space_name}
                                 </div>
                                 <div className="text-muted-foreground">
-                                  ₹{lease.rent_amount.toLocaleString()} •{" "}
+                                  ₹{lease.rent_amount.toLocaleString()} • {" "}
                                   {lease.frequency}
                                 </div>
                                 <div className="text-xs text-muted-foreground">

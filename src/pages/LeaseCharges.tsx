@@ -73,6 +73,7 @@ type ChargeCode =
 interface LeaseCharge {
   id: string;
   lease_id: string;
+  charge_code_id: string;
   charge_code: ChargeCode;
   period_start: string; // ISO date
   period_end: string; // ISO date
@@ -83,11 +84,14 @@ interface LeaseCharge {
   rent_amount?: number;
   period_days?: number;
   tax_amount?: number;
+  total_amount?: number;
   metadata?: any;
   created_at?: string;
   tenant_name: string;
   site_name: string;
   space_name: string;
+  tax_code_id?: string;
+  payer_type?: string;
 }
 
 const monthsFull = [
@@ -233,6 +237,7 @@ export default function LeaseCharges() {
 
   // helpers
   const getChargeCodeColor = (code: string) => {
+    code = code.toUpperCase();
     switch (code) {
       case "RENT":
         return "bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-200";
@@ -260,6 +265,7 @@ export default function LeaseCharges() {
       maximumFractionDigits: 0,
     }).format(amount || 0);
   const getChargeCodeName = (code: string) => {
+    code = code.toUpperCase();
     switch (code) {
       case "RENT":
         return "Monthly Rent";
@@ -290,11 +296,13 @@ export default function LeaseCharges() {
     setSelectedCharge({
       id: charge.id,
       lease_id: charge.lease_id,
-      charge_code: charge.charge_code,
+      charge_code_id: charge.charge_code_id,
       period_start: charge.period_start?.slice(0, 10),
       period_end: charge.period_end?.slice(0, 10),
       amount: charge.amount,
       tax_pct: charge.tax_pct,
+      tax_code_id: charge.tax_code_id, // ✅ Add this
+      payer_type: charge.payer_type, // ✅ Add this
     });
 
     setFormMode("edit");
@@ -309,6 +317,8 @@ export default function LeaseCharges() {
       period_end: charge.period_end?.slice(0, 10),
       amount: charge.amount,
       tax_pct: charge.tax_pct,
+      tax_code_id: charge.tax_code_id, // ✅ Add this
+      payer_type: charge.payer_type, // ✅ Add this
     });
     setFormMode("view");
     setIsFormOpen(true);
@@ -466,7 +476,7 @@ export default function LeaseCharges() {
                 >
                   <div>
                     <Badge className={getChargeCodeColor(code)}>
-                      {code}
+                      {code.toLocaleUpperCase()}
                     </Badge>
                     <div className="text-xs text-muted-foreground mt-1">
                       {getChargeCodeName(code)}
@@ -584,7 +594,7 @@ export default function LeaseCharges() {
               const amount = Number(charge.amount) || 0;
               const taxPct = Number(charge.tax_pct) || 0;
               const taxAmount = (amount * taxPct) / 100;
-              const totalAmount = amount + taxAmount;
+              const totalAmount = Number(charge.total_amount) || 0;
 
               return (
                 <Card
@@ -600,7 +610,7 @@ export default function LeaseCharges() {
                               charge.charge_code
                             )}
                           >
-                            {charge.charge_code}
+                            {charge.charge_code.toLocaleUpperCase()}
                           </Badge>
                           {charge.tenant_name}
                         </CardTitle>
