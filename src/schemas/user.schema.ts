@@ -29,6 +29,16 @@ export const createUserSchema = (isCreateMode: boolean = false) =>
       site_ids: z.array(z.string()).optional(),
       tenant_type: z.string().optional(),
       staff_role: z.string().optional(),
+      user_spaces: z
+        .array(
+          z.object({
+            site_id: z.string().min(1, "Site is required"),
+            building_block_id: z.string().optional(),
+            space_id: z.string().min(1, "Space is required"),
+            role: z.enum(["owner", "occupant"]).optional(),
+          })
+        )
+        .optional(),
     })
     .superRefine((data, ctx) => {
       // Make site_ids required when account_type is "staff"

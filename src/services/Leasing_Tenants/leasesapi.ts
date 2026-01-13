@@ -43,9 +43,8 @@ class LeasesApiService {
     return await apiService.request('/leases/status-lookup');
   }
 
-  async getLeasePartnerLookup(kind: string, site_id: string) {
+  async getLeasePartnerLookup(site_id: string) {
     const params = new URLSearchParams();
-    if (kind) params.append("kind", kind);
     if (site_id) params.append("site_id", site_id);
     return await apiService.request(`/leases/partner-lookup?${params.toString()}`);
   }
