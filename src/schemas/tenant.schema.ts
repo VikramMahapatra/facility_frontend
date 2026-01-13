@@ -32,7 +32,7 @@ export const tenantSchema = z
         z.object({
           site_id: z.string().min(1, "Site is required"),
           building_block_id: z.string().optional(),
-          space_id: z.string().min(1, "Site is required"),
+          space_id: z.string().min(1, "Space is required"),
           role: z.enum(["owner", "occupant"]).optional(),
         })
       )
