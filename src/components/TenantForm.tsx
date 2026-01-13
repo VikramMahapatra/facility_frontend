@@ -80,7 +80,7 @@ export function TenantForm({
     setValue,
     getValues,
     watch,
-    formState: { errors, isSubmitting, isValid },
+    formState: { errors, isSubmitting, isValid, isSubmitted },
   } = useForm<TenantFormValues>({
     resolver: zodResolver(tenantSchema),
     defaultValues: emptyFormData as any,
@@ -870,54 +870,78 @@ export function TenantForm({
 
                             {/* Space */}
                             <div className="space-y-2">
-                              <Label>Space</Label>
+                              <Label>Space *</Label>
                               <Controller
                                 name={`tenant_spaces.${index}.space_id` as any}
                                 control={control}
-                                render={({ field }) => (
-                                  <Select
-                                    value={field.value || ""}
-                                    onValueChange={(value) => {
-                                      updateSpaceEntry(
-                                        index,
-                                        "space_id",
-                                        value
-                                      );
-                                    }}
-                                    disabled={isReadOnly || !location?.site_id}
-                                  >
-                                    <SelectTrigger>
-                                      <SelectValue
-                                        placeholder={
-                                          !location?.site_id
-                                            ? "Select site first"
-                                            : "Select space"
-                                        }
-                                      />
-                                    </SelectTrigger>
-                                    <SelectContent>
-                                      {(() => {
-                                        const siteId = location?.site_id || "";
-                                        const buildingId =
-                                          location?.building_block_id || "";
-                                        const key = buildingId
-                                          ? `${siteId}_${buildingId}`
-                                          : siteId;
-                                        return (spaceList[key] || []).map(
-                                          (space) => (
-                                            <SelectItem
-                                              key={space.id}
-                                              value={space.id}
-                                            >
-                                              {space.name}
-                                            </SelectItem>
-                                          )
+                                render={({ field, fieldState }) => {
+                                  const showError =
+                                    fieldState.error &&
+                                    (fieldState.isTouched || isSubmitted);
+                                  return (
+                                    <Select
+                                      value={field.value || ""}
+                                      onValueChange={(value) => {
+                                        updateSpaceEntry(
+                                          index,
+                                          "space_id",
+                                          value
                                         );
-                                      })()}
-                                    </SelectContent>
-                                  </Select>
-                                )}
+                                      }}
+                                      disabled={
+                                        isReadOnly || !location?.site_id
+                                      }
+                                    >
+                                      <SelectTrigger
+                                        className={
+                                          fieldState.error &&
+                                          (fieldState.isTouched || isSubmitted)
+                                            ? "border-red-500"
+                                            : ""
+                                        }
+                                      >
+                                        <SelectValue
+                                          placeholder={
+                                            !location?.site_id
+                                              ? "Select site first"
+                                              : "Select space"
+                                          }
+                                        />
+                                      </SelectTrigger>
+                                      <SelectContent>
+                                        {(() => {
+                                          const siteId =
+                                            location?.site_id || "";
+                                          const buildingId =
+                                            location?.building_block_id || "";
+                                          const key = buildingId
+                                            ? `${siteId}_${buildingId}`
+                                            : siteId;
+                                          return (spaceList[key] || []).map(
+                                            (space) => (
+                                              <SelectItem
+                                                key={space.id}
+                                                value={space.id}
+                                              >
+                                                {space.name}
+                                              </SelectItem>
+                                            )
+                                          );
+                                        })()}
+                                      </SelectContent>
+                                    </Select>
+                                  );
+                                }}
                               />
+                              {errors.tenant_spaces?.[index]?.space_id &&
+                                isSubmitted && (
+                                  <p className="text-sm text-red-500">
+                                    {
+                                      errors.tenant_spaces[index]?.space_id
+                                        ?.message as any
+                                    }
+                                  </p>
+                                )}
                             </div>
 
                             {/* Role */}
