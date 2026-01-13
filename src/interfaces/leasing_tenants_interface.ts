@@ -7,7 +7,7 @@ export interface Lease {
   building_block_id?: string;
   space_id?: string;
   space_name?: string;
-  kind?: LeaseKind
+  kind?: LeaseKind;
   partner_id?: string;
   tenant_id?: string;
   tenant_name: string;
@@ -22,7 +22,11 @@ export interface Lease {
   updated_at?: string;
   space_code?: string;
   site_name?: string;
+  building_name?: string;
   frequency?: string;
+  default_payer?: string;
+  tenant_role?: string;
+  is_system?: boolean;
 }
 
 export interface LeaseOverview {
