@@ -138,7 +138,7 @@ export function UserForm({
     watch,
     setValue,
     getValues,
-    formState: { errors, isSubmitting, isValid },
+    formState: { errors, isSubmitting, isValid, isSubmitted },
   } = useForm<UserFormValues>({
     resolver: zodResolver(createUserSchema(mode === "create")),
     defaultValues: emptyFormData,
@@ -1439,7 +1439,7 @@ export function UserForm({
                                 <Controller
                                   name={`user_spaces.${index}.space_id` as any}
                                   control={control}
-                                  render={({ field }) => (
+                                  render={({ field, fieldState }) => (
                                     <Select
                                       value={field.value || ""}
                                       onValueChange={(value) => {
@@ -1451,7 +1451,14 @@ export function UserForm({
                                       }}
                                       disabled={isReadOnly || !space?.site_id}
                                     >
-                                      <SelectTrigger>
+                                      <SelectTrigger
+                                        className={
+                                          fieldState.error &&
+                                          (fieldState.isTouched || isSubmitted)
+                                            ? "border-red-500"
+                                            : ""
+                                        }
+                                      >
                                         <SelectValue
                                           placeholder={
                                             !space?.site_id
@@ -1483,6 +1490,15 @@ export function UserForm({
                                     </Select>
                                   )}
                                 />
+                                {errors.user_spaces?.[index]?.space_id &&
+                                  isSubmitted && (
+                                    <p className="text-sm text-red-500">
+                                      {
+                                        errors.user_spaces[index]?.space_id
+                                          ?.message as any
+                                      }
+                                    </p>
+                                  )}
                               </div>
 
                               {/* Role */}
