@@ -46,7 +46,6 @@ import { useSkipFirstEffect } from "@/hooks/use-skipfirst-effect";
 
 export default function Leases() {
   const [searchTerm, setSearchTerm] = useState("");
-  const [selectedKind, setSelectedKind] = useState<string>("all");
   const [selectedStatus, setSelectedStatus] = useState<string>("all");
   const [selectedSite, setSelectedSite] = useState<string>("all");
 
@@ -81,7 +80,7 @@ export default function Leases() {
 
   useSkipFirstEffect(() => {
     updateLeasePage();
-  }, [searchTerm, selectedSite, selectedKind, selectedStatus]);
+  }, [searchTerm, selectedSite, selectedStatus]);
 
   useEffect(() => {
     (async () => {
@@ -103,7 +102,6 @@ export default function Leases() {
     const params = new URLSearchParams();
     if (searchTerm) params.append("search", searchTerm);
     if (selectedSite) params.append("site_id", selectedSite);
-    if (selectedKind) params.append("kind", selectedKind);
     if (selectedStatus) params.append("status", selectedStatus);
 
     const response = await leasesApiService.getLeaseOverview(params);
@@ -117,7 +115,6 @@ export default function Leases() {
     const params = new URLSearchParams();
     if (searchTerm) params.append("search", searchTerm);
     if (selectedSite) params.append("site_id", selectedSite);
-    if (selectedKind) params.append("kind", selectedKind);
     if (selectedStatus) params.append("status", selectedStatus);
     params.append("skip", String(skip));
     params.append("limit", String(limit));
@@ -270,20 +267,6 @@ export default function Leases() {
                   {s.name}
                 </SelectItem>
               ))}
-            </SelectContent>
-          </Select>
-
-          <Select
-            value={selectedKind}
-            onValueChange={setSelectedKind}
-          >
-            <SelectTrigger className="w-[180px]">
-              <SelectValue placeholder="All Types" />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="all">All Types</SelectItem>
-              <SelectItem value="commercial">Commercial</SelectItem>
-              <SelectItem value="residential">Residential</SelectItem>
             </SelectContent>
           </Select>
 

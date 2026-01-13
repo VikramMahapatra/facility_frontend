@@ -1,4 +1,3 @@
-// components/LeaseForm.tsx
 import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -36,7 +35,7 @@ interface LeaseFormProps {
 }
 
 const emptyFormData: Partial<Lease> = {
-  kind: "commercial",
+  kind: "residential",
   site_id: "",
   building_id: "",
   space_id: "",
@@ -71,7 +70,7 @@ export function LeaseForm({
   } = useForm<LeaseFormValues>({
     resolver: zodResolver(leaseSchema),
     defaultValues: {
-      kind: "commercial",
+      kind: "residential",
       site_id: "",
       building_id: "",
       space_id: "",
@@ -98,7 +97,7 @@ export function LeaseForm({
   const loadAll = async () => {
     setFormLoading(true);
 
-    await Promise.all([loadSites(), loadLeasePartners()]);
+    await Promise.all([loadSites()]);
 
     const leaseSiteId = lease && mode !== "create" ? lease.site_id : undefined;
     const leaseBuildingId =
@@ -143,12 +142,26 @@ export function LeaseForm({
   };
 
   useEffect(() => {
-    loadAll();
-  }, [lease, mode, reset]);
+    if (isOpen) {
+      loadAll();
+    } else {
+      reset(emptyFormData);
+      setBuildingList([]);
+      setSpaceList([]);
+      setLeasePartnerList([]);
+    }
+  }, [isOpen, lease, mode, reset]);
 
   const selectedSiteId = watch("site_id");
   const selectedBuildingId = watch("building_id");
   const selectedKind = watch("kind");
+  const selectedTenantId = watch("tenant_id");
+
+  useEffect(() => {
+    if (selectedTenantId && selectedKind !== "residential") {
+      setValue("kind", "residential", { shouldValidate: true });
+    }
+  }, [selectedTenantId, selectedKind, setValue]);
 
   // Load buildings when site changes
   useEffect(() => {
@@ -171,7 +184,7 @@ export function LeaseForm({
 
   useEffect(() => {
     loadLeasePartners();
-  }, [selectedSiteId, selectedKind]);
+  }, [selectedSiteId]);
 
   useEffect(() => {
     if (lease && leasePartnerList.length > 0) {
@@ -210,21 +223,23 @@ export function LeaseForm({
   };
 
   const loadLeasePartners = async () => {
-    if (!selectedKind || !selectedSiteId) return;
+    if (!selectedSiteId) return;
     const partners = await leasesApiService.getLeasePartnerLookup(
-      selectedKind,
       selectedSiteId
     );
     if (partners?.success) setLeasePartnerList(partners.data || []);
   };
 
   const onSubmitForm = async (data: LeaseFormValues) => {
-    const updated = {
-      ...data,
-      partner_id: data.kind === "commercial" ? data.partner_id : null,
-      tenant_id: data.kind === "residential" ? data.tenant_id : null,
-    };
-    const formResponse = await onSave(updated);
+    try {
+      const { kind, ...updated } = data;
+      console.log("Submitting lease data:", updated);
+      const formResponse = await onSave(updated);
+      console.log("Lease save response:", formResponse);
+    } catch (error) {
+      console.error("Error submitting lease form:", error);
+      toast.error("Failed to submit lease form. Please try again.");
+    }
   };
 
   const handleClose = () => {
@@ -249,7 +264,21 @@ export function LeaseForm({
         </DialogHeader>
 
         <form
-          onSubmit={isSubmitting ? undefined : handleSubmit(onSubmitForm)}
+          onSubmit={
+            isSubmitting
+              ? undefined
+              : handleSubmit(onSubmitForm, (errors) => {
+                  console.log("Form validation errors:", errors);
+                  const firstError = Object.values(errors)[0];
+                  if (firstError?.message) {
+                    toast.error(firstError.message as string);
+                  } else {
+                    toast.error(
+                      "Please fill in all required fields correctly."
+                    );
+                  }
+                })
+          }
           className="space-y-4"
         >
           {formLoading ? (
@@ -371,8 +400,9 @@ export function LeaseForm({
                 />
               </div>
 
-              <div className="grid grid-cols-2 gap-4">
-                <div>
+              {/* Row 2: Tenant dropdown only */}
+              <div>
+                {/* <div>
                   <Label>Tenant Type *</Label>
                   <Controller
                     name="kind"
@@ -402,14 +432,12 @@ export function LeaseForm({
                       {errors.kind.message as any}
                     </p>
                   )}
-                </div>
+                </div> */}
 
                 {/* simple text input for IDs (can replace with modal/lookup later) */}
                 <div>
-                  <Label>
-                    {selectedKind === "commercial" ? "Partner *" : "Tenant *"}
-                  </Label>
-                  {selectedKind === "commercial" ? (
+                  <Label>Tenant *</Label>
+                  {/* {selectedKind === "commercial" ? (
                     <Controller
                       name="partner_id"
                       control={control}
@@ -436,38 +464,40 @@ export function LeaseForm({
                         </Select>
                       )}
                     />
-                  ) : (
-                    <Controller
-                      name="tenant_id"
-                      control={control}
-                      render={({ field }) => (
-                        <Select
-                          value={field.value || ""}
-                          onValueChange={field.onChange}
-                          disabled={isReadOnly}
+                  ) : ( */}
+                  <Controller
+                    name="tenant_id"
+                    control={control}
+                    render={({ field }) => (
+                      <Select
+                        value={field.value || ""}
+                        onValueChange={field.onChange}
+                        disabled={isReadOnly}
+                      >
+                        <SelectTrigger
+                          className={errors.tenant_id ? "border-red-500" : ""}
                         >
-                          <SelectTrigger
-                            className={errors.tenant_id ? "border-red-500" : ""}
-                          >
-                            <SelectValue placeholder="Select tenant" />
-                          </SelectTrigger>
-                          <SelectContent>
-                            {leasePartnerList.map((s: any) => (
-                              <SelectItem key={s.id} value={String(s.id)}>
-                                {s.name}
-                              </SelectItem>
-                            ))}
-                          </SelectContent>
-                        </Select>
-                      )}
-                    />
-                  )}
-                  {(errors.partner_id || errors.tenant_id) && (
+                          <SelectValue placeholder="Select tenant" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          {leasePartnerList.map((s: any) => (
+                            <SelectItem key={s.id} value={String(s.id)}>
+                              {s.name}
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                    )}
+                  />
+                  {/* )} */}
+                  {/* {(errors.partner_id || errors.tenant_id) && ( */}
+                  {errors.tenant_id && (
                     <p className="text-sm text-red-500">
-                      {
+                      {/* {
                         (errors.partner_id?.message ||
                           errors.tenant_id?.message) as any
-                      }
+                      } */}
+                      {errors.tenant_id?.message as any}
                     </p>
                   )}
                 </div>
