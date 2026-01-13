@@ -19,9 +19,20 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { Checkbox } from "@/components/ui/checkbox";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { userManagementApiService } from "@/services/access_control/usermanagementapi";
 import { UserFormValues, createUserSchema } from "@/schemas/user.schema";
-import { Building2, Truck, UserCog, Users, Eye, EyeOff } from "lucide-react";
+import { toast } from "sonner";
+import {
+  Building2,
+  Truck,
+  UserCog,
+  Users,
+  Eye,
+  EyeOff,
+  Trash2,
+  Plus,
+} from "lucide-react";
 import PhoneInput from "react-phone-input-2";
 import { siteApiService } from "@/services/spaces_sites/sitesapi";
 import { buildingApiService } from "@/services/spaces_sites/buildingsapi";
@@ -75,6 +86,14 @@ const emptyFormData: UserFormValues = {
   site_ids: [],
   tenant_type: "individual",
   staff_role: "",
+  user_spaces: [
+    {
+      site_id: "",
+      building_block_id: "",
+      space_id: "",
+      role: "owner",
+    },
+  ],
 };
 
 const accountTypes = [
@@ -117,6 +136,8 @@ export function UserForm({
     control,
     reset,
     watch,
+    setValue,
+    getValues,
     formState: { errors, isSubmitting, isValid },
   } = useForm<UserFormValues>({
     resolver: zodResolver(createUserSchema(mode === "create")),
@@ -130,14 +151,15 @@ export function UserForm({
   const [roleList, setRoleList] = useState([]);
   const [siteList, setSiteList] = useState<any[]>([]);
   const [showPassword, setShowPassword] = useState(false);
-  const [buildingList, setBuildingList] = useState<any[]>([]);
-  const [spaceList, setSpaceList] = useState<any[]>([]);
+  const [buildingList, setBuildingList] = useState<Record<string, any[]>>({});
+  const [spaceList, setSpaceList] = useState<Record<string, any[]>>({});
 
   const selectedRoleIds = watch("role_ids") || [];
   const selectedSiteIds = watch("site_ids") || [];
   const accountType = watch("account_type");
   const selectedSiteId = watch("site_id");
   const selectedBuildingId = watch("building_id");
+  const userSpaces = watch("user_spaces") || [];
   const isReadOnly = mode === "view";
   const isTenant = accountType === "tenant";
   const isStaff = accountType === "staff";
@@ -147,8 +169,8 @@ export function UserForm({
     setFormLoading(true);
 
     if (mode === "create") {
-      setBuildingList([]);
-      setSpaceList([]);
+      setBuildingList({});
+      setSpaceList({});
     }
 
     const userSiteId =
@@ -158,7 +180,23 @@ export function UserForm({
 
     const promises = [loadStatusLookup(), loadRolesLookup(), loadSiteLookup()];
 
-    if (userSiteId) {
+    // Preload building and space lists for existing user spaces (edit mode)
+    if (user && mode !== "create" && (user as any).user_spaces) {
+      const spaces = (user as any).user_spaces;
+      if (Array.isArray(spaces) && spaces.length > 0) {
+        const loadPromises = spaces.map(async (space: any) => {
+          if (space.site_id) {
+            await loadBuildingLookup(space.site_id);
+            if (space.building_block_id) {
+              await loadSpaceLookup(space.site_id, space.building_block_id);
+            } else {
+              await loadSpaceLookup(space.site_id);
+            }
+          }
+        });
+        promises.push(...loadPromises);
+      }
+    } else if (userSiteId) {
       promises.push(loadBuildingLookup(userSiteId));
       promises.push(loadSpaceLookup(userSiteId, userBuildingId));
     }
@@ -168,20 +206,20 @@ export function UserForm({
     reset(
       user && mode !== "create"
         ? {
-          full_name: user.full_name || "",
-          email: user.email || "",
-          password: "", // Don't populate password in edit mode
-          phone: user.phone || "",
-          status: user.status || "active",
-          account_type: user.account_type || "organization",
-          role_ids: user.roles?.map((r) => r.id) || [],
-          site_id: userSiteId || "",
-          building_id: userBuildingId || "",
-          space_id: (user as any).space_id || "",
-          site_ids: (user as any).site_ids || [],
-          tenant_type: (user as any).tenant_type || "residential",
-          staff_role: (user as any).staff_role || "",
-        }
+            full_name: user.full_name || "",
+            email: user.email || "",
+            password: "", // Don't populate password in edit mode
+            phone: user.phone || "",
+            status: user.status || "active",
+            account_type: user.account_type || "organization",
+            role_ids: user.roles?.map((r) => r.id) || [],
+            site_id: userSiteId || "",
+            building_id: userBuildingId || "",
+            space_id: (user as any).space_id || "",
+            site_ids: (user as any).site_ids || [],
+            tenant_type: (user as any).tenant_type || "residential",
+            staff_role: (user as any).staff_role || "",
+          }
         : emptyFormData
     );
     setFormLoading(false);
@@ -193,23 +231,110 @@ export function UserForm({
     }
   }, [open, user, mode, reset]);
 
-  // Load buildings when site changes
   useEffect(() => {
-    if (selectedSiteId) {
-      loadBuildingLookup(selectedSiteId);
-    } else {
-      setBuildingList([]);
-      setSpaceList([]);
+    if (accountType === "tenant") {
+      const currentTenantType = watch("tenant_type");
+      if (!currentTenantType || currentTenantType === "individual") {
+        setValue("tenant_type", "residential");
+      }
     }
-  }, [selectedSiteId]);
+  }, [accountType, setValue, watch]);
 
-  useEffect(() => {
-    if (selectedSiteId) {
-      loadSpaceLookup(selectedSiteId, selectedBuildingId);
-    } else {
-      setSpaceList([]);
+  // Helper functions for managing multiple user spaces
+  const addUserSpaceEntry = () => {
+    const currentSpaces = getValues("user_spaces") || [];
+    const newEntry = {
+      site_id: "",
+      building_block_id: "",
+      space_id: "",
+      role: "owner" as any,
+    };
+    setValue("user_spaces", [...currentSpaces, newEntry], {
+      shouldValidate: true,
+      shouldDirty: true,
+    });
+  };
+
+  const removeUserSpaceEntry = (index: number) => {
+    const currentSpaces = getValues("user_spaces") || [];
+    const remaining = currentSpaces.filter((_, i) => i !== index);
+    const ensured =
+      remaining.length === 0
+        ? [
+            {
+              site_id: "",
+              building_block_id: "",
+              space_id: "",
+              role: "owner" as any,
+            },
+          ]
+        : remaining;
+    setValue("user_spaces", ensured, {
+      shouldValidate: true,
+      shouldDirty: true,
+    });
+  };
+
+  const updateUserSpaceEntry = (
+    index: number,
+    field: "site_id" | "building_block_id" | "space_id" | "role",
+    value: string
+  ) => {
+    const currentSpaces = getValues("user_spaces") || [];
+    const updated = [...currentSpaces];
+    updated[index] = { ...updated[index], [field]: value };
+
+    // Reset building and space when site changes
+    if (field === "site_id") {
+      updated[index].building_block_id = "";
+      updated[index].space_id = "";
+      if (value) {
+        loadBuildingLookup(value);
+        loadSpaceLookup(value);
+      }
     }
-  }, [selectedSiteId, selectedBuildingId]);
+    // Reset space when building changes
+    if (field === "building_block_id") {
+      updated[index].space_id = "";
+      if (updated[index].site_id) {
+        loadSpaceLookup(updated[index].site_id, value || undefined);
+      }
+    }
+
+    // Check for duplicate space entries (same site_id, building_block_id, and space_id)
+    // Only check if space_id is being set and both site_id and space_id are present
+    if (field === "space_id" && value && updated[index].site_id) {
+      const currentEntry = updated[index];
+      const duplicateIndex = updated.findIndex(
+        (space: any, i: number) =>
+          i !== index &&
+          space.site_id &&
+          space.space_id &&
+          space.site_id === currentEntry.site_id &&
+          (space.building_block_id || "") ===
+            (currentEntry.building_block_id || "") &&
+          space.space_id === value
+      );
+
+      if (duplicateIndex !== -1) {
+        toast.error(
+          "This space is already added. Please select a different space."
+        );
+        // Revert the change
+        updated[index] = { ...currentSpaces[index] };
+        setValue("user_spaces", updated, {
+          shouldValidate: true,
+          shouldDirty: true,
+        });
+        return;
+      }
+    }
+
+    setValue("user_spaces", updated, {
+      shouldValidate: true,
+      shouldDirty: true,
+    });
+  };
 
   const loadStatusLookup = async () => {
     const lookup = await userManagementApiService.getUserStatusOverview();
@@ -227,29 +352,94 @@ export function UserForm({
   };
 
   const loadBuildingLookup = async (siteId: string) => {
-    const lookup = await buildingApiService.getBuildingLookup(siteId);
-    if (lookup.success) setBuildingList(lookup.data || []);
+    if (siteId && !buildingList[siteId]) {
+      const lookup = await buildingApiService.getBuildingLookup(siteId);
+      if (lookup.success) {
+        setBuildingList((prev) => ({
+          ...prev,
+          [siteId]: lookup.data || [],
+        }));
+      }
+    }
   };
 
   const loadSpaceLookup = async (siteId: string, buildingId?: string) => {
-    const lookup = await spacesApiService.getSpaceLookup(siteId, buildingId);
-    if (lookup.success) setSpaceList(lookup.data || []);
+    if (siteId) {
+      const key = buildingId ? `${siteId}_${buildingId}` : siteId;
+      if (!spaceList[key]) {
+        const lookup = await spacesApiService.getSpaceLookup(
+          siteId,
+          buildingId
+        );
+        if (lookup.success) {
+          setSpaceList((prev) => ({
+            ...prev,
+            [key]: lookup.data || [],
+          }));
+        }
+      }
+    }
   };
 
   const onSubmitForm = async (data: UserFormValues) => {
+    // Process user_spaces for tenant account type
+    let processedData = { ...data };
+
+    if (isTenant && data.user_spaces) {
+      // Filter out only completely empty entries (no site_id and no space_id)
+      const validUserSpaces = data.user_spaces.filter(
+        (space: any) => space.site_id && space.space_id
+      );
+
+      // Check for duplicate space entries (same site_id, building_block_id, and space_id combination)
+      const duplicates: number[] = [];
+      for (let i = 0; i < validUserSpaces.length; i++) {
+        for (let j = i + 1; j < validUserSpaces.length; j++) {
+          const space1 = validUserSpaces[i];
+          const space2 = validUserSpaces[j];
+          if (
+            space1.site_id === space2.site_id &&
+            (space1.building_block_id || "") ===
+              (space2.building_block_id || "") &&
+            space1.space_id === space2.space_id
+          ) {
+            if (!duplicates.includes(i)) duplicates.push(i);
+            if (!duplicates.includes(j)) duplicates.push(j);
+          }
+        }
+      }
+
+      if (duplicates.length > 0) {
+        toast.error(
+          `Duplicate space entries detected at Space #${duplicates
+            .map((d) => d + 1)
+            .join(", #")}. Please remove duplicate spaces.`
+        );
+        return;
+      }
+
+      processedData = {
+        ...data,
+        user_spaces: validUserSpaces.length > 0 ? validUserSpaces : undefined,
+      };
+    }
+
     // If editing and password is empty, exclude it from the data (keep old password)
-    if (mode === "edit" && (!data.password || data.password.trim() === "")) {
-      const { password, ...dataWithoutPassword } = data;
+    if (
+      mode === "edit" &&
+      (!processedData.password || processedData.password.trim() === "")
+    ) {
+      const { password, ...dataWithoutPassword } = processedData;
       await onSubmit(dataWithoutPassword);
     } else {
-      await onSubmit(data);
+      await onSubmit(processedData);
     }
   };
 
   const handleClose = () => {
     reset(emptyFormData);
-    setBuildingList([]);
-    setSpaceList([]);
+    setBuildingList({});
+    setSpaceList({});
     onOpenChange(false);
   };
 
@@ -1109,135 +1299,230 @@ export function UserForm({
                 )}
 
                 {isTenant && (
-                  <div className="grid grid-cols-3 gap-4">
-                    <Controller
-                      name="site_id"
-                      control={control}
-                      render={({ field }) => (
-                        <div className="space-y-2">
-                          <Label htmlFor="site_id">Site *</Label>
-                          <Select
-                            value={field.value || ""}
-                            onValueChange={(value) => {
-                              field.onChange(value);
-                              // Reset building and space when site changes
-                              reset({
-                                ...watch(),
-                                site_id: value,
-                                building_id: "",
-                                space_id: "",
-                              });
-                            }}
-                            disabled={isReadOnly}
-                          >
-                            <SelectTrigger
-                              className={errors.site_id ? "border-red-500" : ""}
-                            >
-                              <SelectValue placeholder="Select site" />
-                            </SelectTrigger>
-                            <SelectContent>
-                              {siteList.map((site: any) => (
-                                <SelectItem key={site.id} value={site.id}>
-                                  {site.name}
-                                </SelectItem>
-                              ))}
-                            </SelectContent>
-                          </Select>
-                          {errors.site_id && (
-                            <p className="text-sm text-red-500">
-                              {errors.site_id.message}
-                            </p>
-                          )}
-                        </div>
+                  <div className="space-y-4">
+                    <div className="flex items-center justify-between">
+                      <Label htmlFor="user_spaces">Space(s)</Label>
+                      {!isReadOnly && (
+                        <Button
+                          type="button"
+                          variant="default"
+                          size="sm"
+                          onClick={addUserSpaceEntry}
+                        >
+                          <Plus className="mr-2 h-4 w-4" /> Add Space
+                        </Button>
                       )}
-                    />
+                    </div>
 
-                    <Controller
-                      name="building_id"
-                      control={control}
-                      render={({ field }) => (
-                        <div className="space-y-2">
-                          <Label htmlFor="building_id">Building </Label>
-                          <Select
-                            value={field.value || ""}
-                            onValueChange={(value) => {
-                              field.onChange(value);
-                              // Reset space when building changes
-                              reset({
-                                ...watch(),
-                                building_id: value,
-                                space_id: "",
-                              });
-                            }}
-                            disabled={isReadOnly || !selectedSiteId}
-                          >
-                            <SelectTrigger
-                              className={
-                                errors.building_id ? "border-red-500" : ""
-                              }
-                            >
-                              <SelectValue placeholder="Select building" />
-                            </SelectTrigger>
-                            <SelectContent>
-                              {buildingList.map((building: any) => (
-                                <SelectItem
-                                  key={building.id}
-                                  value={building.id}
+                    {/* Space Cards */}
+                    <div className="space-y-4">
+                      {userSpaces.map((space: any, index: number) => (
+                        <Card key={index} className="relative">
+                          <CardHeader className="pb-3">
+                            <div className="flex items-center justify-between">
+                              <CardTitle className="text-base">
+                                Space #{index + 1}
+                              </CardTitle>
+                              {!isReadOnly && (
+                                <Button
+                                  type="button"
+                                  variant="ghost"
+                                  size="sm"
+                                  onClick={() => removeUserSpaceEntry(index)}
+                                  disabled={userSpaces.length === 1}
+                                  className="text-destructive hover:text-destructive"
                                 >
-                                  {building.name}
-                                </SelectItem>
-                              ))}
-                            </SelectContent>
-                          </Select>
-                          {errors.building_id && (
-                            <p className="text-sm text-red-500">
-                              {errors.building_id.message}
-                            </p>
-                          )}
-                        </div>
-                      )}
-                    />
+                                  <Trash2 className="h-4 w-4 mr-2" />
+                                  Remove
+                                </Button>
+                              )}
+                            </div>
+                          </CardHeader>
+                          <CardContent>
+                            <div className="grid grid-cols-4 gap-4">
+                              {/* Site */}
+                              <div className="space-y-2">
+                                <Label>Site *</Label>
+                                <Controller
+                                  name={`user_spaces.${index}.site_id` as any}
+                                  control={control}
+                                  render={({ field, fieldState }) => (
+                                    <Select
+                                      value={field.value || ""}
+                                      onValueChange={(value) => {
+                                        updateUserSpaceEntry(
+                                          index,
+                                          "site_id",
+                                          value
+                                        );
+                                      }}
+                                      disabled={isReadOnly}
+                                    >
+                                      <SelectTrigger
+                                        className={
+                                          fieldState.error &&
+                                          fieldState.isTouched
+                                            ? "border-red-500"
+                                            : ""
+                                        }
+                                      >
+                                        <SelectValue placeholder="Select site" />
+                                      </SelectTrigger>
+                                      <SelectContent>
+                                        {siteList.map((site) => (
+                                          <SelectItem
+                                            key={site.id}
+                                            value={site.id}
+                                          >
+                                            {site.name}
+                                          </SelectItem>
+                                        ))}
+                                      </SelectContent>
+                                    </Select>
+                                  )}
+                                />
+                              </div>
 
-                    <Controller
-                      name="space_id"
-                      control={control}
-                      render={({ field }) => (
-                        <div className="space-y-2">
-                          <Label htmlFor="space_id">Space *</Label>
-                          <Select
-                            value={field.value || ""}
-                            onValueChange={field.onChange}
-                            disabled={isReadOnly || !selectedSiteId}
-                          >
-                            <SelectTrigger
-                              className={
-                                errors.space_id ? "border-red-500" : ""
-                              }
-                            >
-                              <SelectValue
-                                placeholder={
-                                  !selectedSiteId
-                                    ? "Select site first"
-                                    : "Select space"
-                                }
-                              />
-                            </SelectTrigger>
-                            <SelectContent>
-                              {spaceList.map((space: any) => (
-                                <SelectItem key={space.id} value={space.id}>
-                                  {space.name || space.code}
-                                </SelectItem>
-                              ))}
-                            </SelectContent>
-                          </Select>
-                          {errors.space_id && (
-                            <p className="text-sm text-red-500">
-                              {errors.space_id.message}
-                            </p>
-                          )}
-                        </div>
-                      )}
-                    />
+                              {/* Building */}
+                              <div className="space-y-2">
+                                <Label>Building</Label>
+                                <Controller
+                                  name={
+                                    `user_spaces.${index}.building_block_id` as any
+                                  }
+                                  control={control}
+                                  render={({ field }) => (
+                                    <Select
+                                      value={field.value ? field.value : "none"}
+                                      onValueChange={(v) => {
+                                        updateUserSpaceEntry(
+                                          index,
+                                          "building_block_id",
+                                          v === "none" ? "" : v
+                                        );
+                                      }}
+                                      disabled={isReadOnly || !space?.site_id}
+                                    >
+                                      <SelectTrigger>
+                                        <SelectValue
+                                          placeholder={
+                                            space?.site_id
+                                              ? "Select building"
+                                              : "Select site first"
+                                          }
+                                        />
+                                      </SelectTrigger>
+                                      <SelectContent>
+                                        <SelectItem value="none">
+                                          Select building
+                                        </SelectItem>
+                                        {(
+                                          buildingList[space?.site_id || ""] ||
+                                          []
+                                        ).map((building) => (
+                                          <SelectItem
+                                            key={building.id}
+                                            value={building.id}
+                                          >
+                                            {building.name}
+                                          </SelectItem>
+                                        ))}
+                                      </SelectContent>
+                                    </Select>
+                                  )}
+                                />
+                              </div>
+
+                              {/* Space */}
+                              <div className="space-y-2">
+                                <Label>Space *</Label>
+                                <Controller
+                                  name={`user_spaces.${index}.space_id` as any}
+                                  control={control}
+                                  render={({ field }) => (
+                                    <Select
+                                      value={field.value || ""}
+                                      onValueChange={(value) => {
+                                        updateUserSpaceEntry(
+                                          index,
+                                          "space_id",
+                                          value
+                                        );
+                                      }}
+                                      disabled={isReadOnly || !space?.site_id}
+                                    >
+                                      <SelectTrigger>
+                                        <SelectValue
+                                          placeholder={
+                                            !space?.site_id
+                                              ? "Select site first"
+                                              : "Select space"
+                                          }
+                                        />
+                                      </SelectTrigger>
+                                      <SelectContent>
+                                        {(() => {
+                                          const siteId = space?.site_id || "";
+                                          const buildingId =
+                                            space?.building_block_id || "";
+                                          const key = buildingId
+                                            ? `${siteId}_${buildingId}`
+                                            : siteId;
+                                          return (spaceList[key] || []).map(
+                                            (sp) => (
+                                              <SelectItem
+                                                key={sp.id}
+                                                value={sp.id}
+                                              >
+                                                {sp.name || sp.code}
+                                              </SelectItem>
+                                            )
+                                          );
+                                        })()}
+                                      </SelectContent>
+                                    </Select>
+                                  )}
+                                />
+                              </div>
+
+                              {/* Role */}
+                              <div className="space-y-2">
+                                <Label>Role</Label>
+                                <Controller
+                                  name={`user_spaces.${index}.role` as any}
+                                  control={control}
+                                  render={({ field }) => (
+                                    <Select
+                                      value={field.value || "owner"}
+                                      onValueChange={(value) => {
+                                        updateUserSpaceEntry(
+                                          index,
+                                          "role",
+                                          value
+                                        );
+                                      }}
+                                      disabled={isReadOnly}
+                                    >
+                                      <SelectTrigger>
+                                        <SelectValue placeholder="Select role" />
+                                      </SelectTrigger>
+                                      <SelectContent>
+                                        <SelectItem value="owner">
+                                          Owner
+                                        </SelectItem>
+                                        <SelectItem value="occupant">
+                                          Occupant
+                                        </SelectItem>
+                                      </SelectContent>
+                                    </Select>
+                                  )}
+                                />
+                              </div>
+                            </div>
+                          </CardContent>
+                        </Card>
+                      ))}
+                    </div>
                   </div>
                 )}
 
@@ -1433,8 +1718,8 @@ export function UserForm({
                 {isSubmitting
                   ? "Saving..."
                   : mode === "create"
-                    ? "Create User"
-                    : "Update User"}
+                  ? "Create User"
+                  : "Update User"}
               </Button>
             )}
           </DialogFooter>

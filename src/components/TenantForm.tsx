@@ -277,6 +277,32 @@ export function TenantForm({
       return;
     }
 
+    const duplicates: number[] = [];
+    for (let i = 0; i < validTenantSpaces.length; i++) {
+      for (let j = i + 1; j < validTenantSpaces.length; j++) {
+        const space1 = validTenantSpaces[i];
+        const space2 = validTenantSpaces[j];
+        if (
+          space1.site_id === space2.site_id &&
+          (space1.building_block_id || "") ===
+            (space2.building_block_id || "") &&
+          space1.space_id === space2.space_id
+        ) {
+          if (!duplicates.includes(i)) duplicates.push(i);
+          if (!duplicates.includes(j)) duplicates.push(j);
+        }
+      }
+    }
+
+    if (duplicates.length > 0) {
+      toast.error(
+        `Duplicate space entries detected at Space #${duplicates
+          .map((d) => d + 1)
+          .join(", #")}. Please remove duplicate spaces.`
+      );
+      return;
+    }
+
     // Prepare the data with all valid tenant spaces
     const formData = {
       ...data,
@@ -391,6 +417,7 @@ export function TenantForm({
     const currentSpaceInfo = getValues("tenant_spaces") || [];
     const updated = [...currentSpaceInfo];
     updated[index] = { ...updated[index], [field]: value };
+
     // Reset building and space when site changes
     if (field === "site_id") {
       updated[index].building_block_id = "";
@@ -409,6 +436,45 @@ export function TenantForm({
         loadSpaceLookup(updated[index].site_id, value || undefined);
       }
     }
+
+    // Check for duplicate space entries (same site_id, building_block_id, and space_id)
+    // Only check if all required fields are present
+    if (
+      (field === "space_id" && value && updated[index].site_id) ||
+      (field === "site_id" && value && updated[index].space_id) ||
+      (field === "building_block_id" &&
+        updated[index].site_id &&
+        updated[index].space_id)
+    ) {
+      const currentEntry = updated[index];
+      // Only check for duplicates if the entry has both site_id and space_id
+      if (currentEntry.site_id && currentEntry.space_id) {
+        const duplicateIndex = updated.findIndex(
+          (space: any, i: number) =>
+            i !== index &&
+            space.site_id &&
+            space.space_id &&
+            space.site_id === currentEntry.site_id &&
+            (space.building_block_id || "") ===
+              (currentEntry.building_block_id || "") &&
+            space.space_id === currentEntry.space_id
+        );
+
+        if (duplicateIndex !== -1) {
+          toast.error(
+            "This space is already added. Please select a different space."
+          );
+          // Revert the change
+          updated[index] = { ...currentSpaceInfo[index] };
+          setValue("tenant_spaces", updated, {
+            shouldValidate: true,
+            shouldDirty: true,
+          });
+          return;
+        }
+      }
+    }
+
     // Use setValue with shouldValidate and shouldDirty to ensure form tracks changes
     setValue("tenant_spaces", updated, {
       shouldValidate: true,
