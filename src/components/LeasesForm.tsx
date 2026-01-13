@@ -1,4 +1,3 @@
-// components/LeaseForm.tsx
 import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -36,7 +35,7 @@ interface LeaseFormProps {
 }
 
 const emptyFormData: Partial<Lease> = {
-  kind: "commercial",
+  kind: "residential",
   site_id: "",
   building_id: "",
   space_id: "",
@@ -71,7 +70,7 @@ export function LeaseForm({
   } = useForm<LeaseFormValues>({
     resolver: zodResolver(leaseSchema),
     defaultValues: {
-      kind: "commercial",
+      kind: "residential",
       site_id: "",
       building_id: "",
       space_id: "",
@@ -143,12 +142,26 @@ export function LeaseForm({
   };
 
   useEffect(() => {
-    loadAll();
-  }, [lease, mode, reset]);
+    if (isOpen) {
+      loadAll();
+    } else {
+      reset(emptyFormData);
+      setBuildingList([]);
+      setSpaceList([]);
+      setLeasePartnerList([]);
+    }
+  }, [isOpen, lease, mode, reset]);
 
   const selectedSiteId = watch("site_id");
   const selectedBuildingId = watch("building_id");
   const selectedKind = watch("kind");
+  const selectedTenantId = watch("tenant_id");
+
+  useEffect(() => {
+    if (selectedTenantId && selectedKind !== "residential") {
+      setValue("kind", "residential", { shouldValidate: true });
+    }
+  }, [selectedTenantId, selectedKind, setValue]);
 
   // Load buildings when site changes
   useEffect(() => {
@@ -218,12 +231,15 @@ export function LeaseForm({
   };
 
   const onSubmitForm = async (data: LeaseFormValues) => {
-    const updated = {
-      ...data,
-      partner_id: data.kind === "commercial" ? data.partner_id : null,
-      tenant_id: data.kind === "residential" ? data.tenant_id : null,
-    };
-    const formResponse = await onSave(updated);
+    try {
+      const { kind, ...updated } = data;
+      console.log("Submitting lease data:", updated);
+      const formResponse = await onSave(updated);
+      console.log("Lease save response:", formResponse);
+    } catch (error) {
+      console.error("Error submitting lease form:", error);
+      toast.error("Failed to submit lease form. Please try again.");
+    }
   };
 
   const handleClose = () => {
@@ -248,7 +264,21 @@ export function LeaseForm({
         </DialogHeader>
 
         <form
-          onSubmit={isSubmitting ? undefined : handleSubmit(onSubmitForm)}
+          onSubmit={
+            isSubmitting
+              ? undefined
+              : handleSubmit(onSubmitForm, (errors) => {
+                  console.log("Form validation errors:", errors);
+                  const firstError = Object.values(errors)[0];
+                  if (firstError?.message) {
+                    toast.error(firstError.message as string);
+                  } else {
+                    toast.error(
+                      "Please fill in all required fields correctly."
+                    );
+                  }
+                })
+          }
           className="space-y-4"
         >
           {formLoading ? (
