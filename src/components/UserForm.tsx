@@ -86,7 +86,7 @@ const emptyFormData: UserFormValues = {
   site_ids: [],
   tenant_type: "individual",
   staff_role: "",
-  user_spaces: [
+  tenant_spaces: [
     {
       site_id: "",
       building_block_id: "",
@@ -159,7 +159,7 @@ export function UserForm({
   const accountType = watch("account_type");
   const selectedSiteId = watch("site_id");
   const selectedBuildingId = watch("building_id");
-  const userSpaces = watch("user_spaces") || [];
+  const tenantSpaces = watch("tenant_spaces") || [];
   const isReadOnly = mode === "view";
   const isTenant = accountType === "tenant";
   const isStaff = accountType === "staff";
@@ -181,8 +181,8 @@ export function UserForm({
     const promises = [loadStatusLookup(), loadRolesLookup(), loadSiteLookup()];
 
     // Preload building and space lists for existing user spaces (edit mode)
-    if (user && mode !== "create" && (user as any).user_spaces) {
-      const spaces = (user as any).user_spaces;
+    if (user && mode !== "create" && (user as any).tenant_spaces) {
+      const spaces = (user as any).tenant_spaces;
       if (Array.isArray(spaces) && spaces.length > 0) {
         const loadPromises = spaces.map(async (space: any) => {
           if (space.site_id) {
@@ -219,6 +219,8 @@ export function UserForm({
             site_ids: (user as any).site_ids || [],
             tenant_type: (user as any).tenant_type || "residential",
             staff_role: (user as any).staff_role || "",
+            tenant_spaces: (user as any).tenant_spaces || [],
+
           }
         : emptyFormData
     );
@@ -242,21 +244,21 @@ export function UserForm({
 
   // Helper functions for managing multiple user spaces
   const addUserSpaceEntry = () => {
-    const currentSpaces = getValues("user_spaces") || [];
+    const currentSpaces = getValues("tenant_spaces") || [];
     const newEntry = {
       site_id: "",
       building_block_id: "",
       space_id: "",
       role: "owner" as any,
     };
-    setValue("user_spaces", [...currentSpaces, newEntry], {
+    setValue("tenant_spaces", [...currentSpaces, newEntry], {
       shouldValidate: true,
       shouldDirty: true,
     });
   };
 
   const removeUserSpaceEntry = (index: number) => {
-    const currentSpaces = getValues("user_spaces") || [];
+    const currentSpaces = getValues("tenant_spaces") || [];
     const remaining = currentSpaces.filter((_, i) => i !== index);
     const ensured =
       remaining.length === 0
@@ -269,7 +271,7 @@ export function UserForm({
             },
           ]
         : remaining;
-    setValue("user_spaces", ensured, {
+    setValue("tenant_spaces", ensured, {
       shouldValidate: true,
       shouldDirty: true,
     });
@@ -280,7 +282,7 @@ export function UserForm({
     field: "site_id" | "building_block_id" | "space_id" | "role",
     value: string
   ) => {
-    const currentSpaces = getValues("user_spaces") || [];
+    const currentSpaces = getValues("tenant_spaces") || [];
     const updated = [...currentSpaces];
     updated[index] = { ...updated[index], [field]: value };
 
@@ -322,7 +324,7 @@ export function UserForm({
         );
         // Revert the change
         updated[index] = { ...currentSpaces[index] };
-        setValue("user_spaces", updated, {
+        setValue("tenant_spaces", updated, {
           shouldValidate: true,
           shouldDirty: true,
         });
@@ -330,7 +332,7 @@ export function UserForm({
       }
     }
 
-    setValue("user_spaces", updated, {
+    setValue("tenant_spaces", updated, {
       shouldValidate: true,
       shouldDirty: true,
     });
@@ -382,12 +384,12 @@ export function UserForm({
   };
 
   const onSubmitForm = async (data: UserFormValues) => {
-    // Process user_spaces for tenant account type
+    // Process tenant_spaces for tenant account type
     let processedData = { ...data };
 
-    if (isTenant && data.user_spaces) {
+    if (isTenant && data.tenant_spaces) {
       // Filter out only completely empty entries (no site_id and no space_id)
-      const validUserSpaces = data.user_spaces.filter(
+      const validUserSpaces = data.tenant_spaces.filter(
         (space: any) => space.site_id && space.space_id
       );
 
@@ -420,7 +422,7 @@ export function UserForm({
 
       processedData = {
         ...data,
-        user_spaces: validUserSpaces.length > 0 ? validUserSpaces : undefined,
+        tenant_spaces: validUserSpaces.length > 0 ? validUserSpaces : undefined,
       };
     }
 
@@ -1301,7 +1303,7 @@ export function UserForm({
                 {isTenant && (
                   <div className="space-y-4">
                     <div className="flex items-center justify-between">
-                      <Label htmlFor="user_spaces">Space(s)</Label>
+                      <Label htmlFor="tenant_spaces">Space(s)</Label>
                       {!isReadOnly && (
                         <Button
                           type="button"
@@ -1316,7 +1318,7 @@ export function UserForm({
 
                     {/* Space Cards */}
                     <div className="space-y-4">
-                      {userSpaces.map((space: any, index: number) => (
+                      {tenantSpaces.map((space: any, index: number) => (
                         <Card key={index} className="relative">
                           <CardHeader className="pb-3">
                             <div className="flex items-center justify-between">
@@ -1329,7 +1331,7 @@ export function UserForm({
                                   variant="ghost"
                                   size="sm"
                                   onClick={() => removeUserSpaceEntry(index)}
-                                  disabled={userSpaces.length === 1}
+                                  disabled={tenantSpaces.length === 1}
                                   className="text-destructive hover:text-destructive"
                                 >
                                   <Trash2 className="h-4 w-4 mr-2" />
@@ -1344,7 +1346,7 @@ export function UserForm({
                               <div className="space-y-2">
                                 <Label>Site *</Label>
                                 <Controller
-                                  name={`user_spaces.${index}.site_id` as any}
+                                  name={`tenant_spaces.${index}.site_id` as any}
                                   control={control}
                                   render={({ field, fieldState }) => (
                                     <Select
@@ -1388,7 +1390,7 @@ export function UserForm({
                                 <Label>Building</Label>
                                 <Controller
                                   name={
-                                    `user_spaces.${index}.building_block_id` as any
+                                    `tenant_spaces.${index}.building_block_id` as any
                                   }
                                   control={control}
                                   render={({ field }) => (
@@ -1437,7 +1439,7 @@ export function UserForm({
                               <div className="space-y-2">
                                 <Label>Space *</Label>
                                 <Controller
-                                  name={`user_spaces.${index}.space_id` as any}
+                                  name={`tenant_spaces.${index}.space_id` as any}
                                   control={control}
                                   render={({ field, fieldState }) => (
                                     <Select
@@ -1490,11 +1492,11 @@ export function UserForm({
                                     </Select>
                                   )}
                                 />
-                                {errors.user_spaces?.[index]?.space_id &&
+                                {errors.tenant_spaces?.[index]?.space_id &&
                                   isSubmitted && (
                                     <p className="text-sm text-red-500">
                                       {
-                                        errors.user_spaces[index]?.space_id
+                                        errors.tenant_spaces[index]?.space_id
                                           ?.message as any
                                       }
                                     </p>
@@ -1505,7 +1507,7 @@ export function UserForm({
                               <div className="space-y-2">
                                 <Label>Role</Label>
                                 <Controller
-                                  name={`user_spaces.${index}.role` as any}
+                                  name={`tenant_spaces.${index}.role` as any}
                                   control={control}
                                   render={({ field }) => (
                                     <Select
