@@ -196,8 +196,7 @@ export default function Leases() {
     if (response?.success) {
       setIsFormOpen(false);
       toast.success(
-        `Lease has been ${
-          formMode === "create" ? "created" : "updated"
+        `Lease has been ${formMode === "create" ? "created" : "updated"
         } successfully.`
       );
     }
@@ -316,8 +315,8 @@ export default function Leases() {
                   {leaseOverview.avgLeaseTermMonths < 12
                     ? `${leaseOverview.avgLeaseTermMonths.toFixed(0)} months`
                     : `${(leaseOverview.avgLeaseTermMonths / 12).toFixed(
-                        1
-                      )} years`}
+                      1
+                    )} years`}
                 </div>
                 <p className="text-sm text-muted-foreground">Avg Lease Term</p>
               </CardContent>
@@ -338,9 +337,9 @@ export default function Leases() {
                         {lease.tenant_name}
                         {"\n"}
                         {lease.tenant_role && (
-                          <span className="text-sm font-normal text-muted-foreground ml-1">
-                            ({lease.tenant_role})
-                          </span>
+                          <Badge className={getStatusColor("default")}>
+                            {lease.tenant_role}
+                          </Badge>
                         )}
                       </CardTitle>
                       <p className="text-sm text-muted-foreground">
@@ -358,71 +357,66 @@ export default function Leases() {
 
                 <CardContent className="space-y-4">
                   <div className="grid grid-cols-2 gap-4 text-sm">
-                    <div>
-                      <div className="font-medium text-muted-foreground">
-                        Rent Amount
+                    {(lease.tenant_role === "occupant") && (
+                      <div>
+                        <div className="font-medium text-muted-foreground">
+                          Rent Amount
+                        </div>
+                        <div className="text-lg font-bold">
+
+                          {(!lease.rent_amount || Number(lease.rent_amount) === 0)
+                            ? "-"
+                            : formatCurrency(lease.rent_amount)}
+                        </div>
+                        <div className="text-xs text-muted-foreground">
+                          per month
+                        </div>
                       </div>
-                      <div className="text-lg font-bold">
-                        {(lease.default_payer === "owner" ||
-                          (lease.is_system === true &&
-                            lease.tenant_role === "owner")) &&
-                        (!lease.rent_amount || Number(lease.rent_amount) === 0)
-                          ? "-"
-                          : formatCurrency(lease.rent_amount)}
-                      </div>
-                      <div className="text-xs text-muted-foreground">
-                        per month
-                      </div>
-                    </div>
+                    )}
                     <div>
                       <div className="font-medium text-muted-foreground">
                         {lease.default_payer === "owner" ||
-                        (lease.is_system === true &&
-                          lease.tenant_role === "owner")
+                          (lease.is_system === true &&
+                            lease.tenant_role === "owner")
                           ? "Start Date"
                           : "Lease Term"}
                       </div>
                       <div className="text-sm">
                         {lease.default_payer === "owner" ||
-                        (lease.is_system === true &&
-                          lease.tenant_role === "owner")
+                          (lease.is_system === true &&
+                            lease.tenant_role === "owner")
                           ? lease.start_date
                           : `${lease.start_date} - ${lease.end_date}`}
                       </div>
                     </div>
                   </div>
-
-                  <div className="grid grid-cols-2 gap-4 text-sm">
-                    <div>
-                      <div className="font-medium text-muted-foreground">
-                        Deposit
+                  {(lease.tenant_role === "occupant") && (
+                    <div className="grid grid-cols-2 gap-4 text-sm">
+                      <div>
+                        <div className="font-medium text-muted-foreground">
+                          Deposit
+                        </div>
+                        <div>
+                          {(!lease.deposit_amount ||
+                            Number(lease.deposit_amount) === 0)
+                            ? "-"
+                            : formatCurrency(lease.deposit_amount as any)}
+                        </div>
                       </div>
                       <div>
-                        {(lease.default_payer === "owner" ||
-                          (lease.is_system === true &&
-                            lease.tenant_role === "owner")) &&
-                        (!lease.deposit_amount ||
-                          Number(lease.deposit_amount) === 0)
-                          ? "-"
-                          : formatCurrency(lease.deposit_amount as any)}
+                        <div className="font-medium text-muted-foreground">
+                          CAM Rate
+                        </div>
+                        <div>
+                          {(!lease.cam_rate || Number(lease.cam_rate) === 0)
+                            ? "-"
+                            : lease.cam_rate && Number(lease.cam_rate) !== 0
+                              ? `₹${lease.cam_rate}/sq ft`
+                              : "-"}
+                        </div>
                       </div>
                     </div>
-                    <div>
-                      <div className="font-medium text-muted-foreground">
-                        CAM Rate
-                      </div>
-                      <div>
-                        {(lease.default_payer === "owner" ||
-                          (lease.is_system === true &&
-                            lease.tenant_role === "owner")) &&
-                        (!lease.cam_rate || Number(lease.cam_rate) === 0)
-                          ? "-"
-                          : lease.cam_rate && Number(lease.cam_rate) !== 0
-                          ? `₹${lease.cam_rate}/sq ft`
-                          : "-"}
-                      </div>
-                    </div>
-                  </div>
+                  )}
 
                   {lease.utilities &&
                     Object.values(lease.utilities).some(
