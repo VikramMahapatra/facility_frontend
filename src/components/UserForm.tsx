@@ -1492,11 +1492,11 @@ export function UserForm({
                                     </Select>
                                   )}
                                 />
-                                {errors.user_spaces?.[index]?.space_id &&
+                                {errors.tenant_spaces?.[index]?.space_id &&
                                   isSubmitted && (
                                     <p className="text-sm text-red-500">
                                       {
-                                        errors.user_spaces[index]?.space_id
+                                        errors.tenant_spaces[index]?.space_id
                                           ?.message as any
                                       }
                                     </p>
