@@ -123,23 +123,23 @@ export function LeaseForm({
     reset(
       lease
         ? {
-            kind: (lease.kind as any) || "commercial",
-            site_id: lease.site_id || "",
-            building_id: leaseBuildingId || "",
-            space_id: lease.space_id || "",
-            partner_id: lease.partner_id ? String(lease.partner_id) : "",
-            tenant_id: lease.tenant_id ? String(lease.tenant_id) : "",
-            start_date: lease.start_date || "",
-            end_date: lease.end_date || "",
-            rent_amount: lease.rent_amount as any,
-            deposit_amount: lease.deposit_amount as any,
-            cam_rate: lease.cam_rate as any,
-            utilities: {
-              electricity: lease.utilities?.electricity as any,
-              water: lease.utilities?.water as any,
-            },
-            status: (lease.status as any) || "draft",
-          }
+          kind: (lease.kind as any) || "commercial",
+          site_id: lease.site_id || "",
+          building_id: leaseBuildingId || "",
+          space_id: lease.space_id || "",
+          partner_id: lease.partner_id ? String(lease.partner_id) : "",
+          tenant_id: lease.tenant_id ? String(lease.tenant_id) : "",
+          start_date: lease.start_date || "",
+          end_date: lease.end_date || "",
+          rent_amount: lease.rent_amount as any,
+          deposit_amount: lease.deposit_amount as any,
+          cam_rate: lease.cam_rate as any,
+          utilities: {
+            electricity: lease.utilities?.electricity as any,
+            water: lease.utilities?.water as any,
+          },
+          status: (lease.status as any) || "draft",
+        }
         : emptyFormData
     );
     setFormLoading(false);
@@ -158,6 +158,7 @@ export function LeaseForm({
 
   const selectedSiteId = watch("site_id");
   const selectedBuildingId = watch("building_id");
+  const selectedSpaceId = watch("space_id");
   const selectedKind = watch("kind");
   const selectedTenantId = watch("tenant_id");
 
@@ -187,8 +188,8 @@ export function LeaseForm({
   }, [selectedSiteId, selectedBuildingId]);
 
   useEffect(() => {
-    loadLeasePartners();
-  }, [selectedSiteId]);
+    loadLeaseTenants();
+  }, [selectedSiteId, selectedSpaceId]);
 
   useEffect(() => {
     if (lease && leasePartnerList.length > 0) {
@@ -226,12 +227,13 @@ export function LeaseForm({
     if (sites.success) setSiteList(sites.data || []);
   };
 
-  const loadLeasePartners = async () => {
+  const loadLeaseTenants = async () => {
     if (!selectedSiteId) return;
-    const partners = await leasesApiService.getLeasePartnerLookup(
-      selectedSiteId
+    const tenants = await leasesApiService.getLeaseTenantLookup(
+      selectedSiteId,
+      selectedSpaceId
     );
-    if (partners?.success) setLeasePartnerList(partners.data || []);
+    if (tenants?.success) setLeasePartnerList(tenants.data || []);
   };
 
   const onSubmitForm = async (data: LeaseFormValues) => {
@@ -262,8 +264,8 @@ export function LeaseForm({
             {mode === "create"
               ? "Create New Lease"
               : mode === "edit"
-              ? "Edit Lease"
-              : "Lease Details"}
+                ? "Edit Lease"
+                : "Lease Details"}
           </DialogTitle>
         </DialogHeader>
 
@@ -272,16 +274,16 @@ export function LeaseForm({
             isSubmitting
               ? undefined
               : handleSubmit(onSubmitForm, (errors) => {
-                  console.log("Form validation errors:", errors);
-                  const firstError = Object.values(errors)[0];
-                  if (firstError?.message) {
-                    toast.error(firstError.message as string);
-                  } else {
-                    toast.error(
-                      "Please fill in all required fields correctly."
-                    );
-                  }
-                })
+                console.log("Form validation errors:", errors);
+                const firstError = Object.values(errors)[0];
+                if (firstError?.message) {
+                  toast.error(firstError.message as string);
+                } else {
+                  toast.error(
+                    "Please fill in all required fields correctly."
+                  );
+                }
+              })
           }
           className="space-y-4"
         >
@@ -676,8 +678,8 @@ export function LeaseForm({
                     {isSubmitting
                       ? "Saving..."
                       : mode === "create"
-                      ? "Create Lease"
-                      : "Update Lease"}
+                        ? "Create Lease"
+                        : "Update Lease"}
                   </Button>
                 )}
               </DialogFooter>
