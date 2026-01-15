@@ -27,6 +27,7 @@ import {
   ticketWorkOrderSchema,
   TicketWorkOrderFormValues,
 } from "@/schemas/ticketworkorder.schema";
+import { leaseChargeApiService } from "@/services/leasing_tenants/leasechargeapi";
 
 interface TicketWorkOrderFormProps {
   workOrder?: any;
@@ -76,6 +77,8 @@ export function TicketWorkOrderForm({
   const [vendorList, setVendorList] = useState<any[]>([]);
   const [ticketsList, setTicketsList] = useState<any[]>([]);
   const [statusList, setStatusList] = useState<any[]>([]);
+  const [taxCodeList, setTaxCodeList] = useState<any[]>([]);
+
   const [selectedTicketDetails, setSelectedTicketDetails] = useState<any>(null);
   const [isLoadingTicketDetails, setIsLoadingTicketDetails] = useState(false);
 
@@ -88,6 +91,7 @@ export function TicketWorkOrderForm({
       loadVendorLookup(),
       loadTicketLookup(),
       loadStatusLookup(),
+      loadTaxCodeLookup(),
     ]);
 
     const ticketId =
@@ -108,6 +112,7 @@ export function TicketWorkOrderForm({
             other_expenses: workOrder.other_expenses || undefined,
             estimated_time: workOrder.estimated_time || undefined,
             special_instructions: workOrder.special_instructions || "",
+            tax_code_id: workOrder.tax_code_id || "No_Tax",
           }
         : {
             ...emptyFormData,
@@ -170,6 +175,10 @@ export function TicketWorkOrderForm({
     const lookup = await ticketWorkOrderApiService.getStatusLookup();
     if (lookup.success) setStatusList(lookup.data || []);
   };
+  const loadTaxCodeLookup = async () => {
+    const lookup = await leaseChargeApiService.getTaxCodeLookup();
+    if (lookup.success) setTaxCodeList(lookup.data || []);
+  }
 
   const onSubmitForm = async (data: TicketWorkOrderFormValues) => {
     const formResponse = await onSave({
@@ -342,8 +351,8 @@ export function TicketWorkOrderForm({
                 </div>
               )}
 
-              {/* Row 4: Labour Cost | Material Cost */}
-              <div className="grid grid-cols-2 gap-4">
+              {/* Row 4: Labour | Material | Other Expenses */}
+              <div className="grid grid-cols-3 gap-4">
                 <div className="space-y-2">
                   <Label htmlFor="labour_cost">Labour Cost</Label>
                   <Input
@@ -358,6 +367,7 @@ export function TicketWorkOrderForm({
                     disabled={isReadOnly}
                   />
                 </div>
+
                 <div className="space-y-2">
                   <Label htmlFor="material_cost">Material Cost</Label>
                   <Input
@@ -372,10 +382,7 @@ export function TicketWorkOrderForm({
                     disabled={isReadOnly}
                   />
                 </div>
-              </div>
 
-              {/* Row 5: Other Expenses | Estimated Time */}
-              <div className="grid grid-cols-2 gap-4">
                 <div className="space-y-2">
                   <Label htmlFor="other_expenses">Other Expenses</Label>
                   <Input
@@ -390,6 +397,9 @@ export function TicketWorkOrderForm({
                     disabled={isReadOnly}
                   />
                 </div>
+              </div>
+              {/* Row 5: Estimated Time | Tax Code */}
+              <div className="grid grid-cols-2 gap-4">
                 <div className="space-y-2">
                   <Label htmlFor="estimated_time">
                     Estimated Time (minutes) *
@@ -411,6 +421,33 @@ export function TicketWorkOrderForm({
                       {errors.estimated_time.message}
                     </p>
                   )}
+                </div>
+
+                <div className="space-y-2">
+                  <Label htmlFor="tax_code_id">Tax Code</Label>
+                  <Controller
+                    name="tax_code_id"
+                    control={control}
+                    render={({ field }) => (
+                      <Select
+                        value={field.value || ""}
+                        onValueChange={field.onChange}
+                        disabled={isReadOnly}
+                      >
+                        <SelectTrigger>
+                          <SelectValue placeholder="Select tax code" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="NO_TAX">No Tax</SelectItem>
+                          {taxCodeList.map((tax) => (
+                            <SelectItem key={tax.id} value={tax.id}>
+                              {tax.name}
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                    )}
+                  />
                 </div>
               </div>
 
