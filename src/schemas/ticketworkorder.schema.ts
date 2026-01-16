@@ -27,6 +27,8 @@ export const ticketWorkOrderSchema = z.object({
     .min(1, "Estimated time must be at least 1 minute")
     .int("Estimated time must be a whole number"),
   special_instructions: z.string().optional(),
+  tax_code_id: z.string().optional(),
+
 });
 
 export type TicketWorkOrderFormValues = z.infer<typeof ticketWorkOrderSchema>;

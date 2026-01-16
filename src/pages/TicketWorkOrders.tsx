@@ -82,6 +82,9 @@ interface TicketWorkOrder {
   created_at: string;
   updated_at?: string;
   is_deleted?: boolean;
+  total_amount?: number; // ✅ ADD
+  tax_code_id?: string; // ✅ ADD
+
 }
 
 interface TicketWorkOrderOverview {
@@ -100,14 +103,9 @@ export default function TicketWorkOrders() {
     "create"
   );
   const [isFormOpen, setIsFormOpen] = useState(false);
-  const [deleteWorkOrderId, setDeleteWorkOrderId] = useState<string | null>(
-    null
-  );
-  const [selectedWorkOrder, setSelectedWorkOrder] = useState<
-    TicketWorkOrder | undefined
-  >();
-  const [workOrderOverview, setWorkOrderOverview] =
-    useState<TicketWorkOrderOverview>({
+  const [deleteWorkOrderId, setDeleteWorkOrderId] = useState<string | null>(null);
+  const [selectedWorkOrder, setSelectedWorkOrder] = useState<TicketWorkOrder | undefined >();
+  const [workOrderOverview, setWorkOrderOverview] = useState<TicketWorkOrderOverview>({
       total_work_orders: 0,
       pending: 0,
       in_progress: 0,
@@ -253,6 +251,7 @@ export default function TicketWorkOrders() {
       );
 
       if (response.success) {
+        loadTicketWorkOrderOverview();
         setWorkOrders((prev) =>
           prev.map((wo) => (wo.id === updatedWorkOrder.id ? response.data : wo))
         );
@@ -262,7 +261,7 @@ export default function TicketWorkOrders() {
     if (response?.success) {
       setIsFormOpen(false);
       toast.success(
-        `Ticket work order has been ${formMode === "create" ? "created" : "updated"
+        `Ticket work order has been ${formMode === "create" ? "created" : "updated"}
         } successfully.`
       );
     }
@@ -434,6 +433,7 @@ export default function TicketWorkOrders() {
                     <TableHead>Assigned To (Staff)</TableHead>
                     <TableHead>Assigned To (Vendor)</TableHead>
                     <TableHead>Status</TableHead>
+                    <TableHead>Total Amount</TableHead>
                     <TableHead>Created At</TableHead>
                     <TableHead>Actions</TableHead>
                   </TableRow>
@@ -480,6 +480,9 @@ export default function TicketWorkOrders() {
                           >
                             {getStatusLabel(workOrder.status)}
                           </span>
+                        </TableCell>
+                        <TableCell className="font-medium">
+                          ₹{Number(workOrder.total_amount || 0).toFixed(2)}
                         </TableCell>
                         <TableCell>
                           <div className="flex items-center">

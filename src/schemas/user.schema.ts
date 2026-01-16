@@ -29,7 +29,7 @@ export const createUserSchema = (isCreateMode: boolean = false) =>
       site_ids: z.array(z.string()).optional(),
       tenant_type: z.string().optional(),
       staff_role: z.string().optional(),
-      user_spaces: z
+      tenant_spaces: z
         .array(
           z.object({
             site_id: z.string().min(1, "Site is required"),
@@ -48,6 +48,15 @@ export const createUserSchema = (isCreateMode: boolean = false) =>
             code: z.ZodIssueCode.custom,
             path: ["site_ids"],
             message: "At least one site must be selected for staff",
+          });
+        }
+      }
+      if (data.account_type === "tenant") {
+        if (!data.tenant_spaces || data.tenant_spaces.length === 0) {
+          ctx.addIssue({
+            code: z.ZodIssueCode.custom,
+            path: ["tenant_spaces"],
+            message: "At least one space is required for tenant",
           });
         }
       }

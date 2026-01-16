@@ -554,19 +554,29 @@ const Tenants = () => {
                                 <div className="font-medium">
                                   #{lease.lease_number} - {lease.space_name}
                                 </div>
-                                <div className="text-muted-foreground">
-                                  ₹{lease.rent_amount.toLocaleString()} •{" "}
-                                  {lease.frequency}
-                                </div>
-                                <div className="text-xs text-muted-foreground">
-                                  {new Date(
-                                    lease.start_date
-                                  ).toLocaleDateString()}{" "}
-                                  -{" "}
-                                  {new Date(
-                                    lease.end_date
-                                  ).toLocaleDateString()}
-                                </div>
+                                {lease.tenant_role == "occupant" && (
+                                  <div className="text-muted-foreground">
+                                    ₹{lease.rent_amount.toLocaleString()} •{" "}
+                                    {lease.frequency}
+                                  </div>
+                                )}
+                                {lease.tenant_role == "occupant" ? (
+                                  <div className="text-xs text-muted-foreground">
+                                    {new Date(
+                                      lease.start_date
+                                    ).toLocaleDateString()}{" "}
+                                    -{" "}
+                                    {new Date(
+                                      lease.end_date
+                                    ).toLocaleDateString()}
+                                  </div>
+                                ) : (
+                                  <div className="text-xs text-muted-foreground">
+                                    {new Date(
+                                      lease.start_date
+                                    ).toLocaleDateString()}
+                                  </div>
+                                )}
                               </div>
                             ))}
                             {tenantLeases.length > 2 && (
