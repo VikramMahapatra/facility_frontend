@@ -10,7 +10,7 @@ class TenantsApiService {
   }
 
   async addTenant(tenantData: any) {
-    return await apiService.request('/tenants/', {
+    return await apiService.request("/tenants/", {
       method: "POST",
       body: JSON.stringify(tenantData),
     });
@@ -30,7 +30,11 @@ class TenantsApiService {
   }
 
   async getTenantById(id: any) {
-    return await apiService.request(`/tenants/${id}`);
+    const params = new URLSearchParams();
+    params.append("tenant_id", id);
+    return await apiService.request(`/tenants/detail?${params.toString()}`, {
+      method: "POST",
+    });
   }
 
   async getTenantLeases(tenantId: any) {
