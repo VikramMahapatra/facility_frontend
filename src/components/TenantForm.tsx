@@ -215,8 +215,7 @@ export function TenantForm({
     tenantSpaces.push({
       site_id: "",
       building_block_id: "",
-      space_id: "",
-      role: "owner" as any,
+      space_id: ""
     });
   }
 

@@ -251,6 +251,7 @@ export default function TicketWorkOrders() {
       );
 
       if (response.success) {
+        loadTicketWorkOrderOverview();
         setWorkOrders((prev) =>
           prev.map((wo) => (wo.id === updatedWorkOrder.id ? response.data : wo))
         );
@@ -260,7 +261,7 @@ export default function TicketWorkOrders() {
     if (response?.success) {
       setIsFormOpen(false);
       toast.success(
-        `Ticket work order has been ${formMode === "create" ? "created" : "updated"
+        `Ticket work order has been ${formMode === "create" ? "created" : "updated"}
         } successfully.`
       );
     }

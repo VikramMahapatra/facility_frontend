@@ -63,6 +63,14 @@ export interface Tenant {
   updated_at?: string;
   tenant_leases?: Lease[];
   tenant_spaces?: SpaceTenants[];
+  family_info?: Array<{
+    member?: string;
+    relation?: string;
+  }>;
+  vehicle_info?: Array<{
+    type?: string;
+    number?: string;
+  }>;
 }
 
 export interface SpaceTenants {
