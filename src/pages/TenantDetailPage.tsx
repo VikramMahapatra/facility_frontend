@@ -146,9 +146,6 @@ export default function TenantDetailPage() {
               >
                 Edit
               </Button>
-              <Button onClick={() => navigate("/leases/create")}>
-                Create Lease
-              </Button>
             </div>
           </div>
 
