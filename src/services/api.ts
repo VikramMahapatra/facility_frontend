@@ -61,10 +61,12 @@ class ApiService {
             }
             console.log('API response data: ', result);
 
-            if (result?.status?.toString().toLowerCase() === "failed") {
+            if (result?.status?.toString().toLowerCase() === "failed" || result?.status.toString().toLowerCase() === "failure") {
                 let message = errorMessage;
 
-                if (result.status_code != "210" && result.status_code != "400" && result.status_code != "500")
+                if (result.status_code != "210" && result.status_code != "400" && result.status_code != "500"
+                    && (result.status_code != "11" && result?.status.toString().toLowerCase() === "failure")
+                )
                     message = result.message
 
                 toast.error(message);
@@ -114,7 +116,7 @@ class ApiService {
             const response = await fetch(url, config);
             const result = await response.json().catch(() => null);
             console.log('response data: ', result);
-            
+
             if (result?.status === "Failure" || result?.status?.toString().toLowerCase() === "failed") {
                 let message = errorMessage;
 

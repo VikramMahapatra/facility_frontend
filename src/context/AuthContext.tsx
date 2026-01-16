@@ -12,8 +12,9 @@ export interface AuthUser {
     name: string;
     email: string;
     phone?: string;
-    account_type: string;
-    organization_name: string;
+    account_types: string[];
+    default_account_type: string;
+    default_organization_name: string;
     is_authenticated: boolean;
     role_policies?: RolePolicy[];
 }
@@ -34,7 +35,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     const [user, setUser] = useState<AuthUser | null>(null);
     const [loading, setLoading] = useState(true);
     const navigate = useNavigate();
-  
+
 
 
     useEffect(() => {
@@ -67,7 +68,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
 
     const hasPermission = (resource: string, action: string) => {
         if (!user?.role_policies) return false;
-      
+
 
 
         return user.role_policies.some(
@@ -78,8 +79,8 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     };
 
     const handleLogout = async () => {
-        await authApiService.logout(); 
-        setUser(null);                 
+        await authApiService.logout();
+        setUser(null);
         navigate("/login");
     };
 

@@ -25,7 +25,6 @@ export interface Lease {
   building_name?: string;
   frequency?: string;
   default_payer?: string;
-  tenant_role?: string;
   is_system?: boolean;
 }
 
@@ -73,7 +72,6 @@ export interface SpaceTenants {
   building_block_name?: string;
   space_id?: string;
   space_name?: string;
-  role: string;
   status: string;
 }
 

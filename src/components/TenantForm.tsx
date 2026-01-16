@@ -269,6 +269,7 @@ export function TenantForm({
     // Explicitly get all tenant_spaces entries from form state
     const allTenantSpaces = getValues("tenant_spaces") || [];
 
+
     // Filter out only completely empty entries (no site_id and no space_id)
     const validTenantSpaces = allTenantSpaces.filter(
       (space: any) => space.site_id && space.space_id
@@ -312,7 +313,6 @@ export function TenantForm({
       tenant_spaces: validTenantSpaces,
     };
 
-    console.log("Submitting tenant data with spaces:", formData);
     const formResponse = await onSave(formData);
   };
 
@@ -950,6 +950,7 @@ export function TenantForm({
                               <Label>Role</Label>
                               <Controller
                                 name={`tenant_spaces.${index}.role` as any}
+                                defaultValue="owner"
                                 control={control}
                                 render={({ field }) => (
                                   <Select

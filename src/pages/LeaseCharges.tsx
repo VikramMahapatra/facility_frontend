@@ -353,7 +353,7 @@ export default function LeaseCharges() {
     if (response.success) {
       setIsFormOpen(false);
       toast.success(
-        `Lease Charge ${data.charge_code} has been ${formMode === "create" ? "created" : "updated"
+        `Lease Charge has been ${formMode === "create" ? "created" : "updated"
         } successfully.`
       );
     }

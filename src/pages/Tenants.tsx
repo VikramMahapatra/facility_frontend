@@ -232,6 +232,8 @@ const Tenants = () => {
       }
     }
 
+    console.log("Tenant save response: ", response);
+
     if (response?.success) {
       setIsFormOpen(false);
       toast.success(
@@ -451,9 +453,9 @@ const Tenants = () => {
                         <CardDescription>
                           {tenantSpaces.slice(0, 2).map((tenant_space) => {
                             const isSpaceStatus =
-                              tenant_space.status == "current"
+                              tenant_space.status == "occupied"
                                 ? "active"
-                                : tenant_space.status == "past"
+                                : tenant_space.status == "vacated"
                                   ? "inactive"
                                   : "suspended";
                             return (
@@ -468,11 +470,6 @@ const Tenants = () => {
                                     .filter(Boolean)
                                     .join(" • ")}
                                   <div className="text-muted-foreground">
-                                    <Badge
-                                      className={getTenantTypeColor("default")}
-                                    >
-                                      {tenant_space.role}
-                                    </Badge>
                                     <Badge
                                       className={getStatusColor(isSpaceStatus)}
                                     >
