@@ -32,6 +32,7 @@ import { toast } from "sonner";
 import ContentContainer from "@/components/ContentContainer";
 import { useLoader } from "@/context/LoaderContext";
 import LoaderOverlay from "@/components/LoaderOverlay";
+import { withFallback } from "@/helpers/commonHelper";
 
 export default function InvoiceFormPage() {
   const navigate = useNavigate();
@@ -86,36 +87,37 @@ export default function InvoiceFormPage() {
   const watchedBillableItemId = watch("billable_item_id");
 
   useEffect(() => {
+    // Load base lookups
+    loadSiteLookup();
+  }, []);
+
+  useEffect(() => {
     if (!id || formMode === "create") return;
-
-    const loadInvoice = async () => {
-      const response = await withLoader(async () => {
-        return await invoiceApiService.getInvoiceById(id);
-      });
-
-      if (response?.success && response.data) {
-        setInvoice(response.data);
-      } else {
-        toast.error("Failed to load invoice details");
-        navigate("/invoices");
-      }
-    };
-
     loadInvoice();
+
+
   }, [id, formMode]);
 
-  const loadAll = async () => {
-    await withLoader(async () => {
-      setTotalsAutoFilled(false);
+  useEffect(() => {
+    loadAll()
+  }, [invoice?.id]);
 
-      // Clear billable item list when in create mode
-      if (formMode === "create") {
-        setBillableItemList([]);
-      }
-
-      // Load base lookups
-      await loadSiteLookup();
+  const loadInvoice = async () => {
+    const response = await withLoader(async () => {
+      return await invoiceApiService.getInvoiceById(id);
     });
+
+    if (response?.success && response.data) {
+      console.log("Loaded invoice:", response.data);
+      setInvoice(response.data);
+    } else {
+      toast.error("Failed to load invoice details");
+      navigate("/invoices");
+    }
+  };
+
+  const loadAll = async () => {
+    setTotalsAutoFilled(false);
 
     // Format payments to ensure they have all required fields
     const invoicePayments = (invoice as any)?.payments;
@@ -126,50 +128,54 @@ export default function InvoiceFormPage() {
 
     const formattedPayments = hasValidPayments
       ? invoicePayments.map((payment: any) => ({
-          id: payment.id,
-          method: payment.method || "upi",
-          ref_no: payment.ref_no || "",
-          paid_at: payment.paid_at || "",
-          amount:
-            typeof payment.amount === "number"
-              ? payment.amount
-              : parseFloat(payment.amount) || 0,
-        }))
+        id: payment.id,
+        method: payment.method || "upi",
+        ref_no: payment.ref_no || "",
+        paid_at: payment.paid_at || "",
+        amount:
+          typeof payment.amount === "number"
+            ? payment.amount
+            : parseFloat(payment.amount) || 0,
+      }))
       : [{ method: "upi" as any, ref_no: "", paid_at: "", amount: 0 }];
+
+
 
     // Reset form based on mode - if create mode or no invoice, use empty data
     reset(
       invoice && formMode !== "create"
         ? {
-            site_id: invoice.site_id || "",
-            date: invoice.date || new Date().toISOString().split("T")[0],
-            due_date: invoice.due_date || "",
-            status: invoice.status || "draft",
-            currency: invoice.currency || "INR",
-            billable_item_type:
-              invoice.billable_item_type === "lease charge"
-                ? "lease_charge"
-                : invoice.billable_item_type === "work order"
+          site_id: invoice.site_id || "",
+          date: invoice.date || new Date().toISOString().split("T")[0],
+          due_date: invoice.due_date || "",
+          status: invoice.status || "draft",
+          currency: invoice.currency || "INR",
+          billable_item_type:
+            invoice.billable_item_type === "lease charge"
+              ? "lease_charge"
+              : invoice.billable_item_type === "work order"
                 ? "work_order"
                 : "lease_charge",
-            billable_item_id: invoice.billable_item_id || "",
-            totals: invoice.totals || { sub: 0, tax: 0, grand: 0 },
-            payments: formattedPayments,
-          }
+          billable_item_id: invoice.billable_item_id || "",
+          totals: invoice.totals || { sub: 0, tax: 0, grand: 0 },
+          payments: formattedPayments,
+        }
         : {
-            site_id: "",
-            date: new Date().toISOString().split("T")[0],
-            due_date: "",
-            status: "draft",
-            currency: "INR",
-            billable_item_type: "lease_charge",
-            billable_item_id: "",
-            totals: { sub: 0, tax: 0, grand: 0 },
-            payments: [
-              { method: "upi" as any, ref_no: "", paid_at: "", amount: 0 },
-            ],
-          }
+          site_id: "",
+          date: new Date().toISOString().split("T")[0],
+          due_date: "",
+          status: "draft",
+          currency: "INR",
+          billable_item_type: "lease_charge",
+          billable_item_id: "",
+          totals: { sub: 0, tax: 0, grand: 0 },
+          payments: [
+            { method: "upi" as any, ref_no: "", paid_at: "", amount: 0 },
+          ],
+        }
     );
+
+
 
     // Preload billable item lookup for existing invoice (edit/view mode)
     if (
@@ -178,56 +184,17 @@ export default function InvoiceFormPage() {
       invoice.site_id &&
       invoice.billable_item_type
     ) {
-      await withLoader(async () => {
-        const billableType =
-          invoice.billable_item_type === "lease charge"
-            ? "lease_charge"
-            : invoice.billable_item_type === "work order"
+      const billableType =
+        invoice.billable_item_type === "lease charge"
+          ? "lease_charge"
+          : invoice.billable_item_type === "work order"
             ? "work_order"
             : "lease_charge";
 
-        // Load billable items for the invoice's site and type
-        await loadBillableItemLookup(billableType, invoice.site_id);
-
-        // Ensure the current billable item is in the list
-        if (invoice.billable_item_id && invoice.billable_item_name) {
-          setBillableItemList((prev) => {
-            const exists = prev.some(
-              (item: any) => item.id === invoice.billable_item_id
-            );
-            if (!exists) {
-              return [
-                ...prev,
-                {
-                  id: invoice.billable_item_id,
-                  name: invoice.billable_item_name,
-                },
-              ];
-            }
-            return prev;
-          });
-        }
-      });
+      // Load billable items for the invoice's site and type
+      await loadBillableItemLookup(billableType, invoice.site_id);
     }
   };
-
-  useEffect(() => {
-    if (invoice !== undefined || formMode === "create") {
-      loadAll();
-    }
-  }, [invoice, formMode]);
-
-  // Ensure site list loads on initial mount for create mode
-  useEffect(() => {
-    if (formMode === "create") {
-      const loadInitialData = async () => {
-        await withLoader(async () => {
-          await loadSiteLookup();
-        });
-      };
-      loadInitialData();
-    }
-  }, [formMode]);
 
   useEffect(() => {
     if (formMode === "create") {
@@ -256,6 +223,7 @@ export default function InvoiceFormPage() {
       setTotalsAutoFilled(false);
     }
   }, [watchedBillableType, watchedBillableItemId, formMode, setValue]);
+
 
   const loadSiteLookup = async () => {
     const lookup = await siteApiService.getSiteLookup();
@@ -291,6 +259,7 @@ export default function InvoiceFormPage() {
             name: item.name || item.code || item.label || item.id,
           }))
         );
+
       } else {
         setBillableItemList([]);
       }
@@ -350,8 +319,7 @@ export default function InvoiceFormPage() {
     if (response?.success) {
       navigate("/invoices");
       toast.success(
-        `Invoice has been ${
-          formMode === "create" ? "created" : "updated"
+        `Invoice has been ${formMode === "create" ? "created" : "updated"
         } successfully.`
       );
     } else if (response && !response.success) {
@@ -450,10 +418,10 @@ export default function InvoiceFormPage() {
       currency === "INR"
         ? "₹"
         : currency === "USD"
-        ? "$"
-        : currency === "EUR"
-        ? "€"
-        : currency;
+          ? "$"
+          : currency === "EUR"
+            ? "€"
+            : currency;
     return `${symbol} ${numAmount.toLocaleString("en-IN", {
       minimumFractionDigits: 2,
       maximumFractionDigits: 2,
@@ -534,6 +502,15 @@ export default function InvoiceFormPage() {
     navigate("/invoices");
   };
 
+  const fallBillableItems = invoice?.billable_item_id
+    ? {
+      id: invoice.billable_item_id,
+      name: invoice.billable_item_name,
+    }
+    : null;
+
+  const billable_items = withFallback(billableItemList, fallBillableItems);
+
   return (
     <ContentContainer>
       <LoaderOverlay />
@@ -548,15 +525,15 @@ export default function InvoiceFormPage() {
                 {formMode === "create"
                   ? "Create New Invoice"
                   : formMode === "edit"
-                  ? "Edit Invoice"
-                  : "Invoice Details"}
+                    ? "Edit Invoice"
+                    : "Invoice Details"}
               </h1>
               <p className="text-muted-foreground">
                 {formMode === "create"
                   ? "Add a new invoice to the system"
                   : formMode === "edit"
-                  ? "Update invoice information"
-                  : "View invoice details"}
+                    ? "Update invoice information"
+                    : "View invoice details"}
               </p>
             </div>
           </div>
@@ -581,8 +558,8 @@ export default function InvoiceFormPage() {
                     ? "Creating..."
                     : "Updating..."
                   : formMode === "create"
-                  ? "Create Invoice"
-                  : "Update Invoice"}
+                    ? "Create Invoice"
+                    : "Update Invoice"}
               </Button>
             )}
           </div>
@@ -694,7 +671,7 @@ export default function InvoiceFormPage() {
                         <SelectValue placeholder="Select item" />
                       </SelectTrigger>
                       <SelectContent>
-                        {billableItemList.map((item: any) => (
+                        {billable_items.map((item: any) => (
                           <SelectItem key={item.id} value={item.id}>
                             {item.name}
                           </SelectItem>
@@ -920,10 +897,10 @@ export default function InvoiceFormPage() {
                                 {watch("currency") === "INR"
                                   ? "₹"
                                   : watch("currency") === "USD"
-                                  ? "$"
-                                  : watch("currency") === "EUR"
-                                  ? "€"
-                                  : watch("currency") || "₹"}
+                                    ? "$"
+                                    : watch("currency") === "EUR"
+                                      ? "€"
+                                      : watch("currency") || "₹"}
                               </span>
                               <Input
                                 type="number"
@@ -979,11 +956,10 @@ export default function InvoiceFormPage() {
                               Outstanding
                             </Label>
                             <p
-                              className={`text-lg font-semibold ${
-                                outstanding > 0
-                                  ? "text-orange-600"
-                                  : "text-green-600"
-                              }`}
+                              className={`text-lg font-semibold ${outstanding > 0
+                                ? "text-orange-600"
+                                : "text-green-600"
+                                }`}
                             >
                               {formatCurrency(outstanding)}
                             </p>
@@ -991,13 +967,12 @@ export default function InvoiceFormPage() {
                           <div className="flex items-end">
                             <div className="flex items-center gap-2">
                               <div
-                                className={`h-2 w-2 rounded-full ${
-                                  paymentStatus === "Paid"
-                                    ? "bg-green-500"
-                                    : paymentStatus === "Partially Paid"
+                                className={`h-2 w-2 rounded-full ${paymentStatus === "Paid"
+                                  ? "bg-green-500"
+                                  : paymentStatus === "Partially Paid"
                                     ? "bg-orange-500"
                                     : "bg-gray-500"
-                                }`}
+                                  }`}
                               />
                               <Label className="text-muted-foreground">
                                 Status:
