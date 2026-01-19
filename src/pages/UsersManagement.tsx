@@ -1,4 +1,5 @@
 import { useState, useEffect } from "react";
+import { useNavigate } from "react-router-dom";
 import { Plus, Pencil, Trash2, Search, UserCircle, Eye, Users } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -20,7 +21,6 @@ import {
 import { Badge } from "@/components/ui/badge";
 import { LogOut, } from "lucide-react";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
-import { UserForm } from "@/components/UserForm";
 import { userManagementApiService } from "@/services/access_control/usermanagementapi";
 import { toast } from "sonner";
 import {
@@ -72,11 +72,9 @@ import { useAuth } from "@/context/AuthContext";
 import { PageHeader } from "@/components/PageHeader";
 
 export default function UsersManagement() {
+  const navigate = useNavigate();
   const [users, setUsers] = useState<User[]>([]);
   const [searchQuery, setSearchQuery] = useState("");
-  const [isFormOpen, setIsFormOpen] = useState(false);
-  const [editingUser, setEditingUser] = useState<User | undefined>();
-  const [formMode, setFormMode] = useState<'create' | 'edit' | 'view'>('create');
   const [deleteUserId, setDeleteUserId] = useState<string | null>(null);
   const [page, setPage] = useState(1);
   const { user, handleLogout } = useAuth();
@@ -102,37 +100,6 @@ export default function UsersManagement() {
   };
 
 
-  const handleCreateUser = async (values: any) => {
-    const response = await userManagementApiService.addUser(values);
-
-    if (response.success) {
-      setIsFormOpen(false);
-      toast.success("User created successfully");
-      loadUsers();
-    }
-    return response;
-  };
-
-  const handleUpdateUser = async (values: any) => {
-    if (!editingUser) return;
-
-    const updatedUser = {
-      ...editingUser,
-      ...values,
-      updated_at: new Date().toISOString(),
-    };
-    const response = await userManagementApiService.updateUser(updatedUser);
-    if (response.success) {
-      console.log("updated user with details :", response.data);
-      setUsers((prev) =>
-        prev.map((u) => (u.id === updatedUser.id ? response.data : u))
-      );
-      toast.success("User updated successfully");
-      setIsFormOpen(false);
-      setEditingUser(undefined);
-    }
-    return response;
-  };
 
   const handleDeleteUser = (userId: string) => {
     setDeleteUserId(userId);
@@ -169,15 +136,15 @@ export default function UsersManagement() {
   };
 
   const handleOpenForm = (user?: User) => {
-    setEditingUser(user);
-    setFormMode(user ? 'edit' : 'create');
-    setIsFormOpen(true);
+    if (user) {
+      navigate(`/users/${user.id}/edit`);
+    } else {
+      navigate("/users/create");
+    }
   };
 
   const handleView = (user: User) => {
-    setEditingUser(user);
-    setFormMode('view');
-    setIsFormOpen(true);
+    navigate(`/users/${user.id}/view`);
   };
 
   const getInitials = (name: string) => {
@@ -356,20 +323,6 @@ export default function UsersManagement() {
           />
         </div>
       </div>
-
-      <UserForm
-        user={editingUser}
-        open={isFormOpen}
-        onOpenChange={(open) => {
-          setIsFormOpen(open);
-          if (!open) {
-            setEditingUser(undefined);
-            setFormMode('create');
-          }
-        }}
-        onSubmit={editingUser ? handleUpdateUser : handleCreateUser}
-        mode={formMode}
-      />
 
       {/* Delete Confirmation Dialog */}
       <AlertDialog

@@ -12,7 +12,7 @@ export interface Invoice {
     invoice_no: string;
     date: string;
     due_date: string;
-    status: 'draft' | 'issued' | 'paid' | 'partial' | 'void';
+    status: 'draft' | 'issued' | 'paid' | 'partial' | 'void' | 'overdue';
     currency: string;
     totals: {
         sub: number;
