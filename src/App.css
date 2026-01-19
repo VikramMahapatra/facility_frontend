@@ -7,3 +7,7 @@
 .scrollbar-none::-webkit-scrollbar {
   display: none;
 }
+
+button.autocomplete-input {
+  font-weight: normal;
+}
