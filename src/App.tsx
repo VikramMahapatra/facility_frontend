@@ -27,6 +27,8 @@ import TenantDetailPage from "./pages/TenantDetailPage";
 import LeaseCharges from "./pages/LeaseCharges";
 import LeaseChargeCode from "./pages/LeaseChargeCode";
 import Invoices from "./pages/Invoices";
+import InvoiceFormPage from "./pages/InvoiceFormPage";
+import InvoiceDetailPage from "./pages/InvoiceDetailPage";
 import RevenueReports from "./pages/RevenueReports";
 import TaxManagement from "./pages/TaxManagement";
 import Assets from "./pages/Assets";
@@ -57,6 +59,8 @@ import RolesManagement from "./pages/RolesManagement";
 import RolePolicies from "./pages/RolePolicies";
 import TicketDetail from "./pages/TicketDetail";
 import UsersManagement from "./pages/UsersManagement";
+import UserFormPage from "./pages/UserFormPage";
+import UserManagementDetailPage from "./pages/UserManagementDetailPage";
 import TicketWorkload from "./pages/TicketWorkload";
 import TicketCategories from "./pages/TicketCategories";
 import PendingApprovals from "./pages/PendingApprovals";
@@ -140,6 +144,18 @@ const App = () => {
                       />
                       <Route path="/invoices" element={<Invoices />} />
                       <Route
+                        path="/invoices/create"
+                        element={<InvoiceFormPage />}
+                      />
+                      <Route
+                        path="/invoices/:id/edit"
+                        element={<InvoiceFormPage />}
+                      />
+                      <Route
+                        path="/invoices/:id/view"
+                        element={<InvoiceDetailPage />}
+                      />
+                      <Route
                         path="/revenue-reports"
                         element={<RevenueReports />}
                       />
@@ -199,6 +215,15 @@ const App = () => {
                       <Route
                         path="/users-management"
                         element={<UsersManagement />}
+                      />
+                      <Route path="/users/create" element={<UserFormPage />} />
+                      <Route
+                        path="/users/:id/edit"
+                        element={<UserFormPage />}
+                      />
+                      <Route
+                        path="/users/:id/view"
+                        element={<UserManagementDetailPage />}
                       />
                       <Route
                         path="/pending-approvals"
