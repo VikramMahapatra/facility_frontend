@@ -335,12 +335,6 @@ export default function Leases() {
                     <div className="space-y-1">
                       <CardTitle className="text-lg">
                         {lease.tenant_name}
-                        {"\n"}
-                        {lease.tenant_role && (
-                          <Badge className={getStatusColor("default")}>
-                            {lease.tenant_role}
-                          </Badge>
-                        )}
                       </CardTitle>
                       <p className="text-sm text-muted-foreground">
                         <div className="flex items-center gap-1">
@@ -357,66 +351,54 @@ export default function Leases() {
 
                 <CardContent className="space-y-4">
                   <div className="grid grid-cols-2 gap-4 text-sm">
-                    {(lease.tenant_role === "occupant") && (
-                      <div>
-                        <div className="font-medium text-muted-foreground">
-                          Rent Amount
-                        </div>
-                        <div className="text-lg font-bold">
-
-                          {(!lease.rent_amount || Number(lease.rent_amount) === 0)
-                            ? "-"
-                            : formatCurrency(lease.rent_amount)}
-                        </div>
-                        <div className="text-xs text-muted-foreground">
-                          per month
-                        </div>
-                      </div>
-                    )}
                     <div>
                       <div className="font-medium text-muted-foreground">
-                        {lease.default_payer === "owner" ||
-                          (lease.is_system === true &&
-                            lease.tenant_role === "owner")
-                          ? "Start Date"
-                          : "Lease Term"}
+                        Rent Amount
+                      </div>
+                      <div className="text-lg font-bold">
+
+                        {(!lease.rent_amount || Number(lease.rent_amount) === 0)
+                          ? "-"
+                          : formatCurrency(lease.rent_amount)}
+                      </div>
+                      <div className="text-xs text-muted-foreground">
+                        per month
+                      </div>
+                    </div>
+                    <div>
+                      <div className="font-medium text-muted-foreground">
+                        Lease Term
                       </div>
                       <div className="text-sm">
-                        {lease.default_payer === "owner" ||
-                          (lease.is_system === true &&
-                            lease.tenant_role === "owner")
-                          ? lease.start_date
-                          : `${lease.start_date} - ${lease.end_date}`}
+                        {`${lease.start_date} - ${lease.end_date}`}
                       </div>
                     </div>
                   </div>
-                  {(lease.tenant_role === "occupant") && (
-                    <div className="grid grid-cols-2 gap-4 text-sm">
-                      <div>
-                        <div className="font-medium text-muted-foreground">
-                          Deposit
-                        </div>
-                        <div>
-                          {(!lease.deposit_amount ||
-                            Number(lease.deposit_amount) === 0)
-                            ? "-"
-                            : formatCurrency(lease.deposit_amount as any)}
-                        </div>
+                  <div className="grid grid-cols-2 gap-4 text-sm">
+                    <div>
+                      <div className="font-medium text-muted-foreground">
+                        Deposit
                       </div>
                       <div>
-                        <div className="font-medium text-muted-foreground">
-                          CAM Rate
-                        </div>
-                        <div>
-                          {(!lease.cam_rate || Number(lease.cam_rate) === 0)
-                            ? "-"
-                            : lease.cam_rate && Number(lease.cam_rate) !== 0
-                              ? `₹${lease.cam_rate}/sq ft`
-                              : "-"}
-                        </div>
+                        {(!lease.deposit_amount ||
+                          Number(lease.deposit_amount) === 0)
+                          ? "-"
+                          : formatCurrency(lease.deposit_amount as any)}
                       </div>
                     </div>
-                  )}
+                    <div>
+                      <div className="font-medium text-muted-foreground">
+                        CAM Rate
+                      </div>
+                      <div>
+                        {(!lease.cam_rate || Number(lease.cam_rate) === 0)
+                          ? "-"
+                          : lease.cam_rate && Number(lease.cam_rate) !== 0
+                            ? `₹${lease.cam_rate}/sq ft`
+                            : "-"}
+                      </div>
+                    </div>
+                  </div>
 
                   {lease.utilities &&
                     Object.values(lease.utilities).some(
@@ -449,20 +431,15 @@ export default function Leases() {
                     >
                       <Eye className="h-3 w-3" />
                     </Button>
-                    {canWrite(resource) &&
-                      lease.default_payer !== "owner" &&
-                      !(
-                        lease.is_system === true &&
-                        lease.tenant_role === "owner"
-                      ) && (
-                        <Button
-                          size="sm"
-                          variant="outline"
-                          onClick={() => handleEdit(lease)}
-                        >
-                          <Edit className="h-3 w-3" />
-                        </Button>
-                      )}
+                    {canWrite(resource) && (
+                      <Button
+                        size="sm"
+                        variant="outline"
+                        onClick={() => handleEdit(lease)}
+                      >
+                        <Edit className="h-3 w-3" />
+                      </Button>
+                    )}
                     {canDelete(resource) && (
                       <Button
                         size="sm"

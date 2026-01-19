@@ -441,11 +441,11 @@ const Tenants = () => {
                         <CardDescription>
                           {tenantSpaces.slice(0, 2).map((tenant_space) => {
                             const isSpaceStatus =
-                              tenant_space.status == "current"
+                              tenant_space.status == "occupied"
                                 ? "active"
-                                : tenant_space.status == "past"
-                                ? "inactive"
-                                : "suspended";
+                                : tenant_space.status == "vacated"
+                                  ? "inactive"
+                                  : "suspended";
                             return (
                               <>
                                 <div className="flex items-center gap-1">
@@ -458,11 +458,6 @@ const Tenants = () => {
                                     .filter(Boolean)
                                     .join(" • ")}
                                   <div className="text-muted-foreground">
-                                    <Badge
-                                      className={getTenantTypeColor("default")}
-                                    >
-                                      {tenant_space.role}
-                                    </Badge>
                                     <Badge
                                       className={getStatusColor(isSpaceStatus)}
                                     >
@@ -525,16 +520,16 @@ const Tenants = () => {
                                   {(tenant.contact_info.address.city ||
                                     tenant.contact_info.address.state ||
                                     tenant.contact_info.address.pincode) && (
-                                    <div>
-                                      {[
-                                        tenant.contact_info.address.city,
-                                        tenant.contact_info.address.state,
-                                        tenant.contact_info.address.pincode,
-                                      ]
-                                        .filter(Boolean)
-                                        .join(", ")}
-                                    </div>
-                                  )}
+                                      <div>
+                                        {[
+                                          tenant.contact_info.address.city,
+                                          tenant.contact_info.address.state,
+                                          tenant.contact_info.address.pincode,
+                                        ]
+                                          .filter(Boolean)
+                                          .join(", ")}
+                                      </div>
+                                    )}
                                 </div>
                               </div>
                             )}
@@ -554,29 +549,19 @@ const Tenants = () => {
                                 <div className="font-medium">
                                   #{lease.lease_number} - {lease.space_name}
                                 </div>
-                                {lease.tenant_role == "occupant" && (
-                                  <div className="text-muted-foreground">
-                                    ₹{lease.rent_amount.toLocaleString()} •{" "}
-                                    {lease.frequency}
-                                  </div>
-                                )}
-                                {lease.tenant_role == "occupant" ? (
-                                  <div className="text-xs text-muted-foreground">
-                                    {new Date(
-                                      lease.start_date
-                                    ).toLocaleDateString()}{" "}
-                                    -{" "}
-                                    {new Date(
-                                      lease.end_date
-                                    ).toLocaleDateString()}
-                                  </div>
-                                ) : (
-                                  <div className="text-xs text-muted-foreground">
-                                    {new Date(
-                                      lease.start_date
-                                    ).toLocaleDateString()}
-                                  </div>
-                                )}
+                                <div className="text-muted-foreground">
+                                  ₹{lease.rent_amount.toLocaleString()} •{" "}
+                                  {lease.frequency}
+                                </div>
+                                <div className="text-xs text-muted-foreground">
+                                  {new Date(
+                                    lease.start_date
+                                  ).toLocaleDateString()}{" "}
+                                  -{" "}
+                                  {new Date(
+                                    lease.end_date
+                                  ).toLocaleDateString()}
+                                </div>
                               </div>
                             ))}
                             {tenantLeases.length > 2 && (

@@ -44,7 +44,7 @@ export default function TenantDetailPage() {
         setTenant(response.data);
       } else {
         toast.error("Failed to load tenant details");
-        navigate("/tenants");
+        navigate(-1);
       }
     };
 
@@ -109,11 +109,28 @@ export default function TenantDetailPage() {
     }
   };
 
+  const getTenantTypeColor = (type: string) => {
+    switch (type) {
+      case "individual":
+        return "bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-200";
+      case "commercial":
+        return "bg-purple-100 text-purple-800 dark:bg-purple-900 dark:text-purple-200";
+      case "merchant":
+        return "bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200";
+      case "brand":
+        return "bg-orange-100 text-orange-800 dark:bg-orange-900 dark:text-orange-200";
+      case "kiosk":
+        return "bg-yellow-100 text-yellow-800 dark:bg-yellow-900 dark:text-yellow-200";
+      default:
+        return "bg-gray-100 text-gray-800 dark:bg-gray-900 dark:text-gray-200";
+    }
+  };
+
   return (
     <ContentContainer>
       <LoaderOverlay />
       {tenant && (
-        <div className="p-6 space-y-6">
+        <div className="space-y-6">
           {/* Header */}
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-4">
@@ -135,7 +152,9 @@ export default function TenantDetailPage() {
                 </h1>
                 <p>
                   <strong className="text-muted-foreground"></strong>{" "}
-                  {tenant.kind}
+                  <Badge className={getTenantTypeColor(tenant.kind)}>
+                    {tenant.kind}
+                  </Badge>
                 </p>
               </div>
             </div>
@@ -207,22 +226,22 @@ export default function TenantDetailPage() {
                       {(tenant.contact_info.address.city ||
                         tenant.contact_info.address.state ||
                         tenant.contact_info.address.pincode) && (
-                        <p className="text-muted-foreground">
-                          {[
-                            tenant.contact_info.address.city,
-                            tenant.contact_info.address.state,
-                            tenant.contact_info.address.pincode,
-                          ]
-                            .filter(Boolean)
-                            .join(", ")}
-                        </p>
-                      )}
+                          <p className="text-muted-foreground">
+                            {[
+                              tenant.contact_info.address.city,
+                              tenant.contact_info.address.state,
+                              tenant.contact_info.address.pincode,
+                            ]
+                              .filter(Boolean)
+                              .join(", ")}
+                          </p>
+                        )}
                     </CardContent>
                   </Card>
                 )}
 
               {(tenant.family_info && tenant.family_info.length > 0) ||
-              (tenant.vehicle_info && tenant.vehicle_info.length > 0) ? (
+                (tenant.vehicle_info && tenant.vehicle_info.length > 0) ? (
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                   {tenant.family_info && tenant.family_info.length > 0 && (
                     <Card>

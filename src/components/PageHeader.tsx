@@ -82,7 +82,7 @@ export const PageHeader = () => {
                     <div className="text-right">
                         <p className="text-sm font-medium">{user.name}</p>
                         <p className="text-xs text-muted-foreground">
-                            {user.account_type}
+                            {user.default_account_type}
                         </p>
                     </div>
                 </div>
