@@ -93,11 +93,6 @@ export function LeaseForm({
   const [spaceList, setSpaceList] = useState<any[]>([]);
   const [leasePartnerList, setLeasePartnerList] = useState<any[]>([]);
   const isReadOnly = mode === "view";
-  const isOwnerPayer =
-    lease?.default_payer === "owner" ||
-    (lease?.is_system === true && lease?.tenant_role === "owner");
-  const showLimitedFields = isReadOnly && isOwnerPayer;
-
   const loadAll = async () => {
     setFormLoading(true);
 
@@ -299,33 +294,29 @@ export function LeaseForm({
                   render={({ field }) => (
                     <div className="space-y-2">
                       <Label htmlFor="site_id">Site *</Label>
-                      {showLimitedFields ? (
-                        <Input value={lease?.site_name || ""} disabled />
-                      ) : (
-                        <Select
-                          value={field.value || ""}
-                          onValueChange={(value) => {
-                            field.onChange(value);
-                            // Reset building and space when site changes
-                            setValue("building_id", "");
-                            setValue("space_id", "");
-                          }}
-                          disabled={isReadOnly}
+                      <Select
+                        value={field.value || ""}
+                        onValueChange={(value) => {
+                          field.onChange(value);
+                          // Reset building and space when site changes
+                          setValue("building_id", "");
+                          setValue("space_id", "");
+                        }}
+                        disabled={isReadOnly}
+                      >
+                        <SelectTrigger
+                          className={errors.site_id ? "border-red-500" : ""}
                         >
-                          <SelectTrigger
-                            className={errors.site_id ? "border-red-500" : ""}
-                          >
-                            <SelectValue placeholder="Select site" />
-                          </SelectTrigger>
-                          <SelectContent>
-                            {siteList.map((site: any) => (
-                              <SelectItem key={site.id} value={site.id}>
-                                {site.name}
-                              </SelectItem>
-                            ))}
-                          </SelectContent>
-                        </Select>
-                      )}
+                          <SelectValue placeholder="Select site" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          {siteList.map((site: any) => (
+                            <SelectItem key={site.id} value={site.id}>
+                              {site.name}
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
                       {errors.site_id && (
                         <p className="text-sm text-red-500">
                           {errors.site_id.message as any}
@@ -341,36 +332,32 @@ export function LeaseForm({
                   render={({ field }) => (
                     <div className="space-y-2">
                       <Label htmlFor="building_id">Building</Label>
-                      {showLimitedFields ? (
-                        <Input value={lease?.building_name || ""} disabled />
-                      ) : (
-                        <Select
-                          value={field.value || ""}
-                          onValueChange={(value) => {
-                            field.onChange(value);
-                            // Reset space when building changes
-                            setValue("space_id", "");
-                          }}
-                          disabled={isReadOnly || !selectedSiteId}
-                        >
-                          <SelectTrigger>
-                            <SelectValue
-                              placeholder={
-                                !selectedSiteId
-                                  ? "Select site first"
-                                  : "Select building"
-                              }
-                            />
-                          </SelectTrigger>
-                          <SelectContent>
-                            {buildingList.map((building: any) => (
-                              <SelectItem key={building.id} value={building.id}>
-                                {building.name}
-                              </SelectItem>
-                            ))}
-                          </SelectContent>
-                        </Select>
-                      )}
+                      <Select
+                        value={field.value || ""}
+                        onValueChange={(value) => {
+                          field.onChange(value);
+                          // Reset space when building changes
+                          setValue("space_id", "");
+                        }}
+                        disabled={isReadOnly || !selectedSiteId}
+                      >
+                        <SelectTrigger>
+                          <SelectValue
+                            placeholder={
+                              !selectedSiteId
+                                ? "Select site first"
+                                : "Select building"
+                            }
+                          />
+                        </SelectTrigger>
+                        <SelectContent>
+                          {buildingList.map((building: any) => (
+                            <SelectItem key={building.id} value={building.id}>
+                              {building.name}
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
                     </div>
                   )}
                 />
@@ -384,34 +371,30 @@ export function LeaseForm({
                   render={({ field }) => (
                     <div className="space-y-2">
                       <Label htmlFor="space_id">Space *</Label>
-                      {showLimitedFields ? (
-                        <Input value={lease?.space_name || ""} disabled />
-                      ) : (
-                        <Select
-                          value={field.value || ""}
-                          onValueChange={field.onChange}
-                          disabled={isReadOnly || !selectedSiteId}
+                      <Select
+                        value={field.value || ""}
+                        onValueChange={field.onChange}
+                        disabled={isReadOnly || !selectedSiteId}
+                      >
+                        <SelectTrigger
+                          className={errors.space_id ? "border-red-500" : ""}
                         >
-                          <SelectTrigger
-                            className={errors.space_id ? "border-red-500" : ""}
-                          >
-                            <SelectValue
-                              placeholder={
-                                !selectedSiteId
-                                  ? "Select site first"
-                                  : "Select space"
-                              }
-                            />
-                          </SelectTrigger>
-                          <SelectContent>
-                            {spaceList.map((space: any) => (
-                              <SelectItem key={space.id} value={space.id}>
-                                {space.name || space.code}
-                              </SelectItem>
-                            ))}
-                          </SelectContent>
-                        </Select>
-                      )}
+                          <SelectValue
+                            placeholder={
+                              !selectedSiteId
+                                ? "Select site first"
+                                : "Select space"
+                            }
+                          />
+                        </SelectTrigger>
+                        <SelectContent>
+                          {spaceList.map((space: any) => (
+                            <SelectItem key={space.id} value={space.id}>
+                              {space.name || space.code}
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
                       {errors.space_id && (
                         <p className="text-sm text-red-500">
                           {errors.space_id.message as any}
@@ -423,34 +406,30 @@ export function LeaseForm({
 
                 <div className="space-y-2">
                   <Label>Tenant *</Label>
-                  {showLimitedFields ? (
-                    <Input value={lease?.tenant_name || ""} disabled />
-                  ) : (
-                    <Controller
-                      name="tenant_id"
-                      control={control}
-                      render={({ field }) => (
-                        <Select
-                          value={field.value || ""}
-                          onValueChange={field.onChange}
-                          disabled={isReadOnly}
+                  <Controller
+                    name="tenant_id"
+                    control={control}
+                    render={({ field }) => (
+                      <Select
+                        value={field.value || ""}
+                        onValueChange={field.onChange}
+                        disabled={isReadOnly}
+                      >
+                        <SelectTrigger
+                          className={errors.tenant_id ? "border-red-500" : ""}
                         >
-                          <SelectTrigger
-                            className={errors.tenant_id ? "border-red-500" : ""}
-                          >
-                            <SelectValue placeholder="Select tenant" />
-                          </SelectTrigger>
-                          <SelectContent>
-                            {leasePartnerList.map((s: any) => (
-                              <SelectItem key={s.id} value={String(s.id)}>
-                                {s.name}
-                              </SelectItem>
-                            ))}
-                          </SelectContent>
-                        </Select>
-                      )}
-                    />
-                  )}
+                          <SelectValue placeholder="Select tenant" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          {leasePartnerList.map((s: any) => (
+                            <SelectItem key={s.id} value={String(s.id)}>
+                              {s.name}
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                    )}
+                  />
                   {errors.tenant_id && (
                     <p className="text-sm text-red-500">
                       {errors.tenant_id?.message as any}
@@ -459,210 +438,162 @@ export function LeaseForm({
                 </div>
               </div>
 
-              {showLimitedFields ? (
-                // Limited view for owner payer: Only Start Date and Status
-                <div className="grid grid-cols-2 gap-4">
-                  <div>
-                    <Label>Start Date *</Label>
-                    <Input
-                      type="date"
-                      disabled={isReadOnly}
-                      {...register("start_date")}
-                      className={errors.start_date ? "border-red-500" : ""}
-                    />
-                    {errors.start_date && (
-                      <p className="text-sm text-red-500">
-                        {errors.start_date.message as any}
-                      </p>
-                    )}
-                  </div>
-                  <div>
-                    <Label>Status</Label>
-                    <Controller
-                      name="status"
-                      control={control}
-                      render={({ field }) => (
-                        <Select
-                          value={field.value}
-                          onValueChange={field.onChange}
-                          disabled={isReadOnly}
-                        >
-                          <SelectTrigger>
-                            <SelectValue />
-                          </SelectTrigger>
-                          <SelectContent>
-                            <SelectItem value="draft">Draft</SelectItem>
-                            <SelectItem value="active">Active</SelectItem>
-                            <SelectItem value="expired">Expired</SelectItem>
-                            <SelectItem value="terminated">
-                              Terminated
-                            </SelectItem>
-                          </SelectContent>
-                        </Select>
-                      )}
-                    />
-                  </div>
+              <div className="grid grid-cols-3 gap-4">
+                <div>
+                  <Label>Start Date *</Label>
+                  <Input
+                    type="date"
+                    disabled={isReadOnly}
+                    {...register("start_date")}
+                    className={errors.start_date ? "border-red-500" : ""}
+                  />
+                  {errors.start_date && (
+                    <p className="text-sm text-red-500">
+                      {errors.start_date.message as any}
+                    </p>
+                  )}
                 </div>
-              ) : (
-                <>
-                  <div className="grid grid-cols-3 gap-4">
-                    <div>
-                      <Label>Start Date *</Label>
-                      <Input
-                        type="date"
-                        disabled={isReadOnly}
-                        {...register("start_date")}
-                        className={errors.start_date ? "border-red-500" : ""}
-                      />
-                      {errors.start_date && (
-                        <p className="text-sm text-red-500">
-                          {errors.start_date.message as any}
-                        </p>
-                      )}
-                    </div>
-                    <div>
-                      <Label>End Date *</Label>
-                      <Input
-                        type="date"
-                        disabled={isReadOnly}
-                        {...register("end_date")}
-                        className={errors.end_date ? "border-red-500" : ""}
-                      />
-                      {errors.end_date && (
-                        <p className="text-sm text-red-500">
-                          {errors.end_date.message as any}
-                        </p>
-                      )}
-                    </div>
-                    <div>
-                      <Label>Rent Amount *</Label>
-                      <Input
-                        type="number"
-                        step="any"
-                        disabled={isReadOnly}
-                        {...register("rent_amount")}
-                        className={errors.rent_amount ? "border-red-500" : ""}
-                      />
-                      {errors.rent_amount && (
-                        <p className="text-sm text-red-500">
-                          {errors.rent_amount.message as any}
-                        </p>
-                      )}
-                    </div>
-                  </div>
+                <div>
+                  <Label>End Date *</Label>
+                  <Input
+                    type="date"
+                    disabled={isReadOnly}
+                    {...register("end_date")}
+                    className={errors.end_date ? "border-red-500" : ""}
+                  />
+                  {errors.end_date && (
+                    <p className="text-sm text-red-500">
+                      {errors.end_date.message as any}
+                    </p>
+                  )}
+                </div>
+                <div>
+                  <Label>Rent Amount *</Label>
+                  <Input
+                    type="number"
+                    step="any"
+                    disabled={isReadOnly}
+                    {...register("rent_amount")}
+                    className={errors.rent_amount ? "border-red-500" : ""}
+                  />
+                  {errors.rent_amount && (
+                    <p className="text-sm text-red-500">
+                      {errors.rent_amount.message as any}
+                    </p>
+                  )}
+                </div>
+              </div>
 
-                  <div className="grid grid-cols-3 gap-4">
-                    <div>
-                      <Label>Deposit Amount</Label>
-                      <Input
-                        type="number"
-                        step="any"
+              <div className="grid grid-cols-3 gap-4">
+                <div>
+                  <Label>Deposit Amount</Label>
+                  <Input
+                    type="number"
+                    step="any"
+                    disabled={isReadOnly}
+                    {...register("deposit_amount")}
+                    className={
+                      errors.deposit_amount ? "border-red-500" : ""
+                    }
+                  />
+                  {errors.deposit_amount && (
+                    <p className="text-sm text-red-500">
+                      {errors.deposit_amount.message as any}
+                    </p>
+                  )}
+                </div>
+                <div>
+                  <Label>CAM Rate (per sq ft)</Label>
+                  <Input
+                    type="number"
+                    step="any"
+                    disabled={isReadOnly}
+                    {...register("cam_rate")}
+                    className={errors.cam_rate ? "border-red-500" : ""}
+                  />
+                  {errors.cam_rate && (
+                    <p className="text-sm text-red-500">
+                      {errors.cam_rate.message as any}
+                    </p>
+                  )}
+                </div>
+                <div>
+                  <Label>Status</Label>
+                  <Controller
+                    name="status"
+                    control={control}
+                    render={({ field }) => (
+                      <Select
+                        value={field.value}
+                        onValueChange={field.onChange}
                         disabled={isReadOnly}
-                        {...register("deposit_amount")}
-                        className={
-                          errors.deposit_amount ? "border-red-500" : ""
-                        }
-                      />
-                      {errors.deposit_amount && (
-                        <p className="text-sm text-red-500">
-                          {errors.deposit_amount.message as any}
-                        </p>
-                      )}
-                    </div>
-                    <div>
-                      <Label>CAM Rate (per sq ft)</Label>
-                      <Input
-                        type="number"
-                        step="any"
-                        disabled={isReadOnly}
-                        {...register("cam_rate")}
-                        className={errors.cam_rate ? "border-red-500" : ""}
-                      />
-                      {errors.cam_rate && (
-                        <p className="text-sm text-red-500">
-                          {errors.cam_rate.message as any}
-                        </p>
-                      )}
-                    </div>
-                    <div>
-                      <Label>Status</Label>
-                      <Controller
-                        name="status"
-                        control={control}
-                        render={({ field }) => (
-                          <Select
-                            value={field.value}
-                            onValueChange={field.onChange}
-                            disabled={isReadOnly}
-                          >
-                            <SelectTrigger>
-                              <SelectValue />
-                            </SelectTrigger>
-                            <SelectContent>
-                              <SelectItem value="draft">Draft</SelectItem>
-                              <SelectItem value="active">Active</SelectItem>
-                              <SelectItem value="expired">Expired</SelectItem>
-                              <SelectItem value="terminated">
-                                Terminated
-                              </SelectItem>
-                            </SelectContent>
-                          </Select>
-                        )}
-                      />
-                    </div>
-                  </div>
+                      >
+                        <SelectTrigger>
+                          <SelectValue />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="draft">Draft</SelectItem>
+                          <SelectItem value="active">Active</SelectItem>
+                          <SelectItem value="expired">Expired</SelectItem>
+                          <SelectItem value="terminated">
+                            Terminated
+                          </SelectItem>
+                        </SelectContent>
+                      </Select>
+                    )}
+                  />
+                </div>
+              </div>
 
-                  {/* Utilities */}
-                  <div className="grid grid-cols-2 gap-4">
-                    <div>
-                      <Label>Electricity</Label>
-                      <Controller
-                        name="utilities.electricity"
-                        control={control}
-                        render={({ field }) => (
-                          <Select
-                            value={field.value || ""}
-                            onValueChange={field.onChange}
-                            disabled={isReadOnly}
-                          >
-                            <SelectTrigger>
-                              <SelectValue placeholder="Select" />
-                            </SelectTrigger>
-                            <SelectContent>
-                              <SelectItem value="submeter">Submeter</SelectItem>
-                              <SelectItem value="fixed">Fixed</SelectItem>
-                              <SelectItem value="na">N/A</SelectItem>
-                            </SelectContent>
-                          </Select>
-                        )}
-                      />
-                    </div>
-                    <div>
-                      <Label>Water</Label>
-                      <Controller
-                        name="utilities.water"
-                        control={control}
-                        render={({ field }) => (
-                          <Select
-                            value={field.value || ""}
-                            onValueChange={field.onChange}
-                            disabled={isReadOnly}
-                          >
-                            <SelectTrigger>
-                              <SelectValue placeholder="Select" />
-                            </SelectTrigger>
-                            <SelectContent>
-                              <SelectItem value="submeter">Submeter</SelectItem>
-                              <SelectItem value="fixed">Fixed</SelectItem>
-                              <SelectItem value="na">N/A</SelectItem>
-                            </SelectContent>
-                          </Select>
-                        )}
-                      />
-                    </div>
-                  </div>
-                </>
-              )}
+              {/* Utilities */}
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <Label>Electricity</Label>
+                  <Controller
+                    name="utilities.electricity"
+                    control={control}
+                    render={({ field }) => (
+                      <Select
+                        value={field.value || ""}
+                        onValueChange={field.onChange}
+                        disabled={isReadOnly}
+                      >
+                        <SelectTrigger>
+                          <SelectValue placeholder="Select" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="submeter">Submeter</SelectItem>
+                          <SelectItem value="fixed">Fixed</SelectItem>
+                          <SelectItem value="na">N/A</SelectItem>
+                        </SelectContent>
+                      </Select>
+                    )}
+                  />
+                </div>
+                <div>
+                  <Label>Water</Label>
+                  <Controller
+                    name="utilities.water"
+                    control={control}
+                    render={({ field }) => (
+                      <Select
+                        value={field.value || ""}
+                        onValueChange={field.onChange}
+                        disabled={isReadOnly}
+                      >
+                        <SelectTrigger>
+                          <SelectValue placeholder="Select" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="submeter">Submeter</SelectItem>
+                          <SelectItem value="fixed">Fixed</SelectItem>
+                          <SelectItem value="na">N/A</SelectItem>
+                        </SelectContent>
+                      </Select>
+                    )}
+                  />
+                </div>
+              </div>
 
               <DialogFooter>
                 <Button
@@ -673,7 +604,7 @@ export function LeaseForm({
                 >
                   {mode === "view" ? "Close" : "Cancel"}
                 </Button>
-                {mode !== "view" && !isOwnerPayer && (
+                {mode !== "view" && (
                   <Button type="submit" disabled={isSubmitting}>
                     {isSubmitting
                       ? "Saving..."

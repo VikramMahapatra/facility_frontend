@@ -169,9 +169,7 @@ export default function Invoices() {
     params.append("skip", skip.toString());
     params.append("limit", limit.toString());
 
-    const response = await withLoader(async () => {
-      return await invoiceApiService.getPayments(params);
-    });
+    const response = await invoiceApiService.getPayments(params);
 
     if (response?.success) {
       const payments =

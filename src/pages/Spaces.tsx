@@ -55,6 +55,7 @@ export interface Space {
   id: string;
   org_id: string;
   site_id: string;
+  site_name?: string;
   code: string;
   name?: string;
   kind: SpaceKind;
@@ -290,10 +291,6 @@ export default function Spaces() {
     return colors[status as keyof typeof colors] || "bg-gray-100 text-gray-800";
   };
 
-  const getSiteName = (siteId: string) => {
-    const site = siteList.find((s) => s.id === siteId);
-    return site ? site.name : "Unknown Site";
-  };
 
   return (
     <div>
@@ -462,7 +459,7 @@ export default function Spaces() {
                     <div className="flex items-center gap-2">
                       <MapPin className="h-3 w-3 text-muted-foreground" />
                       <span className="text-muted-foreground">
-                        {getSiteName(space.site_id)}
+                        {space.site_name}
                       </span>
                     </div>
                     <div className="flex items-center justify-between">

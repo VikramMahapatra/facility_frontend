@@ -24,11 +24,14 @@ import { toast } from "sonner";
 import { siteApiService } from "@/services/spaces_sites/sitesapi";
 import { buildingApiService } from "@/services/spaces_sites/buildingsapi";
 import { SpaceKind, spaceKinds } from "@/interfaces/spaces_interfaces";
+import { AsyncAutocompleteRQ } from "./common/async-autocomplete-rq";
+import { withFallback } from "@/helpers/commonHelper";
 
 interface Space {
   id: string;
   org_id: string;
   site_id: string;
+  site_name?: string;
   code: string;
   name?: string;
   kind: SpaceKind;
@@ -102,45 +105,42 @@ export function SpaceForm({
 
   const loadAll = async () => {
     setFormLoading(true);
-
-    // Clear building list when in create mode
-    if (mode === "create") {
-      setBuildingList([]);
-    }
-
-    await Promise.all([loadSiteLookup(), loadBuildingLookup()]);
-
-      reset(
+    reset(
       space && mode !== "create"
         ? {
-            code: space.code || "",
-            name: space.name || "",
-            kind: space.kind || "room",
-            site_id: space.site_id || "",
-            floor:
-              space.floor !== undefined && space.floor !== null
-                ? Number(space.floor)
-                : undefined,
-            building_block_id: space.building_block_id || "",
-            area_sqft: space.area_sqft,
-            beds: space.beds ,
-            baths: space.baths,
-            status: space.status || "available",
-            attributes: {
-              view: space.attributes?.view || "",
-             
-              furnished: space.attributes?.furnished as
-                | "unfurnished"
-                | "semi"
-                | "fully"
-                | undefined,
-              star_rating: space.attributes?.star_rating || "",
-            },
-          }
+          code: space.code || "",
+          name: space.name || "",
+          kind: space.kind || "room",
+          site_id: space.site_id || "",
+          floor:
+            space.floor !== undefined && space.floor !== null
+              ? Number(space.floor)
+              : undefined,
+          building_block_id: space.building_block_id || "",
+          area_sqft: space.area_sqft,
+          beds: space.beds,
+          baths: space.baths,
+          status: space.status || "available",
+          attributes: {
+            view: space.attributes?.view || "",
+
+            furnished: space.attributes?.furnished as
+              | "unfurnished"
+              | "semi"
+              | "fully"
+              | undefined,
+            star_rating: space.attributes?.star_rating || "",
+          },
+        }
         : emptyFormData
     );
 
     setFormLoading(false);
+
+
+    if (space?.site_id) {
+      loadBuildingLookup(space.site_id);
+    }
   };
 
   useEffect(() => {
@@ -157,18 +157,13 @@ export function SpaceForm({
     }
   }, [selectedSiteId]);
 
-  const loadSiteLookup = async () => {
-    const response = await siteApiService.getSiteLookup();
-    if (response.success) setSiteList(response.data || []);
-  };
 
-  const loadBuildingLookup = async () => {
-    if (selectedSiteId) {
-      const response = await buildingApiService.getBuildingLookup(
-        selectedSiteId
-      );
-      if (response.success) setBuildingList(response.data || []);
-    }
+  const loadBuildingLookup = async (siteId?: string) => {
+    const id = siteId || selectedSiteId;
+    if (!id) return;
+
+    const response = await buildingApiService.getBuildingLookup(id);
+    if (response.success) setBuildingList(response.data || []);
   };
 
   const onSubmitForm = async (data: SpaceFormValues) => {
@@ -179,8 +174,8 @@ export function SpaceForm({
         data.floor !== undefined && data.floor !== null
           ? String(data.floor)
           : mode === "create"
-          ? "0"
-          : space?.floor,
+            ? "0"
+            : space?.floor,
     } as Partial<Space>);
   };
 
@@ -192,6 +187,15 @@ export function SpaceForm({
     setBuildingList([]);
     onClose();
   };
+
+  const fallbackBuilding = space?.building_block_id
+    ? {
+      id: space.building_block_id,
+      name: space.building_block || `Building (${space.building_block_id.slice(0, 6)})`,
+    }
+    : null;
+
+  const building_blocks = withFallback(buildingList, fallbackBuilding);
 
   return (
     <Dialog open={isOpen} onOpenChange={handleClose}>
@@ -247,30 +251,33 @@ export function SpaceForm({
                   render={({ field }) => (
                     <div className="space-y-2">
                       <Label htmlFor="site_id">Site *</Label>
-                      <Select
+                      <AsyncAutocompleteRQ
                         value={field.value}
-                        onValueChange={field.onChange}
+                        onChange={(value) => {
+                          field.onChange(value);
+                          // clear building when site changes
+                          reset({ ...watch(), building_block_id: "" });
+                        }}
+                        placeholder="Select site"
                         disabled={isReadOnly}
-                      >
-                        <SelectTrigger
-                          className={errors.site_id ? "border-red-500" : ""}
-                        >
-                          <SelectValue placeholder="Select site" />
-                        </SelectTrigger>
-                        <SelectContent>
-                          {siteList.length === 0 ? (
-                            <SelectItem value="none" disabled>
-                              No sites available
-                            </SelectItem>
-                          ) : (
-                            siteList.map((site) => (
-                              <SelectItem key={site.id} value={site.id}>
-                                {site.name}
-                              </SelectItem>
-                            ))
-                          )}
-                        </SelectContent>
-                      </Select>
+                        queryKey={["sites"]}
+                        queryFn={async (search) => {
+                          const res = await siteApiService.getSiteLookup(search);
+                          return res.data.map((s) => ({
+                            id: s.id,
+                            label: s.name,
+                          }));
+                        }}
+                        fallbackOption={
+                          space?.site_id
+                            ? {
+                              id: space.site_id,
+                              label: space.site_name || "Selected Site",
+                            }
+                            : undefined
+                        }
+                        minSearchLength={1}
+                      />
                       {errors.site_id && (
                         <p className="text-sm text-red-500">
                           {errors.site_id.message}
@@ -299,7 +306,7 @@ export function SpaceForm({
                         </SelectTrigger>
                         <SelectContent>
                           <SelectItem value="none">Select building</SelectItem>
-                          {buildingList.map((building_block) => (
+                          {building_blocks.map((building_block) => (
                             <SelectItem
                               key={building_block.id}
                               value={building_block.id}
@@ -550,8 +557,8 @@ export function SpaceForm({
                     {isSubmitting
                       ? "Saving..."
                       : mode === "create"
-                      ? "Create Space"
-                      : "Update Space"}
+                        ? "Create Space"
+                        : "Update Space"}
                   </Button>
                 )}
               </DialogFooter>
