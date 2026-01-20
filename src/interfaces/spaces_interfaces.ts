@@ -1,3 +1,42 @@
+export const getKindIcon = (kind: SpaceKind) => {
+    const icons = {
+        room: "🏨",
+        apartment: "🏠",
+        shop: "🏪",
+        office: "🏢",
+        warehouse: "🏭",
+        meeting_room: "🏛️",
+        hall: "🎭",
+        common_area: "🌳",
+        parking: "🚗",
+    };
+    return icons[kind] || "📍";
+};
+
+export const getKindColor = (kind: SpaceKind) => {
+    const colors = {
+        room: "bg-purple-100 text-purple-800",
+        apartment: "bg-blue-100 text-blue-800",
+        shop: "bg-green-100 text-green-800",
+        office: "bg-orange-100 text-orange-800",
+        warehouse: "bg-gray-100 text-gray-800",
+        meeting_room: "bg-indigo-100 text-indigo-800",
+        hall: "bg-pink-100 text-pink-800",
+        common_area: "bg-teal-100 text-teal-800",
+        parking: "bg-yellow-100 text-yellow-800",
+    };
+    return colors[kind] || "bg-gray-100 text-gray-800";
+};
+
+export const getStatusColor = (status: string) => {
+    const colors = {
+        available: "bg-green-100 text-green-800",
+        occupied: "bg-blue-100 text-blue-800",
+        out_of_service: "bg-red-100 text-red-800",
+    };
+    return colors[status as keyof typeof colors] || "bg-gray-100 text-gray-800";
+};
+
 export const spaceKinds = [
     'room',
     'apartment',
@@ -15,7 +54,7 @@ export const spaceKinds = [
     'penthouse',
     'studio_apartment',
     'farm_house',
-    
+
 ] as const;
 
 export type SpaceKind = typeof spaceKinds[number];
