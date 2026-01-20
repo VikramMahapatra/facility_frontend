@@ -1,5 +1,11 @@
 import * as z from "zod";
 
+const StatusEnum = z.enum([
+  "active",
+  "inactive",
+  "blocked",
+]);
+
 export const createUserSchema = (isCreateMode: boolean = false) =>
   z
     .object({
@@ -13,12 +19,12 @@ export const createUserSchema = (isCreateMode: boolean = false) =>
         .max(200, "Email must not exceed 200 characters"),
       password: isCreateMode
         ? z
-            .string()
-            .min(1, "Password is required")
-            .min(6, "Password must be at least 6 characters")
+          .string()
+          .min(1, "Password is required")
+          .min(6, "Password must be at least 6 characters")
         : z.string().optional().or(z.literal("")),
       phone: z.string().regex(/^\+\d{10,15}$/, "Invalid phone number"),
-      status: z.string().min(1, "Status is required"),
+      status: StatusEnum,
       account_type: z.string().min(1, "Type is required"),
       role_ids: z
         .array(z.string())
@@ -59,6 +65,10 @@ export const createUserSchema = (isCreateMode: boolean = false) =>
             message: "At least one space is required for tenant",
           });
         }
+      }
+      else {
+        // 👇 IMPORTANT: prevent validation when not tenant
+        delete (data as any).tenant_spaces;
       }
     });
 

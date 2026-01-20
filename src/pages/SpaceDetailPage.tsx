@@ -11,7 +11,7 @@ import { getKindColor, getKindIcon, getStatusColor } from "@/interfaces/spaces_i
 import ContentContainer from "@/components/ContentContainer";
 import LoaderOverlay from "@/components/LoaderOverlay";
 import { Space } from "./Spaces";
-import { ArrowLeft } from "lucide-react";
+import { ArrowLeft, FileText, Home } from "lucide-react";
 
 export default function SpaceDetailPage() {
     const { id } = useParams<{ id: string }>();
@@ -91,7 +91,11 @@ export default function SpaceDetailPage() {
                     {/* Space Info */}
                     <Card>
                         <CardHeader>
-                            <CardTitle>Space Information</CardTitle>
+                            <CardTitle>
+                                <h1 className="flex items-center gap-2">
+                                    <Home className="h-5 w-5" /> Space Information
+                                </h1>
+                            </CardTitle>
                         </CardHeader>
                         <CardContent className="grid grid-cols-2 gap-4 text-sm">
                             <Info label="Site" value={space.site_name} />
@@ -108,7 +112,9 @@ export default function SpaceDetailPage() {
                     {/* Ownership */}
                     <Card>
                         <CardHeader>
-                            <CardTitle>Ownership</CardTitle>
+                            <CardTitle><h1 className="flex items-center gap-2">
+                                <FileText className="h-5 w-5" /> Ownership
+                            </h1></CardTitle>
                         </CardHeader>
                         <CardContent>
                             <SpaceOwnershipSection spaceId={id!} />
@@ -121,10 +127,12 @@ export default function SpaceDetailPage() {
 }
 
 function Info({ label, value }: { label: string; value?: any }) {
+    const displayValue = (v?: string | number | null) =>
+        v === null || v === undefined || v === "" ? "-" : v;
     return (
         <div>
             <p className="text-muted-foreground">{label}</p>
-            <p>{value ?? "-"}</p>
+            <p>{displayValue(value)}</p>
         </div>
     );
 }

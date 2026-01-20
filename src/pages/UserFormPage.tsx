@@ -81,13 +81,7 @@ const emptyFormData: UserFormValues = {
   site_ids: [],
   tenant_type: "individual",
   staff_role: "",
-  tenant_spaces: [
-    {
-      site_id: "",
-      building_block_id: "",
-      space_id: "",
-    },
-  ],
+  tenant_spaces: undefined,
 };
 
 const accountTypes = [
@@ -244,25 +238,31 @@ export default function UserFormPage() {
     reset(
       user && formMode !== "create"
         ? {
-            full_name: user.full_name || "",
-            email: user.email || "",
-            password: "",
-            phone: user.phone || "",
-            status: user.status || "active",
-            account_type: user.account_type || "organization",
-            role_ids: user.roles?.map((r) => r.id) || [],
-            site_id: userSiteId || "",
-            building_id: userBuildingId || "",
-            space_id: (user as any).space_id || "",
-            site_ids: (user as any).site_ids || [],
-            tenant_type: (user as any).tenant_type || "residential",
-            staff_role: (user as any).staff_role || "",
-            tenant_spaces:
-              (user as any).tenant_spaces || emptyFormData.tenant_spaces,
-          }
+          full_name: user.full_name || "",
+          email: user.email || "",
+          password: "",
+          phone: user.phone || "",
+          status: user.status as any || "active",
+          account_type: user.account_type || "organization",
+          role_ids: user.roles?.map((r) => r.id) || [],
+          site_id: userSiteId || "",
+          building_id: userBuildingId || "",
+          space_id: (user as any).space_id || "",
+          site_ids: (user as any).site_ids || [],
+          tenant_type: (user as any).tenant_type || "residential",
+          staff_role: (user as any).staff_role || "",
+          tenant_spaces:
+            (user as any).tenant_spaces || emptyFormData.tenant_spaces,
+        }
         : emptyFormData
     );
   };
+
+  useEffect(() => {
+    if (watch("account_type") !== "tenant") {
+      setValue("tenant_spaces", undefined);
+    }
+  }, [watch("account_type")]);
 
   useEffect(() => {
     if (user !== undefined || formMode === "create") {
@@ -299,12 +299,12 @@ export default function UserFormPage() {
     const ensured =
       remaining.length === 0
         ? [
-            {
-              site_id: "",
-              building_block_id: "",
-              space_id: "",
-            },
-          ]
+          {
+            site_id: "",
+            building_block_id: "",
+            space_id: "",
+          },
+        ]
         : remaining;
     setValue("tenant_spaces", ensured, {
       shouldValidate: true,
@@ -348,7 +348,7 @@ export default function UserFormPage() {
           space.space_id &&
           space.site_id === currentEntry.site_id &&
           (space.building_block_id || "") ===
-            (currentEntry.building_block_id || "") &&
+          (currentEntry.building_block_id || "") &&
           space.space_id === value
       );
 
@@ -433,8 +433,7 @@ export default function UserFormPage() {
     if (response?.success) {
       navigate("/users-management");
       toast.success(
-        `User ${userData.full_name} has been ${
-          formMode === "create" ? "created" : "updated"
+        `User ${userData.full_name} has been ${formMode === "create" ? "created" : "updated"
         } successfully.`
       );
     } else if (response && !response.success) {
@@ -471,7 +470,7 @@ export default function UserFormPage() {
           if (
             space1.site_id === space2.site_id &&
             (space1.building_block_id || "") ===
-              (space2.building_block_id || "") &&
+            (space2.building_block_id || "") &&
             space1.space_id === space2.space_id
           ) {
             if (!duplicates.includes(i)) duplicates.push(i);
@@ -528,15 +527,15 @@ export default function UserFormPage() {
                 {formMode === "create"
                   ? "Create New User"
                   : formMode === "edit"
-                  ? "Edit User"
-                  : "User Details"}
+                    ? "Edit User"
+                    : "User Details"}
               </h1>
               <p className="text-muted-foreground">
                 {formMode === "create"
                   ? "Add a new user to the system"
                   : formMode === "edit"
-                  ? "Update user information"
-                  : "View user details"}
+                    ? "Update user information"
+                    : "View user details"}
               </p>
             </div>
           </div>
@@ -561,8 +560,8 @@ export default function UserFormPage() {
                     ? "Creating..."
                     : "Updating..."
                   : formMode === "create"
-                  ? "Create User"
-                  : "Update User"}
+                    ? "Create User"
+                    : "Update User"}
               </Button>
             )}
           </div>
@@ -830,47 +829,6 @@ export default function UserFormPage() {
                       </div>
                     )}
                   />
-                  <Controller
-                    name="tenant_type"
-                    control={control}
-                    render={({ field }) => (
-                      <div className="space-y-2">
-                        <Label>Type *</Label>
-                        <Select
-                          value={field.value || ""}
-                          onValueChange={field.onChange}
-                          disabled={isReadOnly}
-                        >
-                          <SelectTrigger className="w-full">
-                            <SelectValue placeholder="Select your account type" />
-                          </SelectTrigger>
-                          <SelectContent>
-                            {accountTypes.map((type) => (
-                              <SelectItem key={type.value} value={type.value}>
-                                <div className="flex items-center space-x-3">
-                                  {type.icon}
-                                  <div>
-                                    <div className="font-medium">
-                                      {type.label}
-                                    </div>
-                                    <div className="text-xs text-muted-foreground">
-                                      {type.description}
-                                    </div>
-                                  </div>
-                                </div>
-                              </SelectItem>
-                            ))}
-                          </SelectContent>
-                        </Select>
-                        {errors.account_type && (
-                          <p className="text-sm text-red-500">
-                            {errors.account_type.message}
-                          </p>
-                        )}
-                      </div>
-                    )}
-                  />
-
                   <Controller
                     name="tenant_type"
                     control={control}
@@ -1583,7 +1541,7 @@ export default function UserFormPage() {
                                     <SelectTrigger
                                       className={
                                         fieldState.error &&
-                                        (fieldState.isTouched || isSubmitted)
+                                          (fieldState.isTouched || isSubmitted)
                                           ? "border-red-500"
                                           : ""
                                       }
