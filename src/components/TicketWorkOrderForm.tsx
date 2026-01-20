@@ -28,6 +28,7 @@ import {
   TicketWorkOrderFormValues,
 } from "@/schemas/ticketworkorder.schema";
 import { leaseChargeApiService } from "@/services/leasing_tenants/leasechargeapi";
+import { withFallback } from "@/helpers/commonHelper";
 
 interface TicketWorkOrderFormProps {
   workOrder?: any;
@@ -87,13 +88,6 @@ export function TicketWorkOrderForm({
   const loadAll = async () => {
     setFormLoading(true);
 
-    await Promise.all([
-      loadVendorLookup(),
-      loadTicketLookup(),
-      loadStatusLookup(),
-      loadTaxCodeLookup(),
-    ]);
-
     const ticketId =
       workOrder && mode !== "create"
         ? workOrder.ticket_id || ""
@@ -120,9 +114,20 @@ export function TicketWorkOrderForm({
           }
     );
 
+    setFormLoading(false);
+
+    await Promise.all([
+      loadVendorLookup(),
+      loadTicketLookup(),
+      loadStatusLookup(),
+      loadTaxCodeLookup(),
+    ]);
+
     if (ticketId) {
       setIsLoadingTicketDetails(true);
-      const response = await ticketWorkOrderApiService.getTicketAssignments(ticketId);
+      const response = await ticketWorkOrderApiService.getTicketAssignments(
+        ticketId
+      );
       if (response.success) {
         setSelectedTicketDetails(response.data);
       }
@@ -131,7 +136,6 @@ export function TicketWorkOrderForm({
       setSelectedTicketDetails(null);
       setIsLoadingTicketDetails(false);
     }
-    setFormLoading(false);
   };
 
   useEffect(() => {
@@ -144,7 +148,7 @@ export function TicketWorkOrderForm({
     const loadTicketAssignments = async () => {
       if (selectedTicketId) {
         setIsLoadingTicketDetails(true);
-        setSelectedTicketDetails(null); 
+        setSelectedTicketDetails(null);
         const response = await ticketWorkOrderApiService.getTicketAssignments(
           selectedTicketId
         );
@@ -178,7 +182,7 @@ export function TicketWorkOrderForm({
   const loadTaxCodeLookup = async () => {
     const lookup = await leaseChargeApiService.getTaxCodeLookup();
     if (lookup.success) setTaxCodeList(lookup.data || []);
-  }
+  };
 
   const onSubmitForm = async (data: TicketWorkOrderFormValues) => {
     const formResponse = await onSave({
@@ -189,6 +193,46 @@ export function TicketWorkOrderForm({
   };
 
   const isReadOnly = mode === "view";
+
+  // Create fallback options for fields that might not be in lookup lists
+  const fallbackTicket = workOrder?.ticket_id
+    ? {
+        id: workOrder.ticket_id,
+        name:
+          workOrder.ticket_name ||
+          workOrder.ticket_no ||
+          `Ticket (${workOrder.ticket_id.slice(0, 6)})`,
+      }
+    : null;
+
+  const fallbackVendor = workOrder?.vendor_name
+    ? {
+        id: workOrder.vendor_id || "",
+        name: workOrder.vendor_name,
+      }
+    : null;
+
+  const fallbackStatus = workOrder?.status
+    ? {
+        id: workOrder.status,
+        name: workOrder.status,
+      }
+    : null;
+
+  const fallbackTaxCode = workOrder?.tax_code_id
+    ? {
+        id: workOrder.tax_code_id,
+        name:
+          workOrder.tax_code_name ||
+          `Tax Code (${workOrder.tax_code_id.slice(0, 6)})`,
+      }
+    : null;
+
+  // Apply fallback to lists
+  const tickets = withFallback(ticketsList, fallbackTicket);
+  const vendors = withFallback(vendorList, fallbackVendor);
+  const statuses = withFallback(statusList, fallbackStatus);
+  const taxCodes = withFallback(taxCodeList, fallbackTaxCode);
 
   const handleClose = () => {
     reset(emptyFormData);
@@ -235,7 +279,7 @@ export function TicketWorkOrderForm({
                           <SelectValue placeholder="Select ticket" />
                         </SelectTrigger>
                         <SelectContent>
-                          {ticketsList.map((ticket) => (
+                          {tickets.map((ticket) => (
                             <SelectItem key={ticket.id} value={ticket.id}>
                               {ticket.name}
                             </SelectItem>
@@ -267,7 +311,7 @@ export function TicketWorkOrderForm({
                           <SelectValue placeholder="Select status" />
                         </SelectTrigger>
                         <SelectContent>
-                          {statusList.map((status) => (
+                          {statuses.map((status) => (
                             <SelectItem key={status.id} value={status.id}>
                               {status.name}
                             </SelectItem>
@@ -439,7 +483,7 @@ export function TicketWorkOrderForm({
                         </SelectTrigger>
                         <SelectContent>
                           <SelectItem value="NO_TAX">No Tax</SelectItem>
-                          {taxCodeList.map((tax) => (
+                          {taxCodes.map((tax) => (
                             <SelectItem key={tax.id} value={tax.id}>
                               {tax.name}
                             </SelectItem>

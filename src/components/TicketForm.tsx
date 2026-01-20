@@ -17,13 +17,15 @@ import { spacesApiService } from "@/services/spaces_sites/spacesapi";
 import { siteApiService } from "@/services/spaces_sites/sitesapi";
 import { buildingApiService } from "@/services/spaces_sites/buildingsapi";
 import { tenantsApiService } from "@/services/leasing_tenants/tenantsapi";
-import { organisationApiService } from "@/services/spaces_sites/organisationapi";
+//import { organisationApiService } from "@/services/spaces_sites/organisationapi";
 import { ticketsApiService } from "@/services/ticketing_service/ticketsapi";
 import { vendorsApiService } from "@/services/procurements/vendorsapi";
-import { userManagementApiService } from "@/services/access_control/usermanagementapi";
+//import { userManagementApiService } from "@/services/access_control/usermanagementapi";
 import { slaPoliciesApiService } from "@/services/ticketing_service/slapoliciesapi";
 import { toast } from "sonner";
 import { ticketSchema, TicketFormValues } from "@/schemas/ticket.schema";
+import { withFallback } from "@/helpers/commonHelper";
+import { AsyncAutocompleteRQ } from "@/components/common/async-autocomplete-rq";
 //import { toast as sonnerToast } from "sonner";
 
 interface TicketFormProps {
@@ -95,7 +97,6 @@ export default function TicketForm({
   const [spaceList, setSpaceList] = useState<any[]>([]);
   const [buildingList, setBuildingList] = useState<any[]>([]);
   const [tenantList, setTenantList] = useState<any[]>([]);
-  const [siteList, setSiteList] = useState<any[]>([]);
   const [categoryList, setCategoryList] = useState<any[]>([]);
   const [staffList, setStaffList] = useState<any[]>([]);
   const [vendorList, setVendorList] = useState<any[]>([]);
@@ -113,7 +114,6 @@ export default function TicketForm({
   ];
 
   useEffect(() => {
-    loadSiteLookup();
     loadCategoryLookup(initialData?.site_id || "all");
     loadStaffLookup(initialData?.site_id);
     loadVendorLookup();
@@ -192,13 +192,6 @@ export default function TicketForm({
       });
     }
   }, [initialData, reset]);
-
-  const loadSiteLookup = async () => {
-    const response = await siteApiService.getSiteLookup();
-    if (response.success) {
-      setSiteList(response.data || []);
-    }
-  };
 
   const loadCategoryLookup = async (siteId?: string | null) => {
     const response = await ticketsApiService.getCategoryLookup(siteId || "all");
@@ -287,6 +280,77 @@ export default function TicketForm({
     await onSubmit(ticketFormData);
   };
 
+  const fallbackBuilding = initialData?.building_id
+    ? {
+        id: initialData.building_id,
+        name:
+          initialData.building_name ||
+          `Building (${initialData.building_id.slice(0, 6)})`,
+      }
+    : null;
+
+  const fallbackSpace = initialData?.space_id
+    ? {
+        id: initialData.space_id,
+        name:
+          initialData.space_name ||
+          initialData.space_code ||
+          `Space (${initialData.space_id.slice(0, 6)})`,
+      }
+    : null;
+
+  const fallbackTenant = initialData?.tenant_id
+    ? {
+        id: initialData.tenant_id,
+        name:
+          initialData.tenant_name ||
+          `Tenant (${initialData.tenant_id.slice(0, 6)})`,
+      }
+    : null;
+
+  const fallbackCategory = initialData?.category_id
+    ? {
+        id: initialData.category_id,
+        category_name:
+          initialData.category_name ||
+          initialData.category ||
+          `Category (${initialData.category_id.slice(0, 6)})`,
+        name:
+          initialData.category_name ||
+          initialData.category ||
+          `Category (${initialData.category_id.slice(0, 6)})`,
+      }
+    : null;
+
+  const fallbackStaff = initialData?.assigned_to
+    ? {
+        id: String(initialData.assigned_to),
+        name:
+          initialData.assigned_to_name ||
+          initialData.assigned_to_full_name ||
+          `Staff (${String(initialData.assigned_to).slice(0, 6)})`,
+        email: initialData.assigned_to_email,
+        full_name:
+          initialData.assigned_to_name || initialData.assigned_to_full_name,
+      }
+    : null;
+
+  const fallbackVendor = initialData?.vendor_id
+    ? {
+        id: initialData.vendor_id,
+        name:
+          initialData.vendor_name ||
+          `Vendor (${initialData.vendor_id.slice(0, 6)})`,
+      }
+    : null;
+
+  const buildings = withFallback(buildingList, fallbackBuilding);
+  const spaces = withFallback(spaceList, fallbackSpace);
+  const tenants = withFallback(tenantList, fallbackTenant);
+  const categories = withFallback(categoryList, fallbackCategory);
+  const staff = withFallback(staffList, fallbackStaff);
+  const vendors = withFallback(vendorList, fallbackVendor);
+
   return (
     <form
       onSubmit={isSubmitting ? undefined : handleSubmit(onSubmitForm)}
@@ -314,28 +378,35 @@ export default function TicketForm({
           render={({ field }) => (
             <div className="space-y-2">
               <Label htmlFor="site_id">Site *</Label>
-              <Select
+              <AsyncAutocompleteRQ
                 value={field.value || ""}
-                onValueChange={(value) => {
+                onChange={(value) => {
                   field.onChange(value);
                   // Reset building and space when site changes
                   setValue("building_id", "");
                   setValue("space_id", "");
                 }}
-              >
-                <SelectTrigger
-                  className={errors.site_id ? "border-red-500" : ""}
-                >
-                  <SelectValue placeholder="Select site" />
-                </SelectTrigger>
-                <SelectContent>
-                  {siteList.map((site: any) => (
-                    <SelectItem key={site.id} value={site.id}>
-                      {site.name}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
+                placeholder="Select site"
+                queryKey={["sites"]}
+                queryFn={async (search) => {
+                  const res = await siteApiService.getSiteLookup(search);
+                  return res.data.map((s: any) => ({
+                    id: s.id,
+                    label: s.name,
+                  }));
+                }}
+                fallbackOption={
+                  initialData?.site_id
+                    ? {
+                        id: initialData.site_id,
+                        label:
+                          initialData.site_name ||
+                          `Site (${initialData.site_id.slice(0, 6)})`,
+                      }
+                    : undefined
+                }
+                minSearchLength={1}
+              />
               {errors.site_id && (
                 <p className="text-sm text-red-500">{errors.site_id.message}</p>
               )}
@@ -366,7 +437,7 @@ export default function TicketForm({
                   />
                 </SelectTrigger>
                 <SelectContent>
-                  {buildingList.map((building: any) => (
+                  {buildings.map((building: any) => (
                     <SelectItem key={building.id} value={building.id}>
                       {building.name}
                     </SelectItem>
@@ -398,7 +469,7 @@ export default function TicketForm({
                   />
                 </SelectTrigger>
                 <SelectContent>
-                  {spaceList.map((space: any) => (
+                  {spaces.map((space: any) => (
                     <SelectItem key={space.id} value={space.id}>
                       {space.name || space.code}
                     </SelectItem>
@@ -437,7 +508,7 @@ export default function TicketForm({
                 </SelectTrigger>
                 <SelectContent>
                   <SelectItem value="none">Select Tenant</SelectItem>
-                  {tenantList.map((tenant: any) => (
+                  {tenants.map((tenant: any) => (
                     <SelectItem key={tenant.id} value={tenant.id}>
                       {tenant.name}
                     </SelectItem>
@@ -461,7 +532,7 @@ export default function TicketForm({
                   <SelectValue placeholder="Select Category" />
                 </SelectTrigger>
                 <SelectContent>
-                  {categoryList.map((category: any) => (
+                  {categories.map((category: any) => (
                     <SelectItem key={category.id} value={category.id}>
                       {category.category_name || category.name}
                     </SelectItem>
@@ -579,12 +650,15 @@ export default function TicketForm({
                 </SelectTrigger>
                 <SelectContent>
                   <SelectItem value="none">Select Staff</SelectItem>
-                  {staffList.map((staff: any) => (
-                    <SelectItem key={staff.id} value={String(staff.id)}>
-                      {staff.name ||
-                        staff.email ||
-                        staff.full_name ||
-                        `User ${staff.id}`}
+                  {staff.map((staffMember: any) => (
+                    <SelectItem
+                      key={staffMember.id}
+                      value={String(staffMember.id)}
+                    >
+                      {staffMember.name ||
+                        staffMember.email ||
+                        staffMember.full_name ||
+                        `User ${staffMember.id}`}
                     </SelectItem>
                   ))}
                 </SelectContent>
@@ -605,7 +679,7 @@ export default function TicketForm({
                 </SelectTrigger>
                 <SelectContent>
                   <SelectItem value="none">Select Vendor</SelectItem>
-                  {vendorList.map((vendor: any) => (
+                  {vendors.map((vendor: any) => (
                     <SelectItem key={vendor.id} value={vendor.id}>
                       {vendor.name}
                     </SelectItem>

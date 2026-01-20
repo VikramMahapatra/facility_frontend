@@ -12,6 +12,9 @@ import { toast } from "sonner";
 import { assetApiService } from '@/services/maintenance_assets/assetsapi';
 import { siteApiService } from '@/services/spaces_sites/sitesapi';
 import { Asset } from '@/interfaces/assets_interface';
+import { withFallback } from '@/helpers/commonHelper';
+import { AsyncAutocompleteRQ } from './common/async-autocomplete-rq';
+
 
 type Mode = 'create' | 'edit' | 'view';
 
@@ -63,7 +66,7 @@ export function AssetForm({ isOpen, mode, asset, onClose, onSave }: Props) {
   const loadAll = async () => {
     setFormLoading(true);
 
-    await Promise.all([loadSites(), loadCategories(), loadStatuses()]);
+   
 
     reset(
       asset && mode !== "create"
@@ -84,7 +87,11 @@ export function AssetForm({ isOpen, mode, asset, onClose, onSave }: Props) {
     );
 
     setFormLoading(false);
+    await Promise.all([loadSites(), loadCategories(), loadStatuses()]);
   };
+
+  
+
 
   useEffect(() => {
     if (isOpen) {
@@ -127,6 +134,26 @@ export function AssetForm({ isOpen, mode, asset, onClose, onSave }: Props) {
     reset(emptyFormData);
     onClose();
   };
+
+
+  const fallbackCategories = asset?.category_id
+    ? {
+        id: asset.category_id,
+        name: asset.category_name,
+        value: asset.category_id,
+      }
+    : null;
+  const categoriesWithFallback = withFallback(categories, fallbackCategories);
+
+  const fallbackStatuses = asset?.status
+    ? {
+        id: asset.status,
+        name: asset.status,
+        value: asset.status,
+      }
+    : null;
+
+  const statusesWithFallback = withFallback(statuses, fallbackStatuses);
 
   return (
     <Dialog open={isOpen} onOpenChange={handleClose}>
@@ -178,20 +205,31 @@ export function AssetForm({ isOpen, mode, asset, onClose, onSave }: Props) {
               render={({ field }) => (
                 <div className="space-y-2">
                   <Label htmlFor="site_id">Site *</Label>
-                  <Select
-                    value={field.value}
-                    onValueChange={field.onChange}
+                  <AsyncAutocompleteRQ
+                    value={field.value || ""}
+                    onChange={(value) => {
+                      field.onChange(value);
+                    }}
                     disabled={readOnly}
-                  >
-                    <SelectTrigger className={errors.site_id ? 'border-red-500' : ''}>
-                      <SelectValue placeholder="Select site" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      {sites.map((s) => (
-                        <SelectItem key={s.id} value={s.id}>{s.name}</SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
+                    placeholder="Select site"
+                    queryKey={["sites"]}
+                    queryFn={async (search) => {
+                      const response = await siteApiService.getSiteLookup(search);
+                      return response.data.map((s: any) => ({
+                        id: s.id,
+                        label: s.name,
+                      }));
+                    }}
+                    fallbackOption={
+                      asset?.site_id
+                        ? {
+                            id: asset.site_id,
+                            label: asset.name || `Site (${asset.site_id.slice(0, 6)})`,
+                          }
+                        : undefined
+                    }
+                    minSearchLength={1}
+                  />
                   {errors.site_id && (
                     <p className="text-sm text-red-500">{errors.site_id.message}</p>
                   )}
@@ -213,7 +251,7 @@ export function AssetForm({ isOpen, mode, asset, onClose, onSave }: Props) {
                       <SelectValue placeholder="Select category" />
                     </SelectTrigger>
                     <SelectContent>
-                      {categories.map((s) => (
+                      {categoriesWithFallback.map((s) => (
                         <SelectItem key={s.id} value={s.id}>{s.name}</SelectItem>
                       ))}
                     </SelectContent>
@@ -323,7 +361,7 @@ export function AssetForm({ isOpen, mode, asset, onClose, onSave }: Props) {
                       <SelectValue placeholder="Select status" />
                     </SelectTrigger>
                     <SelectContent>
-                      {statuses.map((s) => (
+                      {statusesWithFallback.map((s) => (
                         <SelectItem key={s.id} value={s.id}>{s.name}</SelectItem>
                       ))}
                     </SelectContent>
