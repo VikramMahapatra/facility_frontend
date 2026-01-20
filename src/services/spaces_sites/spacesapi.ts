@@ -36,7 +36,7 @@ class SpacesApiService {
             url += `?site_id=${site_id}`;
         }
         if (building_id) {
-            url +=`&building_id=${building_id}`;
+            url += `&building_id=${building_id}`;
         }
         return await apiService.request(url);
     }
@@ -49,6 +49,24 @@ class SpacesApiService {
         return await apiService.request(url);
     }
 
+    async getSpaceById(id: any) {
+        return await apiService.request(`/spaces/${id}`);
+    }
+
+    async getActiveOwners(spaceId: string) {
+        return await apiService.request(`/spaces/active-owners/${spaceId}`);
+    }
+
+    async searchUsers(search: string) {
+        return await apiService.request(`/users/search?query=${encodeURIComponent(search)}`);
+    }
+
+    async assignOwner(spaceId: string, payload: any) {
+        return await apiService.request(`/spaces/assign-owner/${spaceId}`, {
+            method: 'POST',
+            body: JSON.stringify(payload),
+        });
+    }
 }
 
 export const spacesApiService = new SpacesApiService();

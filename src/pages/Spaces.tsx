@@ -41,7 +41,7 @@ import {
 import { Pagination } from "@/components/Pagination";
 import { siteApiService } from "@/services/spaces_sites/sitesapi";
 import { spacesApiService } from "@/services/spaces_sites/spacesapi";
-import { SpaceKind, spaceKinds } from "@/interfaces/spaces_interfaces";
+import { getKindColor, getKindIcon, getStatusColor, SpaceKind, spaceKinds } from "@/interfaces/spaces_interfaces";
 import { useSkipFirstEffect } from "@/hooks/use-skipfirst-effect";
 import { useAuth } from "../context/AuthContext";
 import { useLoader } from "@/context/LoaderContext";
@@ -50,6 +50,7 @@ import LoaderOverlay from "@/components/LoaderOverlay";
 import ContentContainer from "@/components/ContentContainer";
 import { toast } from "sonner";
 import { PageHeader } from "@/components/PageHeader";
+import { useNavigate } from "react-router-dom";
 
 export interface Space {
   id: string;
@@ -79,6 +80,7 @@ interface SpaceOverview {
 }
 
 export default function Spaces() {
+  const navigate = useNavigate();
   const [searchTerm, setSearchTerm] = useState("");
   const [selectedKind, setSelectedKind] = useState<string>("all");
   const [selectedStatus, setSelectedStatus] = useState<string>("all");
@@ -172,9 +174,7 @@ export default function Spaces() {
   };
 
   const handleView = (space: Space) => {
-    setSelectedSpace(space);
-    setFormMode("view");
-    setIsFormOpen(true);
+    navigate(`/spaces/${space.id}`);
   };
 
   const handleEdit = (space: Space) => {
@@ -251,46 +251,6 @@ export default function Spaces() {
     }
     return response;
   };
-
-  const getKindIcon = (kind: SpaceKind) => {
-    const icons = {
-      room: "🏨",
-      apartment: "🏠",
-      shop: "🏪",
-      office: "🏢",
-      warehouse: "🏭",
-      meeting_room: "🏛️",
-      hall: "🎭",
-      common_area: "🌳",
-      parking: "🚗",
-    };
-    return icons[kind] || "📍";
-  };
-
-  const getKindColor = (kind: SpaceKind) => {
-    const colors = {
-      room: "bg-purple-100 text-purple-800",
-      apartment: "bg-blue-100 text-blue-800",
-      shop: "bg-green-100 text-green-800",
-      office: "bg-orange-100 text-orange-800",
-      warehouse: "bg-gray-100 text-gray-800",
-      meeting_room: "bg-indigo-100 text-indigo-800",
-      hall: "bg-pink-100 text-pink-800",
-      common_area: "bg-teal-100 text-teal-800",
-      parking: "bg-yellow-100 text-yellow-800",
-    };
-    return colors[kind] || "bg-gray-100 text-gray-800";
-  };
-
-  const getStatusColor = (status: string) => {
-    const colors = {
-      available: "bg-green-100 text-green-800",
-      occupied: "bg-blue-100 text-blue-800",
-      out_of_service: "bg-red-100 text-red-800",
-    };
-    return colors[status as keyof typeof colors] || "bg-gray-100 text-gray-800";
-  };
-
 
   return (
     <div>
