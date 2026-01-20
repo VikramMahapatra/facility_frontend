@@ -7,7 +7,7 @@ import {
 import { PropertySidebar } from "@/components/PropertySidebar";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { LogOut, } from "lucide-react";
+import { LogOut } from "lucide-react";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import {
@@ -55,10 +55,13 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { PageHeader } from "@/components/PageHeader";
+import { AsyncAutocompleteRQ } from "@/components/common/async-autocomplete-rq";
 
 export default function TicketCategories() {
   const [isFormOpen, setIsFormOpen] = useState(false);
-  const [formMode, setFormMode] = useState<"create" | "edit" | "view">("create");
+  const [formMode, setFormMode] = useState<"create" | "edit" | "view">(
+    "create"
+  );
   const [selectedCategory, setSelectedCategory] = useState<any>(null);
   const [categories, setCategories] = useState<any[]>([]);
   const [deleteCategoryId, setDeleteCategoryId] = useState<
@@ -76,10 +79,8 @@ export default function TicketCategories() {
   const resource = "ticket_categories"; // must match resource name from backend policies
 
   useEffect(() => {
+    // Load sites for table display
     loadSiteLookup();
-  }, []);
-
-  useEffect(() => {
     loadTicketCategories();
   }, []);
 
@@ -141,10 +142,11 @@ export default function TicketCategories() {
   const handleSave = async (categoryData: any) => {
     let response;
     if (formMode === "create") {
-      response = await ticketCategoriesApiService.addTicketCategory(categoryData);
+      response = await ticketCategoriesApiService.addTicketCategory(
+        categoryData
+      );
 
-      if (response.success)
-        loadTicketCategories();
+      if (response.success) loadTicketCategories();
     } else if (formMode === "edit" && selectedCategory) {
       const updatedCategory = {
         ...selectedCategory,
@@ -167,7 +169,9 @@ export default function TicketCategories() {
     if (response?.success) {
       setIsFormOpen(false);
       toast.success(
-        `Ticket category has been ${formMode === "create" ? "created" : "updated"} successfully.`
+        `Ticket category has been ${
+          formMode === "create" ? "created" : "updated"
+        } successfully.`
       );
     }
     return response;
@@ -221,22 +225,26 @@ export default function TicketCategories() {
               className="pl-10"
             />
           </div>
-          <Select
-            value={selectedSite}
-            onValueChange={setSelectedSite}
-          >
-            <SelectTrigger className="w-[160px]">
-              <SelectValue placeholder="All Sites" />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="all">All Sites</SelectItem>
-              {siteList.map((site: any) => (
-                <SelectItem key={site.id} value={site.id}>
-                  {site.name}
-                </SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
+          <div className="w-[160px]">
+            <AsyncAutocompleteRQ
+              value={selectedSite === "all" ? "" : selectedSite}
+              onChange={(value) => {
+                setSelectedSite(value || "all");
+              }}
+              placeholder="All Sites"
+              queryKey={["sites"]}
+              queryFn={async (search) => {
+                const res = await siteApiService.getSiteLookup(search);
+                const sites = res.data.map((s: any) => ({
+                  id: s.id,
+                  label: s.name,
+                }));
+                // Always include "All Sites" option at the beginning
+                return [{ id: "all", label: "All Sites" }, ...sites];
+              }}
+              minSearchLength={0}
+            />
+          </div>
         </div>
         <div className="relative rounded-md border">
           <ContentContainer>
@@ -249,9 +257,7 @@ export default function TicketCategories() {
                   <TableHead>Auto-Assign Role</TableHead>
                   <TableHead>SLA Hours</TableHead>
                   <TableHead>Status</TableHead>
-                  <TableHead className="text-right">
-                    Actions
-                  </TableHead>
+                  <TableHead className="text-right">Actions</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
@@ -270,9 +276,7 @@ export default function TicketCategories() {
                       (s: any) => s.id === category.site_id
                     );
                     return (
-                      <TableRow
-                        key={category.id || category.category_id}
-                      >
+                      <TableRow key={category.id || category.category_id}>
                         <TableCell className="font-medium">
                           {category.category_name}
                         </TableCell>
@@ -288,9 +292,7 @@ export default function TicketCategories() {
                         <TableCell>
                           <Badge
                             variant={
-                              category.is_active
-                                ? "default"
-                                : "secondary"
+                              category.is_active ? "default" : "secondary"
                             }
                           >
                             {category.is_active ? "Active" : "Inactive"}
@@ -342,21 +344,24 @@ export default function TicketCategories() {
             />
           </div>
         )}
-
       </div>
       {/* Create Category Dialog */}
       <Dialog open={isFormOpen} onOpenChange={setIsFormOpen}>
         <DialogContent className="max-w-2xl">
           <DialogHeader>
             <DialogTitle>
-              {formMode === "create" ? "Create Ticket Category" : formMode === "edit" ? "Edit Ticket Category" : "Ticket Category Details"}
+              {formMode === "create"
+                ? "Create Ticket Category"
+                : formMode === "edit"
+                ? "Edit Ticket Category"
+                : "Ticket Category Details"}
             </DialogTitle>
             <DialogDescription>
               {formMode === "create"
                 ? "Add a new ticket category for service requests."
                 : formMode === "edit"
-                  ? "Update ticket category details."
-                  : "View ticket category details."}
+                ? "Update ticket category details."
+                : "View ticket category details."}
             </DialogDescription>
           </DialogHeader>
           <TicketCategoryForm

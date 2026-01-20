@@ -5,7 +5,13 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Switch } from "@/components/ui/switch";
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogFooter,
+} from "@/components/ui/dialog";
 import {
   Select,
   SelectContent,
@@ -13,11 +19,15 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { slaPolicySchema, SLAPolicyFormValues } from "@/schemas/sla_policy.schema";
+import {
+  slaPolicySchema,
+  SLAPolicyFormValues,
+} from "@/schemas/sla_policy.schema";
 import { SLAPolicy } from "@/interfaces/sla_policy_interface";
 import { slaPoliciesApiService } from "@/services/ticketing_service/slapoliciesapi";
 import { siteApiService } from "@/services/spaces_sites/sitesapi";
-
+import { withFallback } from "@/helpers/commonHelper";
+import { AsyncAutocompleteRQ } from "./common/async-autocomplete-rq";
 interface SLAPolicyFormProps {
   policy?: SLAPolicy | null;
   isOpen: boolean;
@@ -38,7 +48,13 @@ const emptyFormData: SLAPolicyFormValues = {
   active: true,
 };
 
-export function SLAPolicyForm({ policy, isOpen, onClose, onSave, mode }: SLAPolicyFormProps) {
+export function SLAPolicyForm({
+  policy,
+  isOpen,
+  onClose,
+  onSave,
+  mode,
+}: SLAPolicyFormProps) {
   const {
     register,
     handleSubmit,
@@ -59,6 +75,7 @@ export function SLAPolicyForm({ policy, isOpen, onClose, onSave, mode }: SLAPoli
   const [siteList, setSiteList] = useState<any[]>([]);
   const [defaultContactList, setDefaultContactList] = useState<any[]>([]);
   const [escalationContactList, setEscalationContactList] = useState<any[]>([]);
+  const [selectedSiteId, setSelectedSiteId] = useState<string>("");
 
   const selectedSiteName = watch("site_name");
 
@@ -71,29 +88,17 @@ export function SLAPolicyForm({ policy, isOpen, onClose, onSave, mode }: SLAPoli
       setEscalationContactList([]);
     }
 
-
-    const sitesResponse = await siteApiService.getSiteLookup();
-    const sites = sitesResponse.success ? sitesResponse.data || [] : [];
-    setSiteList(sites);
-
-    // For edit/view mode, load contacts based on policy's site
-    if (policy && mode !== "create" && policy.site_name) {
-      const site = sites.find((s: any) => s.name === policy.site_name);
-      if (site) {
-        await Promise.all([
-          loadDefaultContactLookup(site.id),
-          loadEscalationContactLookup(site.id)
-        ]);
-      }
-    }
-
     reset(
       policy && mode !== "create"
         ? {
             service_category: policy.service_category || "",
             site_name: policy.site_name || "",
-            default_contact: policy.default_contact ? String(policy.default_contact) : "",
-            escalation_contact: policy.escalation_contact ? String(policy.escalation_contact) : "",
+            default_contact: policy.default_contact
+              ? String(policy.default_contact)
+              : "",
+            escalation_contact: policy.escalation_contact
+              ? String(policy.escalation_contact)
+              : "",
             response_time_mins: policy.response_time_mins || 0,
             resolution_time_mins: policy.resolution_time_mins || 0,
             escalation_time_mins: policy.escalation_time_mins || 0,
@@ -104,6 +109,23 @@ export function SLAPolicyForm({ policy, isOpen, onClose, onSave, mode }: SLAPoli
     );
 
     setFormLoading(false);
+
+    // Load sites for fallback and site lookup
+    const sitesResponse = await siteApiService.getSiteLookup();
+    const sites = sitesResponse.success ? sitesResponse.data || [] : [];
+    setSiteList(sites);
+
+    // Set selectedSiteId if editing
+    if (policy && mode !== "create" && policy.site_name) {
+      const site = sites.find((s: any) => s.name === policy.site_name);
+      if (site) {
+        setSelectedSiteId(site.id);
+        await Promise.all([
+          loadDefaultContactLookup(site.id),
+          loadEscalationContactLookup(site.id),
+        ]);
+      }
+    }
   };
 
   useEffect(() => {
@@ -112,22 +134,16 @@ export function SLAPolicyForm({ policy, isOpen, onClose, onSave, mode }: SLAPoli
     }
   }, [policy, mode, isOpen, reset]);
 
- 
   useEffect(() => {
-    if (!selectedSiteName) {
+    if (!selectedSiteId) {
       setDefaultContactList([]);
       setEscalationContactList([]);
       return;
     }
-    
-    if (siteList.length > 0) {
-      const selectedSite = siteList.find((site) => site.name === selectedSiteName);
-      if (selectedSite) {
-        loadDefaultContactLookup(selectedSite.id);
-        loadEscalationContactLookup(selectedSite.id);
-      }
-    }
-  }, [selectedSiteName, siteList]);
+
+    loadDefaultContactLookup(selectedSiteId);
+    loadEscalationContactLookup(selectedSiteId);
+  }, [selectedSiteId]);
 
   const loadSiteLookup = async () => {
     const lookup = await siteApiService.getSiteLookup();
@@ -145,17 +161,53 @@ export function SLAPolicyForm({ policy, isOpen, onClose, onSave, mode }: SLAPoli
   };
 
   const onSubmitForm = async (data: SLAPolicyFormValues) => {
+    // Find site by ID (from AsyncAutocompleteRQ) or by name (fallback)
+    const selectedSite = selectedSiteId
+      ? siteList.find((site) => site.id === selectedSiteId)
+      : siteList.find((site) => site.name === data.site_name);
 
-    const selectedSite = siteList.find((site) => site.name === data.site_name);
-    
     await onSave({
       ...policy,
       ...data,
+      site_name: selectedSite?.name || data.site_name,
       site_id: selectedSite?.id || undefined,
     });
   };
 
   const isReadOnly = mode === "view";
+
+  // Create fallback options for fields that might not be in lookup lists
+
+  const fallbackDefaultContact = policy?.default_contact
+    ? {
+        id: String(policy.default_contact),
+        name:
+          (policy as any).default_contact_name ||
+          (policy as any).default_contact_email ||
+          `User ${String(policy.default_contact).slice(0, 6)}`,
+        email: (policy as any).default_contact_email,
+      }
+    : null;
+
+  const fallbackEscalationContact = policy?.escalation_contact
+    ? {
+        id: String(policy.escalation_contact),
+        name:
+          (policy as any).escalation_contact_name ||
+          (policy as any).escalation_contact_email ||
+          `User ${String(policy.escalation_contact).slice(0, 6)}`,
+        email: (policy as any).escalation_contact_email,
+      }
+    : null;
+
+  const defaultContacts = withFallback(
+    defaultContactList,
+    fallbackDefaultContact
+  );
+  const escalationContacts = withFallback(
+    escalationContactList,
+    fallbackEscalationContact
+  );
 
   const handleClose = () => {
     reset(emptyFormData);
@@ -173,12 +225,14 @@ export function SLAPolicyForm({ policy, isOpen, onClose, onSave, mode }: SLAPoli
           </DialogTitle>
         </DialogHeader>
 
-        <form onSubmit={isSubmitting ? undefined : handleSubmit(onSubmitForm)} className="space-y-4">
+        <form
+          onSubmit={isSubmitting ? undefined : handleSubmit(onSubmitForm)}
+          className="space-y-4"
+        >
           {formLoading ? (
             <p className="text-center">Loading...</p>
           ) : (
             <div className="space-y-4">
-           
               <div className="grid grid-cols-2 gap-4">
                 <div className="space-y-2">
                   <Label htmlFor="site_name">Site Name *</Label>
@@ -186,32 +240,50 @@ export function SLAPolicyForm({ policy, isOpen, onClose, onSave, mode }: SLAPoli
                     name="site_name"
                     control={control}
                     render={({ field }) => (
-                      <Select
-                        value={field.value || ""}
-                        onValueChange={field.onChange}
+                      <AsyncAutocompleteRQ
+                        value={selectedSiteId || ""}
+                        onChange={(value) => {
+                          setSelectedSiteId(value);
+                          // Find site by ID and set the name in the form
+                          const selectedSite = siteList.find(
+                            (site) => site.id === value
+                          );
+                          if (selectedSite) {
+                            field.onChange(selectedSite.name);
+                          } else {
+                            field.onChange("");
+                          }
+                        }}
+                        placeholder="Select site"
                         disabled={isReadOnly}
-                      >
-                        <SelectTrigger
-                          className={errors.site_name ? "border-red-500" : ""}
-                        >
-                          <SelectValue placeholder="Select site" />
-                        </SelectTrigger>
-                        <SelectContent>
-                          {siteList.length === 0 ? (
-                            <SelectItem value="none" disabled>No sites available</SelectItem>
-                          ) : (
-                            siteList.map((site) => (
-                              <SelectItem key={site.id} value={site.name || site.id}>
-                                {site.name}
-                              </SelectItem>
-                            ))
-                          )}
-                        </SelectContent>
-                      </Select>
+                        queryKey={["sites"]}
+                        queryFn={async (search) => {
+                          const res = await siteApiService.getSiteLookup(
+                            search
+                          );
+                          return res.data.map((s: any) => ({
+                            id: s.id,
+                            label: s.name,
+                          }));
+                        }}
+                        fallbackOption={
+                          policy?.site_id || policy?.site_name
+                            ? {
+                                id: policy.site_id || "",
+                                label:
+                                  policy.site_name ||
+                                  `Site (${policy.site_id?.slice(0, 6)})`,
+                              }
+                            : undefined
+                        }
+                        minSearchLength={1}
+                      />
                     )}
                   />
                   {errors.site_name && (
-                    <p className="text-sm text-red-500">{errors.site_name.message}</p>
+                    <p className="text-sm text-red-500">
+                      {errors.site_name.message}
+                    </p>
                   )}
                 </div>
 
@@ -225,7 +297,9 @@ export function SLAPolicyForm({ policy, isOpen, onClose, onSave, mode }: SLAPoli
                     className={errors.service_category ? "border-red-500" : ""}
                   />
                   {errors.service_category && (
-                    <p className="text-sm text-red-500">{errors.service_category.message}</p>
+                    <p className="text-sm text-red-500">
+                      {errors.service_category.message}
+                    </p>
                   )}
                 </div>
               </div>
@@ -244,17 +318,32 @@ export function SLAPolicyForm({ policy, isOpen, onClose, onSave, mode }: SLAPoli
                         disabled={isReadOnly || !selectedSiteName}
                       >
                         <SelectTrigger
-                          className={errors.default_contact ? "border-red-500" : ""}
+                          className={
+                            errors.default_contact ? "border-red-500" : ""
+                          }
                         >
-                          <SelectValue placeholder={!selectedSiteName ? "Select site first" : "Select default contact"} />
+                          <SelectValue
+                            placeholder={
+                              !selectedSiteName
+                                ? "Select site first"
+                                : "Select default contact"
+                            }
+                          />
                         </SelectTrigger>
                         <SelectContent>
-                          {defaultContactList.length === 0 ? (
-                            <SelectItem value="none" disabled>No contacts available</SelectItem>
+                          {defaultContacts.length === 0 ? (
+                            <SelectItem value="none" disabled>
+                              No contacts available
+                            </SelectItem>
                           ) : (
-                            defaultContactList.map((contact) => (
-                              <SelectItem key={contact.id} value={String(contact.id)}>
-                                {contact.name || contact.email || `User ${contact.id}`}
+                            defaultContacts.map((contact) => (
+                              <SelectItem
+                                key={contact.id}
+                                value={String(contact.id)}
+                              >
+                                {contact.name ||
+                                  contact.email ||
+                                  `User ${contact.id}`}
                               </SelectItem>
                             ))
                           )}
@@ -263,12 +352,16 @@ export function SLAPolicyForm({ policy, isOpen, onClose, onSave, mode }: SLAPoli
                     )}
                   />
                   {errors.default_contact && (
-                    <p className="text-sm text-red-500">{errors.default_contact.message}</p>
+                    <p className="text-sm text-red-500">
+                      {errors.default_contact.message}
+                    </p>
                   )}
                 </div>
 
                 <div className="space-y-2">
-                  <Label htmlFor="escalation_contact">Escalation Contact *</Label>
+                  <Label htmlFor="escalation_contact">
+                    Escalation Contact *
+                  </Label>
                   <Controller
                     name="escalation_contact"
                     control={control}
@@ -279,17 +372,32 @@ export function SLAPolicyForm({ policy, isOpen, onClose, onSave, mode }: SLAPoli
                         disabled={isReadOnly || !selectedSiteName}
                       >
                         <SelectTrigger
-                          className={errors.escalation_contact ? "border-red-500" : ""}
+                          className={
+                            errors.escalation_contact ? "border-red-500" : ""
+                          }
                         >
-                          <SelectValue placeholder={!selectedSiteName ? "Select site first" : "Select escalation contact"} />
+                          <SelectValue
+                            placeholder={
+                              !selectedSiteName
+                                ? "Select site first"
+                                : "Select escalation contact"
+                            }
+                          />
                         </SelectTrigger>
                         <SelectContent>
-                          {escalationContactList.length === 0 ? (
-                            <SelectItem value="none" disabled>No contacts available</SelectItem>
+                          {escalationContacts.length === 0 ? (
+                            <SelectItem value="none" disabled>
+                              No contacts available
+                            </SelectItem>
                           ) : (
-                            escalationContactList.map((contact) => (
-                              <SelectItem key={contact.id} value={String(contact.id)}>
-                                {contact.name || contact.email || `User ${contact.id}`}
+                            escalationContacts.map((contact) => (
+                              <SelectItem
+                                key={contact.id}
+                                value={String(contact.id)}
+                              >
+                                {contact.name ||
+                                  contact.email ||
+                                  `User ${contact.id}`}
                               </SelectItem>
                             ))
                           )}
@@ -298,7 +406,9 @@ export function SLAPolicyForm({ policy, isOpen, onClose, onSave, mode }: SLAPoli
                     )}
                   />
                   {errors.escalation_contact && (
-                    <p className="text-sm text-red-500">{errors.escalation_contact.message}</p>
+                    <p className="text-sm text-red-500">
+                      {errors.escalation_contact.message}
+                    </p>
                   )}
                 </div>
               </div>
@@ -307,23 +417,33 @@ export function SLAPolicyForm({ policy, isOpen, onClose, onSave, mode }: SLAPoli
                 {/* Left Column */}
                 <div className="space-y-4">
                   <div className="space-y-2">
-                    <Label htmlFor="resolution_time_mins">Resolution Time (Minutes) *</Label>
+                    <Label htmlFor="resolution_time_mins">
+                      Resolution Time (Minutes) *
+                    </Label>
                     <Input
                       id="resolution_time_mins"
                       type="number"
-                      {...register("resolution_time_mins", { valueAsNumber: true })}
+                      {...register("resolution_time_mins", {
+                        valueAsNumber: true,
+                      })}
                       min="1"
                       placeholder="e.g., 240"
                       disabled={isReadOnly}
-                      className={errors.resolution_time_mins ? 'border-red-500' : ''}
+                      className={
+                        errors.resolution_time_mins ? "border-red-500" : ""
+                      }
                     />
                     {errors.resolution_time_mins && (
-                      <p className="text-sm text-red-500">{errors.resolution_time_mins.message}</p>
+                      <p className="text-sm text-red-500">
+                        {errors.resolution_time_mins.message}
+                      </p>
                     )}
                   </div>
 
                   <div className="space-y-2">
-                    <Label htmlFor="reopen_time_mins">Reopen Time (Minutes) *</Label>
+                    <Label htmlFor="reopen_time_mins">
+                      Reopen Time (Minutes) *
+                    </Label>
                     <Input
                       id="reopen_time_mins"
                       type="number"
@@ -331,10 +451,14 @@ export function SLAPolicyForm({ policy, isOpen, onClose, onSave, mode }: SLAPoli
                       min="1"
                       placeholder="e.g., 120"
                       disabled={isReadOnly}
-                      className={errors.reopen_time_mins ? 'border-red-500' : ''}
+                      className={
+                        errors.reopen_time_mins ? "border-red-500" : ""
+                      }
                     />
                     {errors.reopen_time_mins && (
-                      <p className="text-sm text-red-500">{errors.reopen_time_mins.message}</p>
+                      <p className="text-sm text-red-500">
+                        {errors.reopen_time_mins.message}
+                      </p>
                     )}
                   </div>
 
@@ -358,34 +482,50 @@ export function SLAPolicyForm({ policy, isOpen, onClose, onSave, mode }: SLAPoli
                 {/* Right Column */}
                 <div className="space-y-4">
                   <div className="space-y-2">
-                    <Label htmlFor="response_time_mins">Response Time (Minutes) *</Label>
+                    <Label htmlFor="response_time_mins">
+                      Response Time (Minutes) *
+                    </Label>
                     <Input
                       id="response_time_mins"
                       type="number"
-                      {...register("response_time_mins", { valueAsNumber: true })}
+                      {...register("response_time_mins", {
+                        valueAsNumber: true,
+                      })}
                       min="1"
                       placeholder="e.g., 60"
                       disabled={isReadOnly}
-                      className={errors.response_time_mins ? 'border-red-500' : ''}
+                      className={
+                        errors.response_time_mins ? "border-red-500" : ""
+                      }
                     />
                     {errors.response_time_mins && (
-                      <p className="text-sm text-red-500">{errors.response_time_mins.message}</p>
+                      <p className="text-sm text-red-500">
+                        {errors.response_time_mins.message}
+                      </p>
                     )}
                   </div>
 
                   <div className="space-y-2">
-                    <Label htmlFor="escalation_time_mins">Escalation Time (Minutes) *</Label>
+                    <Label htmlFor="escalation_time_mins">
+                      Escalation Time (Minutes) *
+                    </Label>
                     <Input
                       id="escalation_time_mins"
                       type="number"
-                      {...register("escalation_time_mins", { valueAsNumber: true })}
+                      {...register("escalation_time_mins", {
+                        valueAsNumber: true,
+                      })}
                       min="1"
                       placeholder="e.g., 300"
                       disabled={isReadOnly}
-                      className={errors.escalation_time_mins ? 'border-red-500' : ''}
+                      className={
+                        errors.escalation_time_mins ? "border-red-500" : ""
+                      }
                     />
                     {errors.escalation_time_mins && (
-                      <p className="text-sm text-red-500">{errors.escalation_time_mins.message}</p>
+                      <p className="text-sm text-red-500">
+                        {errors.escalation_time_mins.message}
+                      </p>
                     )}
                   </div>
                 </div>
@@ -401,7 +541,11 @@ export function SLAPolicyForm({ policy, isOpen, onClose, onSave, mode }: SLAPoli
                 </Button>
                 {mode !== "view" && (
                   <Button type="submit" disabled={isSubmitting || formLoading}>
-                    {isSubmitting ? "Saving..." : mode === "create" ? "Create Policy" : "Update Policy"}
+                    {isSubmitting
+                      ? "Saving..."
+                      : mode === "create"
+                      ? "Create Policy"
+                      : "Update Policy"}
                   </Button>
                 )}
               </DialogFooter>

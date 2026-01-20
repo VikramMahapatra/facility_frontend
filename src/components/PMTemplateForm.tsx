@@ -23,6 +23,7 @@ import { PMTemplateFormValues, pmTemplateSchema } from "@/schemas/pmTemplate.sch
 import { toast } from "sonner";
 import { preventiveMaintenanceApiService } from "@/services/maintenance_assets/preventive_maintenanceapi";
 import { assetApiService } from '@/services/maintenance_assets/assetsapi';
+import { withFallback } from "@/helpers/commonHelper";
 //import { siteApiService } from "@/services/spaces_sites/sitesapi";
 
 interface ChecklistItem {
@@ -209,6 +210,36 @@ export function PMTemplateForm({
 
   const isReadOnly = mode === "view";
 
+  const fallbackCategory = template?.category_id
+    ? {
+        id: template.category_id,
+        name:
+          template.asset_category ||
+          `Category (${template.category_id.slice(0, 6)})`,
+      }
+    : null;
+
+  const fallbackFrequency = template?.frequency
+    ? {
+        id: template.frequency,
+        name: template.frequency,
+      }
+    : null;
+
+  const fallbackStatus = template?.status
+    ? {
+        id: template.status,
+        name: template.status,
+      }
+    : null;
+
+  const categories = withFallback(categoryList as any[], fallbackCategory as any);
+  const frequencies = withFallback(
+    frequencyList as any[],
+    fallbackFrequency as any
+  );
+  const statuses = withFallback(statusList as any[], fallbackStatus as any);
+
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
       <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
@@ -253,7 +284,7 @@ export function PMTemplateForm({
                       <SelectValue placeholder="Select category" />
                     </SelectTrigger>
                     <SelectContent>
-                      {categoryList.map((category) => (
+                      {categories.map((category: any) => (
                         <SelectItem key={category.id} value={category.id}>
                           {category.name}
                         </SelectItem>
@@ -281,7 +312,7 @@ export function PMTemplateForm({
                       <SelectValue placeholder="Select frequency" />
                     </SelectTrigger>
                     <SelectContent>
-                      {frequencyList.map((frequency) => (
+                      {frequencies.map((frequency: any) => (
                         <SelectItem key={frequency.id} value={frequency.id}>
                           {frequency.name}
                         </SelectItem>
@@ -313,7 +344,7 @@ export function PMTemplateForm({
                       <SelectValue placeholder="Select status" />
                     </SelectTrigger>
                     <SelectContent>
-                      {statusList.map((status) => (
+                      {statuses.map((status: any) => (
                         <SelectItem key={status.id} value={status.id}>
                           {status.name}
                         </SelectItem>

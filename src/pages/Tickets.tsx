@@ -1,18 +1,48 @@
 import { useState, useEffect } from "react";
-import { SidebarProvider, SidebarInset, SidebarTrigger } from "@/components/ui/sidebar";
+import {
+  SidebarProvider,
+  SidebarInset,
+  SidebarTrigger,
+} from "@/components/ui/sidebar";
 import { PropertySidebar } from "@/components/PropertySidebar";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "@/components/ui/dialog";
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
-import { Edit, Eye, Plus, TicketIcon, AlertTriangle, Search } from "lucide-react";
+import {
+  Edit,
+  Eye,
+  Plus,
+  TicketIcon,
+  AlertTriangle,
+  Search,
+} from "lucide-react";
 import TicketForm from "@/components/TicketForm";
-import { LogOut, } from "lucide-react";
+import { LogOut } from "lucide-react";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { toast } from "sonner";
 import { useNavigate } from "react-router-dom";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 import { Input } from "@/components/ui/input";
 import { mockTickets } from "@/data/mockTicketData";
 import { ticketsApiService } from "@/services/ticketing_service/ticketsapi";
@@ -24,6 +54,7 @@ import { Pagination } from "@/components/Pagination";
 import { useSkipFirstEffect } from "@/hooks/use-skipfirst-effect";
 import { useAuth } from "../context/AuthContext";
 import { PageHeader } from "@/components/PageHeader";
+import { AsyncAutocompleteRQ } from "@/components/common/async-autocomplete-rq";
 
 export default function Tickets() {
   const navigate = useNavigate();
@@ -38,7 +69,6 @@ export default function Tickets() {
   const [priorityFilter, setPriorityFilter] = useState("ALL");
   const [selectedSite, setSelectedSite] = useState<string>("all");
   const [searchTerm, setSearchTerm] = useState("");
-  const [siteList, setSiteList] = useState<any[]>([]);
   const [priorityList, setPriorityList] = useState<any[]>([]);
   const [statusList, setStatusList] = useState<any[]>([]);
   const [page, setPage] = useState(1);
@@ -51,7 +81,6 @@ export default function Tickets() {
   }, [page]);
 
   useEffect(() => {
-    loadSiteLookup();
     loadPriorityLookup();
     loadStatusLookup();
   }, []);
@@ -63,11 +92,6 @@ export default function Tickets() {
       setPage(1);
     }
   }, [statusFilter, priorityFilter, selectedSite, searchTerm]);
-
-  const loadSiteLookup = async () => {
-    const lookup = await siteApiService.getSiteLookup();
-    if (lookup.success) setSiteList(lookup.data || []);
-  };
 
   const loadPriorityLookup = async () => {
     const lookup = await ticketsApiService.getPriorityLookup();
@@ -87,7 +111,8 @@ export default function Tickets() {
     const params = new URLSearchParams();
     if (statusFilter !== "ALL") params.append("status", statusFilter);
     if (priorityFilter !== "ALL") params.append("priority", priorityFilter);
-    if (selectedSite && selectedSite !== "all") params.append("site_id", selectedSite);
+    if (selectedSite && selectedSite !== "all")
+      params.append("site_id", selectedSite);
     if (searchTerm) params.append("search", searchTerm);
     params.append("skip", skip.toString());
     params.append("limit", limit.toString());
@@ -139,39 +164,39 @@ export default function Tickets() {
   const getStatusColor = (status: string) => {
     const statusUpper = status?.toUpperCase();
     switch (statusUpper) {
-      case 'OPEN':
-        return 'bg-blue-100 text-blue-800';
-      case 'ASSIGNED':
-        return 'bg-purple-100 text-purple-800';
-      case 'IN_PROGRESS':
-      case 'IN PROGRESS':
-        return 'bg-yellow-100 text-yellow-800';
-      case 'ESCALATED':
-        return 'bg-red-100 text-red-800';
-      case 'CLOSED':
-        return 'bg-green-100 text-green-800';
-      case 'REOPENED':
-        return 'bg-orange-100 text-orange-800';
-      case 'ON_HOLD':
-      case 'ON HOLD':
-        return 'bg-orange-100 text-orange-800';
+      case "OPEN":
+        return "bg-blue-100 text-blue-800";
+      case "ASSIGNED":
+        return "bg-purple-100 text-purple-800";
+      case "IN_PROGRESS":
+      case "IN PROGRESS":
+        return "bg-yellow-100 text-yellow-800";
+      case "ESCALATED":
+        return "bg-red-100 text-red-800";
+      case "CLOSED":
+        return "bg-green-100 text-green-800";
+      case "REOPENED":
+        return "bg-orange-100 text-orange-800";
+      case "ON_HOLD":
+      case "ON HOLD":
+        return "bg-orange-100 text-orange-800";
       default:
-        return 'bg-gray-100 text-gray-800';
+        return "bg-gray-100 text-gray-800";
     }
   };
 
   const getPriorityColor = (priority: string) => {
     const priorityLower = priority?.toLowerCase();
     switch (priorityLower) {
-      case 'high':
-      case 'urgent':
-        return 'bg-red-100 text-red-800';
-      case 'medium':
-        return 'bg-yellow-100 text-yellow-800';
-      case 'low':
-        return 'bg-green-100 text-green-800';
+      case "high":
+      case "urgent":
+        return "bg-red-100 text-red-800";
+      case "medium":
+        return "bg-yellow-100 text-yellow-800";
+      case "low":
+        return "bg-green-100 text-green-800";
       default:
-        return 'bg-gray-100 text-gray-800';
+        return "bg-gray-100 text-gray-800";
     }
   };
 
@@ -180,7 +205,9 @@ export default function Tickets() {
       <div className="space-y-6">
         <div className="flex items-center justify-between">
           <div>
-            <h2 className="text-3xl font-bold text-sidebar-primary">All Tickets</h2>
+            <h2 className="text-3xl font-bold text-sidebar-primary">
+              All Tickets
+            </h2>
             <p className="text-muted-foreground">
               Track and manage all service tickets
             </p>
@@ -202,19 +229,26 @@ export default function Tickets() {
               className="pl-10"
             />
           </div>
-          <Select value={selectedSite} onValueChange={setSelectedSite}>
-            <SelectTrigger className="w-[150px]">
-              <SelectValue placeholder="Site" />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="all">All Sites</SelectItem>
-              {siteList.map((site: any) => (
-                <SelectItem key={site.id} value={site.id}>
-                  {site.name}
-                </SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
+          <div className="w-[150px]">
+            <AsyncAutocompleteRQ
+              value={selectedSite === "all" ? "" : selectedSite}
+              onChange={(value) => {
+                setSelectedSite(value || "all");
+              }}
+              placeholder="All Sites"
+              queryKey={["sites"]}
+              queryFn={async (search) => {
+                const res = await siteApiService.getSiteLookup(search);
+                const sites = res.data.map((s: any) => ({
+                  id: s.id,
+                  label: s.name,
+                }));
+                // Always include "All Sites" option at the beginning
+                return [{ id: "all", label: "All Sites" }, ...sites];
+              }}
+              minSearchLength={0}
+            />
+          </div>
           <Select value={statusFilter} onValueChange={setStatusFilter}>
             <SelectTrigger className="w-[150px]">
               <SelectValue placeholder="Status" />
@@ -271,24 +305,40 @@ export default function Tickets() {
                 ) : (
                   tickets.map((ticket) => (
                     <TableRow key={ticket.id || ticket.ticket_id}>
-                      <TableCell className="font-medium">#{ticket.ticket_no}</TableCell>
-                      <TableCell className="max-w-xs truncate">{ticket.title}</TableCell>
+                      <TableCell className="font-medium">
+                        #{ticket.ticket_no}
+                      </TableCell>
+                      <TableCell className="max-w-xs truncate">
+                        {ticket.title}
+                      </TableCell>
                       <TableCell>
                         <Badge variant="outline">{ticket.category}</Badge>
                       </TableCell>
                       <TableCell>
-                        <Badge className={getPriorityColor(ticket.priority)}>{ticket.priority}</Badge>
+                        <Badge className={getPriorityColor(ticket.priority)}>
+                          {ticket.priority}
+                        </Badge>
                       </TableCell>
                       <TableCell>
-                        <Badge className={getStatusColor(ticket.status)}>{ticket.status}</Badge>
+                        <Badge className={getStatusColor(ticket.status)}>
+                          {ticket.status}
+                        </Badge>
                       </TableCell>
                       <TableCell>
                         <Badge variant="secondary">{ticket.request_type}</Badge>
                       </TableCell>
-                      <TableCell>{new Date(ticket.created_at).toLocaleDateString()}</TableCell>
+                      <TableCell>
+                        {new Date(ticket.created_at).toLocaleDateString()}
+                      </TableCell>
                       <TableCell className="text-right">
                         <div className="flex justify-end gap-2">
-                          <Button variant="ghost" size="sm" onClick={() => handleView(ticket.id || ticket.ticket_id)}>
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            onClick={() =>
+                              handleView(ticket.id || ticket.ticket_id)
+                            }
+                          >
                             <Eye className="w-4 h-4" />
                           </Button>
                           {/* <Button variant="ghost" size="sm" onClick={() => handleEdit(ticket)}>
@@ -301,7 +351,6 @@ export default function Tickets() {
                 )}
               </TableBody>
             </Table>
-
           </ContentContainer>
         </div>
         <Pagination
@@ -316,9 +365,14 @@ export default function Tickets() {
         <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
           <DialogHeader>
             <DialogTitle>Create Service Ticket</DialogTitle>
-            <DialogDescription>Submit a new service request ticket.</DialogDescription>
+            <DialogDescription>
+              Submit a new service request ticket.
+            </DialogDescription>
           </DialogHeader>
-          <TicketForm onSubmit={handleCreate} onCancel={() => setIsFormOpen(false)} />
+          <TicketForm
+            onSubmit={handleCreate}
+            onCancel={() => setIsFormOpen(false)}
+          />
         </DialogContent>
       </Dialog>
 

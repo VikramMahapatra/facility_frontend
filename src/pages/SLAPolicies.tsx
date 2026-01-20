@@ -6,7 +6,7 @@ import {
 } from "@/components/ui/sidebar";
 import { PropertySidebar } from "@/components/PropertySidebar";
 import { Button } from "@/components/ui/button";
-import { LogOut, } from "lucide-react";
+import { LogOut } from "lucide-react";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Input } from "@/components/ui/input";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -64,6 +64,7 @@ import { useLoader } from "@/context/LoaderContext";
 import { useAuth } from "../context/AuthContext";
 import { SLAPolicy } from "@/interfaces/sla_policy_interface";
 import { PageHeader } from "@/components/PageHeader";
+import { AsyncAutocompleteRQ } from "@/components/common/async-autocomplete-rq";
 
 export default function SLAPolicies() {
   const [isFormOpen, setIsFormOpen] = useState(false);
@@ -83,15 +84,10 @@ export default function SLAPolicies() {
     total_organizations: 0,
     average_response_time: 0,
   });
-  const [siteList, setSiteList] = useState<any[]>([]);
   const { canRead, canWrite, canDelete } = useAuth();
   const { withLoader } = useLoader();
   const { user, handleLogout } = useAuth();
   const resource = "sla_policies"; // must match resource name from backend policies
-
-  useEffect(() => {
-    loadSiteLookup();
-  }, []);
 
   useSkipFirstEffect(() => {
     loadPolicies();
@@ -101,11 +97,6 @@ export default function SLAPolicies() {
   useEffect(() => {
     updatePoliciesPage();
   }, [searchQuery, selectedSite]);
-
-  const loadSiteLookup = async () => {
-    const lookup = await siteApiService.getSiteLookup();
-    if (lookup.success) setSiteList(lookup.data || []);
-  };
 
   const updatePoliciesPage = () => {
     if (page === 1) {
@@ -184,7 +175,8 @@ export default function SLAPolicies() {
     if (response.success) {
       setIsFormOpen(false);
       toast.success(
-        `SLA Policy has been ${formMode === "create" ? "created" : "updated"
+        `SLA Policy has been ${
+          formMode === "create" ? "created" : "updated"
         } successfully.`
       );
     }
@@ -260,9 +252,7 @@ export default function SLAPolicies() {
               <div className="text-3xl font-bold text-sidebar-primary mb-1">
                 {activeslapolicies}
               </div>
-              <p className="text-sm text-blue-600">
-                Total Active SLA Policies
-              </p>
+              <p className="text-sm text-blue-600">Total Active SLA Policies</p>
             </CardContent>
           </Card>
           <Card>
@@ -290,22 +280,26 @@ export default function SLAPolicies() {
               className="pl-10"
             />
           </div>
-          <Select
-            value={selectedSite}
-            onValueChange={setSelectedSite}
-          >
-            <SelectTrigger className="w-[180px]">
-              <SelectValue placeholder="All Sites" />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="all">All Sites</SelectItem>
-              {siteList.map((site: any) => (
-                <SelectItem key={site.id} value={site.id}>
-                  {site.name}
-                </SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
+          <div className="w-[180px]">
+            <AsyncAutocompleteRQ
+              value={selectedSite === "all" ? "" : selectedSite}
+              onChange={(value) => {
+                setSelectedSite(value || "all");
+              }}
+              placeholder="All Sites"
+              queryKey={["sites"]}
+              queryFn={async (search) => {
+                const res = await siteApiService.getSiteLookup(search);
+                const sites = res.data.map((s: any) => ({
+                  id: s.id,
+                  label: s.name,
+                }));
+                // Always include "All Sites" option at the beginning
+                return [{ id: "all", label: "All Sites" }, ...sites];
+              }}
+              minSearchLength={0}
+            />
+          </div>
         </div>
         <div className="relative rounded-md border">
           <ContentContainer>
@@ -320,9 +314,7 @@ export default function SLAPolicies() {
                   <TableHead>Escalation Time</TableHead>
                   <TableHead>Reopen Time</TableHead>
                   <TableHead>Status</TableHead>
-                  <TableHead className="text-right">
-                    Actions
-                  </TableHead>
+                  <TableHead className="text-right">Actions</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
@@ -375,9 +367,7 @@ export default function SLAPolicies() {
                       </TableCell>
                       <TableCell>
                         <Badge
-                          variant={
-                            policy.active ? "default" : "secondary"
-                          }
+                          variant={policy.active ? "default" : "secondary"}
                         >
                           {policy.active ? "Active" : "Inactive"}
                         </Badge>
@@ -427,15 +417,15 @@ export default function SLAPolicies() {
               {formMode === "create"
                 ? "Create SLA Policy"
                 : formMode === "edit"
-                  ? "Edit SLA Policy"
-                  : "SLA Policy Details"}
+                ? "Edit SLA Policy"
+                : "SLA Policy Details"}
             </DialogTitle>
             <DialogDescription>
               {formMode === "create"
                 ? "Create a new SLA policy for service categories."
                 : formMode === "edit"
-                  ? "Update SLA policy details."
-                  : "View SLA policy details."}
+                ? "Update SLA policy details."
+                : "View SLA policy details."}
             </DialogDescription>
           </DialogHeader>
           <SLAPolicyForm
