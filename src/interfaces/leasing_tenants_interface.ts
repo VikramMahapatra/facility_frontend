@@ -81,6 +81,7 @@ export interface SpaceTenants {
   space_id?: string;
   space_name?: string;
   status: string;
+  is_primary?: boolean;
 }
 
 export interface TenantOverview {
