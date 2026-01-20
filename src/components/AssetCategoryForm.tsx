@@ -16,6 +16,7 @@ import {
   AssetCategoryFormValues,
 } from "@/schemas/assetCategory.schema";
 import { assetCategoriesApiService } from "@/services/maintenance_assets/assetcategoriesapi";
+import { withFallback } from "@/helpers/commonHelper";
 
 interface AssetCategoryFormProps {
   category?: any;
@@ -55,7 +56,6 @@ export default function AssetCategoryForm({
   const [parentCategoryList, setParentCategoryList] = useState<any[]>([]);
 
   const loadAll = async () => {
-    await loadParentCategoryLookup();
     setFormLoading(false);
     reset(
       category
@@ -65,13 +65,15 @@ export default function AssetCategoryForm({
             parent_id: category.parent_id || "",
             attributes: category.attributes || undefined,
           }
-        : emptyFormData
+        : emptyFormData,
     );
+    await loadParentCategoryLookup();
   };
 
   const loadParentCategoryLookup = async () => {
     const categoryId = mode === "edit" && category ? category.id : undefined;
-    const lookup = await assetCategoriesApiService.getAssetParentCategoryLookup(categoryId);
+    const lookup =
+      await assetCategoriesApiService.getAssetParentCategoryLookup(categoryId);
     if (lookup.success) setParentCategoryList(lookup.data || []);
   };
 
@@ -85,13 +87,27 @@ export default function AssetCategoryForm({
     const submitData: any = {
       name: data.name,
       code: data.code,
-      parent_id: data.parent_id && data.parent_id !== "" ? data.parent_id : null,
+      parent_id:
+        data.parent_id && data.parent_id !== "" ? data.parent_id : null,
       attributes: data.attributes || "",
     };
     await onSave(submitData);
   };
 
   const isReadOnly = mode === "view";
+
+  const fallbackParentCategory = category?.parent_id
+    ? {
+        id: category.parent_id,
+        value: category.parent_id ,
+        name: category.parent_name,
+      }
+    : null;
+
+  const parentCategories = withFallback(
+    parentCategoryList,
+    fallbackParentCategory,
+  );
 
   return (
     <form
@@ -138,7 +154,9 @@ export default function AssetCategoryForm({
                 <Label htmlFor="parent_id">Parent Category</Label>
                 <Select
                   value={field.value || "none"}
-                  onValueChange={(value) => field.onChange(value === "none" ? "" : value)}
+                  onValueChange={(value) =>
+                    field.onChange(value === "none" ? "" : value)
+                  }
                   disabled={isReadOnly}
                 >
                   <SelectTrigger>
@@ -146,7 +164,7 @@ export default function AssetCategoryForm({
                   </SelectTrigger>
                   <SelectContent>
                     <SelectItem value="none">None</SelectItem>
-                    {parentCategoryList.map((parent: any) => (
+                    {parentCategories.map((parent: any) => (
                       <SelectItem key={parent.id} value={parent.id}>
                         {parent.name}
                       </SelectItem>
@@ -175,8 +193,8 @@ export default function AssetCategoryForm({
                 {isSubmitting
                   ? "Saving..."
                   : mode === "create"
-                  ? "Create "
-                  : "Update "}
+                    ? "Create "
+                    : "Update "}
               </Button>
             )}
           </div>

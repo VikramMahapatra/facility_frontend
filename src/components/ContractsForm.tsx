@@ -26,6 +26,8 @@ import { siteApiService } from "@/services/spaces_sites/sitesapi";
 import { organisationApiService } from "@/services/spaces_sites/organisationapi";
 import { ContractFormValues, contractSchema } from "@/schemas/contract.schema";
 import { toast } from "sonner";
+import { withFallback } from "@/helpers/commonHelper";
+import { AsyncAutocompleteRQ } from "./common/async-autocomplete-rq";
 
 interface ContractFormProps {
   contract?: any;
@@ -90,12 +92,7 @@ export function ContractForm({
   const loadAll = async () => {
     setFormLoading(true);
 
-    await Promise.all([
-      loadTypeLookup(),
-      loadStatusLookup(),
-      loadVendorLookup(),
-      loadSiteLookup(),
-    ]);
+   
 
     reset(
       contract && mode !== "create"
@@ -122,6 +119,15 @@ export function ContractForm({
     );
     setFormLoading(false);
   };
+
+  useEffect(() => {
+    Promise.all([
+      loadTypeLookup(),
+      loadStatusLookup(),
+      loadVendorLookup(),
+      loadSiteLookup(),
+    ]);
+  }, []);
 
   useEffect(() => {
     if (isOpen) {
@@ -207,6 +213,34 @@ export function ContractForm({
 
   const isReadOnly = mode === "view";
 
+  const fallbackType = contract?.type
+    ? {
+        id: contract.type,
+        name: contract.type,
+        value: contract.type,
+      }
+    : null;
+
+  const fallbackStatus = contract?.status
+    ? {
+        id: contract.status,
+        name: contract.status,
+        value: contract.status,
+      }
+    : null;
+
+  const fallbackVendor = contract?.vendor_id
+    ? {
+        id: contract.vendor_id,
+        name: contract.vendor_name,
+        value: contract.vendor_id,
+      }
+    : null;
+
+  const types = withFallback(typeList, fallbackType);
+  const statuses = withFallback(statusList, fallbackStatus);
+  const vendors = withFallback(vendorList, fallbackVendor);
+
   return (
     <Dialog open={isOpen} onOpenChange={handleClose}>
       <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
@@ -256,7 +290,7 @@ export function ContractForm({
                           <SelectValue placeholder="Select contract type" />
                         </SelectTrigger>
                         <SelectContent>
-                          {typeList.map((t: any) => (
+                          {types.map((t: any) => (
                             <SelectItem key={t.id} value={t.id}>
                               {t.name}
                             </SelectItem>
@@ -282,7 +316,7 @@ export function ContractForm({
                           <SelectValue placeholder="Select contract status" />
                         </SelectTrigger>
                         <SelectContent>
-                          {statusList.map((s: any) => (
+                          {statuses.map((s: any) => (
                             <SelectItem key={s.id} value={s.id}>
                               {s.name}
                             </SelectItem>
@@ -313,7 +347,7 @@ export function ContractForm({
                           <SelectValue placeholder="Select vendor" />
                         </SelectTrigger>
                         <SelectContent>
-                          {vendorList.map((v: any) => (
+                          {vendors.map((v: any) => (
                             <SelectItem key={v.id} value={v.id}>
                               {v.name}
                             </SelectItem>
@@ -335,24 +369,36 @@ export function ContractForm({
                   render={({ field }) => (
                     <div className="space-y-2">
                       <Label htmlFor="site">Site *</Label>
-                      <Select
+                      <AsyncAutocompleteRQ
                         value={field.value || ""}
-                        onValueChange={field.onChange}
+                        onChange={(value) => {
+                          field.onChange(value);
+                        }}
                         disabled={isReadOnly || mode === "edit"}
-                      >
-                        <SelectTrigger
-                          className={errors.site_id ? "border-red-500" : ""}
-                        >
-                          <SelectValue placeholder="Select site" />
-                        </SelectTrigger>
-                        <SelectContent>
-                          {siteList.map((site: any) => (
-                            <SelectItem key={site.id} value={site.id}>
-                              {site.name}
-                            </SelectItem>
-                          ))}
-                        </SelectContent>
-                      </Select>
+                        placeholder="Select site"
+                        queryKey={["contract-sites"]}
+                        queryFn={async (search) => {
+                          const res = await siteApiService.getSiteLookup(search);
+                          if (res.success) {
+                            return res.data.map((s: any) => ({
+                              id: s.id,
+                              label: s.name,
+                            }));
+                          }
+                          return [];
+                        }}
+                        fallbackOption={
+                          contract?.site_id
+                            ? {
+                                id: contract.site_id,
+                                label:
+                                  contract.site_name ||
+                                  `Site (${contract.site_id.slice(0, 6)})`,
+                              }
+                            : undefined
+                        }
+                        minSearchLength={1}
+                      />
                       {errors.site_id && (
                         <p className="text-sm text-red-500">
                           {errors.site_id.message}

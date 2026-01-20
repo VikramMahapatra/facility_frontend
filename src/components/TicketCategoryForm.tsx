@@ -19,6 +19,8 @@ import {
   TicketCategoryFormValues,
 } from "@/schemas/ticketCategory.schema";
 import { toast } from "sonner";
+import { withFallback } from "@/helpers/commonHelper";
+import { AsyncAutocompleteRQ } from "@/components/common/async-autocomplete-rq";
 
 interface TicketCategoryFormProps {
   category?: any;
@@ -63,18 +65,12 @@ export default function TicketCategoryForm({
   const [autoAssignRoleList, setAutoAssignRoleList] = useState<any[]>([]);
   const [slaPolicyList, setSlaPolicyList] = useState<any[]>([]);
   const [statusList, setStatusList] = useState<any[]>([]);
-  const [siteList, setSiteList] = useState<any[]>([]);
 
   const selectedSiteId = watch("site_id");
   const isActive = watch("is_active");
 
   const loadAll = async () => {
-    await Promise.all([
-      loadAutoAssignRoleLookup(),
-      loadStatusLookup(),
-      loadSiteLookup(),
-    ]);
-    setFormLoading(false);
+    setFormLoading(true);
     reset(
       category
         ? {
@@ -84,6 +80,14 @@ export default function TicketCategoryForm({
           }
         : emptyFormData
     );
+
+    setFormLoading(false);
+
+    await Promise.all([loadAutoAssignRoleLookup(), loadStatusLookup()]);
+
+    if (category?.site_id) {
+      loadSlaPolicyLookup(category.site_id);
+    }
   };
 
   useEffect(() => {
@@ -98,12 +102,6 @@ export default function TicketCategoryForm({
       setSlaPolicyList([]);
     }
   }, [selectedSiteId]);
-
-  useEffect(() => {
-    if (category && siteList.length > 0) {
-      setValue("site_id", category.site_id, { shouldValidate: true });
-    }
-  }, [siteList]);
 
   useEffect(() => {
     if (category && slaPolicyList.length > 0) {
@@ -152,13 +150,6 @@ export default function TicketCategoryForm({
     setValue("status", checked ? activeId : inactiveId);
   };
 
-  const loadSiteLookup = async () => {
-    const response = await siteApiService.getSiteLookup();
-    if (response.success) {
-      setSiteList(response.data);
-    }
-  };
-
   const onSubmitForm = async (data: TicketCategoryFormValues) => {
     const formResponse = await onSave({
       ...category,
@@ -167,6 +158,26 @@ export default function TicketCategoryForm({
   };
 
   const isReadOnly = mode === "view";
+
+  const fallbackAutoAssignRole = category?.auto_assign_role
+    ? {
+        id: category.auto_assign_role,
+        name: category.auto_assign_role_name,
+      }
+    : null;
+
+  const fallbackSlaPolicy = category?.sla_id
+    ? {
+        id: category.sla_id,
+        name: category.sla_name || category.sla_policy_name,
+      }
+    : null;
+
+  const autoAssignRoles = withFallback(
+    autoAssignRoleList,
+    fallbackAutoAssignRole
+  );
+  const slaPolicies = withFallback(slaPolicyList, fallbackSlaPolicy);
 
   return (
     <form
@@ -198,24 +209,30 @@ export default function TicketCategoryForm({
             render={({ field }) => (
               <div className="space-y-2">
                 <Label htmlFor="site_id">Site *</Label>
-                <Select
-                  value={field.value || ""}
-                  onValueChange={field.onChange}
-                  disabled={isReadOnly}
-                >
-                  <SelectTrigger
-                    className={errors.site_id ? "border-red-500" : ""}
-                  >
-                    <SelectValue placeholder="Select site" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {siteList.map((site: any) => (
-                      <SelectItem key={site.id} value={site.id}>
-                        {site.name}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
+                <AsyncAutocompleteRQ
+                  value={field.value}
+                  onChange={(value) => {
+                    field.onChange(value);
+                  }}
+                  placeholder="Select site"
+                  fallbackOption={
+                    category?.site_id
+                      ? {
+                          id: category.site_id,
+                          label: category.site_name || "Selected Site",
+                        }
+                      : undefined
+                  }
+                  queryKey={["sites"]}
+                  queryFn={async (search) => {
+                    const res = await siteApiService.getSiteLookup(search);
+                    return res.data.map((s: any) => ({
+                      id: s.id,
+                      label: s.name,
+                    }));
+                  }}
+                  minSearchLength={1}
+                />
                 {errors.site_id && (
                   <p className="text-sm text-red-500">
                     {errors.site_id.message}
@@ -241,7 +258,7 @@ export default function TicketCategoryForm({
                     <SelectValue placeholder="Select auto-assign role" />
                   </SelectTrigger>
                   <SelectContent>
-                    {autoAssignRoleList.map((role: any) => (
+                    {autoAssignRoles.map((role: any) => (
                       <SelectItem key={role.id} value={role.id}>
                         {role.name}
                       </SelectItem>
@@ -288,7 +305,7 @@ export default function TicketCategoryForm({
                     <SelectValue placeholder="Select SLA Policy" />
                   </SelectTrigger>
                   <SelectContent>
-                    {slaPolicyList.map((policy: any) => (
+                    {slaPolicies.map((policy: any) => (
                       <SelectItem key={policy.id} value={policy.id}>
                         {policy.name}
                       </SelectItem>

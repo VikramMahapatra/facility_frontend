@@ -21,7 +21,7 @@ import {
 } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { LogOut, } from "lucide-react";
+import { LogOut } from "lucide-react";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Input } from "@/components/ui/input";
 import {
@@ -67,6 +67,7 @@ import ContentContainer from "@/components/ContentContainer";
 import { ticketWorkOrderApiService } from "@/services/ticketing_service/ticketworkorderapi";
 import { siteApiService } from "@/services/spaces_sites/sitesapi";
 import { PageHeader } from "@/components/PageHeader";
+import { AsyncAutocompleteRQ } from "@/components/common/async-autocomplete-rq";
 
 interface TicketWorkOrder {
   id: string;
@@ -84,7 +85,6 @@ interface TicketWorkOrder {
   is_deleted?: boolean;
   total_amount?: number; // ✅ ADD
   tax_code_id?: string; // ✅ ADD
-
 }
 
 interface TicketWorkOrderOverview {
@@ -103,9 +103,14 @@ export default function TicketWorkOrders() {
     "create"
   );
   const [isFormOpen, setIsFormOpen] = useState(false);
-  const [deleteWorkOrderId, setDeleteWorkOrderId] = useState<string | null>(null);
-  const [selectedWorkOrder, setSelectedWorkOrder] = useState<TicketWorkOrder | undefined >();
-  const [workOrderOverview, setWorkOrderOverview] = useState<TicketWorkOrderOverview>({
+  const [deleteWorkOrderId, setDeleteWorkOrderId] = useState<string | null>(
+    null
+  );
+  const [selectedWorkOrder, setSelectedWorkOrder] = useState<
+    TicketWorkOrder | undefined
+  >();
+  const [workOrderOverview, setWorkOrderOverview] =
+    useState<TicketWorkOrderOverview>({
       total_work_orders: 0,
       pending: 0,
       in_progress: 0,
@@ -119,11 +124,9 @@ export default function TicketWorkOrders() {
   const [pageSize] = useState(6);
   const { user, handleLogout } = useAuth();
   const [totalItems, setTotalItems] = useState(0);
-  const [siteList, setSiteList] = useState<any[]>([]);
   const [statusList, setStatusList] = useState<any[]>([]);
 
   useEffect(() => {
-    loadSiteLookup();
     loadFilterStatusLookup();
   }, []);
 
@@ -143,11 +146,6 @@ export default function TicketWorkOrders() {
     } else {
       setPage(1);
     }
-  };
-
-  const loadSiteLookup = async () => {
-    const response = await siteApiService.getSiteLookup();
-    if (response?.success) setSiteList(response.data || []);
   };
 
   const loadFilterStatusLookup = async () => {
@@ -261,7 +259,9 @@ export default function TicketWorkOrders() {
     if (response?.success) {
       setIsFormOpen(false);
       toast.success(
-        `Ticket work order has been ${formMode === "create" ? "created" : "updated"}
+        `Ticket work order has been ${
+          formMode === "create" ? "created" : "updated"
+        }
         } successfully.`
       );
     }
@@ -329,26 +329,27 @@ export default function TicketWorkOrders() {
               className="pl-10"
             />
           </div>
-          <Select
-            value={selectedSite}
-            onValueChange={setSelectedSite}
-          >
-            <SelectTrigger className="w-[180px]">
-              <SelectValue placeholder="All Sites" />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="all">All Sites</SelectItem>
-              {siteList.map((site) => (
-                <SelectItem key={site.id} value={site.id}>
-                  {site.name}
-                </SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
-          <Select
-            value={selectedStatus}
-            onValueChange={setSelectedStatus}
-          >
+          <div className="w-[180px]">
+            <AsyncAutocompleteRQ
+              value={selectedSite}
+              onChange={(value) => {
+                setSelectedSite(value);
+              }}
+              placeholder="All Sites"
+              queryKey={["sites"]}
+              queryFn={async (search) => {
+                const res = await siteApiService.getSiteLookup(search);
+                const sites = res.data.map((s: any) => ({
+                  id: s.id,
+                  label: s.name,
+                }));
+                // Always include "All Sites" option at the beginning
+                return [{ id: "all", label: "All Sites" }, ...sites];
+              }}
+              minSearchLength={0}
+            />
+          </div>
+          <Select value={selectedStatus} onValueChange={setSelectedStatus}>
             <SelectTrigger className="w-[180px]">
               <SelectValue placeholder="All Status" />
             </SelectTrigger>
@@ -384,9 +385,7 @@ export default function TicketWorkOrders() {
               </Card>
               <Card>
                 <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                  <CardTitle className="text-sm font-medium">
-                    Pending
-                  </CardTitle>
+                  <CardTitle className="text-sm font-medium">Pending</CardTitle>
                   <Clock className="h-4 w-4 text-muted-foreground" />
                 </CardHeader>
                 <CardContent>
@@ -461,8 +460,7 @@ export default function TicketWorkOrders() {
                           <div className="flex items-center">
                             <User className="w-4 h-4 mr-2" />
 
-                            {workOrder.assigned_to_name ||
-                              "Unassigned"}
+                            {workOrder.assigned_to_name || "Unassigned"}
                           </div>
                         </TableCell>
                         <TableCell>
@@ -515,9 +513,7 @@ export default function TicketWorkOrders() {
                                 variant="ghost"
                                 size="sm"
                                 className="text-destructive hover:text-destructive"
-                                onClick={() =>
-                                  handleDelete(workOrder.id!)
-                                }
+                                onClick={() => handleDelete(workOrder.id!)}
                               >
                                 <Trash2 className="w-4 h-4" />
                               </Button>

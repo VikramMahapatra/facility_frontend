@@ -20,7 +20,7 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog";
 import { Label } from "@/components/ui/label";
-import { LogOut, } from "lucide-react";
+import { LogOut } from "lucide-react";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
@@ -44,11 +44,11 @@ import LoaderOverlay from "@/components/LoaderOverlay";
 import ContentContainer from "@/components/ContentContainer";
 import { useAuth } from "@/context/AuthContext";
 import { PageHeader } from "@/components/PageHeader";
+import { AsyncAutocompleteRQ } from "@/components/common/async-autocomplete-rq";
 
 export default function TicketWorkload() {
   const navigate = useNavigate();
   const [selectedSiteId, setSelectedSiteId] = useState("");
-  const [siteList, setSiteList] = useState<any[]>([]);
   const [workloadData, setWorkloadData] = useState<any>(null);
   const { withLoader } = useLoader();
   const [isReassignOpen, setIsReassignOpen] = useState(false);
@@ -67,9 +67,6 @@ export default function TicketWorkload() {
   const [unassignedTicketsPage, setUnassignedTicketsPage] = useState(1);
   const [unassignedTicketsPageSize] = useState(6);
   const [isAssigning, setIsAssigning] = useState(false);
-  useEffect(() => {
-    loadSiteLookup();
-  }, []);
 
   useEffect(() => {
     if (selectedSiteId) {
@@ -79,17 +76,15 @@ export default function TicketWorkload() {
     }
   }, [selectedSiteId]);
 
-  const loadSiteLookup = async () => {
-    const response = await withLoader(async () => {
-      return await siteApiService.getSiteLookup();
-    });
-    if (response?.success) {
-      setSiteList(response.data || []);
-      if (response.data && response.data.length > 0) {
-        setSelectedSiteId(response.data[0].id);
-      }
+  useEffect(() => {
+    if (!selectedSiteId) {
+      siteApiService.getSiteLookup().then((response) => {
+        if (response?.success && response.data && response.data.length > 0) {
+          setSelectedSiteId(response.data[0].id);
+        }
+      });
     }
-  };
+  }, []);
 
   const loadWorkloadData = async () => {
     if (!selectedSiteId) return;
@@ -148,7 +143,9 @@ export default function TicketWorkload() {
   const loadEmployeesForTicket = async () => {
     if (!selectedSiteId) return;
     setLoadingEmployees(true);
-    const response = await workloadManagementApiService.AssignTo(selectedSiteId);
+    const response = await workloadManagementApiService.AssignTo(
+      selectedSiteId
+    );
     if (response.success) {
       setEmployeeList(
         Array.isArray(response.data)
@@ -274,21 +271,24 @@ export default function TicketWorkload() {
               View and manage ticket assignments across your team
             </p>
           </div>
-          <Select
-            value={selectedSiteId}
-            onValueChange={setSelectedSiteId}
-          >
-            <SelectTrigger className="w-[200px]">
-              <SelectValue placeholder="Select Site" />
-            </SelectTrigger>
-            <SelectContent>
-              {siteList.map((site: any) => (
-                <SelectItem key={site.id} value={site.id}>
-                  {site.name}
-                </SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
+          <div className="w-[200px]">
+            <AsyncAutocompleteRQ
+              value={selectedSiteId}
+              onChange={(value) => {
+                setSelectedSiteId(value);
+              }}
+              placeholder="Select Site"
+              queryKey={["sites"]}
+              queryFn={async (search) => {
+                const res = await siteApiService.getSiteLookup(search);
+                return res.data.map((s: any) => ({
+                  id: s.id,
+                  label: s.name,
+                }));
+              }}
+              minSearchLength={1}
+            />
+          </div>
         </div>
 
         <ContentContainer>
@@ -298,9 +298,7 @@ export default function TicketWorkload() {
             <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
               {technicianWorkloads.map((technician: any) => (
                 <Card
-                  key={
-                    technician.technician_name || technician.technician_id
-                  }
+                  key={technician.technician_name || technician.technician_id}
                 >
                   <CardHeader className="pb-3">
                     <CardTitle className="text-sm font-medium">
@@ -311,17 +309,13 @@ export default function TicketWorkload() {
                   <CardContent>
                     <div className="space-y-2">
                       <div className="flex justify-between text-sm">
-                        <span className="text-muted-foreground">
-                          Total:
-                        </span>
+                        <span className="text-muted-foreground">Total:</span>
                         <span className="font-bold">
                           {technician.total_tickets}
                         </span>
                       </div>
                       <div className="flex justify-between text-sm">
-                        <span className="text-muted-foreground">
-                          Open:
-                        </span>
+                        <span className="text-muted-foreground">Open:</span>
                         <span>{technician.open_tickets}</span>
                       </div>
                       <div className="flex justify-between text-sm">
@@ -388,9 +382,7 @@ export default function TicketWorkload() {
                             "Unassigned"}
                         </TableCell>
                         <TableCell>
-                          <Badge
-                            className={getStatusColor(ticket.status)}
-                          >
+                          <Badge className={getStatusColor(ticket.status)}>
                             {ticket.status}
                           </Badge>
                         </TableCell>
@@ -398,36 +390,32 @@ export default function TicketWorkload() {
                           {getPriorityBadge(ticket.priority)}
                         </TableCell>
                         <TableCell>
-                          {new Date(
-                            ticket.created_at
-                          ).toLocaleDateString()}
+                          {new Date(ticket.created_at).toLocaleDateString()}
                         </TableCell>
                         <TableCell>
                           <div className="flex gap-2">
-                            {ticket.status?.toUpperCase() ===
-                              "RETURNED" && (
-                                <Button
-                                  size="sm"
-                                  variant="outline"
-                                  onClick={() =>
-                                    handleReassign(
-                                      ticket.id || ticket.ticket_id,
-                                      ticket.ticket_no,
-                                      ticket.assigned_to
-                                    )
-                                  }
-                                >
-                                  <RefreshCw className="h-3 w-3 mr-1" />
-                                  Reassign
-                                </Button>
-                              )}
+                            {ticket.status?.toUpperCase() === "RETURNED" && (
+                              <Button
+                                size="sm"
+                                variant="outline"
+                                onClick={() =>
+                                  handleReassign(
+                                    ticket.id || ticket.ticket_id,
+                                    ticket.ticket_no,
+                                    ticket.assigned_to
+                                  )
+                                }
+                              >
+                                <RefreshCw className="h-3 w-3 mr-1" />
+                                Reassign
+                              </Button>
+                            )}
                             <Button
                               size="sm"
                               variant="ghost"
                               onClick={() =>
                                 navigate(
-                                  `/tickets/${ticket.id || ticket.ticket_id
-                                  }`
+                                  `/tickets/${ticket.id || ticket.ticket_id}`
                                 )
                               }
                             >
@@ -487,9 +475,7 @@ export default function TicketWorkload() {
                           {ticket.category_name || ticket.category}
                         </TableCell>
                         <TableCell>
-                          <Badge
-                            className={getStatusColor(ticket.status)}
-                          >
+                          <Badge className={getStatusColor(ticket.status)}>
                             {ticket.status}
                           </Badge>
                         </TableCell>
@@ -497,9 +483,7 @@ export default function TicketWorkload() {
                           {getPriorityBadge(ticket.priority)}
                         </TableCell>
                         <TableCell>
-                          {new Date(
-                            ticket.created_at
-                          ).toLocaleDateString()}
+                          {new Date(ticket.created_at).toLocaleDateString()}
                         </TableCell>
                         <TableCell>
                           <Button
@@ -510,9 +494,17 @@ export default function TicketWorkload() {
                                 ticket.ticket_no
                               )
                             }
-                            disabled={isAssigning || (selectedTicket?.id === (ticket.id || ticket.ticket_id))}
+                            disabled={
+                              isAssigning ||
+                              selectedTicket?.id ===
+                                (ticket.id || ticket.ticket_id)
+                            }
                           >
-                            {isAssigning && selectedTicket?.id === (ticket.id || ticket.ticket_id) ? "Assigning..." : "Assign"}
+                            {isAssigning &&
+                            selectedTicket?.id ===
+                              (ticket.id || ticket.ticket_id)
+                              ? "Assigning..."
+                              : "Assign"}
                           </Button>
                         </TableCell>
                       </TableRow>
@@ -562,7 +554,9 @@ export default function TicketWorkload() {
                 </SelectTrigger>
                 <SelectContent>
                   {employeeList
-                    .filter((user: any) => user.id !== selectedTicket?.assigned_to)
+                    .filter(
+                      (user: any) => user.id !== selectedTicket?.assigned_to
+                    )
                     .map((user: any) => (
                       <SelectItem key={user.id} value={String(user.id)}>
                         {user.name}
@@ -586,10 +580,7 @@ export default function TicketWorkload() {
                 >
                   Cancel
                 </Button>
-                <Button
-                  onClick={handleReassignSubmit}
-                  disabled={isAssigning}
-                >
+                <Button onClick={handleReassignSubmit} disabled={isAssigning}>
                   {isAssigning ? "Assigning..." : "Assign"}
                 </Button>
               </div>

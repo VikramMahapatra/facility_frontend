@@ -37,18 +37,26 @@ import LoaderOverlay from "@/components/LoaderOverlay";
 import ContentContainer from "@/components/ContentContainer";
 import { useAuth } from "@/context/AuthContext";
 import { PageHeader } from "@/components/PageHeader";
+import { AsyncAutocompleteRQ } from "@/components/common/async-autocomplete-rq";
 
 export default function TicketDashboard() {
   const { toast } = useToast();
   const navigate = useNavigate();
   const [selectedSiteId, setSelectedSiteId] = useState("");
-  const [siteList, setSiteList] = useState<any[]>([]);
   const [dashboardData, setDashboardData] = useState<any>(null);
   const { withLoader } = useLoader();
   const { user, handleLogout } = useAuth();
 
+  // Set first site as selected when component mounts (if no site is selected)
   useEffect(() => {
-    loadSiteLookup();
+    if (!selectedSiteId) {
+      // Use React Query to get sites and set the first one
+      siteApiService.getSiteLookup().then((response) => {
+        if (response?.success && response.data && response.data.length > 0) {
+          setSelectedSiteId(response.data[0].id);
+        }
+      });
+    }
   }, []);
 
   useEffect(() => {
@@ -56,18 +64,6 @@ export default function TicketDashboard() {
       loadDashboard();
     }
   }, [selectedSiteId]);
-
-  const loadSiteLookup = async () => {
-    const response = await withLoader(async () => {
-      return await siteApiService.getSiteLookup();
-    });
-    if (response?.success) {
-      setSiteList(response.data || []);
-      if (response.data && response.data.length > 0) {
-        setSelectedSiteId(response.data[0].id);
-      }
-    }
-  };
 
   const loadDashboard = async () => {
     if (!selectedSiteId) return;
@@ -131,21 +127,24 @@ export default function TicketDashboard() {
           </p>
         </div>
         <div className="flex gap-3">
-          <Select
-            value={selectedSiteId}
-            onValueChange={setSelectedSiteId}
-          >
-            <SelectTrigger className="w-[200px]">
-              <SelectValue placeholder="Select Site" />
-            </SelectTrigger>
-            <SelectContent>
-              {siteList.map((site: any) => (
-                <SelectItem key={site.id} value={site.id}>
-                  {site.name}
-                </SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
+          <div className="w-[200px]">
+            <AsyncAutocompleteRQ
+              value={selectedSiteId}
+              onChange={(value) => {
+                setSelectedSiteId(value);
+              }}
+              placeholder="Select Site"
+              queryKey={["sites"]}
+              queryFn={async (search) => {
+                const res = await siteApiService.getSiteLookup(search);
+                return res.data.map((s: any) => ({
+                  id: s.id,
+                  label: s.name,
+                }));
+              }}
+              minSearchLength={1}
+            />
+          </div>
           <Button onClick={() => navigate("/ticket-workload")}>
             <Users className="h-4 w-4 mr-2" />
             Workload Management
