@@ -577,21 +577,23 @@ export default function UserFormPage() {
             {/* Organization Layout */}
             {isOrganization ? (
               <>
-                {/* Row 1: Full Name (full width) */}
-                <div className="space-y-2">
-                  <Label htmlFor="full_name">Full Name *</Label>
-                  <Input
-                    id="full_name"
-                    {...register("full_name")}
-                    placeholder="John Doe"
-                    disabled={isReadOnly}
-                    className={errors.full_name ? "border-red-500" : ""}
-                  />
-                  {errors.full_name && (
-                    <p className="text-sm text-red-500">
-                      {errors.full_name.message}
-                    </p>
-                  )}
+                {/* Row 1: Full Name (half width) */}
+                <div className="grid grid-cols-2 gap-4">
+                  <div className="space-y-2">
+                    <Label htmlFor="full_name">Full Name *</Label>
+                    <Input
+                      id="full_name"
+                      {...register("full_name")}
+                      placeholder="John Doe"
+                      disabled={isReadOnly}
+                      className={errors.full_name ? "border-red-500" : ""}
+                    />
+                    {errors.full_name && (
+                      <p className="text-sm text-red-500">
+                        {errors.full_name.message}
+                      </p>
+                    )}
+                  </div>
                 </div>
 
                 {/* Row 2: Type and Status */}
@@ -767,27 +769,69 @@ export default function UserFormPage() {
             ) : isTenant ? (
               <>
                 {/* Tenant Layout */}
-                {/* Row 1: Full Name (full width) */}
-                <div className="space-y-2">
-                  <Label htmlFor="full_name">Full Name *</Label>
-                  <Input
-                    id="full_name"
-                    {...register("full_name")}
-                    placeholder="John Doe"
-                    disabled={isReadOnly}
-                    className={errors.full_name ? "border-red-500" : ""}
-                  />
-                  {errors.full_name && (
-                    <p className="text-sm text-red-500">
-                      {errors.full_name.message}
-                    </p>
-                  )}
+                {/* Row 1: Full Name (half width) */}
+                <div className="grid grid-cols-2 gap-4">
+                  <div className="space-y-2">
+                    <Label htmlFor="full_name">Full Name *</Label>
+                    <Input
+                      id="full_name"
+                      {...register("full_name")}
+                      placeholder="John Doe"
+                      disabled={isReadOnly}
+                      className={errors.full_name ? "border-red-500" : ""}
+                    />
+                    {errors.full_name && (
+                      <p className="text-sm text-red-500">
+                        {errors.full_name.message}
+                      </p>
+                    )}
+                  </div>
                 </div>
 
                 {/* Row 2: Type, Tenant Type, Status */}
                 <div className="grid grid-cols-3 gap-4">
                   <Controller
                     name="account_type"
+                    control={control}
+                    render={({ field }) => (
+                      <div className="space-y-2">
+                        <Label>Type *</Label>
+                        <Select
+                          value={field.value || ""}
+                          onValueChange={field.onChange}
+                          disabled={isReadOnly}
+                        >
+                          <SelectTrigger className="w-full">
+                            <SelectValue placeholder="Select your account type" />
+                          </SelectTrigger>
+                          <SelectContent>
+                            {accountTypes.map((type) => (
+                              <SelectItem key={type.value} value={type.value}>
+                                <div className="flex items-center space-x-3">
+                                  {type.icon}
+                                  <div>
+                                    <div className="font-medium">
+                                      {type.label}
+                                    </div>
+                                    <div className="text-xs text-muted-foreground">
+                                      {type.description}
+                                    </div>
+                                  </div>
+                                </div>
+                              </SelectItem>
+                            ))}
+                          </SelectContent>
+                        </Select>
+                        {errors.account_type && (
+                          <p className="text-sm text-red-500">
+                            {errors.account_type.message}
+                          </p>
+                        )}
+                      </div>
+                    )}
+                  />
+                  <Controller
+                    name="tenant_type"
                     control={control}
                     render={({ field }) => (
                       <div className="space-y-2">
@@ -993,21 +1037,23 @@ export default function UserFormPage() {
             ) : isStaff ? (
               <>
                 {/* Staff Layout */}
-                {/* Row 1: Full Name (full width) */}
-                <div className="space-y-2">
-                  <Label htmlFor="full_name">Full Name *</Label>
-                  <Input
-                    id="full_name"
-                    {...register("full_name")}
-                    placeholder="John Doe"
-                    disabled={isReadOnly}
-                    className={errors.full_name ? "border-red-500" : ""}
-                  />
-                  {errors.full_name && (
-                    <p className="text-sm text-red-500">
-                      {errors.full_name.message}
-                    </p>
-                  )}
+                {/* Row 1: Full Name (half width) */}
+                <div className="grid grid-cols-2 gap-4">
+                  <div className="space-y-2">
+                    <Label htmlFor="full_name">Full Name *</Label>
+                    <Input
+                      id="full_name"
+                      {...register("full_name")}
+                      placeholder="John Doe"
+                      disabled={isReadOnly}
+                      className={errors.full_name ? "border-red-500" : ""}
+                    />
+                    {errors.full_name && (
+                      <p className="text-sm text-red-500">
+                        {errors.full_name.message}
+                      </p>
+                    )}
+                  </div>
                 </div>
 
                 {/* Row 2: Type, Staff Role, Status */}
