@@ -78,6 +78,8 @@ export default function TenantDetailPage() {
     }
   };
 
+  
+
   const getInitials = (name: string) => {
     if (!name) return "";
     return name
@@ -331,7 +333,7 @@ export default function TenantDetailPage() {
                         ? leasesBySpace.get(space.space_id)
                         : [];
                       const activeLease = leases?.find(
-                        (l) => l.status === "active"
+                        (l) => l.status === "active",
                       );
 
                       return (
@@ -345,11 +347,16 @@ export default function TenantDetailPage() {
                                 <CardTitle className="text-base flex items-center gap-2">
                                   <MapPin className="h-4 w-4 text-muted-foreground" />
                                   {space.space_name || "Unnamed Space"}
+                                  {space.is_primary && (
+                                    <Badge className="bg-blue-100 text-blue-700 border-0">
+                                      Primary
+                                    </Badge>
+                                  )}
                                   {space.status && (
                                     <Badge
                                       variant="outline"
                                       className={`${getStatusColor(
-                                        space.status
+                                        space.status,
                                       )} border-0`}
                                     >
                                       {space.status}
@@ -395,11 +402,11 @@ export default function TenantDetailPage() {
                                       {lease.start_date && lease.end_date && (
                                         <div className="text-xs">
                                           {new Date(
-                                            lease.start_date
+                                            lease.start_date,
                                           ).toLocaleDateString()}{" "}
                                           -{" "}
                                           {new Date(
-                                            lease.end_date
+                                            lease.end_date,
                                           ).toLocaleDateString()}
                                         </div>
                                       )}
@@ -452,7 +459,7 @@ export default function TenantDetailPage() {
                       )}
                     {tenant.tenant_leases &&
                       tenant.tenant_leases.some(
-                        (l) => l.status === "active"
+                        (l) => l.status === "active",
                       ) && <li>Lease activated</li>}
                     {!tenant.created_at &&
                       !tenant.tenant_spaces?.length &&

@@ -60,6 +60,7 @@ interface User {
     space_name?: string;
     role?: string;
     status?: string;
+    is_primary?: boolean;
   }>;
 }
 
@@ -430,9 +431,16 @@ export default function UserManagementDetailPage() {
                               <Building className="h-6 w-6 text-primary" />
                             </div>
                             <div className="flex-1">
-                              <p className="font-semibold text-lg mb-1">
-                                {space.site_name || "N/A"}
-                              </p>
+                              <div className="flex items-center gap-2 mb-1">
+                                <p className="font-semibold text-lg">
+                                  {space.site_name || "N/A"}
+                                </p>
+                                {space.is_primary && (
+                                  <Badge className="bg-blue-100 text-blue-700 border-0 text-xs px-2 py-0.5">
+                                    Primary
+                                  </Badge>
+                                )}
+                              </div>
                               <p className="text-sm text-muted-foreground mb-1">
                                 {space.building_block_name || "N/A"}
                               </p>
