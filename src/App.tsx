@@ -96,6 +96,7 @@ const App = () => {
                   <Route path="/login" element={<Login />} />
                   <Route path="/signup" element={<SignUp />} />
                   <Route path="/registration-status" element={<RegistrationStatus />} />
+
                   {/* All protected pages go inside */}
                   <Route element={<ProtectedRoute></ProtectedRoute>}>
                     {/* Layout mounted ONCE */}
@@ -150,9 +151,9 @@ const App = () => {
                       <Route path="/roles" element={<RolesManagement />} />
                       <Route path="/role-policies" element={<RolePolicies />} />
                       <Route path="/users-management" element={<UsersManagement />} />
-                      <Route path="/users/create" element={<UserFormPage />} />
-                      <Route path="/users/:id/edit" element={<UserFormPage />} />
-                      <Route path="/users/:id/view" element={<UserManagementDetailPage />} />
+                      <Route path="/users-management/create" element={<UserFormPage />} />
+                      <Route path="/users-management/:id/edit" element={<UserFormPage />} />
+                      <Route path="/users-management/:id/view" element={<UserManagementDetailPage />} />
                       <Route path="/pending-approvals" element={<PendingApprovals />} />
                       <Route path="/ticket-dashboard" element={<TicketDashboard />} />
                       <Route path="/tickets" element={<Tickets />} />

@@ -1,6 +1,14 @@
 import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
-import { Plus, Pencil, Trash2, Search, UserCircle, Eye, Users } from "lucide-react";
+import {
+  Plus,
+  Pencil,
+  Trash2,
+  Search,
+  UserCircle,
+  Eye,
+  Users,
+} from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import {
@@ -19,7 +27,7 @@ import {
   CardDescription,
 } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { LogOut, } from "lucide-react";
+import { LogOut } from "lucide-react";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { userManagementApiService } from "@/services/access_control/usermanagementapi";
 import { toast } from "sonner";
@@ -99,8 +107,6 @@ export default function UsersManagement() {
     }
   };
 
-
-
   const handleDeleteUser = (userId: string) => {
     setDeleteUserId(userId);
   };
@@ -113,7 +119,10 @@ export default function UsersManagement() {
         loadUsers();
         setDeleteUserId(null);
       } else {
-        const errorMessage = response?.data?.message || response?.message || "Failed to delete user";
+        const errorMessage =
+          response?.data?.message ||
+          response?.message ||
+          "Failed to delete user";
         toast.error(errorMessage);
       }
     }
@@ -137,14 +146,14 @@ export default function UsersManagement() {
 
   const handleOpenForm = (user?: User) => {
     if (user) {
-      navigate(`/users/${user.id}/edit`);
+      navigate(`/users-management/${user.id}/edit`);
     } else {
-      navigate("/users/create");
+      navigate("/users-management/create");
     }
   };
 
   const handleView = (user: User) => {
-    navigate(`/users/${user.id}/view`);
+    navigate(`/users-management/${user.id}/view`);
   };
 
   const getInitials = (name: string) => {
@@ -178,9 +187,7 @@ export default function UsersManagement() {
       <div className="space-y-6">
         <div className="flex items-center justify-between">
           <div>
-            <h1 className="text-3xl font-bold text-foreground">
-              All Users
-            </h1>
+            <h1 className="text-3xl font-bold text-foreground">All Users</h1>
             <p className="text-muted-foreground mt-1">
               Create and manage users and assign roles
             </p>
@@ -215,9 +222,7 @@ export default function UsersManagement() {
                   <TableHead>Contact</TableHead>
                   <TableHead>Roles</TableHead>
                   <TableHead>Status</TableHead>
-                  <TableHead className="text-right">
-                    Actions
-                  </TableHead>
+                  <TableHead className="text-right">Actions</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
@@ -241,18 +246,14 @@ export default function UsersManagement() {
                             </AvatarFallback>
                           </Avatar>
                           <div>
-                            <div className="font-medium">
-                              {user.full_name}
-                            </div>
+                            <div className="font-medium">{user.full_name}</div>
                             <div className="text-xs text-muted-foreground">
                               {user.email}
                             </div>
                           </div>
                         </div>
                       </TableCell>
-                      <TableCell>
-                        {getTypeBadge(user.account_type)}
-                      </TableCell>
+                      <TableCell>{getTypeBadge(user.account_type)}</TableCell>
                       <TableCell className="text-muted-foreground">
                         {user.phone}
                       </TableCell>
@@ -271,8 +272,8 @@ export default function UsersManagement() {
                             user.status === "active"
                               ? "default"
                               : user.status === "pending_approval"
-                                ? "secondary"
-                                : "outline"
+                              ? "secondary"
+                              : "outline"
                           }
                         >
                           {user.status === "pending_approval"
@@ -333,8 +334,8 @@ export default function UsersManagement() {
           <AlertDialogHeader>
             <AlertDialogTitle>Delete User</AlertDialogTitle>
             <AlertDialogDescription>
-              Are you sure you want to delete this user? This action
-              cannot be undone.
+              Are you sure you want to delete this user? This action cannot be
+              undone.
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
