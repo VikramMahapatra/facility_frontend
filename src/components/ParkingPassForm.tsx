@@ -28,7 +28,8 @@ import { spacesApiService } from "@/services/spaces_sites/spacesapi";
 import { parkingZoneApiService } from "@/services/parking_access/parkingzonesapi";
 import { tenantsApiService } from "@/services/leasing_tenants/tenantsapi";
 import { parkingPassesApiService } from "@/services/parking_access/parkingpassesapi";
-
+import { withFallback } from "@/helpers/commonHelper";
+import { AsyncAutocompleteRQ } from "./common/async-autocomplete-rq";
 interface ParkingPassFormProps {
   pass?: ParkingPass | null;
   isOpen: boolean;
@@ -126,38 +127,7 @@ export function ParkingPassForm({
   const loadAll = async () => {
     setFormLoading(true);
 
-    // Load sites and status lookup
-    await Promise.all([loadSiteLookup(), loadStatusLookup()]);
-
-    // Load spaces and zones if editing
-    if (pass && mode !== "create" && pass.site_id) {
-      await loadSpaces(pass.site_id);
-      await loadZones(pass.site_id);
-
-      // Load tenants if space is available
-      if (pass.space_id) {
-        await loadTenantLookup(pass.site_id, pass.space_id);
-
-        // If tenant is not in the list but we have partner_id, add it to the list
-        const tenantId = pass.resident_id || pass.partner_id;
-        if (tenantId && (pass as any).partner_name) {
-          setTenantList((prev) => {
-            const exists = prev.some((t: any) => t.id === tenantId);
-            if (!exists) {
-              return [
-                ...prev,
-                {
-                  id: tenantId,
-                  name: (pass as any).partner_name,
-                },
-              ];
-            }
-            return prev;
-          });
-        }
-      }
-    }
-
+    // Reset form first
     reset(
       pass && mode !== "create"
         ? {
@@ -176,6 +146,35 @@ export function ParkingPassForm({
     );
 
     setFormLoading(false);
+
+    // Load spaces and zones if editing
+    if (pass && mode !== "create" && pass.site_id) {
+      loadSpaces(pass.site_id);
+      loadZones(pass.site_id);
+
+      // Load tenants if space is available
+      if (pass.space_id) {
+        loadTenantLookup(pass.site_id, pass.space_id).then(() => {
+          // If tenant is not in the list but we have partner_id, add it to the list
+          const tenantId = pass.resident_id || pass.partner_id;
+          if (tenantId && (pass as any).partner_name) {
+            setTenantList((prev) => {
+              const exists = prev.some((t: any) => t.id === tenantId);
+              if (!exists) {
+                return [
+                  ...prev,
+                  {
+                    id: tenantId,
+                    name: (pass as any).partner_name,
+                  },
+                ];
+              }
+              return prev;
+            });
+          }
+        });
+      }
+    }
   };
 
   useEffect(() => {
@@ -287,6 +286,41 @@ export function ParkingPassForm({
     onClose();
   };
 
+  const fallbackSpace = pass?.space_id
+    ? {
+        id: pass.space_id,
+        name: pass.space_name || "Selected Space",
+      }
+    : null;
+
+  const fallbackZone = pass?.zone_id
+    ? {
+        id: pass.zone_id,
+        name: pass.zone_name || `Zone (${pass.zone_id.slice(0, 6)})`,
+      }
+    : null;
+
+  const fallbackTenant = pass?.resident_id || pass?.partner_id
+    ? {
+        id: pass.resident_id || pass.partner_id || "",
+        name: (pass as any).partner_name || `Tenant (${(pass.resident_id || pass.partner_id || "").slice(0, 6)})`,
+      }
+    : null;
+
+  const fallbackStatus = pass?.status
+    ? {
+        id: pass.status,
+        name: pass.status,
+        value: pass.status,
+      }
+    : null;
+
+  const spaces = withFallback(spaceList, fallbackSpace);
+  const zones = withFallback(zoneList, fallbackZone);
+  const tenants = withFallback(tenantList, fallbackTenant);
+  const statuses = withFallback(statusList, fallbackStatus);
+
+
   return (
     <Dialog open={isOpen} onOpenChange={handleClose}>
       <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
@@ -314,34 +348,31 @@ export function ParkingPassForm({
                   render={({ field }) => (
                     <div className="space-y-2">
                       <Label htmlFor="site_id">Site *</Label>
-                      <Select
+                      <AsyncAutocompleteRQ
                         value={field.value || ""}
-                        onValueChange={(value) => {
+                        onChange={(value) => {
                           field.onChange(value);
-                          setValue("space_id", "");
-                          setValue("zone_id", "");
                         }}
                         disabled={isReadOnly || isFieldDisabled("site_id")}
-                      >
-                        <SelectTrigger
-                          className={errors.site_id ? "border-red-500" : ""}
-                        >
-                          <SelectValue placeholder="Select site" />
-                        </SelectTrigger>
-                        <SelectContent>
-                          {siteList.length === 0 ? (
-                            <SelectItem value="none" disabled>
-                              No sites available
-                            </SelectItem>
-                          ) : (
-                            siteList.map((site) => (
-                              <SelectItem key={site.id} value={site.id}>
-                                {site.name}
-                              </SelectItem>
-                            ))
-                          )}
-                        </SelectContent>
-                      </Select>
+                        placeholder="Select site"
+                        queryKey={["sites"]}
+                        queryFn={async (search) => {
+                          const response = await siteApiService.getSiteLookup(search);
+                          return response.data.map((s: any) => ({
+                            id: s.id,
+                            label: s.name,
+                          }));
+                        }}
+                        fallbackOption={
+                          pass?.site_id
+                            ? {
+                                id: pass.site_id,
+                                label: pass.site_name || `Site (${pass.site_id.slice(0, 6)})`,
+                              }
+                            : undefined
+                        }
+                        minSearchLength={1}
+                      />
                       {errors.site_id && (
                         <p className="text-sm text-red-500">
                           {errors.site_id.message}
@@ -379,7 +410,7 @@ export function ParkingPassForm({
                                 : "Select site first"}
                             </SelectItem>
                           ) : (
-                            spaceList.map((space) => (
+                            spaces.map((space) => (
                               <SelectItem key={space.id} value={space.id}>
                                 {space.name}
                               </SelectItem>
@@ -420,14 +451,14 @@ export function ParkingPassForm({
                           <SelectValue placeholder="Select zone" />
                         </SelectTrigger>
                         <SelectContent>
-                          {zoneList.length === 0 ? (
+                          {zones.length === 0 ? (
                             <SelectItem value="none" disabled>
                               {selectedSiteId
                                 ? "No zones available"
                                 : "Select site first"}
                             </SelectItem>
                           ) : (
-                            zoneList.map((zone) => (
+                            zones.map((zone) => (
                               <SelectItem key={zone.id} value={zone.id}>
                                 {zone.name}
                               </SelectItem>
@@ -471,7 +502,7 @@ export function ParkingPassForm({
                           />
                         </SelectTrigger>
                         <SelectContent>
-                          {tenantList.map((tenant: any) => (
+                          {tenants.map((tenant: any) => (
                             <SelectItem key={tenant.id} value={tenant.id}>
                               {tenant.name}
                             </SelectItem>
@@ -619,7 +650,7 @@ export function ParkingPassForm({
                           <SelectValue placeholder="Select status" />
                         </SelectTrigger>
                         <SelectContent>
-                          {statusList.map((status: any) => (
+                          {statuses.map((status: any) => (
                             <SelectItem key={status.id} value={status.id}>
                               {status.name}
                             </SelectItem>

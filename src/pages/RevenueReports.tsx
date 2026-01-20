@@ -56,6 +56,7 @@ import LoaderOverlay from "@/components/LoaderOverlay";
 import ContentContainer from "@/components/ContentContainer";
 import { useAuth } from "@/context/AuthContext";
 import { PageHeader } from "@/components/PageHeader";
+import{AsyncAutocompleteRQ} from "@/components/common/async-autocomplete-rq";
 
 interface RevenueReportsOverview {
   TotalRevenue: number;
@@ -293,19 +294,30 @@ export default function RevenueReports() {
                 <SelectItem value="Last_Year">Last Year</SelectItem>
               </SelectContent>
             </Select>
-            <Select value={selectedSite} onValueChange={setSelectedSite}>
-              <SelectTrigger className="w-[180px]">
-                <SelectValue placeholder="All Sites" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="all">All Sites</SelectItem>
-                {siteList.map((s: any) => (
-                  <SelectItem key={s.id} value={s.id}>
-                    {s.name}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
+            <div className="w-[180px]">
+            <AsyncAutocompleteRQ
+              value={selectedSite}
+              onChange={(value) => {
+                setSelectedSite(value);
+              }}
+              placeholder="All Sites"
+              queryKey={["sites"]}
+              queryFn={async (search) => {
+                const res = await siteApiService.getSiteLookup(search);
+                const sites = res.data.map((s: any) => ({
+                  id: s.id,
+                  label: s.name,
+                }));
+                return [{ id: "all", label: "All Sites" }, ...sites];
+              }}
+              fallbackOption={
+                selectedSite === "all"
+                  ? { id: "all", label: "All Sites" }
+                  : undefined
+              }
+                minSearchLength={0}
+              />
+            </div>
           </div>
 
           {/* Key Metrics */}
