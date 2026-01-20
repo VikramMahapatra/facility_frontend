@@ -56,6 +56,7 @@ import { useLoader } from "@/context/LoaderContext";
 import { useAuth } from "../context/AuthContext";
 import { ParkingZone } from "@/interfaces/parking_access_interface";
 import { PageHeader } from "@/components/PageHeader";
+import { AsyncAutocompleteRQ } from "@/components/common/async-autocomplete-rq";
 
 export default function ParkingZones() {
   const [isFormOpen, setIsFormOpen] = useState(false);
@@ -267,22 +268,32 @@ export default function ParkingZones() {
               className="pl-10"
             />
           </div>
-          <Select
-            value={selectedSite}
-            onValueChange={setSelectedSite}
-          >
-            <SelectTrigger className="w-[180px]">
-              <SelectValue placeholder="All Sites" />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="all">All Sites</SelectItem>
-              {siteList.map((site: any) => (
-                <SelectItem key={site.id} value={site.id}>
-                  {site.name}
-                </SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
+          <div className="w-[180px]">
+          <AsyncAutocompleteRQ
+            value={selectedSite === "all" ? "" : selectedSite}
+            onChange={(value) => {
+              setSelectedSite(value || "all");
+            }}
+            placeholder="All Sites"
+            queryKey={["sites"]}
+            queryFn={async (search) => {
+              const res = await siteApiService.getSiteLookup(search);
+              return res.data.map((s: any) => ({
+                id: s.id,
+                label: s.name,
+              }));
+            }}
+            fallbackOption={
+              selectedSite === "all"
+                ? {
+                    id: "all",
+                    label: "All Sites",
+                  }
+                : undefined
+            }
+              minSearchLength={0}
+            />
+          </div>
         </div>
         <div className="relative rounded-md border">
           <ContentContainer>
