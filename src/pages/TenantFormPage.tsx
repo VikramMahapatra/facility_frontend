@@ -26,6 +26,7 @@ import PhoneInput from "react-phone-input-2";
 import ContentContainer from "@/components/ContentContainer";
 import { useLoader } from "@/context/LoaderContext";
 import LoaderOverlay from "@/components/LoaderOverlay";
+import { Switch } from "@/components/ui/switch";
 
 const emptyFormData = {
   name: "",
@@ -38,6 +39,7 @@ const emptyFormData = {
       site_id: "",
       building_block_id: "",
       space_id: "",
+      is_primary: true,
     },
   ],
   contact_info: {
@@ -436,12 +438,13 @@ export default function TenantFormPage() {
     const ensured =
       remaining.length === 0
         ? [
-          {
-            site_id: "",
-            building_block_id: "",
-            space_id: "",
-          },
-        ]
+            {
+              site_id: "",
+              building_block_id: "",
+              space_id: "",
+              is_primary: true,
+            },
+          ]
         : remaining;
     setValue("tenant_spaces", ensured, {
       shouldValidate: true,
@@ -451,21 +454,44 @@ export default function TenantFormPage() {
 
   const updateSpaceEntry = (
     index: number,
-    field: "site_id" | "building_block_id" | "space_id",
-    value: string
+    field: "site_id" | "building_block_id" | "space_id" | "is_primary",
+    value: string | boolean
   ) => {
     const currentSpaceInfo = getValues("tenant_spaces") || [];
     const updated = [...currentSpaceInfo];
+
+    if (field === "is_primary") {
+      const isPrimary = Boolean(value);
+      if (isPrimary) {
+        // set this entry as primary and others as non-primary
+        updated.forEach((space, i) => {
+          updated[i] = { ...(space as any), is_primary: i === index } as any;
+        });
+      } else {
+        updated[index] = {
+          ...(updated[index] as any),
+          is_primary: false,
+        } as any;
+      }
+
+      setValue("tenant_spaces", updated, {
+        shouldValidate: true,
+        shouldDirty: true,
+      });
+      return;
+    }
+
     updated[index] = { ...updated[index], [field]: value };
 
     // Reset building and space when site changes
     if (field === "site_id") {
+      const siteId = value as string;
       updated[index].building_block_id = "";
       updated[index].space_id = "";
       // Load buildings and spaces for the new site (for any entry)
-      if (value) {
-        loadBuildingLookup(value);
-        loadSpaceLookup(value);
+      if (siteId) {
+        loadBuildingLookup(siteId);
+        loadSpaceLookup(siteId);
       }
     }
     // Reset space when building changes
@@ -473,7 +499,7 @@ export default function TenantFormPage() {
       updated[index].space_id = "";
       // Load spaces for the site and building (for any entry)
       if (updated[index].site_id) {
-        loadSpaceLookup(updated[index].site_id, value || undefined);
+        loadSpaceLookup(updated[index].site_id, (value as string) || undefined);
       }
     }
 
@@ -848,7 +874,7 @@ export default function TenantFormPage() {
                       </div>
                     </CardHeader>
                     <CardContent>
-                      <div className="grid grid-cols-3 gap-4">
+                      <div className="grid grid-cols-4 gap-4">
                         {/* Site */}
                         <div className="space-y-2">
                           <Label>Site *</Label>
@@ -1000,6 +1026,26 @@ export default function TenantFormPage() {
                                 }
                               </p>
                             )}
+                        </div>
+
+                        {/* Is Primary */}
+                        <div className="flex items-center gap-2 pt-6">
+                          <Label className="text-sm m-0 whitespace-nowrap">
+                            Primary
+                          </Label>
+                          <Controller
+                            name={`tenant_spaces.${index}.is_primary` as any}
+                            control={control}
+                            render={({ field }) => (
+                              <Switch
+                                checked={!!field.value}
+                                onCheckedChange={(checked) => {
+                                  updateSpaceEntry(index, "is_primary", checked);
+                                }}
+                                disabled={isReadOnly}
+                              />
+                            )}
+                          />
                         </div>
                       </div>
                     </CardContent>

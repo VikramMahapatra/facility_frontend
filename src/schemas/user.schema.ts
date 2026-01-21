@@ -42,6 +42,7 @@ export const accountSchema = (isCreateMode: boolean = false) =>
             building_block_id: z.string().optional(),
             space_id: z.string().min(1, "Space is required"),
             role: z.enum(["owner", "occupant"]).optional(),
+            is_primary: z.boolean().optional(),
           })
         )
         .optional(),
