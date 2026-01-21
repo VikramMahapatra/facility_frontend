@@ -152,7 +152,6 @@ const App = () => {
                       <Route path="/role-policies" element={<RolePolicies />} />
                       <Route path="/users-management" element={<UsersManagement />} />
                       <Route path="/users-management/create" element={<UserFormPage />} />
-                      <Route path="/users-management/:id/edit" element={<UserFormPage />} />
                       <Route path="/users-management/:id/view" element={<UserManagementDetailPage />} />
                       <Route path="/pending-approvals" element={<PendingApprovals />} />
                       <Route path="/ticket-dashboard" element={<TicketDashboard />} />
