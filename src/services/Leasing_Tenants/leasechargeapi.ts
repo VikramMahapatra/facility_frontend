@@ -40,6 +40,10 @@ class LeaseChargeApiService {
     async getLeaseMonthLookup() {
         return await apiService.request('/lease-charges/month-lookup');
     }
+
+    async getLeaseRentAmount(leaseId: string) {
+        return await apiService.request(`/lease-charges/lease-rent/${leaseId}`);
+    }
 }
 
 export const leaseChargeApiService = new LeaseChargeApiService();
