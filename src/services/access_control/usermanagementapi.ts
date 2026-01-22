@@ -24,6 +24,20 @@ class UserManagementApiService {
     });
   }
 
+  async addAccount(userAccountData: any) {
+    return await apiService.request("/users/add-account", {
+      method: "POST",
+      body: JSON.stringify(userAccountData),
+    });
+  }
+
+  async updateAccount(userAccountData: any) {
+    return await apiService.request("/users/update-account", {
+      method: "PUT",
+      body: JSON.stringify(userAccountData),
+    });
+  }
+
   async deleteUser(userId: string) {
     return await apiService.request(`/users/${userId}`, {
       method: "DELETE",

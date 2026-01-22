@@ -6,7 +6,7 @@ const StatusEnum = z.enum([
   "blocked",
 ]);
 
-export const createUserSchema = (isCreateMode: boolean = false) =>
+export const accountSchema = (isCreateMode: boolean = false) =>
   z
     .object({
       full_name: z
@@ -73,6 +73,30 @@ export const createUserSchema = (isCreateMode: boolean = false) =>
       }
     });
 
-export const userSchema = createUserSchema(false);
+export const userSchema = (isCreateMode: boolean = false) =>
+  z
+    .object({
+      full_name: z
+        .string()
+        .min(2, "Name is required")
+        .max(200, "Name must not exceed 200 characters"),
+      email: z
+        .string()
+        .email("Invalid email address")
+        .max(200, "Email must not exceed 200 characters"),
+      password: isCreateMode
+        ? z
+          .string()
+          .min(1, "Password is required")
+          .min(6, "Password must be at least 6 characters")
+        : z.string().optional().or(z.literal("")),
+      phone: z.string().regex(/^\+\d{10,15}$/, "Invalid phone number"),
+      status: StatusEnum,
+    });
 
-export type UserFormValues = z.infer<typeof userSchema>;
+export const userFormSchema = userSchema(false);
+export type UserFormValues = z.infer<typeof userFormSchema>;
+
+
+export const userFormPageSchema = accountSchema(false);
+export type UserFormPageValues = z.infer<typeof userFormPageSchema>;

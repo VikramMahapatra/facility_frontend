@@ -25,51 +25,10 @@ import { toast } from "sonner";
 import ContentContainer from "@/components/ContentContainer";
 import { useLoader } from "@/context/LoaderContext";
 import LoaderOverlay from "@/components/LoaderOverlay";
+import AccountCard from "@/components/userdetails/AccountCard";
+import { User, UserAccount } from "@/interfaces/user_interface";
+import AccountEditModal from "@/components/userdetails/UserAccountEditModal";
 
-interface User {
-  id: string;
-  org_id: string;
-  full_name: string;
-  email: string;
-  phone?: string;
-  account_type: string;
-  status: string;
-  created_at: string;
-  updated_at: string;
-  roles?: Role[];
-  site_id?: string;
-  building_block_id?: string;
-  space_id?: string;
-  site_ids?: string[];
-  tenant_type?: string;
-  staff_role?: string;
-  org_name?: string;
-  account_types?: Array<{
-    account_type: string;
-    user_org_id: string;
-    org_id: string;
-    organization_name: string;
-    is_default: boolean;
-  }>;
-  tenant_spaces?: Array<{
-    site_id: string;
-    site_name?: string;
-    building_block_id?: string;
-    building_block_name?: string;
-    space_id: string;
-    space_name?: string;
-    role?: string;
-    status?: string;
-    is_primary?: boolean;
-  }>;
-}
-
-interface Role {
-  id: string;
-  org_id: string;
-  name: string;
-  description: string;
-}
 
 export default function UserManagementDetailPage() {
   const { id } = useParams<{ id: string }>();
@@ -79,6 +38,9 @@ export default function UserManagementDetailPage() {
   const [user, setUser] = useState<User | null>(null);
   const [isSwitchingAccount, setIsSwitchingAccount] = useState(false);
   const [isAccountListExpanded, setIsAccountListExpanded] = useState(false);
+  const [isAccountModalOpen, setIsAccountModalOpen] = useState(false);
+  const [editingAccount, setEditingAccount] = useState<UserAccount | null>(null);
+  const [accountMode, setAccountMode] = useState<"create" | "edit">("create");
 
   useEffect(() => {
     if (!id) return;
@@ -120,17 +82,17 @@ export default function UserManagementDetailPage() {
   const getStatusBadge = (status: string) => {
     switch (status?.toLowerCase()) {
       case "active":
-        return <Badge className="bg-green-100 text-green-700">Active</Badge>;
+        return <Badge className="bg-green-100 text-green-700">active</Badge>;
       case "inactive":
-        return <Badge variant="secondary">Inactive</Badge>;
+        return <Badge variant="secondary">inactive</Badge>;
       case "pending_approval":
         return (
           <Badge className="bg-yellow-100 text-yellow-700">
-            Pending Approval
+            pending approval
           </Badge>
         );
       default:
-        return <Badge variant="outline">{status}</Badge>;
+        return <Badge variant="outline">{status.toLowerCase()}</Badge>;
     }
   };
 
@@ -161,7 +123,7 @@ export default function UserManagementDetailPage() {
           </Badge>
         );
       default:
-        return <Badge variant="outline">{accountType}</Badge>;
+        return <Badge variant="outline">{accountType.toLowerCase()}</Badge>;
     }
   };
 
@@ -175,7 +137,7 @@ export default function UserManagementDetailPage() {
       case "inactive":
         return <Badge variant="secondary">Inactive</Badge>;
       default:
-        return <Badge variant="outline">{status}</Badge>;
+        return <Badge variant="outline">{status.toLowerCase()}</Badge>;
     }
   };
 
@@ -211,8 +173,42 @@ export default function UserManagementDetailPage() {
     }
   };
 
+  const setOpenAddAccount = (open: boolean) => {
+    if (open) {
+      setEditingAccount(null); // create mode
+      setAccountMode("create");
+    }
+    setIsAccountModalOpen(open);
+
+  };
+
+  const openEditAccount = (account: UserAccount) => {
+    setEditingAccount(account); // edit mode
+    setAccountMode("edit");
+    setIsAccountModalOpen(true);
+  };
+
+  const handleAccountSave = async (accountData, accountMode) => {
+    let response;
+    if (accountMode === "create") {
+      response = await userManagementApiService.addAccount(accountData);
+    } else if (accountMode === "edit") {
+      response = await userManagementApiService.updateAccount(accountData);
+    }
+    if (response.success) {
+      setUser(response.data);
+      setIsAccountModalOpen(false);
+      setEditingAccount(null);
+      toast.success(
+        `${accountData.account_type} account has been ${accountMode === "create" ? "created" : "updated"
+        } successfully.`
+      );
+    }
+    return response;
+  };
+
   const showSwitchAccount =
-    user?.account_types && user.account_types.length > 1;
+    user?.accounts && user.accounts.length > 1;
 
   return (
     <ContentContainer>
@@ -267,13 +263,15 @@ export default function UserManagementDetailPage() {
 
                       {/* Badges */}
                       <div className="flex items-center gap-2">
-                        {getAccountTypeBadge(user.account_type)}
-                        {getStatusBadge(user.status)}
+                        <Badge variant="outline">
+                          {user?.accounts.length} Account(s)
+                        </Badge>
+
                       </div>
 
 
                       {/* Switch Account */}
-                      {showSwitchAccount && (
+                      {/* {showSwitchAccount && (
                         <div className="pt-2">
                           <Button
                             variant="ghost"
@@ -292,30 +290,23 @@ export default function UserManagementDetailPage() {
                               <ChevronDown className="h-4 w-4 ml-2" />
                             )}
                           </Button>
-
-                          {isAccountListExpanded &&
-                            user.account_types?.length > 1 && (
-                              <div className="mt-3 space-y-2">
-                                {/* existing account cards */}
-                              </div>
-                            )}
                         </div>
-                      )}
+                      )} */}
                     </div>
                   </div>
                 </div>
               </div>
             </div>
           </div>
-          {/* Contact Information & Roles & Account */}
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+          {/* Contact Information */}
+          <div className="flex flex-col gap-6">
             {/* Contact Information */}
             <Card className="shadow-sm">
               <CardContent className="p-6">
                 <h3 className="text-lg font-semibold mb-6 flex items-center gap-2">
                   <Users className="h-5 w-5" /> Contact Information
                 </h3>
-                <div className="space-y-5">
+                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
                   <div>
                     <span className="text-muted-foreground flex items-center gap-2 mb-2 text-sm">
                       <Mail className="h-4 w-4" />
@@ -332,71 +323,7 @@ export default function UserManagementDetailPage() {
                       <p className="font-semibold text-base">{user.phone}</p>
                     </div>
                   )}
-                </div>
-              </CardContent>
-            </Card>
-
-            {/* Roles & Account */}
-            <Card className="shadow-sm">
-              <CardContent className="p-6">
-                <h3 className="text-lg font-semibold mb-6 flex items-center gap-2">
-                  <Shield className="h-5 w-5" /> Roles & Account
-                </h3>
-                <div className="space-y-5">
-                  <div>
-                    <span className="text-muted-foreground flex items-center gap-2 mb-2 text-sm">
-                      <UserCog className="h-4 w-4" />
-                      Roles
-                    </span>
-                    {user.roles && user.roles.length > 0 ? (
-                      <div className="flex flex-wrap gap-2">
-                        {user.roles.map((role) => {
-                          const getRoleBadgeColor = (roleName: string) => {
-                            const name = roleName?.toLowerCase();
-                            if (name === "tenant") {
-                              return "bg-purple-100 text-purple-700";
-                            }
-
-                            if (name === "staff") {
-                              return "bg-orange-100 text-orange-700";
-                            }
-                            if (name === "vendor") {
-                              return "bg-gray-100 text-gray-700";
-                            }
-                            if (name === "organization") {
-                              return "bg-orange-100 text-orange-700";
-                            }
-                            if (name === "individual") {
-                              return "bg-purple-100 text-purple-700";
-                            }
-                            return "bg-blue-100 text-blue-700";
-                          };
-                          return (
-                            <Badge
-                              key={role.id}
-                              className={getRoleBadgeColor(role.name)}
-                            >
-                              {role.name}
-                            </Badge>
-                          );
-                        })}
-                      </div>
-                    ) : (
-                      <p className="text-muted-foreground font-semibold">
-                        No roles assigned
-                      </p>
-                    )}
-                  </div>
-                  {user.org_name && (
-                    <div>
-                      <span className="text-muted-foreground flex items-center gap-2 mb-2 text-sm">
-                        <Building className="h-4 w-4" />
-                        Organization
-                      </span>
-                      <p className="font-semibold text-base">{user.org_name}</p>
-                    </div>
-                  )}
-                  <div>
+                  {/* <div>
                     <span className="text-muted-foreground flex items-center gap-2 mb-2 text-sm">
                       <UserPlus className="h-4 w-4" />
                       User ID
@@ -404,6 +331,13 @@ export default function UserManagementDetailPage() {
                     <p className="font-semibold text-sm font-mono">
                       {user.id.slice(0, 20)}..
                     </p>
+                  </div> */}
+                  <div>
+                    <span className="text-muted-foreground flex items-center gap-2 mb-2 text-sm">
+                      <UserPlus className="h-4 w-4" />
+                      Status
+                    </span>
+                    {getStatusBadge(user.status)}
                   </div>
                 </div>
               </CardContent>
@@ -411,71 +345,54 @@ export default function UserManagementDetailPage() {
           </div>
 
           {/* Spaces & Access */}
-          {user.account_type.toLowerCase() === "tenant" && (
+          {user.accounts && (
             <div className="space-y-4">
-              <h3 className="text-xl font-semibold flex items-center gap-2">
-                <Building2 className="h-5 w-5" /> Spaces & Access
-              </h3>
+              <div className="flex items-center justify-between">
+                <h2 className="text-xl font-semibold flex items-center gap-2">
+                  <Shield className="h-5 w-5" />
+                  Accounts
+                </h2>
 
-              {user.tenant_spaces && user.tenant_spaces.length > 0 ? (
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                  {user.tenant_spaces.map((space, idx) => (
-                    <Card
-                      key={idx}
-                      className="hover:shadow-lg transition-all border"
-                    >
-                      <CardContent className="p-5">
-                        <div className="flex items-start justify-between mb-4">
-                          <div className="flex items-start gap-4 flex-1">
-                            <div className="p-3 bg-primary/10 rounded-lg">
-                              <Building className="h-6 w-6 text-primary" />
-                            </div>
-                            <div className="flex-1">
-                              <div className="flex items-center gap-2 mb-1">
-                                <p className="font-semibold text-lg">
-                                  {space.site_name || "N/A"}
-                                </p>
-                                {space.is_primary && (
-                                  <Badge className="bg-blue-100 text-blue-700 border-0 text-xs px-2 py-0.5">
-                                    Primary
-                                  </Badge>
-                                )}
-                              </div>
-                              <p className="text-sm text-muted-foreground mb-1">
-                                {space.building_block_name || "N/A"}
-                              </p>
-                              <p className="text-base font-medium text-foreground">
-                                {space.space_name || "N/A"}
-                              </p>
-                            </div>
-                          </div>
-                          <div className="pt-1">
-                            {getSpaceStatusBadge(space.status)}
-                          </div>
-                        </div>
-                        {space.role && (
-                          <div className="flex items-center gap-2 text-sm text-muted-foreground pt-3 border-t">
-                            <UserPlus className="h-4 w-4" />
-                            <span className="font-medium">
-                              Access: {space.role}
-                            </span>
-                          </div>
-                        )}
-                      </CardContent>
-                    </Card>
-                  ))}
-                </div>
-              ) : (
-                <Card className="shadow-sm">
-                  <CardContent className="p-8">
-                    <p className="text-muted-foreground text-center text-base">
-                      No spaces assigned
-                    </p>
-                  </CardContent>
-                </Card>
-              )}
+                <Button onClick={() => setOpenAddAccount(true)}>
+                  + Add Account
+                </Button>
+              </div>
+
+              {user?.accounts.map(account => (
+                <AccountCard
+                  key={account.id}
+                  account={account}
+                  onEdit={() => openEditAccount(account)}
+                />
+              ))}
             </div>
           )}
+          <AccountEditModal
+            open={isAccountModalOpen}
+            onClose={() => setIsAccountModalOpen(false)}
+            account={editingAccount}
+            mode={accountMode}
+            onSubmit={async (data) => {
+
+              if (accountMode === "create") {
+                const newAccount = {
+                  ...data,
+                  user_id: user!.id
+                };
+                await handleAccountSave(newAccount, accountMode);
+              } else {
+                const updatedAccount = {
+                  ...data,
+                  user_id: user!.id,
+                  user_org_id: editingAccount!.id
+                };
+
+                console.log("editing account:", editingAccount);
+                await handleAccountSave(updatedAccount, accountMode);
+              }
+            }}
+          />
+
         </div>
       )}
     </ContentContainer>

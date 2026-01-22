@@ -41,6 +41,7 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
+import { UserForm } from "@/components/UserForm";
 
 // Define interfaces for API data
 
@@ -50,17 +51,11 @@ interface User {
   full_name: string;
   email: string;
   phone?: string;
-  account_type: string;
+  account_types: [];
   status: string;
   created_at: string;
   updated_at: string;
   roles?: Role[];
-  // Additional fields that might come from API
-  site_id?: string;
-  building_block_id?: string;
-  space_id?: string;
-  site_ids?: string[];
-  tenant_type?: string;
 }
 
 interface Role {
@@ -89,6 +84,9 @@ export default function UsersManagement() {
   const [pageSize] = useState(10);
   const [totalItems, setTotalItems] = useState(0);
   const { withLoader } = useLoader();
+  const [isFormOpen, setIsFormOpen] = useState(false);
+  const [editingUser, setEditingUser] = useState<User | undefined>();
+  const [formMode, setFormMode] = useState<'create' | 'edit' | 'view'>('create');
 
   // Load users on component mount and when search changes
   useSkipFirstEffect(() => {
@@ -105,6 +103,38 @@ export default function UsersManagement() {
     } else {
       setPage(1);
     }
+  };
+
+  const handleCreateUser = async (values: any) => {
+    const response = await userManagementApiService.addUser(values);
+
+    if (response.success) {
+      setIsFormOpen(false);
+      toast.success("User created successfully");
+      loadUsers();
+    }
+    return response;
+  };
+
+  const handleUpdateUser = async (values: any) => {
+    if (!editingUser) return;
+
+    const updatedUser = {
+      ...editingUser,
+      ...values,
+      updated_at: new Date().toISOString(),
+    };
+    const response = await userManagementApiService.updateUser(updatedUser);
+    if (response.success) {
+      console.log("updated user with details :", response.data);
+      setUsers((prev) =>
+        prev.map((u) => (u.id === updatedUser.id ? response.data : u))
+      );
+      toast.success("User updated successfully");
+      setIsFormOpen(false);
+      setEditingUser(undefined);
+    }
+    return response;
   };
 
   const handleDeleteUser = (userId: string) => {
@@ -145,11 +175,9 @@ export default function UsersManagement() {
   };
 
   const handleOpenForm = (user?: User) => {
-    if (user) {
-      navigate(`/users-management/${user.id}/edit`);
-    } else {
-      navigate("/users-management/create");
-    }
+    setEditingUser(user);
+    setFormMode(user ? 'edit' : 'create');
+    setIsFormOpen(true);
   };
 
   const handleView = (user: User) => {
@@ -253,7 +281,13 @@ export default function UsersManagement() {
                           </div>
                         </div>
                       </TableCell>
-                      <TableCell>{getTypeBadge(user.account_type)}</TableCell>
+                      <TableCell>
+                        <div className="flex flex-wrap gap-1">
+                          {user.account_types?.map((account_type) => (
+                            getTypeBadge(account_type)
+                          ))}
+                        </div>
+                      </TableCell>
                       <TableCell className="text-muted-foreground">
                         {user.phone}
                       </TableCell>
@@ -272,8 +306,8 @@ export default function UsersManagement() {
                             user.status === "active"
                               ? "default"
                               : user.status === "pending_approval"
-                              ? "secondary"
-                              : "outline"
+                                ? "secondary"
+                                : "outline"
                           }
                         >
                           {user.status === "pending_approval"
@@ -324,6 +358,19 @@ export default function UsersManagement() {
           />
         </div>
       </div>
+      <UserForm
+        user={editingUser}
+        open={isFormOpen}
+        onOpenChange={(open) => {
+          setIsFormOpen(open);
+          if (!open) {
+            setEditingUser(undefined);
+            setFormMode('create');
+          }
+        }}
+        onSubmit={editingUser ? handleUpdateUser : handleCreateUser}
+        mode={formMode}
+      />
 
       {/* Delete Confirmation Dialog */}
       <AlertDialog

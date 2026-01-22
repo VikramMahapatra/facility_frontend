@@ -15,7 +15,7 @@ import {
 import { Checkbox } from "@/components/ui/checkbox";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { userManagementApiService } from "@/services/access_control/usermanagementapi";
-import { UserFormValues, createUserSchema } from "@/schemas/user.schema";
+import { UserFormPageValues, UserFormValues, accountSchema } from "@/schemas/user.schema";
 import { toast } from "sonner";
 import {
   Building2,
@@ -69,7 +69,7 @@ interface Role {
   description: string;
 }
 
-const emptyFormData: UserFormValues = {
+const emptyFormData: UserFormPageValues = {
   full_name: "",
   email: "",
   password: "",
@@ -142,8 +142,8 @@ export default function UserFormPage() {
     setValue,
     getValues,
     formState: { errors, isSubmitting: formIsSubmitting, isValid, isSubmitted },
-  } = useForm<UserFormValues>({
-    resolver: zodResolver(createUserSchema(formMode === "create")),
+  } = useForm<UserFormPageValues>({
+    resolver: zodResolver(accountSchema(formMode === "create")),
     defaultValues: emptyFormData,
     mode: "onChange",
     reValidateMode: "onChange",

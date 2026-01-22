@@ -227,10 +227,6 @@ const App = () => {
                         element={<UserFormPage />}
                       />
                       <Route
-                        path="/users-management/:id/edit"
-                        element={<UserFormPage />}
-                      />
-                      <Route
                         path="/users-management/:id/view"
                         element={<UserManagementDetailPage />}
                       />
