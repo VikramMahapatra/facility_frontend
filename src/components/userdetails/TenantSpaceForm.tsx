@@ -9,7 +9,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Plus, Trash2 } from "lucide-react";
 import { AsyncAutocompleteRQ } from "../common/async-autocomplete-rq";
 import { siteApiService } from "@/services/spaces_sites/sitesapi";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { buildingApiService } from "@/services/spaces_sites/buildingsapi";
 import { spacesApiService } from "@/services/spaces_sites/spacesapi";
 import { toast } from "sonner";
@@ -35,10 +35,38 @@ export default function TenantSpacesForm({
     } = form;
     const [buildingList, setBuildingList] = useState<Record<string, any[]>>({});
     const [spaceList, setSpaceList] = useState<Record<string, any[]>>({});
-
     const isReadOnly = mode === "view";
-
     const tenantSpaces = watch("tenant_spaces") || [];
+
+    const loadAll = async () => {
+        if (mode === "create") {
+            setBuildingList({});
+            setSpaceList({});
+        }
+
+        // Preload building and space lists for existing tenant spaces (edit mode)
+        if (tenantSpaces && mode !== "create") {
+            const spaces = tenantSpaces;
+            if (Array.isArray(tenantSpaces) && spaces.length > 0) {
+                const loadPromises = spaces.map(async (space: any) => {
+                    if (space.site_id) {
+                        await loadBuildingLookup(space.site_id);
+                        if (space.building_block_id) {
+                            await loadSpaceLookup(space.site_id, space.building_block_id);
+                        } else {
+                            await loadSpaceLookup(space.site_id);
+                        }
+                    }
+                });
+                await Promise.all(loadPromises);
+            }
+        }
+    }
+
+    useEffect(() => {
+        loadAll();
+    }, [form]);
+
 
     // Helper functions for managing multiple user spaces
     const addUserSpaceEntry = () => {
@@ -162,6 +190,14 @@ export default function TenantSpacesForm({
         }
     };
 
+    if (tenantSpaces.length === 0) {
+        tenantSpaces.push({
+            site_id: "",
+            building_block_id: "",
+            space_id: ""
+        });
+    }
+
 
     return (
         <>
@@ -173,7 +209,7 @@ export default function TenantSpacesForm({
                         <div className="space-y-2">
                             <Label htmlFor="tenant_type">Tenant Type *</Label>
                             <Select
-                                value={field.value || "residential"}
+                                value={field.value}
                                 onValueChange={field.onChange}
                                 disabled={isReadOnly}
                             >
@@ -220,6 +256,8 @@ export default function TenantSpacesForm({
                 {/* Space Cards */}
                 <div className="space-y-4">
                     {tenantSpaces.map((space: any, index: number) => (
+
+
                         <Card key={index} className="relative">
                             <CardHeader className="pb-3">
                                 <div className="flex items-center justify-between">
@@ -245,12 +283,11 @@ export default function TenantSpacesForm({
                                 <div className="grid grid-cols-3 gap-4">
                                     {/* Site */}
                                     <div className="space-y-2">
-                                        <Label>Site *</Label>
                                         <Controller
                                             name={`tenant_spaces.${index}.site_id` as any}
                                             control={control}
                                             render={({ field, fieldState }) => (
-                                                <div className="space-y-4">
+                                                <div className="space-y-2">
                                                     <Label htmlFor="site_id">Site *</Label>
                                                     <AsyncAutocompleteRQ
                                                         value={field.value}

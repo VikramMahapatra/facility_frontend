@@ -2,18 +2,7 @@ import { userManagementApiService } from "@/services/access_control/usermanageme
 import { useEffect, useState } from "react";
 import { Controller } from "react-hook-form";
 
-export function RolesSelector({ control, errors }) {
-    const [roleList, setRoleList] = useState([]);
-
-    useEffect(() => {
-        loadRolesLookup();
-    }, []);
-
-    const loadRolesLookup = async () => {
-        const lookup = await userManagementApiService.getUserRolesLookup();
-        if (lookup?.success) setRoleList(lookup.data || []);
-    };
-
+export function RolesSelector({ control, errors, roleList }) {
     return (
         <Controller
             name="role_ids"
@@ -21,7 +10,7 @@ export function RolesSelector({ control, errors }) {
             render={({ field }) => (
                 <div>
                     <label className="text-sm font-medium">Roles *</label>
-                    <div className="border rounded-md p-3 space-y-2">
+                    <div className="grid grid-cols-4 gap-x-6 gap-y-3 border rounded-md p-4 max-h-[180px] overflow-y-auto">
                         {roleList.map((role) => (
                             <label key={role.id} className="flex items-center gap-2">
                                 <input

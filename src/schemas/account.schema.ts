@@ -22,12 +22,13 @@ export const tenantAccountSchema = z.object({
 export const staffAccountSchema = z.object({
     ...baseAccountSchema,
     account_type: z.literal("staff"),
+    staff_role: z.string().min(1, "Staff role is required"),
     site_ids: z.array(z.string()).min(1, "Select at least one site"),
 });
 
 export const adminAccountSchema = z.object({
     ...baseAccountSchema,
-    account_type: z.literal("admin"),
+    account_type: z.enum(["organization", "owner", "vendor"]),
 });
 
 export const accountSchema = z.discriminatedUnion("account_type", [

@@ -29,6 +29,7 @@ export interface UserAccount {
     tenant_spaces?: TenantSpace[];
     tenant_type?: string;
     staff_role?: string;
+    is_default: boolean;
     site_ids: [];
     sites: [];
 }
@@ -39,5 +40,7 @@ export interface Role {
     name: string;
     description: string;
 }
+
+
 
 

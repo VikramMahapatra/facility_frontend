@@ -82,17 +82,17 @@ export default function UserManagementDetailPage() {
   const getStatusBadge = (status: string) => {
     switch (status?.toLowerCase()) {
       case "active":
-        return <Badge className="bg-green-100 text-green-700">Active</Badge>;
+        return <Badge className="bg-green-100 text-green-700">active</Badge>;
       case "inactive":
-        return <Badge variant="secondary">Inactive</Badge>;
+        return <Badge variant="secondary">inactive</Badge>;
       case "pending_approval":
         return (
           <Badge className="bg-yellow-100 text-yellow-700">
-            Pending Approval
+            pending approval
           </Badge>
         );
       default:
-        return <Badge variant="outline">{status}</Badge>;
+        return <Badge variant="outline">{status.toLowerCase()}</Badge>;
     }
   };
 
@@ -123,7 +123,7 @@ export default function UserManagementDetailPage() {
           </Badge>
         );
       default:
-        return <Badge variant="outline">{accountType}</Badge>;
+        return <Badge variant="outline">{accountType.toLowerCase()}</Badge>;
     }
   };
 
@@ -137,7 +137,7 @@ export default function UserManagementDetailPage() {
       case "inactive":
         return <Badge variant="secondary">Inactive</Badge>;
       default:
-        return <Badge variant="outline">{status}</Badge>;
+        return <Badge variant="outline">{status.toLowerCase()}</Badge>;
     }
   };
 
@@ -186,6 +186,25 @@ export default function UserManagementDetailPage() {
     setEditingAccount(account); // edit mode
     setAccountMode("edit");
     setIsAccountModalOpen(true);
+  };
+
+  const handleAccountSave = async (accountData, accountMode) => {
+    let response;
+    if (accountMode === "create") {
+      response = await userManagementApiService.addAccount(accountData);
+    } else if (accountMode === "edit") {
+      response = await userManagementApiService.updateAccount(accountData);
+    }
+    if (response.success) {
+      setUser(response.data);
+      setIsAccountModalOpen(false);
+      setEditingAccount(null);
+      toast.success(
+        `${accountData.account_type} account has been ${accountMode === "create" ? "created" : "updated"
+        } successfully.`
+      );
+    }
+    return response;
   };
 
   const showSwitchAccount =
@@ -245,14 +264,14 @@ export default function UserManagementDetailPage() {
                       {/* Badges */}
                       <div className="flex items-center gap-2">
                         <Badge variant="outline">
-                          {user?.accounts.length} Accounts
+                          {user?.accounts.length} Account(s)
                         </Badge>
 
                       </div>
 
 
                       {/* Switch Account */}
-                      {showSwitchAccount && (
+                      {/* {showSwitchAccount && (
                         <div className="pt-2">
                           <Button
                             variant="ghost"
@@ -272,7 +291,7 @@ export default function UserManagementDetailPage() {
                             )}
                           </Button>
                         </div>
-                      )}
+                      )} */}
                     </div>
                   </div>
                 </div>
@@ -318,83 +337,16 @@ export default function UserManagementDetailPage() {
                       <UserPlus className="h-4 w-4" />
                       Status
                     </span>
-                    <p className="font-semibold text-sm font-mono">
-                      {getStatusBadge(user.status)}
-                    </p>
+                    {getStatusBadge(user.status)}
                   </div>
                 </div>
               </CardContent>
             </Card>
-
-            {/* Roles & Account
-            <Card className="shadow-sm">
-              <CardContent className="p-6">
-                <h3 className="text-lg font-semibold mb-6 flex items-center gap-2">
-                  <Shield className="h-5 w-5" /> Roles & Account
-                </h3>
-                <div className="space-y-5">
-                  <div>
-                    <span className="text-muted-foreground flex items-center gap-2 mb-2 text-sm">
-                      <UserCog className="h-4 w-4" />
-                      Roles
-                    </span>
-                    {user.roles && user.roles.length > 0 ? (
-                      <div className="flex flex-wrap gap-2">
-                        {user.roles.map((role) => {
-                          const getRoleBadgeColor = (roleName: string) => {
-                            const name = roleName?.toLowerCase();
-                            if (name === "tenant") {
-                              return "bg-purple-100 text-purple-700";
-                            }
-
-                            if (name === "staff") {
-                              return "bg-orange-100 text-orange-700";
-                            }
-                            if (name === "vendor") {
-                              return "bg-gray-100 text-gray-700";
-                            }
-                            if (name === "organization") {
-                              return "bg-orange-100 text-orange-700";
-                            }
-                            if (name === "individual") {
-                              return "bg-purple-100 text-purple-700";
-                            }
-                            return "bg-blue-100 text-blue-700";
-                          };
-                          return (
-                            <Badge
-                              key={role.id}
-                              className={getRoleBadgeColor(role.name)}
-                            >
-                              {role.name}
-                            </Badge>
-                          );
-                        })}
-                      </div>
-                    ) : (
-                      <p className="text-muted-foreground font-semibold">
-                        No roles assigned
-                      </p>
-                    )}
-                  </div>
-                  {user.org_name && (
-                    <div>
-                      <span className="text-muted-foreground flex items-center gap-2 mb-2 text-sm">
-                        <Building className="h-4 w-4" />
-                        Organization
-                      </span>
-                      <p className="font-semibold text-base">{user.org_name}</p>
-                    </div>
-                  )}
-
-                </div>
-              </CardContent>
-            </Card> */}
           </div>
 
           {/* Spaces & Access */}
           {user.accounts && (
-            <div className="space-y-6">
+            <div className="space-y-4">
               <div className="flex items-center justify-between">
                 <h2 className="text-xl font-semibold flex items-center gap-2">
                   <Shield className="h-5 w-5" />
@@ -421,17 +373,23 @@ export default function UserManagementDetailPage() {
             account={editingAccount}
             mode={accountMode}
             onSubmit={async (data) => {
-              // if (accountMode === "create") {
-              //   await createUserAccount(user.id, data);
-              // } else {
-              //   await updateUserAccount(editingAccount!.id, data);
-              // }
 
-              setIsAccountModalOpen(false);
-              setEditingAccount(null);
+              if (accountMode === "create") {
+                const newAccount = {
+                  ...data,
+                  user_id: user!.id
+                };
+                await handleAccountSave(newAccount, accountMode);
+              } else {
+                const updatedAccount = {
+                  ...data,
+                  user_id: user!.id,
+                  user_org_id: editingAccount!.id
+                };
 
-              // refresh user details
-              //await refetchUser();
+                console.log("editing account:", editingAccount);
+                await handleAccountSave(updatedAccount, accountMode);
+              }
             }}
           />
 

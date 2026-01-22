@@ -3,7 +3,7 @@ import { Card, CardContent } from "../ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { StaffSitesSection } from "./StaffSitesSection";
-import { Building2, MapPin } from "lucide-react";
+import { Building2, MapPin, Pencil, Power, Star } from "lucide-react";
 
 interface Props {
     key: string;
@@ -20,17 +20,17 @@ export default function AccountCard({
     const getStatusBadge = (status: string) => {
         switch (status?.toLowerCase()) {
             case "active":
-                return <Badge className="bg-green-100 text-green-700">Active</Badge>;
+                return <Badge className="bg-green-100 text-green-700">active</Badge>;
             case "inactive":
-                return <Badge variant="secondary">Inactive</Badge>;
+                return <Badge variant="secondary">inactive</Badge>;
             case "pending_approval":
                 return (
                     <Badge className="bg-yellow-100 text-yellow-700">
-                        Pending Approval
+                        pending approval
                     </Badge>
                 );
             default:
-                return <Badge variant="outline">{status}</Badge>;
+                return <Badge variant="outline">{status.toLowerCase()}</Badge>;
         }
     };
 
@@ -41,18 +41,51 @@ export default function AccountCard({
                 {/* Header */}
                 <div className="flex items-start justify-between">
                     <div>
-                        <h3 className="text-lg font-semibold capitalize">
+                        <h3 className="text-lg font-semibold capitalize flex items-center gap-2">
                             {account.account_type} Account
+                            {!account.is_default ? (
+                                <Button
+                                    size="icon"
+                                    variant="ghost"
+                                    //onClick={() => onMakeDefault(account)}
+                                    title="Mark as default account"
+                                >
+                                    <Star className="h-5 w-5" />
+                                </Button>
+                            ) : (
+                                <Button
+                                    size="icon"
+                                    variant="ghost"
+                                    disabled
+                                    className="cursor-default"
+                                    title="This account is used by default for login and actions"
+                                >
+                                    <Star className="h-5 w-5 text-yellow-500 fill-yellow-500" />
+                                </Button>
+                            )}
                         </h3>
                         {getStatusBadge(account.status)}
                     </div>
 
                     <div className="flex gap-2">
-                        <Button size="sm" variant="outline" onClick={onEdit}>
-                            Edit
+
+                        <Button
+                            size="icon"
+                            variant="ghost"
+                            onClick={onEdit}
+                            title="Edit account"
+                        >
+                            <Pencil className="h-4 w-4" />
                         </Button>
-                        <Button size="sm" variant="destructive">
-                            Deactivate
+                        <Button
+                            size="icon"
+                            variant="ghost"
+                            //onClick={() => onDeactivate(account)}
+                            title="Deactivate account"
+                            className="text-destructive hover:text-destructive"
+                            disabled={account.is_default} // UX rule
+                        >
+                            <Power className="h-4 w-4" />
                         </Button>
                     </div>
                 </div>
