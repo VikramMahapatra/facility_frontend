@@ -67,12 +67,24 @@ export function LeaseChargeForm({
   onSave,
   mode,
 }: LeaseChargeFormProps) {
+  const getMonthBounds = () => {
+    const now = new Date();
+    const start = new Date(now.getFullYear(), now.getMonth(), 1);
+    const end = new Date(now.getFullYear(), now.getMonth() + 1, 0);
+    const formatDate = (date: Date) =>
+      `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(
+        2,
+        "0"
+      )}-${String(date.getDate()).padStart(2, "0")}`;
+    return { startDate: formatDate(start), endDate: formatDate(end) };
+  };
   const {
     register,
     handleSubmit,
     control,
     reset,
     watch,
+    setValue,
     trigger,
     formState: { errors, isSubmitting, isValid },
   } = useForm<LeaseChargeFormValues>({
@@ -95,9 +107,12 @@ export function LeaseChargeForm({
   const [taxCodeList, setTaxCodeList] = useState<any[]>([]);
   const [payerTypeList, setPayerTypeList] = useState<any[]>([]);
   const [formLoading, setFormLoading] = useState(true);
+  const [isRentAmountLocked, setIsRentAmountLocked] = useState(false);
 
   const periodStart = watch("period_start");
   const periodEnd = watch("period_end");
+  const selectedLeaseId = watch("lease_id");
+  const selectedChargeCodeId = watch("charge_code_id");
 
   const isReadOnly = mode === "view";
 
@@ -117,6 +132,44 @@ export function LeaseChargeForm({
     }
   }, [charge, isOpen, mode, reset]);
 
+  const isRentChargeCode = (chargeCodeId: string) => {
+    const selected = chargeCodeList.find((code: any) => code.id === chargeCodeId);
+    const name = String(selected?.name || selected?.code || "").toLowerCase();
+    return name === "rent" || name.includes("rent");
+  };
+
+  const loadRentAmount = async (leaseId: string) => {
+    const response = await leaseChargeApiService.getLeaseRentAmount(leaseId);
+    if (response?.success) {
+      const amount =
+        response.data?.amount ??
+        response.data?.rent_amount ??
+        response.data?.rent ??
+        response.data;
+      if (amount !== undefined && amount !== null) {
+        setValue("amount", Number(amount));
+      }
+    }
+  };
+
+  useEffect(() => {
+    if (mode !== "create") {
+      setIsRentAmountLocked(false);
+      return;
+    }
+    if (!selectedChargeCodeId || !isRentChargeCode(selectedChargeCodeId)) {
+      setIsRentAmountLocked(false);
+      setValue("amount", undefined as any);
+      return;
+    }
+    if (!selectedLeaseId) {
+      setIsRentAmountLocked(false);
+      return;
+    }
+    setIsRentAmountLocked(true);
+    loadRentAmount(selectedLeaseId);
+  }, [mode, selectedChargeCodeId, selectedLeaseId, chargeCodeList]);
+
   const loadAll = async () => {
     setFormLoading(true);
 
@@ -134,11 +187,12 @@ export function LeaseChargeForm({
         payer_type: charge.payer_type || "", // ✅ Add this
       });
     } else {
+      const {startDate, endDate} = getMonthBounds();
       reset({
         lease_id: "",
         charge_code_id: "",
-        period_start: "",
-        period_end: "",
+        period_start: startDate,
+        period_end: endDate,
         amount: undefined as any,
         tax_pct: 0 as any,
         tax_code_id: "", // ✅ Add this
@@ -342,7 +396,7 @@ export function LeaseChargeForm({
                   {...register("amount", {
                     setValueAs: (v) => (v === "" ? undefined : Number(v)),
                   })}
-                  disabled={isReadOnly}
+                  disabled={isReadOnly || isRentAmountLocked}
                   className={errors.amount ? "border-red-500" : ""}
                   min="0"
                 />
