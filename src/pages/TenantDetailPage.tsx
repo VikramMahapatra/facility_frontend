@@ -13,6 +13,7 @@ import {
   Mail,
   Phone,
   MapPin,
+  CreditCard,
 } from "lucide-react";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import {
@@ -31,6 +32,8 @@ export default function TenantDetailPage() {
   const navigate = useNavigate();
   const { withLoader } = useLoader();
   const [tenant, setTenant] = useState<Tenant | null>(null);
+  const [paymentHistory, setPaymentHistory] = useState<any[]>([]);
+  const [isPaymentLoading, setIsPaymentLoading] = useState(false);
 
   useEffect(() => {
     if (!id) return;
@@ -51,6 +54,30 @@ export default function TenantDetailPage() {
     loadTenant();
   }, [id]);
 
+  useEffect(() => {
+    if (!id) return;
+
+    const loadPaymentHistory = async () => {
+      setIsPaymentLoading(true);
+      try {
+        const response = await tenantsApiService.getTenantPaymentHistory(id);
+        if (response?.success) {
+          setPaymentHistory(response?.data || []);
+        } else {
+          setPaymentHistory([]);
+          toast.error(response?.message || "Failed to load payment history");
+        }
+      } catch (error) {
+        setPaymentHistory([]);
+        toast.error("Failed to load payment history");
+      } finally {
+        setIsPaymentLoading(false);
+      }
+    };
+
+    loadPaymentHistory();
+  }, [id]);
+
   const leasesBySpace = new Map<string, Lease[]>();
 
   tenant?.tenant_leases?.forEach((lease) => {
@@ -60,6 +87,8 @@ export default function TenantDetailPage() {
     }
     leasesBySpace.get(lease.space_id)!.push(lease);
   });
+
+  const recentPayments = paymentHistory.slice(0, 5);
 
   const leaseBadge = (status?: Lease["status"]) => {
     switch (status) {
@@ -141,6 +170,8 @@ export default function TenantDetailPage() {
     }
   };
 
+  
+
   return (
     <ContentContainer>
       <LoaderOverlay />
@@ -185,9 +216,10 @@ export default function TenantDetailPage() {
           </div>
 
           <Tabs defaultValue="overview">
-            <TabsList className="grid w-full grid-cols-2">
+            <TabsList className="grid w-full grid-cols-3">
               <TabsTrigger value="overview">Overview</TabsTrigger>
               <TabsTrigger value="spaces">Spaces & Leases</TabsTrigger>
+              <TabsTrigger value="history">Payments History</TabsTrigger>
             </TabsList>
 
             {/* OVERVIEW */}
@@ -255,68 +287,88 @@ export default function TenantDetailPage() {
                   </Card>
                 )}
 
-              {(tenant.family_info && tenant.family_info.length > 0) ||
-              (tenant.vehicle_info && tenant.vehicle_info.length > 0) ? (
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                  {tenant.family_info && tenant.family_info.length > 0 && (
-                    <Card>
-                      <CardContent className="p-6">
-                        <h3 className="text-lg font-medium mb-4 flex items-center gap-2">
-                          <Users className="h-5 w-5" /> Family Members
-                        </h3>
-                        <div className="space-y-3">
-                          {tenant.family_info.map((member, idx) => (
-                            <div
-                              key={idx}
-                              className="flex items-center gap-3 p-2 border rounded-md"
-                            >
-                              <Users className="h-4 w-4 text-muted-foreground" />
-                              <div className="flex-1">
-                                <p className="font-medium">
-                                  {member.member
-                                    ? capitalizeName(member.member)
-                                    : "-"}
-                                </p>
-                                <p className="text-sm text-muted-foreground">
-                                  Relation: {member.relation || "-"}
-                                </p>
-                              </div>
-                            </div>
-                          ))}
-                        </div>
-                      </CardContent>
-                    </Card>
-                  )}
+              {(() => {
+                const familyItems = Array.isArray(tenant.family_info)
+                  ? tenant.family_info.filter(
+                      (member) => member.member || member.relation,
+                    )
+                  : [];
+                const vehicleItems = Array.isArray(tenant.vehicle_info)
+                  ? tenant.vehicle_info.filter(
+                      (vehicle) => vehicle.type || vehicle.number,
+                    )
+                  : [];
 
-                  {tenant.vehicle_info && tenant.vehicle_info.length > 0 && (
-                    <Card>
-                      <CardContent className="p-6">
-                        <h3 className="text-lg font-medium mb-4 flex items-center gap-2">
-                          <Car className="h-5 w-5" /> Vehicles
-                        </h3>
-                        <div className="space-y-3">
-                          {tenant.vehicle_info.map((vehicle, idx) => (
-                            <div
-                              key={idx}
-                              className="flex items-center gap-3 p-2 border rounded-md"
-                            >
-                              <Car className="h-4 w-4 text-muted-foreground" />
-                              <div className="flex-1">
-                                <p className="font-medium">
-                                  Vehicle Type: {vehicle.type || "-"}
-                                </p>
-                                <p className="text-sm text-muted-foreground">
-                                  Vehicle Number: {vehicle.number || "-"}
-                                </p>
-                              </div>
+                return (
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <Card>
+                  <CardContent className="p-6">
+                    <h3 className="text-lg font-medium mb-4 flex items-center gap-2">
+                      <Users className="h-5 w-5" /> Family Members
+                    </h3>
+                    {familyItems.length > 0 ? (
+                      <div className="space-y-3">
+                        {familyItems.map((member, idx) => (
+                          <div
+                            key={idx}
+                            className="flex items-center gap-3 p-2 border rounded-md"
+                          >
+                            <Users className="h-4 w-4 text-muted-foreground" />
+                            <div className="flex-1">
+                              <p className="font-medium">
+                                {member.member
+                                  ? capitalizeName(member.member)
+                                  : "-"}
+                              </p>
+                              <p className="text-sm text-muted-foreground">
+                                Relation: {member.relation || "-"}
+                              </p>
                             </div>
-                          ))}
-                        </div>
-                      </CardContent>
-                    </Card>
-                  )}
-                </div>
-              ) : null}
+                          </div>
+                        ))}
+                      </div>
+                    ) : (
+                      <p className="text-sm text-muted-foreground">
+                        No family details
+                      </p>
+                    )}
+                  </CardContent>
+                </Card>
+
+                <Card>
+                  <CardContent className="p-6">
+                    <h3 className="text-lg font-medium mb-4 flex items-center gap-2">
+                      <Car className="h-5 w-5" /> Vehicles
+                    </h3>
+                    {vehicleItems.length > 0 ? (
+                      <div className="space-y-3">
+                        {vehicleItems.map((vehicle, idx) => (
+                          <div
+                            key={idx}
+                            className="flex items-center gap-3 p-2 border rounded-md"
+                          >
+                            <Car className="h-4 w-4 text-muted-foreground" />
+                            <div className="flex-1">
+                              <p className="font-medium">
+                                Vehicle Type: {vehicle.type || "-"}
+                              </p>
+                              <p className="text-sm text-muted-foreground">
+                                Vehicle Number: {vehicle.number || "-"}
+                              </p>
+                            </div>
+                          </div>
+                        ))}
+                      </div>
+                    ) : (
+                      <p className="text-sm text-muted-foreground">
+                        No vehicle details
+                      </p>
+                    )}
+                  </CardContent>
+                </Card>
+                  </div>
+                );
+              })()}
             </TabsContent>
 
             {/* SPACES & LEASES */}
@@ -439,39 +491,123 @@ export default function TenantDetailPage() {
               </div>
             </TabsContent>
 
-            {/* HISTORY */}
-            <TabsContent value="history">
-              <Card>
-                <CardContent className="p-6">
-                  <h3 className="text-lg font-medium mb-4 flex items-center gap-2">
-                    <History className="h-5 w-5" /> Activity History
-                  </h3>
-                  <ul className="space-y-2 text-sm">
-                    {tenant.created_at && (
-                      <li>
-                        Tenant created on{" "}
-                        {new Date(tenant.created_at).toLocaleDateString()}
-                      </li>
-                    )}
-                    {tenant.tenant_spaces &&
-                      tenant.tenant_spaces.length > 0 && (
-                        <li>Space assigned</li>
-                      )}
-                    {tenant.tenant_leases &&
-                      tenant.tenant_leases.some(
-                        (l) => l.status === "active",
-                      ) && <li>Lease activated</li>}
-                    {!tenant.created_at &&
-                      !tenant.tenant_spaces?.length &&
-                      !tenant.tenant_leases?.length && (
-                        <li className="text-muted-foreground">
-                          No activity history available
-                        </li>
-                      )}
-                  </ul>
-                </CardContent>
-              </Card>
-            </TabsContent>
+          {/* HISTORY / PAYMENTS */}
+          <TabsContent value="history">
+            <Card>
+              <CardContent className="p-6 space-y-6">
+                <h3 className="text-lg font-medium mb-4 flex items-center gap-2">
+                  <CreditCard className="h-5 w-5" /> Payments History
+                </h3>
+
+                {isPaymentLoading ? (
+                  <div className="text-sm text-muted-foreground">
+                    Loading payment history...
+                  </div>
+                ) : recentPayments.length > 0 ? (
+                  <div className="space-y-3">
+                    <p className="text-sm text-muted-foreground">
+                      Showing most recent payments
+                    </p>
+                    <div className="space-y-2">
+                      {recentPayments.map((payment: any, idx: number) => {
+                        const key = payment.id || payment.payment_id || idx;
+                        const label = payment.invoice_no || "Payment";
+                        const date = payment.payment_date || payment.paid_at || payment.date || payment.created_at || undefined;
+                        const amount =
+                          typeof payment.amount === "number"
+                            ? payment.amount
+                            : payment.amount
+                            ? Number(payment.amount)
+                            : undefined;
+                        const reference =
+                          payment.reference ||
+                          payment.reference_no ||
+                          payment.ref_no ||
+                          payment.payment_ref;
+                        const metaLine = [
+                          payment.site,
+                          payment.method ? String(payment.method).toUpperCase() : null,
+                          reference ? `Ref: ${reference}` : null,
+                        ]
+                          .filter(Boolean)
+                          .join(" • ");
+
+                        return (
+                          <div
+                            key={key}
+                            className="rounded-md border px-4 py-3 text-sm"
+                          >
+                            <div className="flex items-start justify-between gap-4">
+                              <div className="space-y-2">
+                                <div className="text-lg font-semibold">
+                                  {label}
+                                </div>
+                                {payment.description && (
+                                  <div className="text-sm text-muted-foreground">
+                                    {payment.description}
+                                  </div>
+                                )}
+                              </div>
+                              <div className="text-right space-y-1">
+                                {amount !== undefined &&
+                                  !Number.isNaN(amount) && (
+                                    <div className="text-xl font-bold">
+                                      ₹{amount.toLocaleString()}
+                                    </div>
+                                  )}
+                                {payment.type && (
+                                  <Badge variant="outline" className="text-xs">
+                                    {String(payment.type)}
+                                  </Badge>
+                                )}
+                              </div>
+                            </div>
+
+                            <div className="mt-3 grid grid-cols-1 gap-2 text-sm text-muted-foreground sm:grid-cols-2">
+                              <div>
+                                <span className="font-medium text-foreground">
+                                  Date:
+                                </span>{" "}
+                                {date
+                                  ? new Date(date).toLocaleDateString()
+                                  : "-"}
+                              </div>
+                              <div>
+                                <span className="font-medium text-foreground">
+                                  Method:
+                                </span>{" "}
+                                {payment.method
+                                  ? String(payment.method).toUpperCase()
+                                  : "-"}
+                              </div>
+                              <div>
+                                <span className="font-medium text-foreground">
+                                  Reference:
+                                </span>{" "}
+                                {reference || "-"}
+                              </div>
+                              <div>
+                                <span className="font-medium text-foreground">
+                                  Site:
+                                </span>{" "}
+                                {payment.site || "-"}
+                              </div>
+                            </div>
+                          </div>
+                        );
+                      })}
+                    </div>
+                  </div>
+                ) : (
+                  <div className="text-sm text-muted-foreground">
+                    No payments found
+                  </div>
+                )}
+
+                
+              </CardContent>
+            </Card>
+          </TabsContent>
           </Tabs>
         </div>
       )}

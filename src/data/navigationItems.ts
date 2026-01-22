@@ -84,6 +84,12 @@ export const navigationItems = [
       },
       { title: "Spaces", url: "/spaces", icon: Home, resource: "spaces" },
       {
+        title: "Maintenance (CAM)",
+        url: "/space-maintenance",
+        icon: Wrench,
+        resource: "spaces",
+      },
+      {
         title: "Group Assignments",
         url: "/space-assignments",
         icon: Users,
@@ -172,7 +178,12 @@ export const navigationItems = [
     title: "Maintenance & Assets",
     items: [
       { title: "Assets", url: "/assets", icon: Package, resource: "assets" },
-      { title: "Asset Categories", url: "/asset-categories", icon: FolderTree, resource: "asset_categories" },
+      {
+        title: "Asset Categories",
+        url: "/asset-categories",
+        icon: FolderTree,
+        resource: "asset_categories",
+      },
       {
         title: "Work Orders",
         url: "/work-orders",
