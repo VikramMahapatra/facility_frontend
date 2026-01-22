@@ -363,7 +363,7 @@ export default function Invoices() {
                     <TableHeader>
                       <TableRow>
                         <TableHead>Invoice No.</TableHead>
-                        <TableHead>Lease Charge</TableHead>
+                        <TableHead>Billable Type</TableHead>
                         <TableHead>Site Name</TableHead>
                         <TableHead>Date</TableHead>
                         <TableHead>Due Date</TableHead>
