@@ -237,9 +237,12 @@ export default function LeaseCharges() {
   );
 
   // helpers
-  const getChargeCodeColor = (code: string) => {
-    code = code.toUpperCase();
-    switch (code) {
+  const normalizeChargeCode = (code?: string) =>
+    code?.toUpperCase().trim() || "UNKNOWN";
+
+  const getChargeCodeColor = (code?: string) => {
+    const normalized = normalizeChargeCode(code);
+    switch (normalized) {
       case "RENT":
         return "bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-200";
       case "CAM":
@@ -265,9 +268,9 @@ export default function LeaseCharges() {
       minimumFractionDigits: 0,
       maximumFractionDigits: 0,
     }).format(amount || 0);
-  const getChargeCodeName = (code: string) => {
-    code = code.toUpperCase();
-    switch (code) {
+  const getChargeCodeName = (code?: string) => {
+    const normalized = normalizeChargeCode(code);
+    switch (normalized) {
       case "RENT":
         return "Monthly Rent";
       case "CAM":
@@ -283,7 +286,7 @@ export default function LeaseCharges() {
       case "MAINTENANCE":
         return "Maintenance";
       default:
-        return code;
+        return normalized;
     }
   };
 
@@ -477,7 +480,7 @@ export default function LeaseCharges() {
                 >
                   <div>
                     <Badge className={getChargeCodeColor(code)}>
-                      {code.toLocaleUpperCase()}
+                      {normalizeChargeCode(code)}
                     </Badge>
                     <div className="text-xs text-muted-foreground mt-1">
                       {getChargeCodeName(code)}
@@ -611,7 +614,7 @@ export default function LeaseCharges() {
                               charge.charge_code
                             )}
                           >
-                            {charge.charge_code.toLocaleUpperCase()}
+                            {normalizeChargeCode(charge.charge_code)}
                           </Badge>
                           {charge.tenant_name}
                         </CardTitle>

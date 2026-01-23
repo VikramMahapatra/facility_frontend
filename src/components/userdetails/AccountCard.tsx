@@ -97,12 +97,22 @@ export default function AccountCard({
                         {account.roles.map(role => (
                             <Badge key={role.id}>{role.name}</Badge>
                         ))}
+                        {account.roles.length == 0 && (
+                            <p className="text-sm text-muted-foreground">
+                                No roles assigned
+                            </p>
+                        )}
                     </div>
                 </div>
 
                 {/* Tenant Spaces */}
                 {account.account_type === "tenant" && (
                     <TenantSpacesSection spaces={account.tenant_spaces} />
+                )}
+
+                {/* Owner Spaces */}
+                {account.account_type === "owner" && (
+                    <TenantSpacesSection spaces={account.owner_spaces} />
                 )}
 
                 {/* Staff Sites */}

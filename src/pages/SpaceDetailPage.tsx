@@ -10,20 +10,21 @@ import { SpaceOwnershipSection } from "@/components/SpaceOwnershipSection";
 import { useLoader } from "@/context/LoaderContext";
 import { getKindColor, getKindIcon, getStatusColor } from "@/interfaces/spaces_interfaces";
 import ContentContainer from "@/components/ContentContainer";
-import LoaderOverlay from "@/components/LoaderOverlay";
 import { Space } from "./Spaces";
-import { ArrowLeft, FileText, Home, Wrench,Search } from "lucide-react";
+import {
+    ArrowLeft,
+    FileText,
+    Home,
+    Wrench,
+    Search,
+    Calendar,
+    Receipt,
+    IndianRupee,
+    Clock,
+} from "lucide-react";
 import { SpaceMaintenanceForm } from "@/components/SpaceMaintenanceForm";
 import { toast } from "sonner";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import {
-    Table,
-    TableBody,
-    TableCell,
-    TableHead,
-    TableHeader,
-    TableRow,
-} from "@/components/ui/table";
 import { ownerMaintenancesApiService } from "@/services/spaces_sites/ownermaintenancesapi";
 import { Pagination } from "@/components/Pagination";
 
@@ -116,7 +117,6 @@ export default function SpaceDetailPage() {
 
     return (
         <ContentContainer>
-            <LoaderOverlay />
             {space && (
                 <div className="space-y-6">
                     {/* Header */}
@@ -245,54 +245,69 @@ export default function SpaceDetailPage() {
                                             className="max-w-sm"
                                         />
                                     </div>
-                                    {maintenanceLoading ? (
-                                        <p className="text-center text-sm text-muted-foreground">
-                                            Loading maintenance charges...
-                                        </p>
-                                    ) : maintenanceItems.length === 0 ? (
-                                        <p className="text-center text-sm text-muted-foreground">
-                                            No maintenance charges found.
-                                        </p>
-                                    ) : (
-                                        <div className="space-y-4">
-                                            {maintenanceItems.map((item) => (
-                                                <Card key={item.id} className="p-4">
-                                                    <div className="flex items-center justify-between">
-                                                        <div className="font-medium">
-                                                            {item.maintenance_no || "-"}
+                                    <div className="relative">
+                                        {maintenanceLoading && (
+                                            <div className="absolute inset-0 bg-background/50 backdrop-blur-sm z-20 flex items-center justify-center">
+                                                <div className="animate-spin w-10 h-10 border-4 border-primary border-t-transparent rounded-full"></div>
+                                            </div>
+                                        )}
+                                        {maintenanceItems.length === 0 ? (
+                                            <p className="text-center text-sm text-muted-foreground">
+                                                No maintenance charges found.
+                                            </p>
+                                        ) : (
+                                            <div className="space-y-4">
+                                                {maintenanceItems.map((item) => (
+                                                    <Card key={item.id} className="p-4">
+                                                        <div className="flex items-center justify-between">
+                                                            <div className="font-medium">
+                                                                {item.maintenance_no || "-"}
+                                                            </div>
+                                                            {getStatusBadge(item.status)}
                                                         </div>
-                                                        {getStatusBadge(item.status)}
-                                                    </div>
-                                                    <div className="text-sm text-muted-foreground mt-1">
-                                                       {item.building_name || "-"} • {item.site_name || "-"}
-                                                    </div>
-                                                    <div className="text-xs text-muted-foreground">
-                                                        Owner: {item.owner_name || "-"}
-                                                    </div>
-                                                    <div className="grid grid-cols-2 gap-4 mt-3 text-sm">
-                                                        <div className="space-y-1">
-                                                            <div className="text-muted-foreground">Period</div>
-                                                            <div>
-                                                                {formatDate(item.period_start)} - {formatDate(item.period_end)}
+                                                        <div className="text-sm text-muted-foreground mt-1">
+                                                           {item.building_name || "-"} • {item.site_name || "-"}
+                                                        </div>
+                                                        <div className="text-xs text-muted-foreground">
+                                                            Owner: {item.owner_name || "-"}
+                                                        </div>
+                                                        <div className="grid grid-cols-2 gap-4 mt-3 text-sm">
+                                                            <div className="space-y-1">
+                                                                <div className="text-muted-foreground flex items-center gap-2">
+                                                                    <Calendar className="h-4 w-4" />
+                                                                    Period
+                                                                </div>
+                                                                <div>
+                                                                    {formatDate(item.period_start)} - {formatDate(item.period_end)}
+                                                                </div>
+                                                            </div>
+                                                            <div className="space-y-1">
+                                                                <div className="text-muted-foreground flex items-center gap-2">
+                                                                    <IndianRupee className="h-4 w-4" />
+                                                                    Amount
+                                                                </div>
+                                                                <div className="font-medium">₹ {item.amount ?? "-"}</div>
+                                                            </div>
+                                                            <div className="space-y-1">
+                                                                <div className="text-muted-foreground flex items-center gap-2">
+                                                                    <Receipt className="h-4 w-4" />
+                                                                    Invoice
+                                                                </div>
+                                                                <div>{item.invoice_id || "-"}</div>
+                                                            </div>
+                                                            <div className="space-y-1">
+                                                                <div className="text-muted-foreground flex items-center gap-2">
+                                                                    <Clock className="h-4 w-4" />
+                                                                    Created
+                                                                </div>
+                                                                <div>{formatDate(item.created_at)}</div>
                                                             </div>
                                                         </div>
-                                                        <div className="space-y-1">
-                                                            <div className="text-muted-foreground">Amount</div>
-                                                            <div className="font-medium">₹ {item.amount ?? "-"}</div>
-                                                        </div>
-                                                        <div className="space-y-1">
-                                                            <div className="text-muted-foreground">Invoice</div>
-                                                            <div>{item.invoice_id || "-"}</div>
-                                                        </div>
-                                                        <div className="space-y-1">
-                                                            <div className="text-muted-foreground">Created</div>
-                                                            <div>{formatDate(item.created_at)}</div>
-                                                        </div>
-                                                    </div>
-                                                </Card>
-                                            ))}
-                                        </div>
-                                    )}
+                                                    </Card>
+                                                ))}
+                                            </div>
+                                        )}
+                                    </div>
                         </CardContent>
                     </Card>
                             <Pagination

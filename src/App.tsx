@@ -18,7 +18,6 @@ import Sites from "./pages/Sites";
 import Buildings from "./pages/Buildings";
 import Spaces from "./pages/Spaces";
 import SpacesByKind from "./pages/SpacesByKind";
-import SpaceMaintenance from "./pages/SpaceMaintenance";
 import SpaceGroups from "./pages/SpaceGroups";
 import SpaceAssignments from "./pages/SpaceAssignments";
 import Leases from "./pages/Leases";
@@ -60,7 +59,6 @@ import RolesManagement from "./pages/RolesManagement";
 import RolePolicies from "./pages/RolePolicies";
 import TicketDetail from "./pages/TicketDetail";
 import UsersManagement from "./pages/UsersManagement";
-import UserFormPage from "./pages/UserFormPage";
 import UserManagementDetailPage from "./pages/UserManagementDetailPage";
 import TicketWorkload from "./pages/TicketWorkload";
 import TicketCategories from "./pages/TicketCategories";
@@ -96,10 +94,7 @@ const App = () => {
                   <Route path="/pricing" element={<Pricing />} />
                   <Route path="/login" element={<Login />} />
                   <Route path="/signup" element={<SignUp />} />
-                  <Route
-                    path="/registration-status"
-                    element={<RegistrationStatus />}
-                  />
+                  <Route path="/registration-status" element={<RegistrationStatus />} />
 
                   {/* All protected pages go inside */}
                   <Route element={<ProtectedRoute></ProtectedRoute>}>
@@ -107,93 +102,38 @@ const App = () => {
                     <Route element={<MainLayout />}>
                       <Route path="/dashboard" element={<Dashboard />} />
                       <Route path="/analytics" element={<Analytics />} />
-                      <Route
-                        path="/ai-predictions"
-                        element={<AiPredictions />}
-                      />
-                      <Route
-                        path="/organizations"
-                        element={<Organizations />}
-                      />
+                      <Route path="/ai-predictions" element={<AiPredictions />} />
+                      <Route path="/organizations" element={<Organizations />} />
                       <Route path="/sites" element={<Sites />} />
                       <Route path="/buildings" element={<Buildings />} />
                       <Route path="/spaces" element={<Spaces />} />
-                      <Route
-                        path="/space-maintenance"
-                        element={<SpaceMaintenance />}
-                      />
                       <Route path="/spaces/:id" element={<SpaceDetailPage />} />
                       <Route path="/spaces/:kind" element={<SpacesByKind />} />
                       <Route path="/space-groups" element={<SpaceGroups />} />
-                      <Route
-                        path="/space-assignments"
-                        element={<SpaceAssignments />}
-                      />
+                      <Route path="/space-assignments" element={<SpaceAssignments />} />
                       <Route path="/leases" element={<Leases />} />
                       <Route path="/tenants" element={<Tenants />} />
-                      <Route
-                        path="/tenants/create"
-                        element={<TenantFormPage />}
-                      />
-                      <Route
-                        path="/tenants/:id/edit"
-                        element={<TenantFormPage />}
-                      />
-                      <Route
-                        path="/tenants/:id/view"
-                        element={<TenantDetailPage />}
-                      />
+                      <Route path="/tenants/create" element={<TenantFormPage />} />
+                      <Route path="/tenants/:id/edit" element={<TenantFormPage />} />
+                      <Route path="/tenants/:id/view" element={<TenantDetailPage />} />
                       <Route path="/lease-charges" element={<LeaseCharges />} />
-                      <Route
-                        path="/lease-charge-codes"
-                        element={<LeaseChargeCode />}
-                      />
+                      <Route path="/lease-charge-codes" element={<LeaseChargeCode />} />
                       <Route path="/invoices" element={<Invoices />} />
-                      <Route
-                        path="/invoices/create"
-                        element={<InvoiceFormPage />}
-                      />
-                      <Route
-                        path="/invoices/:id/edit"
-                        element={<InvoiceFormPage />}
-                      />
-                      <Route
-                        path="/invoices/:id/view"
-                        element={<InvoiceDetailPage />}
-                      />
-                      <Route
-                        path="/revenue-reports"
-                        element={<RevenueReports />}
-                      />
-                      <Route
-                        path="/tax-management"
-                        element={<TaxManagement />}
-                      />
+                      <Route path="/invoices/create" element={<InvoiceFormPage />} />
+                      <Route path="/invoices/:id/edit" element={<InvoiceFormPage />} />
+                      <Route path="/invoices/:id/view" element={<InvoiceDetailPage />} />
+                      <Route path="/revenue-reports" element={<RevenueReports />} />
+                      <Route path="/tax-management" element={<TaxManagement />} />
                       <Route path="/assets" element={<Assets />} />
-                      <Route
-                        path="/asset-categories"
-                        element={<AssetCategories />}
-                      />
+                      <Route path="/asset-categories" element={<AssetCategories />} />
                       <Route path="/work-orders" element={<WorkOrders />} />
-                      <Route
-                        path="/service-requests"
-                        element={<ServiceRequests />}
-                      />
-                      <Route
-                        path="/service-requests/:id"
-                        element={<ServiceRequestDetail />}
-                      />
-                      <Route
-                        path="/preventive-maintenance"
-                        element={<PreventiveMaintenance />}
-                      />
+                      <Route path="/service-requests" element={<ServiceRequests />} />
+                      <Route path="/service-requests/:id" element={<ServiceRequestDetail />} />
+                      <Route path="/preventive-maintenance" element={<PreventiveMaintenance />} />
                       <Route path="/vendors" element={<Vendors />} />
                       <Route path="/contracts" element={<Contracts />} />
                       <Route path="/meters" element={<MetersReadings />} />
-                      <Route
-                        path="/consumption"
-                        element={<ConsumptionReports />}
-                      />
+                      <Route path="/consumption" element={<ConsumptionReports />} />
                       <Route path="/bookings" element={<Bookings />} />
                       <Route path="/rates" element={<RatePlans />} />
                       <Route path="/guests" element={<Guests />} />
@@ -201,65 +141,25 @@ const App = () => {
                       <Route path="/housekeeping" element={<Housekeeping />} />
                       <Route path="/chatbot" element={<ChatBot />} />
                       <Route path="/parking-zones" element={<ParkingZones />} />
-                      <Route
-                        path="/parking-passes"
-                        element={<ParkingPasses />}
-                      />
+                      <Route path="/parking-passes" element={<ParkingPasses />} />
                       <Route path="/access-logs" element={<AccessLogs />} />
                       <Route path="/visitors" element={<Visitors />} />
-                      <Route
-                        path="/notifications"
-                        element={<Notifications />}
-                      />
+                      <Route path="/notifications" element={<Notifications />} />
                       <Route path="/settings" element={<Settings />} />
-                      <Route
-                        path="/documentation"
-                        element={<Documentation />}
-                      />
+                      <Route path="/documentation" element={<Documentation />} />
                       <Route path="/roles" element={<RolesManagement />} />
                       <Route path="/role-policies" element={<RolePolicies />} />
-                      <Route
-                        path="/users-management"
-                        element={<UsersManagement />}
-                      />
-                      <Route
-                        path="/users-management/create"
-                        element={<UserFormPage />}
-                      />
-                      <Route
-                        path="/users-management/:id/view"
-                        element={<UserManagementDetailPage />}
-                      />
-                      <Route
-                        path="/pending-approvals"
-                        element={<PendingApprovals />}
-                      />
-                      <Route
-                        path="/ticket-dashboard"
-                        element={<TicketDashboard />}
-                      />
+                      <Route path="/users-management" element={<UsersManagement />} />
+                      <Route path="/users-management/:id/view" element={<UserManagementDetailPage />} />
+                      <Route path="/pending-approvals" element={<PendingApprovals />} />
+                      <Route path="/ticket-dashboard" element={<TicketDashboard />} />
                       <Route path="/tickets" element={<Tickets />} />
-                      <Route
-                        path="/tickets/:ticketId"
-                        element={<TicketDetail />}
-                      />
-                      <Route
-                        path="/ticket-categories"
-                        element={<TicketCategories />}
-                      />
+                      <Route path="/tickets/:ticketId" element={<TicketDetail />} />
+                      <Route path="/ticket-categories" element={<TicketCategories />} />
                       <Route path="/sla-policies" element={<SLAPolicies />} />
-                      <Route
-                        path="/ticket-work-orders"
-                        element={<TicketWorkOrders />}
-                      />
-                      <Route
-                        path="/ticket-workload"
-                        element={<TicketWorkload />}
-                      />
-                      <Route
-                        path="/approval-rules"
-                        element={<ApprovalRules />}
-                      />
+                      <Route path="/ticket-work-orders" element={<TicketWorkOrders />} />
+                      <Route path="/ticket-workload" element={<TicketWorkload />} />
+                      <Route path="/approval-rules" element={<ApprovalRules />} />
                     </Route>
                   </Route>
                   {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
