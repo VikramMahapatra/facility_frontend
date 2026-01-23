@@ -58,11 +58,15 @@ class SpacesApiService {
     }
 
     async searchUsers(search: string) {
-        return await apiService.request(`/users/search?query=${encodeURIComponent(search)}`);
+        let url = `/users/search-user`;
+        if (search) {
+            url += `?search=${encodeURIComponent(search)}`;
+        }
+        return await apiService.request(url);
     }
 
-    async assignOwner(spaceId: string, payload: any) {
-        return await apiService.request(`/spaces/assign-owner/${spaceId}`, {
+    async assignOwner(payload: any) {
+        return await apiService.request(`/spaces/assign-owner`, {
             method: 'POST',
             body: JSON.stringify(payload),
         });

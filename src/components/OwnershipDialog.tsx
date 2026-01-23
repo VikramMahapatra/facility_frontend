@@ -20,7 +20,8 @@ export function OwnershipDialog({
     const submit = async () => {
         if (!ownerId) return;
 
-        const res = await spacesApiService.assignOwner(spaceId, {
+        const res = await spacesApiService.assignOwner({
+            space_id: spaceId,
             owner_user_id: ownerId,
             ownership_percentage: 100,
         });
