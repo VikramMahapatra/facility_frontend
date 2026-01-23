@@ -11,7 +11,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { Plus, Eye, Edit, Trash2, Calendar, SearchIcon } from "lucide-react";
+import { Plus, Eye, Edit, Trash2, Calendar, SearchIcon, Search } from "lucide-react";
 import {
   Table,
   TableBody,
@@ -249,7 +249,7 @@ const SpaceMaintenance = () => {
             Track maintenance requests by space with billing and status details.
           </div>
           <div className="flex flex-wrap items-center gap-4 mb-4">
-            <SearchIcon className="h-4 w-4 text-muted-foreground" />
+            <Search className="h-4 w-4 text-muted-foreground" />
             <Input
               placeholder="Search maintenance..."
               value={searchTerm}

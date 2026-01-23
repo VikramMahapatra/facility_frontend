@@ -115,6 +115,8 @@ export function LeaseChargeForm({
   const selectedChargeCodeId = watch("charge_code_id");
 
   const isReadOnly = mode === "view";
+  const isEdit = mode === "edit";
+  const isLeaseAndChargeLocked = isReadOnly || isEdit;
 
   // Trigger validation when either date changes
   useEffect(() => {
@@ -257,9 +259,10 @@ export function LeaseChargeForm({
                   <Select
                     value={field.value}
                     onValueChange={field.onChange}
-                    disabled={isReadOnly}
+                    disabled={isLeaseAndChargeLocked}
                   >
                     <SelectTrigger
+                      disabled={isLeaseAndChargeLocked}
                       className={errors.lease_id ? "border-red-500" : ""}
                     >
                       <SelectValue placeholder="Select lease" />
@@ -291,9 +294,10 @@ export function LeaseChargeForm({
                   <Select
                     value={field.value}
                     onValueChange={field.onChange}
-                    disabled={isReadOnly}
+                    disabled={isLeaseAndChargeLocked}
                   >
                     <SelectTrigger
+                      disabled={isLeaseAndChargeLocked}
                       className={errors.charge_code_id ? "border-red-500" : ""}
                     >
                       <SelectValue placeholder="Select type" />

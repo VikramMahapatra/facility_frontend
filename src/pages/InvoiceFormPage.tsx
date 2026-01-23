@@ -71,7 +71,7 @@ export default function InvoiceFormPage() {
       due_date: "",
       status: "draft",
       currency: "INR",
-      billable_item_type: "lease_charge",
+      billable_item_type: "",
       billable_item_id: "",
       totals: { sub: 0, tax: 0, grand: 0 },
       payments: [{ method: "upi", ref_no: "", paid_at: "", amount: 0 }],
@@ -79,6 +79,9 @@ export default function InvoiceFormPage() {
   });
 
   const [siteList, setSiteList] = useState<any[]>([]);
+  const [invoiceTypeList, setInvoiceTypeList] = useState<
+    { id: string; name: string }[]
+  >([]);
   const [billableItemList, setBillableItemList] = useState<any[]>([]);
   const [totalsAutoFilled, setTotalsAutoFilled] = useState(false);
 
@@ -87,19 +90,18 @@ export default function InvoiceFormPage() {
   const watchedBillableItemId = watch("billable_item_id");
 
   useEffect(() => {
-    // Load base lookups
+   
     loadSiteLookup();
+    loadInvoiceTypeLookup();
   }, []);
 
   useEffect(() => {
     if (!id || formMode === "create") return;
     loadInvoice();
-
-
   }, [id, formMode]);
 
   useEffect(() => {
-    loadAll()
+    loadAll();
   }, [invoice?.id]);
 
   const loadInvoice = async () => {
@@ -128,54 +130,45 @@ export default function InvoiceFormPage() {
 
     const formattedPayments = hasValidPayments
       ? invoicePayments.map((payment: any) => ({
-        id: payment.id,
-        method: payment.method || "upi",
-        ref_no: payment.ref_no || "",
-        paid_at: payment.paid_at || "",
-        amount:
-          typeof payment.amount === "number"
-            ? payment.amount
-            : parseFloat(payment.amount) || 0,
-      }))
+          id: payment.id,
+          method: payment.method || "upi",
+          ref_no: payment.ref_no || "",
+          paid_at: payment.paid_at || "",
+          amount:
+            typeof payment.amount === "number"
+              ? payment.amount
+              : parseFloat(payment.amount) || 0,
+        }))
       : [{ method: "upi" as any, ref_no: "", paid_at: "", amount: 0 }];
-
-
 
     // Reset form based on mode - if create mode or no invoice, use empty data
     reset(
       invoice && formMode !== "create"
         ? {
-          site_id: invoice.site_id || "",
-          date: invoice.date || new Date().toISOString().split("T")[0],
-          due_date: invoice.due_date || "",
-          status: invoice.status || "draft",
-          currency: invoice.currency || "INR",
-          billable_item_type:
-            invoice.billable_item_type === "lease charge"
-              ? "lease_charge"
-              : invoice.billable_item_type === "work order"
-                ? "work_order"
-                : "lease_charge",
-          billable_item_id: invoice.billable_item_id || "",
-          totals: invoice.totals || { sub: 0, tax: 0, grand: 0 },
-          payments: formattedPayments,
-        }
+            site_id: invoice.site_id || "",
+            date: invoice.date || new Date().toISOString().split("T")[0],
+            due_date: invoice.due_date || "",
+            status: invoice.status || "draft",
+            currency: invoice.currency || "INR",
+            billable_item_type: invoice.billable_item_type || "",
+            billable_item_id: invoice.billable_item_id || "",
+            totals: invoice.totals || { sub: 0, tax: 0, grand: 0 },
+            payments: formattedPayments,
+          }
         : {
-          site_id: "",
-          date: new Date().toISOString().split("T")[0],
-          due_date: "",
-          status: "draft",
-          currency: "INR",
-          billable_item_type: "lease_charge",
-          billable_item_id: "",
-          totals: { sub: 0, tax: 0, grand: 0 },
-          payments: [
-            { method: "upi" as any, ref_no: "", paid_at: "", amount: 0 },
-          ],
-        }
+            site_id: "",
+            date: new Date().toISOString().split("T")[0],
+            due_date: "",
+            status: "draft",
+            currency: "INR",
+            billable_item_type: "",
+            billable_item_id: "",
+            totals: { sub: 0, tax: 0, grand: 0 },
+            payments: [
+              { method: "upi" as any, ref_no: "", paid_at: "", amount: 0 },
+            ],
+          },
     );
-
-
 
     // Preload billable item lookup for existing invoice (edit/view mode)
     if (
@@ -184,15 +177,8 @@ export default function InvoiceFormPage() {
       invoice.site_id &&
       invoice.billable_item_type
     ) {
-      const billableType =
-        invoice.billable_item_type === "lease charge"
-          ? "lease_charge"
-          : invoice.billable_item_type === "work order"
-            ? "work_order"
-            : "lease_charge";
-
-      // Load billable items for the invoice's site and type
-      await loadBillableItemLookup(billableType, invoice.site_id);
+      
+      await loadBillableItemLookup(invoice.billable_item_type, invoice.site_id);
     }
   };
 
@@ -224,10 +210,33 @@ export default function InvoiceFormPage() {
     }
   }, [watchedBillableType, watchedBillableItemId, formMode, setValue]);
 
-
   const loadSiteLookup = async () => {
     const lookup = await siteApiService.getSiteLookup();
     if (lookup.success) setSiteList(lookup.data || []);
+  };
+
+  const loadInvoiceTypeLookup = async () => {
+    try {
+      const response = await invoiceApiService.getInvoiceTypeLookup();
+      if (response?.success) {
+        const items = response.data?.data || response.data || [];
+        if (Array.isArray(items) && items.length > 0) {
+          setInvoiceTypeList(
+            items.map((item: any) => ({
+              id: item.id,
+              name: item.name,
+            }))
+          );
+        } else {
+          setInvoiceTypeList([]);
+        }
+      } else {
+        setInvoiceTypeList([]);
+      }
+    } catch (error) {
+      console.error("Failed to load invoice types:", error);
+      setInvoiceTypeList([]);
+    }
   };
 
   const loadBillableItemLookup = async (type?: string, siteId?: string) => {
@@ -240,10 +249,8 @@ export default function InvoiceFormPage() {
     try {
       const params = new URLSearchParams();
       params.append("site_id", siteId);
-      params.append(
-        "billable_item_type",
-        type === "lease_charge" ? "lease charge" : "work order"
-      );
+      // Use the type value directly as it comes from API (e.g., "lease charge", "work order", "owner maintenance")
+      params.append("billable_item_type", type);
 
       const response = await invoiceApiService.getInvoiceEntityLookup(params);
       if (response?.success) {
@@ -257,9 +264,8 @@ export default function InvoiceFormPage() {
           items.map((item: any) => ({
             id: item.id,
             name: item.name || item.code || item.label || item.id,
-          }))
+          })),
         );
-
       } else {
         setBillableItemList([]);
       }
@@ -270,7 +276,7 @@ export default function InvoiceFormPage() {
 
   const loadInvoiceTotals = async (
     billableType: string,
-    billableItemId: string
+    billableItemId: string,
   ) => {
     if (!billableType || !billableItemId) {
       setTotalsAutoFilled(false);
@@ -279,10 +285,8 @@ export default function InvoiceFormPage() {
 
     try {
       const params = new URLSearchParams();
-      params.append(
-        "billable_item_type",
-        billableType === "lease_charge" ? "lease charge" : "work order"
-      );
+      // Use the billableType value directly as it comes from API
+      params.append("billable_item_type", billableType);
       params.append("billable_item_id", billableItemId);
 
       const response = await invoiceApiService.getInvoiceTotals(params);
@@ -319,8 +323,9 @@ export default function InvoiceFormPage() {
     if (response?.success) {
       navigate("/invoices");
       toast.success(
-        `Invoice has been ${formMode === "create" ? "created" : "updated"
-        } successfully.`
+        `Invoice has been ${
+          formMode === "create" ? "created" : "updated"
+        } successfully.`,
       );
     } else if (response && !response.success) {
       if (response?.message) {
@@ -472,7 +477,7 @@ export default function InvoiceFormPage() {
     (
       index: number,
       field: "method" | "ref_no" | "paid_at" | "amount",
-      value: string
+      value: string,
     ) => {
       const currentPaymentModes = getValues("payments") || [];
       const updated = [...currentPaymentModes];
@@ -483,7 +488,7 @@ export default function InvoiceFormPage() {
         shouldDirty: true,
       });
     },
-    [getValues, setValue]
+    [getValues, setValue],
   );
 
   const handleClose = () => {
@@ -493,7 +498,7 @@ export default function InvoiceFormPage() {
       due_date: "",
       status: "draft",
       currency: "INR",
-      billable_item_type: "lease_charge",
+      billable_item_type: "",
       billable_item_id: "",
       totals: { sub: 0, tax: 0, grand: 0 },
       payments: [{ method: "upi", ref_no: "", paid_at: "", amount: 0 }],
@@ -504,9 +509,9 @@ export default function InvoiceFormPage() {
 
   const fallBillableItems = invoice?.billable_item_id
     ? {
-      id: invoice.billable_item_id,
-      name: invoice.billable_item_name,
-    }
+        id: invoice.billable_item_id,
+        name: invoice.billable_item_name,
+      }
     : null;
 
   const billable_items = withFallback(billableItemList, fallBillableItems);
@@ -615,7 +620,7 @@ export default function InvoiceFormPage() {
                   control={control}
                   render={({ field }) => (
                     <Select
-                      value={field.value || "lease_charge"}
+                      value={field.value || ""}
                       onValueChange={(value) => {
                         field.onChange(value);
                         setValue("billable_item_id", "");
@@ -630,10 +635,11 @@ export default function InvoiceFormPage() {
                         <SelectValue placeholder="Select type" />
                       </SelectTrigger>
                       <SelectContent>
-                        <SelectItem value="lease_charge">
-                          Lease Charge
-                        </SelectItem>
-                        <SelectItem value="work_order">Work Order</SelectItem>
+                        {invoiceTypeList.map((item) => (
+                          <SelectItem key={item.id} value={item.id}>
+                            {item.name}
+                          </SelectItem>
+                        ))}
                       </SelectContent>
                     </Select>
                   )}
@@ -647,9 +653,14 @@ export default function InvoiceFormPage() {
 
               <div className="space-y-2">
                 <Label htmlFor="billable_item_id">
-                  {watchedBillableType === "work_order"
-                    ? "Work Order *"
-                    : "Lease Charge *"}
+                  {(() => {
+                    const selectedType = invoiceTypeList.find(
+                      (type) => type.id === watchedBillableType
+                    );
+                    return selectedType
+                      ? `${selectedType.name} *`
+                      : "Billable Item *";
+                  })()}
                 </Label>
                 <Controller
                   name="billable_item_id"
@@ -861,7 +872,7 @@ export default function InvoiceFormPage() {
                                 updatePaymentMode(
                                   index,
                                   "ref_no",
-                                  e.target.value
+                                  e.target.value,
                                 );
                               }}
                               disabled={isReadOnly}
@@ -882,7 +893,7 @@ export default function InvoiceFormPage() {
                                   updatePaymentMode(
                                     index,
                                     "paid_at",
-                                    e.target.value
+                                    e.target.value,
                                   );
                                 }}
                               />
@@ -911,7 +922,7 @@ export default function InvoiceFormPage() {
                                   updatePaymentMode(
                                     index,
                                     "amount",
-                                    e.target.value
+                                    e.target.value,
                                   );
                                 }}
                                 disabled={isReadOnly}
@@ -956,10 +967,11 @@ export default function InvoiceFormPage() {
                               Outstanding
                             </Label>
                             <p
-                              className={`text-lg font-semibold ${outstanding > 0
-                                ? "text-orange-600"
-                                : "text-green-600"
-                                }`}
+                              className={`text-lg font-semibold ${
+                                outstanding > 0
+                                  ? "text-orange-600"
+                                  : "text-green-600"
+                              }`}
                             >
                               {formatCurrency(outstanding)}
                             </p>
@@ -967,12 +979,13 @@ export default function InvoiceFormPage() {
                           <div className="flex items-end">
                             <div className="flex items-center gap-2">
                               <div
-                                className={`h-2 w-2 rounded-full ${paymentStatus === "Paid"
-                                  ? "bg-green-500"
-                                  : paymentStatus === "Partially Paid"
-                                    ? "bg-orange-500"
-                                    : "bg-gray-500"
-                                  }`}
+                                className={`h-2 w-2 rounded-full ${
+                                  paymentStatus === "Paid"
+                                    ? "bg-green-500"
+                                    : paymentStatus === "Partially Paid"
+                                      ? "bg-orange-500"
+                                      : "bg-gray-500"
+                                }`}
                               />
                               <Label className="text-muted-foreground">
                                 Status:

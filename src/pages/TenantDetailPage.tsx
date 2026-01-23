@@ -14,6 +14,8 @@ import {
   Phone,
   MapPin,
   CreditCard,
+  Calendar,
+  Hash,
 } from "lucide-react";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import {
@@ -26,6 +28,7 @@ import { toast } from "sonner";
 import ContentContainer from "@/components/ContentContainer";
 import { useLoader } from "@/context/LoaderContext";
 import LoaderOverlay from "@/components/LoaderOverlay";
+import { Pagination } from "@/components/Pagination";
 
 export default function TenantDetailPage() {
   const { id } = useParams<{ id: string }>();
@@ -34,6 +37,9 @@ export default function TenantDetailPage() {
   const [tenant, setTenant] = useState<Tenant | null>(null);
   const [paymentHistory, setPaymentHistory] = useState<any[]>([]);
   const [isPaymentLoading, setIsPaymentLoading] = useState(false);
+  const [paymentPage, setPaymentPage] = useState(1);
+  const [paymentPageSize] = useState(5);
+  const [paymentTotalItems, setPaymentTotalItems] = useState(0);
 
   useEffect(() => {
     if (!id) return;
@@ -62,13 +68,17 @@ export default function TenantDetailPage() {
       try {
         const response = await tenantsApiService.getTenantPaymentHistory(id);
         if (response?.success) {
-          setPaymentHistory(response?.data || []);
+          const items = response?.data || [];
+          setPaymentHistory(items);
+          setPaymentTotalItems(items.length);
         } else {
           setPaymentHistory([]);
+          setPaymentTotalItems(0);
           toast.error(response?.message || "Failed to load payment history");
         }
       } catch (error) {
         setPaymentHistory([]);
+        setPaymentTotalItems(0);
         toast.error("Failed to load payment history");
       } finally {
         setIsPaymentLoading(false);
@@ -88,7 +98,15 @@ export default function TenantDetailPage() {
     leasesBySpace.get(lease.space_id)!.push(lease);
   });
 
-  const recentPayments = paymentHistory.slice(0, 5);
+  useEffect(() => {
+    setPaymentPage(1);
+  }, [id, paymentHistory.length]);
+
+  const paymentStartIndex = (paymentPage - 1) * paymentPageSize;
+  const pagedPayments = paymentHistory.slice(
+    paymentStartIndex,
+    paymentStartIndex + paymentPageSize
+  );
 
   const leaseBadge = (status?: Lease["status"]) => {
     switch (status) {
@@ -167,6 +185,53 @@ export default function TenantDetailPage() {
         return "bg-yellow-100 text-yellow-800 dark:bg-yellow-900 dark:text-yellow-200";
       default:
         return "bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-200";
+    }
+  };
+
+  const normalizeBadgeValue = (value?: string) =>
+    String(value || "").toUpperCase().trim();
+
+  const getChargeCodeBadgeClass = (value?: string) => {
+    switch (normalizeBadgeValue(value)) {
+      case "RENT":
+        return "bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-200";
+      case "CAM":
+        return "bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200";
+      case "ELEC":
+        return "bg-yellow-100 text-yellow-800 dark:bg-yellow-900 dark:text-yellow-200";
+      case "WATER":
+        return "bg-cyan-100 text-cyan-800 dark:bg-cyan-900 dark:text-cyan-200";
+      case "PARK":
+        return "bg-purple-100 text-purple-800 dark:bg-purple-900 dark:text-purple-200";
+      case "PENALTY":
+        return "bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-200";
+      case "MAINTENANCE":
+        return "bg-orange-100 text-orange-800 dark:bg-orange-900 dark:text-orange-200";
+      default:
+        return "bg-gray-100 text-gray-800 dark:bg-gray-900 dark:text-gray-200";
+    }
+  };
+
+  const getMethodBadgeClass = (value?: string) => {
+    switch (normalizeBadgeValue(value)) {
+      case "UPI":
+        return "bg-purple-100 text-purple-800 dark:bg-purple-900 dark:text-purple-200";
+      case "CASH":
+        return "bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200";
+      case "CARD":
+      case "CREDIT CARD":
+      case "DEBIT CARD":
+        return "bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-200";
+      case "BANK":
+      case "NEFT":
+      case "RTGS":
+      case "IMPS":
+      case "TRANSFER":
+        return "bg-orange-100 text-orange-800 dark:bg-orange-900 dark:text-orange-200";
+      case "CHEQUE":
+        return "bg-yellow-100 text-yellow-800 dark:bg-yellow-900 dark:text-yellow-200";
+      default:
+        return "bg-gray-100 text-gray-800 dark:bg-gray-900 dark:text-gray-200";
     }
   };
 
@@ -503,13 +568,10 @@ export default function TenantDetailPage() {
                   <div className="text-sm text-muted-foreground">
                     Loading payment history...
                   </div>
-                ) : recentPayments.length > 0 ? (
+                ) : pagedPayments.length > 0 ? (
                   <div className="space-y-3">
-                    <p className="text-sm text-muted-foreground">
-                      Showing most recent payments
-                    </p>
                     <div className="space-y-2">
-                      {recentPayments.map((payment: any, idx: number) => {
+                      {pagedPayments.map((payment: any, idx: number) => {
                         const key = payment.id || payment.payment_id || idx;
                         const label = payment.invoice_no || "Payment";
                         const date = payment.payment_date || payment.paid_at || payment.date || payment.created_at || undefined;
@@ -524,14 +586,6 @@ export default function TenantDetailPage() {
                           payment.reference_no ||
                           payment.ref_no ||
                           payment.payment_ref;
-                        const metaLine = [
-                          payment.site,
-                          payment.method ? String(payment.method).toUpperCase() : null,
-                          reference ? `Ref: ${reference}` : null,
-                        ]
-                          .filter(Boolean)
-                          .join(" • ");
-
                         return (
                           <div
                             key={key}
@@ -542,11 +596,31 @@ export default function TenantDetailPage() {
                                 <div className="text-lg font-semibold">
                                   {label}
                                 </div>
-                                {payment.description && (
-                                  <div className="text-sm text-muted-foreground">
-                                    {payment.description}
-                                  </div>
-                                )}
+                                {payment.description && (() => {
+                                  const description = String(payment.description);
+                                  const match = description.match(
+                                    /^lease charge\s*:\s*(.+)$/i
+                                  );
+                                  if (!match) {
+                                    return (
+                                      <div className="text-sm text-muted-foreground">
+                                        {description}
+                                      </div>
+                                    );
+                                  }
+                                  return (
+                                    <div className="text-sm text-muted-foreground flex items-center gap-2">
+                                      <span>Lease Charge:</span>
+                                      <Badge
+                                        className={`text-xs border-0 ${getChargeCodeBadgeClass(
+                                          match[1]
+                                        )}`}
+                                      >
+                                        {match[1].trim()}
+                                      </Badge>
+                                    </div>
+                                  );
+                                })()}
                               </div>
                               <div className="text-right space-y-1">
                                 {amount !== undefined &&
@@ -555,9 +629,23 @@ export default function TenantDetailPage() {
                                       ₹{amount.toLocaleString()}
                                     </div>
                                   )}
-                                {payment.type && (
-                                  <Badge variant="outline" className="text-xs">
-                                    {String(payment.type)}
+                                {(payment.charge_code ||
+                                  payment.charge_code_name ||
+                                  payment.charge_code_id) && (
+                                  <Badge
+                                    className={`text-xs border-0 ${getChargeCodeBadgeClass(
+                                      String(
+                                        payment.charge_code ||
+                                          payment.charge_code_name ||
+                                          payment.charge_code_id
+                                      )
+                                    )}`}
+                                  >
+                                    {String(
+                                      payment.charge_code ||
+                                        payment.charge_code_name ||
+                                        payment.charge_code_id
+                                    )}
                                   </Badge>
                                 )}
                               </div>
@@ -565,7 +653,8 @@ export default function TenantDetailPage() {
 
                             <div className="mt-3 grid grid-cols-1 gap-2 text-sm text-muted-foreground sm:grid-cols-2">
                               <div>
-                                <span className="font-medium text-foreground">
+                                <span className="font-medium text-foreground inline-flex items-center gap-2">
+                                  <Calendar className="h-4 w-4 text-muted-foreground" />
                                   Date:
                                 </span>{" "}
                                 {date
@@ -573,21 +662,32 @@ export default function TenantDetailPage() {
                                   : "-"}
                               </div>
                               <div>
-                                <span className="font-medium text-foreground">
+                                <span className="font-medium text-foreground inline-flex items-center gap-2">
+                                  <CreditCard className="h-4 w-4 text-muted-foreground" />
                                   Method:
                                 </span>{" "}
-                                {payment.method
-                                  ? String(payment.method).toUpperCase()
-                                  : "-"}
+                                {payment.method ? (
+                                  <Badge
+                                    className={`text-xs border-0 ${getMethodBadgeClass(
+                                      payment.method
+                                    )}`}
+                                  >
+                                    {String(payment.method).toUpperCase()}
+                                  </Badge>
+                                ) : (
+                                  "-"
+                                )}
                               </div>
                               <div>
-                                <span className="font-medium text-foreground">
+                                <span className="font-medium text-foreground inline-flex items-center gap-2">
+                                  <Hash className="h-4 w-4 text-muted-foreground" />
                                   Reference:
                                 </span>{" "}
                                 {reference || "-"}
                               </div>
                               <div>
-                                <span className="font-medium text-foreground">
+                                <span className="font-medium text-foreground inline-flex items-center gap-2">
+                                  <MapPin className="h-4 w-4 text-muted-foreground" />
                                   Site:
                                 </span>{" "}
                                 {payment.site || "-"}
@@ -607,6 +707,13 @@ export default function TenantDetailPage() {
                 
               </CardContent>
             </Card>
+            {/* Pagination */}
+            <Pagination
+              page={paymentPage}
+              pageSize={paymentPageSize}
+              totalItems={paymentTotalItems}
+              onPageChange={setPaymentPage}
+            />
           </TabsContent>
           </Tabs>
         </div>
