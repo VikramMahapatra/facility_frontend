@@ -290,33 +290,55 @@ export default function TenantDetailPage() {
             {/* OVERVIEW */}
             <TabsContent value="overview" className="space-y-6">
               <Card>
-                <CardContent className="p-6 grid grid-cols-1 md:grid-cols-2 gap-6">
-                  <div className="space-y-2">
-                    <p className="flex items-center gap-2">
-                      <Mail className="h-4 w-4 text-muted-foreground" />
-                      <strong>Email:</strong> {tenant.email}
-                    </p>
-                    <p className="flex items-center gap-2">
-                      <Phone className="h-4 w-4 text-muted-foreground" />
-                      <strong>Phone:</strong> {tenant.phone}
-                    </p>
+                <CardContent className="p-6">
+                  <h3 className="text-lg font-semibold mb-6 flex items-center gap-2">
+                    <Users className="h-5 w-5" /> Contact Information
+                  </h3>
+                  {/* First Row: Email, Phone, Status */}
+                  <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6 mb-6">
+                    <div>
+                      <span className="text-muted-foreground flex items-center gap-2 mb-2 text-sm">
+                        <Mail className="h-4 w-4" />
+                        Email
+                      </span>
+                      <p className="font-semibold text-base">{tenant.email}</p>
+                    </div>
+                    {tenant.phone && (
+                      <div>
+                        <span className="text-muted-foreground flex items-center gap-2 mb-2 text-sm">
+                          <Phone className="h-4 w-4" />
+                          Phone
+                        </span>
+                        <p className="font-semibold text-base">{tenant.phone}</p>
+                      </div>
+                    )}
+                    <div>
+                      <span className="text-muted-foreground flex items-center gap-2 mb-2 text-sm">
+                        Status
+                      </span>
+                      {getStatusBadge(tenant.status)}
+                    </div>
+                  </div>
+                  {/* Second Row: Other Fields */}
+                  <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
                     {tenant.type && (
-                      <p>
-                        <strong>Type:</strong> {tenant.type}
-                      </p>
+                      <div>
+                        <span className="text-muted-foreground mb-2 text-sm block">
+                          Type
+                        </span>
+                        <p className="font-semibold text-base">{tenant.type}</p>
+                      </div>
                     )}
                     {tenant.legal_name && (
-                      <p>
-                        <strong>Legal Name:</strong>{" "}
-                        {capitalizeName(tenant.legal_name)}
-                      </p>
+                      <div>
+                        <span className="text-muted-foreground mb-2 text-sm block">
+                          Legal Name
+                        </span>
+                        <p className="font-semibold text-base">
+                          {capitalizeName(tenant.legal_name)}
+                        </p>
+                      </div>
                     )}
-                  </div>
-                  <div className="space-y-2">
-                    <p>
-                      <strong>Status</strong>
-                    </p>
-                    {getStatusBadge(tenant.status)}
                   </div>
                 </CardContent>
               </Card>
@@ -366,71 +388,75 @@ export default function TenantDetailPage() {
 
                 return (
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                <Card>
-                  <CardContent className="p-6">
-                    <h3 className="text-lg font-medium mb-4 flex items-center gap-2">
-                      <Users className="h-5 w-5" /> Family Members
-                    </h3>
-                    {familyItems.length > 0 ? (
-                      <div className="space-y-3">
-                        {familyItems.map((member, idx) => (
-                          <div
-                            key={idx}
-                            className="flex items-center gap-3 p-2 border rounded-md"
-                          >
-                            <Users className="h-4 w-4 text-muted-foreground" />
-                            <div className="flex-1">
-                              <p className="font-medium">
-                                {member.member
-                                  ? capitalizeName(member.member)
-                                  : "-"}
-                              </p>
-                              <p className="text-sm text-muted-foreground">
-                                Relation: {member.relation || "-"}
-                              </p>
+                    <div className="space-y-4">
+                      <h3 className="text-lg font-medium flex items-center gap-2">
+                        <Users className="h-5 w-5" /> Family Members
+                      </h3>
+                      <Card>
+                        <CardContent className="p-6">
+                          {familyItems.length > 0 ? (
+                            <div className="space-y-3">
+                              {familyItems.map((member, idx) => (
+                                <div
+                                  key={idx}
+                                  className="flex items-center gap-3 p-2 border rounded-md"
+                                >
+                                  <Users className="h-4 w-4 text-muted-foreground" />
+                                  <div className="flex-1">
+                                    <p className="font-medium">
+                                      {member.member
+                                        ? capitalizeName(member.member)
+                                        : "-"}
+                                    </p>
+                                    <p className="text-sm text-muted-foreground">
+                                      Relation: {member.relation || "-"}
+                                    </p>
+                                  </div>
+                                </div>
+                              ))}
                             </div>
-                          </div>
-                        ))}
-                      </div>
-                    ) : (
-                      <p className="text-sm text-muted-foreground">
-                        No family details
-                      </p>
-                    )}
-                  </CardContent>
-                </Card>
+                          ) : (
+                            <p className="text-sm text-muted-foreground">
+                              No family details
+                            </p>
+                          )}
+                        </CardContent>
+                      </Card>
+                    </div>
 
-                <Card>
-                  <CardContent className="p-6">
-                    <h3 className="text-lg font-medium mb-4 flex items-center gap-2">
-                      <Car className="h-5 w-5" /> Vehicles
-                    </h3>
-                    {vehicleItems.length > 0 ? (
-                      <div className="space-y-3">
-                        {vehicleItems.map((vehicle, idx) => (
-                          <div
-                            key={idx}
-                            className="flex items-center gap-3 p-2 border rounded-md"
-                          >
-                            <Car className="h-4 w-4 text-muted-foreground" />
-                            <div className="flex-1">
-                              <p className="font-medium">
-                                Vehicle Type: {vehicle.type || "-"}
-                              </p>
-                              <p className="text-sm text-muted-foreground">
-                                Vehicle Number: {vehicle.number || "-"}
-                              </p>
+                    <div className="space-y-4">
+                      <h3 className="text-lg font-medium flex items-center gap-2">
+                        <Car className="h-5 w-5" /> Vehicles
+                      </h3>
+                      <Card>
+                        <CardContent className="p-6">
+                          {vehicleItems.length > 0 ? (
+                            <div className="space-y-3">
+                              {vehicleItems.map((vehicle, idx) => (
+                                <div
+                                  key={idx}
+                                  className="flex items-center gap-3 p-2 border rounded-md"
+                                >
+                                  <Car className="h-4 w-4 text-muted-foreground" />
+                                  <div className="flex-1">
+                                    <p className="font-medium">
+                                      Vehicle Type: {vehicle.type || "-"}
+                                    </p>
+                                    <p className="text-sm text-muted-foreground">
+                                      Vehicle Number: {vehicle.number || "-"}
+                                    </p>
+                                  </div>
+                                </div>
+                              ))}
                             </div>
-                          </div>
-                        ))}
-                      </div>
-                    ) : (
-                      <p className="text-sm text-muted-foreground">
-                        No vehicle details
-                      </p>
-                    )}
-                  </CardContent>
-                </Card>
+                          ) : (
+                            <p className="text-sm text-muted-foreground">
+                              No vehicle details
+                            </p>
+                          )}
+                        </CardContent>
+                      </Card>
+                    </div>
                   </div>
                 );
               })()}
