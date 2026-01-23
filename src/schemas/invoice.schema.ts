@@ -39,9 +39,7 @@ export const invoiceSchema = z
       .enum(["draft", "issued", "paid", "partial", "void", "overdue"])
       .optional(),
     currency: z.string().optional(),
-    billable_item_type: z.enum(["lease_charge", "work_order"], {
-      required_error: "Invoice type is required",
-    }),
+    billable_item_type: z.string().min(1, "Invoice type is required"),
     billable_item_id: z.string().min(1, "Billable item is required"),
     totals: z
       .object({

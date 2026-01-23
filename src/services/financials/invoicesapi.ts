@@ -64,6 +64,10 @@ class InvoiceApiService {
       method: "POST",
     });
   }
+
+  async getInvoiceTypeLookup() {
+    return await apiService.request("/invoices/invoice-type");
+  }
 }
 
 export const invoiceApiService = new InvoiceApiService();
