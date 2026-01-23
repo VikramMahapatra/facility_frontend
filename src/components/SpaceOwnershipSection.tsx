@@ -12,7 +12,13 @@ import { useEffect, useState } from "react";
 import { spacesApiService } from "@/services/spaces_sites/spacesapi";
 import { OwnershipDialog } from "./OwnershipDialog";
 
-export function SpaceOwnershipSection({ spaceId }: { spaceId: string }) {
+export function SpaceOwnershipSection({
+    spaceId,
+    actionSlot,
+}: {
+    spaceId: string;
+    actionSlot?: React.ReactNode;
+}) {
     const [owners, setOwners] = useState<any[]>([]);
     const [open, setOpen] = useState(false);
 
@@ -48,7 +54,10 @@ export function SpaceOwnershipSection({ spaceId }: { spaceId: string }) {
                 </Card>
             ))}
 
-            <Button onClick={() => setOpen(true)}>Assign / Change Ownership</Button>
+            <div className="flex items-center gap-2">
+                <Button onClick={() => setOpen(true)}>Assign / Change Ownership</Button>
+                {owners.length > 0 && actionSlot}
+            </div>
 
             <OwnershipDialog
                 open={open}

@@ -1,11 +1,11 @@
 import { useState, useRef, useEffect } from "react";
 import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Card, CardContent } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import Navigation from "@/components/Navigation";
 import { useNavigate } from "react-router-dom";
-import { Chrome, Phone, Mail, Eye, EyeOff, Loader2 } from "lucide-react";
+import { Chrome, Phone, Loader2 } from "lucide-react";
 import { useGoogleLogin } from "@react-oauth/google";
 import { authApiService } from "@/services/authapi";
 import { useAuth } from "@/context/AuthContext";
@@ -15,15 +15,12 @@ import { toast } from "sonner";
 
 const Login = () => {
   const navigate = useNavigate();
-  const [usernameOrEmail, setUsernameOrEmail] = useState("");
-  const [password, setPassword] = useState("");
-  const [showPassword, setShowPassword] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   const [isGoogleLoading, setIsGoogleLoading] = useState(false);
   const [isMobileLoading, setIsMobileLoading] = useState(false);
   const [mobileNumber, setMobileNumber] = useState("");
   const [showOtp, setShowOtp] = useState(false);
-  const [showPhoneLogin, setShowPhoneLogin] = useState(false);
+  const [showPhoneLogin, setShowPhoneLogin] = useState(true);
   const [otp, setOtp] = useState(["", "", "", "", "", ""]);
   const [isVerifyingOtp, setIsVerifyingOtp] = useState(false);
   const otpInputRefs = useRef<(HTMLInputElement | null)[]>([]);
@@ -96,52 +93,8 @@ const Login = () => {
     },
   });
 
-  const handleEmailPasswordLogin = async (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!usernameOrEmail || !password) {
-      toast.error("Please enter username/email and password");
-      return;
-    }
-    setIsLoading(true);
-    try {
-      // TODO: Replace with actual email/password login endpoint when available
-      const response = await authApiService.login(usernameOrEmail, password);
-      // For now, show error that this method is not yet implemented
-      if (response?.success) {
-        const authResponse = response.data;
-        setUser(authResponse?.user);
-        if (
-          authResponse?.user?.status?.toLowerCase() === "pending_approval"
-        ) {
-          const user = authResponse.user;
-          navigate("/registration-status", {
-            state: {
-              userData: {
-                email: user.email,
-                name: user.full_name,
-              },
-            },
-          });
-        } else {
-          navigate("/dashboard");
-        }
-        toast.success("Login successful");
-      }
-      else {
-        setIsLoading(false);
-      }
-    } catch (error) {
-      toast.error("Login failed. Please try again.");
-      setIsLoading(false);
-    }
-  };
-
   const handleGoogleLogin = async () => {
     googleLogin();
-  };
-
-  const handlePhoneLoginClick = () => {
-    setShowPhoneLogin(true);
   };
 
   const handleMobileLogin = async () => {
@@ -153,7 +106,6 @@ const Login = () => {
       const response = (await authApiService.sendOtp(mobileNumber)) as any;
       if (response?.success) {
         setShowOtp(true);
-        setShowPhoneLogin(false);
         toast.success("OTP sent to your mobile number");
       } else {
         toast.error("Failed to send OTP. Please try again.");
@@ -283,10 +235,9 @@ const Login = () => {
   return (
     <div className="min-h-screen bg-background">
       <Navigation />
-
       <div className="flex items-center justify-center min-h-[calc(100vh-4rem)] py-12 px-6">
         <div className="w-full max-w-md">
-          <div className="text-center mb-8">
+          <div className="text-center mb-6">
             <div className="w-16 h-16 bg-gradient-primary rounded-xl flex items-center justify-center mx-auto mb-4">
               <span className="text-white font-bold text-2xl">F</span>
             </div>
@@ -295,119 +246,13 @@ const Login = () => {
               Sign in to access your dashboard
             </p>
           </div>
+          <p className="text-center text-sm font-medium text-muted-foreground mb-4">
+            Choose sign in method
+          </p>
 
           <Card className="shadow-elegant border-0">
             <CardContent className="space-y-4">
-              {!showOtp && !showPhoneLogin ? (
-                <>
-                  {/* Email/Password Form - First */}
-                  <form
-                    onSubmit={handleEmailPasswordLogin}
-                    className="space-y-4"
-                  >
-                    <div className="space-y-2">
-                      <Label htmlFor="usernameOrEmail">Username or Email</Label>
-                      <Input
-                        id="usernameOrEmail"
-                        type="text"
-                        placeholder="Enter your username or email"
-                        value={usernameOrEmail}
-                        onChange={(e) => setUsernameOrEmail(e.target.value)}
-                        className="h-11"
-                        required
-                      />
-                    </div>
-                    <div className="space-y-2">
-                      <div className="flex items-center justify-between">
-                        <Label htmlFor="password">Password</Label>
-                        <button
-                          type="button"
-                          onClick={() => { }}
-                          className="text-sm text-muted-foreground hover:text-foreground"
-                        >
-                          Forgot?
-                        </button>
-                      </div>
-                      <div className="relative">
-                        <Input
-                          id="password"
-                          type={showPassword ? "text" : "password"}
-                          placeholder="Enter your password"
-                          value={password}
-                          onChange={(e) => setPassword(e.target.value)}
-                          className="h-11 pr-10"
-                          required
-                        />
-                        <button
-                          type="button"
-                          onClick={() => setShowPassword(!showPassword)}
-                          className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground"
-                        >
-                          {showPassword ? (
-                            <EyeOff className="h-4 w-4" />
-                          ) : (
-                            <Eye className="h-4 w-4" />
-                          )}
-                        </button>
-                      </div>
-                    </div>
-                    <Button
-                      type="submit"
-                      variant="default"
-                      disabled={isLoading || isGoogleLoading}
-                      size="lg"
-                      className="w-full h-11 shadow-sm text-background"
-                    >
-                      {isLoading ? "Signing in..." : "Sign In"}
-                    </Button>
-                  </form>
-
-                  {/* Separator */}
-                  <div className="relative">
-                    <div className="absolute inset-0 flex items-center">
-                      <span className="w-full border-t" />
-                    </div>
-                    <div className="relative flex justify-center text-sm">
-                      <span className="bg-card px-2 text-muted-foreground">
-                        or
-                      </span>
-                    </div>
-                  </div>
-
-                  {/* Google Login Button */}
-                  <Button
-                    onClick={handleGoogleLogin}
-                    variant="outline"
-                    size="lg"
-                    disabled={isGoogleLoading || isLoading}
-                    className="w-full border border-input bg-background hover:bg-accent h-11"
-                  >
-                    {isGoogleLoading ? (
-                      <>
-                        <Loader2 className="w-5 h-5 mr-2 animate-spin" />
-                        Signing in...
-                      </>
-                    ) : (
-                      <>
-                        <Chrome className="w-5 h-5 mr-2" />
-                        Continue with Google
-                      </>
-                    )}
-                  </Button>
-
-                  {/* Phone Login Button */}
-                  <Button
-                    onClick={handlePhoneLoginClick}
-                    variant="outline"
-                    size="lg"
-                    disabled={isGoogleLoading || isLoading}
-                    className="w-full border border-input bg-background hover:bg-accent h-11"
-                  >
-                    <Phone className="w-5 h-5 mr-2" />
-                    Continue with Phone
-                  </Button>
-                </>
-              ) : showPhoneLogin && !showOtp ? (
+              {!showOtp ? (
                 <>
                   <div className="space-y-3">
                     <div className="relative">
@@ -424,6 +269,7 @@ const Login = () => {
                         inputProps={{
                           name: "mobile",
                           required: true,
+                          id: "mobile",
                         }}
                         containerClass="w-full relative mt-2"
                         inputClass="!w-full !h-10 !pl-12 !rounded-md !border !border-input !bg-background !px-3 !py-2 !text-base !ring-offset-background placeholder:!text-muted-foreground focus-visible:!outline-none focus-visible:!ring-2 focus-visible:!ring-ring focus-visible:!ring-offset-2 disabled:!cursor-not-allowed disabled:!opacity-50 md:!text-sm"
@@ -449,18 +295,34 @@ const Login = () => {
                         ? "Sending OTP..."
                         : "Continue with Phone"}
                     </Button>
-                    <Button
-                      onClick={() => {
-                        setShowPhoneLogin(false);
-                        setMobileNumber("");
-                      }}
-                      variant="ghost"
-                      size="lg"
-                      className="w-full"
-                    >
-                      Back
-                    </Button>
                   </div>
+
+                  <div className="flex items-center gap-3">
+                    <div className="h-px flex-1 bg-border" />
+                    <span className="text-xs text-muted-foreground">or</span>
+                    <div className="h-px flex-1 bg-border" />
+                  </div>
+
+                  {/* Google Login Button */}
+                  <Button
+                    onClick={handleGoogleLogin}
+                    variant="outline"
+                    size="lg"
+                    disabled={isGoogleLoading || isLoading}
+                    className="w-full border border-input bg-background hover:bg-accent h-11"
+                  >
+                    {isGoogleLoading ? (
+                      <>
+                        <Loader2 className="w-5 h-5 mr-2 animate-spin" />
+                        Signing in...
+                      </>
+                    ) : (
+                      <>
+                        <Chrome className="w-5 h-5 mr-2" />
+                        Continue with Google
+                      </>
+                    )}
+                  </Button>
                 </>
               ) : (
                 <div className="space-y-4">
@@ -499,7 +361,7 @@ const Login = () => {
                   <Button
                     onClick={() => {
                       setShowOtp(false);
-                      setShowPhoneLogin(false);
+                      setShowPhoneLogin(true);
                       setOtp(["", "", "", "", "", ""]);
                       setMobileNumber("");
                     }}

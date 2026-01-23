@@ -110,17 +110,17 @@ export default function InvoiceDetailPage() {
 
   const formatCurrency = (
     amount: number | undefined,
-    currency: string = "INR"
+    currency: string = "INR",
   ) => {
     const numAmount = amount || 0;
     const symbol =
       currency === "INR"
         ? "₹"
         : currency === "USD"
-        ? "$"
-        : currency === "EUR"
-        ? "€"
-        : currency;
+          ? "$"
+          : currency === "EUR"
+            ? "€"
+            : currency;
     return `${symbol} ${numAmount.toLocaleString("en-IN", {
       minimumFractionDigits: 2,
       maximumFractionDigits: 2,
@@ -152,8 +152,8 @@ export default function InvoiceDetailPage() {
       outstanding <= 0 && paid > 0
         ? "Paid"
         : paid > 0
-        ? "Partially Paid"
-        : "Unpaid";
+          ? "Partially Paid"
+          : "Unpaid";
 
     return { paid, outstanding, status };
   };
@@ -187,6 +187,7 @@ export default function InvoiceDetailPage() {
             <div className="flex gap-2">
               <Button
                 variant="outline"
+                className="bg-primary text-primary-foreground hover:bg-primary/90"
                 onClick={() => navigate(`/invoices/${id}/edit`)}
               >
                 Edit
@@ -220,8 +221,8 @@ export default function InvoiceDetailPage() {
                         {invoice.billable_item_type === "lease charge"
                           ? "Lease Charge"
                           : invoice.billable_item_type === "work order"
-                          ? "Work Order"
-                          : invoice.billable_item_type || "-"}
+                            ? "Work Order"
+                            : invoice.billable_item_type || "-"}
                       </p>
                     </div>
                     <div>
@@ -314,7 +315,7 @@ export default function InvoiceDetailPage() {
                       <p className="text-lg font-semibold">
                         {formatCurrency(
                           invoice.totals?.grand,
-                          invoice.currency
+                          invoice.currency,
                         )}
                       </p>
                     </div>
@@ -341,7 +342,7 @@ export default function InvoiceDetailPage() {
                       >
                         {formatCurrency(
                           paymentSummary.outstanding,
-                          invoice.currency
+                          invoice.currency,
                         )}
                       </p>
                     </div>
@@ -392,7 +393,7 @@ export default function InvoiceDetailPage() {
                                   <strong>Date:</strong>{" "}
                                   {payment.paid_at
                                     ? new Date(
-                                        payment.paid_at
+                                        payment.paid_at,
                                       ).toLocaleDateString("en-IN", {
                                         year: "numeric",
                                         month: "long",
@@ -411,7 +412,7 @@ export default function InvoiceDetailPage() {
                               <p className="text-2xl font-bold">
                                 {formatCurrency(
                                   payment.amount,
-                                  invoice.currency
+                                  invoice.currency,
                                 )}
                               </p>
                             </div>

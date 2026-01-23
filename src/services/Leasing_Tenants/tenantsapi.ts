@@ -41,6 +41,10 @@ class TenantsApiService {
     return await apiService.request(`/tenants/${tenantId}/leases`);
   }
 
+  async getTenantPaymentHistory(tenantId: any) {
+    return await apiService.request(`/tenants/payment-history/${tenantId}`);
+  }
+
   async getTenantStatusLookup() {
     return await apiService.request("/tenants/status-lookup");
   }

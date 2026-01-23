@@ -13,6 +13,9 @@ import {
   Mail,
   Phone,
   MapPin,
+  CreditCard,
+  Calendar,
+  Hash,
 } from "lucide-react";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import {
@@ -25,12 +28,18 @@ import { toast } from "sonner";
 import ContentContainer from "@/components/ContentContainer";
 import { useLoader } from "@/context/LoaderContext";
 import LoaderOverlay from "@/components/LoaderOverlay";
+import { Pagination } from "@/components/Pagination";
 
 export default function TenantDetailPage() {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
   const { withLoader } = useLoader();
   const [tenant, setTenant] = useState<Tenant | null>(null);
+  const [paymentHistory, setPaymentHistory] = useState<any[]>([]);
+  const [isPaymentLoading, setIsPaymentLoading] = useState(false);
+  const [paymentPage, setPaymentPage] = useState(1);
+  const [paymentPageSize] = useState(5);
+  const [paymentTotalItems, setPaymentTotalItems] = useState(0);
 
   useEffect(() => {
     if (!id) return;
@@ -51,6 +60,34 @@ export default function TenantDetailPage() {
     loadTenant();
   }, [id]);
 
+  useEffect(() => {
+    if (!id) return;
+
+    const loadPaymentHistory = async () => {
+      setIsPaymentLoading(true);
+      try {
+        const response = await tenantsApiService.getTenantPaymentHistory(id);
+        if (response?.success) {
+          const items = response?.data || [];
+          setPaymentHistory(items);
+          setPaymentTotalItems(items.length);
+        } else {
+          setPaymentHistory([]);
+          setPaymentTotalItems(0);
+          toast.error(response?.message || "Failed to load payment history");
+        }
+      } catch (error) {
+        setPaymentHistory([]);
+        setPaymentTotalItems(0);
+        toast.error("Failed to load payment history");
+      } finally {
+        setIsPaymentLoading(false);
+      }
+    };
+
+    loadPaymentHistory();
+  }, [id]);
+
   const leasesBySpace = new Map<string, Lease[]>();
 
   tenant?.tenant_leases?.forEach((lease) => {
@@ -60,6 +97,16 @@ export default function TenantDetailPage() {
     }
     leasesBySpace.get(lease.space_id)!.push(lease);
   });
+
+  useEffect(() => {
+    setPaymentPage(1);
+  }, [id, paymentHistory.length]);
+
+  const paymentStartIndex = (paymentPage - 1) * paymentPageSize;
+  const pagedPayments = paymentHistory.slice(
+    paymentStartIndex,
+    paymentStartIndex + paymentPageSize
+  );
 
   const leaseBadge = (status?: Lease["status"]) => {
     switch (status) {
@@ -141,6 +188,55 @@ export default function TenantDetailPage() {
     }
   };
 
+  const normalizeBadgeValue = (value?: string) =>
+    String(value || "").toUpperCase().trim();
+
+  const getChargeCodeBadgeClass = (value?: string) => {
+    switch (normalizeBadgeValue(value)) {
+      case "RENT":
+        return "bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-200";
+      case "CAM":
+        return "bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200";
+      case "ELEC":
+        return "bg-yellow-100 text-yellow-800 dark:bg-yellow-900 dark:text-yellow-200";
+      case "WATER":
+        return "bg-cyan-100 text-cyan-800 dark:bg-cyan-900 dark:text-cyan-200";
+      case "PARK":
+        return "bg-purple-100 text-purple-800 dark:bg-purple-900 dark:text-purple-200";
+      case "PENALTY":
+        return "bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-200";
+      case "MAINTENANCE":
+        return "bg-orange-100 text-orange-800 dark:bg-orange-900 dark:text-orange-200";
+      default:
+        return "bg-gray-100 text-gray-800 dark:bg-gray-900 dark:text-gray-200";
+    }
+  };
+
+  const getMethodBadgeClass = (value?: string) => {
+    switch (normalizeBadgeValue(value)) {
+      case "UPI":
+        return "bg-purple-100 text-purple-800 dark:bg-purple-900 dark:text-purple-200";
+      case "CASH":
+        return "bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200";
+      case "CARD":
+      case "CREDIT CARD":
+      case "DEBIT CARD":
+        return "bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-200";
+      case "BANK":
+      case "NEFT":
+      case "RTGS":
+      case "IMPS":
+      case "TRANSFER":
+        return "bg-orange-100 text-orange-800 dark:bg-orange-900 dark:text-orange-200";
+      case "CHEQUE":
+        return "bg-yellow-100 text-yellow-800 dark:bg-yellow-900 dark:text-yellow-200";
+      default:
+        return "bg-gray-100 text-gray-800 dark:bg-gray-900 dark:text-gray-200";
+    }
+  };
+
+  
+
   return (
     <ContentContainer>
       <LoaderOverlay />
@@ -185,41 +281,64 @@ export default function TenantDetailPage() {
           </div>
 
           <Tabs defaultValue="overview">
-            <TabsList className="grid w-full grid-cols-2">
+            <TabsList className="grid w-full grid-cols-3">
               <TabsTrigger value="overview">Overview</TabsTrigger>
               <TabsTrigger value="spaces">Spaces & Leases</TabsTrigger>
+              <TabsTrigger value="history">Payments History</TabsTrigger>
             </TabsList>
 
             {/* OVERVIEW */}
             <TabsContent value="overview" className="space-y-6">
               <Card>
-                <CardContent className="p-6 grid grid-cols-1 md:grid-cols-2 gap-6">
-                  <div className="space-y-2">
-                    <p className="flex items-center gap-2">
-                      <Mail className="h-4 w-4 text-muted-foreground" />
-                      <strong>Email:</strong> {tenant.email}
-                    </p>
-                    <p className="flex items-center gap-2">
-                      <Phone className="h-4 w-4 text-muted-foreground" />
-                      <strong>Phone:</strong> {tenant.phone}
-                    </p>
+                <CardContent className="p-6">
+                  <h3 className="text-lg font-semibold mb-6 flex items-center gap-2">
+                    <Users className="h-5 w-5" /> Contact Information
+                  </h3>
+                  {/* First Row: Email, Phone, Status */}
+                  <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6 mb-6">
+                    <div>
+                      <span className="text-muted-foreground flex items-center gap-2 mb-2 text-sm">
+                        <Mail className="h-4 w-4" />
+                        Email
+                      </span>
+                      <p className="font-semibold text-base">{tenant.email}</p>
+                    </div>
+                    {tenant.phone && (
+                      <div>
+                        <span className="text-muted-foreground flex items-center gap-2 mb-2 text-sm">
+                          <Phone className="h-4 w-4" />
+                          Phone
+                        </span>
+                        <p className="font-semibold text-base">{tenant.phone}</p>
+                      </div>
+                    )}
+                    <div>
+                      <span className="text-muted-foreground flex items-center gap-2 mb-2 text-sm">
+                        Status
+                      </span>
+                      {getStatusBadge(tenant.status)}
+                    </div>
+                  </div>
+                  {/* Second Row: Other Fields */}
+                  <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
                     {tenant.type && (
-                      <p>
-                        <strong>Type:</strong> {tenant.type}
-                      </p>
+                      <div>
+                        <span className="text-muted-foreground mb-2 text-sm block">
+                          Type
+                        </span>
+                        <p className="font-semibold text-base">{tenant.type}</p>
+                      </div>
                     )}
                     {tenant.legal_name && (
-                      <p>
-                        <strong>Legal Name:</strong>{" "}
-                        {capitalizeName(tenant.legal_name)}
-                      </p>
+                      <div>
+                        <span className="text-muted-foreground mb-2 text-sm block">
+                          Legal Name
+                        </span>
+                        <p className="font-semibold text-base">
+                          {capitalizeName(tenant.legal_name)}
+                        </p>
+                      </div>
                     )}
-                  </div>
-                  <div className="space-y-2">
-                    <p>
-                      <strong>Status</strong>
-                    </p>
-                    {getStatusBadge(tenant.status)}
                   </div>
                 </CardContent>
               </Card>
@@ -255,68 +374,92 @@ export default function TenantDetailPage() {
                   </Card>
                 )}
 
-              {(tenant.family_info && tenant.family_info.length > 0) ||
-              (tenant.vehicle_info && tenant.vehicle_info.length > 0) ? (
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                  {tenant.family_info && tenant.family_info.length > 0 && (
-                    <Card>
-                      <CardContent className="p-6">
-                        <h3 className="text-lg font-medium mb-4 flex items-center gap-2">
-                          <Users className="h-5 w-5" /> Family Members
-                        </h3>
-                        <div className="space-y-3">
-                          {tenant.family_info.map((member, idx) => (
-                            <div
-                              key={idx}
-                              className="flex items-center gap-3 p-2 border rounded-md"
-                            >
-                              <Users className="h-4 w-4 text-muted-foreground" />
-                              <div className="flex-1">
-                                <p className="font-medium">
-                                  {member.member
-                                    ? capitalizeName(member.member)
-                                    : "-"}
-                                </p>
-                                <p className="text-sm text-muted-foreground">
-                                  Relation: {member.relation || "-"}
-                                </p>
-                              </div>
-                            </div>
-                          ))}
-                        </div>
-                      </CardContent>
-                    </Card>
-                  )}
+              {(() => {
+                const familyItems = Array.isArray(tenant.family_info)
+                  ? tenant.family_info.filter(
+                      (member) => member.member || member.relation,
+                    )
+                  : [];
+                const vehicleItems = Array.isArray(tenant.vehicle_info)
+                  ? tenant.vehicle_info.filter(
+                      (vehicle) => vehicle.type || vehicle.number,
+                    )
+                  : [];
 
-                  {tenant.vehicle_info && tenant.vehicle_info.length > 0 && (
-                    <Card>
-                      <CardContent className="p-6">
-                        <h3 className="text-lg font-medium mb-4 flex items-center gap-2">
-                          <Car className="h-5 w-5" /> Vehicles
-                        </h3>
-                        <div className="space-y-3">
-                          {tenant.vehicle_info.map((vehicle, idx) => (
-                            <div
-                              key={idx}
-                              className="flex items-center gap-3 p-2 border rounded-md"
-                            >
-                              <Car className="h-4 w-4 text-muted-foreground" />
-                              <div className="flex-1">
-                                <p className="font-medium">
-                                  Vehicle Type: {vehicle.type || "-"}
-                                </p>
-                                <p className="text-sm text-muted-foreground">
-                                  Vehicle Number: {vehicle.number || "-"}
-                                </p>
-                              </div>
+                return (
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                    <div className="space-y-4">
+                      <h3 className="text-lg font-medium flex items-center gap-2">
+                        <Users className="h-5 w-5" /> Family Members
+                      </h3>
+                      <Card>
+                        <CardContent className="p-6">
+                          {familyItems.length > 0 ? (
+                            <div className="space-y-3">
+                              {familyItems.map((member, idx) => (
+                                <div
+                                  key={idx}
+                                  className="flex items-center gap-3 p-2 border rounded-md"
+                                >
+                                  <Users className="h-4 w-4 text-muted-foreground" />
+                                  <div className="flex-1">
+                                    <p className="font-medium">
+                                      {member.member
+                                        ? capitalizeName(member.member)
+                                        : "-"}
+                                    </p>
+                                    <p className="text-sm text-muted-foreground">
+                                      Relation: {member.relation || "-"}
+                                    </p>
+                                  </div>
+                                </div>
+                              ))}
                             </div>
-                          ))}
-                        </div>
-                      </CardContent>
-                    </Card>
-                  )}
-                </div>
-              ) : null}
+                          ) : (
+                            <p className="text-sm text-muted-foreground">
+                              No family details
+                            </p>
+                          )}
+                        </CardContent>
+                      </Card>
+                    </div>
+
+                    <div className="space-y-4">
+                      <h3 className="text-lg font-medium flex items-center gap-2">
+                        <Car className="h-5 w-5" /> Vehicles
+                      </h3>
+                      <Card>
+                        <CardContent className="p-6">
+                          {vehicleItems.length > 0 ? (
+                            <div className="space-y-3">
+                              {vehicleItems.map((vehicle, idx) => (
+                                <div
+                                  key={idx}
+                                  className="flex items-center gap-3 p-2 border rounded-md"
+                                >
+                                  <Car className="h-4 w-4 text-muted-foreground" />
+                                  <div className="flex-1">
+                                    <p className="font-medium">
+                                      Vehicle Type: {vehicle.type || "-"}
+                                    </p>
+                                    <p className="text-sm text-muted-foreground">
+                                      Vehicle Number: {vehicle.number || "-"}
+                                    </p>
+                                  </div>
+                                </div>
+                              ))}
+                            </div>
+                          ) : (
+                            <p className="text-sm text-muted-foreground">
+                              No vehicle details
+                            </p>
+                          )}
+                        </CardContent>
+                      </Card>
+                    </div>
+                  </div>
+                );
+              })()}
             </TabsContent>
 
             {/* SPACES & LEASES */}
@@ -439,39 +582,165 @@ export default function TenantDetailPage() {
               </div>
             </TabsContent>
 
-            {/* HISTORY */}
-            <TabsContent value="history">
-              <Card>
-                <CardContent className="p-6">
-                  <h3 className="text-lg font-medium mb-4 flex items-center gap-2">
-                    <History className="h-5 w-5" /> Activity History
-                  </h3>
-                  <ul className="space-y-2 text-sm">
-                    {tenant.created_at && (
-                      <li>
-                        Tenant created on{" "}
-                        {new Date(tenant.created_at).toLocaleDateString()}
-                      </li>
-                    )}
-                    {tenant.tenant_spaces &&
-                      tenant.tenant_spaces.length > 0 && (
-                        <li>Space assigned</li>
-                      )}
-                    {tenant.tenant_leases &&
-                      tenant.tenant_leases.some(
-                        (l) => l.status === "active",
-                      ) && <li>Lease activated</li>}
-                    {!tenant.created_at &&
-                      !tenant.tenant_spaces?.length &&
-                      !tenant.tenant_leases?.length && (
-                        <li className="text-muted-foreground">
-                          No activity history available
-                        </li>
-                      )}
-                  </ul>
-                </CardContent>
-              </Card>
-            </TabsContent>
+          {/* HISTORY / PAYMENTS */}
+          <TabsContent value="history">
+            <Card>
+              <CardContent className="p-6 space-y-6">
+                <h3 className="text-lg font-medium mb-4 flex items-center gap-2">
+                  <CreditCard className="h-5 w-5" /> Payments History
+                </h3>
+
+                {isPaymentLoading ? (
+                  <div className="text-sm text-muted-foreground">
+                    Loading payment history...
+                  </div>
+                ) : pagedPayments.length > 0 ? (
+                  <div className="space-y-3">
+                    <div className="space-y-2">
+                      {pagedPayments.map((payment: any, idx: number) => {
+                        const key = payment.id || payment.payment_id || idx;
+                        const label = payment.invoice_no || "Payment";
+                        const date = payment.payment_date || payment.paid_at || payment.date || payment.created_at || undefined;
+                        const amount =
+                          typeof payment.amount === "number"
+                            ? payment.amount
+                            : payment.amount
+                            ? Number(payment.amount)
+                            : undefined;
+                        const reference =
+                          payment.reference ||
+                          payment.reference_no ||
+                          payment.ref_no ||
+                          payment.payment_ref;
+                        return (
+                          <div
+                            key={key}
+                            className="rounded-md border px-4 py-3 text-sm"
+                          >
+                            <div className="flex items-start justify-between gap-4">
+                              <div className="space-y-2">
+                                <div className="text-lg font-semibold">
+                                  {label}
+                                </div>
+                                {payment.description && (() => {
+                                  const description = String(payment.description);
+                                  const match = description.match(
+                                    /^lease charge\s*:\s*(.+)$/i
+                                  );
+                                  if (!match) {
+                                    return (
+                                      <div className="text-sm text-muted-foreground">
+                                        {description}
+                                      </div>
+                                    );
+                                  }
+                                  return (
+                                    <div className="text-sm text-muted-foreground flex items-center gap-2">
+                                      <span>Lease Charge:</span>
+                                      <Badge
+                                        className={`text-xs border-0 ${getChargeCodeBadgeClass(
+                                          match[1]
+                                        )}`}
+                                      >
+                                        {match[1].trim()}
+                                      </Badge>
+                                    </div>
+                                  );
+                                })()}
+                              </div>
+                              <div className="text-right space-y-1">
+                                {amount !== undefined &&
+                                  !Number.isNaN(amount) && (
+                                    <div className="text-xl font-bold">
+                                      ₹{amount.toLocaleString()}
+                                    </div>
+                                  )}
+                                {(payment.charge_code ||
+                                  payment.charge_code_name ||
+                                  payment.charge_code_id) && (
+                                  <Badge
+                                    className={`text-xs border-0 ${getChargeCodeBadgeClass(
+                                      String(
+                                        payment.charge_code ||
+                                          payment.charge_code_name ||
+                                          payment.charge_code_id
+                                      )
+                                    )}`}
+                                  >
+                                    {String(
+                                      payment.charge_code ||
+                                        payment.charge_code_name ||
+                                        payment.charge_code_id
+                                    )}
+                                  </Badge>
+                                )}
+                              </div>
+                            </div>
+
+                            <div className="mt-3 grid grid-cols-1 gap-2 text-sm text-muted-foreground sm:grid-cols-2">
+                              <div>
+                                <span className="font-medium text-foreground inline-flex items-center gap-2">
+                                  <Calendar className="h-4 w-4 text-muted-foreground" />
+                                  Date:
+                                </span>{" "}
+                                {date
+                                  ? new Date(date).toLocaleDateString()
+                                  : "-"}
+                              </div>
+                              <div>
+                                <span className="font-medium text-foreground inline-flex items-center gap-2">
+                                  <CreditCard className="h-4 w-4 text-muted-foreground" />
+                                  Method:
+                                </span>{" "}
+                                {payment.method ? (
+                                  <Badge
+                                    className={`text-xs border-0 ${getMethodBadgeClass(
+                                      payment.method
+                                    )}`}
+                                  >
+                                    {String(payment.method).toUpperCase()}
+                                  </Badge>
+                                ) : (
+                                  "-"
+                                )}
+                              </div>
+                              <div>
+                                <span className="font-medium text-foreground inline-flex items-center gap-2">
+                                  <Hash className="h-4 w-4 text-muted-foreground" />
+                                  Reference:
+                                </span>{" "}
+                                {reference || "-"}
+                              </div>
+                              <div>
+                                <span className="font-medium text-foreground inline-flex items-center gap-2">
+                                  <MapPin className="h-4 w-4 text-muted-foreground" />
+                                  Site:
+                                </span>{" "}
+                                {payment.site || "-"}
+                              </div>
+                            </div>
+                          </div>
+                        );
+                      })}
+                    </div>
+                  </div>
+                ) : (
+                  <div className="text-sm text-muted-foreground">
+                    No payments found
+                  </div>
+                )}
+
+                
+              </CardContent>
+            </Card>
+            {/* Pagination */}
+            <Pagination
+              page={paymentPage}
+              pageSize={paymentPageSize}
+              totalItems={paymentTotalItems}
+              onPageChange={setPaymentPage}
+            />
+          </TabsContent>
           </Tabs>
         </div>
       )}
