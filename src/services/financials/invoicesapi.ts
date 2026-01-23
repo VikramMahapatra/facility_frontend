@@ -93,6 +93,6 @@ class InvoiceApiService {
   window.URL.revokeObjectURL(url);
 }
 
-}
+}//
 
 export const invoiceApiService = new InvoiceApiService();

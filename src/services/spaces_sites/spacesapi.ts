@@ -73,4 +73,4 @@ class SpacesApiService {
     }
 }
 
-export const spacesApiService = new SpacesApiService();
+export const spacesApiService = new SpacesApiService();//
