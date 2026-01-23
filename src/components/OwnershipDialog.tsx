@@ -6,7 +6,7 @@ import { useState } from "react";
 import { toast } from "./ui/sonner";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "./ui/dialog";
 import { AsyncAutocompleteRQ } from "./common/async-autocomplete-rq";
-import { Button } from "./ui/button";
+import { Button } from "./ui/button";//
 
 // ===============================
 export function OwnershipDialog({
@@ -20,7 +20,8 @@ export function OwnershipDialog({
     const submit = async () => {
         if (!ownerId) return;
 
-        const res = await spacesApiService.assignOwner(spaceId, {
+        const res = await spacesApiService.assignOwner({
+            space_id: spaceId,
             owner_user_id: ownerId,
             ownership_percentage: 100,
         });

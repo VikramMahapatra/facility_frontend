@@ -68,6 +68,31 @@ class InvoiceApiService {
   async getInvoiceTypeLookup() {
     return await apiService.request("/invoices/invoice-type");
   }
+  async downloadInvoice(id: string) {
+  const response = await fetch(`/api/invoices/${id}/download`, {
+    method: "GET",
+    headers: {
+     Authorization: `Bearer ${localStorage.getItem("access_token")}`,
+    },
+  });
+
+  if (!response.ok) {
+    throw new Error("Failed to download invoice");
+  }
+
+  const blob = await response.blob();
+  const url = window.URL.createObjectURL(blob);
+
+  const a = document.createElement("a");
+  a.href = url;
+  a.download = `Invoice_${id}.pdf`;
+  document.body.appendChild(a);
+  a.click();
+  a.remove();
+
+  window.URL.revokeObjectURL(url);
 }
+
+}//
 
 export const invoiceApiService = new InvoiceApiService();

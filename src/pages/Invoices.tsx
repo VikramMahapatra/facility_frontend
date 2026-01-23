@@ -6,7 +6,7 @@ import {
   CardDescription,
   CardHeader,
   CardTitle,
-} from "@/components/ui/card";
+} from "@/components/ui/card";//
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { LogOut } from "lucide-react";
@@ -207,6 +207,10 @@ export default function Invoices() {
   const handleEdit = (invoice: Invoice) => {
     navigate(`/invoices/${invoice.id}/edit`);
   };
+  const handleDownload = async (invoiceId: string) => {
+  await invoiceApiService.downloadInvoice(invoiceId);
+  };
+
 
   const handleDelete = (invoiceId: string) => {
     setDeleteInvoiceId(invoiceId);
@@ -431,6 +435,14 @@ export default function Invoices() {
                                     <Trash2 className="h-4 w-4" />
                                   </Button>
                                 )}
+                                  <Button
+                                      variant="ghost"
+                                      size="sm"
+                                      onClick={() => handleDownload(invoice.id)}
+                                    >
+                                      <Download className="h-4 w-4" />
+                                  </Button>
+
                               </div>
                             </TableCell>
                           </TableRow>
