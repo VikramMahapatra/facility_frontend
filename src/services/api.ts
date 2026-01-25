@@ -61,10 +61,12 @@ class ApiService {
             }
             console.log('API response data: ', result);
 
-            if (result?.status?.toString().toLowerCase() === "failed") {
+            if (result?.status?.toString().toLowerCase() === "failed" || result?.status.toString().toLowerCase() === "failure") {
                 let message = errorMessage;
 
-                if (result.status_code != "210" && result.status_code != "400" && result.status_code != "500")
+                if (result.status_code != "210" && result.status_code != "400" && result.status_code != "500"
+                    || (result.status_code != "11" && result?.status.toString().toLowerCase() === "failure")
+                )
                     message = result.message
 
                 toast.error(message);
@@ -98,6 +100,36 @@ class ApiService {
         }
     }
 
+    public async requestBlob(
+        endpoint: string,
+        options: RequestInit = {},
+        isRetry = false
+    ): Promise<Response> {
+        const url = `${this.baseUrl}${endpoint}`;
+        const config = {
+            ...options,
+            headers: {
+                ...this.getHeaders(),
+                ...options.headers,
+            },
+        };
+
+        let response = await fetch(url, config);
+
+        // 🔐 Handle token expiration
+        if (response.status === 401 && !isRetry) {
+            const refreshed = await this.refreshToken();
+            if (refreshed) {
+                return this.requestBlob(endpoint, options, true);
+            }
+            this.logoutUser();
+            throw new Error("Unauthorized");
+        }
+
+        return response; // 🔥 RAW RESPONSE
+    }
+
+
     public async requestWithForm(endpoint: string, options: RequestInit = {}) {
         const url = `${this.baseUrl}${endpoint}`;
         const config = {
@@ -114,7 +146,7 @@ class ApiService {
             const response = await fetch(url, config);
             const result = await response.json().catch(() => null);
             console.log('response data: ', result);
-            
+
             if (result?.status === "Failure" || result?.status?.toString().toLowerCase() === "failed") {
                 let message = errorMessage;
 

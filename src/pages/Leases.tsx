@@ -19,7 +19,7 @@ import {
   SidebarTrigger,
 } from "@/components/ui/sidebar";
 import { LeaseForm } from "@/components/LeasesForm";
-import { LogOut, } from "lucide-react";
+import { LogOut } from "lucide-react";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -46,7 +46,6 @@ import { useSkipFirstEffect } from "@/hooks/use-skipfirst-effect";
 
 export default function Leases() {
   const [searchTerm, setSearchTerm] = useState("");
-  const [selectedKind, setSelectedKind] = useState<string>("all");
   const [selectedStatus, setSelectedStatus] = useState<string>("all");
   const [selectedSite, setSelectedSite] = useState<string>("all");
 
@@ -81,7 +80,7 @@ export default function Leases() {
 
   useSkipFirstEffect(() => {
     updateLeasePage();
-  }, [searchTerm, selectedSite, selectedKind, selectedStatus]);
+  }, [searchTerm, selectedSite, selectedStatus]);
 
   useEffect(() => {
     (async () => {
@@ -103,7 +102,6 @@ export default function Leases() {
     const params = new URLSearchParams();
     if (searchTerm) params.append("search", searchTerm);
     if (selectedSite) params.append("site_id", selectedSite);
-    if (selectedKind) params.append("kind", selectedKind);
     if (selectedStatus) params.append("status", selectedStatus);
 
     const response = await leasesApiService.getLeaseOverview(params);
@@ -117,7 +115,6 @@ export default function Leases() {
     const params = new URLSearchParams();
     if (searchTerm) params.append("search", searchTerm);
     if (selectedSite) params.append("site_id", selectedSite);
-    if (selectedKind) params.append("kind", selectedKind);
     if (selectedStatus) params.append("status", selectedStatus);
     params.append("skip", String(skip));
     params.append("limit", String(limit));
@@ -233,9 +230,7 @@ export default function Leases() {
             <h2 className="text-2xl font-bold text-sidebar-primary">
               All Leases
             </h2>
-            <p className="text-muted-foreground">
-              Manage lease agreements
-            </p>
+            <p className="text-muted-foreground">Manage lease agreements</p>
           </div>
           {canWrite(resource) && (
             <Button onClick={handleCreate} className="gap-2">
@@ -256,10 +251,7 @@ export default function Leases() {
             />
           </div>
 
-          <Select
-            value={selectedSite}
-            onValueChange={setSelectedSite}
-          >
+          <Select value={selectedSite} onValueChange={setSelectedSite}>
             <SelectTrigger className="w-[180px]">
               <SelectValue placeholder="All Sites" />
             </SelectTrigger>
@@ -273,24 +265,7 @@ export default function Leases() {
             </SelectContent>
           </Select>
 
-          <Select
-            value={selectedKind}
-            onValueChange={setSelectedKind}
-          >
-            <SelectTrigger className="w-[180px]">
-              <SelectValue placeholder="All Types" />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="all">All Types</SelectItem>
-              <SelectItem value="commercial">Commercial</SelectItem>
-              <SelectItem value="residential">Residential</SelectItem>
-            </SelectContent>
-          </Select>
-
-          <Select
-            value={selectedStatus}
-            onValueChange={setSelectedStatus}
-          >
+          <Select value={selectedStatus} onValueChange={setSelectedStatus}>
             <SelectTrigger className="w-[180px]">
               <SelectValue placeholder="All Status" />
             </SelectTrigger>
@@ -313,9 +288,7 @@ export default function Leases() {
                 <div className="text-2xl font-bold text-sidebar-primary">
                   {leaseOverview.activeLeases}
                 </div>
-                <p className="text-sm text-muted-foreground">
-                  Active Leases
-                </p>
+                <p className="text-sm text-muted-foreground">Active Leases</p>
               </CardContent>
             </Card>
             <Card>
@@ -333,25 +306,19 @@ export default function Leases() {
                 <div className="text-2xl font-bold text-orange-600">
                   {leaseOverview.expiringSoon}
                 </div>
-                <p className="text-sm text-muted-foreground">
-                  Expiring Soon
-                </p>
+                <p className="text-sm text-muted-foreground">Expiring Soon</p>
               </CardContent>
             </Card>
             <Card>
               <CardContent className="p-4">
                 <div className="text-2xl font-bold text-blue-600">
                   {leaseOverview.avgLeaseTermMonths < 12
-                    ? `${leaseOverview.avgLeaseTermMonths.toFixed(
-                      0
-                    )} months`
+                    ? `${leaseOverview.avgLeaseTermMonths.toFixed(0)} months`
                     : `${(leaseOverview.avgLeaseTermMonths / 12).toFixed(
                       1
                     )} years`}
                 </div>
-                <p className="text-sm text-muted-foreground">
-                  Avg Lease Term
-                </p>
+                <p className="text-sm text-muted-foreground">Avg Lease Term</p>
               </CardContent>
             </Card>
           </div>
@@ -389,7 +356,10 @@ export default function Leases() {
                         Rent Amount
                       </div>
                       <div className="text-lg font-bold">
-                        {formatCurrency(lease.rent_amount)}
+
+                        {(!lease.rent_amount || Number(lease.rent_amount) === 0)
+                          ? "-"
+                          : formatCurrency(lease.rent_amount)}
                       </div>
                       <div className="text-xs text-muted-foreground">
                         per month
@@ -400,18 +370,20 @@ export default function Leases() {
                         Lease Term
                       </div>
                       <div className="text-sm">
-                        {lease.start_date} - {lease.end_date}
+                        {`${lease.start_date} - ${lease.end_date}`}
                       </div>
                     </div>
                   </div>
-
                   <div className="grid grid-cols-2 gap-4 text-sm">
                     <div>
                       <div className="font-medium text-muted-foreground">
                         Deposit
                       </div>
                       <div>
-                        {formatCurrency(lease.deposit_amount as any)}
+                        {(!lease.deposit_amount ||
+                          Number(lease.deposit_amount) === 0)
+                          ? "-"
+                          : formatCurrency(lease.deposit_amount as any)}
                       </div>
                     </div>
                     <div>
@@ -419,9 +391,11 @@ export default function Leases() {
                         CAM Rate
                       </div>
                       <div>
-                        {lease.cam_rate
-                          ? `₹${lease.cam_rate}/sq ft`
-                          : "-"}
+                        {(!lease.cam_rate || Number(lease.cam_rate) === 0)
+                          ? "-"
+                          : lease.cam_rate && Number(lease.cam_rate) !== 0
+                            ? `₹${lease.cam_rate}/sq ft`
+                            : "-"}
                       </div>
                     </div>
                   </div>
@@ -437,7 +411,8 @@ export default function Leases() {
                         <div className="text-sm">
                           {Object.entries(lease.utilities)
                             .filter(
-                              ([_, v]) => v !== null && v !== undefined && v !== ""
+                              ([_, v]) =>
+                                v !== null && v !== undefined && v !== ""
                             )
                             .map(([k, v]) => (
                               <span key={k} className="mr-4 capitalize">
@@ -446,8 +421,7 @@ export default function Leases() {
                             ))}
                         </div>
                       </div>
-                  )}
-
+                    )}
 
                   <div className="flex items-center justify-end gap-2 pt-2">
                     <Button

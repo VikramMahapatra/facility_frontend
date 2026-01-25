@@ -15,6 +15,7 @@ import { toast } from "sonner";
 import { vendorsApiService } from "@/services/procurements/vendorsapi";
 import { ChevronsUpDown, X } from "lucide-react";
 import PhoneInput from "react-phone-input-2";
+import { withFallback } from "@/helpers/commonHelper";
 
 interface VendorFormProps {
   vendor?: any;
@@ -65,8 +66,6 @@ export function VendorForm({ vendor, isOpen, onClose, onSave, mode }: VendorForm
   const loadAll = async () => {
     setFormLoading(true);
 
-    await Promise.all([loadStatusLookup(), loadCategoriesLookup()]);
-
     // Reset form based on mode
     reset(
       vendor && mode !== "create"
@@ -85,11 +84,9 @@ export function VendorForm({ vendor, isOpen, onClose, onSave, mode }: VendorForm
         : emptyFormData
     );
 
-    if (vendor && mode !== "create") {
-      setTimeout(() => trigger(), 100);
-    }
-
     setFormLoading(false);
+
+    Promise.all([loadStatusLookup(), loadCategoriesLookup()]);
   };
 
   useEffect(() => {
@@ -128,6 +125,43 @@ export function VendorForm({ vendor, isOpen, onClose, onSave, mode }: VendorForm
     const category = categoriesList.find(c => (c.id ?? c.value ?? c).toString() === categoryId);
     return category?.name ?? category?.label ?? category ?? categoryId;
   };
+
+
+
+  const fallbackStatus = vendor?.status
+    ? {
+        id: vendor.status,
+        name: vendor.status,
+        value: vendor.status,
+      }
+    : null;
+
+  const statuses = withFallback(statusList, fallbackStatus);
+
+
+  const getCategoriesWithFallback = () => {
+    if (!vendor?.categories || vendor.categories.length === 0) {
+      return categoriesList;
+    }
+
+    const fallbackCategories = vendor.categories
+      .filter((catId: string) => {
+        // Only create fallback if category is not in the loaded list
+        return !categoriesList.some(
+          (c: any) => (c.id ?? c.value ?? c).toString() === catId.toString()
+        );
+      })
+      .map((catId: string) => ({
+        id: catId,
+        name: `Category (${catId.slice(0, 6)})`,
+        value: catId,
+        label: `Category (${catId.slice(0, 6)})`,
+      }));
+
+    return [...fallbackCategories, ...categoriesList];
+  };
+
+  const categories = getCategoriesWithFallback();
 
   const onSubmitForm = async (data: VendorFormValues) => {
     const formResponse = await onSave({
@@ -196,7 +230,7 @@ export function VendorForm({ vendor, isOpen, onClose, onSave, mode }: VendorForm
                       <SelectValue placeholder="Select status" />
                     </SelectTrigger>
                     <SelectContent>
-                      {statusList.map((s: any) => (
+                      {statuses.map((s: any) => (
                         <SelectItem key={(s.id ?? s.value ?? s).toString()} value={(s.id ?? s.value ?? s).toString()}>
                           {s.name ?? s.label ?? s}
                         </SelectItem>
@@ -246,7 +280,7 @@ export function VendorForm({ vendor, isOpen, onClose, onSave, mode }: VendorForm
                     <PopoverContent className="w-full p-0" align="start">
                       <div className="max-h-96 overflow-y-auto">
                         <div className="p-1">
-                          {categoriesList.map((c: any) => {
+                          {categories.map((c: any) => {
                             const categoryId = (c.id ?? c.value ?? c).toString();
                             const categoryName = c.name ?? c.label ?? c;
                             const isSelected = selectedCategories.includes(categoryId);

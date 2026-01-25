@@ -2,21 +2,17 @@ import * as z from "zod";
 
 const paymentSchema = z
   .object({
-    method: z.enum(
-      ["upi", "card", "bank", "cash", "cheque", "gateway"],
-      {
-        required_error: "Payment method is required",
-      }
-    ),
+    method: z.enum(["upi", "card", "bank", "cash", "cheque", "gateway"], {
+      required_error: "Payment method is required",
+    }),
 
     ref_no: z.string().optional(),
 
     paid_at: z.string().min(1, "Payment date is required"),
 
-    amount: z
-      .coerce
+    amount: z.coerce
       .number()
-      .positive("Payment amount must be greater than zero")
+      .positive("Payment amount must be greater than zero"),
   })
   .refine(
     (data) => {
@@ -39,11 +35,11 @@ export const invoiceSchema = z
     customer_id: z.string().optional(),
     date: z.string().min(1, "Invoice Date is required"),
     due_date: z.string().min(1, "Due date is required"),
-    status: z.enum(["draft", "issued", "paid", "partial", "void"]).optional(),
+    status: z
+      .enum(["draft", "issued", "paid", "partial", "void", "overdue"])
+      .optional(),
     currency: z.string().optional(),
-    billable_item_type: z.enum(["lease_charge", "work_order"], {
-      required_error: "Invoice type is required",
-    }),
+    billable_item_type: z.string().min(1, "Invoice type is required"),
     billable_item_id: z.string().min(1, "Billable item is required"),
     totals: z
       .object({
@@ -69,8 +65,5 @@ export const invoiceSchema = z
       path: ["due_date"],
     }
   );
-
-
-
 
 export type InvoiceFormValues = z.infer<typeof invoiceSchema>;

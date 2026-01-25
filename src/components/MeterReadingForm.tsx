@@ -25,6 +25,7 @@ import {
 import { MeterReading } from "@/interfaces/energy_iot_interface";
 import { meterReadingApiService } from "@/services/energy_iot/meterreadingsapi";
 import { utcToLocal } from "@/helpers/dateHelpers";
+import { withFallback } from "@/helpers/commonHelper";
 
 interface MeterReadingFormProps {
   meterReading?: MeterReading | null;
@@ -75,10 +76,7 @@ export function MeterReadingForm({
   const loadAll = async () => {
     setFormLoading(true);
 
-    const metersResponse = await meterReadingApiService.getMeterReadingLookup();
-    const meters = metersResponse?.success ? metersResponse.data || [] : [];
-    setMeterList(meters);
-
+    // Reset form first
     reset(
       meterReading && mode !== "create"
         ? {
@@ -95,6 +93,12 @@ export function MeterReadingForm({
     );
 
     setFormLoading(false);
+
+    // Load lookups in the background
+    meterReadingApiService.getMeterReadingLookup().then((metersResponse) => {
+      const meters = metersResponse?.success ? metersResponse.data || [] : [];
+      setMeterList(meters);
+    });
   };
 
   useEffect(() => {
@@ -116,6 +120,18 @@ export function MeterReadingForm({
     reset(emptyFormData);
     onClose();
   };
+
+  const fallbackMeter = meterReading?.meter_id
+    ? {
+        id: meterReading.meter_id,
+        name:
+          (meterReading as any).meter_name ||
+          (meterReading as any).meter_code ||
+          `Meter (${meterReading.meter_id.slice(0, 6)})`,
+      }
+    : null;
+
+  const meters = withFallback(meterList, fallbackMeter);
 
   return (
     <Dialog open={isOpen} onOpenChange={handleClose}>
@@ -154,12 +170,12 @@ export function MeterReadingForm({
                           <SelectValue placeholder="Select meter" />
                         </SelectTrigger>
                         <SelectContent>
-                          {meterList.length === 0 ? (
+                          {meters.length === 0 ? (
                             <SelectItem value="none" disabled>
                               No meters available
                             </SelectItem>
                           ) : (
-                            meterList.map((meter) => (
+                            meters.map((meter) => (
                               <SelectItem key={meter.id} value={meter.id}>
                                 {meter.name ||
                                   meter.code ||

@@ -26,6 +26,8 @@ import { siteApiService } from "@/services/spaces_sites/sitesapi";
 import { utcToLocal, localToUTC } from "@/helpers/dateHelpers";
 import { spacesApiService } from "@/services/spaces_sites/spacesapi";
 import PhoneInput from "react-phone-input-2";
+import { withFallback } from "@/helpers/commonHelper";
+import { AsyncAutocompleteRQ } from "./common/async-autocomplete-rq";
 
 interface VisitorFormProps {
   visitor?: Visitor;
@@ -80,17 +82,7 @@ export function VisitorForm({
   const loadAll = async () => {
     setFormLoading(true);
 
-    const sitesResponse = await siteApiService.getSiteLookup();
-    const sites = sitesResponse.success ? sitesResponse.data || [] : [];
-    setSiteList(sites);
-
-    // For edit/view mode, load spaces based on visitor's site
-    if (visitor && mode !== "create" && visitor.site_id) {
-      await loadSpaceLookup(visitor.site_id);
-    } else {
-      setSpaceList([]);
-    }
-
+    // Reset form first
     reset(
       visitor && mode !== "create"
         ? {
@@ -112,6 +104,18 @@ export function VisitorForm({
     );
 
     setFormLoading(false);
+
+    // Load lookups in the background
+    const sitesResponse = await siteApiService.getSiteLookup();
+    const sites = sitesResponse.success ? sitesResponse.data || [] : [];
+    setSiteList(sites);
+
+    // For edit/view mode, load spaces based on visitor's site
+    if (visitor && mode !== "create" && visitor.site_id) {
+      loadSpaceLookup(visitor.site_id);
+    } else {
+      setSpaceList([]);
+    }
   };
 
   useEffect(() => {
@@ -162,6 +166,22 @@ export function VisitorForm({
     reset(emptyFormData);
     onClose();
   };
+
+  const fallbackSite = visitor?.site_id
+    ? {
+        id: visitor.site_id,
+        name: (visitor as any).site_name || `Site (${visitor.site_id.slice(0, 6)})`,
+      }
+    : null;
+
+  const fallbackSpace = visitor?.space_id
+    ? {
+        id: visitor.space_id,
+        name: (visitor as any).space_name || `Space (${visitor.space_id.slice(0, 6)})`,
+      }
+    : null;
+
+  const spaces = withFallback(spaceList, fallbackSpace);
 
   return (
     <Dialog open={isOpen} onOpenChange={handleClose}>
@@ -242,27 +262,36 @@ export function VisitorForm({
                 render={({ field }) => (
                   <div className="space-y-2">
                     <Label htmlFor="site">Site *</Label>
-                    <Select
+                    <AsyncAutocompleteRQ
                       value={field.value || ""}
-                      onValueChange={(value) => {
+                      onChange={(value) => {
                         field.onChange(value);
                         setValue("space_id", "");
                       }}
                       disabled={isReadOnly}
-                    >
-                      <SelectTrigger
-                        className={errors.site_id ? "border-red-500" : ""}
-                      >
-                        <SelectValue placeholder="Select site" />
-                      </SelectTrigger>
-                      <SelectContent>
-                        {siteList.map((site) => (
-                          <SelectItem key={site.id} value={site.id}>
-                            {site.name}
-                          </SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
+                      placeholder="Select site"
+                      queryKey={["visitor-sites"]}
+                      queryFn={async (search) => {
+                        const res = await siteApiService.getSiteLookup(search);
+                        if (res.success) {
+                          return res.data.map((s: any) => ({
+                            id: s.id,
+                            label: s.name,
+                          }));
+                        }
+                        return [];
+                      }}
+                      fallbackOption={
+                        visitor?.site_id
+                          ? {
+                              id: visitor.site_id,
+                              label:
+                                (visitor as any).site_name,
+                            }
+                          : undefined
+                      }
+                      minSearchLength={1}
+                    />
                     {errors.site_id && (
                       <p className="text-sm text-red-500">
                         {errors.site_id.message}
@@ -289,7 +318,7 @@ export function VisitorForm({
                         <SelectValue placeholder="Select visiting place" />
                       </SelectTrigger>
                       <SelectContent>
-                        {spaceList.map((space) => (
+                        {spaces.map((space) => (
                           <SelectItem key={space.id} value={space.id}>
                             {space.name}
                           </SelectItem>

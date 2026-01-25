@@ -7,7 +7,7 @@ export interface Lease {
   building_block_id?: string;
   space_id?: string;
   space_name?: string;
-  kind?: LeaseKind
+  kind?: LeaseKind;
   partner_id?: string;
   tenant_id?: string;
   tenant_name: string;
@@ -22,7 +22,10 @@ export interface Lease {
   updated_at?: string;
   space_code?: string;
   site_name?: string;
+  building_name?: string;
   frequency?: string;
+  default_payer?: string;
+  is_system?: boolean;
 }
 
 export interface LeaseOverview {
@@ -60,6 +63,14 @@ export interface Tenant {
   updated_at?: string;
   tenant_leases?: Lease[];
   tenant_spaces?: SpaceTenants[];
+  family_info?: Array<{
+    member?: string;
+    relation?: string;
+  }>;
+  vehicle_info?: Array<{
+    type?: string;
+    number?: string;
+  }>;
 }
 
 export interface SpaceTenants {
@@ -69,7 +80,6 @@ export interface SpaceTenants {
   building_block_name?: string;
   space_id?: string;
   space_name?: string;
-  role: string;
   status: string;
 }
 

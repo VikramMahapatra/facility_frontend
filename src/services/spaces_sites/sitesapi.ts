@@ -5,8 +5,10 @@ class SiteApiService {
     return await apiService.request(`/sites/all?${params.toString()}`);
   }
 
-  async getSiteLookup() {
-    return await apiService.request("/sites/lookup");
+  async getSiteLookup(search?: string) {
+    const params = new URLSearchParams();
+    if (search) params.append("search", search);
+    return await apiService.request(`/sites/lookup?${params.toString()}`);
   }
 
   async addSite(siteData: any) {

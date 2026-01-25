@@ -46,11 +46,11 @@ class LeasesApiService {
     return await apiService.request('/leases/default-payer-lookup');
   }
 
-  async getLeasePartnerLookup(kind: string, site_id: string) {
+  async getLeaseTenantLookup(site_id: string, space_id: string) {
     const params = new URLSearchParams();
-    if (kind) params.append("kind", kind);
     if (site_id) params.append("site_id", site_id);
-    return await apiService.request(`/leases/partner-lookup?${params.toString()}`);
+    if (space_id) params.append("space_id", space_id);
+    return await apiService.request(`/leases/tenant-lookup?${params.toString()}`);
   }
 
 

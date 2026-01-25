@@ -18,12 +18,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { Badge } from "@/components/ui/badge";
-import { Separator } from "@/components/ui/separator";
-import {
-  SidebarProvider,
-  SidebarInset,
-  SidebarTrigger,
-} from "@/components/ui/sidebar";
+
 import { PropertySidebar } from "@/components/PropertySidebar";
 import {
   AlertDialog,
@@ -54,7 +49,7 @@ import { Tenant, TenantOverview } from "@/interfaces/leasing_tenants_interface";
 import { useSkipFirstEffect } from "@/hooks/use-skipfirst-effect";
 import { toast } from "sonner";
 import { Pagination } from "@/components/Pagination";
-import { TenantForm } from "@/components/TenantForm";
+import { useNavigate } from "react-router-dom";
 import { useAuth } from "../context/AuthContext";
 import { useLoader } from "@/context/LoaderContext";
 import LoaderOverlay from "@/components/LoaderOverlay";
@@ -67,12 +62,8 @@ const Tenants = () => {
   const [selectedType, setSelectedType] = useState<string>("all");
   const [selectedSite, setSelectedSite] = useState<string>("all");
   const [tenants, setTenants] = useState<Tenant[]>([]);
-  const [formMode, setFormMode] = useState<"create" | "edit" | "view">(
-    "create"
-  );
-  const [isFormOpen, setIsFormOpen] = useState(false);
+  const navigate = useNavigate();
   const [deleteTenantId, setDeleteTenantId] = useState<string | null>(null);
-  const [selectedTenant, setSelectedTenant] = useState<Tenant | undefined>();
   const [tenantOverview, setTenantOverview] = useState<TenantOverview>({
     totalTenants: 0,
     activeTenants: 0,
@@ -163,21 +154,15 @@ const Tenants = () => {
 
   // Form handlers
   const handleCreate = () => {
-    setSelectedTenant(undefined);
-    setFormMode("create");
-    setIsFormOpen(true);
+    navigate("/tenants/create");
   };
 
   const handleEdit = (tenant: Tenant) => {
-    setSelectedTenant(tenant);
-    setFormMode("edit");
-    setIsFormOpen(true);
+    navigate(`/tenants/${tenant.id}/edit`);
   };
 
   const handleView = (tenant: Tenant) => {
-    setSelectedTenant(tenant);
-    setFormMode("view");
-    setIsFormOpen(true);
+    navigate(`/tenants/${tenant.id}/view`);
   };
 
   const handleDelete = (tenantId: string) => {
@@ -209,7 +194,8 @@ const Tenants = () => {
     }
   };
 
-  const handleSave = async (tenantData: Partial<Tenant>) => {
+  {
+    /*const handleSave = async (tenantData: Partial<Tenant>) => {
     let response;
     if (formMode === "create") {
       response = await tenantsApiService.addTenant(tenantData);
@@ -231,16 +217,20 @@ const Tenants = () => {
         );
       }
     }
+    
 
     if (response?.success) {
       setIsFormOpen(false);
       toast.success(
-        `Tenant ${tenantData.name} has been ${formMode === "create" ? "created" : "updated"
+        `Tenant ${tenantData.name} has been ${
+          formMode === "create" ? "created" : "updated"
         } successfully.`
       );
     }
     return response;
   };
+  */
+  }
 
   const getStatusColor = (status: string) => {
     switch (status) {
@@ -451,9 +441,9 @@ const Tenants = () => {
                         <CardDescription>
                           {tenantSpaces.slice(0, 2).map((tenant_space) => {
                             const isSpaceStatus =
-                              tenant_space.status == "current"
+                              tenant_space.status == "occupied"
                                 ? "active"
-                                : tenant_space.status == "past"
+                                : tenant_space.status == "vacated"
                                   ? "inactive"
                                   : "suspended";
                             return (
@@ -468,11 +458,6 @@ const Tenants = () => {
                                     .filter(Boolean)
                                     .join(" • ")}
                                   <div className="text-muted-foreground">
-                                    <Badge
-                                      className={getTenantTypeColor("default")}
-                                    >
-                                      {tenant_space.role}
-                                    </Badge>
                                     <Badge
                                       className={getStatusColor(isSpaceStatus)}
                                     >
@@ -495,33 +480,6 @@ const Tenants = () => {
                         <Badge className={getStatusColor(tenant.status)}>
                           {tenant.status}
                         </Badge>
-                        <div className="flex gap-1">
-                          <Button
-                            variant="ghost"
-                            size="sm"
-                            onClick={() => handleView(tenant)}
-                          >
-                            <Eye className="h-4 w-4" />
-                          </Button>
-                          {canWrite(resource) && (
-                            <Button
-                              variant="ghost"
-                              size="sm"
-                              onClick={() => handleEdit(tenant)}
-                            >
-                              <Edit className="h-4 w-4" />
-                            </Button>
-                          )}
-                          {canDelete(resource) && (
-                            <Button
-                              variant="ghost"
-                              size="sm"
-                              onClick={() => handleDelete(tenant.id!)}
-                            >
-                              <Trash2 className="h-4 w-4" />
-                            </Button>
-                          )}
-                        </div>
                       </div>
                     </div>
                   </CardHeader>
@@ -592,7 +550,7 @@ const Tenants = () => {
                                   #{lease.lease_number} - {lease.space_name}
                                 </div>
                                 <div className="text-muted-foreground">
-                                  ₹{lease.rent_amount.toLocaleString()} • {" "}
+                                  ₹{lease.rent_amount.toLocaleString()} •{" "}
                                   {lease.frequency}
                                 </div>
                                 <div className="text-xs text-muted-foreground">
@@ -634,6 +592,34 @@ const Tenants = () => {
                         </div>
                       )}
                   </CardContent>
+                  <div className="flex items-center justify-end gap-2 px-6 pb-4 pt-2">
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={() => handleView(tenant)}
+                    >
+                      <Eye className="h-4 w-4" />
+                    </Button>
+                    {canWrite(resource) && (
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={() => handleEdit(tenant)}
+                      >
+                        <Edit className="h-4 w-4" />
+                      </Button>
+                    )}
+                    {canDelete(resource) && (
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        className="text-destructive hover:text-destructive"
+                        onClick={() => handleDelete(tenant.id!)}
+                      >
+                        <Trash2 className="h-4 w-4" />
+                      </Button>
+                    )}
+                  </div>
                 </Card>
               );
             })
@@ -646,13 +632,6 @@ const Tenants = () => {
           onPageChange={setPage}
         />
       </ContentContainer>
-      <TenantForm
-        isOpen={isFormOpen}
-        onClose={() => setIsFormOpen(false)}
-        mode={formMode}
-        tenant={selectedTenant}
-        onSave={handleSave}
-      />
       <AlertDialog
         open={!!deleteTenantId}
         onOpenChange={() => setDeleteTenantId(null)}

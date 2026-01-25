@@ -22,9 +22,13 @@ import SpaceGroups from "./pages/SpaceGroups";
 import SpaceAssignments from "./pages/SpaceAssignments";
 import Leases from "./pages/Leases";
 import Tenants from "./pages/Tenants";
+import TenantFormPage from "./pages/TenantFormPage";
+import TenantDetailPage from "./pages/TenantDetailPage";
 import LeaseCharges from "./pages/LeaseCharges";
 import LeaseChargeCode from "./pages/LeaseChargeCode";
 import Invoices from "./pages/Invoices";
+import InvoiceFormPage from "./pages/InvoiceFormPage";
+import InvoiceDetailPage from "./pages/InvoiceDetailPage";
 import RevenueReports from "./pages/RevenueReports";
 import TaxManagement from "./pages/TaxManagement";
 import Assets from "./pages/Assets";
@@ -55,6 +59,7 @@ import RolesManagement from "./pages/RolesManagement";
 import RolePolicies from "./pages/RolePolicies";
 import TicketDetail from "./pages/TicketDetail";
 import UsersManagement from "./pages/UsersManagement";
+import UserManagementDetailPage from "./pages/UserManagementDetailPage";
 import TicketWorkload from "./pages/TicketWorkload";
 import TicketCategories from "./pages/TicketCategories";
 import PendingApprovals from "./pages/PendingApprovals";
@@ -69,6 +74,7 @@ import ProtectedRoute from "./components/ProtectedRoute";
 import RegistrationStatus from "./pages/RegistrationStatus";
 import MainLayout from "./layouts/MainLayout";
 import "./App.css";
+import SpaceDetailPage from "./pages/SpaceDetailPage";
 
 const queryClient = new QueryClient();
 
@@ -82,17 +88,13 @@ const App = () => {
               <TooltipProvider>
                 <Toaster />
                 <Sonner />
-
                 <Routes>
                   <Route path="/" element={<Home />} />
                   <Route path="/features" element={<Features />} />
                   <Route path="/pricing" element={<Pricing />} />
                   <Route path="/login" element={<Login />} />
                   <Route path="/signup" element={<SignUp />} />
-                  <Route
-                    path="/registration-status"
-                    element={<RegistrationStatus />}
-                  />
+                  <Route path="/registration-status" element={<RegistrationStatus />} />
 
                   {/* All protected pages go inside */}
                   <Route element={<ProtectedRoute></ProtectedRoute>}>
@@ -105,14 +107,21 @@ const App = () => {
                       <Route path="/sites" element={<Sites />} />
                       <Route path="/buildings" element={<Buildings />} />
                       <Route path="/spaces" element={<Spaces />} />
+                      <Route path="/spaces/:id" element={<SpaceDetailPage />} />
                       <Route path="/spaces/:kind" element={<SpacesByKind />} />
                       <Route path="/space-groups" element={<SpaceGroups />} />
                       <Route path="/space-assignments" element={<SpaceAssignments />} />
                       <Route path="/leases" element={<Leases />} />
                       <Route path="/tenants" element={<Tenants />} />
+                      <Route path="/tenants/create" element={<TenantFormPage />} />
+                      <Route path="/tenants/:id/edit" element={<TenantFormPage />} />
+                      <Route path="/tenants/:id/view" element={<TenantDetailPage />} />
                       <Route path="/lease-charges" element={<LeaseCharges />} />
                       <Route path="/lease-charge-codes" element={<LeaseChargeCode />} />
                       <Route path="/invoices" element={<Invoices />} />
+                      <Route path="/invoices/create" element={<InvoiceFormPage />} />
+                      <Route path="/invoices/:id/edit" element={<InvoiceFormPage />} />
+                      <Route path="/invoices/:id/view" element={<InvoiceDetailPage />} />
                       <Route path="/revenue-reports" element={<RevenueReports />} />
                       <Route path="/tax-management" element={<TaxManagement />} />
                       <Route path="/assets" element={<Assets />} />
@@ -141,6 +150,7 @@ const App = () => {
                       <Route path="/roles" element={<RolesManagement />} />
                       <Route path="/role-policies" element={<RolePolicies />} />
                       <Route path="/users-management" element={<UsersManagement />} />
+                      <Route path="/users-management/:id/view" element={<UserManagementDetailPage />} />
                       <Route path="/pending-approvals" element={<PendingApprovals />} />
                       <Route path="/ticket-dashboard" element={<TicketDashboard />} />
                       <Route path="/tickets" element={<Tickets />} />

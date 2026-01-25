@@ -27,6 +27,8 @@ import {
   ticketWorkOrderSchema,
   TicketWorkOrderFormValues,
 } from "@/schemas/ticketworkorder.schema";
+import { leaseChargeApiService } from "@/services/leasing_tenants/leasechargeapi";
+import { withFallback } from "@/helpers/commonHelper";
 
 interface TicketWorkOrderFormProps {
   workOrder?: any;
@@ -76,6 +78,8 @@ export function TicketWorkOrderForm({
   const [vendorList, setVendorList] = useState<any[]>([]);
   const [ticketsList, setTicketsList] = useState<any[]>([]);
   const [statusList, setStatusList] = useState<any[]>([]);
+  const [taxCodeList, setTaxCodeList] = useState<any[]>([]);
+
   const [selectedTicketDetails, setSelectedTicketDetails] = useState<any>(null);
   const [isLoadingTicketDetails, setIsLoadingTicketDetails] = useState(false);
 
@@ -83,12 +87,6 @@ export function TicketWorkOrderForm({
 
   const loadAll = async () => {
     setFormLoading(true);
-
-    await Promise.all([
-      loadVendorLookup(),
-      loadTicketLookup(),
-      loadStatusLookup(),
-    ]);
 
     const ticketId =
       workOrder && mode !== "create"
@@ -108,6 +106,7 @@ export function TicketWorkOrderForm({
             other_expenses: workOrder.other_expenses || undefined,
             estimated_time: workOrder.estimated_time || undefined,
             special_instructions: workOrder.special_instructions || "",
+            tax_code_id: workOrder.tax_code_id || "No_Tax",
           }
         : {
             ...emptyFormData,
@@ -115,9 +114,20 @@ export function TicketWorkOrderForm({
           }
     );
 
+    setFormLoading(false);
+
+    await Promise.all([
+      loadVendorLookup(),
+      loadTicketLookup(),
+      loadStatusLookup(),
+      loadTaxCodeLookup(),
+    ]);
+
     if (ticketId) {
       setIsLoadingTicketDetails(true);
-      const response = await ticketWorkOrderApiService.getTicketAssignments(ticketId);
+      const response = await ticketWorkOrderApiService.getTicketAssignments(
+        ticketId
+      );
       if (response.success) {
         setSelectedTicketDetails(response.data);
       }
@@ -126,7 +136,6 @@ export function TicketWorkOrderForm({
       setSelectedTicketDetails(null);
       setIsLoadingTicketDetails(false);
     }
-    setFormLoading(false);
   };
 
   useEffect(() => {
@@ -139,7 +148,7 @@ export function TicketWorkOrderForm({
     const loadTicketAssignments = async () => {
       if (selectedTicketId) {
         setIsLoadingTicketDetails(true);
-        setSelectedTicketDetails(null); 
+        setSelectedTicketDetails(null);
         const response = await ticketWorkOrderApiService.getTicketAssignments(
           selectedTicketId
         );
@@ -170,6 +179,10 @@ export function TicketWorkOrderForm({
     const lookup = await ticketWorkOrderApiService.getStatusLookup();
     if (lookup.success) setStatusList(lookup.data || []);
   };
+  const loadTaxCodeLookup = async () => {
+    const lookup = await leaseChargeApiService.getTaxCodeLookup();
+    if (lookup.success) setTaxCodeList(lookup.data || []);
+  };
 
   const onSubmitForm = async (data: TicketWorkOrderFormValues) => {
     const formResponse = await onSave({
@@ -180,6 +193,46 @@ export function TicketWorkOrderForm({
   };
 
   const isReadOnly = mode === "view";
+
+  // Create fallback options for fields that might not be in lookup lists
+  const fallbackTicket = workOrder?.ticket_id
+    ? {
+        id: workOrder.ticket_id,
+        name:
+          workOrder.ticket_name ||
+          workOrder.ticket_no ||
+          `Ticket (${workOrder.ticket_id.slice(0, 6)})`,
+      }
+    : null;
+
+  const fallbackVendor = workOrder?.vendor_name
+    ? {
+        id: workOrder.vendor_id || "",
+        name: workOrder.vendor_name,
+      }
+    : null;
+
+  const fallbackStatus = workOrder?.status
+    ? {
+        id: workOrder.status,
+        name: workOrder.status,
+      }
+    : null;
+
+  const fallbackTaxCode = workOrder?.tax_code_id
+    ? {
+        id: workOrder.tax_code_id,
+        name:
+          workOrder.tax_code_name ||
+          `Tax Code (${workOrder.tax_code_id.slice(0, 6)})`,
+      }
+    : null;
+
+  // Apply fallback to lists
+  const tickets = withFallback(ticketsList, fallbackTicket);
+  const vendors = withFallback(vendorList, fallbackVendor);
+  const statuses = withFallback(statusList, fallbackStatus);
+  const taxCodes = withFallback(taxCodeList, fallbackTaxCode);
 
   const handleClose = () => {
     reset(emptyFormData);
@@ -226,7 +279,7 @@ export function TicketWorkOrderForm({
                           <SelectValue placeholder="Select ticket" />
                         </SelectTrigger>
                         <SelectContent>
-                          {ticketsList.map((ticket) => (
+                          {tickets.map((ticket) => (
                             <SelectItem key={ticket.id} value={ticket.id}>
                               {ticket.name}
                             </SelectItem>
@@ -258,7 +311,7 @@ export function TicketWorkOrderForm({
                           <SelectValue placeholder="Select status" />
                         </SelectTrigger>
                         <SelectContent>
-                          {statusList.map((status) => (
+                          {statuses.map((status) => (
                             <SelectItem key={status.id} value={status.id}>
                               {status.name}
                             </SelectItem>
@@ -342,8 +395,8 @@ export function TicketWorkOrderForm({
                 </div>
               )}
 
-              {/* Row 4: Labour Cost | Material Cost */}
-              <div className="grid grid-cols-2 gap-4">
+              {/* Row 4: Labour | Material | Other Expenses */}
+              <div className="grid grid-cols-3 gap-4">
                 <div className="space-y-2">
                   <Label htmlFor="labour_cost">Labour Cost</Label>
                   <Input
@@ -358,6 +411,7 @@ export function TicketWorkOrderForm({
                     disabled={isReadOnly}
                   />
                 </div>
+
                 <div className="space-y-2">
                   <Label htmlFor="material_cost">Material Cost</Label>
                   <Input
@@ -372,10 +426,7 @@ export function TicketWorkOrderForm({
                     disabled={isReadOnly}
                   />
                 </div>
-              </div>
 
-              {/* Row 5: Other Expenses | Estimated Time */}
-              <div className="grid grid-cols-2 gap-4">
                 <div className="space-y-2">
                   <Label htmlFor="other_expenses">Other Expenses</Label>
                   <Input
@@ -390,6 +441,9 @@ export function TicketWorkOrderForm({
                     disabled={isReadOnly}
                   />
                 </div>
+              </div>
+              {/* Row 5: Estimated Time | Tax Code */}
+              <div className="grid grid-cols-2 gap-4">
                 <div className="space-y-2">
                   <Label htmlFor="estimated_time">
                     Estimated Time (minutes) *
@@ -411,6 +465,33 @@ export function TicketWorkOrderForm({
                       {errors.estimated_time.message}
                     </p>
                   )}
+                </div>
+
+                <div className="space-y-2">
+                  <Label htmlFor="tax_code_id">Tax Code</Label>
+                  <Controller
+                    name="tax_code_id"
+                    control={control}
+                    render={({ field }) => (
+                      <Select
+                        value={field.value || ""}
+                        onValueChange={field.onChange}
+                        disabled={isReadOnly}
+                      >
+                        <SelectTrigger>
+                          <SelectValue placeholder="Select tax code" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="NO_TAX">No Tax</SelectItem>
+                          {taxCodes.map((tax) => (
+                            <SelectItem key={tax.id} value={tax.id}>
+                              {tax.name}
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                    )}
+                  />
                 </div>
               </div>
 

@@ -23,6 +23,8 @@ import { Meter } from "@/interfaces/energy_iot_interface";
 import { siteApiService } from "@/services/spaces_sites/sitesapi";
 import { spacesApiService } from "@/services/spaces_sites/spacesapi";
 import { assetApiService } from "@/services/maintenance_assets/assetsapi";
+import { withFallback } from "@/helpers/commonHelper";
+import { AsyncAutocompleteRQ } from "./common/async-autocomplete-rq";
 
 interface MeterFormProps {
   meter?: Meter | null;
@@ -102,29 +104,7 @@ export function MeterForm({
   const loadAll = async () => {
     setFormLoading(true);
 
-    if (mode === "create") {
-      setSpaceList([]);
-    }
-
-    const [sitesResponse, assetsResponse] = await Promise.all([
-      siteApiService.getSiteLookup(),
-      assetApiService.getAssetLookup(),
-    ]);
-
-    const sites = sitesResponse?.data || [];
-    const assets = assetsResponse?.data || [];
-    setSiteList(sites);
-    setAssetList(assets);
-
-    if (meter && mode !== "create" && meter.site_id) {
-      const spacesResponse = await spacesApiService.getSpaceLookup(
-        meter.site_id
-      );
-      if (spacesResponse.success) {
-        setSpaceList(spacesResponse.data || []);
-      }
-    }
-
+    // Reset form first
     reset(
       meter && mode !== "create"
         ? {
@@ -141,6 +121,29 @@ export function MeterForm({
     );
 
     setFormLoading(false);
+
+    // Load lookups in the background
+    if (mode === "create") {
+      setSpaceList([]);
+    }
+
+    Promise.all([
+      siteApiService.getSiteLookup(),
+      assetApiService.getAssetLookup(),
+    ]).then(([sitesResponse, assetsResponse]) => {
+      const sites = sitesResponse?.data || [];
+      const assets = assetsResponse?.data || [];
+      setSiteList(sites);
+      setAssetList(assets);
+    });
+
+    if (meter && mode !== "create" && meter.site_id) {
+      spacesApiService.getSpaceLookup(meter.site_id).then((spacesResponse) => {
+        if (spacesResponse.success) {
+          setSpaceList(spacesResponse.data || []);
+        }
+      });
+    }
   };
 
   useEffect(() => {
@@ -185,6 +188,23 @@ export function MeterForm({
     onClose();
   };
 
+  const fallbackSpace = meter?.space_id
+    ? {
+        id: meter.space_id,
+        name: (meter as any).space_name || `Space (${meter.space_id.slice(0, 6)})`,
+      }
+    : null;
+
+  const fallbackAsset = meter?.asset_id
+    ? {
+        id: meter.asset_id,
+        name: (meter as any).asset_name || `Asset (${meter.asset_id.slice(0, 6)})`,
+      }
+    : null;
+
+  const spaces = withFallback(spaceList, fallbackSpace);
+  const assets = withFallback(assetList, fallbackAsset);
+
   return (
     <Dialog open={isOpen} onOpenChange={handleClose}>
       <DialogContent className="sm:max-w-[600px]">
@@ -212,37 +232,42 @@ export function MeterForm({
                     name="site_id"
                     control={control}
                     render={({ field }) => (
-                      <Select
-                        value={field.value || ""}
-                        onValueChange={field.onChange}
-                        disabled={isReadOnly}
-                      >
-                        <SelectTrigger
-                          className={errors.site_id ? "border-red-500" : ""}
-                        >
-                          <SelectValue placeholder="Select site" />
-                        </SelectTrigger>
-                        <SelectContent>
-                          {siteList.length === 0 ? (
-                            <SelectItem value="none" disabled>
-                              No sites available
-                            </SelectItem>
-                          ) : (
-                            siteList.map((site) => (
-                              <SelectItem key={site.id} value={site.id}>
-                                {site.name}
-                              </SelectItem>
-                            ))
-                          )}
-                        </SelectContent>
-                      </Select>
+                      <>
+                        <AsyncAutocompleteRQ
+                          value={field.value || ""}
+                          onChange={(value) => {
+                            field.onChange(value);
+                          }}
+                          disabled={isReadOnly}
+                          placeholder="Select site"
+                          queryKey={["meter-sites"]}
+                          queryFn={async (search) => {
+                            const res = await siteApiService.getSiteLookup(search);
+                            return res.data.map((s: any) => ({
+                              id: s.id,
+                              label: s.name,
+                            }));
+                          }}
+                          fallbackOption={
+                            meter?.site_id
+                              ? {
+                                  id: meter.site_id,
+                                  label:
+                                    (meter as any).site_name ||
+                                    `Site (${meter.site_id.slice(0, 6)})`,
+                                }
+                              : undefined
+                          }
+                          minSearchLength={1}
+                        />
+                        {errors.site_id && (
+                          <p className="text-sm text-red-500">
+                            {errors.site_id.message}
+                          </p>
+                        )}
+                      </>
                     )}
                   />
-                  {errors.site_id && (
-                    <p className="text-sm text-red-500">
-                      {errors.site_id.message}
-                    </p>
-                  )}
                 </div>
 
                 {/* Associated Space */}
@@ -270,7 +295,7 @@ export function MeterForm({
                         </SelectTrigger>
                         <SelectContent>
                           <SelectItem value="none">No Space</SelectItem>
-                          {spaceList.map((space) => (
+                          {spaces.map((space) => (
                             <SelectItem key={space.id} value={space.id}>
                               {space.name}
                             </SelectItem>
@@ -389,7 +414,7 @@ export function MeterForm({
                         </SelectTrigger>
                         <SelectContent>
                           <SelectItem value="none">No Asset</SelectItem>
-                          {assetList.map((asset) => (
+                          {assets.map((asset) => (
                             <SelectItem key={asset.id} value={asset.id}>
                               {asset.name}
                             </SelectItem>

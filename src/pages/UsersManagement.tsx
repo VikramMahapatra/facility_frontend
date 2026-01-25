@@ -1,5 +1,14 @@
 import { useState, useEffect } from "react";
-import { Plus, Pencil, Trash2, Search, UserCircle, Eye, Users } from "lucide-react";
+import { useNavigate } from "react-router-dom";
+import {
+  Plus,
+  Pencil,
+  Trash2,
+  Search,
+  UserCircle,
+  Eye,
+  Users,
+} from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import {
@@ -18,9 +27,8 @@ import {
   CardDescription,
 } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { LogOut, } from "lucide-react";
+import { LogOut } from "lucide-react";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
-import { UserForm } from "@/components/UserForm";
 import { userManagementApiService } from "@/services/access_control/usermanagementapi";
 import { toast } from "sonner";
 import {
@@ -33,6 +41,7 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
+import { UserForm } from "@/components/UserForm";
 
 // Define interfaces for API data
 
@@ -42,17 +51,11 @@ interface User {
   full_name: string;
   email: string;
   phone?: string;
-  account_type: string;
+  account_types: [];
   status: string;
   created_at: string;
   updated_at: string;
   roles?: Role[];
-  // Additional fields that might come from API
-  site_id?: string;
-  building_block_id?: string;
-  space_id?: string;
-  site_ids?: string[];
-  tenant_type?: string;
 }
 
 interface Role {
@@ -72,17 +75,18 @@ import { useAuth } from "@/context/AuthContext";
 import { PageHeader } from "@/components/PageHeader";
 
 export default function UsersManagement() {
+  const navigate = useNavigate();
   const [users, setUsers] = useState<User[]>([]);
   const [searchQuery, setSearchQuery] = useState("");
-  const [isFormOpen, setIsFormOpen] = useState(false);
-  const [editingUser, setEditingUser] = useState<User | undefined>();
-  const [formMode, setFormMode] = useState<'create' | 'edit' | 'view'>('create');
   const [deleteUserId, setDeleteUserId] = useState<string | null>(null);
   const [page, setPage] = useState(1);
   const { user, handleLogout } = useAuth();
   const [pageSize] = useState(10);
   const [totalItems, setTotalItems] = useState(0);
   const { withLoader } = useLoader();
+  const [isFormOpen, setIsFormOpen] = useState(false);
+  const [editingUser, setEditingUser] = useState<User | undefined>();
+  const [formMode, setFormMode] = useState<'create' | 'edit' | 'view'>('create');
 
   // Load users on component mount and when search changes
   useSkipFirstEffect(() => {
@@ -100,7 +104,6 @@ export default function UsersManagement() {
       setPage(1);
     }
   };
-
 
   const handleCreateUser = async (values: any) => {
     const response = await userManagementApiService.addUser(values);
@@ -146,7 +149,10 @@ export default function UsersManagement() {
         loadUsers();
         setDeleteUserId(null);
       } else {
-        const errorMessage = response?.data?.message || response?.message || "Failed to delete user";
+        const errorMessage =
+          response?.data?.message ||
+          response?.message ||
+          "Failed to delete user";
         toast.error(errorMessage);
       }
     }
@@ -175,9 +181,7 @@ export default function UsersManagement() {
   };
 
   const handleView = (user: User) => {
-    setEditingUser(user);
-    setFormMode('view');
-    setIsFormOpen(true);
+    navigate(`/users-management/${user.id}/view`);
   };
 
   const getInitials = (name: string) => {
@@ -211,9 +215,7 @@ export default function UsersManagement() {
       <div className="space-y-6">
         <div className="flex items-center justify-between">
           <div>
-            <h1 className="text-3xl font-bold text-foreground">
-              All Users
-            </h1>
+            <h1 className="text-3xl font-bold text-foreground">All Users</h1>
             <p className="text-muted-foreground mt-1">
               Create and manage users and assign roles
             </p>
@@ -248,9 +250,7 @@ export default function UsersManagement() {
                   <TableHead>Contact</TableHead>
                   <TableHead>Roles</TableHead>
                   <TableHead>Status</TableHead>
-                  <TableHead className="text-right">
-                    Actions
-                  </TableHead>
+                  <TableHead className="text-right">Actions</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
@@ -274,9 +274,7 @@ export default function UsersManagement() {
                             </AvatarFallback>
                           </Avatar>
                           <div>
-                            <div className="font-medium">
-                              {user.full_name}
-                            </div>
+                            <div className="font-medium">{user.full_name}</div>
                             <div className="text-xs text-muted-foreground">
                               {user.email}
                             </div>
@@ -284,7 +282,11 @@ export default function UsersManagement() {
                         </div>
                       </TableCell>
                       <TableCell>
-                        {getTypeBadge(user.account_type)}
+                        <div className="flex flex-wrap gap-1">
+                          {user.account_types?.map((account_type) => (
+                            getTypeBadge(account_type)
+                          ))}
+                        </div>
                       </TableCell>
                       <TableCell className="text-muted-foreground">
                         {user.phone}
@@ -356,7 +358,6 @@ export default function UsersManagement() {
           />
         </div>
       </div>
-
       <UserForm
         user={editingUser}
         open={isFormOpen}
@@ -380,8 +381,8 @@ export default function UsersManagement() {
           <AlertDialogHeader>
             <AlertDialogTitle>Delete User</AlertDialogTitle>
             <AlertDialogDescription>
-              Are you sure you want to delete this user? This action
-              cannot be undone.
+              Are you sure you want to delete this user? This action cannot be
+              undone.
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>

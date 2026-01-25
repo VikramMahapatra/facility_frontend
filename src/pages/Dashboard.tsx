@@ -59,8 +59,8 @@ const Dashboard = () => {
             Welcome back, {user.name}!
           </h2>
           <p className="text-muted-foreground">
-            {user.organization_name
-              ? `Managing facilities for ${user.organization_name}`
+            {user.default_organization_name
+              ? `Managing facilities for ${user.default_organization_name}`
               : "Your comprehensive property management dashboard"}
           </p>
         </div>
