@@ -10,6 +10,7 @@ import { siteApiService } from "@/services/spaces_sites/sitesapi";
 import { userManagementApiService } from "@/services/access_control/usermanagementapi";
 import { Building2, Home, Truck, UserCog, Users } from "lucide-react";
 import { accountTypes } from "../common/AccountTypes";
+import OwnerSpacesForm from "./OwnerSpacesForm";
 
 type Mode = 'create' | 'edit' | 'view';
 
