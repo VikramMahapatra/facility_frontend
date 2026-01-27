@@ -53,6 +53,13 @@ class LeasesApiService {
     return await apiService.request(`/leases/tenant-lookup?${params.toString()}`);
   }
 
+  async getLeaseById(id: string) {
+    const params = new URLSearchParams();
+    params.append("lease_id", id);
+    return await apiService.request(`/leases/detail?${params.toString()}`, {
+      method: "POST",
+    });
+  }
 
 }
 
