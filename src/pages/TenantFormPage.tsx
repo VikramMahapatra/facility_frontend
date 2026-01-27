@@ -297,12 +297,6 @@ export default function TenantFormPage() {
         `Tenant ${tenantData.name} has been ${formMode === "create" ? "created" : "updated"
         } successfully.`
       );
-    } else if (response && !response.success) {
-      if (response?.message) {
-        toast.error(response.message);
-      } else {
-        toast.error("Failed to save tenant.");
-      }
     }
     setIsSubmitting(false);
     return response;
