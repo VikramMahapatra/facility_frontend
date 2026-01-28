@@ -86,6 +86,10 @@ class SpacesApiService {
             }),
         });
     }
+
+    async getOwnershipHistory(spaceId: string) {
+        return await apiService.request(`/spaces/ownership-history/${spaceId}`);
+    }
 }
 
 export const spacesApiService = new SpacesApiService();//

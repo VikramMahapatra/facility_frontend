@@ -84,6 +84,13 @@ export const navigationItems = [
         resource: "space_groups",
       },
       { title: "Spaces", url: "/spaces", icon: Home, resource: "spaces" },
+
+      {
+        title: "Space Ownership Approvals",
+        url: "/space-ownership-approvals",
+        icon: CheckCircle2,
+        resource: "space_ownership_approvals",
+      },
       {
         title: "Maintenance (CAM)",
         url: "/space-maintenance",
@@ -325,12 +332,7 @@ export const navigationItems = [
         icon: UserCog,
         resource: "role_policies",
       },
-      {
-        title: "Space Ownership Approvals",
-        url: "/space-ownership-approvals",
-        icon: CheckCircle2,
-        resource: "space_ownership_approvals",
-      },
+
       {
         title: "Users Management",
         url: "/users-management",

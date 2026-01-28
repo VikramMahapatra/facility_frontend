@@ -7,6 +7,7 @@ import { Badge } from "@/components/ui/badge";
 import { Separator } from "@/components/ui/separator";
 import { spacesApiService } from "@/services/spaces_sites/spacesapi";
 import { SpaceOwnershipSection } from "@/components/SpaceOwnershipSection";
+import { OwnershipHistoryDialog } from "@/components/OwnershipHistoryDialog";
 import { useLoader } from "@/context/LoaderContext";
 import { getKindColor, getKindIcon, getStatusColor } from "@/interfaces/spaces_interfaces";
 import ContentContainer from "@/components/ContentContainer";
@@ -21,6 +22,7 @@ import {
     Receipt,
     IndianRupee,
     Clock,
+    History,
 } from "lucide-react";
 import { SpaceMaintenanceForm } from "@/components/SpaceMaintenanceForm";
 import { toast } from "sonner";
@@ -42,6 +44,7 @@ export default function SpaceDetailPage() {
     const navigate = useNavigate();
     const [isMaintenanceOpen, setIsMaintenanceOpen] = useState(false);
     const [maintenanceMode, setMaintenanceMode] = useState<"create" | "edit" | "view">("create");
+    const [isHistoryOpen, setIsHistoryOpen] = useState(false);
 
     useEffect(() => {
         if (!id) return;
@@ -200,9 +203,20 @@ export default function SpaceDetailPage() {
 
                             <Card>
                                 <CardHeader>
-                                    <CardTitle><h1 className="flex items-center gap-2">
-                                        <FileText className="h-5 w-5" /> Ownership
-                                    </h1></CardTitle>
+                                    <div className="flex items-center justify-between">
+                                        <CardTitle><h1 className="flex items-center gap-2">
+                                            <FileText className="h-5 w-5" /> Ownership
+                                        </h1></CardTitle>
+                                        <Button
+                                            variant="ghost"
+                                            size="sm"
+                                            onClick={() => setIsHistoryOpen(true)}
+                                            className="flex items-center gap-2 text-muted-foreground hover:text-foreground"
+                                        >
+                                            <History className="h-4 w-4" />
+                                            View History
+                                        </Button>
+                                    </div>
                                 </CardHeader>
                                 <CardContent>
                                     <SpaceOwnershipSection
@@ -228,6 +242,11 @@ export default function SpaceDetailPage() {
                                     />
                                 </CardContent>
                             </Card>
+                            <OwnershipHistoryDialog
+                                open={isHistoryOpen}
+                                onClose={() => setIsHistoryOpen(false)}
+                                spaceId={id!}
+                            />
                         </TabsContent>
 
                         <TabsContent value="maintenance" className="space-y-4">
