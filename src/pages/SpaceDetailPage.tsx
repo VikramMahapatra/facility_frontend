@@ -54,7 +54,7 @@ export default function SpaceDetailPage() {
         });
         if (response.success) {
             setSpace(response.data);
-    }
+        }
     }
 
     const loadMaintenances = async (spaceId: string) => {
@@ -178,40 +178,40 @@ export default function SpaceDetailPage() {
                         </TabsList>
 
                         <TabsContent value="info" className="space-y-6">
-                    <Card>
-                        <CardHeader>
-                            <CardTitle>
-                                <h1 className="flex items-center gap-2">
-                                    <Home className="h-5 w-5" /> Space Information
-                                </h1>
-                            </CardTitle>
-                        </CardHeader>
-                        <CardContent className="grid grid-cols-2 gap-4 text-sm">
-                            <Info label="Site" value={space.site_name} />
-                            <Info label="Building" value={space.building_block} />
-                            <Info label="Floor" value={space.floor} />
-                            <Info label="Area (sqft)" value={space.area_sqft} />
-                            <Info label="Beds" value={space.beds} />
-                            <Info label="Baths" value={space.baths} />
-                            <Info label="View" value={space.attributes?.view} />
-                            <Info label="Furnished" value={space.attributes?.furnished} />
-                        </CardContent>
-                    </Card>
+                            <Card>
+                                <CardHeader>
+                                    <CardTitle>
+                                        <h1 className="flex items-center gap-2">
+                                            <Home className="h-5 w-5" /> Space Information
+                                        </h1>
+                                    </CardTitle>
+                                </CardHeader>
+                                <CardContent className="grid grid-cols-2 gap-4 text-sm">
+                                    <Info label="Site" value={space.site_name} />
+                                    <Info label="Building" value={space.building_block} />
+                                    <Info label="Floor" value={space.floor} />
+                                    <Info label="Area (sqft)" value={space.area_sqft} />
+                                    <Info label="Beds" value={space.beds} />
+                                    <Info label="Baths" value={space.baths} />
+                                    <Info label="View" value={space.attributes?.view} />
+                                    <Info label="Furnished" value={space.attributes?.furnished} />
+                                </CardContent>
+                            </Card>
 
-                    <Card>
-                        <CardHeader>
-                            <CardTitle><h1 className="flex items-center gap-2">
-                                <FileText className="h-5 w-5" /> Ownership
-                            </h1></CardTitle>
-                        </CardHeader>
-                        <CardContent>
+                            <Card>
+                                <CardHeader>
+                                    <CardTitle><h1 className="flex items-center gap-2">
+                                        <FileText className="h-5 w-5" /> Ownership
+                                    </h1></CardTitle>
+                                </CardHeader>
+                                <CardContent>
                                     <SpaceOwnershipSection
                                         spaceId={id!}
                                         actionSlot={
                                             <Button
                                                 onClick={() => {
                                                     setMaintenanceRecord({
-                                                       
+
                                                         site_name: space.site_name,
                                                         space_name: space.name,
                                                         building_name: space.building_block,
@@ -261,12 +261,12 @@ export default function SpaceDetailPage() {
                                                     <Card key={item.id} className="p-4">
                                                         <div className="flex items-center justify-between">
                                                             <div className="font-medium">
-                                                                {item.maintenance_no || "-"}
+                                                                #{item.maintenance_no || "-"}
                                                             </div>
                                                             {getStatusBadge(item.status)}
                                                         </div>
                                                         <div className="text-sm text-muted-foreground mt-1">
-                                                           {item.building_name || "-"} • {item.site_name || "-"}
+                                                            {item.building_name || "-"} • {item.site_name || "-"}
                                                         </div>
                                                         <div className="text-xs text-muted-foreground">
                                                             Owner: {item.owner_name || "-"}
@@ -308,8 +308,8 @@ export default function SpaceDetailPage() {
                                             </div>
                                         )}
                                     </div>
-                        </CardContent>
-                    </Card>
+                                </CardContent>
+                            </Card>
                             <Pagination
                                 page={maintenancePage}
                                 pageSize={maintenancePageSize}
@@ -326,9 +326,27 @@ export default function SpaceDetailPage() {
                                 toast.error("Space and start date are required");
                                 return { success: false };
                             }
-                            toast.success("Space maintenance created (mock)");
-                            setIsMaintenanceOpen(false);
-                            return { success: true };
+
+                            const payloadToSave = {
+                                ...payload,
+                                period_start: payload.start_date,
+                                period_end: payload.end_date,
+                            };
+                            delete payloadToSave.start_date;
+                            delete payloadToSave.end_date;
+                            const response = await ownerMaintenancesApiService.createOwnerMaintenance(payloadToSave);
+
+                            if (response?.success) {
+                                setIsMaintenanceOpen(false);
+                                toast.success(
+                                    `Space maintenance has been created successfully.`,
+                                );
+                                return { success: true };
+                            }
+                            else {
+                                return { success: false };
+                            }
+
                         }}
                         mode={maintenanceMode}
                         record={maintenanceRecord as any}
