@@ -76,6 +76,7 @@ import RegistrationStatus from "./pages/RegistrationStatus";
 import MainLayout from "./layouts/MainLayout";
 import "./App.css";
 import SpaceDetailPage from "./pages/SpaceDetailPage";
+import SpaceOwnershipApproval from "./pages/SpaceOwnershipApproval";
 
 const queryClient = new QueryClient();
 
@@ -162,6 +163,7 @@ const App = () => {
                       <Route path="/ticket-work-orders" element={<TicketWorkOrders />} />
                       <Route path="/ticket-workload" element={<TicketWorkload />} />
                       <Route path="/approval-rules" element={<ApprovalRules />} />
+                      <Route path="/space-ownership-approvals" element={<SpaceOwnershipApproval />} />
                     </Route>
                   </Route>
                   {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
