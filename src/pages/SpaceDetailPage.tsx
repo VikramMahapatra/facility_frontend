@@ -7,7 +7,9 @@ import { Badge } from "@/components/ui/badge";
 import { Separator } from "@/components/ui/separator";
 import { spacesApiService } from "@/services/spaces_sites/spacesapi";
 import { SpaceOwnershipSection } from "@/components/SpaceOwnershipSection";
+import { SpaceTenantSection } from "@/components/SpaceTenantSection";
 import { OwnershipHistoryDialog } from "@/components/OwnershipHistoryDialog";
+import { TenantHistoryDialog } from "@/components/TenantHistoryDialog";
 import { useLoader } from "@/context/LoaderContext";
 import { getKindColor, getKindIcon, getStatusColor } from "@/interfaces/spaces_interfaces";
 import ContentContainer from "@/components/ContentContainer";
@@ -23,6 +25,7 @@ import {
     IndianRupee,
     Clock,
     History,
+    Users,
 } from "lucide-react";
 import { SpaceMaintenanceForm } from "@/components/SpaceMaintenanceForm";
 import { toast } from "sonner";
@@ -45,6 +48,7 @@ export default function SpaceDetailPage() {
     const [isMaintenanceOpen, setIsMaintenanceOpen] = useState(false);
     const [maintenanceMode, setMaintenanceMode] = useState<"create" | "edit" | "view">("create");
     const [isHistoryOpen, setIsHistoryOpen] = useState(false);
+    const [isTenantHistoryOpen, setIsTenantHistoryOpen] = useState(false);
 
     useEffect(() => {
         if (!id) return;
@@ -201,50 +205,98 @@ export default function SpaceDetailPage() {
                                 </CardContent>
                             </Card>
 
-                            <Card>
-                                <CardHeader>
-                                    <div className="flex items-center justify-between">
-                                        <CardTitle><h1 className="flex items-center gap-2">
-                                            <FileText className="h-5 w-5" /> Ownership
-                                        </h1></CardTitle>
-                                        <Button
-                                            variant="ghost"
-                                            size="sm"
-                                            onClick={() => setIsHistoryOpen(true)}
-                                            className="flex items-center gap-2 text-muted-foreground hover:text-foreground"
-                                        >
-                                            <History className="h-4 w-4" />
-                                            View History
-                                        </Button>
-                                    </div>
-                                </CardHeader>
-                                <CardContent>
-                                    <SpaceOwnershipSection
-                                        spaceId={id!}
-                                        actionSlot={
+                            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                <Card>
+                                    <CardHeader>
+                                        <div className="flex items-center justify-between">
+                                            <CardTitle><h1 className="flex items-center gap-2">
+                                                <FileText className="h-5 w-5" /> Ownership
+                                            </h1></CardTitle>
                                             <Button
-                                                onClick={() => {
-                                                    setMaintenanceRecord({
-
-                                                        site_name: space.site_name,
-                                                        space_name: space.name,
-                                                        building_name: space.building_block,
-                                                    });
-                                                    setMaintenanceMode("create");
-                                                    setIsMaintenanceOpen(true);
-                                                }}
-                                                className="gap-2"
+                                                variant="ghost"
+                                                size="sm"
+                                                onClick={() => setIsHistoryOpen(true)}
+                                                className="flex items-center gap-2 text-muted-foreground hover:text-foreground"
                                             >
-                                                <Wrench className="h-4 w-4" />
-                                                Create Maintenance
+                                                <History className="h-4 w-4" />
+                                                View History
                                             </Button>
-                                        }
-                                    />
-                                </CardContent>
-                            </Card>
+                                        </div>
+                                    </CardHeader>
+                                    <CardContent>
+                                        <SpaceOwnershipSection
+                                            spaceId={id!}
+                                            actionSlot={
+                                                <Button
+                                                    onClick={() => {
+                                                        setMaintenanceRecord({
+
+                                                            site_name: space.site_name,
+                                                            space_name: space.name,
+                                                            building_name: space.building_block,
+                                                        });
+                                                        setMaintenanceMode("create");
+                                                        setIsMaintenanceOpen(true);
+                                                    }}
+                                                    className="gap-2"
+                                                >
+                                                    <Wrench className="h-4 w-4" />
+                                                    Create Maintenance
+                                                </Button>
+                                            }
+                                        />
+                                    </CardContent>
+                                </Card>
+
+                                <Card>
+                                    <CardHeader>
+                                        <div className="flex items-center justify-between">
+                                            <CardTitle><h1 className="flex items-center gap-2">
+                                                <Users className="h-5 w-5" /> Tenant
+                                            </h1></CardTitle>
+                                            <Button
+                                                variant="ghost"
+                                                size="sm"
+                                                onClick={() => setIsTenantHistoryOpen(true)}
+                                                className="flex items-center gap-2 text-muted-foreground hover:text-foreground"
+                                            >
+                                                <History className="h-4 w-4" />
+                                                View History
+                                            </Button>
+                                        </div>
+                                    </CardHeader>
+                                    <CardContent>
+                                        <SpaceTenantSection
+                                            spaceId={id!}
+                                            actionSlot={
+                                                <Button
+                                                    onClick={() => {
+                                                        setMaintenanceRecord({
+                                                            site_name: space.site_name,
+                                                            space_name: space.name,
+                                                            building_name: space.building_block,
+                                                        });
+                                                        setMaintenanceMode("create");
+                                                        setIsMaintenanceOpen(true);
+                                                    }}
+                                                    className="gap-2"
+                                                >
+                                                    <Wrench className="h-4 w-4" />
+                                                    Create Maintenance
+                                                </Button>
+                                            }
+                                        />
+                                    </CardContent>
+                                </Card>
+                            </div>
                             <OwnershipHistoryDialog
                                 open={isHistoryOpen}
                                 onClose={() => setIsHistoryOpen(false)}
+                                spaceId={id!}
+                            />
+                            <TenantHistoryDialog
+                                open={isTenantHistoryOpen}
+                                onClose={() => setIsTenantHistoryOpen(false)}
                                 spaceId={id!}
                             />
                         </TabsContent>

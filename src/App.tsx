@@ -77,6 +77,7 @@ import MainLayout from "./layouts/MainLayout";
 import "./App.css";
 import SpaceDetailPage from "./pages/SpaceDetailPage";
 import SpaceOwnershipApproval from "./pages/SpaceOwnershipApproval";
+import SpaceMaintenance from "./pages/SpaceMaintenance";
 
 const queryClient = new QueryClient();
 
@@ -113,6 +114,7 @@ const App = () => {
                       <Route path="/spaces/:kind" element={<SpacesByKind />} />
                       <Route path="/space-groups" element={<SpaceGroups />} />
                       <Route path="/space-assignments" element={<SpaceAssignments />} />
+                      <Route path="/space-maintenance" element={<SpaceMaintenance />} />
                       <Route path="/leases" element={<Leases />} />
                       <Route path="/leases/:id" element={<LeaseDetailPage />} />
                       <Route path="/tenants" element={<Tenants />} />
