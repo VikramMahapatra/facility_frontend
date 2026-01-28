@@ -45,7 +45,9 @@ import {
 } from "lucide-react";
 import { tenantsApiService } from "@/services/leasing_tenants/tenantsapi";
 import { siteApiService } from "@/services/spaces_sites/sitesapi";
-import { Tenant, TenantOverview } from "@/interfaces/leasing_tenants_interface";
+import { leasesApiService } from "@/services/leasing_tenants/leasesapi";
+import { Tenant, TenantOverview, Lease } from "@/interfaces/leasing_tenants_interface";
+import { LeaseForm } from "@/components/LeasesForm";
 import { useSkipFirstEffect } from "@/hooks/use-skipfirst-effect";
 import { toast } from "sonner";
 import { Pagination } from "@/components/Pagination";
@@ -77,6 +79,9 @@ const Tenants = () => {
   const [page, setPage] = useState(1); // current page
   const [pageSize] = useState(6); // items per page
   const [totalItems, setTotalItems] = useState(0);
+  const [isLeaseFormOpen, setIsLeaseFormOpen] = useState(false);
+  const [selectedTenantId, setSelectedTenantId] = useState<string | null>(null);
+  const [prefilledLeaseData, setPrefilledLeaseData] = useState<Partial<Lease> | null>(null);
   const { canRead, canWrite, canDelete } = useAuth();
   const { withLoader } = useLoader();
   const { user, handleLogout } = useAuth();
@@ -572,8 +577,45 @@ const Tenants = () => {
                             )}
                           </div>
                         ) : (
-                          <div className="text-sm text-muted-foreground">
-                            No active leases
+                          <div className="space-y-2">
+                            <div className="text-sm text-muted-foreground">
+                              No active leases
+                            </div>
+                            {canWrite(resource) && (
+                              <Button
+                                size="sm"
+                                variant="outline"
+                                onClick={async () => {
+                                  setSelectedTenantId(tenant.id!);
+                                  // Fetch tenant lease details
+                                  const response = await withLoader(async () => {
+                                    return await leasesApiService.getTenantLeaseDetail(tenant.id!);
+                                  });
+                                  if (response?.success && response.data?.tenant_data?.length > 0) {
+                                    const tenantData = response.data.tenant_data[0];
+                                    setPrefilledLeaseData({
+                                      tenant_id: tenantData.tenant_id,
+                                      site_id: tenantData.site_id,
+                                      site_name: tenantData.site_name,
+                                      building_id: tenantData.building_id,
+                                      building_name: tenantData.building_name,
+                                      space_id: tenantData.space_id,
+                                      space_name: tenantData.space_name,
+                                    } as Lease);
+                                  } else {
+                                    // If no data, just set tenant_id
+                                    setPrefilledLeaseData({
+                                      tenant_id: tenant.id!,
+                                    } as Lease);
+                                  }
+                                  setIsLeaseFormOpen(true);
+                                }}
+                                className="flex items-center gap-1"
+                              >
+                                <Plus className="h-3 w-3" />
+                                Add Lease
+                              </Button>
+                            )}
                           </div>
                         )}
                       </div>
@@ -655,6 +697,37 @@ const Tenants = () => {
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
+      <LeaseForm
+        lease={prefilledLeaseData ? (prefilledLeaseData as Lease) : undefined}
+        isOpen={isLeaseFormOpen}
+        disableLocationFields={true}
+        onClose={() => {
+          setIsLeaseFormOpen(false);
+          setSelectedTenantId(null);
+          setPrefilledLeaseData(null);
+        }}
+        onSave={async (leaseData: Partial<Lease>) => {
+          const response = await withLoader(async () => {
+            return await leasesApiService.addLease(leaseData);
+          });
+          if (response?.success) {
+            setIsLeaseFormOpen(false);
+            setSelectedTenantId(null);
+            toast.success(`Lease has been created successfully.`);
+            // Reload tenants data to show the new lease
+            await loadTenants();
+            await loadTenantOverview();
+          } else if (response && !response.success) {
+            if (response?.message) {
+              toast.error(response.message);
+            } else {
+              toast.error("Failed to create lease.");
+            }
+          }
+          return response;
+        }}
+        mode="create"
+      />
     </div>
   );
 };

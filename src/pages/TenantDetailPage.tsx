@@ -16,6 +16,8 @@ import {
   CreditCard,
   Calendar,
   Hash,
+  Plus,
+  Pencil
 } from "lucide-react";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import {
@@ -24,11 +26,13 @@ import {
   SpaceTenants,
 } from "@/interfaces/leasing_tenants_interface";
 import { tenantsApiService } from "@/services/leasing_tenants/tenantsapi";
+import { leasesApiService } from "@/services/leasing_tenants/leasesapi";
 import { toast } from "sonner";
 import ContentContainer from "@/components/ContentContainer";
 import { useLoader } from "@/context/LoaderContext";
 import LoaderOverlay from "@/components/LoaderOverlay";
 import { Pagination } from "@/components/Pagination";
+import { LeaseForm } from "@/components/LeasesForm";
 
 export default function TenantDetailPage() {
   const { id } = useParams<{ id: string }>();
@@ -40,6 +44,9 @@ export default function TenantDetailPage() {
   const [paymentPage, setPaymentPage] = useState(1);
   const [paymentPageSize] = useState(5);
   const [paymentTotalItems, setPaymentTotalItems] = useState(0);
+  const [isLeaseFormOpen, setIsLeaseFormOpen] = useState(false);
+  const [selectedSpaceId, setSelectedSpaceId] = useState<string | null>(null);
+  const [prefilledLeaseData, setPrefilledLeaseData] = useState<Partial<Lease> | null>(null);
 
   useEffect(() => {
     if (!id) return;
@@ -267,15 +274,17 @@ export default function TenantDetailPage() {
                     {tenant.kind}
                   </Badge>
                 </p>
+                
               </div>
             </div>
             <div className="flex gap-2">
               <Button
                 variant="outline"
                 onClick={() => navigate(`/tenants/${id}/edit`)}
-                className="bg-primary text-primary-foreground hover:bg-primary/90"
+                size="icon"
+                className="text-primary hover:text-primary-hover"
               >
-                Edit
+                <Pencil className="h-4 w-4" />
               </Button>
             </div>
           </div>
@@ -520,11 +529,11 @@ export default function TenantDetailPage() {
                             </div>
                           </CardHeader>
                           <CardContent>
+                            <div className="text-sm font-medium mb-3">
+                              Leases
+                            </div>
                             {leases && leases.length > 0 ? (
                               <div className="space-y-2">
-                                <div className="text-sm font-medium">
-                                  Leases
-                                </div>
                                 {leases.map((lease) => (
                                   <div
                                     key={lease.id}
@@ -561,8 +570,47 @@ export default function TenantDetailPage() {
                                 ))}
                               </div>
                             ) : (
-                              <div className="text-sm text-muted-foreground">
-                                No leases for this space
+                              <div className="space-y-2">
+                                <div className="text-sm text-muted-foreground">
+                                  No leases for this space
+                                </div>
+                                <Button
+                                  size="sm"
+                                  variant="outline"
+                                  onClick={async () => {
+                                    setSelectedSpaceId(space.space_id);
+                                    // Fetch tenant lease details
+                                    if (id) {
+                                      const response = await withLoader(async () => {
+                                        return await leasesApiService.getTenantLeaseDetail(id);
+                                      });
+                                      if (response?.success && response.data?.tenant_data?.length > 0) {
+                                        const tenantData = response.data.tenant_data[0];
+                                        setPrefilledLeaseData({
+                                          tenant_id: id,
+                                          site_id: tenantData.site_id,
+                                          site_name: tenantData.site_name,
+                                          building_id: tenantData.building_id,
+                                          building_name: tenantData.building_name,
+                                          space_id: space.space_id, // Use the space from the card
+                                          space_name: space.space_name,
+                                        } as Lease);
+                                      } else {
+                                        // If no data, set tenant_id and space_id
+                                        setPrefilledLeaseData({
+                                          tenant_id: id,
+                                          space_id: space.space_id,
+                                          space_name: space.space_name,
+                                        } as Lease);
+                                      }
+                                    }
+                                    setIsLeaseFormOpen(true);
+                                  }}
+                                  className="flex items-center gap-2"
+                                >
+                                  <Plus className="h-4 w-4" />
+                                  Add Lease
+                                </Button>
                               </div>
                             )}
                           </CardContent>
@@ -744,6 +792,44 @@ export default function TenantDetailPage() {
           </Tabs>
         </div>
       )}
+      <LeaseForm
+        lease={prefilledLeaseData ? (prefilledLeaseData as Lease) : undefined}
+        isOpen={isLeaseFormOpen}
+        disableLocationFields={true}
+        onClose={() => {
+          setIsLeaseFormOpen(false);
+          setSelectedSpaceId(null);
+          setPrefilledLeaseData(null);
+        }}
+        onSave={async (leaseData: Partial<Lease>) => {
+          const response = await withLoader(async () => {
+            return await leasesApiService.addLease(leaseData);
+          });
+          if (response?.success) {
+            setIsLeaseFormOpen(false);
+            setSelectedSpaceId(null);
+            setPrefilledLeaseData(null);
+            toast.success(`Lease has been created successfully.`);
+            // Reload tenant data to show the new lease
+            if (id) {
+              const tenantResponse = await withLoader(async () => {
+                return await tenantsApiService.getTenantById(id);
+              });
+              if (tenantResponse?.success) {
+                setTenant(tenantResponse.data);
+              }
+            }
+          } else if (response && !response.success) {
+            if (response?.message) {
+              toast.error(response.message);
+            } else {
+              toast.error("Failed to create lease.");
+            }
+          }
+          return response;
+        }}
+        mode="create"
+      />
     </ContentContainer>
   );
 }

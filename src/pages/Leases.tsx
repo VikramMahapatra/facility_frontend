@@ -1,5 +1,6 @@
 // app/(your-path)/Leases.tsx
 import { useState, useEffect } from "react";
+import { useNavigate } from "react-router-dom";
 import { Home, Search, Plus, Eye, Edit, Trash2, MapPin } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -45,6 +46,7 @@ import { PageHeader } from "@/components/PageHeader";
 import { useSkipFirstEffect } from "@/hooks/use-skipfirst-effect";
 
 export default function Leases() {
+  const navigate = useNavigate();
   const [searchTerm, setSearchTerm] = useState("");
   const [selectedStatus, setSelectedStatus] = useState<string>("all");
   const [selectedSite, setSelectedSite] = useState<string>("all");
@@ -136,9 +138,7 @@ export default function Leases() {
   };
 
   const handleView = (lease: Lease) => {
-    setSelectedLease(lease);
-    setFormMode("view");
-    setIsFormOpen(true);
+    navigate(`/leases/${lease.id}`);
   };
 
   const handleEdit = (lease: Lease) => {
