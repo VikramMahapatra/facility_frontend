@@ -70,6 +70,7 @@ export interface Space {
   status: "available" | "occupied" | "out_of_service";
   created_at: string;
   updated_at: string;
+  owner_name: string;
 }
 
 interface SpaceOverview {
