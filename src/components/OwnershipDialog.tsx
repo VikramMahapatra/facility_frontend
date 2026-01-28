@@ -16,19 +16,27 @@ export function OwnershipDialog({
     onSuccess,
 }: any) {
     const [ownerId, setOwnerId] = useState<string>("");
+    const [isSubmitting, setIsSubmitting] = useState(false);
 
     const submit = async () => {
-        if (!ownerId) return;
+        if (!ownerId || isSubmitting) return;
 
-        const res = await spacesApiService.assignOwner({
-            space_id: spaceId,
-            owner_user_id: ownerId,
-            ownership_percentage: 100,
-        });
+        setIsSubmitting(true);
+        try {
+            const res = await spacesApiService.assignOwner({
+                space_id: spaceId,
+                owner_user_id: ownerId,
+                ownership_percentage: 100,
+            });
 
-        if (res.success) {
-            toast.success("Ownership updated");
-            onSuccess();
+            if (res.success) {
+                toast.success("Ownership updated");
+                onSuccess();
+            }
+        } catch (error) {
+            toast.error("Failed to assign ownership");
+        } finally {
+            setIsSubmitting(false);
         }
     };
 
@@ -51,8 +59,12 @@ export function OwnershipDialog({
                 />
 
                 <div className="flex justify-end gap-2">
-                    <Button variant="outline" onClick={onClose}>Cancel</Button>
-                    <Button onClick={submit}>Confirm</Button>
+                    <Button variant="outline" onClick={onClose} disabled={isSubmitting}>
+                        Cancel
+                    </Button>
+                    <Button onClick={submit} disabled={isSubmitting}>
+                        {isSubmitting ? "Assigning..." : "Confirm"}
+                    </Button>
                 </div>
             </DialogContent>
         </Dialog>

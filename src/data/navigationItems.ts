@@ -29,6 +29,7 @@ import {
   ShieldCheck,
   FolderTree,
   Ticket,
+  CheckCircle2,
 } from "lucide-react";
 
 export const navigationItems = [
@@ -83,6 +84,13 @@ export const navigationItems = [
         resource: "space_groups",
       },
       { title: "Spaces", url: "/spaces", icon: Home, resource: "spaces" },
+
+      {
+        title: "Space Ownership Approvals",
+        url: "/space-ownership-approvals",
+        icon: CheckCircle2,
+        resource: "space_ownership_approvals",
+      },
       {
         title: "Maintenance (CAM)",
         url: "/space-maintenance",
@@ -324,6 +332,7 @@ export const navigationItems = [
         icon: UserCog,
         resource: "role_policies",
       },
+
       {
         title: "Users Management",
         url: "/users-management",

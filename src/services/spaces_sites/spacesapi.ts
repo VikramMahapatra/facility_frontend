@@ -71,6 +71,25 @@ class SpacesApiService {
             body: JSON.stringify(payload),
         });
     }
+
+    async getPendingOwnerRequests(params?: URLSearchParams) {
+        const url = params ? `/spaces/pending-owner-request?${params.toString()}` : '/spaces/pending-owner-request';
+        return await apiService.request(url);
+    }
+
+    async updateOwnerApproval(requestId: string, action: string) {
+        return await apiService.request('/spaces/update-owner-approval', {
+            method: 'POST',
+            body: JSON.stringify({
+                action: action,
+                request_id: requestId,
+            }),
+        });
+    }
+
+    async getOwnershipHistory(spaceId: string) {
+        return await apiService.request(`/spaces/ownership-history/${spaceId}`);
+    }
 }
 
 export const spacesApiService = new SpacesApiService();//
