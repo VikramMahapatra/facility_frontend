@@ -21,6 +21,7 @@ import SpacesByKind from "./pages/SpacesByKind";
 import SpaceGroups from "./pages/SpaceGroups";
 import SpaceAssignments from "./pages/SpaceAssignments";
 import Leases from "./pages/Leases";
+import LeaseDetailPage from "./pages/LeaseDetailPage";
 import Tenants from "./pages/Tenants";
 import TenantFormPage from "./pages/TenantFormPage";
 import TenantDetailPage from "./pages/TenantDetailPage";
@@ -112,6 +113,7 @@ const App = () => {
                       <Route path="/space-groups" element={<SpaceGroups />} />
                       <Route path="/space-assignments" element={<SpaceAssignments />} />
                       <Route path="/leases" element={<Leases />} />
+                      <Route path="/leases/:id" element={<LeaseDetailPage />} />
                       <Route path="/tenants" element={<Tenants />} />
                       <Route path="/tenants/create" element={<TenantFormPage />} />
                       <Route path="/tenants/:id/edit" element={<TenantFormPage />} />

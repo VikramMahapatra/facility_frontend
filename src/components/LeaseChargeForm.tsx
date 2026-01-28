@@ -46,6 +46,7 @@ interface LeaseChargeFormProps {
   onClose: () => void;
   onSave: (leasecharge: any) => Promise<any>;
   mode: "create" | "edit" | "view";
+  disableLeaseField?: boolean; // When true, disables the lease dropdown
 }
 
 // ---- Empty (default) form data, styled like SpaceForm's emptyFormData) ----
@@ -66,6 +67,7 @@ export function LeaseChargeForm({
   onClose,
   onSave,
   mode,
+  disableLeaseField = false,
 }: LeaseChargeFormProps) {
   const getMonthBounds = () => {
     const now = new Date();
@@ -116,7 +118,8 @@ export function LeaseChargeForm({
 
   const isReadOnly = mode === "view";
   const isEdit = mode === "edit";
-  const isLeaseAndChargeLocked = isReadOnly || isEdit;
+  const isLeaseLocked = isReadOnly || isEdit || disableLeaseField;
+  const isChargeCodeLocked = isReadOnly || isEdit;
 
   // Trigger validation when either date changes
   useEffect(() => {
@@ -175,8 +178,7 @@ export function LeaseChargeForm({
   const loadAll = async () => {
     setFormLoading(true);
 
-    await Promise.all([loadLeaseLookup(), loadLeaseChargeLookup(), loadTaxCodeLookup(), loadPayerTypeLookup()]);
-
+  
     if (charge && mode !== "create") {
       reset({
         lease_id: (charge.lease_id as any) || "",
@@ -191,7 +193,7 @@ export function LeaseChargeForm({
     } else {
       const {startDate, endDate} = getMonthBounds();
       reset({
-        lease_id: "",
+        lease_id: (charge?.lease_id as any) || "", 
         charge_code_id: "",
         period_start: startDate,
         period_end: endDate,
@@ -202,9 +204,10 @@ export function LeaseChargeForm({
       });
     }
 
-    console.log("Form reset with data:", charge);
-
     setFormLoading(false);
+
+
+    await Promise.all([loadLeaseLookup(), loadLeaseChargeLookup(), loadTaxCodeLookup(), loadPayerTypeLookup()]);
   };
 
   const loadLeaseLookup = async () => {
@@ -259,10 +262,10 @@ export function LeaseChargeForm({
                   <Select
                     value={field.value}
                     onValueChange={field.onChange}
-                    disabled={isLeaseAndChargeLocked}
+                    disabled={isLeaseLocked}
                   >
                     <SelectTrigger
-                      disabled={isLeaseAndChargeLocked}
+                      disabled={isLeaseLocked}
                       className={errors.lease_id ? "border-red-500" : ""}
                     >
                       <SelectValue placeholder="Select lease" />
@@ -294,10 +297,10 @@ export function LeaseChargeForm({
                   <Select
                     value={field.value}
                     onValueChange={field.onChange}
-                    disabled={isLeaseAndChargeLocked}
+                    disabled={isChargeCodeLocked}
                   >
                     <SelectTrigger
-                      disabled={isLeaseAndChargeLocked}
+                      disabled={isChargeCodeLocked}
                       className={errors.charge_code_id ? "border-red-500" : ""}
                     >
                       <SelectValue placeholder="Select type" />
@@ -452,7 +455,7 @@ export function LeaseChargeForm({
                 {mode === "view" ? "Close" : "Cancel"}
               </Button>
               {mode !== "view" && (
-                <Button type="submit" disabled={isSubmitting}>
+                <Button type="submit" disabled={isSubmitting || formLoading}>
                   {isSubmitting
                     ? "Saving..."
                     : mode === "create"
