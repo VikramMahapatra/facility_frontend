@@ -338,16 +338,34 @@ export default function InvoiceFormPage() {
     return response;
   };
 
+  const normalizeBillableTypeForSubmit = (typeId?: string) => {
+    if (!typeId) return "";
+    
+    // Find the invoice type from the list
+    const invoiceType = invoiceTypeList.find((item) => item.id === typeId);
+    if (!invoiceType) return typeId;
+    
+    // Map the name to backend-expected format
+    const typeName = invoiceType.name.toLowerCase();
+    if (typeName.includes("lease") || typeName.includes("lease charge")) {
+      return "lease charge";
+    } else if (typeName.includes("owner maintenance") || typeName.includes("owner_maintenance")) {
+      return "owner maintenance";
+    } else if (typeName.includes("work order") || typeName.includes("work_order")) {
+      return "work order";
+    }
+    
+    // Fallback: use the name as-is, converting underscores to spaces
+    return typeName.replace(/_/g, " ");
+  };
+
   const onSubmitForm = async (data: InvoiceFormValues) => {
     const payload: Partial<Invoice> = {
       ...invoice,
       ...data,
       id: invoice?.id || id, // Ensure ID is included for updates
       invoice_no: invoice?.invoice_no, // Preserve invoice number
-      billable_item_type:
-        data.billable_item_type === "lease_charge"
-          ? "lease charge"
-          : "work order",
+      billable_item_type: normalizeBillableTypeForSubmit(data.billable_item_type),
       billable_item_id: data.billable_item_id,
       totals: {
         sub: data.totals?.sub ?? 0,

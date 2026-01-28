@@ -14,6 +14,16 @@ import {
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { ArrowLeft, Trash2, Plus } from "lucide-react";
 import { toast } from "sonner";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
 import { Controller, useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { tenantSchema, TenantFormValues } from "@/schemas/tenant.schema";
@@ -21,8 +31,10 @@ import { siteApiService } from "@/services/spaces_sites/sitesapi";
 import { spacesApiService } from "@/services/spaces_sites/spacesapi";
 import { buildingApiService } from "@/services/spaces_sites/buildingsapi";
 import { tenantsApiService } from "@/services/leasing_tenants/tenantsapi";
-import { Tenant } from "@/interfaces/leasing_tenants_interface";
+import { Tenant, Lease } from "@/interfaces/leasing_tenants_interface";
 import PhoneInput from "react-phone-input-2";
+import { LeaseForm } from "@/components/LeasesForm";
+import { leasesApiService } from "@/services/leasing_tenants/leasesapi";
 import ContentContainer from "@/components/ContentContainer";
 import { useLoader } from "@/context/LoaderContext";
 import LoaderOverlay from "@/components/LoaderOverlay";
@@ -67,6 +79,10 @@ export default function TenantFormPage() {
   const id = params?.id;
   const [tenant, setTenant] = useState<Tenant | undefined>();
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [showAddLeaseDialog, setShowAddLeaseDialog] = useState(false);
+  const [createdTenantId, setCreatedTenantId] = useState<string | null>(null);
+  const [isLeaseFormOpen, setIsLeaseFormOpen] = useState(false);
+  const [prefilledLeaseData, setPrefilledLeaseData] = useState<Partial<Lease> | null>(null);
   const { withLoader } = useLoader();
 
   // Extract mode from pathname
@@ -293,16 +309,25 @@ export default function TenantFormPage() {
     }
 
     if (response?.success) {
-      navigate(-1);
-      toast.success(
-        `Tenant ${tenantData.name} has been ${formMode === "create" ? "created" : "updated"
-        } successfully.`
-      );
+      const tenantId = response.data?.id || response.data?.data?.id;
+      
+      if (formMode === "create" && tenantId) {
+        // Show dialog to ask if user wants to add lease
+        setCreatedTenantId(tenantId);
+        setShowAddLeaseDialog(true);
+        toast.success(
+          `Tenant ${tenantData.name} has been created successfully.`
+        );
+      } else {
+        navigate(-1);
+        toast.success(
+          `Tenant ${tenantData.name} has been ${formMode === "create" ? "created" : "updated"
+          } successfully.`
+        );
+      }
     } else if (response && !response.success) {
       if (response?.message) {
         toast.error(response.message);
-      } else {
-        toast.error("Failed to save tenant.");
       }
     }
     setIsSubmitting(false);
@@ -551,6 +576,7 @@ export default function TenantFormPage() {
   const isReadOnly = formMode === "view";
 
   return (
+    <>
     <ContentContainer>
       <LoaderOverlay />
       <div className="space-y-6">
@@ -1247,5 +1273,90 @@ export default function TenantFormPage() {
         </form>
       </div>
     </ContentContainer>
+    
+    <AlertDialog open={showAddLeaseDialog} onOpenChange={setShowAddLeaseDialog}>
+      <AlertDialogContent>
+        <AlertDialogHeader>
+          <AlertDialogTitle>Add Lease?</AlertDialogTitle>
+          <AlertDialogDescription>
+            Do you want to add a lease for this tenant?
+          </AlertDialogDescription>
+        </AlertDialogHeader>
+        <AlertDialogFooter>
+          <AlertDialogCancel onClick={() => {
+            setShowAddLeaseDialog(false);
+            setCreatedTenantId(null);
+            navigate(-1);
+          }}>
+            No
+          </AlertDialogCancel>
+          <AlertDialogAction
+            onClick={async () => {
+              setShowAddLeaseDialog(false);
+              // Fetch tenant lease details
+              if (createdTenantId) {
+                const response = await withLoader(async () => {
+                  return await leasesApiService.getTenantLeaseDetail(createdTenantId);
+                });
+                if (response?.success && response.data?.tenant_data?.length > 0) {
+                  const tenantData = response.data.tenant_data[0];
+                  setPrefilledLeaseData({
+                    tenant_id: createdTenantId,
+                    site_id: tenantData.site_id,
+                    site_name: tenantData.site_name,
+                    building_id: tenantData.building_id,
+                    building_name: tenantData.building_name,
+                    space_id: tenantData.space_id,
+                    space_name: tenantData.space_name,
+                  } as Lease);
+                } else {
+                  // If no data, just set tenant_id
+                  setPrefilledLeaseData({
+                    tenant_id: createdTenantId,
+                  } as Lease);
+                }
+              }
+              setIsLeaseFormOpen(true);
+            }}
+          >
+            Yes
+          </AlertDialogAction>
+        </AlertDialogFooter>
+      </AlertDialogContent>
+    </AlertDialog>
+    
+    <LeaseForm
+      lease={prefilledLeaseData ? (prefilledLeaseData as Lease) : undefined}
+      isOpen={isLeaseFormOpen}
+      disableLocationFields={true}
+      onClose={() => {
+        setIsLeaseFormOpen(false);
+        setCreatedTenantId(null);
+        setPrefilledLeaseData(null);
+        navigate(-1);
+      }}
+      onSave={async (leaseData: Partial<Lease>) => {
+        const response = await withLoader(async () => {
+          return await leasesApiService.addLease(leaseData);
+        });
+        
+        if (response?.success) {
+          setIsLeaseFormOpen(false);
+          setCreatedTenantId(null);
+          setPrefilledLeaseData(null);
+          toast.success(`Lease has been created successfully.`);
+          navigate(-1);
+        } else if (response && !response.success) {
+          if (response?.message) {
+            toast.error(response.message);
+          } else {
+            toast.error("Failed to create lease.");
+          }
+        }
+        return response;
+      }}
+      mode="create"
+    />
+    </>
   );
 }
