@@ -25,6 +25,7 @@ import { spacesApiService } from "@/services/spaces_sites/spacesapi";
 import { buildingApiService } from "@/services/spaces_sites/buildingsapi";
 import { Lease } from "@/interfaces/leasing_tenants_interface";
 import { leasesApiService } from "@/services/leasing_tenants/leasesapi";
+import { withFallback } from "@/helpers/commonHelper";
 
 interface LeaseFormProps {
   lease?: Lease;
@@ -32,6 +33,7 @@ interface LeaseFormProps {
   onClose: () => void;
   onSave: (lease: Partial<Lease>) => Promise<any>;
   mode: "create" | "edit" | "view";
+  disableLocationFields?: boolean; // When true, disables site, building, and space fields
 }
 
 const emptyFormData: Partial<Lease> = {
@@ -56,6 +58,7 @@ export function LeaseForm({
   onClose,
   onSave,
   mode,
+  disableLocationFields = false,
 }: LeaseFormProps) {
   const {
     register,
@@ -96,25 +99,12 @@ export function LeaseForm({
   const loadAll = async () => {
     setFormLoading(true);
 
-    await Promise.all([loadSites()]);
-
-    const leaseSiteId = lease && mode !== "create" ? lease.site_id : undefined;
+    // Get site_id and building_id from lease prop, regardless of mode
+    const leaseSiteId = lease?.site_id;
     const leaseBuildingId =
-      lease && mode !== "create"
-        ? (lease as any).building_id || (lease as any).building_block_id
-        : undefined;
+      (lease as any)?.building_id || (lease as any)?.building_block_id;
 
-    if (leaseSiteId) {
-      await loadBuildingLookup(leaseSiteId);
-      if (leaseSiteId) {
-        const spaces = await spacesApiService.getSpaceLookup(
-          leaseSiteId,
-          leaseBuildingId
-        );
-        if (spaces.success) setSpaceList(spaces.data || []);
-      }
-    }
-
+    // Reset form first (like SLAPolicyForm pattern)
     reset(
       lease
         ? {
@@ -137,7 +127,23 @@ export function LeaseForm({
         }
         : emptyFormData
     );
+
     setFormLoading(false);
+
+    // Load sites first
+    await loadSites();
+
+    // Then load buildings and spaces if site_id is provided
+    if (leaseSiteId) {
+      await loadBuildingLookup(leaseSiteId);
+      if (leaseSiteId) {
+        const spaces = await spacesApiService.getSpaceLookup(
+          leaseSiteId,
+          leaseBuildingId
+        );
+        if (spaces.success) setSpaceList(spaces.data || []);
+      }
+    }
   };
 
   useEffect(() => {
@@ -201,6 +207,39 @@ export function LeaseForm({
       }
     }
   }, [leasePartnerList, lease, setValue, clearErrors, trigger]);
+
+  // Create fallback options for site, building, and space from lease prop
+  const fallbackSite = lease?.site_id
+    ? {
+        id: lease.site_id,
+        name: (lease as any).site_name ,
+      }
+    : null;
+
+  const fallbackBuilding = lease?.building_id || (lease as any)?.building_block_id
+    ? {
+        id: (lease as any).building_id || (lease as any).building_block_id,
+        name: (lease as any).building_name,
+      }
+    : null;
+
+  const fallbackSpace = lease?.space_id
+    ? {
+        id: lease.space_id,
+        name: (lease as any).space_name 
+      }
+    : null;
+const fallbackTenant = lease?.tenant_id
+    ? {
+        id: lease.tenant_id,
+        name: (lease as any).tenant_name ,
+      }
+    : null;
+
+  const tenants = withFallback(leasePartnerList, fallbackTenant);
+  const sites = withFallback(siteList, fallbackSite);
+  const buildings = withFallback(buildingList, fallbackBuilding);
+  const spaces = withFallback(spaceList, fallbackSpace);
 
   const loadBuildingLookup = async (siteId: string) => {
     const lookup = await buildingApiService.getBuildingLookup(siteId);
@@ -302,7 +341,7 @@ export function LeaseForm({
                           setValue("building_id", "");
                           setValue("space_id", "");
                         }}
-                        disabled={isReadOnly}
+                        disabled={isReadOnly || disableLocationFields}
                       >
                         <SelectTrigger
                           className={errors.site_id ? "border-red-500" : ""}
@@ -310,7 +349,7 @@ export function LeaseForm({
                           <SelectValue placeholder="Select site" />
                         </SelectTrigger>
                         <SelectContent>
-                          {siteList.map((site: any) => (
+                          {sites.map((site: any) => (
                             <SelectItem key={site.id} value={site.id}>
                               {site.name}
                             </SelectItem>
@@ -339,7 +378,7 @@ export function LeaseForm({
                           // Reset space when building changes
                           setValue("space_id", "");
                         }}
-                        disabled={isReadOnly || !selectedSiteId}
+                        disabled={isReadOnly || !selectedSiteId || disableLocationFields}
                       >
                         <SelectTrigger>
                           <SelectValue
@@ -351,7 +390,7 @@ export function LeaseForm({
                           />
                         </SelectTrigger>
                         <SelectContent>
-                          {buildingList.map((building: any) => (
+                          {buildings.map((building: any) => (
                             <SelectItem key={building.id} value={building.id}>
                               {building.name}
                             </SelectItem>
@@ -374,7 +413,7 @@ export function LeaseForm({
                       <Select
                         value={field.value || ""}
                         onValueChange={field.onChange}
-                        disabled={isReadOnly || !selectedSiteId}
+                        disabled={isReadOnly || !selectedSiteId || disableLocationFields}
                       >
                         <SelectTrigger
                           className={errors.space_id ? "border-red-500" : ""}
@@ -388,7 +427,7 @@ export function LeaseForm({
                           />
                         </SelectTrigger>
                         <SelectContent>
-                          {spaceList.map((space: any) => (
+                          {spaces.map((space: any) => (
                             <SelectItem key={space.id} value={space.id}>
                               {space.name || space.code}
                             </SelectItem>
@@ -413,7 +452,7 @@ export function LeaseForm({
                       <Select
                         value={field.value || ""}
                         onValueChange={field.onChange}
-                        disabled={isReadOnly}
+                        disabled={isReadOnly || disableLocationFields}
                       >
                         <SelectTrigger
                           className={errors.tenant_id ? "border-red-500" : ""}
@@ -421,7 +460,7 @@ export function LeaseForm({
                           <SelectValue placeholder="Select tenant" />
                         </SelectTrigger>
                         <SelectContent>
-                          {leasePartnerList.map((s: any) => (
+                          {tenants.map((s: any) => (
                             <SelectItem key={s.id} value={String(s.id)}>
                               {s.name}
                             </SelectItem>
@@ -605,7 +644,7 @@ export function LeaseForm({
                   {mode === "view" ? "Close" : "Cancel"}
                 </Button>
                 {mode !== "view" && (
-                  <Button type="submit" disabled={isSubmitting}>
+                  <Button type="submit" disabled={isSubmitting || formLoading}>
                     {isSubmitting
                       ? "Saving..."
                       : mode === "create"
