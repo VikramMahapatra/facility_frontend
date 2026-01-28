@@ -50,7 +50,7 @@ class SpacesApiService {
     }
 
     async getSpaceById(id: any) {
-        return await apiService.request(`/spaces/${id}`);
+        return await apiService.request(`/spaces/detail/${id}`);
     }
 
     async getActiveOwners(spaceId: string) {
