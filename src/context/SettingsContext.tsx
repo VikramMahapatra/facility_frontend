@@ -6,6 +6,7 @@ import {
   ReactNode,
 } from "react";
 import { settingsApiService } from "@/services/system/settingsapi";
+import { useAuth } from "./AuthContext";
 
 interface SettingsContextType {
   systemName: string;
@@ -20,13 +21,17 @@ const SettingsContext = createContext<SettingsContextType | undefined>(
 export const SettingsProvider = ({ children }: { children: ReactNode }) => {
   const [systemName, setSystemName] = useState<string>("FacilityOS");
   const [loading, setLoading] = useState(true);
+  const { user } = useAuth()
 
   const loadSettings = async () => {
-    const response = await settingsApiService.getSettings();
-    if (response?.success && response.data) {
-      const name = response.data.general?.system_name || "FacilityOS";
-      setSystemName(name);
-      document.title = `${name} - Enterprise Facility Management`;
+    console.log("user", user);
+    if (user) {
+      const response = await settingsApiService.getSettings();
+      if (response?.success && response.data) {
+        const name = response.data.general?.system_name || "FacilityOS";
+        setSystemName(name);
+        document.title = `${name} - Enterprise Facility Management`;
+      }
     }
   };
 

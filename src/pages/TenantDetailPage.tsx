@@ -132,7 +132,7 @@ export default function TenantDetailPage() {
     }
   };
 
-  
+
 
   const getInitials = (name: string) => {
     if (!name) return "";
@@ -242,7 +242,7 @@ export default function TenantDetailPage() {
     }
   };
 
-  
+
 
   return (
     <ContentContainer>
@@ -369,16 +369,16 @@ export default function TenantDetailPage() {
                       {(tenant.contact_info.address.city ||
                         tenant.contact_info.address.state ||
                         tenant.contact_info.address.pincode) && (
-                        <p className="text-muted-foreground">
-                          {[
-                            tenant.contact_info.address.city,
-                            tenant.contact_info.address.state,
-                            tenant.contact_info.address.pincode,
-                          ]
-                            .filter(Boolean)
-                            .join(", ")}
-                        </p>
-                      )}
+                          <p className="text-muted-foreground">
+                            {[
+                              tenant.contact_info.address.city,
+                              tenant.contact_info.address.state,
+                              tenant.contact_info.address.pincode,
+                            ]
+                              .filter(Boolean)
+                              .join(", ")}
+                          </p>
+                        )}
                     </CardContent>
                   </Card>
                 )}
@@ -386,13 +386,13 @@ export default function TenantDetailPage() {
               {(() => {
                 const familyItems = Array.isArray(tenant.family_info)
                   ? tenant.family_info.filter(
-                      (member) => member.member || member.relation,
-                    )
+                    (member) => member.member || member.relation,
+                  )
                   : [];
                 const vehicleItems = Array.isArray(tenant.vehicle_info)
                   ? tenant.vehicle_info.filter(
-                      (vehicle) => vehicle.type || vehicle.number,
-                    )
+                    (vehicle) => vehicle.type || vehicle.number,
+                  )
                   : [];
 
                 return (
@@ -499,11 +499,11 @@ export default function TenantDetailPage() {
                                 <CardTitle className="text-base flex items-center gap-2">
                                   <MapPin className="h-4 w-4 text-muted-foreground" />
                                   {space.space_name || "Unnamed Space"}
-                                  {space.is_primary && (
+                                  {/* {space.is_primary && (
                                     <Badge className="bg-blue-100 text-blue-700 border-0">
                                       Primary
                                     </Badge>
-                                  )}
+                                  )} */}
                                   {space.status && (
                                     <Badge
                                       variant="outline"
@@ -630,165 +630,165 @@ export default function TenantDetailPage() {
               </div>
             </TabsContent>
 
-          {/* HISTORY / PAYMENTS */}
-          <TabsContent value="history">
-            <Card>
-              <CardContent className="p-6 space-y-6">
-                <h3 className="text-lg font-medium mb-4 flex items-center gap-2">
-                  <CreditCard className="h-5 w-5" /> Payments History
-                </h3>
+            {/* HISTORY / PAYMENTS */}
+            <TabsContent value="history">
+              <Card>
+                <CardContent className="p-6 space-y-6">
+                  <h3 className="text-lg font-medium mb-4 flex items-center gap-2">
+                    <CreditCard className="h-5 w-5" /> Payments History
+                  </h3>
 
-                {isPaymentLoading ? (
-                  <div className="text-sm text-muted-foreground">
-                    Loading payment history...
-                  </div>
-                ) : pagedPayments.length > 0 ? (
-                  <div className="space-y-3">
-                    <div className="space-y-2">
-                      {pagedPayments.map((payment: any, idx: number) => {
-                        const key = payment.id || payment.payment_id || idx;
-                        const label = payment.invoice_no || "Payment";
-                        const date = payment.payment_date || payment.paid_at || payment.date || payment.created_at || undefined;
-                        const amount =
-                          typeof payment.amount === "number"
-                            ? payment.amount
-                            : payment.amount
-                            ? Number(payment.amount)
-                            : undefined;
-                        const reference =
-                          payment.reference ||
-                          payment.reference_no ||
-                          payment.ref_no ||
-                          payment.payment_ref;
-                        return (
-                          <div
-                            key={key}
-                            className="rounded-md border px-4 py-3 text-sm"
-                          >
-                            <div className="flex items-start justify-between gap-4">
-                              <div className="space-y-2">
-                                <div className="text-lg font-semibold">
-                                  {label}
-                                </div>
-                                {payment.description && (() => {
-                                  const description = String(payment.description);
-                                  const match = description.match(
-                                    /^lease charge\s*:\s*(.+)$/i
-                                  );
-                                  if (!match) {
+                  {isPaymentLoading ? (
+                    <div className="text-sm text-muted-foreground">
+                      Loading payment history...
+                    </div>
+                  ) : pagedPayments.length > 0 ? (
+                    <div className="space-y-3">
+                      <div className="space-y-2">
+                        {pagedPayments.map((payment: any, idx: number) => {
+                          const key = payment.id || payment.payment_id || idx;
+                          const label = payment.invoice_no || "Payment";
+                          const date = payment.payment_date || payment.paid_at || payment.date || payment.created_at || undefined;
+                          const amount =
+                            typeof payment.amount === "number"
+                              ? payment.amount
+                              : payment.amount
+                                ? Number(payment.amount)
+                                : undefined;
+                          const reference =
+                            payment.reference ||
+                            payment.reference_no ||
+                            payment.ref_no ||
+                            payment.payment_ref;
+                          return (
+                            <div
+                              key={key}
+                              className="rounded-md border px-4 py-3 text-sm"
+                            >
+                              <div className="flex items-start justify-between gap-4">
+                                <div className="space-y-2">
+                                  <div className="text-lg font-semibold">
+                                    {label}
+                                  </div>
+                                  {payment.description && (() => {
+                                    const description = String(payment.description);
+                                    const match = description.match(
+                                      /^lease charge\s*:\s*(.+)$/i
+                                    );
+                                    if (!match) {
+                                      return (
+                                        <div className="text-sm text-muted-foreground">
+                                          {description}
+                                        </div>
+                                      );
+                                    }
                                     return (
-                                      <div className="text-sm text-muted-foreground">
-                                        {description}
+                                      <div className="text-sm text-muted-foreground flex items-center gap-2">
+                                        <span>Lease Charge:</span>
+                                        <Badge
+                                          className={`text-xs border-0 ${getChargeCodeBadgeClass(
+                                            match[1]
+                                          )}`}
+                                        >
+                                          {match[1].trim()}
+                                        </Badge>
                                       </div>
                                     );
-                                  }
-                                  return (
-                                    <div className="text-sm text-muted-foreground flex items-center gap-2">
-                                      <span>Lease Charge:</span>
+                                  })()}
+                                </div>
+                                <div className="text-right space-y-1">
+                                  {amount !== undefined &&
+                                    !Number.isNaN(amount) && (
+                                      <div className="text-xl font-bold">
+                                        ₹{amount.toLocaleString()}
+                                      </div>
+                                    )}
+                                  {(payment.charge_code ||
+                                    payment.charge_code_name ||
+                                    payment.charge_code_id) && (
                                       <Badge
                                         className={`text-xs border-0 ${getChargeCodeBadgeClass(
-                                          match[1]
+                                          String(
+                                            payment.charge_code ||
+                                            payment.charge_code_name ||
+                                            payment.charge_code_id
+                                          )
                                         )}`}
                                       >
-                                        {match[1].trim()}
-                                      </Badge>
-                                    </div>
-                                  );
-                                })()}
-                              </div>
-                              <div className="text-right space-y-1">
-                                {amount !== undefined &&
-                                  !Number.isNaN(amount) && (
-                                    <div className="text-xl font-bold">
-                                      ₹{amount.toLocaleString()}
-                                    </div>
-                                  )}
-                                {(payment.charge_code ||
-                                  payment.charge_code_name ||
-                                  payment.charge_code_id) && (
-                                  <Badge
-                                    className={`text-xs border-0 ${getChargeCodeBadgeClass(
-                                      String(
-                                        payment.charge_code ||
+                                        {String(
+                                          payment.charge_code ||
                                           payment.charge_code_name ||
                                           payment.charge_code_id
-                                      )
-                                    )}`}
-                                  >
-                                    {String(
-                                      payment.charge_code ||
-                                        payment.charge_code_name ||
-                                        payment.charge_code_id
+                                        )}
+                                      </Badge>
                                     )}
-                                  </Badge>
-                                )}
+                                </div>
                               </div>
-                            </div>
 
-                            <div className="mt-3 grid grid-cols-1 gap-2 text-sm text-muted-foreground sm:grid-cols-2">
-                              <div>
-                                <span className="font-medium text-foreground inline-flex items-center gap-2">
-                                  <Calendar className="h-4 w-4 text-muted-foreground" />
-                                  Date:
-                                </span>{" "}
-                                {date
-                                  ? new Date(date).toLocaleDateString()
-                                  : "-"}
-                              </div>
-                              <div>
-                                <span className="font-medium text-foreground inline-flex items-center gap-2">
-                                  <CreditCard className="h-4 w-4 text-muted-foreground" />
-                                  Method:
-                                </span>{" "}
-                                {payment.method ? (
-                                  <Badge
-                                    className={`text-xs border-0 ${getMethodBadgeClass(
-                                      payment.method
-                                    )}`}
-                                  >
-                                    {String(payment.method).toUpperCase()}
-                                  </Badge>
-                                ) : (
-                                  "-"
-                                )}
-                              </div>
-                              <div>
-                                <span className="font-medium text-foreground inline-flex items-center gap-2">
-                                  <Hash className="h-4 w-4 text-muted-foreground" />
-                                  Reference:
-                                </span>{" "}
-                                {reference || "-"}
-                              </div>
-                              <div>
-                                <span className="font-medium text-foreground inline-flex items-center gap-2">
-                                  <MapPin className="h-4 w-4 text-muted-foreground" />
-                                  Site:
-                                </span>{" "}
-                                {payment.site || "-"}
+                              <div className="mt-3 grid grid-cols-1 gap-2 text-sm text-muted-foreground sm:grid-cols-2">
+                                <div>
+                                  <span className="font-medium text-foreground inline-flex items-center gap-2">
+                                    <Calendar className="h-4 w-4 text-muted-foreground" />
+                                    Date:
+                                  </span>{" "}
+                                  {date
+                                    ? new Date(date).toLocaleDateString()
+                                    : "-"}
+                                </div>
+                                <div>
+                                  <span className="font-medium text-foreground inline-flex items-center gap-2">
+                                    <CreditCard className="h-4 w-4 text-muted-foreground" />
+                                    Method:
+                                  </span>{" "}
+                                  {payment.method ? (
+                                    <Badge
+                                      className={`text-xs border-0 ${getMethodBadgeClass(
+                                        payment.method
+                                      )}`}
+                                    >
+                                      {String(payment.method).toUpperCase()}
+                                    </Badge>
+                                  ) : (
+                                    "-"
+                                  )}
+                                </div>
+                                <div>
+                                  <span className="font-medium text-foreground inline-flex items-center gap-2">
+                                    <Hash className="h-4 w-4 text-muted-foreground" />
+                                    Reference:
+                                  </span>{" "}
+                                  {reference || "-"}
+                                </div>
+                                <div>
+                                  <span className="font-medium text-foreground inline-flex items-center gap-2">
+                                    <MapPin className="h-4 w-4 text-muted-foreground" />
+                                    Site:
+                                  </span>{" "}
+                                  {payment.site || "-"}
+                                </div>
                               </div>
                             </div>
-                          </div>
-                        );
-                      })}
+                          );
+                        })}
+                      </div>
                     </div>
-                  </div>
-                ) : (
-                  <div className="text-sm text-muted-foreground">
-                    No payments found
-                  </div>
-                )}
+                  ) : (
+                    <div className="text-sm text-muted-foreground">
+                      No payments found
+                    </div>
+                  )}
 
-                
-              </CardContent>
-            </Card>
-            {/* Pagination */}
-            <Pagination
-              page={paymentPage}
-              pageSize={paymentPageSize}
-              totalItems={paymentTotalItems}
-              onPageChange={setPaymentPage}
-            />
-          </TabsContent>
+
+                </CardContent>
+              </Card>
+              {/* Pagination */}
+              <Pagination
+                page={paymentPage}
+                pageSize={paymentPageSize}
+                totalItems={paymentTotalItems}
+                onPageChange={setPaymentPage}
+              />
+            </TabsContent>
           </Tabs>
         </div>
       )}

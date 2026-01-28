@@ -19,6 +19,18 @@ export const tenantAccountSchema = z.object({
     ).min(1, "At least one space is required"),
 });
 
+export const ownerAccountSchema = z.object({
+    ...baseAccountSchema,
+    account_type: z.literal("owner"),
+    owner_spaces: z.array(
+        z.object({
+            site_id: z.string().min(1),
+            building_block_id: z.string().optional(),
+            space_id: z.string().min(1),
+        })
+    ).min(1, "At least one space is required"),
+});
+
 export const staffAccountSchema = z.object({
     ...baseAccountSchema,
     account_type: z.literal("staff"),
@@ -28,13 +40,14 @@ export const staffAccountSchema = z.object({
 
 export const adminAccountSchema = z.object({
     ...baseAccountSchema,
-    account_type: z.enum(["organization", "owner", "vendor"]),
+    account_type: z.enum(["organization", "vendor"]),
 });
 
 export const accountSchema = z.discriminatedUnion("account_type", [
     tenantAccountSchema,
     staffAccountSchema,
     adminAccountSchema,
+    ownerAccountSchema
 ]);
 
 export type AccountFormValues = z.infer<typeof accountSchema>;

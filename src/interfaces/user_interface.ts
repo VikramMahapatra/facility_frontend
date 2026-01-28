@@ -27,6 +27,7 @@ export interface UserAccount {
     status: "active" | "inactive";
     roles: Role[];
     tenant_spaces?: TenantSpace[];
+    owner_spaces?: TenantSpace[];
     tenant_type?: string;
     staff_role?: string;
     is_default: boolean;
