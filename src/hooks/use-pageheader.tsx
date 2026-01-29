@@ -1,4 +1,4 @@
-import { navigationItems } from "@/data/navigationItems";
+import { navigationItems, pageHeaderOverrides } from "@/data/navigationItems";
 import { useLocation } from "react-router-dom";
 
 export interface BreadcrumbItem {
@@ -19,6 +19,12 @@ export interface PageHeaderMeta {
 
 export const usePageHeader = (): PageHeaderMeta => {
   const { pathname } = useLocation();
+
+  for (const override of pageHeaderOverrides) {
+    if (override.match(pathname)) {
+      return override.meta;
+    }
+  }
 
   for (const section of navigationItems) {
     for (const item of section.items) {

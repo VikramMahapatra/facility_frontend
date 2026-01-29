@@ -28,10 +28,12 @@ import LoaderOverlay from "@/components/LoaderOverlay";
 import AccountCard from "@/components/userdetails/AccountCard";
 import { User, UserAccount } from "@/interfaces/user_interface";
 import AccountEditModal from "@/components/userdetails/UserAccountEditModal";
+import { useAuth } from "@/context/AuthContext";
 
 
 export default function UserManagementDetailPage() {
   const { id } = useParams<{ id: string }>();
+  const { user: authUser } = useAuth();
   const navigate = useNavigate();
   const location = useLocation();
   const { withLoader } = useLoader();
@@ -42,12 +44,14 @@ export default function UserManagementDetailPage() {
   const [editingAccount, setEditingAccount] = useState<UserAccount | null>(null);
   const [accountMode, setAccountMode] = useState<"create" | "edit">("create");
 
+  const resolvedUserId = id ?? authUser.id;
+
   useEffect(() => {
-    if (!id) return;
+    if (!resolvedUserId) return;
 
     const loadUser = async () => {
       const response = await withLoader(async () => {
-        return await userManagementApiService.getUserById(id);
+        return await userManagementApiService.getUserById(resolvedUserId);
       });
 
       if (response?.success) {
@@ -59,7 +63,7 @@ export default function UserManagementDetailPage() {
     };
 
     loadUser();
-  }, [id]);
+  }, [resolvedUserId]);
 
   const getInitials = (name: string) => {
     if (!name) return "";
@@ -158,9 +162,9 @@ export default function UserManagementDetailPage() {
       toast.success(`Switching to ${accountType.organization_name}...`);
 
       // Reload user data after switching
-      if (id) {
+      if (resolvedUserId) {
         const response = await withLoader(async () => {
-          return await userManagementApiService.getUserById(id);
+          return await userManagementApiService.getUserById(resolvedUserId);
         });
         if (response?.success) {
           setUser(response.data);
@@ -253,7 +257,7 @@ export default function UserManagementDetailPage() {
                           size="icon"
                           variant="ghost"
                           onClick={() =>
-                            navigate(`/users-management/${id}/edit`)
+                            navigate(`/users-management/${resolvedUserId}/edit`)
                           }
                           className="top-6 right-6 h-8 px-3"
                         >

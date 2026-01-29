@@ -23,6 +23,10 @@ export const PageHeader = () => {
         navigate("/notifications");
     };
 
+    const handleProfileClick = () => {
+        navigate("/profile"); // or /account/profile
+    };
+
     const loadNotificationCount = async () => {
         const response = await notificationsApiService.getNotificationCount();
         if (response?.success) setNotiCount(response.data || 0);
@@ -35,9 +39,9 @@ export const PageHeader = () => {
                 <Separator orientation="vertical" className="mr-2 h-4" />
                 {breadcrumb ? (
                     <div className="flex items-center gap-2 text-sm text-muted-foreground">
-                        <Home className="h-4 w-4" />
                         {breadcrumb.parent && (
                             <>
+                                <Home className="h-4 w-4" />
                                 <span className="font-medium">{breadcrumb.parent.label}</span>
                                 <ChevronRight className="h-4 w-4" />
                             </>
@@ -72,7 +76,10 @@ export const PageHeader = () => {
                     </span>
                 </Button>
                 {/* User */}
-                <div className="flex items-center gap-3">
+                <button
+                    onClick={handleProfileClick}
+                    className="flex items-center gap-3 rounded-md px-2 py-1 text-left hover:bg-muted transition"
+                >
                     <Avatar>
                         <AvatarFallback className="bg-gradient-primary text-white">
                             {user.name.charAt(0)}
@@ -85,7 +92,7 @@ export const PageHeader = () => {
                             {user.default_account_type}
                         </p>
                     </div>
-                </div>
+                </button>
 
                 <Button
                     variant="ghost"
@@ -97,6 +104,6 @@ export const PageHeader = () => {
                     Logout
                 </Button>
             </div>
-        </header>
+        </header >
     );
 };

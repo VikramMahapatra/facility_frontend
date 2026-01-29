@@ -19,22 +19,16 @@ import { OwnershipDialog } from "./OwnershipDialog";
 
 export function SpaceOwnershipSection({
   spaceId,
+  owners,
+  onRefresh,
   actionSlot,
 }: {
   spaceId: string;
+  owners: any[];
+  onRefresh: () => void;
   actionSlot?: React.ReactNode;
 }) {
-  const [owners, setOwners] = useState<any[]>([]);
   const [open, setOpen] = useState(false);
-
-  const loadOwners = async () => {
-    const res = await spacesApiService.getActiveOwners(spaceId);
-    if (res.success) setOwners(res.data || []);
-  };
-
-  useEffect(() => {
-    loadOwners();
-  }, []);
 
   return (
     <div className="space-y-4">
@@ -70,47 +64,10 @@ export function SpaceOwnershipSection({
         onClose={() => setOpen(false)}
         spaceId={spaceId}
         onSuccess={() => {
-          loadOwners();
+          onRefresh();
           setOpen(false);
         }}
       />
     </div>
   );
 }
-
-// // ===============================
-// // SpaceEditPage.tsx
-// // ===============================
-// import { useEffect, useState } from "react";
-// import { useParams, useNavigate } from "react-router-dom";
-// import { SpaceForm } from "./SpaceForm";
-// import { spaceApiService } from "@/services/spaces_sites/spacesapi";
-
-// export function SpaceEditPage() {
-//     const { spaceId } = useParams();
-//     const navigate = useNavigate();
-//     const [space, setSpace] = useState<any>(null);
-
-//     useEffect(() => {
-//         if (!spaceId) return;
-//         spaceApiService.getSpaceById(spaceId).then((res) => {
-//             if (res.success) setSpace(res.data);
-//         });
-//     }, [spaceId]);
-
-//     if (!space) return <div className="p-6">Loading...</div>;
-
-//     return (
-//         <SpaceForm
-//             space={space}
-//             mode="edit"
-//             isOpen={true}
-//             onClose={() => navigate(`/spaces/${spaceId}`)}
-//             onSave={async (payload) => {
-//                 const res = await spaceApiService.updateSpace(spaceId!, payload);
-//                 if (res.success) navigate(`/spaces/${spaceId}`);
-//                 return res.data;
-//             }}
-//         />
-//     );
-// }

@@ -45,10 +45,12 @@ export default function SpaceDetailPage() {
     const [isMaintenanceOpen, setIsMaintenanceOpen] = useState(false);
     const [maintenanceMode, setMaintenanceMode] = useState<"create" | "edit" | "view">("create");
     const [isHistoryOpen, setIsHistoryOpen] = useState(false);
+    const [owners, setOwners] = useState([]);
 
     useEffect(() => {
         if (!id) return;
         loadSpace();
+        loadOwners();
     }, [id]);
 
     const loadSpace = async () => {
@@ -59,6 +61,11 @@ export default function SpaceDetailPage() {
             setSpace(response.data);
         }
     }
+
+    const loadOwners = async () => {
+        const res = await spacesApiService.getActiveOwners(id);
+        if (res.success) setOwners(res.data || []);
+    };
 
     const loadMaintenances = async (spaceId: string) => {
         setMaintenanceLoading(true);
@@ -221,6 +228,8 @@ export default function SpaceDetailPage() {
                                 <CardContent>
                                     <SpaceOwnershipSection
                                         spaceId={id!}
+                                        owners={owners}
+                                        onRefresh={loadOwners}
                                         actionSlot={
                                             <Button
                                                 onClick={() => {

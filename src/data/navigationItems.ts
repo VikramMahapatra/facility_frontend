@@ -77,16 +77,21 @@ export const navigationItems = [
         icon: Building2,
         resource: "buildings",
       },
+      { title: "Spaces", url: "/spaces", icon: Home, resource: "spaces" },
       {
         title: "Space Groups (Templates)",
         url: "/space-groups",
         icon: Archive,
         resource: "space_groups",
       },
-      { title: "Spaces", url: "/spaces", icon: Home, resource: "spaces" },
-
       {
-        title: "Space Ownership Approvals",
+        title: "Group Assignments",
+        url: "/space-assignments",
+        icon: Users,
+        resource: "group_assignments",
+      },
+      {
+        title: "Ownership Approvals",
         url: "/space-ownership-approvals",
         icon: CheckCircle2,
         resource: "space_ownership_approvals",
@@ -97,19 +102,14 @@ export const navigationItems = [
         icon: Wrench,
         resource: "spaces",
       },
-      {
-        title: "Group Assignments",
-        url: "/space-assignments",
-        icon: Users,
-        resource: "group_assignments",
-      },
+
     ],
   },
   {
     title: "Leasing & Tenants",
     items: [
-      { title: "Leases", url: "/leases", icon: FileText, resource: "leases" },
       { title: "Tenants", url: "/tenants", icon: Users, resource: "tenants" },
+      { title: "Leases", url: "/leases", icon: FileText, resource: "leases" },
       {
         title: "Lease Charges",
         url: "/lease-charges",
@@ -376,4 +376,21 @@ export const navigationItems = [
       // },
     ],
   },
+];
+
+
+
+export const pageHeaderOverrides = [
+  {
+    match: (path: string) => path === "/profile",
+    meta: {
+      title: "My Profile",
+      breadcrumb: {
+        current: {
+          label: "My Profile",
+          icon: UserCog,
+        },
+      },
+    },
+  }
 ];
