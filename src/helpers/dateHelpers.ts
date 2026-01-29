@@ -30,3 +30,20 @@ export function localToUTC(localDateTime) {
     const date = new Date(localDateTime);
     return date.toISOString(); // automatically in UTC with 'Z'
 }
+
+export function formatDate(
+    date?: string | Date | null,
+    fallback: string = "-"
+) {
+    if (!date) return fallback;
+
+    const d = typeof date === "string" ? new Date(date) : date;
+
+    if (isNaN(d.getTime())) return fallback;
+
+    return d.toLocaleDateString("en-IN", {
+        day: "2-digit",
+        month: "short",
+        year: "numeric",
+    });
+}
