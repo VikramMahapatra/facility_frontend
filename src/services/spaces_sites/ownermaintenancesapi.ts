@@ -40,9 +40,17 @@ class OwnerMaintenancesApiService {
   }
 
   async deleteOwnerMaintenance(maintenanceId: string) {
+    return await apiService.request(`/owner-maintenances/${maintenanceId}`, {
+      method: "DELETE",
+    });
+  }
+
+  async autoGenerateMaintenance(date: string) {
+    const params = new URLSearchParams();
+    params.append("date", date);
     return await apiService.request(
-      `/owner-maintenances/${maintenanceId}`,
-      { method: "DELETE" },
+      `/owner-maintenances/auto-generate-maintenance?${params.toString()}`,
+      { method: "POST" },
     );
   }
 }
