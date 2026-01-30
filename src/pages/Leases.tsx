@@ -54,7 +54,7 @@ export default function Leases() {
   const [leases, setLeases] = useState<Lease[]>([]);
   const [selectedLease, setSelectedLease] = useState<Lease | undefined>();
   const [formMode, setFormMode] = useState<"create" | "edit" | "view">(
-    "create"
+    "create",
   );
   const [isFormOpen, setIsFormOpen] = useState(false);
   const [deleteLeaseId, setDeleteLeaseId] = useState<string | null>(null);
@@ -164,7 +164,7 @@ export default function Leases() {
           `Cannot Delete Lease\n${authResponse?.message || "Unknown error"}`,
           {
             style: { whiteSpace: "pre-line" },
-          }
+          },
         );
       }
     }
@@ -187,8 +187,8 @@ export default function Leases() {
         loadLeaseOverview();
         setLeases((prev) =>
           prev.map((lease) =>
-            lease.id === selectedLease.id ? response.data : lease
-          )
+            lease.id === selectedLease.id ? response.data : lease,
+          ),
         );
       }
     }
@@ -196,8 +196,9 @@ export default function Leases() {
     if (response?.success) {
       setIsFormOpen(false);
       toast.success(
-        `Lease has been ${formMode === "create" ? "created" : "updated"
-        } successfully.`
+        `Lease has been ${
+          formMode === "create" ? "created" : "updated"
+        } successfully.`,
       );
     }
     return response;
@@ -315,8 +316,8 @@ export default function Leases() {
                   {leaseOverview.avgLeaseTermMonths < 12
                     ? `${leaseOverview.avgLeaseTermMonths.toFixed(0)} months`
                     : `${(leaseOverview.avgLeaseTermMonths / 12).toFixed(
-                      1
-                    )} years`}
+                        1,
+                      )} years`}
                 </div>
                 <p className="text-sm text-muted-foreground">Avg Lease Term</p>
               </CardContent>
@@ -334,12 +335,27 @@ export default function Leases() {
                   <div className="flex items-start justify-between">
                     <div className="space-y-1">
                       <CardTitle className="text-lg">
-                        {lease.tenant_name}
+                        <span
+                          className="text-blue-600 hover:text-blue-800 cursor-pointer hover:underline"
+                          onClick={() =>
+                            navigate(`/tenants/${lease.tenant_id}/view`)
+                          }
+                        >
+                          {lease.tenant_name}
+                        </span>
                       </CardTitle>
                       <p className="text-sm text-muted-foreground">
                         <div className="flex items-center gap-1">
                           <MapPin className="h-4 w-4 text-muted-foreground" />
-                          {lease.space_name} • {lease.site_name}
+                          <span
+                            className="text-blue-600 hover:text-blue-800 cursor-pointer hover:underline"
+                            onClick={() =>
+                              navigate(`/spaces/${lease.space_id}`)
+                            }
+                          >
+                            {lease.space_name}
+                          </span>{" "}
+                          • {lease.site_name}
                         </div>
                       </p>
                     </div>
@@ -356,8 +372,7 @@ export default function Leases() {
                         Rent Amount
                       </div>
                       <div className="text-lg font-bold">
-
-                        {(!lease.rent_amount || Number(lease.rent_amount) === 0)
+                        {!lease.rent_amount || Number(lease.rent_amount) === 0
                           ? "-"
                           : formatCurrency(lease.rent_amount)}
                       </div>
@@ -380,8 +395,8 @@ export default function Leases() {
                         Deposit
                       </div>
                       <div>
-                        {(!lease.deposit_amount ||
-                          Number(lease.deposit_amount) === 0)
+                        {!lease.deposit_amount ||
+                        Number(lease.deposit_amount) === 0
                           ? "-"
                           : formatCurrency(lease.deposit_amount as any)}
                       </div>
@@ -391,7 +406,7 @@ export default function Leases() {
                         CAM Rate
                       </div>
                       <div>
-                        {(!lease.cam_rate || Number(lease.cam_rate) === 0)
+                        {!lease.cam_rate || Number(lease.cam_rate) === 0
                           ? "-"
                           : lease.cam_rate && Number(lease.cam_rate) !== 0
                             ? `₹${lease.cam_rate}/sq ft`
@@ -402,7 +417,7 @@ export default function Leases() {
 
                   {lease.utilities &&
                     Object.values(lease.utilities).some(
-                      (v) => v !== null && v !== undefined && v !== ""
+                      (v) => v !== null && v !== undefined && v !== "",
                     ) && (
                       <div>
                         <div className="font-medium text-muted-foreground">
@@ -412,7 +427,7 @@ export default function Leases() {
                           {Object.entries(lease.utilities)
                             .filter(
                               ([_, v]) =>
-                                v !== null && v !== undefined && v !== ""
+                                v !== null && v !== undefined && v !== "",
                             )
                             .map(([k, v]) => (
                               <span key={k} className="mr-4 capitalize">

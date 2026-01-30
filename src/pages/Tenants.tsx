@@ -46,7 +46,11 @@ import {
 import { tenantsApiService } from "@/services/leasing_tenants/tenantsapi";
 import { siteApiService } from "@/services/spaces_sites/sitesapi";
 import { leasesApiService } from "@/services/leasing_tenants/leasesapi";
-import { Tenant, TenantOverview, Lease } from "@/interfaces/leasing_tenants_interface";
+import {
+  Tenant,
+  TenantOverview,
+  Lease,
+} from "@/interfaces/leasing_tenants_interface";
 import { LeaseForm } from "@/components/LeasesForm";
 import { useSkipFirstEffect } from "@/hooks/use-skipfirst-effect";
 import { toast } from "sonner";
@@ -81,7 +85,8 @@ const Tenants = () => {
   const [totalItems, setTotalItems] = useState(0);
   const [isLeaseFormOpen, setIsLeaseFormOpen] = useState(false);
   const [selectedTenantId, setSelectedTenantId] = useState<string | null>(null);
-  const [prefilledLeaseData, setPrefilledLeaseData] = useState<Partial<Lease> | null>(null);
+  const [prefilledLeaseData, setPrefilledLeaseData] =
+    useState<Partial<Lease> | null>(null);
   const { canRead, canWrite, canDelete } = useAuth();
   const { withLoader } = useLoader();
   const { user, handleLogout } = useAuth();
@@ -192,7 +197,7 @@ const Tenants = () => {
             `Cannot Delete Tenant\n${authResponse?.message || "Unknown error"}`,
             {
               style: { whiteSpace: "pre-line" },
-            }
+            },
           );
         }
       }
@@ -525,16 +530,16 @@ const Tenants = () => {
                                   {(tenant.contact_info.address.city ||
                                     tenant.contact_info.address.state ||
                                     tenant.contact_info.address.pincode) && (
-                                      <div>
-                                        {[
-                                          tenant.contact_info.address.city,
-                                          tenant.contact_info.address.state,
-                                          tenant.contact_info.address.pincode,
-                                        ]
-                                          .filter(Boolean)
-                                          .join(", ")}
-                                      </div>
-                                    )}
+                                    <div>
+                                      {[
+                                        tenant.contact_info.address.city,
+                                        tenant.contact_info.address.state,
+                                        tenant.contact_info.address.pincode,
+                                      ]
+                                        .filter(Boolean)
+                                        .join(", ")}
+                                    </div>
+                                  )}
                                 </div>
                               </div>
                             )}
@@ -552,7 +557,15 @@ const Tenants = () => {
                                 className="p-2 bg-muted rounded text-sm"
                               >
                                 <div className="font-medium">
-                                  #{lease.lease_number} - {lease.space_name}
+                                  <span
+                                    className="text-blue-600 hover:text-blue-800 cursor-pointer hover:underline"
+                                    onClick={() =>
+                                      navigate(`/leases/${lease.id}`)
+                                    }
+                                  >
+                                    #{lease.lease_number}
+                                  </span>{" "}
+                                  - {lease.space_name}
                                 </div>
                                 <div className="text-muted-foreground">
                                   ₹{lease.rent_amount.toLocaleString()} •{" "}
@@ -560,11 +573,11 @@ const Tenants = () => {
                                 </div>
                                 <div className="text-xs text-muted-foreground">
                                   {new Date(
-                                    lease.start_date
+                                    lease.start_date,
                                   ).toLocaleDateString()}{" "}
                                   -{" "}
                                   {new Date(
-                                    lease.end_date
+                                    lease.end_date,
                                   ).toLocaleDateString()}
                                 </div>
                               </div>
@@ -588,11 +601,19 @@ const Tenants = () => {
                                 onClick={async () => {
                                   setSelectedTenantId(tenant.id!);
                                   // Fetch tenant lease details
-                                  const response = await withLoader(async () => {
-                                    return await leasesApiService.getTenantLeaseDetail(tenant.id!);
-                                  });
-                                  if (response?.success && response.data?.tenant_data?.length > 0) {
-                                    const tenantData = response.data.tenant_data[0];
+                                  const response = await withLoader(
+                                    async () => {
+                                      return await leasesApiService.getTenantLeaseDetail(
+                                        tenant.id!,
+                                      );
+                                    },
+                                  );
+                                  if (
+                                    response?.success &&
+                                    response.data?.tenant_data?.length > 0
+                                  ) {
+                                    const tenantData =
+                                      response.data.tenant_data[0];
                                     setPrefilledLeaseData({
                                       tenant_id: tenantData.tenant_id,
                                       site_id: tenantData.site_id,
