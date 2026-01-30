@@ -48,6 +48,7 @@ const emptyFormData: TicketFormValues = {
   preferred_time: "",
   assigned_to: "",
   vendor_id: "",
+  user_id: "",
 };
 
 export default function TicketForm({
@@ -76,6 +77,7 @@ export default function TicketForm({
           building_id: initialData.building_id || "",
           space_id: initialData.space_id || "",
           tenant_id: initialData.tenant_id || "",
+          user_id: initialData.user_id || "",
           preferred_date:
             initialData.preferred_date ||
             new Date().toISOString().split("T")[0],
@@ -100,6 +102,7 @@ export default function TicketForm({
   const [categoryList, setCategoryList] = useState<any[]>([]);
   const [staffList, setStaffList] = useState<any[]>([]);
   const [vendorList, setVendorList] = useState<any[]>([]);
+  const[selectedTenantId, setSelectedTenantId] = useState<string>("");
 
   const selectedSiteId = watch("site_id");
   const selectedBuildingId = watch("building_id");
@@ -170,6 +173,7 @@ export default function TicketForm({
         building_id: initialData.building_id || "",
         space_id: initialData.space_id || "",
         tenant_id: initialData.tenant_id || "",
+        user_id: initialData.user_id || "",
         preferred_date:
           initialData.preferred_date || new Date().toISOString().split("T")[0],
         preferred_time: initialData.preferred_time || "",
@@ -255,8 +259,11 @@ export default function TicketForm({
       ticketFormData.append("building_id", data.building_id);
     }
     ticketFormData.append("space_id", data.space_id);
-    if (data.tenant_id && data.tenant_id !== "none") {
-      ticketFormData.append("tenant_id", data.tenant_id);
+    if (data.user_id && data.user_id !== "none") {
+      ticketFormData.append("user_id", data.user_id);
+      if (selectedTenantId) {  
+        ticketFormData.append("tenant_id", selectedTenantId);
+      }
     }
     if (data.preferred_date) {
       ticketFormData.append("preferred_date", data.preferred_date);
@@ -489,25 +496,29 @@ export default function TicketForm({
       {/* 3. Tenant, Category, Request Type */}
       <div className="grid grid-cols-3 gap-4">
         <Controller
-          name="tenant_id"
+          name="user_id"
           control={control}
           render={({ field }) => (
             <div className="space-y-2">
-              <Label htmlFor="tenant_id">Tenant</Label>
+              <Label htmlFor="user_id">Tenant/Owner</Label>
               <Select
                 value={field.value || ""}
-                onValueChange={field.onChange}
+                onValueChange={(value) => {
+                  field.onChange(value);
+                  const tenant = tenants.find(t => t.tenant_id=== value);
+                  setSelectedTenantId(tenant?.tenant_id ?? null);
+        }}
                 disabled={!selectedSpaceId}
               >
                 <SelectTrigger>
                   <SelectValue
                     placeholder={
-                      selectedSpaceId ? "Select Tenant" : "Select space first"
+                      selectedSpaceId ? "Select Tenant/Owner" : "Select space first"
                     }
                   />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="none">Select Tenant</SelectItem>
+                  <SelectItem value="none">Select Tenant/Owner</SelectItem>
                   {tenants.map((tenant: any) => (
                     <SelectItem key={tenant.id} value={tenant.id}>
                       {tenant.name}
