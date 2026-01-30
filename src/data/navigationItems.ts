@@ -91,12 +91,6 @@ export const navigationItems = [
         resource: "group_assignments",
       },
       {
-        title: "Ownership Approvals",
-        url: "/space-ownership-approvals",
-        icon: CheckCircle2,
-        resource: "space_ownership_approvals",
-      },
-      {
         title: "Maintenance (CAM)",
         url: "/space-maintenance",
         icon: Wrench,
@@ -192,18 +186,18 @@ export const navigationItems = [
         icon: FolderTree,
         resource: "asset_categories",
       },
-      {
-        title: "Work Orders",
-        url: "/work-orders",
-        icon: Wrench,
-        resource: "work_orders",
-      },
-      {
-        title: "Service Requests",
-        url: "/service-requests",
-        icon: AlertTriangle,
-        resource: "service_requests",
-      },
+      // {
+      //   title: "Work Orders",
+      //   url: "/work-orders",
+      //   icon: Wrench,
+      //   resource: "work_orders",
+      // },
+      // {
+      //   title: "Service Requests",
+      //   url: "/service-requests",
+      //   icon: AlertTriangle,
+      //   resource: "service_requests",
+      // },
       {
         title: "Preventive Maintenance",
         url: "/preventive-maintenance",
@@ -318,6 +312,29 @@ export const navigationItems = [
     ],
   },
   {
+    title: "Approval Requests",
+    items: [
+      {
+        title: "Users",
+        url: "/pending-approvals",
+        icon: UserCheck,
+        resource: "pending_approvals",
+      },
+      {
+        title: "Space Ownerships",
+        url: "/space-ownership-approvals",
+        icon: CheckCircle2,
+        resource: "space_ownership_approvals",
+      },
+      {
+        title: "Space Tenants",
+        url: "/tenant-space-approvals",
+        icon: CheckCircle2,
+        resource: "tenant_space_approvals",
+      }
+    ],
+  },
+  {
     title: "Access & Control",
     items: [
       {
@@ -338,12 +355,6 @@ export const navigationItems = [
         url: "/users-management",
         icon: Users,
         resource: "users_management",
-      },
-      {
-        title: "Pending Approvals",
-        url: "/pending-approvals",
-        icon: UserCheck,
-        resource: "pending_approvals",
       },
       {
         title: "Approval Rules",

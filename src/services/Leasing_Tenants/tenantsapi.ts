@@ -57,6 +57,28 @@ class TenantsApiService {
     const qs = params?.toString() ? `?${params.toString()}` : "";
     return await apiService.request(`/tenants/by-site-space${qs}`);
   }
+
+  async getSpaceTenants(spaceId: any) {
+    return await apiService.request(`/tenants/${spaceId}/spaces`);
+  }
+
+  async approveTenant(spaceId: any, tenantId: any) {
+    return await apiService.request(`/tenants/approve`, {
+      method: "POST",
+      body: JSON.stringify({ space_id: spaceId, tenant_id: tenantId }),
+    });
+  }
+
+  async rejectTenant(spaceId: any, tenantId: any) {
+    return await apiService.request(`/tenants/reject`, {
+      method: "POST",
+      body: JSON.stringify({ space_id: spaceId, tenant_id: tenantId }),
+    });
+  }
+
+  async getTenantApprovals(params) {
+    return await apiService.request(`/tenants/approvals?${params.toString()}`);
+  }
 }
 
 export const tenantsApiService = new TenantsApiService();
