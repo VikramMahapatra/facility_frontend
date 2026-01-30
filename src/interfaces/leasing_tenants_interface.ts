@@ -26,6 +26,7 @@ export interface Lease {
   frequency?: string;
   default_payer?: string;
   is_system?: boolean;
+  auto_move_in_space_occupancy?: boolean;
 }
 
 export interface LeaseOverview {
