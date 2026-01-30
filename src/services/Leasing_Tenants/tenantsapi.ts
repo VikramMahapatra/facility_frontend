@@ -55,7 +55,7 @@ class TenantsApiService {
 
   async getTenantsBySiteSpace(params?: URLSearchParams) {
     const qs = params?.toString() ? `?${params.toString()}` : "";
-    return await apiService.request(`/tenants/by-site-space${qs}`);
+    return await apiService.request(`/tenants/users-by-site-space${qs}`);
   }
 
   async getSpaceTenants(spaceId: any) {
