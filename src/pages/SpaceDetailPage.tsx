@@ -6,10 +6,8 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Separator } from "@/components/ui/separator";
 import { spacesApiService } from "@/services/spaces_sites/spacesapi";
-import { SpaceOwnershipSection } from "@/components/SpaceOwnershipSection";
-import { SpaceTenantSection } from "@/components/SpaceTenantSection";
+import { SpaceOwnershipSection } from "@/components/spacedetails/SpaceOwnershipSection";
 import { OwnershipHistoryDialog } from "@/components/OwnershipHistoryDialog";
-import { TenantHistoryDialog } from "@/components/TenantHistoryDialog";
 import { useLoader } from "@/context/LoaderContext";
 import { getKindColor, getKindIcon, getStatusColor } from "@/interfaces/spaces_interfaces";
 import ContentContainer from "@/components/ContentContainer";
@@ -32,6 +30,9 @@ import { toast } from "sonner";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { ownerMaintenancesApiService } from "@/services/spaces_sites/ownermaintenancesapi";
 import { Pagination } from "@/components/Pagination";
+import OccupancyTab from "@/components/spacedetails/OccupancyTab";
+import SpaceTenantSection from "@/components/spacedetails/SpaceTenantSection";
+import { tenantsApiService } from "@/services/leasing_tenants/tenantsapi";
 
 export default function SpaceDetailPage() {
     const { id } = useParams<{ id: string }>();
@@ -48,11 +49,17 @@ export default function SpaceDetailPage() {
     const [isMaintenanceOpen, setIsMaintenanceOpen] = useState(false);
     const [maintenanceMode, setMaintenanceMode] = useState<"create" | "edit" | "view">("create");
     const [isHistoryOpen, setIsHistoryOpen] = useState(false);
-    const [isTenantHistoryOpen, setIsTenantHistoryOpen] = useState(false);
+    const [owners, setOwners] = useState([]);
+    const [tenants, setTenants] = useState({
+        pending: [],
+        active: []
+    });
 
     useEffect(() => {
         if (!id) return;
         loadSpace();
+        loadOwners();
+        fetchTenants();
     }, [id]);
 
     const loadSpace = async () => {
@@ -63,6 +70,18 @@ export default function SpaceDetailPage() {
             setSpace(response.data);
         }
     }
+
+    const loadOwners = async () => {
+        const res = await spacesApiService.getActiveOwners(id);
+        if (res.success) setOwners(res.data || []);
+    };
+
+    const fetchTenants = async () => {
+        const res = await tenantsApiService.getSpaceTenants(id);
+        if (res?.success) {
+            setTenants(res.data || []);
+        }
+    };
 
     const loadMaintenances = async (spaceId: string) => {
         setMaintenanceLoading(true);
@@ -179,8 +198,9 @@ export default function SpaceDetailPage() {
                     <Separator />
 
                     <Tabs defaultValue="info">
-                        <TabsList className="grid w-full grid-cols-2">
+                        <TabsList className="grid w-full grid-cols-3">
                             <TabsTrigger value="info">Space Information</TabsTrigger>
+                            <TabsTrigger value="occupancy">Occupany Information</TabsTrigger>
                             <TabsTrigger value="maintenance">Maintenance Charges</TabsTrigger>
                         </TabsList>
 
@@ -226,6 +246,8 @@ export default function SpaceDetailPage() {
                                     <CardContent>
                                         <SpaceOwnershipSection
                                             spaceId={id!}
+                                            owners={owners}
+                                            onRefresh={loadOwners}
                                             actionSlot={
                                                 <Button
                                                     onClick={() => {
@@ -247,60 +269,24 @@ export default function SpaceDetailPage() {
                                         />
                                     </CardContent>
                                 </Card>
-
-                                <Card>
-                                    <CardHeader>
-                                        <div className="flex items-center justify-between">
-                                            <CardTitle><h1 className="flex items-center gap-2">
-                                                <Users className="h-5 w-5" /> Tenant
-                                            </h1></CardTitle>
-                                            <Button
-                                                variant="ghost"
-                                                size="sm"
-                                                onClick={() => setIsTenantHistoryOpen(true)}
-                                                className="flex items-center gap-2 text-muted-foreground hover:text-foreground"
-                                            >
-                                                <History className="h-4 w-4" />
-                                                View History
-                                            </Button>
-                                        </div>
-                                    </CardHeader>
-                                    <CardContent>
-                                        <SpaceTenantSection
-                                            spaceId={id!}
-                                            actionSlot={
-                                                <Button
-                                                    onClick={() => {
-                                                        setMaintenanceRecord({
-                                                            site_name: space.site_name,
-                                                            space_name: space.name,
-                                                            building_name: space.building_block,
-                                                        });
-                                                        setMaintenanceMode("create");
-                                                        setIsMaintenanceOpen(true);
-                                                    }}
-                                                    className="gap-2"
-                                                >
-                                                    <Wrench className="h-4 w-4" />
-                                                    Create Maintenance
-                                                </Button>
-                                            }
-                                        />
-                                    </CardContent>
-                                </Card>
+                                <SpaceTenantSection
+                                    spaceId={id}
+                                    tenants={tenants}
+                                />
                             </div>
                             <OwnershipHistoryDialog
                                 open={isHistoryOpen}
                                 onClose={() => setIsHistoryOpen(false)}
                                 spaceId={id!}
                             />
-                            <TenantHistoryDialog
-                                open={isTenantHistoryOpen}
-                                onClose={() => setIsTenantHistoryOpen(false)}
-                                spaceId={id!}
+                        </TabsContent>
+                        <TabsContent value="occupancy" className="space-y-6">
+                            <OccupancyTab
+                                spaceId={id}
+                                owners={owners}
+                                tenants={tenants.active}
                             />
                         </TabsContent>
-
                         <TabsContent value="maintenance" className="space-y-4">
                             <Card>
                                 <CardHeader>

@@ -77,25 +77,12 @@ export const navigationItems = [
         icon: Building2,
         resource: "buildings",
       },
+      { title: "Spaces", url: "/spaces", icon: Home, resource: "spaces" },
       {
         title: "Space Groups (Templates)",
         url: "/space-groups",
         icon: Archive,
         resource: "space_groups",
-      },
-      { title: "Spaces", url: "/spaces", icon: Home, resource: "spaces" },
-
-      {
-        title: "Space Ownership Approvals",
-        url: "/space-ownership-approvals",
-        icon: CheckCircle2,
-        resource: "space_ownership_approvals",
-      },
-      {
-        title: "Maintenance (CAM)",
-        url: "/space-maintenance",
-        icon: Wrench,
-        resource: "spaces",
       },
       {
         title: "Group Assignments",
@@ -103,13 +90,20 @@ export const navigationItems = [
         icon: Users,
         resource: "group_assignments",
       },
+      {
+        title: "Maintenance (CAM)",
+        url: "/space-maintenance",
+        icon: Wrench,
+        resource: "spaces",
+      },
+
     ],
   },
   {
     title: "Leasing & Tenants",
     items: [
-      { title: "Leases", url: "/leases", icon: FileText, resource: "leases" },
       { title: "Tenants", url: "/tenants", icon: Users, resource: "tenants" },
+      { title: "Leases", url: "/leases", icon: FileText, resource: "leases" },
       {
         title: "Lease Charges",
         url: "/lease-charges",
@@ -192,18 +186,18 @@ export const navigationItems = [
         icon: FolderTree,
         resource: "asset_categories",
       },
-      {
-        title: "Work Orders",
-        url: "/work-orders",
-        icon: Wrench,
-        resource: "work_orders",
-      },
-      {
-        title: "Service Requests",
-        url: "/service-requests",
-        icon: AlertTriangle,
-        resource: "service_requests",
-      },
+      // {
+      //   title: "Work Orders",
+      //   url: "/work-orders",
+      //   icon: Wrench,
+      //   resource: "work_orders",
+      // },
+      // {
+      //   title: "Service Requests",
+      //   url: "/service-requests",
+      //   icon: AlertTriangle,
+      //   resource: "service_requests",
+      // },
       {
         title: "Preventive Maintenance",
         url: "/preventive-maintenance",
@@ -318,6 +312,29 @@ export const navigationItems = [
     ],
   },
   {
+    title: "Approval Requests",
+    items: [
+      {
+        title: "Users",
+        url: "/pending-approvals",
+        icon: UserCheck,
+        resource: "pending_approvals",
+      },
+      {
+        title: "Space Ownerships",
+        url: "/space-ownership-approvals",
+        icon: CheckCircle2,
+        resource: "space_ownership_approvals",
+      },
+      {
+        title: "Space Tenants",
+        url: "/tenant-space-approvals",
+        icon: CheckCircle2,
+        resource: "tenant_space_approvals",
+      }
+    ],
+  },
+  {
     title: "Access & Control",
     items: [
       {
@@ -338,12 +355,6 @@ export const navigationItems = [
         url: "/users-management",
         icon: Users,
         resource: "users_management",
-      },
-      {
-        title: "Pending Approvals",
-        url: "/pending-approvals",
-        icon: UserCheck,
-        resource: "pending_approvals",
       },
       {
         title: "Approval Rules",
@@ -376,4 +387,21 @@ export const navigationItems = [
       // },
     ],
   },
+];
+
+
+
+export const pageHeaderOverrides = [
+  {
+    match: (path: string) => path === "/profile",
+    meta: {
+      title: "My Profile",
+      breadcrumb: {
+        current: {
+          label: "My Profile",
+          icon: UserCog,
+        },
+      },
+    },
+  }
 ];

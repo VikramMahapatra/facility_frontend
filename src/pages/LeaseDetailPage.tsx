@@ -41,9 +41,10 @@ export default function LeaseDetailPage() {
   const [chargePageSize] = useState(5);
   const [chargeTotalItems, setChargeTotalItems] = useState(0);
   const [isChargeFormOpen, setIsChargeFormOpen] = useState(false);
-  const [chargeFormMode, setChargeFormMode] = useState<"create" | "edit" | "view">("create");
+  const [chargeFormMode, setChargeFormMode] = useState<
+    "create" | "edit" | "view"
+  >("create");
   const [selectedCharge, setSelectedCharge] = useState<any | undefined>();
-  
 
   useEffect(() => {
     if (!id) return;
@@ -55,14 +56,13 @@ export default function LeaseDetailPage() {
 
       if (response?.success) {
         const data = response.data;
-        
+
         if (data.lease) {
           setLease(data.lease);
         } else {
-          
           setLease(data);
         }
-      
+
         if (data.charges || data.lease_charges) {
           const charges = data.charges || data.lease_charges || [];
           setChargeHistory(Array.isArray(charges) ? charges : []);
@@ -197,7 +197,12 @@ export default function LeaseDetailPage() {
                   {lease.lease_number || `Lease #${lease.id?.slice(0, 8)}`}
                 </h1>
                 <p>
-                  <Badge className="bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-200">
+                  <Badge
+                    className="bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-200 cursor-pointer hover:bg-blue-200 transition-colors"
+                    onClick={() =>
+                      lease.space_id && navigate(`/spaces/${lease.space_id}`)
+                    }
+                  >
                     {lease.space_name || "Unknown Space"}
                   </Badge>
                 </p>
@@ -223,12 +228,11 @@ export default function LeaseDetailPage() {
 
             {/* OVERVIEW */}
             <TabsContent value="overview" className="space-y-6">
-               {/* Tenant Information */}
-               <Card>
+              {/* Tenant Information */}
+              <Card>
                 <CardContent className="p-6">
                   <h3 className="text-lg font-semibold mb-6 flex items-center gap-2">
                     <Users className="h-5 w-5" /> Tenant Information
-                    
                   </h3>
                   <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
                     <div>
@@ -237,7 +241,15 @@ export default function LeaseDetailPage() {
                         Tenant Name
                       </span>
                       <p className="font-semibold text-base">
-                        {capitalizeName(lease.tenant_name) || "-"}
+                        <span
+                          className="text-blue-600 hover:text-blue-800 cursor-pointer hover:underline"
+                          onClick={() =>
+                            lease.tenant_id &&
+                            navigate(`/tenants/${lease.tenant_id}/view`)
+                          }
+                        >
+                          {capitalizeName(lease.tenant_name) || "-"}
+                        </span>
                       </p>
                     </div>
                     {(lease as any).tenant_kind && (
@@ -350,15 +362,21 @@ export default function LeaseDetailPage() {
                           Space
                         </span>
                         <p className="font-semibold text-base">
-                          {lease.space_name}
+                          <span
+                            className="text-blue-600 hover:text-blue-800 cursor-pointer hover:underline"
+                            onClick={() =>
+                              lease.space_id &&
+                              navigate(`/spaces/${lease.space_id}`)
+                            }
+                          >
+                            {lease.space_name}
+                          </span>
                         </p>
                       </div>
                     )}
                   </div>
                 </CardContent>
               </Card>
-
-             
 
               {/* Financial Details */}
               <Card>
@@ -390,22 +408,21 @@ export default function LeaseDetailPage() {
                         </p>
                       </div>
                     )}
-                    {(lease as any).cam_rate !== undefined && (lease as any).cam_rate !== null && (
-                      <div>
-                        <span className="text-muted-foreground flex items-center gap-2 mb-2 text-sm">
-                          <Percent className="h-4 w-4" />
-                          CAM Rate
-                        </span>
-                        <p className="font-semibold text-base">
-                          {formatCurrency(Number((lease as any).cam_rate))}
-                        </p>
-                      </div>
-                    )}
+                    {(lease as any).cam_rate !== undefined &&
+                      (lease as any).cam_rate !== null && (
+                        <div>
+                          <span className="text-muted-foreground flex items-center gap-2 mb-2 text-sm">
+                            <Percent className="h-4 w-4" />
+                            CAM Rate
+                          </span>
+                          <p className="font-semibold text-base">
+                            {formatCurrency(Number((lease as any).cam_rate))}
+                          </p>
+                        </div>
+                      )}
                   </div>
                 </CardContent>
               </Card>
-
-             
 
               {/* Utilities */}
               {((lease as any).electricity || (lease as any).water) && (
@@ -451,7 +468,7 @@ export default function LeaseDetailPage() {
                     <h3 className="text-lg font-semibold flex items-center gap-2">
                       <DollarSign className="h-5 w-5" /> Lease Charges
                     </h3>
-                    { lease?.status === "active" && (
+                    {lease?.status === "active" && (
                       <Button
                         size="sm"
                         onClick={() => {
@@ -477,15 +494,22 @@ export default function LeaseDetailPage() {
                       {chargeHistory
                         .slice(
                           (chargePage - 1) * chargePageSize,
-                          chargePage * chargePageSize
+                          chargePage * chargePageSize,
                         )
                         .map((charge, index) => (
-                          <Card key={charge.id || index} className="hover:shadow-md transition-shadow">
+                          <Card
+                            key={charge.id || index}
+                            className="hover:shadow-md transition-shadow"
+                          >
                             <CardContent className="p-5">
                               <div className="flex items-start justify-between mb-4">
                                 <div className="flex items-center gap-3">
-                                  <Badge className={`${getChargeCodeColor(charge.charge_code || charge.code)} text-base font-semibold px-3 py-1 border-0`}>
-                                    {charge.charge_code || charge.code || `Charge #${index + 1}`}
+                                  <Badge
+                                    className={`${getChargeCodeColor(charge.charge_code || charge.code)} text-base font-semibold px-3 py-1 border-0`}
+                                  >
+                                    {charge.charge_code ||
+                                      charge.code ||
+                                      `Charge #${index + 1}`}
                                   </Badge>
                                   {charge.invoice_status === "paid" && (
                                     <Badge className="bg-green-100 text-green-700">
@@ -495,17 +519,23 @@ export default function LeaseDetailPage() {
                                 </div>
                                 {charge.total_amount && (
                                   <div className="text-right">
-                                    <p className="text-xs text-muted-foreground mb-1">Total Amount</p>
+                                    <p className="text-xs text-muted-foreground mb-1">
+                                      Total Amount
+                                    </p>
                                     <p className="text-xl font-bold">
-                                      {formatCurrency(Number(charge.total_amount))}
+                                      {formatCurrency(
+                                        Number(charge.total_amount),
+                                      )}
                                     </p>
                                   </div>
                                 )}
                               </div>
-                              
+
                               <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 mb-4">
                                 <div>
-                                  <span className="text-xs text-muted-foreground block mb-1">Period</span>
+                                  <span className="text-xs text-muted-foreground block mb-1">
+                                    Period
+                                  </span>
                                   <p className="font-medium text-sm">
                                     {charge.period_start && charge.period_end
                                       ? `${formatDate(charge.period_start)} - ${formatDate(charge.period_end)}`
@@ -517,52 +547,65 @@ export default function LeaseDetailPage() {
                                     </p>
                                   )}
                                 </div>
-                                
+
                                 <div>
-                                  <span className="text-xs text-muted-foreground block mb-1">Base Amount</span>
+                                  <span className="text-xs text-muted-foreground block mb-1">
+                                    Base Amount
+                                  </span>
                                   <p className="font-medium text-sm">
                                     {charge.amount
                                       ? formatCurrency(Number(charge.amount))
                                       : "-"}
                                   </p>
                                 </div>
-                                
-                                {charge.tax_pct !== undefined && charge.tax_pct !== null && (
-                                  <div>
-                                    <span className="text-xs text-muted-foreground block mb-1">
-                                      Tax ({charge.tax_pct}%)
-                                    </span>
-                                    <p className="font-medium text-sm">
-                                      {charge.tax_amount
-                                        ? formatCurrency(Number(charge.tax_amount))
-                                        : "-"}
-                                    </p>
-                                  </div>
-                                )}
-                                
+
+                                {charge.tax_pct !== undefined &&
+                                  charge.tax_pct !== null && (
+                                    <div>
+                                      <span className="text-xs text-muted-foreground block mb-1">
+                                        Tax ({charge.tax_pct}%)
+                                      </span>
+                                      <p className="font-medium text-sm">
+                                        {charge.tax_amount
+                                          ? formatCurrency(
+                                              Number(charge.tax_amount),
+                                            )
+                                          : "-"}
+                                      </p>
+                                    </div>
+                                  )}
+
                                 {charge.payer_type && (
                                   <div>
-                                    <span className="text-xs text-muted-foreground block mb-1">Payer Type</span>
+                                    <span className="text-xs text-muted-foreground block mb-1">
+                                      Payer Type
+                                    </span>
                                     <p className="font-medium text-sm capitalize">
                                       {charge.payer_type}
                                     </p>
                                   </div>
                                 )}
-                                
+
                                 {charge.created_at && (
                                   <div>
-                                    <span className="text-xs text-muted-foreground block mb-1">Created Date</span>
+                                    <span className="text-xs text-muted-foreground block mb-1">
+                                      Created Date
+                                    </span>
                                     <p className="font-medium text-sm">
                                       {formatDate(charge.created_at)}
                                     </p>
                                   </div>
                                 )}
                               </div>
-                              
+
                               {charge.description && (
                                 <div className="pt-3 border-t">
-                                  <span className="text-xs text-muted-foreground block mb-1">Description</span>
-                                  <p className="text-sm">{charge.description}</p>
+                                  <span className="text-xs text-muted-foreground block mb-1">
+                                    Description
+                                  </span>
+                                  <p className="text-sm">
+                                    {charge.description}
+                                  </p>
                                 </div>
                               )}
                             </CardContent>
@@ -570,7 +613,7 @@ export default function LeaseDetailPage() {
                         ))}
                     </div>
                   )}
-                  
+
                   {/* Pagination */}
                   {chargeTotalItems > chargePageSize && (
                     <div className="mt-6">
@@ -591,10 +634,10 @@ export default function LeaseDetailPage() {
       <LeaseChargeForm
         charge={
           chargeFormMode === "create" && id && lease
-            ? { 
+            ? ({
                 lease_id: id,
-                lease_name: lease.lease_number ,
-              } as any
+                lease_name: lease.lease_number,
+              } as any)
             : selectedCharge
         }
         isOpen={isChargeFormOpen}
@@ -619,7 +662,9 @@ export default function LeaseDetailPage() {
               updated_at: new Date().toISOString(),
             };
             response = await withLoader(async () => {
-              return await leaseChargeApiService.updateLeaseCharge(updatedCharge);
+              return await leaseChargeApiService.updateLeaseCharge(
+                updatedCharge,
+              );
             });
           }
 
@@ -627,7 +672,7 @@ export default function LeaseDetailPage() {
             setIsChargeFormOpen(false);
             setSelectedCharge(undefined);
             toast.success(
-              `Lease charge has been ${chargeFormMode === "create" ? "created" : "updated"} successfully.`
+              `Lease charge has been ${chargeFormMode === "create" ? "created" : "updated"} successfully.`,
             );
             // Reload lease detail data to show the new/updated charge
             if (id) {
@@ -644,7 +689,9 @@ export default function LeaseDetailPage() {
                 if (data.charges || data.lease_charges) {
                   const charges = data.charges || data.lease_charges || [];
                   setChargeHistory(Array.isArray(charges) ? charges : []);
-                  setChargeTotalItems(Array.isArray(charges) ? charges.length : 0);
+                  setChargeTotalItems(
+                    Array.isArray(charges) ? charges.length : 0,
+                  );
                 }
               }
             }
@@ -652,7 +699,9 @@ export default function LeaseDetailPage() {
             if (response?.message) {
               toast.error(response.message);
             } else {
-              toast.error(`Failed to ${chargeFormMode === "create" ? "create" : "update"} lease charge.`);
+              toast.error(
+                `Failed to ${chargeFormMode === "create" ? "create" : "update"} lease charge.`,
+              );
             }
           }
           return response;

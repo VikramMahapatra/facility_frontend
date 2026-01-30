@@ -166,6 +166,7 @@ const App = () => {
                       <Route path="/ticket-workload" element={<TicketWorkload />} />
                       <Route path="/approval-rules" element={<ApprovalRules />} />
                       <Route path="/space-ownership-approvals" element={<SpaceOwnershipApproval />} />
+                      <Route path="/profile" element={<UserManagementDetailPage />} />
                     </Route>
                   </Route>
                   {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
