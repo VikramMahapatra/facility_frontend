@@ -11,7 +11,16 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { Plus, Eye, Edit, Trash2, Calendar, SearchIcon, Search } from "lucide-react";
+import {
+  Plus,
+  Eye,
+  Edit,
+  Trash2,
+  Calendar,
+  SearchIcon,
+  Search,
+  Sparkles,
+} from "lucide-react";
 import {
   Table,
   TableBody,
@@ -24,6 +33,7 @@ import { siteApiService } from "@/services/spaces_sites/sitesapi";
 import { AsyncAutocompleteRQ } from "@/components/common/async-autocomplete-rq";
 import { toast } from "sonner";
 import { SpaceMaintenanceForm } from "@/components/SpaceMaintenanceForm";
+import { AutoGenerateMaintenanceForm } from "@/components/AutoGenerateMaintenanceForm";
 import { ownerMaintenancesApiService } from "@/services/spaces_sites/ownermaintenancesapi";
 import ContentContainer from "@/components/ContentContainer";
 import LoaderOverlay from "@/components/LoaderOverlay";
@@ -103,6 +113,7 @@ const SpaceMaintenance = () => {
   const [deleteMaintenanceId, setDeleteMaintenanceId] = useState<string | null>(
     null,
   );
+  const [isAutoGenerateFormOpen, setIsAutoGenerateFormOpen] = useState(false);
   const { canRead, canWrite } = useAuth();
   const resource = "spaces";
   const location = useLocation();
@@ -179,9 +190,10 @@ const SpaceMaintenance = () => {
 
   const confirmDelete = async () => {
     if (deleteMaintenanceId) {
-      const response = await ownerMaintenancesApiService.deleteOwnerMaintenance(
-        deleteMaintenanceId,
-      );
+      const response =
+        await ownerMaintenancesApiService.deleteOwnerMaintenance(
+          deleteMaintenanceId,
+        );
       if (response?.success) {
         loadMaintenances();
         toast.success("Maintenance deleted successfully");
@@ -191,8 +203,6 @@ const SpaceMaintenance = () => {
       }
     }
   };
-
-  
 
   const handleSave = async (payload: any) => {
     let response;
@@ -237,12 +247,23 @@ const SpaceMaintenance = () => {
       <Card>
         <CardHeader className="flex flex-row items-center justify-between">
           <CardTitle>Space Maintenance</CardTitle>
-          {canWrite(resource) && (
-            <Button onClick={handleCreate}>
-              <Plus className="h-4 w-4" />
-              Create Maintenance
-            </Button>
-          )}
+          <div className="flex gap-2">
+            {canWrite(resource) && (
+              <>
+                <Button
+                  variant="outline"
+                  onClick={() => setIsAutoGenerateFormOpen(true)}
+                >
+                  <Sparkles className="h-4 w-4 mr-2" />
+                  Auto Generate
+                </Button>
+                <Button onClick={handleCreate}>
+                  <Plus className="h-4 w-4" />
+                  Create Maintenance
+                </Button>
+              </>
+            )}
+          </div>
         </CardHeader>
         <CardContent>
           <div className="text-sm text-muted-foreground mb-4">
@@ -406,6 +427,14 @@ const SpaceMaintenance = () => {
         mode={formMode}
         record={selectedMaintenance as any}
         defaultSpaceId={defaultSpaceId}
+      />
+
+      <AutoGenerateMaintenanceForm
+        isOpen={isAutoGenerateFormOpen}
+        onClose={() => setIsAutoGenerateFormOpen(false)}
+        onSuccess={() => {
+          loadMaintenances();
+        }}
       />
 
       <AlertDialog
