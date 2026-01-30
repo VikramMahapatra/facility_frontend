@@ -78,6 +78,7 @@ import "./App.css";
 import SpaceDetailPage from "./pages/SpaceDetailPage";
 import SpaceOwnershipApproval from "./pages/SpaceOwnershipApproval";
 import SpaceMaintenance from "./pages/SpaceMaintenance";
+import TenantApprovalPage from "./pages/TenantApprovals";
 
 const queryClient = new QueryClient();
 
@@ -166,6 +167,7 @@ const App = () => {
                       <Route path="/ticket-workload" element={<TicketWorkload />} />
                       <Route path="/approval-rules" element={<ApprovalRules />} />
                       <Route path="/space-ownership-approvals" element={<SpaceOwnershipApproval />} />
+                      <Route path="/tenant-space-approvals" element={<TenantApprovalPage />} />
                       <Route path="/profile" element={<UserManagementDetailPage />} />
                     </Route>
                   </Route>
