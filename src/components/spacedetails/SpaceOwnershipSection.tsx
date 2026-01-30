@@ -21,12 +21,10 @@ export function SpaceOwnershipSection({
   spaceId,
   owners,
   onRefresh,
-  actionSlot,
 }: {
   spaceId: string;
   owners: any[];
   onRefresh: () => void;
-  actionSlot?: React.ReactNode;
 }) {
   const [open, setOpen] = useState(false);
 
@@ -36,8 +34,7 @@ export function SpaceOwnershipSection({
         <Alert variant="destructive">
           <AlertTitle>No owner assigned</AlertTitle>
           <AlertDescription>
-            This space currently has no owner. Assign ownership to continue
-            normal operations.
+            This space currently has no owner. Assign owner to continue normal operations.
           </AlertDescription>
         </Alert>
       )}
@@ -56,7 +53,6 @@ export function SpaceOwnershipSection({
 
       <div className="flex items-center gap-2">
         <Button onClick={() => setOpen(true)}>Assign / Change Ownership</Button>
-        {owners.length > 0 && actionSlot}
       </div>
 
       <OwnershipDialog
@@ -64,9 +60,9 @@ export function SpaceOwnershipSection({
         onClose={() => setOpen(false)}
         spaceId={spaceId}
         onSuccess={() => {
-          onRefresh();
           setOpen(false);
         }}
+        type="owner"
       />
     </div>
   );

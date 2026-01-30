@@ -6,6 +6,7 @@ import { tenantsApiService } from "@/services/leasing_tenants/tenantsapi";
 import { Card, CardContent, CardHeader, CardTitle } from "../ui/card";
 import { Button } from "../ui/button";
 import { Alert, AlertDescription, AlertTitle } from "../ui/alert";
+import { OwnershipDialog } from "../OwnershipDialog";
 
 interface Tenant {
   id: string;
@@ -26,7 +27,7 @@ export default function SpaceTenantSection({ spaceId, tenants }: Props) {
   const [pendingTenants, setPendingTenants] = useState<Tenant[]>([]);
   const [activeTenants, setActiveTenants] = useState<Tenant[]>([]);
   const [isTenantHistoryOpen, setIsTenantHistoryOpen] = useState(false);
-
+  const [openTenantAssignmentForm, setOpenTenantAssignmentForm] = useState(false);
 
   const fetchTenants = async () => {
     setPendingTenants(tenants.pending || []);
@@ -72,18 +73,17 @@ export default function SpaceTenantSection({ spaceId, tenants }: Props) {
             </Button>
           </div>
         </CardHeader>
-        <CardContent className="space-y-3">
-          {pendingTenants.length === 0 && activeTenants.length === 0 ? (
+        <CardContent className="space-y-4">
+          {activeTenants.length === 0 ? (
             <Alert variant="destructive">
-              <AlertTitle>No owner assigned</AlertTitle>
+              <AlertTitle>No tenant assigned</AlertTitle>
               <AlertDescription>
-                This space currently has no tenant. Assign tenant to continue
-                normal operations.
+                This space currently has no tenant. Assign tenant to continue normal operations.
               </AlertDescription>
             </Alert>
           ) : (
             <>
-              {pendingTenants.map((t) => (
+              {/* {pendingTenants.map((t) => (
                 <Card key={t.id} className="p-4 flex justify-between items-center">
                   <p className="font-medium">{t.full_name}</p>
                   <div className="flex gap-2">
@@ -92,7 +92,7 @@ export default function SpaceTenantSection({ spaceId, tenants }: Props) {
                   </div>
                 </Card>
               ))
-              }
+              } */}
 
               {activeTenants.map((t) => (
                 <Card key={t.id} className="p-4 flex justify-between items-center">
@@ -107,10 +107,22 @@ export default function SpaceTenantSection({ spaceId, tenants }: Props) {
               ))}
             </>
           )}
+          <div className="flex items-center gap-2">
+            <Button onClick={() => setOpenTenantAssignmentForm(true)}>Assign / Change Tenant</Button>
+          </div>
           <TenantHistoryDialog
             open={isTenantHistoryOpen}
             onClose={() => setIsTenantHistoryOpen(false)}
             spaceId={spaceId!}
+          />
+          <OwnershipDialog
+            open={openTenantAssignmentForm}
+            onClose={() => setOpenTenantAssignmentForm(false)}
+            spaceId={spaceId}
+            onSuccess={() => {
+              setOpenTenantAssignmentForm(false);
+            }}
+            type="tenant"
           />
         </CardContent>
 

@@ -248,24 +248,24 @@ export default function SpaceDetailPage() {
                                             spaceId={id!}
                                             owners={owners}
                                             onRefresh={loadOwners}
-                                            actionSlot={
-                                                <Button
-                                                    onClick={() => {
-                                                        setMaintenanceRecord({
+                                        // actionSlot={
+                                        //     <Button
+                                        //         onClick={() => {
+                                        //             setMaintenanceRecord({
 
-                                                            site_name: space.site_name,
-                                                            space_name: space.name,
-                                                            building_name: space.building_block,
-                                                        });
-                                                        setMaintenanceMode("create");
-                                                        setIsMaintenanceOpen(true);
-                                                    }}
-                                                    className="gap-2"
-                                                >
-                                                    <Wrench className="h-4 w-4" />
-                                                    Create Maintenance
-                                                </Button>
-                                            }
+                                        //                 site_name: space.site_name,
+                                        //                 space_name: space.name,
+                                        //                 building_name: space.building_block,
+                                        //             });
+                                        //             setMaintenanceMode("create");
+                                        //             setIsMaintenanceOpen(true);
+                                        //         }}
+                                        //         className="gap-2"
+                                        //     >
+                                        //         <Wrench className="h-4 w-4" />
+                                        //         Create Maintenance
+                                        //     </Button>
+                                        // }
                                         />
                                     </CardContent>
                                 </Card>

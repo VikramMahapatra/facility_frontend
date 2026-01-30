@@ -14,6 +14,7 @@ export function OwnershipDialog({
     onClose,
     spaceId,
     onSuccess,
+    type
 }: any) {
     const [ownerId, setOwnerId] = useState<string>("");
     const [isSubmitting, setIsSubmitting] = useState(false);
@@ -23,18 +24,21 @@ export function OwnershipDialog({
 
         setIsSubmitting(true);
         try {
-            const res = await spacesApiService.assignOwner({
-                space_id: spaceId,
-                owner_user_id: ownerId,
-                ownership_percentage: 100,
-            });
+            if (type == "owner") {
+                const res = await spacesApiService.assignOwner({
+                    space_id: spaceId,
+                    owner_user_id: ownerId,
+                    ownership_percentage: 100,
+                });
 
-            if (res.success) {
-                toast.success("Ownership updated");
-                onSuccess();
+                if (res.success) {
+                    toast.success("Ownership request submitted");
+                    onSuccess();
+                }
             }
+
         } catch (error) {
-            toast.error("Failed to assign ownership");
+            toast.error("Failed to assign ownership/tenant");
         } finally {
             setIsSubmitting(false);
         }
