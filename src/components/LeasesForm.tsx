@@ -19,6 +19,7 @@ import {
 import { toast } from "sonner";
 import { Controller, useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
+import { Checkbox } from "@/components/ui/checkbox";
 import { leaseSchema, LeaseFormValues } from "@/schemas/lease.schema";
 import { siteApiService } from "@/services/spaces_sites/sitesapi";
 import { spacesApiService } from "@/services/spaces_sites/spacesapi";
@@ -50,6 +51,7 @@ const emptyFormData: Partial<Lease> = {
   cam_rate: "" as any,
   utilities: { electricity: undefined, water: undefined },
   status: "draft",
+  auto_move_in_space_occupancy: false,
 };
 
 export function LeaseForm({
@@ -86,6 +88,7 @@ export function LeaseForm({
       cam_rate: "" as any,
       utilities: { electricity: undefined, water: undefined },
       status: "draft",
+      auto_move_in_space_occupancy: false,
     },
     mode: "onChange",
     reValidateMode: "onChange",
@@ -108,24 +111,24 @@ export function LeaseForm({
     reset(
       lease
         ? {
-          kind: (lease.kind as any) || "commercial",
-          site_id: lease.site_id || "",
-          building_id: leaseBuildingId || "",
-          space_id: lease.space_id || "",
-          partner_id: lease.partner_id ? String(lease.partner_id) : "",
-          tenant_id: lease.tenant_id ? String(lease.tenant_id) : "",
-          start_date: lease.start_date || "",
-          end_date: lease.end_date || "",
-          rent_amount: lease.rent_amount as any,
-          deposit_amount: lease.deposit_amount as any,
-          cam_rate: lease.cam_rate as any,
-          utilities: {
-            electricity: lease.utilities?.electricity as any,
-            water: lease.utilities?.water as any,
-          },
-          status: (lease.status as any) || "draft",
-        }
-        : emptyFormData
+            kind: (lease.kind as any) || "commercial",
+            site_id: lease.site_id || "",
+            building_id: leaseBuildingId || "",
+            space_id: lease.space_id || "",
+            partner_id: lease.partner_id ? String(lease.partner_id) : "",
+            tenant_id: lease.tenant_id ? String(lease.tenant_id) : "",
+            start_date: lease.start_date || "",
+            end_date: lease.end_date || "",
+            rent_amount: lease.rent_amount as any,
+            deposit_amount: lease.deposit_amount as any,
+            cam_rate: lease.cam_rate as any,
+            utilities: {
+              electricity: lease.utilities?.electricity as any,
+              water: lease.utilities?.water as any,
+            },
+            status: (lease.status as any) || "draft",
+          }
+        : emptyFormData,
     );
 
     setFormLoading(false);
@@ -139,7 +142,7 @@ export function LeaseForm({
       if (leaseSiteId) {
         const spaces = await spacesApiService.getSpaceLookup(
           leaseSiteId,
-          leaseBuildingId
+          leaseBuildingId,
         );
         if (spaces.success) setSpaceList(spaces.data || []);
       }
@@ -212,27 +215,28 @@ export function LeaseForm({
   const fallbackSite = lease?.site_id
     ? {
         id: lease.site_id,
-        name: (lease as any).site_name ,
+        name: (lease as any).site_name,
       }
     : null;
 
-  const fallbackBuilding = lease?.building_id || (lease as any)?.building_block_id
-    ? {
-        id: (lease as any).building_id || (lease as any).building_block_id,
-        name: (lease as any).building_name,
-      }
-    : null;
+  const fallbackBuilding =
+    lease?.building_id || (lease as any)?.building_block_id
+      ? {
+          id: (lease as any).building_id || (lease as any).building_block_id,
+          name: (lease as any).building_name,
+        }
+      : null;
 
   const fallbackSpace = lease?.space_id
     ? {
         id: lease.space_id,
-        name: (lease as any).space_name 
+        name: (lease as any).space_name,
       }
     : null;
-const fallbackTenant = lease?.tenant_id
+  const fallbackTenant = lease?.tenant_id
     ? {
         id: lease.tenant_id,
-        name: (lease as any).tenant_name ,
+        name: (lease as any).tenant_name,
       }
     : null;
 
@@ -250,7 +254,7 @@ const fallbackTenant = lease?.tenant_id
     if (selectedSiteId) {
       const spaces = await spacesApiService.getSpaceLookup(
         selectedSiteId,
-        selectedBuildingId
+        selectedBuildingId,
       );
       if (spaces.success) setSpaceList(spaces.data || []);
     }
@@ -265,7 +269,7 @@ const fallbackTenant = lease?.tenant_id
     if (!selectedSiteId) return;
     const tenants = await leasesApiService.getLeaseTenantLookup(
       selectedSiteId,
-      selectedSpaceId
+      selectedSpaceId,
     );
     if (tenants?.success) setLeasePartnerList(tenants.data || []);
   };
@@ -308,16 +312,16 @@ const fallbackTenant = lease?.tenant_id
             isSubmitting
               ? undefined
               : handleSubmit(onSubmitForm, (errors) => {
-                console.log("Form validation errors:", errors);
-                const firstError = Object.values(errors)[0];
-                if (firstError?.message) {
-                  toast.error(firstError.message as string);
-                } else {
-                  toast.error(
-                    "Please fill in all required fields correctly."
-                  );
-                }
-              })
+                  console.log("Form validation errors:", errors);
+                  const firstError = Object.values(errors)[0];
+                  if (firstError?.message) {
+                    toast.error(firstError.message as string);
+                  } else {
+                    toast.error(
+                      "Please fill in all required fields correctly.",
+                    );
+                  }
+                })
           }
           className="space-y-4"
         >
@@ -378,7 +382,9 @@ const fallbackTenant = lease?.tenant_id
                           // Reset space when building changes
                           setValue("space_id", "");
                         }}
-                        disabled={isReadOnly || !selectedSiteId || disableLocationFields}
+                        disabled={
+                          isReadOnly || !selectedSiteId || disableLocationFields
+                        }
                       >
                         <SelectTrigger>
                           <SelectValue
@@ -413,7 +419,9 @@ const fallbackTenant = lease?.tenant_id
                       <Select
                         value={field.value || ""}
                         onValueChange={field.onChange}
-                        disabled={isReadOnly || !selectedSiteId || disableLocationFields}
+                        disabled={
+                          isReadOnly || !selectedSiteId || disableLocationFields
+                        }
                       >
                         <SelectTrigger
                           className={errors.space_id ? "border-red-500" : ""}
@@ -531,9 +539,7 @@ const fallbackTenant = lease?.tenant_id
                     step="any"
                     disabled={isReadOnly}
                     {...register("deposit_amount")}
-                    className={
-                      errors.deposit_amount ? "border-red-500" : ""
-                    }
+                    className={errors.deposit_amount ? "border-red-500" : ""}
                   />
                   {errors.deposit_amount && (
                     <p className="text-sm text-red-500">
@@ -574,9 +580,7 @@ const fallbackTenant = lease?.tenant_id
                           <SelectItem value="draft">Draft</SelectItem>
                           <SelectItem value="active">Active</SelectItem>
                           <SelectItem value="expired">Expired</SelectItem>
-                          <SelectItem value="terminated">
-                            Terminated
-                          </SelectItem>
+                          <SelectItem value="terminated">Terminated</SelectItem>
                         </SelectContent>
                       </Select>
                     )}
@@ -632,6 +636,28 @@ const fallbackTenant = lease?.tenant_id
                     )}
                   />
                 </div>
+              </div>
+
+              {/* Auto Move In Space Occupancy Checkbox */}
+              <div className="flex items-center space-x-2">
+                <Controller
+                  name="auto_move_in_space_occupancy"
+                  control={control}
+                  render={({ field }) => (
+                    <Checkbox
+                      id="auto_move_in_space_occupancy"
+                      checked={field.value || false}
+                      onCheckedChange={field.onChange}
+                      disabled={isReadOnly}
+                    />
+                  )}
+                />
+                <Label
+                  htmlFor="auto_move_in_space_occupancy"
+                  className="text-sm font-normal cursor-pointer"
+                >
+                  Do you want to Auto move in space occupancy
+                </Label>
               </div>
 
               <DialogFooter>
