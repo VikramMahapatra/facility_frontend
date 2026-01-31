@@ -1,57 +1,54 @@
 import { useEffect, useState } from "react";
 import { Card, CardHeader, CardTitle, CardContent, } from "@/components/ui/card";
-import { Users, LogIn, LogOut, History } from "lucide-react";
+import { Users, LogIn, LogOut, History, Clock, CheckCircle, XCircle } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "../ui/button";
 import { formatDate } from "@/helpers/dateHelpers";
-import { occupancyApiService } from "@/services/spaces_sites/spaceoccupancyapi";
 import MoveInModal from "./MoveInModal";
 import MoveOutModal from "./MoveOutModal";
-
-interface OccupancyRecord {
-    status: "vacant" | "occupied";
-    occupant_type?: string;
-    occupant_name?: string;
-    move_in_date?: string;
-    reference_no?: string;
-}
-
-interface HistoryRecord {
-    id: string;
-    occupant_type: string;
-    occupant_name: string;
-    move_in_date: string;
-    move_out_date?: string;
-}
+import { TimelineEvent, OccupancyRecord } from "@/interfaces/spaces_interfaces";
 
 interface Props {
     spaceId: string;
     owners: any[];
     tenants: any[];
+    occupancy: OccupancyRecord;
+    history: TimelineEvent[];
+    onSucess: () => void;
 }
 
-export default function OccupancyTab({ spaceId, owners, tenants }: Props) {
-    const [occupancy, setOccupancy] = useState<OccupancyRecord>({ status: "vacant" });
-    const [history, setHistory] = useState<HistoryRecord[]>([]);
-    const [loading, setLoading] = useState(false);
+const EVENT_META: Record<string, any> = {
+    tenant_requested: {
+        label: "Tenant Requested",
+        icon: Clock,
+        color: "text-yellow-600 bg-yellow-100"
+    },
+    tenant_approved: {
+        label: "Tenant Approved",
+        icon: CheckCircle,
+        color: "text-green-600 bg-green-100"
+    },
+    tenant_rejected: {
+        label: "Tenant Rejected",
+        icon: XCircle,
+        color: "text-red-600 bg-red-100"
+    },
+    moved_in: {
+        label: "Moved In",
+        icon: LogIn,
+        color: "text-green-700 bg-green-100"
+    },
+    moved_out: {
+        label: "Moved Out",
+        icon: LogOut,
+        color: "text-gray-600 bg-gray-100"
+    }
+};
+
+export default function OccupancyTab({ spaceId, owners, tenants, occupancy, history, onSucess }: Props) {
     const [isMoveInOpen, setIsMoveInOpen] = useState(false);
     const [isMoveOutOpen, setIsMoveOutOpen] = useState(false);
-
-
-    const fetchOccupancy = async () => {
-        setLoading(true);
-        const res = await occupancyApiService.getSpaceOccupancy(spaceId);
-        if (res?.success) {
-            setOccupancy(res.data.current || { status: "vacant" });
-            setHistory(res.data.history || []);
-        }
-        setLoading(false);
-    };
-
-    useEffect(() => {
-        fetchOccupancy();
-    }, [spaceId]);
-
+    const canViewMoveInButton = owners.length > 0 || tenants.length > 0;
 
     return (
         <div className="space-y-6">
@@ -69,7 +66,7 @@ export default function OccupancyTab({ spaceId, owners, tenants }: Props) {
                         </Badge>
 
                         <div className="flex gap-2">
-                            {occupancy.status === "vacant" && (
+                            {occupancy.status === "vacant" && canViewMoveInButton && (
                                 <Button onClick={() => setIsMoveInOpen(true)}>
                                     <LogIn className="h-4 w-4 mr-1" /> Move-In
                                 </Button>
@@ -110,22 +107,64 @@ export default function OccupancyTab({ spaceId, owners, tenants }: Props) {
             <Card>
                 <CardHeader>
                     <CardTitle className="flex items-center gap-2">
-                        <History className="h-5 w-5" /> Occupancy History
+                        <History className="h-5 w-5" /> Occupancy Timeline
                     </CardTitle>
                 </CardHeader>
                 <CardContent className="space-y-3">
-                    {history.length === 0 && (
+                    {history.length === 0 ? (
                         <p className="text-sm text-muted-foreground">No history</p>
-                    )}
-                    {history.map((h) => (
-                        <div key={h.id} className="border rounded p-3 text-sm">
-                            <div className="font-medium">{h.occupant_name}</div>
-                            <div className="text-muted-foreground">
-                                {h.occupant_type} • {formatDate(h.move_in_date)} →{" "}
-                                {h.move_out_date ? formatDate(h.move_out_date) : "Present"}
+                    ) : (
+                        <div className="relative pl-6">
+                            {/* vertical line */}
+                            <div className="absolute left-2 top-0 h-full w-px bg-border" />
+                            <div className="space-y-6">
+                                {history.map((e, i) => {
+                                    const meta = EVENT_META[e.event] || {};
+                                    const Icon = meta.icon || Clock;
+
+                                    return (
+                                        <div key={i} className="relative flex gap-4">
+                                            {/* dot */}
+                                            <div
+                                                className={`flex h-8 w-8 items-center justify-center rounded-full ${meta.color}`}
+                                            >
+                                                <Icon className="h-4 w-4" />
+                                            </div>
+
+                                            {/* content */}
+                                            <div className="flex-1">
+                                                <div className="flex items-center gap-2">
+                                                    <p className="font-medium">{meta.label || e.event}</p>
+
+                                                    {e.occupant_type && (
+                                                        <span className="rounded bg-muted px-2 py-0.5 text-xs capitalize">
+                                                            {e.occupant_type}
+                                                        </span>
+                                                    )}
+                                                </div>
+
+                                                {e.occupant_name && (
+                                                    <p className="text-sm text-muted-foreground">
+                                                        {e.occupant_name}
+                                                    </p>
+                                                )}
+
+                                                <p className="text-xs text-muted-foreground">
+                                                    {new Date(e.date).toLocaleString()}
+                                                </p>
+
+                                                {e.notes && (
+                                                    <p className="mt-1 text-sm text-muted-foreground">
+                                                        {e.notes}
+                                                    </p>
+                                                )}
+                                            </div>
+                                        </div>
+                                    );
+                                })}
                             </div>
                         </div>
-                    ))}
+                    )}
                 </CardContent>
             </Card>
             <MoveInModal
@@ -135,7 +174,7 @@ export default function OccupancyTab({ spaceId, owners, tenants }: Props) {
                 onClose={() => setIsMoveInOpen(false)}
                 spaceId={spaceId}
                 onSuccess={() => {
-                    fetchOccupancy();   // refresh current occupancy
+                    onSucess();   // refresh current occupancy
                 }}
             />
             <MoveOutModal
@@ -143,7 +182,7 @@ export default function OccupancyTab({ spaceId, owners, tenants }: Props) {
                 onClose={() => setIsMoveOutOpen(false)}
                 spaceId={spaceId}
                 onSuccess={() => {
-                    fetchOccupancy();   // refresh current occupancy
+                    onSucess();   // refresh current occupancy
                 }}
             />
         </div>

@@ -6,7 +6,7 @@ import { tenantsApiService } from "@/services/leasing_tenants/tenantsapi";
 import { Card, CardContent, CardHeader, CardTitle } from "../ui/card";
 import { Button } from "../ui/button";
 import { Alert, AlertDescription, AlertTitle } from "../ui/alert";
-import { OwnershipDialog } from "../OwnershipDialog";
+import { OwnershipDialog } from "./OwnershipDialog";
 
 interface Tenant {
   id: string;
@@ -24,28 +24,19 @@ interface Props {
 }
 
 export default function SpaceTenantSection({ spaceId, tenants }: Props) {
-  const [pendingTenants, setPendingTenants] = useState<Tenant[]>([]);
-  const [activeTenants, setActiveTenants] = useState<Tenant[]>([]);
   const [isTenantHistoryOpen, setIsTenantHistoryOpen] = useState(false);
   const [openTenantAssignmentForm, setOpenTenantAssignmentForm] = useState(false);
 
-  const fetchTenants = async () => {
-    setPendingTenants(tenants.pending || []);
-    setActiveTenants(tenants.active || []);
-  };
 
-  useEffect(() => {
-    fetchTenants();
-  }, [spaceId]);
 
   const approveTenant = async (tenantId: string) => {
     await tenantsApiService.approveTenant(spaceId, tenantId);
-    fetchTenants();
+    // fetchTenants();
   };
 
   const rejectTenant = async (tenantId: string) => {
     await tenantsApiService.rejectTenant(spaceId, tenantId);
-    fetchTenants();
+    // fetchTenants();
   };
 
   const navigateToOccupancyTab = () => {
@@ -74,7 +65,7 @@ export default function SpaceTenantSection({ spaceId, tenants }: Props) {
           </div>
         </CardHeader>
         <CardContent className="space-y-4">
-          {activeTenants.length === 0 ? (
+          {tenants?.active.length === 0 ? (
             <Alert variant="destructive">
               <AlertTitle>No tenant assigned</AlertTitle>
               <AlertDescription>
@@ -94,7 +85,7 @@ export default function SpaceTenantSection({ spaceId, tenants }: Props) {
               ))
               } */}
 
-              {activeTenants.map((t) => (
+              {tenants?.active.map((t) => (
                 <Card key={t.id} className="p-4 flex justify-between items-center">
                   <div>
                     <p className="font-medium">{t.full_name}<span></span></p>
@@ -102,7 +93,7 @@ export default function SpaceTenantSection({ spaceId, tenants }: Props) {
                       {t.lease_no && `Lease: #${t.lease_no}`}
                     </p>
                   </div>
-                  <Button size="sm" onClick={navigateToOccupancyTab}>Go to Occupancy</Button>
+
                 </Card>
               ))}
             </>

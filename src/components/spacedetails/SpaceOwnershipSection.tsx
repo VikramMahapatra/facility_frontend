@@ -15,7 +15,7 @@ import { AsyncAutocompleteRQ } from "@/components/common/async-autocomplete-rq";
 import { toast } from "sonner";
 import { useEffect, useState } from "react";
 import { spacesApiService } from "@/services/spaces_sites/spacesapi";
-import { OwnershipDialog } from "../OwnershipDialog";
+import { OwnershipDialog } from "./OwnershipDialog";
 
 export function SpaceOwnershipSection({
   spaceId,

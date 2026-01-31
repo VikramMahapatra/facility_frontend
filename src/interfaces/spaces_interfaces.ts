@@ -1,3 +1,31 @@
+
+export interface OccupancyRecord {
+    status: "vacant" | "occupied";
+    occupant_type?: string;
+    occupant_name?: string;
+    move_in_date?: string;
+    reference_no?: string;
+};
+
+
+export interface HistoryRecord {
+    id: string;
+    occupant_type: string;
+    occupant_name: string;
+    move_in_date: string;
+    move_out_date?: string;
+}
+
+export type TimelineEvent = {
+    event: string;              // moved_in, moved_out, tenant_requested...
+    occupant_type?: "owner" | "tenant";
+    occupant_user_id?: string;
+    occupant_name?: string;
+    date: string;               // ISO
+    notes?: string;
+};
+
+
 export const getKindIcon = (kind: SpaceKind) => {
     const icons = {
         room: "🏨",

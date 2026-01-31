@@ -63,6 +63,7 @@ export default function TenantApprovalPage() {
     };
 
     const approveTenant = async (spaceId: string, tenantId: string) => {
+        console.log("space & tenant", spaceId, tenantId);
         await tenantsApiService.approveTenant(spaceId, tenantId);
         fetchTenants();
     };
@@ -138,15 +139,7 @@ export default function TenantApprovalPage() {
                         </TableHeader>
 
                         <TableBody>
-                            {loading && (
-                                <TableRow>
-                                    <TableCell colSpan={6} className="text-center py-8">
-                                        Loading...
-                                    </TableCell>
-                                </TableRow>
-                            )}
-
-                            {!loading && tenants.length === 0 && (
+                            {tenants.length === 0 && (
                                 <TableRow>
                                     <TableCell colSpan={6} className="text-center py-8">
                                         No tenant requests found
@@ -154,70 +147,73 @@ export default function TenantApprovalPage() {
                                 </TableRow>
                             )}
 
-                            {tenants.map((tenant) => (
-                                <TableRow key={tenant.id}>
-                                    <TableCell>
-                                        <div className="font-medium">{tenant.tenant_name}</div>
-                                        <div className="text-sm text-muted-foreground">
-                                            {tenant.phone}
-                                        </div>
-                                    </TableCell>
+                            {tenants.map((tenant) => {
+                                return (
+                                    <TableRow key={tenant.id} >
+                                        <TableCell>
+                                            <div className="font-medium">{tenant.tenant_name}</div>
+                                            <div className="text-sm text-muted-foreground">
+                                                {tenant.phone}
+                                            </div>
+                                        </TableCell>
 
-                                    <TableCell>{tenant.space_name}</TableCell>
-                                    <TableCell>{tenant.site_name}</TableCell>
-                                    <TableCell>
-                                        {new Date(tenant.requested_at).toLocaleDateString()}
-                                    </TableCell>
-                                    <TableCell>{statusBadge(tenant.status)}</TableCell>
+                                        <TableCell>{tenant.space_name}</TableCell>
+                                        <TableCell>{tenant.site_name}</TableCell>
+                                        <TableCell>
+                                            {new Date(tenant.requested_at).toLocaleDateString()}
+                                        </TableCell>
+                                        <TableCell>{statusBadge(tenant.status)}</TableCell>
 
-                                    <TableCell className="text-right space-x-2">
-                                        {tenant.status === "pending" && (
-                                            <>
-                                                <Button
-                                                    size="sm"
-                                                    onClick={() =>
-                                                        approveTenant(
-                                                            tenant.space_id,
-                                                            tenant.tenant_id
-                                                        )
-                                                    }
-                                                >
-                                                    <Check className="h-4 w-4 mr-1" />
-                                                    Approve
-                                                </Button>
+                                        <TableCell className="text-right space-x-2">
+                                            {tenant.status === "pending" && (
+                                                <>
+                                                    <Button
+                                                        size="sm"
+                                                        onClick={() =>
+                                                            approveTenant(
+                                                                tenant.space_id,
+                                                                tenant.tenant_id
+                                                            )
+                                                        }
+                                                    >
+                                                        <Check className="h-4 w-4 mr-1" />
+                                                        Approve
+                                                    </Button>
 
-                                                <Button
-                                                    size="sm"
-                                                    variant="destructive"
-                                                    onClick={() =>
-                                                        rejectTenant(
-                                                            tenant.space_id,
-                                                            tenant.tenant_id
-                                                        )
-                                                    }
-                                                >
-                                                    <X className="h-4 w-4 mr-1" />
-                                                    Reject
-                                                </Button>
-                                            </>
-                                        )}
+                                                    <Button
+                                                        size="sm"
+                                                        variant="destructive"
+                                                        onClick={() =>
+                                                            rejectTenant(
+                                                                tenant.space_id,
+                                                                tenant.tenant_id
+                                                            )
+                                                        }
+                                                    >
+                                                        <X className="h-4 w-4 mr-1" />
+                                                        Reject
+                                                    </Button>
+                                                </>
+                                            )}
 
-                                        <Button
-                                            size="sm"
-                                            variant="ghost"
-                                            onClick={() =>
-                                                navigate(`/spaces/${tenant.space_id}`)
-                                            }
-                                        >
-                                            <Eye className="h-4 w-4" />
-                                        </Button>
-                                    </TableCell>
-                                </TableRow>
-                            ))}
+                                            <Button
+                                                size="sm"
+                                                variant="ghost"
+                                                onClick={() =>
+                                                    navigate(`/spaces/${tenant.space_id}`)
+                                                }
+                                            >
+                                                <Eye className="h-4 w-4" />
+                                            </Button>
+                                        </TableCell>
+                                    </TableRow>
+                                )
+                            }
+                            )}
                         </TableBody>
                     </Table>
                 </CardContent>
             </Card>
-        </div>
+        </div >
     );
 }

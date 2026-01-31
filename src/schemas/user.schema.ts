@@ -84,12 +84,6 @@ export const userSchema = (isCreateMode: boolean = false) =>
         .string()
         .email("Invalid email address")
         .max(200, "Email must not exceed 200 characters"),
-      password: isCreateMode
-        ? z
-          .string()
-          .min(1, "Password is required")
-          .min(6, "Password must be at least 6 characters")
-        : z.string().optional().or(z.literal("")),
       phone: z.string().regex(/^\+\d{10,15}$/, "Invalid phone number"),
       status: StatusEnum,
     });

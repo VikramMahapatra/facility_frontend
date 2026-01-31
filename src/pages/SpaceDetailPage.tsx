@@ -7,10 +7,18 @@ import { Badge } from "@/components/ui/badge";
 import { Separator } from "@/components/ui/separator";
 import { spacesApiService } from "@/services/spaces_sites/spacesapi";
 import { SpaceOwnershipSection } from "@/components/spacedetails/SpaceOwnershipSection";
-import { OwnershipHistoryDialog } from "@/components/OwnershipHistoryDialog";
+import { OwnershipHistoryDialog } from "@/components/spacedetails/OwnershipHistoryDialog";
 import { useLoader } from "@/context/LoaderContext";
-import { getKindColor, getKindIcon, getStatusColor } from "@/interfaces/spaces_interfaces";
+import {
+    getKindColor,
+    getKindIcon,
+    getStatusColor,
+    HistoryRecord,
+    OccupancyRecord,
+    TimelineEvent,
+} from "@/interfaces/spaces_interfaces";
 import ContentContainer from "@/components/ContentContainer";
+import LoaderOverlay from "@/components/LoaderOverlay";
 import { Space } from "./Spaces";
 import {
     ArrowLeft,
@@ -33,6 +41,9 @@ import { Pagination } from "@/components/Pagination";
 import OccupancyTab from "@/components/spacedetails/OccupancyTab";
 import SpaceTenantSection from "@/components/spacedetails/SpaceTenantSection";
 import { tenantsApiService } from "@/services/leasing_tenants/tenantsapi";
+import { occupancyApiService } from "@/services/spaces_sites/spaceoccupancyapi";
+
+
 
 export default function SpaceDetailPage() {
     const { id } = useParams<{ id: string }>();
@@ -47,19 +58,24 @@ export default function SpaceDetailPage() {
     const { withLoader } = useLoader();
     const navigate = useNavigate();
     const [isMaintenanceOpen, setIsMaintenanceOpen] = useState(false);
-    const [maintenanceMode, setMaintenanceMode] = useState<"create" | "edit" | "view">("create");
+    const [maintenanceMode, setMaintenanceMode] = useState<
+        "create" | "edit" | "view"
+    >("create");
     const [isHistoryOpen, setIsHistoryOpen] = useState(false);
     const [owners, setOwners] = useState([]);
     const [tenants, setTenants] = useState({
         pending: [],
-        active: []
+        active: [],
     });
+    const [occupancy, setOccupancy] = useState<OccupancyRecord>({ status: "vacant" });
+    const [occupancyHistory, setOccupancyHistory] = useState<TimelineEvent[]>([]);
 
     useEffect(() => {
         if (!id) return;
         loadSpace();
         loadOwners();
         fetchTenants();
+        fetchOccupancy();
     }, [id]);
 
     const loadSpace = async () => {
@@ -69,7 +85,7 @@ export default function SpaceDetailPage() {
         if (response.success) {
             setSpace(response.data);
         }
-    }
+    };
 
     const loadOwners = async () => {
         const res = await spacesApiService.getActiveOwners(id);
@@ -83,14 +99,26 @@ export default function SpaceDetailPage() {
         }
     };
 
+    const fetchOccupancy = async () => {
+        const res = await occupancyApiService.getSpaceOccupancy(id);
+        if (res?.success) {
+            setOccupancy(res.data.current || { status: "vacant" });
+            setOccupancyHistory(res.data.history || []);
+        }
+    };
+
     const loadMaintenances = async (spaceId: string) => {
         setMaintenanceLoading(true);
         const params = new URLSearchParams();
         if (maintenanceSearch) params.append("search", maintenanceSearch);
         params.append("space_id", spaceId);
-        params.append("skip", ((maintenancePage - 1) * maintenancePageSize).toString());
+        params.append(
+            "skip",
+            ((maintenancePage - 1) * maintenancePageSize).toString(),
+        );
         params.append("limit", maintenancePageSize.toString());
-        const response = await ownerMaintenancesApiService.getOwnerMaintenancesBySpace(params);
+        const response =
+            await ownerMaintenancesApiService.getOwnerMaintenancesBySpace(params);
         if (response?.success) {
             setMaintenanceItems(response.data?.maintenances || []);
             setMaintenanceTotal(response.data?.total_records || 0);
@@ -143,6 +171,7 @@ export default function SpaceDetailPage() {
 
     return (
         <ContentContainer>
+            <LoaderOverlay />
             {space && (
                 <div className="space-y-6">
                     {/* Header */}
@@ -179,21 +208,34 @@ export default function SpaceDetailPage() {
 
                                     {/* Badges */}
                                     <div className="flex items-center gap-2 mt-1">
-                                        <Badge
-                                            className={getKindColor(space?.kind)}
-                                        >
+                                        <Badge className={getKindColor(space?.kind)}>
                                             {space?.kind.replace("_", " ")}
                                         </Badge>
 
-                                        <Badge
-                                            className={getStatusColor(space?.status)}
-                                        >
+                                        <Badge className={getStatusColor(space?.status)}>
                                             {space?.status.replace("_", " ")}
                                         </Badge>
                                     </div>
                                 </div>
                             </div>
                         </div>
+                        {owners.length > 0 && (
+                            <Button
+                                onClick={() => {
+                                    setMaintenanceRecord({
+                                        site_name: space.site_name,
+                                        space_name: space.name,
+                                        building_name: space.building_block,
+                                    });
+                                    setMaintenanceMode("create");
+                                    setIsMaintenanceOpen(true);
+                                }}
+                                className="gap-2"
+                            >
+                                <Wrench className="h-4 w-4" />
+                                Create Maintenance
+                            </Button>
+                        )}
                     </div>
                     <Separator />
 
@@ -249,22 +291,7 @@ export default function SpaceDetailPage() {
                                             owners={owners}
                                             onRefresh={loadOwners}
                                         // actionSlot={
-                                        //     <Button
-                                        //         onClick={() => {
-                                        //             setMaintenanceRecord({
 
-                                        //                 site_name: space.site_name,
-                                        //                 space_name: space.name,
-                                        //                 building_name: space.building_block,
-                                        //             });
-                                        //             setMaintenanceMode("create");
-                                        //             setIsMaintenanceOpen(true);
-                                        //         }}
-                                        //         className="gap-2"
-                                        //     >
-                                        //         <Wrench className="h-4 w-4" />
-                                        //         Create Maintenance
-                                        //     </Button>
                                         // }
                                         />
                                     </CardContent>
@@ -285,12 +312,34 @@ export default function SpaceDetailPage() {
                                 spaceId={id}
                                 owners={owners}
                                 tenants={tenants.active}
+                                occupancy={occupancy}
+                                history={occupancyHistory}
+                                onSucess={fetchOccupancy}
                             />
                         </TabsContent>
                         <TabsContent value="maintenance" className="space-y-4">
                             <Card>
                                 <CardHeader>
-                                    <CardTitle>Maintenance Charges</CardTitle>
+                                    <CardTitle className="flex items-center justify-between">
+                                        <span>Maintenance Charges</span>
+
+                                        <Button
+                                            onClick={() => {
+                                                setMaintenanceRecord({
+                                                    site_name: space.site_name,
+                                                    space_name: space.name,
+                                                    building_name: space.building_block,
+                                                });
+                                                setMaintenanceMode("create");
+                                                setIsMaintenanceOpen(true);
+                                            }}
+                                            className="gap-2"
+                                        >
+                                            <Wrench className="h-4 w-4" />
+                                            Create Maintenance
+                                        </Button>
+                                    </CardTitle>
+
                                 </CardHeader>
                                 <CardContent>
                                     <div className="flex flex-wrap items-center gap-2 mb-4">
@@ -301,6 +350,7 @@ export default function SpaceDetailPage() {
                                             onChange={(e) => setMaintenanceSearch(e.target.value)}
                                             className="max-w-sm"
                                         />
+
                                     </div>
                                     <div className="relative">
                                         {maintenanceLoading && (
@@ -391,7 +441,10 @@ export default function SpaceDetailPage() {
                             };
                             delete payloadToSave.start_date;
                             delete payloadToSave.end_date;
-                            const response = await ownerMaintenancesApiService.createOwnerMaintenance(payloadToSave);
+                            const response =
+                                await ownerMaintenancesApiService.createOwnerMaintenance(
+                                    payloadToSave,
+                                );
 
                             if (response?.success) {
                                 setIsMaintenanceOpen(false);
@@ -399,11 +452,9 @@ export default function SpaceDetailPage() {
                                     `Space maintenance has been created successfully.`,
                                 );
                                 return { success: true };
-                            }
-                            else {
+                            } else {
                                 return { success: false };
                             }
-
                         }}
                         mode={maintenanceMode}
                         record={maintenanceRecord as any}

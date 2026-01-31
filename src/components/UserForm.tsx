@@ -62,7 +62,6 @@ interface UserFormProps {
 const emptyFormData: UserFormValues = {
     full_name: "",
     email: "",
-    password: "",
     phone: "",
     status: "active",
 };
@@ -115,7 +114,6 @@ export function UserForm({
                 ? {
                     full_name: user.full_name || "",
                     email: user.email || "",
-                    password: "", // Don't populate password in edit mode
                     phone: user.phone || "",
                     status: user.status as any || "active"
                 }
@@ -139,17 +137,7 @@ export function UserForm({
     const onSubmitForm = async (data: UserFormValues) => {
         // Process tenant_spaces for tenant account type
         let processedData = { ...data };
-
-        // If editing and password is empty, exclude it from the data (keep old password)
-        if (
-            mode === "edit" &&
-            (!processedData.password || processedData.password.trim() === "")
-        ) {
-            const { password, ...dataWithoutPassword } = processedData;
-            await onSubmit(dataWithoutPassword);
-        } else {
-            await onSubmit(processedData);
-        }
+        await onSubmit(processedData);
     };
 
     const handleClose = () => {
@@ -238,7 +226,7 @@ export function UserForm({
                             </div>
 
                             {/* Row 2: Email, Password, Phone */}
-                            <div className="grid grid-cols-3 gap-4">
+                            <div className="grid grid-cols-2 gap-4">
                                 <div className="space-y-2">
                                     <Label htmlFor="email">Email *</Label>
                                     <Input
@@ -255,46 +243,6 @@ export function UserForm({
                                         </p>
                                     )}
                                 </div>
-
-                                <div className="space-y-2">
-                                    <Label htmlFor="password">
-                                        Password {mode === "create" ? "*" : ""}
-                                    </Label>
-                                    <div className="relative">
-                                        <Input
-                                            id="password"
-                                            type={showPassword ? "text" : "password"}
-                                            {...register("password")}
-                                            placeholder={
-                                                mode === "create"
-                                                    ? "Enter password"
-                                                    : "Leave empty to keep current password"
-                                            }
-                                            disabled={isReadOnly}
-                                            className={
-                                                errors.password ? "border-red-500 pr-10" : "pr-10"
-                                            }
-                                        />
-                                        <button
-                                            type="button"
-                                            onClick={() => setShowPassword(!showPassword)}
-                                            className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground"
-                                            disabled={isReadOnly}
-                                        >
-                                            {showPassword ? (
-                                                <EyeOff className="h-4 w-4" />
-                                            ) : (
-                                                <Eye className="h-4 w-4" />
-                                            )}
-                                        </button>
-                                    </div>
-                                    {errors.password && (
-                                        <p className="text-sm text-red-500">
-                                            {errors.password.message}
-                                        </p>
-                                    )}
-                                </div>
-
                                 <Controller
                                     name="phone"
                                     control={control}

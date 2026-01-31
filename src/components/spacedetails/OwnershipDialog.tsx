@@ -3,10 +3,10 @@
 
 import { spacesApiService } from "@/services/spaces_sites/spacesapi";
 import { useState } from "react";
-import { toast } from "./ui/sonner";
-import { Dialog, DialogContent, DialogHeader, DialogTitle } from "./ui/dialog";
-import { AsyncAutocompleteRQ } from "./common/async-autocomplete-rq";
-import { Button } from "./ui/button";//
+import { toast } from "../ui/sonner";
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from "../ui/dialog";
+import { AsyncAutocompleteRQ } from "../common/async-autocomplete-rq";
+import { Button } from "../ui/button";//
 
 // ===============================
 export function OwnershipDialog({
@@ -24,17 +24,26 @@ export function OwnershipDialog({
 
         setIsSubmitting(true);
         try {
+            let res = null;
             if (type == "owner") {
-                const res = await spacesApiService.assignOwner({
+                res = await spacesApiService.assignOwner({
                     space_id: spaceId,
                     owner_user_id: ownerId,
                     ownership_percentage: 100,
                 });
 
-                if (res.success) {
-                    toast.success("Ownership request submitted");
-                    onSuccess();
-                }
+
+            }
+            else if (type == "tenant") {
+                res = await spacesApiService.assignTenant({
+                    space_id: spaceId,
+                    tenant_user_id: ownerId,
+                });
+            }
+
+            if (res.success) {
+                toast.success(`${type == "owner" ? "Ownership" : "Tenant assignment"} request submitted`);
+                onSuccess();
             }
 
         } catch (error) {
@@ -48,7 +57,7 @@ export function OwnershipDialog({
         <Dialog open={open} onOpenChange={onClose}>
             <DialogContent>
                 <DialogHeader>
-                    <DialogTitle>Assign Ownership</DialogTitle>
+                    <DialogTitle>Assign {type == "owner" ? "Ownership" : "Tenant"}</DialogTitle>
                 </DialogHeader>
 
                 <AsyncAutocompleteRQ

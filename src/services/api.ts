@@ -64,7 +64,7 @@ class ApiService {
             if (result?.status?.toString().toLowerCase() === "failed" || result?.status.toString().toLowerCase() === "failure") {
                 let message = errorMessage;
 
-                if (result.status_code != "210" && result.status_code != "400" && result.status_code != "500"
+                if (result.status_code != "210" && result.status_code != "400" && result.status_code != "500" && result.status_code != "11"
                     || (result.status_code != "11" && result?.status.toString().toLowerCase() === "failure")
                 )
                     message = result.message
