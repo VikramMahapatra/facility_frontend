@@ -4,10 +4,10 @@
 
 import { spacesApiService } from "@/services/spaces_sites/spacesapi";
 import { useState, useEffect } from "react";
-import { Dialog, DialogContent, DialogHeader, DialogTitle } from "./ui/dialog";
-import { Button } from "./ui/button";
-import { Badge } from "./ui/badge";
-import { Card, CardContent } from "./ui/card";
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from "../ui/dialog";
+import { Button } from "../ui/button";
+import { Badge } from "../ui/badge";
+import { Card, CardContent } from "../ui/card";
 import { useLoader } from "@/context/LoaderContext";
 import { format } from "date-fns";
 import { User, Calendar, Tag, CheckCircle2, XCircle, FileText } from "lucide-react";
@@ -16,12 +16,13 @@ interface TenantHistoryItem {
     id: string;
     tenant_id: string;
     tenant_name: string;
-    lease_number?: string;
+    lease_no?: string;
     start_date: string;
     end_date: string;
     is_active: boolean;
     space_id: string;
     space_name: string;
+    status: string;
 }
 
 export function TenantHistoryDialog({
@@ -70,6 +71,29 @@ export function TenantHistoryDialog({
         return "bg-gray-100 text-gray-800 dark:bg-gray-900 dark:text-gray-200";
     };
 
+    const getSpaceStatusBadge = (status: string) => {
+        switch (status?.toLowerCase()) {
+            case "approved":
+                return <Badge className="bg-green-100 text-green-700">approved</Badge>;
+            case "leased":
+                return <Badge className="bg-green-100 text-green-700">leased</Badge>;
+            case "rejected":
+                return <Badge variant="secondary">rejected</Badge>;
+            case "revoked":
+                return <Badge variant="secondary">revoked</Badge>;
+            case "ended":
+                return <Badge variant="secondary">ended</Badge>;
+            case "pending":
+                return (
+                    <Badge className="bg-yellow-100 text-yellow-700">
+                        pending
+                    </Badge>
+                );
+            default:
+                return <Badge variant="outline">{status.toLowerCase()}</Badge>;
+        }
+    };
+
     return (
         <Dialog open={open} onOpenChange={onClose}>
             <DialogContent className="max-w-4xl max-h-[80vh] overflow-y-auto">
@@ -100,12 +124,20 @@ export function TenantHistoryDialog({
                                                     <User className="h-4 w-4 text-muted-foreground" />
                                                     <span className="font-semibold text-lg">{item.tenant_name}</span>
                                                 </div>
-                                                {item.lease_number && (
+                                                {item.lease_no && (
                                                     <Badge variant="outline" className="flex items-center gap-1">
                                                         <FileText className="h-3 w-3" />
-                                                        {item.lease_number}
+                                                        #{item.lease_no}
                                                     </Badge>
                                                 )}
+                                                {!item.lease_no && (
+                                                    <Badge variant="outline" className="flex items-center gap-1">
+                                                        <FileText className="h-3 w-3" />
+                                                        No lease
+                                                    </Badge>
+                                                )
+
+                                                }
                                             </div>
                                             <Badge className={getStatusBadgeClass(item.is_active)}>
                                                 {item.is_active ? (
@@ -122,13 +154,13 @@ export function TenantHistoryDialog({
                                             </Badge>
                                         </div>
 
-                                        <div className="grid grid-cols-2 md:grid-cols-4 gap-4 text-sm">
+                                        <div className="grid grid-cols-2 md:grid-cols-3 gap-4 text-sm">
                                             <div className="flex items-start gap-2">
                                                 <Calendar className="h-4 w-4 text-muted-foreground mt-0.5 flex-shrink-0" />
                                                 <div>
                                                     <p className="text-muted-foreground text-xs mb-1">Start Date</p>
                                                     <p className="font-medium">
-                                                        {item.start_date
+                                                        {item.start_date && item.status == "leased"
                                                             ? format(new Date(item.start_date), "dd MMM yyyy")
                                                             : "N/A"}
                                                     </p>
@@ -142,7 +174,7 @@ export function TenantHistoryDialog({
                                                     <p className="font-medium">
                                                         {item.end_date
                                                             ? format(new Date(item.end_date), "dd MMM yyyy")
-                                                            : "Ongoing"}
+                                                            : (item.status == "leased" ? "Ongoing" : "N/A")}
                                                     </p>
                                                 </div>
                                             </div>
@@ -151,12 +183,7 @@ export function TenantHistoryDialog({
                                                 <Tag className="h-4 w-4 text-muted-foreground mt-0.5 flex-shrink-0" />
                                                 <div>
                                                     <p className="text-muted-foreground text-xs mb-1">Status</p>
-                                                    <Badge
-                                                        variant={item.is_active ? "default" : "secondary"}
-                                                        className="text-xs"
-                                                    >
-                                                        {item.is_active ? "Active" : "Inactive"}
-                                                    </Badge>
+                                                    {getSpaceStatusBadge(item.status)}
                                                 </div>
                                             </div>
                                         </div>

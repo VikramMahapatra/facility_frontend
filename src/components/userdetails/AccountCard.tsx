@@ -4,6 +4,8 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { StaffSitesSection } from "./StaffSitesSection";
 import { Building2, MapPin, Pencil, Power, Star } from "lucide-react";
+import { useNavigate } from "react-router-dom";
+import { getSpaceOwnershipStatusColor } from "@/interfaces/spaces_interfaces";
 
 interface Props {
     key: string;
@@ -126,6 +128,8 @@ export default function AccountCard({
 
 
 function TenantSpacesSection({ spaces }) {
+    const navigate = useNavigate();
+
     if (!spaces || spaces.length === 0) {
         return (
             <p className="text-sm text-muted-foreground">
@@ -134,18 +138,7 @@ function TenantSpacesSection({ spaces }) {
         );
     }
 
-    const getStatusColor = (status: string) => {
-        switch (status) {
-            case "occupied":
-                return "bg-green-100 text-green-700";
-            case "pending":
-                return "bg-red-100 text-red-700";
-            case "vacated":
-                return "bg-yellow-100 text-yellow-700";
-            default:
-                return "bg-blue-100 text-blue-700";
-        }
-    };
+
 
     return (
         <div className="pt-4 border-t">
@@ -159,11 +152,15 @@ function TenantSpacesSection({ spaces }) {
 
                             <div className="text-base flex items-center gap-2">
                                 <MapPin className="h-4 w-4 text-muted-foreground" />
-                                <p className="font-semibold">{space.space_name}</p>
+                                <p className="font-semibold cursor-pointer hover:underline"
+                                    onClick={() =>
+                                        navigate(`/spaces/${space.space_id}`)
+                                    }
+                                >{space.space_name}</p>
                                 {space.status && (
                                     <Badge
                                         variant="outline"
-                                        className={`${getStatusColor(
+                                        className={`${getSpaceOwnershipStatusColor(
                                             space.status
                                         )} border-0`}
                                     >

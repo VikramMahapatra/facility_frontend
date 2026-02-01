@@ -16,6 +16,7 @@ import { toast } from "sonner";
 import { useEffect, useState } from "react";
 import { spacesApiService } from "@/services/spaces_sites/spacesapi";
 import { OwnershipDialog } from "./OwnershipDialog";
+import { Calendar, User } from "lucide-react";
 
 export function SpaceOwnershipSection({
   spaceId,
@@ -42,10 +43,23 @@ export function SpaceOwnershipSection({
       {owners.map((o) => (
         <Card key={o.id} className="p-4 flex justify-between items-center">
           <div>
-            <p className="font-medium">{o.full_name}</p>
-            <p className="text-sm text-muted-foreground">
-              Since {o.start_date}
-            </p>
+            <div className="flex items-center gap-2">
+              <User className="h-4 w-4 text-muted-foreground" />
+              <span className="font-semibold text-lg">{o.full_name}</span>
+            </div>
+            <div className="flex items-center gap-1 text-sm text-muted-foreground">
+              <Calendar className="h-3.5 w-3.5" />
+              <span>
+                Since{" "}
+                <span className="font-medium text-foreground">
+                  {new Date(o.start_date).toLocaleDateString("en-GB", {
+                    day: "2-digit",
+                    month: "short",
+                    year: "numeric",
+                  })}
+                </span>
+              </span>
+            </div>
           </div>
           <Badge>{o.ownership_percentage}%</Badge>
         </Card>

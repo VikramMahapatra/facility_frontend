@@ -48,12 +48,12 @@ export const navigationItems = [
         icon: TrendingUp,
         resource: "analytics",
       },
-      {
-        title: "AI Predictions",
-        url: "/ai-predictions",
-        icon: Bot,
-        resource: "ai_predictions",
-      },
+      // {
+      //   title: "AI Predictions",
+      //   url: "/ai-predictions",
+      //   icon: Bot,
+      //   resource: "ai_predictions",
+      // },
     ],
   },
   {
@@ -206,31 +206,31 @@ export const navigationItems = [
       },
     ],
   },
-  {
-    title: "Hospitality",
-    items: [
-      {
-        title: "Bookings",
-        url: "/bookings",
-        icon: Hotel,
-        resource: "bookings",
-      },
-      { title: "Guests", url: "/guests", icon: Users, resource: "guests" },
-      {
-        title: "Rate Plans",
-        url: "/rates",
-        icon: CreditCard,
-        resource: "rate_plans",
-      },
-      { title: "Folios", url: "/folios", icon: Receipt, resource: "folios" },
-      {
-        title: "Housekeeping",
-        url: "/housekeeping",
-        icon: Shield,
-        resource: "housekeeping",
-      },
-    ],
-  },
+  // {
+  //   title: "Hospitality",
+  //   items: [
+  //     {
+  //       title: "Bookings",
+  //       url: "/bookings",
+  //       icon: Hotel,
+  //       resource: "bookings",
+  //     },
+  //     { title: "Guests", url: "/guests", icon: Users, resource: "guests" },
+  //     {
+  //       title: "Rate Plans",
+  //       url: "/rates",
+  //       icon: CreditCard,
+  //       resource: "rate_plans",
+  //     },
+  //     { title: "Folios", url: "/folios", icon: Receipt, resource: "folios" },
+  //     {
+  //       title: "Housekeeping",
+  //       url: "/housekeeping",
+  //       icon: Shield,
+  //       resource: "housekeeping",
+  //     },
+  //   ],
+  // },
   {
     title: "Parking & Access",
     items: [
@@ -300,17 +300,17 @@ export const navigationItems = [
       },
     ],
   },
-  {
-    title: "AI & Automation",
-    items: [
-      {
-        title: "AI ChatBot",
-        url: "/chatbot",
-        icon: Bot,
-        resource: "ai_chatbot",
-      },
-    ],
-  },
+  // {
+  //   title: "AI & Automation",
+  //   items: [
+  //     {
+  //       title: "AI ChatBot",
+  //       url: "/chatbot",
+  //       icon: Bot,
+  //       resource: "ai_chatbot",
+  //     },
+  //   ],
+  // },
   {
     title: "Approval Requests",
     items: [
@@ -373,12 +373,12 @@ export const navigationItems = [
         icon: Bell,
         resource: "notifications",
       },
-      {
-        title: "Settings",
-        url: "/settings",
-        icon: Settings,
-        resource: "settings",
-      },
+      // {
+      //   title: "Settings",
+      //   url: "/settings",
+      //   icon: Settings,
+      //   resource: "settings",
+      // },
       // {
       //   title: "Documentation",
       //   url: "/documentation",

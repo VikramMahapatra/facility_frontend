@@ -30,6 +30,7 @@ interface OwnershipHistoryItem {
   is_active: boolean;
   space_id: string;
   space_name: string;
+  status: string;
 }
 
 export function OwnershipHistoryDialog({
@@ -96,6 +97,25 @@ export function OwnershipHistoryDialog({
     return "bg-gray-100 text-gray-800 dark:bg-gray-900 dark:text-gray-200";
   };
 
+  const getSpaceStatusBadge = (status: string) => {
+    switch (status?.toLowerCase()) {
+      case "approved":
+        return <Badge className="bg-green-100 text-green-700">approved</Badge>;
+      case "rejected":
+        return <Badge variant="secondary">rejected</Badge>;
+      case "revoked":
+        return <Badge variant="secondary">revoked</Badge>;
+      case "pending":
+        return (
+          <Badge className="bg-yellow-100 text-yellow-700">
+            pending
+          </Badge>
+        );
+      default:
+        return <Badge variant="outline">{status.toLowerCase()}</Badge>;
+    }
+  };
+
   return (
     <Dialog open={open} onOpenChange={onClose}>
       <DialogContent className="max-w-4xl max-h-[80vh] overflow-y-auto">
@@ -158,8 +178,8 @@ export function OwnershipHistoryDialog({
                       </Badge>
                     </div>
 
-                    <div className="grid grid-cols-2 md:grid-cols-4 gap-4 text-sm">
-                      <div className="flex items-start gap-2">
+                    <div className="grid grid-cols-2 md:grid-cols-3 gap-4 text-sm">
+                      {/* <div className="flex items-start gap-2">
                         <Percent className="h-4 w-4 text-muted-foreground mt-0.5 flex-shrink-0" />
                         <div>
                           <p className="text-muted-foreground text-xs mb-1">
@@ -169,7 +189,7 @@ export function OwnershipHistoryDialog({
                             {item.ownership_percentage}%
                           </p>
                         </div>
-                      </div>
+                      </div> */}
 
                       <div className="flex items-start gap-2">
                         <Calendar className="h-4 w-4 text-muted-foreground mt-0.5 flex-shrink-0" />
@@ -178,7 +198,7 @@ export function OwnershipHistoryDialog({
                             Start Date
                           </p>
                           <p className="font-medium">
-                            {item.start_date
+                            {item.start_date && item.status != "pending"
                               ? format(new Date(item.start_date), "dd MMM yyyy")
                               : "N/A"}
                           </p>
@@ -194,7 +214,7 @@ export function OwnershipHistoryDialog({
                           <p className="font-medium">
                             {item.end_date
                               ? format(new Date(item.end_date), "dd MMM yyyy")
-                              : "Ongoing"}
+                              : (item.status != "pending" ? "Ongoing" : "N/A")}
                           </p>
                         </div>
                       </div>
@@ -205,12 +225,7 @@ export function OwnershipHistoryDialog({
                           <p className="text-muted-foreground text-xs mb-1">
                             Status
                           </p>
-                          <Badge
-                            variant={item.is_active ? "default" : "secondary"}
-                            className="text-xs"
-                          >
-                            {item.is_active ? "Active" : "Inactive"}
-                          </Badge>
+                          {getSpaceStatusBadge(item.status)}
                         </div>
                       </div>
                     </div>

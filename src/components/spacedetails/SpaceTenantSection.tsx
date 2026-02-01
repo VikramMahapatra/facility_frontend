@@ -1,12 +1,13 @@
 
-import { Users, History } from "lucide-react";
+import { Users, History, FileText, User, Calendar } from "lucide-react";
 import { useState, useEffect } from "react";
-import { TenantHistoryDialog } from "../TenantHistoryDialog";
+import { TenantHistoryDialog } from "./TenantHistoryDialog";
 import { tenantsApiService } from "@/services/leasing_tenants/tenantsapi";
 import { Card, CardContent, CardHeader, CardTitle } from "../ui/card";
 import { Button } from "../ui/button";
 import { Alert, AlertDescription, AlertTitle } from "../ui/alert";
 import { OwnershipDialog } from "./OwnershipDialog";
+import { Badge } from "../ui/badge";
 
 interface Tenant {
   id: string;
@@ -87,14 +88,42 @@ export default function SpaceTenantSection({ spaceId, tenants }: Props) {
 
               {tenants?.active.map((t) => (
                 <Card key={t.id} className="p-4 flex justify-between items-center">
-                  <div>
-                    <p className="font-medium">{t.full_name}<span></span></p>
-                    <p className="text-sm text-muted-foreground">
-                      {t.lease_no && `Lease: #${t.lease_no}`}
-                    </p>
+                  {/* LEFT: Name + Start Date */}
+                  <div >
+                    <div className="flex items-center gap-2">
+                      <User className="h-4 w-4 text-muted-foreground" />
+                      <span className="font-semibold text-lg">{t.full_name}</span>
+                    </div>
+
+                    {t.start_date && (
+                      <div className="flex items-center gap-2 text-sm text-muted-foreground">
+                        <Calendar className="h-3.5 w-3.5" />
+                        <span>
+                          Since{" "}
+                          <span className="font-medium text-foreground">
+                            {new Date(t.start_date).toLocaleDateString("en-GB", {
+                              day: "2-digit",
+                              month: "short",
+                              year: "numeric",
+                            })}
+                          </span>
+                        </span>
+                      </div>
+                    )}
                   </div>
 
+                  {/* RIGHT: Lease */}
+                  {t.lease_no && (
+                    <Badge
+                      variant="outline"
+                      className="flex items-center gap-1 whitespace-nowrap"
+                    >
+                      <FileText className="h-3 w-3" />
+                      #{t.lease_no}
+                    </Badge>
+                  )}
                 </Card>
+
               ))}
             </>
           )}

@@ -1,6 +1,20 @@
 import { useEffect, useState } from "react";
 import { Card, CardHeader, CardTitle, CardContent, } from "@/components/ui/card";
-import { Users, LogIn, LogOut, History, Clock, CheckCircle, XCircle } from "lucide-react";
+import {
+    Clock,
+    CheckCircle,
+    XCircle,
+    LogIn,
+    LogOut,
+    User,
+    UserPlus,
+    UserCheck,
+    UserX,
+    FileText,
+    ShieldCheck,
+    Users,
+    History
+} from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "../ui/button";
 import { formatDate } from "@/helpers/dateHelpers";
@@ -18,20 +32,35 @@ interface Props {
 }
 
 const EVENT_META: Record<string, any> = {
+    owner_requested: {
+        label: "Owner Requested",
+        icon: User, // 👤 owner context
+        color: "text-yellow-600 bg-yellow-100"
+    },
+    owner_approved: {
+        label: "Owner Approved",
+        icon: ShieldCheck, // 🛡 ownership confirmed
+        color: "text-green-600 bg-green-100"
+    },
     tenant_requested: {
         label: "Tenant Requested",
-        icon: Clock,
+        icon: UserPlus, // 🧑➕
         color: "text-yellow-600 bg-yellow-100"
     },
     tenant_approved: {
         label: "Tenant Approved",
-        icon: CheckCircle,
+        icon: UserCheck, // 🧑✔
         color: "text-green-600 bg-green-100"
     },
     tenant_rejected: {
         label: "Tenant Rejected",
-        icon: XCircle,
+        icon: UserX, // 🧑❌
         color: "text-red-600 bg-red-100"
+    },
+    lease_created: {
+        label: "Lease Created",
+        icon: FileText, // 📄
+        color: "text-green-600 bg-green-100"
     },
     moved_in: {
         label: "Moved In",
@@ -115,8 +144,6 @@ export default function OccupancyTab({ spaceId, owners, tenants, occupancy, hist
                         <p className="text-sm text-muted-foreground">No history</p>
                     ) : (
                         <div className="relative pl-6">
-                            {/* vertical line */}
-                            <div className="absolute left-2 top-0 h-full w-px bg-border" />
                             <div className="space-y-6">
                                 {history.map((e, i) => {
                                     const meta = EVENT_META[e.event] || {};
@@ -124,15 +151,23 @@ export default function OccupancyTab({ spaceId, owners, tenants, occupancy, hist
 
                                     return (
                                         <div key={i} className="relative flex gap-4">
-                                            {/* dot */}
-                                            <div
-                                                className={`flex h-8 w-8 items-center justify-center rounded-full ${meta.color}`}
-                                            >
-                                                <Icon className="h-4 w-4" />
+                                            {/* timeline line */}
+                                            <div className="relative flex flex-col items-center">
+                                                {/* vertical line */}
+                                                {i !== history.length - 1 && (
+                                                    <span className="absolute top-8 h-full w-px bg-border" />
+                                                )}
+
+                                                {/* dot */}
+                                                <div
+                                                    className={`z-10 flex h-8 w-8 items-center justify-center rounded-full ${meta.color}`}
+                                                >
+                                                    <Icon className="h-4 w-4" />
+                                                </div>
                                             </div>
 
                                             {/* content */}
-                                            <div className="flex-1">
+                                            <div className="flex-1 pb-6">
                                                 <div className="flex items-center gap-2">
                                                     <p className="font-medium">{meta.label || e.event}</p>
 
@@ -152,14 +187,9 @@ export default function OccupancyTab({ spaceId, owners, tenants, occupancy, hist
                                                 <p className="text-xs text-muted-foreground">
                                                     {new Date(e.date).toLocaleString()}
                                                 </p>
-
-                                                {e.notes && (
-                                                    <p className="mt-1 text-sm text-muted-foreground">
-                                                        {e.notes}
-                                                    </p>
-                                                )}
                                             </div>
                                         </div>
+
                                     );
                                 })}
                             </div>
