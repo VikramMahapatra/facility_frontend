@@ -11,12 +11,14 @@ interface Props {
     key: string;
     account: UserAccount;
     onEdit: () => void;
+    onMarkASDefault: (account) => void;
 }
 
 export default function AccountCard({
     key,
     account,
-    onEdit
+    onEdit,
+    onMarkASDefault
 }: Props) {
 
     const getStatusBadge = (status: string) => {
@@ -49,7 +51,7 @@ export default function AccountCard({
                                 <Button
                                     size="icon"
                                     variant="ghost"
-                                    //onClick={() => onMakeDefault(account)}
+                                    onClick={() => onMarkASDefault(account)}
                                     title="Mark as default account"
                                 >
                                     <Star className="h-5 w-5" />
@@ -79,7 +81,7 @@ export default function AccountCard({
                         >
                             <Pencil className="h-4 w-4" />
                         </Button>
-                        <Button
+                        {/* <Button
                             size="icon"
                             variant="ghost"
                             //onClick={() => onDeactivate(account)}
@@ -88,7 +90,7 @@ export default function AccountCard({
                             disabled={account.is_default} // UX rule
                         >
                             <Power className="h-4 w-4" />
-                        </Button>
+                        </Button> */}
                     </div>
                 </div>
 

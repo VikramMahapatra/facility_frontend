@@ -61,6 +61,7 @@ import { useLoader } from "@/context/LoaderContext";
 import LoaderOverlay from "@/components/LoaderOverlay";
 import ContentContainer from "@/components/ContentContainer";
 import { PageHeader } from "@/components/PageHeader";
+import { TenantForm } from "@/components/TenantForm";
 
 const Tenants = () => {
   const [searchTerm, setSearchTerm] = useState("");
@@ -79,11 +80,15 @@ const Tenants = () => {
   const [statusList, setStatusList] = useState([]);
   const [typeList, setTypeList] = useState([]);
   const [siteList, setSiteList] = useState([]);
-
+  const [formMode, setFormMode] = useState<"create" | "edit" | "view">(
+    "create"
+  );
+  const [isFormOpen, setIsFormOpen] = useState(false);
   const [page, setPage] = useState(1); // current page
   const [pageSize] = useState(6); // items per page
   const [totalItems, setTotalItems] = useState(0);
   const [isLeaseFormOpen, setIsLeaseFormOpen] = useState(false);
+  const [selectedTenant, setSelectedTenant] = useState<Tenant | undefined>();
   const [selectedTenantId, setSelectedTenantId] = useState<string | null>(null);
   const [prefilledLeaseData, setPrefilledLeaseData] =
     useState<Partial<Lease> | null>(null);
@@ -162,13 +167,16 @@ const Tenants = () => {
     }
   };
 
-  // Form handlers
   const handleCreate = () => {
-    navigate("/tenants/create");
+    setSelectedTenant(undefined);
+    setFormMode("create");
+    setIsFormOpen(true);
   };
 
   const handleEdit = (tenant: Tenant) => {
-    navigate(`/tenants/${tenant.id}/edit`);
+    setSelectedTenant(tenant);
+    setFormMode("edit");
+    setIsFormOpen(true);
   };
 
   const handleView = (tenant: Tenant) => {
@@ -204,8 +212,7 @@ const Tenants = () => {
     }
   };
 
-  {
-    /*const handleSave = async (tenantData: Partial<Tenant>) => {
+  const handleSave = async (tenantData: Partial<Tenant>) => {
     let response;
     if (formMode === "create") {
       response = await tenantsApiService.addTenant(tenantData);
@@ -227,20 +234,18 @@ const Tenants = () => {
         );
       }
     }
-    
+
 
     if (response?.success) {
       setIsFormOpen(false);
       toast.success(
-        `Tenant ${tenantData.name} has been ${
-          formMode === "create" ? "created" : "updated"
+        `Tenant ${tenantData.name} has been ${formMode === "create" ? "created" : "updated"
         } successfully.`
       );
     }
     return response;
   };
-  */
-  }
+
 
   const getStatusColor = (status: string) => {
     switch (status) {
@@ -594,7 +599,7 @@ const Tenants = () => {
                             <div className="text-sm text-muted-foreground">
                               No active leases
                             </div>
-                            {canWrite(resource) && (
+                            {canWrite(resource) && tenantSpaces.length > 0 && (
                               <Button
                                 size="sm"
                                 variant="outline"
@@ -718,6 +723,13 @@ const Tenants = () => {
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
+      <TenantForm
+        isOpen={isFormOpen}
+        onClose={() => setIsFormOpen(false)}
+        mode={formMode}
+        tenant={selectedTenant}
+        onSave={handleSave}
+      />
       <LeaseForm
         lease={prefilledLeaseData ? (prefilledLeaseData as Lease) : undefined}
         isOpen={isLeaseFormOpen}

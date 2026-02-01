@@ -140,7 +140,30 @@ export function SpacesForm<TForm extends FieldValues>({
                     <Plus className="mr-2 h-4 w-4" /> Add Space
                 </Button>
             </div>
+            {fields.length === 0 && (
+                <Card className="border-dashed">
+                    <CardContent className="flex flex-col items-center justify-center py-10 text-center space-y-3">
+                        <div className="text-sm text-muted-foreground">
+                            No spaces added yet.
+                        </div>
+                        <div className="text-xs text-muted-foreground">
+                            Click <b>Add Space</b> to assign a site, building, and space.
+                        </div>
 
+                        {mode !== "view" && (
+                            <Button
+                                type="button"
+                                size="sm"
+                                onClick={addSpace}
+                                className="mt-2"
+                            >
+                                <Plus className="mr-2 h-4 w-4" />
+                                Add Space
+                            </Button>
+                        )}
+                    </CardContent>
+                </Card>
+            )}
             {fields.map((f, index) => {
                 const space = spaces[index];
                 const siteId = space?.site_id;

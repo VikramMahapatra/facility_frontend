@@ -37,6 +37,7 @@ import PhoneInput from "react-phone-input-2";
 import { siteApiService } from "@/services/spaces_sites/sitesapi";
 import { buildingApiService } from "@/services/spaces_sites/buildingsapi";
 import { spacesApiService } from "@/services/spaces_sites/spacesapi";
+import { boolean } from "zod";
 
 // Define interfaces for API data
 interface User {
@@ -55,7 +56,7 @@ interface UserFormProps {
     user?: User;
     open: boolean;
     onOpenChange: (open: boolean) => void;
-    onSubmit: (values: UserFormValues) => void;
+    onSubmit: (values: UserFormValues, isExistingUser: boolean) => void;
     mode?: "create" | "edit" | "view";
 }
 
@@ -92,18 +93,18 @@ export function UserForm({
 
     const [formLoading, setFormLoading] = useState(true);
     const [statusList, setStatusList] = useState([]);
-    const [roleList, setRoleList] = useState([]);
-    const [siteList, setSiteList] = useState<any[]>([]);
-    const [showPassword, setShowPassword] = useState(false);
-    const [buildingList, setBuildingList] = useState<Record<string, any[]>>({});
-    const [spaceList, setSpaceList] = useState<Record<string, any[]>>({});
-
-    const isReadOnly = mode === "view";
+    const [existingUserWarning, setExistingUserWarning] = useState<string | null>(null);
+    const [isGlobalUser, setIsGlobalUser] = useState(false);
+    const [globalUserId, setGlobalUserId] = useState<string | null>(null);
+    const [isCheckingGlobalUser, setIsCheckingGlobalUser] = useState(false);
+    const isReadOnly = mode === "view" || mode === "edit";
 
     const loadAll = async () => {
         setFormLoading(true);
 
         const promises = [loadStatusLookup()];
+        setExistingUserWarning(null);
+        setIsGlobalUser(null);
 
         // Preload building and space lists for existing user spaces (edit mode)
 
@@ -128,6 +129,53 @@ export function UserForm({
         }
     }, [open, user, mode, reset]);
 
+    const checkGlobalUser = async (email?: string, phone?: string) => {
+        if (!email && !phone) {
+            setExistingUserWarning(null);
+            setIsGlobalUser(false);
+            setGlobalUserId(null);
+            return;
+        }
+
+        setIsCheckingGlobalUser(true);
+
+        try {
+            const res = await userManagementApiService.checkUserGlobal({ email, phone });
+
+            if (res?.success && res.data?.exists && res.data.user) {
+                const user = res.data.user;
+
+                reset(
+                    {
+                        full_name: user.full_name ?? "",
+                        email: user.email ?? "",
+                        phone: user.phone ?? "",
+                        status: "active",
+                    },
+                    { keepDirty: false }
+                );
+
+                setIsGlobalUser(true);
+                setGlobalUserId(user.id);
+
+                setExistingUserWarning(
+                    "This user already exists globally. It will be linked to the current organization."
+                );
+            } else {
+                setExistingUserWarning(null);
+                setIsGlobalUser(false);
+                setGlobalUserId(null);
+            }
+        } catch (err) {
+            console.error(err);
+            setExistingUserWarning(null);
+            setIsGlobalUser(false);
+            setGlobalUserId(null);
+        } finally {
+            setIsCheckingGlobalUser(false); // 🔥 important
+        }
+    };
+
 
     const loadStatusLookup = async () => {
         const lookup = await userManagementApiService.getUserStatusOverview();
@@ -136,14 +184,14 @@ export function UserForm({
 
     const onSubmitForm = async (data: UserFormValues) => {
         // Process tenant_spaces for tenant account type
-        let processedData = { ...data };
-        await onSubmit(processedData);
+        let isExistingUser = false;
+        if (existingUserWarning) isExistingUser = true;
+
+        await onSubmit(data, isExistingUser); // create new user
     };
 
     const handleClose = () => {
         reset(emptyFormData);
-        setBuildingList({});
-        setSpaceList({});
         onOpenChange(false);
     };
 
@@ -169,6 +217,7 @@ export function UserForm({
                                 <Controller
                                     name="full_name"
                                     control={control}
+                                    disabled={isReadOnly || isGlobalUser}
                                     render={({ field }) => (
                                         <div className="space-y-2">
                                             <Label>Full Name *</Label>
@@ -177,7 +226,7 @@ export function UserForm({
                                                 type="full_name"
                                                 {...register("full_name")}
                                                 placeholder="John Doe"
-                                                disabled={isReadOnly || mode === "edit"}
+                                                disabled={isReadOnly || isGlobalUser}
                                                 className={errors.email ? "border-red-500" : ""}
                                             />
                                             {errors.full_name && (
@@ -198,7 +247,7 @@ export function UserForm({
                                             <Select
                                                 value={field.value || ""}
                                                 onValueChange={field.onChange}
-                                                disabled={isReadOnly}
+                                                disabled={isReadOnly || isGlobalUser}
                                             >
                                                 <SelectTrigger
                                                     className={
@@ -224,41 +273,39 @@ export function UserForm({
                                     )}
                                 />
                             </div>
-
-                            {/* Row 2: Email, Password, Phone */}
                             <div className="grid grid-cols-2 gap-4">
-                                <div className="space-y-2">
-                                    <Label htmlFor="email">Email *</Label>
-                                    <Input
-                                        id="email"
-                                        type="email"
-                                        {...register("email")}
-                                        placeholder="john@example.com"
-                                        disabled={isReadOnly || mode === "edit"}
-                                        className={errors.email ? "border-red-500" : ""}
-                                    />
-                                    {errors.email && (
-                                        <p className="text-sm text-red-500">
-                                            {errors.email.message}
-                                        </p>
-                                    )}
-                                </div>
+                                {/* Row 2: Email, Password, Phone */}
                                 <Controller
-                                    name="phone"
+                                    name="email"
                                     control={control}
                                     render={({ field }) => (
                                         <div className="space-y-2">
-                                            <Label htmlFor="phone">Phone</Label>
+                                            <Label>Email *</Label>
+                                            <Input
+                                                {...field}
+                                                placeholder="john@example.com"
+                                                disabled={isReadOnly || isGlobalUser}
+                                                onBlur={() => checkGlobalUser(field.value, getValues("phone"))}
+                                            />
+                                        </div>
+                                    )}
+                                />
+                                <Controller
+                                    name="phone"
+                                    control={control}
+
+                                    render={({ field }) => (
+                                        <div className="space-y-2">
+                                            <Label>Phone</Label>
                                             <PhoneInput
-                                                country={"in"}
+                                                country="in"
                                                 value={field.value || ""}
                                                 onChange={(value) => {
                                                     const digits = value.replace(/\D/g, "");
                                                     const finalValue = "+" + digits;
-                                                    console.log("cleaned no :", finalValue);
                                                     field.onChange(finalValue);
                                                 }}
-                                                disabled={isReadOnly || mode === "edit"}
+                                                onBlur={() => checkGlobalUser(getValues("email"), getValues("phone"))}
                                                 inputProps={{
                                                     name: "phone",
                                                     required: true,
@@ -268,16 +315,23 @@ export function UserForm({
                                                 buttonClass="!border-none !bg-transparent !absolute !left-2 !top-1/2 !-translate-y-1/2 z-10"
                                                 dropdownClass="!absolute !z-50 !bg-white !border !border-gray-200 !rounded-md !shadow-lg max-h-60 overflow-y-auto"
                                                 enableSearch={true}
+                                                disabled={isReadOnly || isGlobalUser}
                                             />
-                                            {errors.phone && (
-                                                <p className="text-sm text-red-500">
-                                                    {errors.phone.message}
-                                                </p>
-                                            )}
                                         </div>
                                     )}
                                 />
                             </div>
+                            {existingUserWarning && (
+                                <div className="flex items-start gap-3 rounded-md border border-yellow-300 bg-yellow-50 px-4 py-3">
+                                    <UserCog className="h-5 w-5 text-yellow-600 mt-0.5" />
+                                    <div className="text-sm text-yellow-800">
+                                        <p className="font-medium">User already exists</p>
+                                        <p className="text-yellow-700">
+                                            {existingUserWarning}
+                                        </p>
+                                    </div>
+                                </div>
+                            )}
                         </div>
                     </form>
                 </div>
@@ -292,12 +346,18 @@ export function UserForm({
                             {mode === "view" ? "Close" : "Cancel"}
                         </Button>
                         {mode !== "view" && (
-                            <Button type="submit" form="user-form" disabled={isSubmitting}>
+                            <Button
+                                type="submit"
+                                form="user-form"
+                                disabled={isSubmitting || isCheckingGlobalUser}
+                            >
                                 {isSubmitting
                                     ? "Saving..."
-                                    : mode === "create"
-                                        ? "Create User"
-                                        : "Update User"}
+                                    : isCheckingGlobalUser
+                                        ? "Checking user..."
+                                        : mode === "create"
+                                            ? "Create User"
+                                            : "Update User"}
                             </Button>
                         )}
                     </DialogFooter>

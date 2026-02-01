@@ -212,6 +212,27 @@ export default function UserManagementDetailPage() {
     return response;
   };
 
+  const onMarkASDefault = async (accountData) => {
+    const response = await userManagementApiService.markAsDefault(accountData.id);
+    if (response.success) {
+      setUser(prev => {
+        if (!prev) return prev;
+
+        return {
+          ...prev,
+          accounts: prev.accounts.map(acc => ({
+            ...acc,
+            is_default: acc.id === accountData.id, // 🔥 only one default
+          })),
+        };
+      });
+      toast.success(
+        `${accountData.account_type} account has been mark as default successfully.`
+      );
+    }
+    return response;
+  };
+
   const showSwitchAccount =
     user?.accounts && user.accounts.length > 1;
 
@@ -368,6 +389,7 @@ export default function UserManagementDetailPage() {
                   key={account.id}
                   account={account}
                   onEdit={() => openEditAccount(account)}
+                  onMarkASDefault={() => onMarkASDefault(account)}
                 />
               ))}
             </div>

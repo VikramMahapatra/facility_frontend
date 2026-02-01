@@ -79,6 +79,14 @@ class TenantsApiService {
   async getTenantApprovals(params) {
     return await apiService.request(`/tenants/approvals?${params.toString()}`);
   }
+
+
+  async manageSpaces(tenantSpaceData: any) {
+    return await apiService.request("/tenants/manage-spaces", {
+      method: "POST",
+      body: JSON.stringify(tenantSpaceData),
+    });
+  }
 }
 
 export const tenantsApiService = new TenantsApiService();

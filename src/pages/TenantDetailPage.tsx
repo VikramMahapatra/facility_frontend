@@ -33,6 +33,8 @@ import { useLoader } from "@/context/LoaderContext";
 import LoaderOverlay from "@/components/LoaderOverlay";
 import { Pagination } from "@/components/Pagination";
 import { LeaseForm } from "@/components/LeasesForm";
+import { ManageTenantSpacesForm } from "@/components/ManageTenantSpacesForm";
+import { userManagementApiService } from "@/services/access_control/usermanagementapi";
 
 export default function TenantDetailPage() {
   const { id } = useParams<{ id: string }>();
@@ -48,25 +50,26 @@ export default function TenantDetailPage() {
   const [selectedSpaceId, setSelectedSpaceId] = useState<string | null>(null);
   const [prefilledLeaseData, setPrefilledLeaseData] =
     useState<Partial<Lease> | null>(null);
+  const [spacesOpen, setSpacesOpen] = useState(false);
 
   useEffect(() => {
     if (!id) return;
 
-    const loadTenant = async () => {
-      const response = await withLoader(async () => {
-        return await tenantsApiService.getTenantById(id);
-      });
-
-      if (response?.success) {
-        setTenant(response.data);
-      } else {
-        toast.error("Failed to load tenant details");
-        navigate(-1);
-      }
-    };
-
     loadTenant();
   }, [id]);
+
+  const loadTenant = async () => {
+    const response = await withLoader(async () => {
+      return await tenantsApiService.getTenantById(id);
+    });
+
+    if (response?.success) {
+      setTenant(response.data);
+    } else {
+      toast.error("Failed to load tenant details");
+      navigate(-1);
+    }
+  };
 
   useEffect(() => {
     if (!id) return;
@@ -243,6 +246,20 @@ export default function TenantDetailPage() {
     }
   };
 
+  const handleAccountSave = async (accountData) => {
+    const tenantAccountData = {
+      tenant_id: tenant.id,
+      tenant_spaces: accountData.tenant_spaces
+    }
+    const response = await tenantsApiService.manageSpaces(tenantAccountData);
+
+    if (response.success) {
+      loadTenant();
+      toast.success(`spaces assigned successfully.`);
+    }
+    return response;
+  };
+
   return (
     <ContentContainer>
       <LoaderOverlay />
@@ -263,27 +280,30 @@ export default function TenantDetailPage() {
                   {getInitials(tenant.name)}
                 </AvatarFallback>
               </Avatar>
-              <div>
-                <h1 className="text-2xl font-bold">
-                  {capitalizeName(tenant.name)}
-                </h1>
-                <p>
-                  <strong className="text-muted-foreground"></strong>{" "}
+              <div className="flex-1 space-y-3">
+                <div className="flex items-center gap-3 flex-wrap">
+                  <h1 className="text-3xl font-semibold leading-tight">
+                    {capitalizeName(tenant.name)}
+                  </h1>
+                  <Button
+                    variant="ghost"
+                    onClick={() => navigate(`/tenants/${id}/edit`)}
+                    size="icon"
+                    className="top-6 right-6 h-8 px-3"
+                  >
+                    <Pencil className="h-4 w-4" />
+                  </Button>
+                </div>
+
+                <div className="flex items-center gap-2">
                   <Badge className={getTenantTypeColor(tenant.kind)}>
                     {tenant.kind}
                   </Badge>
-                </p>
+                </div>
               </div>
             </div>
             <div className="flex gap-2">
-              <Button
-                variant="outline"
-                onClick={() => navigate(`/tenants/${id}/edit`)}
-                size="icon"
-                className="text-primary hover:text-primary-hover"
-              >
-                <Pencil className="h-4 w-4" />
-              </Button>
+
             </div>
           </div>
 
@@ -369,16 +389,16 @@ export default function TenantDetailPage() {
                       {(tenant.contact_info.address.city ||
                         tenant.contact_info.address.state ||
                         tenant.contact_info.address.pincode) && (
-                        <p className="text-muted-foreground">
-                          {[
-                            tenant.contact_info.address.city,
-                            tenant.contact_info.address.state,
-                            tenant.contact_info.address.pincode,
-                          ]
-                            .filter(Boolean)
-                            .join(", ")}
-                        </p>
-                      )}
+                          <p className="text-muted-foreground">
+                            {[
+                              tenant.contact_info.address.city,
+                              tenant.contact_info.address.state,
+                              tenant.contact_info.address.pincode,
+                            ]
+                              .filter(Boolean)
+                              .join(", ")}
+                          </p>
+                        )}
                     </CardContent>
                   </Card>
                 )}
@@ -386,13 +406,13 @@ export default function TenantDetailPage() {
               {(() => {
                 const familyItems = Array.isArray(tenant.family_info)
                   ? tenant.family_info.filter(
-                      (member) => member.member || member.relation,
-                    )
+                    (member) => member.member || member.relation,
+                  )
                   : [];
                 const vehicleItems = Array.isArray(tenant.vehicle_info)
                   ? tenant.vehicle_info.filter(
-                      (vehicle) => vehicle.type || vehicle.number,
-                    )
+                    (vehicle) => vehicle.type || vehicle.number,
+                  )
                   : [];
 
                 return (
@@ -473,10 +493,18 @@ export default function TenantDetailPage() {
 
             {/* SPACES & LEASES */}
             <TabsContent value="spaces" className="space-y-6">
-              <div>
-                <h3 className="text-lg font-medium mb-4 flex items-center gap-2">
-                  <Building2 className="h-5 w-5" /> Assigned Spaces
-                </h3>
+              <div className="space-y-4">
+                <div className="flex items-center justify-between">
+                  <h2 className="text-xl font-semibold flex items-center gap-2">
+                    <Building2 className="h-5 w-5" /> Assigned Spaces
+                  </h2>
+                  <Button
+                    size="sm"
+                    onClick={() => setSpacesOpen(true)}>
+                    <MapPin className="h-4 w-4 mr-2" />
+                    Manage Spaces
+                  </Button>
+                </div>
 
                 {tenant.tenant_spaces && tenant.tenant_spaces.length > 0 ? (
                   <div className="space-y-4">
@@ -737,22 +765,22 @@ export default function TenantDetailPage() {
                                   {(payment.charge_code ||
                                     payment.charge_code_name ||
                                     payment.charge_code_id) && (
-                                    <Badge
-                                      className={`text-xs border-0 ${getChargeCodeBadgeClass(
-                                        String(
-                                          payment.charge_code ||
+                                      <Badge
+                                        className={`text-xs border-0 ${getChargeCodeBadgeClass(
+                                          String(
+                                            payment.charge_code ||
                                             payment.charge_code_name ||
                                             payment.charge_code_id,
-                                        ),
-                                      )}`}
-                                    >
-                                      {String(
-                                        payment.charge_code ||
+                                          ),
+                                        )}`}
+                                      >
+                                        {String(
+                                          payment.charge_code ||
                                           payment.charge_code_name ||
                                           payment.charge_code_id,
-                                      )}
-                                    </Badge>
-                                  )}
+                                        )}
+                                      </Badge>
+                                    )}
                                 </div>
                               </div>
 
@@ -820,6 +848,16 @@ export default function TenantDetailPage() {
             </TabsContent>
           </Tabs>
         </div>
+      )}
+      {tenant && (
+        <ManageTenantSpacesForm
+          spacesOpen={spacesOpen}
+          onClose={() => setSpacesOpen(false)}
+          onSubmit={async (data) => {
+            await handleAccountSave(data);
+          }}
+          tenant={tenant}
+        />
       )}
       <LeaseForm
         lease={prefilledLeaseData ? (prefilledLeaseData as Lease) : undefined}
