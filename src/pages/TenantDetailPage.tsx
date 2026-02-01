@@ -256,6 +256,8 @@ export default function TenantDetailPage() {
     if (response.success) {
       loadTenant();
       toast.success(`spaces assigned successfully.`);
+      setSpacesOpen(false)
+
     }
     return response;
   };
@@ -616,52 +618,56 @@ export default function TenantDetailPage() {
                                 <div className="text-sm text-muted-foreground">
                                   No leases for this space
                                 </div>
-                                <Button
-                                  size="sm"
-                                  variant="outline"
-                                  onClick={async () => {
-                                    setSelectedSpaceId(space.space_id);
-                                    // Fetch tenant lease details
-                                    if (id) {
-                                      const response = await withLoader(
-                                        async () => {
-                                          return await leasesApiService.getTenantLeaseDetail(
-                                            id,
-                                          );
-                                        },
-                                      );
-                                      if (
-                                        response?.success &&
-                                        response.data?.tenant_data?.length > 0
-                                      ) {
-                                        const tenantData =
-                                          response.data.tenant_data[0];
-                                        setPrefilledLeaseData({
-                                          tenant_id: id,
-                                          site_id: tenantData.site_id,
-                                          site_name: tenantData.site_name,
-                                          building_id: tenantData.building_id,
-                                          building_name:
-                                            tenantData.building_name,
-                                          space_id: space.space_id, // Use the space from the card
-                                          space_name: space.space_name,
-                                        } as Lease);
-                                      } else {
-                                        // If no data, set tenant_id and space_id
-                                        setPrefilledLeaseData({
-                                          tenant_id: id,
-                                          space_id: space.space_id,
-                                          space_name: space.space_name,
-                                        } as Lease);
+                                {space.status == "approved" && (
+                                  <Button
+                                    size="sm"
+                                    variant="outline"
+                                    onClick={async () => {
+                                      setSelectedSpaceId(space.space_id);
+                                      // Fetch tenant lease details
+                                      if (id) {
+                                        const response = await withLoader(
+                                          async () => {
+                                            return await leasesApiService.getTenantLeaseDetail(
+                                              id,
+                                            );
+                                          },
+                                        );
+                                        if (
+                                          response?.success &&
+                                          response.data?.tenant_data?.length > 0
+                                        ) {
+                                          const tenantData =
+                                            response.data.tenant_data[0];
+                                          setPrefilledLeaseData({
+                                            tenant_id: id,
+                                            site_id: tenantData.site_id,
+                                            site_name: tenantData.site_name,
+                                            building_id: tenantData.building_id,
+                                            building_name:
+                                              tenantData.building_name,
+                                            space_id: space.space_id, // Use the space from the card
+                                            space_name: space.space_name,
+                                          } as Lease);
+                                        } else {
+                                          // If no data, set tenant_id and space_id
+                                          setPrefilledLeaseData({
+                                            tenant_id: id,
+                                            space_id: space.space_id,
+                                            space_name: space.space_name,
+                                          } as Lease);
+                                        }
                                       }
-                                    }
-                                    setIsLeaseFormOpen(true);
-                                  }}
-                                  className="flex items-center gap-2"
-                                >
-                                  <Plus className="h-4 w-4" />
-                                  Add Lease
-                                </Button>
+                                      setIsLeaseFormOpen(true);
+                                    }}
+                                    className="flex items-center gap-2"
+                                  >
+                                    <Plus className="h-4 w-4" />
+                                    Add Lease
+                                  </Button>
+                                )
+                                }
+
                               </div>
                             )}
                           </CardContent>

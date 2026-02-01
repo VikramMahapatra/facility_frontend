@@ -69,7 +69,10 @@ export function ManageTenantSpacesForm({
                             form={form}
                             name="tenant_spaces"
                             mode="edit"
-                            isRowReadOnly={(space) => space?.status === "leased"}
+                            isRowReadOnly={(space) => {
+                                if (space?.id && space?.status === "leased") return true;
+                                return false;
+                            }}
                         />
                     </div>
 

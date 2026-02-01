@@ -456,9 +456,9 @@ const Tenants = () => {
                         <CardDescription>
                           {tenantSpaces.slice(0, 2).map((tenant_space) => {
                             const isSpaceStatus =
-                              tenant_space.status == "occupied"
+                              tenant_space.status == "approved" || tenant_space.status == "leased"
                                 ? "active"
-                                : tenant_space.status == "vacated"
+                                : tenant_space.status == "pending"
                                   ? "inactive"
                                   : "suspended";
                             return (
