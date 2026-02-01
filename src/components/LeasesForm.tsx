@@ -28,16 +28,7 @@ import { Lease } from "@/interfaces/leasing_tenants_interface";
 import { leasesApiService } from "@/services/leasing_tenants/leasesapi";
 import { withFallback } from "@/helpers/commonHelper";
 
-interface LeaseFormProps {
-  lease?: Lease;
-  isOpen: boolean;
-  onClose: () => void;
-  onSave: (lease: Partial<Lease>) => Promise<any>;
-  mode: "create" | "edit" | "view";
-  disableLocationFields?: boolean; // When true, disables site, building, and space fields
-}
-
-const emptyFormData: Partial<Lease> = {
+const emptyFormData: Partial<LeaseFormValues> = {
   kind: "residential",
   site_id: "",
   building_id: "",
@@ -45,7 +36,8 @@ const emptyFormData: Partial<Lease> = {
   partner_id: "",
   tenant_id: "",
   start_date: "",
-  end_date: "",
+  frequency: "monthly",
+  lease_term_months: undefined,
   rent_amount: "" as any,
   deposit_amount: "" as any,
   cam_rate: "" as any,
@@ -53,6 +45,15 @@ const emptyFormData: Partial<Lease> = {
   status: "draft",
   auto_move_in_space_occupancy: false,
 };
+
+interface LeaseFormProps {
+  lease?: Lease;
+  isOpen: boolean;
+  onClose: () => void;
+  onSave: (lease: Partial<Lease>) => Promise<any>;
+  mode: "create" | "edit" | "view";
+  disableLocationFields?: boolean;
+}
 
 export function LeaseForm({
   lease,
@@ -82,7 +83,8 @@ export function LeaseForm({
       partner_id: "",
       tenant_id: "",
       start_date: "",
-      end_date: "",
+      frequency: "monthly",
+      lease_term_months: undefined,
       rent_amount: "" as any,
       deposit_amount: "" as any,
       cam_rate: "" as any,
@@ -118,7 +120,8 @@ export function LeaseForm({
             partner_id: lease.partner_id ? String(lease.partner_id) : "",
             tenant_id: lease.tenant_id ? String(lease.tenant_id) : "",
             start_date: lease.start_date || "",
-            end_date: lease.end_date || "",
+            frequency: (lease.frequency as "monthly" | "annually") || "monthly",
+            lease_term_months: (lease as any).lease_term_months || undefined,
             rent_amount: lease.rent_amount as any,
             deposit_amount: lease.deposit_amount as any,
             cam_rate: lease.cam_rate as any,
@@ -165,6 +168,7 @@ export function LeaseForm({
   const selectedSpaceId = watch("space_id");
   const selectedKind = watch("kind");
   const selectedTenantId = watch("tenant_id");
+  const selectedFrequency = watch("frequency");
 
   useEffect(() => {
     if (selectedTenantId && selectedKind !== "residential") {
@@ -302,8 +306,8 @@ export function LeaseForm({
             {mode === "create"
               ? "Create New Lease"
               : mode === "edit"
-                ? "Edit Lease"
-                : "Lease Details"}
+              ? "Edit Lease"
+              : "Lease Details"}
           </DialogTitle>
         </DialogHeader>
 
@@ -487,6 +491,35 @@ export function LeaseForm({
 
               <div className="grid grid-cols-3 gap-4">
                 <div>
+                  <Label>Frequency *</Label>
+                  <Controller
+                    name="frequency"
+                    control={control}
+                    render={({ field }) => (
+                      <Select
+                        value={field.value}
+                        onValueChange={field.onChange}
+                        disabled={isReadOnly}
+                      >
+                        <SelectTrigger
+                          className={errors.frequency ? "border-red-500" : ""}
+                        >
+                          <SelectValue placeholder="Select frequency" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="monthly">Monthly</SelectItem>
+                          <SelectItem value="annually">Annually</SelectItem>
+                        </SelectContent>
+                      </Select>
+                    )}
+                  />
+                  {errors.frequency && (
+                    <p className="text-sm text-red-500">
+                      {errors.frequency.message as any}
+                    </p>
+                  )}
+                </div>
+                <div>
                   <Label>Start Date *</Label>
                   <Input
                     type="date"
@@ -500,25 +533,33 @@ export function LeaseForm({
                     </p>
                   )}
                 </div>
-                <div>
-                  <Label>End Date *</Label>
-                  <Input
-                    type="date"
-                    disabled={isReadOnly}
-                    {...register("end_date")}
-                    className={errors.end_date ? "border-red-500" : ""}
-                  />
-                  {errors.end_date && (
-                    <p className="text-sm text-red-500">
-                      {errors.end_date.message as any}
-                    </p>
-                  )}
-                </div>
+                {selectedFrequency === "monthly" && (
+                  <div>
+                    <Label>Lease Term (Months) *</Label>
+                    <Input
+                      type="number"
+                      min="1"
+                      step="1"
+                      placeholder="Enter number of months"
+                      disabled={isReadOnly}
+                      {...register("lease_term_months")}
+                      className={
+                        errors.lease_term_months ? "border-red-500" : ""
+                      }
+                    />
+                    {errors.lease_term_months && (
+                      <p className="text-sm text-red-500">
+                        {errors.lease_term_months.message as any}
+                      </p>
+                    )}
+                  </div>
+                )}
                 <div>
                   <Label>Rent Amount *</Label>
                   <Input
                     type="number"
                     step="any"
+                    placeholder="Enter rent amount"
                     disabled={isReadOnly}
                     {...register("rent_amount")}
                     className={errors.rent_amount ? "border-red-500" : ""}
@@ -537,6 +578,7 @@ export function LeaseForm({
                   <Input
                     type="number"
                     step="any"
+                    placeholder="Enter deposit amount"
                     disabled={isReadOnly}
                     {...register("deposit_amount")}
                     className={errors.deposit_amount ? "border-red-500" : ""}
@@ -552,6 +594,7 @@ export function LeaseForm({
                   <Input
                     type="number"
                     step="any"
+                    placeholder="Enter CAM rate"
                     disabled={isReadOnly}
                     {...register("cam_rate")}
                     className={errors.cam_rate ? "border-red-500" : ""}
@@ -574,7 +617,7 @@ export function LeaseForm({
                         disabled={isReadOnly}
                       >
                         <SelectTrigger>
-                          <SelectValue />
+                          <SelectValue placeholder="Select status" />
                         </SelectTrigger>
                         <SelectContent>
                           <SelectItem value="draft">Draft</SelectItem>
@@ -674,8 +717,8 @@ export function LeaseForm({
                     {isSubmitting
                       ? "Saving..."
                       : mode === "create"
-                        ? "Create Lease"
-                        : "Update Lease"}
+                      ? "Create Lease"
+                      : "Update Lease"}
                   </Button>
                 )}
               </DialogFooter>
