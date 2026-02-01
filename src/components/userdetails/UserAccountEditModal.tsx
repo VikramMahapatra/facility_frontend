@@ -43,6 +43,7 @@ export default function AccountEditModal({
                 role_ids: account.roles?.map((r: any) => r.id) ?? [],
                 tenant_type: account.tenant_type ?? "residential",
                 tenant_spaces: account.tenant_spaces ?? [],
+                owner_spaces: account.owner_spaces ?? [],
                 site_ids: account.site_ids ?? [],
                 staff_role: account.staff_role ?? ""
             };

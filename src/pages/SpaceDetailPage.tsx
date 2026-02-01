@@ -107,6 +107,13 @@ export default function SpaceDetailPage() {
         }
     };
 
+    const onMoveInOutSuccess = async () => {
+        loadSpace();
+        loadOwners();
+        fetchTenants();
+        fetchOccupancy();
+    }
+
     const loadMaintenances = async (spaceId: string) => {
         setMaintenanceLoading(true);
         const params = new URLSearchParams();
@@ -314,7 +321,7 @@ export default function SpaceDetailPage() {
                                 tenants={tenants.active}
                                 occupancy={occupancy}
                                 history={occupancyHistory}
-                                onSucess={fetchOccupancy}
+                                onSucess={onMoveInOutSuccess}
                             />
                         </TabsContent>
                         <TabsContent value="maintenance" className="space-y-4">

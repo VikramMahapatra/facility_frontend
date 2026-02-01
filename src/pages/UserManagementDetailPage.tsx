@@ -187,6 +187,7 @@ export default function UserManagementDetailPage() {
   };
 
   const openEditAccount = (account: UserAccount) => {
+    console.log("account data :", account);
     setEditingAccount(account); // edit mode
     setAccountMode("edit");
     setIsAccountModalOpen(true);

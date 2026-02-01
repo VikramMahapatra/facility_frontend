@@ -530,16 +530,16 @@ const Tenants = () => {
                                   {(tenant.contact_info.address.city ||
                                     tenant.contact_info.address.state ||
                                     tenant.contact_info.address.pincode) && (
-                                    <div>
-                                      {[
-                                        tenant.contact_info.address.city,
-                                        tenant.contact_info.address.state,
-                                        tenant.contact_info.address.pincode,
-                                      ]
-                                        .filter(Boolean)
-                                        .join(", ")}
-                                    </div>
-                                  )}
+                                      <div>
+                                        {[
+                                          tenant.contact_info.address.city,
+                                          tenant.contact_info.address.state,
+                                          tenant.contact_info.address.pincode,
+                                        ]
+                                          .filter(Boolean)
+                                          .join(", ")}
+                                      </div>
+                                    )}
                                 </div>
                               </div>
                             )}
