@@ -19,6 +19,8 @@ import {
   Droplets,
   Percent,
   Plus,
+  CalendarClock,
+  Pencil,
 } from "lucide-react";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { Lease } from "@/interfaces/leasing_tenants_interface";
@@ -30,6 +32,7 @@ import ContentContainer from "@/components/ContentContainer";
 import { useLoader } from "@/context/LoaderContext";
 import LoaderOverlay from "@/components/LoaderOverlay";
 import { Pagination } from "@/components/Pagination";
+import { PaymentTermsForm } from "@/components/PaymentTermsForm";
 
 export default function LeaseDetailPage() {
   const { id } = useParams<{ id: string }>();
@@ -41,10 +44,20 @@ export default function LeaseDetailPage() {
   const [chargePageSize] = useState(5);
   const [chargeTotalItems, setChargeTotalItems] = useState(0);
   const [isChargeFormOpen, setIsChargeFormOpen] = useState(false);
+  const [isPaymentTermsFormOpen, setIsPaymentTermsFormOpen] = useState(false);
   const [chargeFormMode, setChargeFormMode] = useState<
     "create" | "edit" | "view"
   >("create");
   const [selectedCharge, setSelectedCharge] = useState<any | undefined>();
+
+  const [paymentTerms, setPaymentTerms] = useState<any[]>([]);
+  const [termPage, setTermPage] = useState(1);
+  const [termPageSize] = useState(6);
+  const [termTotalItems, setTermTotalItems] = useState(0);
+  const [selectedTerm, setSelectedTerm] = useState<any | undefined>();
+  const [termFormMode, setTermFormMode] = useState<"create" | "edit" | "view">(
+    "create",
+  );
 
   useEffect(() => {
     if (!id) return;
@@ -78,7 +91,27 @@ export default function LeaseDetailPage() {
     };
 
     loadLeaseDetail();
+    loadLeasePaymentTerms()
   }, [id]);
+
+  const loadLeasePaymentTerms = async () => {
+    const skip = (termPage - 1) * termPageSize;
+    const limit = termPageSize;
+
+    const params = new URLSearchParams();
+    params.append("skip", String(skip));
+    params.append("limit", String(limit));
+    params.append("lease_id", String(id));
+
+    const response = await withLoader(async () => {
+      return await leasesApiService.getLeasePaymentTerms(params);
+    });
+
+    if (response?.success) {
+      setPaymentTerms(response.data?.items || []);
+      setTermTotalItems(response.data?.total || 0);
+    }
+  };
 
   const getInitials = (name: string) => {
     if (!name) return "";
@@ -223,7 +256,7 @@ export default function LeaseDetailPage() {
           <Tabs defaultValue="overview">
             <TabsList className="grid w-full grid-cols-2">
               <TabsTrigger value="overview">Overview</TabsTrigger>
-              <TabsTrigger value="charges">Lease Charges</TabsTrigger>
+              <TabsTrigger value="terms">Payment Terms</TabsTrigger>
             </TabsList>
 
             {/* OVERVIEW */}
@@ -460,154 +493,155 @@ export default function LeaseDetailPage() {
               )}
             </TabsContent>
 
-            {/* CHARGES */}
-            <TabsContent value="charges" className="space-y-6">
+            {/* PAYMENT TERMS */}
+            {/* PAYMENT TERMS */}
+            <TabsContent value="terms" className="space-y-6">
               <Card>
                 <CardContent className="p-6">
                   <div className="flex items-center justify-between mb-6">
                     <h3 className="text-lg font-semibold flex items-center gap-2">
-                      <DollarSign className="h-5 w-5" /> Lease Charges
+                      <CalendarClock className="h-5 w-5" />
+                      Payment Terms
                     </h3>
+
                     {lease?.status === "active" && (
                       <Button
                         size="sm"
                         onClick={() => {
-                          setSelectedCharge(undefined);
-                          setChargeFormMode("create");
-                          setIsChargeFormOpen(true);
+                          setSelectedTerm(undefined);
+                          setTermFormMode("create");
+                          setIsPaymentTermsFormOpen(true);
                         }}
                         className="flex items-center gap-2"
                       >
                         <Plus className="h-4 w-4" />
-                        Add Charge
+                        Add Term
                       </Button>
                     )}
                   </div>
-                  {chargeHistory.length === 0 ? (
+
+                  {paymentTerms.length === 0 ? (
                     <div className="text-center py-8">
                       <p className="text-sm text-muted-foreground">
-                        No charges found
+                        No payment terms defined
                       </p>
                     </div>
                   ) : (
                     <div className="space-y-4">
-                      {chargeHistory
+                      {paymentTerms
                         .slice(
-                          (chargePage - 1) * chargePageSize,
-                          chargePage * chargePageSize,
+                          (termPage - 1) * termPageSize,
+                          termPage * termPageSize
                         )
-                        .map((charge, index) => (
+                        .map((term, index) => (
                           <Card
-                            key={charge.id || index}
+                            key={term.id || index}
                             className="hover:shadow-md transition-shadow"
                           >
                             <CardContent className="p-5">
+                              {/* Header */}
                               <div className="flex items-start justify-between mb-4">
                                 <div className="flex items-center gap-3">
-                                  <Badge
-                                    className={`${getChargeCodeColor(charge.charge_code || charge.code)} text-base font-semibold px-3 py-1 border-0`}
-                                  >
-                                    {charge.charge_code ||
-                                      charge.code ||
-                                      `Charge #${index + 1}`}
+                                  <Badge className="text-base font-semibold px-3 py-1">
+                                    {term.description || `Term #${index + 1}`}
                                   </Badge>
-                                  {charge.invoice_status === "paid" && (
-                                    <Badge className="bg-green-100 text-green-700">
-                                      Paid
-                                    </Badge>
-                                  )}
+
+                                  <Badge
+                                    className={
+                                      term.status === "paid"
+                                        ? "bg-green-100 text-green-700"
+                                        : term.status === "overdue"
+                                          ? "bg-red-100 text-red-700"
+                                          : "bg-yellow-100 text-yellow-700"
+                                    }
+                                  >
+                                    {term.status}
+                                  </Badge>
                                 </div>
-                                {charge.total_amount && (
+
+                                <div className="flex items-center gap-3">
+                                  {/* Amount */}
                                   <div className="text-right">
-                                    <p className="text-xs text-muted-foreground mb-1">
-                                      Total Amount
-                                    </p>
+                                    <p className="text-xs text-muted-foreground mb-1">Amount</p>
                                     <p className="text-xl font-bold">
-                                      {formatCurrency(
-                                        Number(charge.total_amount),
-                                      )}
+                                      {formatCurrency(Number(term.amount))}
                                     </p>
                                   </div>
-                                )}
+
+                                  {/* ✏️ Edit button */}
+                                  {lease?.status === "active" && term.status !== "paid" && (
+                                    <Button
+                                      size="icon"
+                                      variant="ghost"
+                                      onClick={() => {
+                                        setSelectedTerm(term);
+                                        setTermFormMode("edit");
+                                        setIsPaymentTermsFormOpen(true);
+                                      }}
+                                      title="Edit payment term"
+                                    >
+                                      <Pencil className="h-4 w-4" />
+                                    </Button>
+                                  )}
+                                </div>
                               </div>
 
-                              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 mb-4">
-                                <div>
-                                  <span className="text-xs text-muted-foreground block mb-1">
-                                    Period
-                                  </span>
-                                  <p className="font-medium text-sm">
-                                    {charge.period_start && charge.period_end
-                                      ? `${formatDate(charge.period_start)} - ${formatDate(charge.period_end)}`
-                                      : "-"}
-                                  </p>
-                                  {charge.period_days && (
-                                    <p className="text-xs text-muted-foreground mt-1">
-                                      {charge.period_days} days
-                                    </p>
-                                  )}
-                                </div>
 
+                              {/* Details */}
+                              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
                                 <div>
                                   <span className="text-xs text-muted-foreground block mb-1">
-                                    Base Amount
+                                    Due Date
                                   </span>
                                   <p className="font-medium text-sm">
-                                    {charge.amount
-                                      ? formatCurrency(Number(charge.amount))
-                                      : "-"}
+                                    {formatDate(term.due_date)}
                                   </p>
                                 </div>
 
-                                {charge.tax_pct !== undefined &&
-                                  charge.tax_pct !== null && (
-                                    <div>
-                                      <span className="text-xs text-muted-foreground block mb-1">
-                                        Tax ({charge.tax_pct}%)
-                                      </span>
-                                      <p className="font-medium text-sm">
-                                        {charge.tax_amount
-                                          ? formatCurrency(
-                                              Number(charge.tax_amount),
-                                            )
-                                          : "-"}
-                                      </p>
-                                    </div>
-                                  )}
-
-                                {charge.payer_type && (
+                                {term.payment_method && (
                                   <div>
                                     <span className="text-xs text-muted-foreground block mb-1">
-                                      Payer Type
+                                      Payment Method
                                     </span>
                                     <p className="font-medium text-sm capitalize">
-                                      {charge.payer_type}
+                                      {term.payment_method}
                                     </p>
                                   </div>
                                 )}
 
-                                {charge.created_at && (
+                                {term.reference_no && (
+                                  <div>
+                                    <span className="text-xs text-muted-foreground block mb-1">
+                                      Reference No
+                                    </span>
+                                    <p className="font-medium text-sm">
+                                      {term.reference_no}
+                                    </p>
+                                  </div>
+                                )}
+
+                                {term.paid_at && (
+                                  <div>
+                                    <span className="text-xs text-muted-foreground block mb-1">
+                                      Paid On
+                                    </span>
+                                    <p className="font-medium text-sm">
+                                      {formatDate(term.paid_at)}
+                                    </p>
+                                  </div>
+                                )}
+
+                                {term.created_at && (
                                   <div>
                                     <span className="text-xs text-muted-foreground block mb-1">
                                       Created Date
                                     </span>
                                     <p className="font-medium text-sm">
-                                      {formatDate(charge.created_at)}
+                                      {formatDate(term.created_at)}
                                     </p>
                                   </div>
                                 )}
                               </div>
-
-                              {charge.description && (
-                                <div className="pt-3 border-t">
-                                  <span className="text-xs text-muted-foreground block mb-1">
-                                    Description
-                                  </span>
-                                  <p className="text-sm">
-                                    {charge.description}
-                                  </p>
-                                </div>
-                              )}
                             </CardContent>
                           </Card>
                         ))}
@@ -615,29 +649,46 @@ export default function LeaseDetailPage() {
                   )}
 
                   {/* Pagination */}
-                  {chargeTotalItems > chargePageSize && (
+                  {termTotalItems > termPageSize && (
                     <div className="mt-6">
                       <Pagination
-                        page={chargePage}
-                        pageSize={chargePageSize}
-                        totalItems={chargeTotalItems}
-                        onPageChange={setChargePage}
+                        page={termPage}
+                        pageSize={termPageSize}
+                        totalItems={termTotalItems}
+                        onPageChange={setTermPage}
                       />
                     </div>
                   )}
                 </CardContent>
               </Card>
             </TabsContent>
+
           </Tabs>
         </div>
+      )}
+      {/* Payment Terms Form */}
+      {id && (
+        <PaymentTermsForm
+          term={selectedTerm}
+          mode={termFormMode}
+          leaseId={id}
+          isOpen={isPaymentTermsFormOpen}
+          onClose={() => {
+            setIsPaymentTermsFormOpen(false);
+          }}
+          onSave={() => {
+            // Refresh data if needed
+            loadLeasePaymentTerms();
+          }}
+        />
       )}
       <LeaseChargeForm
         charge={
           chargeFormMode === "create" && id && lease
             ? ({
-                lease_id: id,
-                lease_name: lease.lease_number,
-              } as any)
+              lease_id: id,
+              lease_name: lease.lease_number,
+            } as any)
             : selectedCharge
         }
         isOpen={isChargeFormOpen}

@@ -180,14 +180,14 @@ export default function Leases() {
 
       if (response.success) {
         updateLeasePage();
-        
+
         // Extract leaseId from response
         const leaseId = response.data?.id || response.data?.data?.id || response.data?.lease_id;
-        
+
         if (leaseId) {
           // Close lease form
           setIsFormOpen(false);
-          
+
           // Store leaseId and directly open payment terms form
           setCreatedLeaseId(String(leaseId));
           setIsPaymentTermsFormOpen(true);
@@ -215,8 +215,7 @@ export default function Leases() {
         setIsFormOpen(false);
       }
       toast.success(
-        `Lease has been ${
-          formMode === "create" ? "created" : "updated"
+        `Lease has been ${formMode === "create" ? "created" : "updated"
         } successfully.`,
       );
     }
@@ -335,8 +334,8 @@ export default function Leases() {
                   {leaseOverview.avgLeaseTermMonths < 12
                     ? `${leaseOverview.avgLeaseTermMonths.toFixed(0)} months`
                     : `${(leaseOverview.avgLeaseTermMonths / 12).toFixed(
-                        1,
-                      )} years`}
+                      1,
+                    )} years`}
                 </div>
                 <p className="text-sm text-muted-foreground">Avg Lease Term</p>
               </CardContent>
@@ -415,7 +414,7 @@ export default function Leases() {
                       </div>
                       <div>
                         {!lease.deposit_amount ||
-                        Number(lease.deposit_amount) === 0
+                          Number(lease.deposit_amount) === 0
                           ? "-"
                           : formatCurrency(lease.deposit_amount as any)}
                       </div>
@@ -545,6 +544,8 @@ export default function Leases() {
       {/* Payment Terms Form */}
       {createdLeaseId && (
         <PaymentTermsForm
+          term={undefined}
+          mode="create"
           leaseId={createdLeaseId}
           isOpen={isPaymentTermsFormOpen}
           onClose={() => {

@@ -275,7 +275,7 @@ export default function UserManagementDetailPage() {
                           {capitalizeName(user.full_name)}
                         </h1>
 
-                        <Button
+                        {/* <Button
                           size="icon"
                           variant="ghost"
                           onClick={() =>
@@ -284,7 +284,7 @@ export default function UserManagementDetailPage() {
                           className="top-6 right-6 h-8 px-3"
                         >
                           <Pencil className="h-4 w-4" />
-                        </Button>
+                        </Button> */}
                       </div>
 
                       {/* Badges */}

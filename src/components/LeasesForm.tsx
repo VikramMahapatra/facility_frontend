@@ -113,24 +113,24 @@ export function LeaseForm({
     reset(
       lease
         ? {
-            kind: (lease.kind as any) || "commercial",
-            site_id: lease.site_id || "",
-            building_id: leaseBuildingId || "",
-            space_id: lease.space_id || "",
-            partner_id: lease.partner_id ? String(lease.partner_id) : "",
-            tenant_id: lease.tenant_id ? String(lease.tenant_id) : "",
-            start_date: lease.start_date || "",
-            frequency: (lease.frequency as "monthly" | "annually") || "monthly",
-            lease_term_months: (lease as any).lease_term_months || undefined,
-            rent_amount: lease.rent_amount as any,
-            deposit_amount: lease.deposit_amount as any,
-            cam_rate: lease.cam_rate as any,
-            utilities: {
-              electricity: lease.utilities?.electricity as any,
-              water: lease.utilities?.water as any,
-            },
-            status: (lease.status as any) || "draft",
-          }
+          kind: (lease.kind as any) || "commercial",
+          site_id: lease.site_id || "",
+          building_id: leaseBuildingId || "",
+          space_id: lease.space_id || "",
+          partner_id: lease.partner_id ? String(lease.partner_id) : "",
+          tenant_id: lease.tenant_id ? String(lease.tenant_id) : "",
+          start_date: lease.start_date || "",
+          frequency: (lease.frequency as "monthly" | "annually") || "monthly",
+          lease_term_months: (lease as any).lease_term_months || undefined,
+          rent_amount: lease.rent_amount as any,
+          deposit_amount: lease.deposit_amount as any,
+          cam_rate: lease.cam_rate as any,
+          utilities: {
+            electricity: lease.utilities?.electricity as any,
+            water: lease.utilities?.water as any,
+          },
+          status: (lease.status as any) || "draft",
+        }
         : emptyFormData,
     );
 
@@ -218,30 +218,30 @@ export function LeaseForm({
   // Create fallback options for site, building, and space from lease prop
   const fallbackSite = lease?.site_id
     ? {
-        id: lease.site_id,
-        name: (lease as any).site_name,
-      }
+      id: lease.site_id,
+      name: (lease as any).site_name,
+    }
     : null;
 
   const fallbackBuilding =
     lease?.building_id || (lease as any)?.building_block_id
       ? {
-          id: (lease as any).building_id || (lease as any).building_block_id,
-          name: (lease as any).building_name,
-        }
+        id: (lease as any).building_id || (lease as any).building_block_id,
+        name: (lease as any).building_name,
+      }
       : null;
 
   const fallbackSpace = lease?.space_id
     ? {
-        id: lease.space_id,
-        name: (lease as any).space_name,
-      }
+      id: lease.space_id,
+      name: (lease as any).space_name,
+    }
     : null;
   const fallbackTenant = lease?.tenant_id
     ? {
-        id: lease.tenant_id,
-        name: (lease as any).tenant_name,
-      }
+      id: lease.tenant_id,
+      name: (lease as any).tenant_name,
+    }
     : null;
 
   const tenants = withFallback(leasePartnerList, fallbackTenant);
@@ -306,8 +306,8 @@ export function LeaseForm({
             {mode === "create"
               ? "Create New Lease"
               : mode === "edit"
-              ? "Edit Lease"
-              : "Lease Details"}
+                ? "Edit Lease"
+                : "Lease Details"}
           </DialogTitle>
         </DialogHeader>
 
@@ -316,16 +316,16 @@ export function LeaseForm({
             isSubmitting
               ? undefined
               : handleSubmit(onSubmitForm, (errors) => {
-                  console.log("Form validation errors:", errors);
-                  const firstError = Object.values(errors)[0];
-                  if (firstError?.message) {
-                    toast.error(firstError.message as string);
-                  } else {
-                    toast.error(
-                      "Please fill in all required fields correctly.",
-                    );
-                  }
-                })
+                console.log("Form validation errors:", errors);
+                const firstError = Object.values(errors)[0];
+                if (firstError?.message) {
+                  toast.error(firstError.message as string);
+                } else {
+                  toast.error(
+                    "Please fill in all required fields correctly.",
+                  );
+                }
+              })
           }
           className="space-y-4"
         >
@@ -489,8 +489,13 @@ export function LeaseForm({
                 </div>
               </div>
 
-              <div className="grid grid-cols-3 gap-4">
-                <div>
+              <div
+                className={`grid gap-4 ${selectedFrequency === "monthly"
+                  ? "grid-cols-4"
+                  : "grid-cols-3"
+                  }`}
+              >
+                <div >
                   <Label>Frequency *</Label>
                   <Controller
                     name="frequency"
@@ -632,7 +637,7 @@ export function LeaseForm({
               </div>
 
               {/* Utilities */}
-              <div className="grid grid-cols-2 gap-4">
+              <div className="grid grid-cols-3 gap-4">
                 <div>
                   <Label>Electricity</Label>
                   <Controller
@@ -679,29 +684,38 @@ export function LeaseForm({
                     )}
                   />
                 </div>
+                {/* Auto Move In Space Occupancy Checkbox */}
+                <div className="flex flex-col gap-2">
+                  {/* spacer to match Label height */}
+                  <Label className="invisible">Auto move-in occupancy</Label>
+
+                  <div className="flex items-center gap-2 h-10">
+                    <Controller
+                      name="auto_move_in_space_occupancy"
+                      control={control}
+                      render={({ field }) => (
+                        <Checkbox
+                          id="auto_move_in_space_occupancy"
+                          checked={field.value || false}
+                          onCheckedChange={field.onChange}
+                          disabled={isReadOnly}
+                        />
+                      )}
+                    />
+                    <Label
+                      htmlFor="auto_move_in_space_occupancy"
+                      className="text-sm font-normal cursor-pointer leading-none"
+                    >
+                      Auto move tenant to space
+                    </Label>
+                  </div>
+                </div>
+
+
               </div>
 
-              {/* Auto Move In Space Occupancy Checkbox */}
-              <div className="flex items-center space-x-2">
-                <Controller
-                  name="auto_move_in_space_occupancy"
-                  control={control}
-                  render={({ field }) => (
-                    <Checkbox
-                      id="auto_move_in_space_occupancy"
-                      checked={field.value || false}
-                      onCheckedChange={field.onChange}
-                      disabled={isReadOnly}
-                    />
-                  )}
-                />
-                <Label
-                  htmlFor="auto_move_in_space_occupancy"
-                  className="text-sm font-normal cursor-pointer"
-                >
-                  Do you want to Auto move in space occupancy
-                </Label>
-              </div>
+
+
 
               <DialogFooter>
                 <Button
@@ -717,8 +731,8 @@ export function LeaseForm({
                     {isSubmitting
                       ? "Saving..."
                       : mode === "create"
-                      ? "Create Lease"
-                      : "Update Lease"}
+                        ? "Create Lease"
+                        : "Update Lease"}
                   </Button>
                 )}
               </DialogFooter>

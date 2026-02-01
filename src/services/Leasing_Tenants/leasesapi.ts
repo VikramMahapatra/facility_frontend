@@ -64,6 +64,17 @@ class LeasesApiService {
     return await apiService.request(`/leases/tenant-lease/detail?tenant_id=${tenant_id}`);
   }
 
+  async addLeasePaymentTerm(leasePaymentTermData: any) {
+    return await apiService.request('/leases/create-lease-payment-term', {
+      method: 'POST',
+      body: JSON.stringify(leasePaymentTermData),
+    });
+  }
+
+  async getLeasePaymentTerms(params) {
+    return await apiService.request(`/leases/get-payment-terms?${params.toString()}`);
+  }
+
 }
 
 export const leasesApiService = new LeasesApiService();
