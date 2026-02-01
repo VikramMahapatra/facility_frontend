@@ -20,6 +20,7 @@ import {
   SidebarTrigger,
 } from "@/components/ui/sidebar";
 import { LeaseForm } from "@/components/LeasesForm";
+import { PaymentTermsForm } from "@/components/PaymentTermsForm";
 import { LogOut } from "lucide-react";
 import {
   AlertDialog,
@@ -59,6 +60,8 @@ export default function Leases() {
   const [isFormOpen, setIsFormOpen] = useState(false);
   const [deleteLeaseId, setDeleteLeaseId] = useState<string | null>(null);
   const [siteList, setSiteList] = useState<any[]>([]);
+  const [createdLeaseId, setCreatedLeaseId] = useState<string | null>(null);
+  const [isPaymentTermsFormOpen, setIsPaymentTermsFormOpen] = useState(false);
   const { canRead, canWrite, canDelete } = useAuth();
   const { withLoader } = useLoader();
   const { user, handleLogout } = useAuth();
@@ -175,7 +178,21 @@ export default function Leases() {
     if (formMode === "create") {
       response = await leasesApiService.addLease(leaseData);
 
-      if (response.success) updateLeasePage();
+      if (response.success) {
+        updateLeasePage();
+        
+        // Extract leaseId from response
+        const leaseId = response.data?.id || response.data?.data?.id || response.data?.lease_id;
+        
+        if (leaseId) {
+          // Close lease form
+          setIsFormOpen(false);
+          
+          // Store leaseId and directly open payment terms form
+          setCreatedLeaseId(String(leaseId));
+          setIsPaymentTermsFormOpen(true);
+        }
+      }
     } else if (formMode === "edit" && selectedLease) {
       const updated = {
         ...selectedLease,
@@ -194,7 +211,9 @@ export default function Leases() {
     }
 
     if (response?.success) {
-      setIsFormOpen(false);
+      if (formMode === "edit") {
+        setIsFormOpen(false);
+      }
       toast.success(
         `Lease has been ${
           formMode === "create" ? "created" : "updated"
@@ -522,6 +541,22 @@ export default function Leases() {
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
+
+      {/* Payment Terms Form */}
+      {createdLeaseId && (
+        <PaymentTermsForm
+          leaseId={createdLeaseId}
+          isOpen={isPaymentTermsFormOpen}
+          onClose={() => {
+            setIsPaymentTermsFormOpen(false);
+            setCreatedLeaseId(null);
+          }}
+          onSave={() => {
+            // Refresh data if needed
+            updateLeasePage();
+          }}
+        />
+      )}
     </div>
   );
 }
