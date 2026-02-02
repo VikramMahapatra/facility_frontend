@@ -129,7 +129,7 @@ export function LeaseForm({
             electricity: lease.utilities?.electricity as any,
             water: lease.utilities?.water as any,
           },
-          status: (lease.status as any) || "draft",
+          status: (lease.status as any) || "draft"
         }
         : emptyFormData,
     );
@@ -637,7 +637,12 @@ export function LeaseForm({
               </div>
 
               {/* Utilities */}
-              <div className="grid grid-cols-3 gap-4">
+              <div
+                className={`grid gap-4 ${mode === "create"
+                  ? "grid-cols-3"
+                  : "grid-cols-2"
+                  }`}
+              >
                 <div>
                   <Label>Electricity</Label>
                   <Controller
@@ -684,33 +689,35 @@ export function LeaseForm({
                     )}
                   />
                 </div>
+
                 {/* Auto Move In Space Occupancy Checkbox */}
-                <div className="flex flex-col gap-2">
-                  {/* spacer to match Label height */}
-                  <Label className="invisible">Auto move-in occupancy</Label>
+                {mode == "create" && (
+                  <div className="flex flex-col gap-2">
+                    {/* spacer to match Label height */}
+                    <Label className="invisible">Auto move-in occupancy</Label>
 
-                  <div className="flex items-center gap-2 h-10">
-                    <Controller
-                      name="auto_move_in_space_occupancy"
-                      control={control}
-                      render={({ field }) => (
-                        <Checkbox
-                          id="auto_move_in_space_occupancy"
-                          checked={field.value || false}
-                          onCheckedChange={field.onChange}
-                          disabled={isReadOnly}
-                        />
-                      )}
-                    />
-                    <Label
-                      htmlFor="auto_move_in_space_occupancy"
-                      className="text-sm font-normal cursor-pointer leading-none"
-                    >
-                      Auto move tenant to space
-                    </Label>
+                    <div className="flex items-center gap-2 h-10">
+                      <Controller
+                        name="auto_move_in_space_occupancy"
+                        control={control}
+                        render={({ field }) => (
+                          <Checkbox
+                            id="auto_move_in_space_occupancy"
+                            checked={field.value || false}
+                            onCheckedChange={field.onChange}
+                            disabled={isReadOnly}
+                          />
+                        )}
+                      />
+                      <Label
+                        htmlFor="auto_move_in_space_occupancy"
+                        className="text-sm font-normal cursor-pointer leading-none"
+                      >
+                        Auto move tenant to space
+                      </Label>
+                    </div>
                   </div>
-                </div>
-
+                )}
 
               </div>
 
