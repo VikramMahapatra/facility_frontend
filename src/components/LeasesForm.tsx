@@ -131,7 +131,7 @@ export function LeaseForm({
             },
             status: (lease.status as any) || "draft",
           }
-        : emptyFormData
+        : emptyFormData,
     );
 
     setFormLoading(false);
@@ -145,7 +145,7 @@ export function LeaseForm({
       if (leaseSiteId) {
         const spaces = await spacesApiService.getSpaceLookup(
           leaseSiteId,
-          leaseBuildingId
+          leaseBuildingId,
         );
         if (spaces.success) setSpaceList(spaces.data || []);
       }
@@ -258,7 +258,7 @@ export function LeaseForm({
     if (selectedSiteId) {
       const spaces = await spacesApiService.getSpaceLookup(
         selectedSiteId,
-        selectedBuildingId
+        selectedBuildingId,
       );
       if (spaces.success) setSpaceList(spaces.data || []);
     }
@@ -273,7 +273,7 @@ export function LeaseForm({
     if (!selectedSiteId) return;
     const tenants = await leasesApiService.getLeaseTenantLookup(
       selectedSiteId,
-      selectedSpaceId
+      selectedSpaceId,
     );
     if (tenants?.success) setLeasePartnerList(tenants.data || []);
   };
@@ -306,8 +306,8 @@ export function LeaseForm({
             {mode === "create"
               ? "Create New Lease"
               : mode === "edit"
-              ? "Edit Lease"
-              : "Lease Details"}
+                ? "Edit Lease"
+                : "Lease Details"}
           </DialogTitle>
         </DialogHeader>
 
@@ -322,7 +322,7 @@ export function LeaseForm({
                     toast.error(firstError.message as string);
                   } else {
                     toast.error(
-                      "Please fill in all required fields correctly."
+                      "Please fill in all required fields correctly.",
                     );
                   }
                 })
@@ -638,7 +638,11 @@ export function LeaseForm({
               </div>
 
               {/* Utilities */}
-              <div className="grid grid-cols-3 gap-4">
+              <div
+                className={`grid gap-4 ${
+                  mode === "create" ? "grid-cols-3" : "grid-cols-2"
+                }`}
+              >
                 <div>
                   <Label>Electricity</Label>
                   <Controller
@@ -729,8 +733,8 @@ export function LeaseForm({
                     {isSubmitting
                       ? "Saving..."
                       : mode === "create"
-                      ? "Create Lease"
-                      : "Update Lease"}
+                        ? "Create Lease"
+                        : "Update Lease"}
                   </Button>
                 )}
               </DialogFooter>
