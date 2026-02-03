@@ -34,6 +34,7 @@ import LoaderOverlay from "@/components/LoaderOverlay";
 import { Pagination } from "@/components/Pagination";
 import { LeaseForm } from "@/components/LeasesForm";
 import { ManageTenantSpacesForm } from "@/components/ManageTenantSpacesForm";
+import { TenantForm } from "@/components/TenantForm";
 import { userManagementApiService } from "@/services/access_control/usermanagementapi";
 
 export default function TenantDetailPage() {
@@ -51,6 +52,7 @@ export default function TenantDetailPage() {
   const [prefilledLeaseData, setPrefilledLeaseData] =
     useState<Partial<Lease> | null>(null);
   const [spacesOpen, setSpacesOpen] = useState(false);
+  const [isTenantFormOpen, setIsTenantFormOpen] = useState(false);
 
   useEffect(() => {
     if (!id) return;
@@ -249,15 +251,14 @@ export default function TenantDetailPage() {
   const handleAccountSave = async (accountData) => {
     const tenantAccountData = {
       tenant_id: tenant.id,
-      tenant_spaces: accountData.tenant_spaces
-    }
+      tenant_spaces: accountData.tenant_spaces,
+    };
     const response = await tenantsApiService.manageSpaces(tenantAccountData);
 
     if (response.success) {
       loadTenant();
       toast.success(`spaces assigned successfully.`);
-      setSpacesOpen(false)
-
+      setSpacesOpen(false);
     }
     return response;
   };
@@ -289,7 +290,7 @@ export default function TenantDetailPage() {
                   </h1>
                   <Button
                     variant="ghost"
-                    onClick={() => navigate(`/tenants/${id}/edit`)}
+                    onClick={() => setIsTenantFormOpen(true)}
                     size="icon"
                     className="top-6 right-6 h-8 px-3"
                   >
@@ -304,9 +305,7 @@ export default function TenantDetailPage() {
                 </div>
               </div>
             </div>
-            <div className="flex gap-2">
-
-            </div>
+            <div className="flex gap-2"></div>
           </div>
 
           <Tabs defaultValue="overview">
@@ -391,16 +390,16 @@ export default function TenantDetailPage() {
                       {(tenant.contact_info.address.city ||
                         tenant.contact_info.address.state ||
                         tenant.contact_info.address.pincode) && (
-                          <p className="text-muted-foreground">
-                            {[
-                              tenant.contact_info.address.city,
-                              tenant.contact_info.address.state,
-                              tenant.contact_info.address.pincode,
-                            ]
-                              .filter(Boolean)
-                              .join(", ")}
-                          </p>
-                        )}
+                        <p className="text-muted-foreground">
+                          {[
+                            tenant.contact_info.address.city,
+                            tenant.contact_info.address.state,
+                            tenant.contact_info.address.pincode,
+                          ]
+                            .filter(Boolean)
+                            .join(", ")}
+                        </p>
+                      )}
                     </CardContent>
                   </Card>
                 )}
@@ -408,13 +407,13 @@ export default function TenantDetailPage() {
               {(() => {
                 const familyItems = Array.isArray(tenant.family_info)
                   ? tenant.family_info.filter(
-                    (member) => member.member || member.relation,
-                  )
+                      (member) => member.member || member.relation,
+                    )
                   : [];
                 const vehicleItems = Array.isArray(tenant.vehicle_info)
                   ? tenant.vehicle_info.filter(
-                    (vehicle) => vehicle.type || vehicle.number,
-                  )
+                      (vehicle) => vehicle.type || vehicle.number,
+                    )
                   : [];
 
                 return (
@@ -500,9 +499,7 @@ export default function TenantDetailPage() {
                   <h2 className="text-xl font-semibold flex items-center gap-2">
                     <Building2 className="h-5 w-5" /> Assigned Spaces
                   </h2>
-                  <Button
-                    size="sm"
-                    onClick={() => setSpacesOpen(true)}>
+                  <Button size="sm" onClick={() => setSpacesOpen(true)}>
                     <MapPin className="h-4 w-4 mr-2" />
                     Manage Spaces
                   </Button>
@@ -630,6 +627,7 @@ export default function TenantDetailPage() {
                                           async () => {
                                             return await leasesApiService.getTenantLeaseDetail(
                                               id,
+                                              space.space_id,
                                             );
                                           },
                                         );
@@ -665,9 +663,7 @@ export default function TenantDetailPage() {
                                     <Plus className="h-4 w-4" />
                                     Add Lease
                                   </Button>
-                                )
-                                }
-
+                                )}
                               </div>
                             )}
                           </CardContent>
@@ -771,22 +767,22 @@ export default function TenantDetailPage() {
                                   {(payment.charge_code ||
                                     payment.charge_code_name ||
                                     payment.charge_code_id) && (
-                                      <Badge
-                                        className={`text-xs border-0 ${getChargeCodeBadgeClass(
-                                          String(
-                                            payment.charge_code ||
+                                    <Badge
+                                      className={`text-xs border-0 ${getChargeCodeBadgeClass(
+                                        String(
+                                          payment.charge_code ||
                                             payment.charge_code_name ||
                                             payment.charge_code_id,
-                                          ),
-                                        )}`}
-                                      >
-                                        {String(
-                                          payment.charge_code ||
+                                        ),
+                                      )}`}
+                                    >
+                                      {String(
+                                        payment.charge_code ||
                                           payment.charge_code_name ||
                                           payment.charge_code_id,
-                                        )}
-                                      </Badge>
-                                    )}
+                                      )}
+                                    </Badge>
+                                  )}
                                 </div>
                               </div>
 
@@ -902,6 +898,40 @@ export default function TenantDetailPage() {
           return response;
         }}
         mode="create"
+      />
+
+      {/* Tenant Form */}
+      <TenantForm
+        isOpen={isTenantFormOpen}
+        onClose={() => setIsTenantFormOpen(false)}
+        mode="edit"
+        tenant={tenant || undefined}
+        onSave={async (tenantData: Partial<Tenant>) => {
+          if (!tenant) return { success: false };
+
+          const updatedTenant = {
+            ...tenant,
+            ...tenantData,
+          };
+
+          const response = await withLoader(async () => {
+            return await tenantsApiService.updateTenant(updatedTenant);
+          });
+
+          if (response?.success) {
+            setIsTenantFormOpen(false);
+            toast.success("Tenant updated successfully.");
+            // Reload tenant data
+            await loadTenant();
+          } else if (response && !response.success) {
+            if (response?.message) {
+              toast.error(response.message);
+            } else {
+              toast.error("Failed to update tenant.");
+            }
+          }
+          return response;
+        }}
       />
     </ContentContainer>
   );

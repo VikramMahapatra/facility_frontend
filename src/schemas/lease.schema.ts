@@ -16,7 +16,6 @@ export const leaseSchema = z
       .number({
         invalid_type_error: "Lease Term must be a number",
       })
-      .min(1, "Lease Term must be at least 1 month")
       .optional(),
     rent_amount: z.coerce
       .number({

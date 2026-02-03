@@ -29,6 +29,8 @@ const paymentSchema = z
 export const invoiceSchema = z
   .object({
     site_id: z.string().min(1, "Site is required"),
+    building_id: z.string().optional(),
+    space_id: z.string().optional(),
     customer_kind: z
       .enum(["resident", "merchant", "guest", "staff", "other"])
       .optional(),
