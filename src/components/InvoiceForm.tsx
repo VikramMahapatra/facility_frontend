@@ -17,6 +17,8 @@ import {
   DialogFooter,
 } from "@/components/ui/dialog";
 import { siteApiService } from "@/services/spaces_sites/sitesapi";
+import { buildingApiService } from "@/services/spaces_sites/buildingsapi";
+import { spacesApiService } from "@/services/spaces_sites/spacesapi";
 import { Invoice } from "@/interfaces/invoices_interfaces";
 import { invoiceApiService } from "@/services/financials/invoicesapi";
 import { useForm, Controller } from "react-hook-form";
@@ -36,6 +38,8 @@ interface InvoiceFormProps {
 
 const emptyFormData: InvoiceFormValues = {
   site_id: "",
+  building_id: "",
+  space_id: "",
   date: new Date().toISOString().split("T")[0],
   due_date: "",
   status: "draft",
@@ -57,6 +61,8 @@ export function InvoiceForm({
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [formLoading, setFormLoading] = useState(false);
   const [siteList, setSiteList] = useState<any[]>([]);
+  const [buildingList, setBuildingList] = useState<any[]>([]);
+  const [spaceList, setSpaceList] = useState<any[]>([]);
   const [invoiceTypeList, setInvoiceTypeList] = useState<
     { id: string; name: string }[]
   >([]);
@@ -80,6 +86,8 @@ export function InvoiceForm({
   });
 
   const watchedSiteId = watch("site_id");
+  const watchedBuildingId = watch("building_id");
+  const watchedSpaceId = watch("space_id");
   const watchedBillableType = watch("billable_item_type");
   const watchedBillableItemId = watch("billable_item_id");
 
@@ -95,16 +103,46 @@ export function InvoiceForm({
     }
   }, [isOpen, invoice, mode]);
 
+  // Load buildings when site changes
+  useEffect(() => {
+    if (watchedSiteId) {
+      loadBuildingLookup(watchedSiteId);
+    } else {
+      setBuildingList([]);
+      setSpaceList([]);
+    }
+  }, [watchedSiteId]);
+
+  // Load spaces when site or building changes
+  useEffect(() => {
+    if (watchedSiteId) {
+      loadSpaceLookup(watchedSiteId, watchedBuildingId);
+    } else {
+      setSpaceList([]);
+    }
+  }, [watchedSiteId, watchedBuildingId]);
+
   useEffect(() => {
     if (mode === "create") {
       if (watchedBillableType && watchedSiteId && siteList.length > 0) {
-        loadBillableItemLookup(watchedBillableType, watchedSiteId);
+        loadBillableItemLookup(
+          watchedBillableType,
+          watchedSiteId,
+          watchedSpaceId
+        );
       } else if (!watchedBillableType || !watchedSiteId) {
         setBillableItemList([]);
         setValue("billable_item_id", "");
       }
     }
-  }, [watchedBillableType, watchedSiteId, setValue, mode, siteList.length]);
+  }, [
+    watchedBillableType,
+    watchedSiteId,
+    watchedSpaceId,
+    setValue,
+    mode,
+    siteList.length,
+  ]);
 
   useEffect(() => {
     // Auto-load totals only once when billable item is first selected
@@ -142,6 +180,16 @@ export function InvoiceForm({
     if (lookup.success) setSiteList(lookup.data || []);
   };
 
+  const loadBuildingLookup = async (siteId: string) => {
+    const lookup = await buildingApiService.getBuildingLookup(siteId);
+    if (lookup.success) setBuildingList(lookup.data || []);
+  };
+
+  const loadSpaceLookup = async (siteId: string, buildingId?: string) => {
+    const lookup = await spacesApiService.getSpaceLookup(siteId, buildingId);
+    if (lookup.success) setSpaceList(lookup.data || []);
+  };
+
   const loadInvoiceTypeLookup = async () => {
     try {
       const response = await invoiceApiService.getInvoiceTypeLookup();
@@ -166,7 +214,11 @@ export function InvoiceForm({
     }
   };
 
-  const loadBillableItemLookup = async (type?: string, siteId?: string) => {
+  const loadBillableItemLookup = async (
+    type?: string,
+    siteId?: string,
+    spaceId?: string
+  ) => {
     if (!type || !siteId) {
       setBillableItemList([]);
       setValue("billable_item_id", "");
@@ -177,6 +229,9 @@ export function InvoiceForm({
       const params = new URLSearchParams();
       params.append("site_id", siteId);
       params.append("billable_item_type", type);
+      if (spaceId) {
+        params.append("space_id", spaceId);
+      }
 
       const response = await invoiceApiService.getInvoiceEntityLookup(params);
       if (response?.success) {
@@ -237,6 +292,8 @@ export function InvoiceForm({
       invoice && mode !== "create"
         ? {
             site_id: invoice.site_id || "",
+            building_id: (invoice as any).building_id || "",
+            space_id: (invoice as any).space_id || "",
             date: invoice.date || new Date().toISOString().split("T")[0],
             due_date: invoice.due_date || "",
             status: invoice.status || "draft",
@@ -249,6 +306,15 @@ export function InvoiceForm({
         : emptyFormData
     );
 
+    // Preload building and space lookups for existing invoice (edit/view mode)
+    if (invoice && mode !== "create" && invoice.site_id) {
+      await loadBuildingLookup(invoice.site_id);
+      const buildingId = (invoice as any).building_id;
+      if (invoice.site_id) {
+        await loadSpaceLookup(invoice.site_id, buildingId);
+      }
+    }
+
     // Preload billable item lookup for existing invoice (edit/view mode)
     if (
       invoice &&
@@ -256,7 +322,12 @@ export function InvoiceForm({
       invoice.site_id &&
       invoice.billable_item_type
     ) {
-      await loadBillableItemLookup(invoice.billable_item_type, invoice.site_id);
+      const spaceId = (invoice as any).space_id;
+      await loadBillableItemLookup(
+        invoice.billable_item_type,
+        invoice.site_id,
+        spaceId
+      );
     }
   };
 
@@ -312,6 +383,8 @@ export function InvoiceForm({
 
   const handleClose = () => {
     reset(emptyFormData);
+    setBuildingList([]);
+    setSpaceList([]);
     setBillableItemList([]);
     onClose();
   };
@@ -365,8 +438,8 @@ export function InvoiceForm({
               id="invoice-form"
             >
               <div className="space-y-4">
-                {/* Row 1: Site, Invoice Type */}
-                <div className="grid grid-cols-2 gap-4">
+                {/* Row 1: Site, Building, Space */}
+                <div className="grid grid-cols-3 gap-4">
                   <div className="space-y-2">
                     <Label htmlFor="site_id">Site *</Label>
                     <Controller
@@ -377,7 +450,10 @@ export function InvoiceForm({
                           value={field.value || ""}
                           onValueChange={(value) => {
                             field.onChange(value);
+                            setValue("building_id", "");
+                            setValue("space_id", "");
                           }}
+                          disabled={isReadOnly}
                         >
                           <SelectTrigger
                             className={errors.site_id ? "border-red-500" : ""}
@@ -401,6 +477,75 @@ export function InvoiceForm({
                     )}
                   </div>
                   <div className="space-y-2">
+                    <Label htmlFor="building_id">Building</Label>
+                    <Controller
+                      name="building_id"
+                      control={control}
+                      render={({ field }) => (
+                        <Select
+                          value={field.value || ""}
+                          onValueChange={(value) => {
+                            field.onChange(value);
+                            setValue("space_id", "");
+                          }}
+                          disabled={isReadOnly || !watchedSiteId}
+                        >
+                          <SelectTrigger>
+                            <SelectValue
+                              placeholder={
+                                !watchedSiteId
+                                  ? "Select site first"
+                                  : "Select building"
+                              }
+                            />
+                          </SelectTrigger>
+                          <SelectContent>
+                            {buildingList.map((building) => (
+                              <SelectItem key={building.id} value={building.id}>
+                                {building.name}
+                              </SelectItem>
+                            ))}
+                          </SelectContent>
+                        </Select>
+                      )}
+                    />
+                  </div>
+                  <div className="space-y-2">
+                    <Label htmlFor="space_id">Space</Label>
+                    <Controller
+                      name="space_id"
+                      control={control}
+                      render={({ field }) => (
+                        <Select
+                          value={field.value || ""}
+                          onValueChange={field.onChange}
+                          disabled={isReadOnly || !watchedSiteId}
+                        >
+                          <SelectTrigger>
+                            <SelectValue
+                              placeholder={
+                                !watchedSiteId
+                                  ? "Select site first"
+                                  : "Select space"
+                              }
+                            />
+                          </SelectTrigger>
+                          <SelectContent>
+                            {spaceList.map((space) => (
+                              <SelectItem key={space.id} value={space.id}>
+                                {space.name || space.code}
+                              </SelectItem>
+                            ))}
+                          </SelectContent>
+                        </Select>
+                      )}
+                    />
+                  </div>
+                </div>
+
+                {/* Row 2: Invoice Type, Billable Item */}
+                <div className="grid grid-cols-2 gap-4">
+                  <div className="space-y-2">
                     <Label htmlFor="billable_item_type">Invoice Type *</Label>
                     <Controller
                       name="billable_item_type"
@@ -412,6 +557,7 @@ export function InvoiceForm({
                             field.onChange(value);
                             setValue("billable_item_id", "");
                           }}
+                          disabled={isReadOnly}
                         >
                           <SelectTrigger
                             className={
@@ -436,10 +582,6 @@ export function InvoiceForm({
                       </p>
                     )}
                   </div>
-                </div>
-
-                {/* Row 2: Billable Item, Invoice Date */}
-                <div className="grid grid-cols-2 gap-4">
                   <div className="space-y-2">
                     <Label htmlFor="billable_item_id">
                       {(() => {
@@ -458,6 +600,7 @@ export function InvoiceForm({
                         <Select
                           value={field.value || ""}
                           onValueChange={field.onChange}
+                          disabled={isReadOnly}
                         >
                           <SelectTrigger
                             className={
@@ -482,6 +625,10 @@ export function InvoiceForm({
                       </p>
                     )}
                   </div>
+                </div>
+
+                {/* Row 3: Invoice Date, Due Date, Currency */}
+                <div className="grid grid-cols-3 gap-4">
                   <div className="space-y-2">
                     <Label htmlFor="date">Invoice Date *</Label>
                     <Input
@@ -497,10 +644,6 @@ export function InvoiceForm({
                       </p>
                     )}
                   </div>
-                </div>
-
-                {/* Row 3: Due Date, Currency */}
-                <div className="grid grid-cols-2 gap-4">
                   <div className="space-y-2">
                     <Label htmlFor="due_date">Due Date *</Label>
                     <Input
