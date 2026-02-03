@@ -76,6 +76,9 @@ import RegistrationStatus from "./pages/RegistrationStatus";
 import MainLayout from "./layouts/MainLayout";
 import "./App.css";
 import SpaceDetailPage from "./pages/SpaceDetailPage";
+import SpaceOwnershipApproval from "./pages/SpaceOwnershipApproval";
+import SpaceMaintenance from "./pages/SpaceMaintenance";
+import TenantApprovalPage from "./pages/TenantApprovals";
 
 const queryClient = new QueryClient();
 
@@ -112,6 +115,7 @@ const App = () => {
                       <Route path="/spaces/:kind" element={<SpacesByKind />} />
                       <Route path="/space-groups" element={<SpaceGroups />} />
                       <Route path="/space-assignments" element={<SpaceAssignments />} />
+                      <Route path="/space-maintenance" element={<SpaceMaintenance />} />
                       <Route path="/leases" element={<Leases />} />
                       <Route path="/leases/:id" element={<LeaseDetailPage />} />
                       <Route path="/tenants" element={<Tenants />} />
@@ -162,6 +166,9 @@ const App = () => {
                       <Route path="/ticket-work-orders" element={<TicketWorkOrders />} />
                       <Route path="/ticket-workload" element={<TicketWorkload />} />
                       <Route path="/approval-rules" element={<ApprovalRules />} />
+                      <Route path="/space-ownership-approvals" element={<SpaceOwnershipApproval />} />
+                      <Route path="/tenant-space-approvals" element={<TenantApprovalPage />} />
+                      <Route path="/profile" element={<UserManagementDetailPage />} />
                     </Route>
                   </Route>
                   {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}

@@ -19,6 +19,7 @@ import {
 import { toast } from "sonner";
 import { Controller, useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
+import { Checkbox } from "@/components/ui/checkbox";
 import { leaseSchema, LeaseFormValues } from "@/schemas/lease.schema";
 import { siteApiService } from "@/services/spaces_sites/sitesapi";
 import { spacesApiService } from "@/services/spaces_sites/spacesapi";
@@ -27,16 +28,7 @@ import { Lease } from "@/interfaces/leasing_tenants_interface";
 import { leasesApiService } from "@/services/leasing_tenants/leasesapi";
 import { withFallback } from "@/helpers/commonHelper";
 
-interface LeaseFormProps {
-  lease?: Lease;
-  isOpen: boolean;
-  onClose: () => void;
-  onSave: (lease: Partial<Lease>) => Promise<any>;
-  mode: "create" | "edit" | "view";
-  disableLocationFields?: boolean; // When true, disables site, building, and space fields
-}
-
-const emptyFormData: Partial<Lease> = {
+const emptyFormData: Partial<LeaseFormValues> = {
   kind: "residential",
   site_id: "",
   building_id: "",
@@ -44,13 +36,24 @@ const emptyFormData: Partial<Lease> = {
   partner_id: "",
   tenant_id: "",
   start_date: "",
-  end_date: "",
+  frequency: "monthly",
+  lease_term_months: undefined,
   rent_amount: "" as any,
   deposit_amount: "" as any,
   cam_rate: "" as any,
   utilities: { electricity: undefined, water: undefined },
   status: "draft",
+  auto_move_in_space_occupancy: false,
 };
+
+interface LeaseFormProps {
+  lease?: Lease;
+  isOpen: boolean;
+  onClose: () => void;
+  onSave: (lease: Partial<Lease>) => Promise<any>;
+  mode: "create" | "edit" | "view";
+  disableLocationFields?: boolean;
+}
 
 export function LeaseForm({
   lease,
@@ -80,12 +83,14 @@ export function LeaseForm({
       partner_id: "",
       tenant_id: "",
       start_date: "",
-      end_date: "",
+      frequency: "monthly",
+      lease_term_months: undefined,
       rent_amount: "" as any,
       deposit_amount: "" as any,
       cam_rate: "" as any,
       utilities: { electricity: undefined, water: undefined },
       status: "draft",
+      auto_move_in_space_occupancy: false,
     },
     mode: "onChange",
     reValidateMode: "onChange",
@@ -108,24 +113,25 @@ export function LeaseForm({
     reset(
       lease
         ? {
-          kind: (lease.kind as any) || "commercial",
-          site_id: lease.site_id || "",
-          building_id: leaseBuildingId || "",
-          space_id: lease.space_id || "",
-          partner_id: lease.partner_id ? String(lease.partner_id) : "",
-          tenant_id: lease.tenant_id ? String(lease.tenant_id) : "",
-          start_date: lease.start_date || "",
-          end_date: lease.end_date || "",
-          rent_amount: lease.rent_amount as any,
-          deposit_amount: lease.deposit_amount as any,
-          cam_rate: lease.cam_rate as any,
-          utilities: {
-            electricity: lease.utilities?.electricity as any,
-            water: lease.utilities?.water as any,
-          },
-          status: (lease.status as any) || "draft",
-        }
-        : emptyFormData
+            kind: (lease.kind as any) || "commercial",
+            site_id: lease.site_id || "",
+            building_id: leaseBuildingId || "",
+            space_id: lease.space_id || "",
+            partner_id: lease.partner_id ? String(lease.partner_id) : "",
+            tenant_id: lease.tenant_id ? String(lease.tenant_id) : "",
+            start_date: lease.start_date || "",
+            frequency: (lease.frequency as "monthly" | "annually") || "monthly",
+            lease_term_months: (lease as any).lease_term_months || undefined,
+            rent_amount: lease.rent_amount as any,
+            deposit_amount: lease.deposit_amount as any,
+            cam_rate: lease.cam_rate as any,
+            utilities: {
+              electricity: lease.utilities?.electricity as any,
+              water: lease.utilities?.water as any,
+            },
+            status: (lease.status as any) || "draft",
+          }
+        : emptyFormData,
     );
 
     setFormLoading(false);
@@ -139,7 +145,7 @@ export function LeaseForm({
       if (leaseSiteId) {
         const spaces = await spacesApiService.getSpaceLookup(
           leaseSiteId,
-          leaseBuildingId
+          leaseBuildingId,
         );
         if (spaces.success) setSpaceList(spaces.data || []);
       }
@@ -162,6 +168,7 @@ export function LeaseForm({
   const selectedSpaceId = watch("space_id");
   const selectedKind = watch("kind");
   const selectedTenantId = watch("tenant_id");
+  const selectedFrequency = watch("frequency");
 
   useEffect(() => {
     if (selectedTenantId && selectedKind !== "residential") {
@@ -212,27 +219,28 @@ export function LeaseForm({
   const fallbackSite = lease?.site_id
     ? {
         id: lease.site_id,
-        name: (lease as any).site_name ,
+        name: (lease as any).site_name,
       }
     : null;
 
-  const fallbackBuilding = lease?.building_id || (lease as any)?.building_block_id
-    ? {
-        id: (lease as any).building_id || (lease as any).building_block_id,
-        name: (lease as any).building_name,
-      }
-    : null;
+  const fallbackBuilding =
+    lease?.building_id || (lease as any)?.building_block_id
+      ? {
+          id: (lease as any).building_id || (lease as any).building_block_id,
+          name: (lease as any).building_name,
+        }
+      : null;
 
   const fallbackSpace = lease?.space_id
     ? {
         id: lease.space_id,
-        name: (lease as any).space_name 
+        name: (lease as any).space_name,
       }
     : null;
-const fallbackTenant = lease?.tenant_id
+  const fallbackTenant = lease?.tenant_id
     ? {
         id: lease.tenant_id,
-        name: (lease as any).tenant_name ,
+        name: (lease as any).tenant_name,
       }
     : null;
 
@@ -250,7 +258,7 @@ const fallbackTenant = lease?.tenant_id
     if (selectedSiteId) {
       const spaces = await spacesApiService.getSpaceLookup(
         selectedSiteId,
-        selectedBuildingId
+        selectedBuildingId,
       );
       if (spaces.success) setSpaceList(spaces.data || []);
     }
@@ -265,7 +273,7 @@ const fallbackTenant = lease?.tenant_id
     if (!selectedSiteId) return;
     const tenants = await leasesApiService.getLeaseTenantLookup(
       selectedSiteId,
-      selectedSpaceId
+      selectedSpaceId,
     );
     if (tenants?.success) setLeasePartnerList(tenants.data || []);
   };
@@ -308,16 +316,16 @@ const fallbackTenant = lease?.tenant_id
             isSubmitting
               ? undefined
               : handleSubmit(onSubmitForm, (errors) => {
-                console.log("Form validation errors:", errors);
-                const firstError = Object.values(errors)[0];
-                if (firstError?.message) {
-                  toast.error(firstError.message as string);
-                } else {
-                  toast.error(
-                    "Please fill in all required fields correctly."
-                  );
-                }
-              })
+                  console.log("Form validation errors:", errors);
+                  const firstError = Object.values(errors)[0];
+                  if (firstError?.message) {
+                    toast.error(firstError.message as string);
+                  } else {
+                    toast.error(
+                      "Please fill in all required fields correctly.",
+                    );
+                  }
+                })
           }
           className="space-y-4"
         >
@@ -378,7 +386,9 @@ const fallbackTenant = lease?.tenant_id
                           // Reset space when building changes
                           setValue("space_id", "");
                         }}
-                        disabled={isReadOnly || !selectedSiteId || disableLocationFields}
+                        disabled={
+                          isReadOnly || !selectedSiteId || disableLocationFields
+                        }
                       >
                         <SelectTrigger>
                           <SelectValue
@@ -413,7 +423,9 @@ const fallbackTenant = lease?.tenant_id
                       <Select
                         value={field.value || ""}
                         onValueChange={field.onChange}
-                        disabled={isReadOnly || !selectedSiteId || disableLocationFields}
+                        disabled={
+                          isReadOnly || !selectedSiteId || disableLocationFields
+                        }
                       >
                         <SelectTrigger
                           className={errors.space_id ? "border-red-500" : ""}
@@ -477,7 +489,42 @@ const fallbackTenant = lease?.tenant_id
                 </div>
               </div>
 
-              <div className="grid grid-cols-3 gap-4">
+              <div
+                className={`grid gap-4 ${
+                  selectedFrequency === "monthly"
+                    ? "grid-cols-4"
+                    : "grid-cols-3"
+                }`}
+              >
+                <div>
+                  <Label>Frequency *</Label>
+                  <Controller
+                    name="frequency"
+                    control={control}
+                    render={({ field }) => (
+                      <Select
+                        value={field.value}
+                        onValueChange={field.onChange}
+                        disabled={isReadOnly}
+                      >
+                        <SelectTrigger
+                          className={errors.frequency ? "border-red-500" : ""}
+                        >
+                          <SelectValue placeholder="Select frequency" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="monthly">Monthly</SelectItem>
+                          <SelectItem value="annually">Annually</SelectItem>
+                        </SelectContent>
+                      </Select>
+                    )}
+                  />
+                  {errors.frequency && (
+                    <p className="text-sm text-red-500">
+                      {errors.frequency.message as any}
+                    </p>
+                  )}
+                </div>
                 <div>
                   <Label>Start Date *</Label>
                   <Input
@@ -492,25 +539,33 @@ const fallbackTenant = lease?.tenant_id
                     </p>
                   )}
                 </div>
-                <div>
-                  <Label>End Date *</Label>
-                  <Input
-                    type="date"
-                    disabled={isReadOnly}
-                    {...register("end_date")}
-                    className={errors.end_date ? "border-red-500" : ""}
-                  />
-                  {errors.end_date && (
-                    <p className="text-sm text-red-500">
-                      {errors.end_date.message as any}
-                    </p>
-                  )}
-                </div>
+                {selectedFrequency === "monthly" && (
+                  <div>
+                    <Label>Lease Term (Months) *</Label>
+                    <Input
+                      type="number"
+                      min="1"
+                      step="1"
+                      placeholder="Enter number of months"
+                      disabled={isReadOnly}
+                      {...register("lease_term_months")}
+                      className={
+                        errors.lease_term_months ? "border-red-500" : ""
+                      }
+                    />
+                    {errors.lease_term_months && (
+                      <p className="text-sm text-red-500">
+                        {errors.lease_term_months.message as any}
+                      </p>
+                    )}
+                  </div>
+                )}
                 <div>
                   <Label>Rent Amount *</Label>
                   <Input
                     type="number"
                     step="any"
+                    placeholder="Enter rent amount"
                     disabled={isReadOnly}
                     {...register("rent_amount")}
                     className={errors.rent_amount ? "border-red-500" : ""}
@@ -529,11 +584,10 @@ const fallbackTenant = lease?.tenant_id
                   <Input
                     type="number"
                     step="any"
+                    placeholder="Enter deposit amount"
                     disabled={isReadOnly}
                     {...register("deposit_amount")}
-                    className={
-                      errors.deposit_amount ? "border-red-500" : ""
-                    }
+                    className={errors.deposit_amount ? "border-red-500" : ""}
                   />
                   {errors.deposit_amount && (
                     <p className="text-sm text-red-500">
@@ -546,6 +600,7 @@ const fallbackTenant = lease?.tenant_id
                   <Input
                     type="number"
                     step="any"
+                    placeholder="Enter CAM rate"
                     disabled={isReadOnly}
                     {...register("cam_rate")}
                     className={errors.cam_rate ? "border-red-500" : ""}
@@ -568,15 +623,13 @@ const fallbackTenant = lease?.tenant_id
                         disabled={isReadOnly}
                       >
                         <SelectTrigger>
-                          <SelectValue />
+                          <SelectValue placeholder="Select status" />
                         </SelectTrigger>
                         <SelectContent>
                           <SelectItem value="draft">Draft</SelectItem>
                           <SelectItem value="active">Active</SelectItem>
                           <SelectItem value="expired">Expired</SelectItem>
-                          <SelectItem value="terminated">
-                            Terminated
-                          </SelectItem>
+                          <SelectItem value="terminated">Terminated</SelectItem>
                         </SelectContent>
                       </Select>
                     )}
@@ -585,7 +638,11 @@ const fallbackTenant = lease?.tenant_id
               </div>
 
               {/* Utilities */}
-              <div className="grid grid-cols-2 gap-4">
+              <div
+                className={`grid gap-4 ${
+                  mode === "create" ? "grid-cols-3" : "grid-cols-2"
+                }`}
+              >
                 <div>
                   <Label>Electricity</Label>
                   <Controller
@@ -632,6 +689,34 @@ const fallbackTenant = lease?.tenant_id
                     )}
                   />
                 </div>
+                {/* Auto Move In Space Occupancy Checkbox - Only show when creating */}
+                {mode === "create" && (
+                  <div className="flex flex-col gap-2">
+                    {/* spacer to match Label height */}
+                    <Label className="invisible">Auto move-in occupancy</Label>
+
+                    <div className="flex items-center gap-2 h-10">
+                      <Controller
+                        name="auto_move_in_space_occupancy"
+                        control={control}
+                        render={({ field }) => (
+                          <Checkbox
+                            id="auto_move_in_space_occupancy"
+                            checked={field.value || false}
+                            onCheckedChange={field.onChange}
+                            disabled={isReadOnly}
+                          />
+                        )}
+                      />
+                      <Label
+                        htmlFor="auto_move_in_space_occupancy"
+                        className="text-sm font-normal cursor-pointer leading-none"
+                      >
+                        Auto move tenant to space
+                      </Label>
+                    </div>
+                  </div>
+                )}
               </div>
 
               <DialogFooter>

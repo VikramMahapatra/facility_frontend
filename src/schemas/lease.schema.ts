@@ -9,7 +9,14 @@ export const leaseSchema = z
     partner_id: z.string().optional(),
     tenant_id: z.string().optional(),
     start_date: z.string().min(1, "Start Date is required"),
-    end_date: z.string().min(1, "End Date is required"),
+    frequency: z.enum(["monthly", "annually"], {
+      required_error: "Frequency is required",
+    }),
+    lease_term_months: z.coerce
+      .number({
+        invalid_type_error: "Lease Term must be a number",
+      })
+      .optional(),
     rent_amount: z.coerce
       .number({
         required_error: "Rent Amount is required",
@@ -31,6 +38,7 @@ export const leaseSchema = z
     status: z.enum(["draft", "active", "expired", "terminated"], {
       required_error: "Status is required",
     }),
+    auto_move_in_space_occupancy: z.boolean().optional(),
   })
   .superRefine((val, ctx) => {
     // Since kind is not used by API, require tenant_id (since that's what the form shows)
@@ -41,16 +49,16 @@ export const leaseSchema = z
         message: "Tenant is required",
       });
     }
-    if (val.start_date && val.end_date) {
-      const start = new Date(val.start_date);
-      const end = new Date(val.end_date);
-      if (!isNaN(start.getTime()) && !isNaN(end.getTime()) && end < start) {
-        ctx.addIssue({
-          code: z.ZodIssueCode.custom,
-          path: ["end_date"],
-          message: "End Date cannot be before Start Date",
-        });
-      }
+    // Require lease_term_months when frequency is monthly
+    if (
+      val.frequency === "monthly" &&
+      (!val.lease_term_months || val.lease_term_months < 1)
+    ) {
+      ctx.addIssue({
+        code: z.ZodIssueCode.custom,
+        path: ["lease_term_months"],
+        message: "Lease Term is required when frequency is monthly",
+      });
     }
   });
 

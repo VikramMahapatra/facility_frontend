@@ -105,8 +105,18 @@ export default function UsersManagement() {
     }
   };
 
-  const handleCreateUser = async (values: any) => {
-    const response = await userManagementApiService.addUser(values);
+  const handleCreateUser = async (values: any, isExistingUser: boolean) => {
+    let response;
+    if (isExistingUser) {
+      // Map existing user to this org
+      response = await userManagementApiService.mapUserToOrg({
+        email: values.email,
+        phone: values.phone,
+      });
+    }
+    else {
+      response = await userManagementApiService.addUser(values);
+    }
 
     if (response.success) {
       setIsFormOpen(false);
@@ -116,7 +126,7 @@ export default function UsersManagement() {
     return response;
   };
 
-  const handleUpdateUser = async (values: any) => {
+  const handleUpdateUser = async (values: any, isExistingUser: boolean) => {
     if (!editingUser) return;
 
     const updatedUser = {

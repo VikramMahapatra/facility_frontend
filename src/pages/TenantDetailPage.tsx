@@ -17,7 +17,7 @@ import {
   Calendar,
   Hash,
   Plus,
-  Pencil
+  Pencil,
 } from "lucide-react";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import {
@@ -33,6 +33,9 @@ import { useLoader } from "@/context/LoaderContext";
 import LoaderOverlay from "@/components/LoaderOverlay";
 import { Pagination } from "@/components/Pagination";
 import { LeaseForm } from "@/components/LeasesForm";
+import { ManageTenantSpacesForm } from "@/components/ManageTenantSpacesForm";
+import { TenantForm } from "@/components/TenantForm";
+import { userManagementApiService } from "@/services/access_control/usermanagementapi";
 
 export default function TenantDetailPage() {
   const { id } = useParams<{ id: string }>();
@@ -46,26 +49,29 @@ export default function TenantDetailPage() {
   const [paymentTotalItems, setPaymentTotalItems] = useState(0);
   const [isLeaseFormOpen, setIsLeaseFormOpen] = useState(false);
   const [selectedSpaceId, setSelectedSpaceId] = useState<string | null>(null);
-  const [prefilledLeaseData, setPrefilledLeaseData] = useState<Partial<Lease> | null>(null);
+  const [prefilledLeaseData, setPrefilledLeaseData] =
+    useState<Partial<Lease> | null>(null);
+  const [spacesOpen, setSpacesOpen] = useState(false);
+  const [isTenantFormOpen, setIsTenantFormOpen] = useState(false);
 
   useEffect(() => {
     if (!id) return;
 
-    const loadTenant = async () => {
-      const response = await withLoader(async () => {
-        return await tenantsApiService.getTenantById(id);
-      });
-
-      if (response?.success) {
-        setTenant(response.data);
-      } else {
-        toast.error("Failed to load tenant details");
-        navigate(-1);
-      }
-    };
-
     loadTenant();
   }, [id]);
+
+  const loadTenant = async () => {
+    const response = await withLoader(async () => {
+      return await tenantsApiService.getTenantById(id);
+    });
+
+    if (response?.success) {
+      setTenant(response.data);
+    } else {
+      toast.error("Failed to load tenant details");
+      navigate(-1);
+    }
+  };
 
   useEffect(() => {
     if (!id) return;
@@ -112,7 +118,7 @@ export default function TenantDetailPage() {
   const paymentStartIndex = (paymentPage - 1) * paymentPageSize;
   const pagedPayments = paymentHistory.slice(
     paymentStartIndex,
-    paymentStartIndex + paymentPageSize
+    paymentStartIndex + paymentPageSize,
   );
 
   const leaseBadge = (status?: Lease["status"]) => {
@@ -131,8 +137,6 @@ export default function TenantDetailPage() {
         return <Badge variant="outline">No Lease</Badge>;
     }
   };
-
-
 
   const getInitials = (name: string) => {
     if (!name) return "";
@@ -196,7 +200,9 @@ export default function TenantDetailPage() {
   };
 
   const normalizeBadgeValue = (value?: string) =>
-    String(value || "").toUpperCase().trim();
+    String(value || "")
+      .toUpperCase()
+      .trim();
 
   const getChargeCodeBadgeClass = (value?: string) => {
     switch (normalizeBadgeValue(value)) {
@@ -242,7 +248,20 @@ export default function TenantDetailPage() {
     }
   };
 
+  const handleAccountSave = async (accountData) => {
+    const tenantAccountData = {
+      tenant_id: tenant.id,
+      tenant_spaces: accountData.tenant_spaces,
+    };
+    const response = await tenantsApiService.manageSpaces(tenantAccountData);
 
+    if (response.success) {
+      loadTenant();
+      toast.success(`spaces assigned successfully.`);
+      setSpacesOpen(false);
+    }
+    return response;
+  };
 
   return (
     <ContentContainer>
@@ -264,29 +283,29 @@ export default function TenantDetailPage() {
                   {getInitials(tenant.name)}
                 </AvatarFallback>
               </Avatar>
-              <div>
-                <h1 className="text-2xl font-bold">
-                  {capitalizeName(tenant.name)}
-                </h1>
-                <p>
-                  <strong className="text-muted-foreground"></strong>{" "}
+              <div className="flex-1 space-y-3">
+                <div className="flex items-center gap-3 flex-wrap">
+                  <h1 className="text-3xl font-semibold leading-tight">
+                    {capitalizeName(tenant.name)}
+                  </h1>
+                  <Button
+                    variant="ghost"
+                    onClick={() => setIsTenantFormOpen(true)}
+                    size="icon"
+                    className="top-6 right-6 h-8 px-3"
+                  >
+                    <Pencil className="h-4 w-4" />
+                  </Button>
+                </div>
+
+                <div className="flex items-center gap-2">
                   <Badge className={getTenantTypeColor(tenant.kind)}>
                     {tenant.kind}
                   </Badge>
-                </p>
-                
+                </div>
               </div>
             </div>
-            <div className="flex gap-2">
-              <Button
-                variant="outline"
-                onClick={() => navigate(`/tenants/${id}/edit`)}
-                size="icon"
-                className="text-primary hover:text-primary-hover"
-              >
-                <Pencil className="h-4 w-4" />
-              </Button>
-            </div>
+            <div className="flex gap-2"></div>
           </div>
 
           <Tabs defaultValue="overview">
@@ -318,7 +337,9 @@ export default function TenantDetailPage() {
                           <Phone className="h-4 w-4" />
                           Phone
                         </span>
-                        <p className="font-semibold text-base">{tenant.phone}</p>
+                        <p className="font-semibold text-base">
+                          {tenant.phone}
+                        </p>
                       </div>
                     )}
                     <div>
@@ -369,16 +390,16 @@ export default function TenantDetailPage() {
                       {(tenant.contact_info.address.city ||
                         tenant.contact_info.address.state ||
                         tenant.contact_info.address.pincode) && (
-                          <p className="text-muted-foreground">
-                            {[
-                              tenant.contact_info.address.city,
-                              tenant.contact_info.address.state,
-                              tenant.contact_info.address.pincode,
-                            ]
-                              .filter(Boolean)
-                              .join(", ")}
-                          </p>
-                        )}
+                        <p className="text-muted-foreground">
+                          {[
+                            tenant.contact_info.address.city,
+                            tenant.contact_info.address.state,
+                            tenant.contact_info.address.pincode,
+                          ]
+                            .filter(Boolean)
+                            .join(", ")}
+                        </p>
+                      )}
                     </CardContent>
                   </Card>
                 )}
@@ -386,13 +407,13 @@ export default function TenantDetailPage() {
               {(() => {
                 const familyItems = Array.isArray(tenant.family_info)
                   ? tenant.family_info.filter(
-                    (member) => member.member || member.relation,
-                  )
+                      (member) => member.member || member.relation,
+                    )
                   : [];
                 const vehicleItems = Array.isArray(tenant.vehicle_info)
                   ? tenant.vehicle_info.filter(
-                    (vehicle) => vehicle.type || vehicle.number,
-                  )
+                      (vehicle) => vehicle.type || vehicle.number,
+                    )
                   : [];
 
                 return (
@@ -473,10 +494,16 @@ export default function TenantDetailPage() {
 
             {/* SPACES & LEASES */}
             <TabsContent value="spaces" className="space-y-6">
-              <div>
-                <h3 className="text-lg font-medium mb-4 flex items-center gap-2">
-                  <Building2 className="h-5 w-5" /> Assigned Spaces
-                </h3>
+              <div className="space-y-4">
+                <div className="flex items-center justify-between">
+                  <h2 className="text-xl font-semibold flex items-center gap-2">
+                    <Building2 className="h-5 w-5" /> Assigned Spaces
+                  </h2>
+                  <Button size="sm" onClick={() => setSpacesOpen(true)}>
+                    <MapPin className="h-4 w-4 mr-2" />
+                    Manage Spaces
+                  </Button>
+                </div>
 
                 {tenant.tenant_spaces && tenant.tenant_spaces.length > 0 ? (
                   <div className="space-y-4">
@@ -498,7 +525,14 @@ export default function TenantDetailPage() {
                               <div className="flex-1">
                                 <CardTitle className="text-base flex items-center gap-2">
                                   <MapPin className="h-4 w-4 text-muted-foreground" />
-                                  {space.space_name || "Unnamed Space"}
+                                  <span
+                                    className="text-blue-600 hover:text-blue-800 cursor-pointer hover:underline"
+                                    onClick={() =>
+                                      navigate(`/spaces/${space.space_id}`)
+                                    }
+                                  >
+                                    {space.space_name || "Unnamed Space"}
+                                  </span>
                                   {/* {space.is_primary && (
                                     <Badge className="bg-blue-100 text-blue-700 border-0">
                                       Primary
@@ -540,8 +574,15 @@ export default function TenantDetailPage() {
                                     className="p-3 bg-muted rounded-lg text-sm"
                                   >
                                     <div className="font-medium mb-1">
-                                      #{lease.lease_number || "N/A"} -{" "}
-                                      {lease.space_name || space.space_name}
+                                      <span
+                                        className="text-blue-600 hover:text-blue-800 cursor-pointer hover:underline"
+                                        onClick={() =>
+                                          navigate(`/leases/${lease.id}`)
+                                        }
+                                      >
+                                        #{lease.lease_number || "N/A"}
+                                      </span>{" "}
+                                      - {lease.space_name || space.space_name}
                                     </div>
                                     <div className="text-muted-foreground space-y-1">
                                       {lease.rent_amount && (
@@ -574,43 +615,55 @@ export default function TenantDetailPage() {
                                 <div className="text-sm text-muted-foreground">
                                   No leases for this space
                                 </div>
-                                <Button
-                                  size="sm"
-                                  variant="outline"
-                                  onClick={async () => {
-                                    setSelectedSpaceId(space.space_id);
-                                    // Fetch tenant lease details
-                                    if (id) {
-                                      const response = await withLoader(async () => {
-                                        return await leasesApiService.getTenantLeaseDetail(id);
-                                      });
-                                      if (response?.success && response.data?.tenant_data?.length > 0) {
-                                        const tenantData = response.data.tenant_data[0];
-                                        setPrefilledLeaseData({
-                                          tenant_id: id,
-                                          site_id: tenantData.site_id,
-                                          site_name: tenantData.site_name,
-                                          building_id: tenantData.building_id,
-                                          building_name: tenantData.building_name,
-                                          space_id: space.space_id, // Use the space from the card
-                                          space_name: space.space_name,
-                                        } as Lease);
-                                      } else {
-                                        // If no data, set tenant_id and space_id
-                                        setPrefilledLeaseData({
-                                          tenant_id: id,
-                                          space_id: space.space_id,
-                                          space_name: space.space_name,
-                                        } as Lease);
+                                {space.status == "approved" && (
+                                  <Button
+                                    size="sm"
+                                    variant="outline"
+                                    onClick={async () => {
+                                      setSelectedSpaceId(space.space_id);
+                                      // Fetch tenant lease details
+                                      if (id) {
+                                        const response = await withLoader(
+                                          async () => {
+                                            return await leasesApiService.getTenantLeaseDetail(
+                                              id,
+                                              space.space_id,
+                                            );
+                                          },
+                                        );
+                                        if (
+                                          response?.success &&
+                                          response.data?.tenant_data?.length > 0
+                                        ) {
+                                          const tenantData =
+                                            response.data.tenant_data[0];
+                                          setPrefilledLeaseData({
+                                            tenant_id: id,
+                                            site_id: tenantData.site_id,
+                                            site_name: tenantData.site_name,
+                                            building_id: tenantData.building_id,
+                                            building_name:
+                                              tenantData.building_name,
+                                            space_id: space.space_id, // Use the space from the card
+                                            space_name: space.space_name,
+                                          } as Lease);
+                                        } else {
+                                          // If no data, set tenant_id and space_id
+                                          setPrefilledLeaseData({
+                                            tenant_id: id,
+                                            space_id: space.space_id,
+                                            space_name: space.space_name,
+                                          } as Lease);
+                                        }
                                       }
-                                    }
-                                    setIsLeaseFormOpen(true);
-                                  }}
-                                  className="flex items-center gap-2"
-                                >
-                                  <Plus className="h-4 w-4" />
-                                  Add Lease
-                                </Button>
+                                      setIsLeaseFormOpen(true);
+                                    }}
+                                    className="flex items-center gap-2"
+                                  >
+                                    <Plus className="h-4 w-4" />
+                                    Add Lease
+                                  </Button>
+                                )}
                               </div>
                             )}
                           </CardContent>
@@ -648,7 +701,12 @@ export default function TenantDetailPage() {
                         {pagedPayments.map((payment: any, idx: number) => {
                           const key = payment.id || payment.payment_id || idx;
                           const label = payment.invoice_no || "Payment";
-                          const date = payment.payment_date || payment.paid_at || payment.date || payment.created_at || undefined;
+                          const date =
+                            payment.payment_date ||
+                            payment.paid_at ||
+                            payment.date ||
+                            payment.created_at ||
+                            undefined;
                           const amount =
                             typeof payment.amount === "number"
                               ? payment.amount
@@ -670,31 +728,34 @@ export default function TenantDetailPage() {
                                   <div className="text-lg font-semibold">
                                     {label}
                                   </div>
-                                  {payment.description && (() => {
-                                    const description = String(payment.description);
-                                    const match = description.match(
-                                      /^lease charge\s*:\s*(.+)$/i
-                                    );
-                                    if (!match) {
+                                  {payment.description &&
+                                    (() => {
+                                      const description = String(
+                                        payment.description,
+                                      );
+                                      const match = description.match(
+                                        /^lease charge\s*:\s*(.+)$/i,
+                                      );
+                                      if (!match) {
+                                        return (
+                                          <div className="text-sm text-muted-foreground">
+                                            {description}
+                                          </div>
+                                        );
+                                      }
                                       return (
-                                        <div className="text-sm text-muted-foreground">
-                                          {description}
+                                        <div className="text-sm text-muted-foreground flex items-center gap-2">
+                                          <span>Lease Charge:</span>
+                                          <Badge
+                                            className={`text-xs border-0 ${getChargeCodeBadgeClass(
+                                              match[1],
+                                            )}`}
+                                          >
+                                            {match[1].trim()}
+                                          </Badge>
                                         </div>
                                       );
-                                    }
-                                    return (
-                                      <div className="text-sm text-muted-foreground flex items-center gap-2">
-                                        <span>Lease Charge:</span>
-                                        <Badge
-                                          className={`text-xs border-0 ${getChargeCodeBadgeClass(
-                                            match[1]
-                                          )}`}
-                                        >
-                                          {match[1].trim()}
-                                        </Badge>
-                                      </div>
-                                    );
-                                  })()}
+                                    })()}
                                 </div>
                                 <div className="text-right space-y-1">
                                   {amount !== undefined &&
@@ -706,22 +767,22 @@ export default function TenantDetailPage() {
                                   {(payment.charge_code ||
                                     payment.charge_code_name ||
                                     payment.charge_code_id) && (
-                                      <Badge
-                                        className={`text-xs border-0 ${getChargeCodeBadgeClass(
-                                          String(
-                                            payment.charge_code ||
-                                            payment.charge_code_name ||
-                                            payment.charge_code_id
-                                          )
-                                        )}`}
-                                      >
-                                        {String(
+                                    <Badge
+                                      className={`text-xs border-0 ${getChargeCodeBadgeClass(
+                                        String(
                                           payment.charge_code ||
+                                            payment.charge_code_name ||
+                                            payment.charge_code_id,
+                                        ),
+                                      )}`}
+                                    >
+                                      {String(
+                                        payment.charge_code ||
                                           payment.charge_code_name ||
-                                          payment.charge_code_id
-                                        )}
-                                      </Badge>
-                                    )}
+                                          payment.charge_code_id,
+                                      )}
+                                    </Badge>
+                                  )}
                                 </div>
                               </div>
 
@@ -743,7 +804,7 @@ export default function TenantDetailPage() {
                                   {payment.method ? (
                                     <Badge
                                       className={`text-xs border-0 ${getMethodBadgeClass(
-                                        payment.method
+                                        payment.method,
                                       )}`}
                                     >
                                       {String(payment.method).toUpperCase()}
@@ -777,8 +838,6 @@ export default function TenantDetailPage() {
                       No payments found
                     </div>
                   )}
-
-
                 </CardContent>
               </Card>
               {/* Pagination */}
@@ -791,6 +850,16 @@ export default function TenantDetailPage() {
             </TabsContent>
           </Tabs>
         </div>
+      )}
+      {tenant && (
+        <ManageTenantSpacesForm
+          spacesOpen={spacesOpen}
+          onClose={() => setSpacesOpen(false)}
+          onSubmit={async (data) => {
+            await handleAccountSave(data);
+          }}
+          tenant={tenant}
+        />
       )}
       <LeaseForm
         lease={prefilledLeaseData ? (prefilledLeaseData as Lease) : undefined}
@@ -829,6 +898,40 @@ export default function TenantDetailPage() {
           return response;
         }}
         mode="create"
+      />
+
+      {/* Tenant Form */}
+      <TenantForm
+        isOpen={isTenantFormOpen}
+        onClose={() => setIsTenantFormOpen(false)}
+        mode="edit"
+        tenant={tenant || undefined}
+        onSave={async (tenantData: Partial<Tenant>) => {
+          if (!tenant) return { success: false };
+
+          const updatedTenant = {
+            ...tenant,
+            ...tenantData,
+          };
+
+          const response = await withLoader(async () => {
+            return await tenantsApiService.updateTenant(updatedTenant);
+          });
+
+          if (response?.success) {
+            setIsTenantFormOpen(false);
+            toast.success("Tenant updated successfully.");
+            // Reload tenant data
+            await loadTenant();
+          } else if (response && !response.success) {
+            if (response?.message) {
+              toast.error(response.message);
+            } else {
+              toast.error("Failed to update tenant.");
+            }
+          }
+          return response;
+        }}
       />
     </ContentContainer>
   );

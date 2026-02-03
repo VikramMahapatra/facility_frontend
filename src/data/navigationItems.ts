@@ -29,6 +29,7 @@ import {
   ShieldCheck,
   FolderTree,
   Ticket,
+  CheckCircle2,
 } from "lucide-react";
 
 export const navigationItems = [
@@ -47,12 +48,12 @@ export const navigationItems = [
         icon: TrendingUp,
         resource: "analytics",
       },
-      {
-        title: "AI Predictions",
-        url: "/ai-predictions",
-        icon: Bot,
-        resource: "ai_predictions",
-      },
+      // {
+      //   title: "AI Predictions",
+      //   url: "/ai-predictions",
+      //   icon: Bot,
+      //   resource: "ai_predictions",
+      // },
     ],
   },
   {
@@ -76,18 +77,12 @@ export const navigationItems = [
         icon: Building2,
         resource: "buildings",
       },
+      { title: "Spaces", url: "/spaces", icon: Home, resource: "spaces" },
       {
         title: "Space Groups (Templates)",
         url: "/space-groups",
         icon: Archive,
         resource: "space_groups",
-      },
-      { title: "Spaces", url: "/spaces", icon: Home, resource: "spaces" },
-      {
-        title: "Maintenance (CAM)",
-        url: "/space-maintenance",
-        icon: Wrench,
-        resource: "spaces",
       },
       {
         title: "Group Assignments",
@@ -95,13 +90,20 @@ export const navigationItems = [
         icon: Users,
         resource: "group_assignments",
       },
+      {
+        title: "Maintenance (CAM)",
+        url: "/space-maintenance",
+        icon: Wrench,
+        resource: "spaces",
+      },
+
     ],
   },
   {
     title: "Leasing & Tenants",
     items: [
-      { title: "Leases", url: "/leases", icon: FileText, resource: "leases" },
       { title: "Tenants", url: "/tenants", icon: Users, resource: "tenants" },
+      { title: "Leases", url: "/leases", icon: FileText, resource: "leases" },
       {
         title: "Lease Charges",
         url: "/lease-charges",
@@ -184,18 +186,18 @@ export const navigationItems = [
         icon: FolderTree,
         resource: "asset_categories",
       },
-      {
-        title: "Work Orders",
-        url: "/work-orders",
-        icon: Wrench,
-        resource: "work_orders",
-      },
-      {
-        title: "Service Requests",
-        url: "/service-requests",
-        icon: AlertTriangle,
-        resource: "service_requests",
-      },
+      // {
+      //   title: "Work Orders",
+      //   url: "/work-orders",
+      //   icon: Wrench,
+      //   resource: "work_orders",
+      // },
+      // {
+      //   title: "Service Requests",
+      //   url: "/service-requests",
+      //   icon: AlertTriangle,
+      //   resource: "service_requests",
+      // },
       {
         title: "Preventive Maintenance",
         url: "/preventive-maintenance",
@@ -204,31 +206,31 @@ export const navigationItems = [
       },
     ],
   },
-  {
-    title: "Hospitality",
-    items: [
-      {
-        title: "Bookings",
-        url: "/bookings",
-        icon: Hotel,
-        resource: "bookings",
-      },
-      { title: "Guests", url: "/guests", icon: Users, resource: "guests" },
-      {
-        title: "Rate Plans",
-        url: "/rates",
-        icon: CreditCard,
-        resource: "rate_plans",
-      },
-      { title: "Folios", url: "/folios", icon: Receipt, resource: "folios" },
-      {
-        title: "Housekeeping",
-        url: "/housekeeping",
-        icon: Shield,
-        resource: "housekeeping",
-      },
-    ],
-  },
+  // {
+  //   title: "Hospitality",
+  //   items: [
+  //     {
+  //       title: "Bookings",
+  //       url: "/bookings",
+  //       icon: Hotel,
+  //       resource: "bookings",
+  //     },
+  //     { title: "Guests", url: "/guests", icon: Users, resource: "guests" },
+  //     {
+  //       title: "Rate Plans",
+  //       url: "/rates",
+  //       icon: CreditCard,
+  //       resource: "rate_plans",
+  //     },
+  //     { title: "Folios", url: "/folios", icon: Receipt, resource: "folios" },
+  //     {
+  //       title: "Housekeeping",
+  //       url: "/housekeeping",
+  //       icon: Shield,
+  //       resource: "housekeeping",
+  //     },
+  //   ],
+  // },
   {
     title: "Parking & Access",
     items: [
@@ -298,15 +300,38 @@ export const navigationItems = [
       },
     ],
   },
+  // {
+  //   title: "AI & Automation",
+  //   items: [
+  //     {
+  //       title: "AI ChatBot",
+  //       url: "/chatbot",
+  //       icon: Bot,
+  //       resource: "ai_chatbot",
+  //     },
+  //   ],
+  // },
   {
-    title: "AI & Automation",
+    title: "Approval Requests",
     items: [
       {
-        title: "AI ChatBot",
-        url: "/chatbot",
-        icon: Bot,
-        resource: "ai_chatbot",
+        title: "Users",
+        url: "/pending-approvals",
+        icon: UserCheck,
+        resource: "pending_approvals",
       },
+      {
+        title: "Space Ownerships",
+        url: "/space-ownership-approvals",
+        icon: CheckCircle2,
+        resource: "space_ownership_approvals",
+      },
+      {
+        title: "Space Tenants",
+        url: "/tenant-space-approvals",
+        icon: CheckCircle2,
+        resource: "tenant_space_approvals",
+      }
     ],
   },
   {
@@ -324,17 +349,12 @@ export const navigationItems = [
         icon: UserCog,
         resource: "role_policies",
       },
+
       {
         title: "Users Management",
         url: "/users-management",
         icon: Users,
         resource: "users_management",
-      },
-      {
-        title: "Pending Approvals",
-        url: "/pending-approvals",
-        icon: UserCheck,
-        resource: "pending_approvals",
       },
       {
         title: "Approval Rules",
@@ -353,12 +373,12 @@ export const navigationItems = [
         icon: Bell,
         resource: "notifications",
       },
-      {
-        title: "Settings",
-        url: "/settings",
-        icon: Settings,
-        resource: "settings",
-      },
+      // {
+      //   title: "Settings",
+      //   url: "/settings",
+      //   icon: Settings,
+      //   resource: "settings",
+      // },
       // {
       //   title: "Documentation",
       //   url: "/documentation",
@@ -367,4 +387,21 @@ export const navigationItems = [
       // },
     ],
   },
+];
+
+
+
+export const pageHeaderOverrides = [
+  {
+    match: (path: string) => path === "/profile",
+    meta: {
+      title: "My Profile",
+      breadcrumb: {
+        current: {
+          label: "My Profile",
+          icon: UserCog,
+        },
+      },
+    },
+  }
 ];

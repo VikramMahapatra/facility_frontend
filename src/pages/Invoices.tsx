@@ -6,7 +6,7 @@ import {
   CardDescription,
   CardHeader,
   CardTitle,
-} from "@/components/ui/card";//
+} from "@/components/ui/card"; //
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { LogOut } from "lucide-react";
@@ -72,6 +72,7 @@ import ContentContainer from "@/components/ContentContainer";
 import { PageHeader } from "@/components/PageHeader";
 import { useLoader } from "@/context/LoaderContext";
 import LoaderOverlay from "@/components/LoaderOverlay";
+import { InvoiceForm } from "@/components/InvoiceForm";
 
 export default function Invoices() {
   const [searchTerm, setSearchTerm] = useState("");
@@ -98,6 +99,11 @@ export default function Invoices() {
   const [paymentPageSize] = useState(5); // items per page
   const [totalPaymentItems, setTotalPaymentItems] = useState(0);
   const { withLoader } = useLoader();
+  const [isFormOpen, setIsFormOpen] = useState(false);
+  const [selectedInvoice, setSelectedInvoice] = useState<Invoice | undefined>();
+  const [formMode, setFormMode] = useState<"create" | "edit" | "view">(
+    "create"
+  );
 
   useEffect(() => {
     loadInvoicesOverView();
@@ -197,7 +203,9 @@ export default function Invoices() {
   };
 
   const handleCreate = () => {
-    navigate("/invoices/create");
+    setSelectedInvoice(undefined);
+    setFormMode("create");
+    setIsFormOpen(true);
   };
 
   const handleView = (invoice: Invoice) => {
@@ -205,12 +213,52 @@ export default function Invoices() {
   };
 
   const handleEdit = (invoice: Invoice) => {
-    navigate(`/invoices/${invoice.id}/edit`);
-  };
-  const handleDownload = async (invoiceId: string) => {
-  await invoiceApiService.downloadInvoice(invoiceId);
+    setSelectedInvoice(invoice);
+    setFormMode("edit");
+    setIsFormOpen(true);
   };
 
+  const handleSave = async (invoiceData: Partial<Invoice>) => {
+    let response;
+    if (formMode === "create") {
+      response = await withLoader(async () => {
+        return await invoiceApiService.addInvoice(invoiceData);
+      });
+    } else if (formMode === "edit" && selectedInvoice) {
+      const updatedInvoice = {
+        ...selectedInvoice,
+        ...invoiceData,
+        id: selectedInvoice.id,
+        invoice_no: selectedInvoice.invoice_no,
+        updated_at: new Date().toISOString(),
+      };
+      response = await withLoader(async () => {
+        return await invoiceApiService.updateInvoice(updatedInvoice);
+      });
+    }
+
+    if (response?.success) {
+      toast.success(
+        `Invoice has been ${
+          formMode === "create" ? "created" : "updated"
+        } successfully.`
+      );
+      updateInvoicesPage();
+      loadInvoicesOverView();
+      setIsFormOpen(false);
+      setSelectedInvoice(undefined);
+    } else if (response && !response.success) {
+      if (response?.message) {
+        toast.error(response.message);
+      } else {
+        toast.error("Failed to save invoice.");
+      }
+    }
+    return response;
+  };
+  const handleDownload = async (invoiceId: string) => {
+    await invoiceApiService.downloadInvoice(invoiceId);
+  };
 
   const handleDelete = (invoiceId: string) => {
     setDeleteInvoiceId(invoiceId);
@@ -435,14 +483,15 @@ export default function Invoices() {
                                     <Trash2 className="h-4 w-4" />
                                   </Button>
                                 )}
+                                {invoice.status === "paid" && (
                                   <Button
-                                      variant="ghost"
-                                      size="sm"
-                                      onClick={() => handleDownload(invoice.id)}
-                                    >
-                                      <Download className="h-4 w-4" />
+                                    variant="ghost"
+                                    size="sm"
+                                    onClick={() => handleDownload(invoice.id)}
+                                  >
+                                    <Download className="h-4 w-4" />
                                   </Button>
-
+                                )}
                               </div>
                             </TableCell>
                           </TableRow>
@@ -550,6 +599,17 @@ export default function Invoices() {
             </AlertDialogFooter>
           </AlertDialogContent>
         </AlertDialog>
+
+        <InvoiceForm
+          invoice={selectedInvoice}
+          isOpen={isFormOpen}
+          onClose={() => {
+            setIsFormOpen(false);
+            setSelectedInvoice(undefined);
+          }}
+          onSave={handleSave}
+          mode={formMode}
+        />
       </div>
     </ContentContainer>
   );

@@ -35,6 +35,7 @@ interface SpaceMaintenanceFormValues {
   amount: string;
   start_date: string;
   end_date: string;
+  due_date: string;
   status: string;
 }
 
@@ -58,6 +59,7 @@ const emptyFormData: SpaceMaintenanceFormValues = {
   amount: "",
   start_date: "",
   end_date: "",
+  due_date: "",
   status: "pending",
 };
 
@@ -88,9 +90,9 @@ export const SpaceMaintenanceForm = ({
   const [spaceList, setSpaceList] = useState<any[]>([]);
   const [siteList, setSiteList] = useState<any[]>([]);
   const [buildingList, setBuildingList] = useState<any[]>([]);
-  const [statusList, setStatusList] = useState<
-    { id: string; name: string }[]
-  >([]);
+  const [statusList, setStatusList] = useState<{ id: string; name: string }[]>(
+    [],
+  );
   const [siteFallback, setSiteFallback] = useState<{
     id: string;
     label: string;
@@ -111,9 +113,8 @@ export const SpaceMaintenanceForm = ({
   };
 
   const loadSpaces = async (siteId: string) => {
-    const lookup = await ownerMaintenancesApiService.getSpaceOwnerLookup(
-      siteId,
-    );
+    const lookup =
+      await ownerMaintenancesApiService.getSpaceOwnerLookup(siteId);
     const list = lookup?.success ? lookup.data || [] : [];
     setSpaceList(list);
     return list;
@@ -141,6 +142,7 @@ export const SpaceMaintenanceForm = ({
             start_date:
               (record as any)?.period_start || record?.start_date || "",
             end_date: (record as any)?.period_end || record?.end_date || "",
+            due_date: (record as any)?.due_date || record?.due_date || "",
             amount:
               (record as any)?.amount !== undefined &&
               (record as any)?.amount !== null
@@ -148,7 +150,7 @@ export const SpaceMaintenanceForm = ({
                 : "",
             status: (record as any)?.status || emptyFormData.status,
           }
-        : emptyFormData
+        : emptyFormData,
     );
     setFormLoading(false);
 
@@ -239,30 +241,33 @@ export const SpaceMaintenanceForm = ({
 
   const spaces = withFallback(spaceList, fallbackSpace);
 
-
   const fallbackStatus = record?.status
-  ? {
-    id: record.status,
-    name: record.status,
-    value: record.status,
-  }
-  : null;
+    ? {
+        id: record.status,
+        name: record.status,
+        value: record.status,
+      }
+    : null;
 
   const statuses = withFallback(statusList, fallbackStatus);
 
   const fallbackBuilding = record?.building_block_id
-  ? {
-    id: record.building_block_id,
-    name: (record as any).building_block || `Building (${record.building_block_id.slice(0, 6)})`,
-  }
-  : null;
+    ? {
+        id: record.building_block_id,
+        name:
+          (record as any).building_block ||
+          `Building (${record.building_block_id.slice(0, 6)})`,
+      }
+    : null;
 
   const buildings = withFallback(buildingList, fallbackBuilding);
 
   const getSpaceLabel = (space: any) => {
     if (space?.space_name) return space.space_name;
     if (space?.name) {
-      const parts = String(space.name).split(" - ").map((p) => p.trim());
+      const parts = String(space.name)
+        .split(" - ")
+        .map((p) => p.trim());
       if (parts.length >= 2) return parts[1];
       return space.name;
     }
@@ -338,7 +343,12 @@ export const SpaceMaintenanceForm = ({
                           field.onChange(value);
                           setValue("space_id", "");
                         }}
-                        disabled={isReadOnly || isEditMode || hasPrefill || buildings.length === 0}
+                        disabled={
+                          isReadOnly ||
+                          isEditMode ||
+                          hasPrefill ||
+                          buildings.length === 0
+                        }
                       >
                         <SelectTrigger>
                           <SelectValue placeholder="Select building" />
@@ -369,7 +379,12 @@ export const SpaceMaintenanceForm = ({
                             : undefined
                         }
                         onValueChange={field.onChange}
-                        disabled={isReadOnly || isEditMode || hasPrefill || !selectedSiteId}
+                        disabled={
+                          isReadOnly ||
+                          isEditMode ||
+                          hasPrefill ||
+                          !selectedSiteId
+                        }
                       >
                         <SelectTrigger
                           className={errors.space_id ? "border-red-500" : ""}
@@ -415,6 +430,16 @@ export const SpaceMaintenanceForm = ({
                   <Input
                     type="date"
                     {...register("end_date")}
+                    min={watch("start_date") || undefined}
+                    disabled={isReadOnly}
+                  />
+                </div>
+
+                <div className="space-y-2">
+                  <Label>Due Date</Label>
+                  <Input
+                    type="date"
+                    {...register("due_date")}
                     min={watch("start_date") || undefined}
                     disabled={isReadOnly}
                   />

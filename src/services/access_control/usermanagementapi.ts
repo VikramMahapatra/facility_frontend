@@ -38,6 +38,13 @@ class UserManagementApiService {
     });
   }
 
+  async markAsDefault(id: any) {
+    return await apiService.request("/users/mark-default", {
+      method: "POST",
+      body: JSON.stringify({ user_org_id: id }),
+    });
+  }
+
   async deleteUser(userId: string) {
     return await apiService.request(`/users/${userId}`, {
       method: "DELETE",
@@ -53,6 +60,21 @@ class UserManagementApiService {
       method: "POST",
     });
   }
+
+  async checkUserGlobal(userData: any) {
+    return await apiService.request("/users/check-global", {
+      method: "POST",
+      body: JSON.stringify(userData),
+    });
+  }
+
+  async mapUserToOrg(userData: any) {
+    return await apiService.request("/users/map-user-org", {
+      method: "POST",
+      body: JSON.stringify(userData),
+    });
+  }
+
 }
 
 export const userManagementApiService = new UserManagementApiService();

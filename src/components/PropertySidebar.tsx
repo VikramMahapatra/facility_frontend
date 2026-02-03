@@ -56,7 +56,7 @@ export function PropertySidebar() {
   const [roleWiseNavigationItems, setRoleWiseNavigationItems] = useState<any[]>(
     []
   );
-  const { canRead } = useAuth();
+  const { user, canRead } = useAuth();
   const { systemName } = useSettings();
 
   // Ensure the group containing the current route is always expanded
@@ -124,7 +124,7 @@ export function PropertySidebar() {
                 {systemName}
               </h2>
               <p className="text-xs text-sidebar-foreground">
-                Property Management
+                {user.default_organization_name}
               </p>
             </div>
           </div>

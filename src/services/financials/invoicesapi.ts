@@ -72,7 +72,7 @@ class InvoiceApiService {
   async downloadInvoice(id: string) {
     const response = await apiService.requestBlob(`/invoices/${id}/download`);
 
-    console.log("response blob", response)
+    console.log("response blob", response);
     if (!response.ok) {
       const text = await response.text();
       throw new Error(text);
@@ -97,7 +97,16 @@ class InvoiceApiService {
     window.URL.revokeObjectURL(url);
   }
 
+  async saveInvoicePayment(paymentData: any) {
+    return await apiService.request("/invoices/save-invoice-payment", {
+      method: "POST",
+      body: JSON.stringify(paymentData),
+    });
+  }
 
-}//
+  async getPaymentHistory(invoiceId: string) {
+    return await apiService.request(`/invoices/payment-history/${invoiceId}`);
+  }
+} //
 
 export const invoiceApiService = new InvoiceApiService();

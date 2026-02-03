@@ -6,10 +6,19 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Separator } from "@/components/ui/separator";
 import { spacesApiService } from "@/services/spaces_sites/spacesapi";
-import { SpaceOwnershipSection } from "@/components/SpaceOwnershipSection";
+import { SpaceOwnershipSection } from "@/components/spacedetails/SpaceOwnershipSection";
+import { OwnershipHistoryDialog } from "@/components/spacedetails/OwnershipHistoryDialog";
 import { useLoader } from "@/context/LoaderContext";
-import { getKindColor, getKindIcon, getStatusColor } from "@/interfaces/spaces_interfaces";
+import {
+    getKindColor,
+    getKindIcon,
+    getStatusColor,
+    HistoryRecord,
+    OccupancyRecord,
+    TimelineEvent,
+} from "@/interfaces/spaces_interfaces";
 import ContentContainer from "@/components/ContentContainer";
+import LoaderOverlay from "@/components/LoaderOverlay";
 import { Space } from "./Spaces";
 import {
     ArrowLeft,
@@ -21,12 +30,22 @@ import {
     Receipt,
     IndianRupee,
     Clock,
+    History,
+    Users,
+    Pencil,
 } from "lucide-react";
 import { SpaceMaintenanceForm } from "@/components/SpaceMaintenanceForm";
+import { SpaceForm } from "@/components/SpaceForm";
 import { toast } from "sonner";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { ownerMaintenancesApiService } from "@/services/spaces_sites/ownermaintenancesapi";
 import { Pagination } from "@/components/Pagination";
+import OccupancyTab from "@/components/spacedetails/OccupancyTab";
+import SpaceTenantSection from "@/components/spacedetails/SpaceTenantSection";
+import { tenantsApiService } from "@/services/leasing_tenants/tenantsapi";
+import { occupancyApiService } from "@/services/spaces_sites/spaceoccupancyapi";
+
+
 
 export default function SpaceDetailPage() {
     const { id } = useParams<{ id: string }>();
@@ -41,11 +60,25 @@ export default function SpaceDetailPage() {
     const { withLoader } = useLoader();
     const navigate = useNavigate();
     const [isMaintenanceOpen, setIsMaintenanceOpen] = useState(false);
-    const [maintenanceMode, setMaintenanceMode] = useState<"create" | "edit" | "view">("create");
+    const [maintenanceMode, setMaintenanceMode] = useState<
+        "create" | "edit" | "view"
+    >("create");
+    const [isHistoryOpen, setIsHistoryOpen] = useState(false);
+    const [owners, setOwners] = useState([]);
+    const [tenants, setTenants] = useState({
+        pending: [],
+        active: [],
+    });
+    const [occupancy, setOccupancy] = useState<OccupancyRecord>({ status: "vacant" });
+    const [occupancyHistory, setOccupancyHistory] = useState<TimelineEvent[]>([]);
+    const [isSpaceFormOpen, setIsSpaceFormOpen] = useState(false);
 
     useEffect(() => {
         if (!id) return;
         loadSpace();
+        loadOwners();
+        fetchTenants();
+        fetchOccupancy();
     }, [id]);
 
     const loadSpace = async () => {
@@ -55,6 +88,33 @@ export default function SpaceDetailPage() {
         if (response.success) {
             setSpace(response.data);
         }
+    };
+
+    const loadOwners = async () => {
+        const res = await spacesApiService.getActiveOwners(id);
+        if (res.success) setOwners(res.data || []);
+    };
+
+    const fetchTenants = async () => {
+        const res = await tenantsApiService.getSpaceTenants(id);
+        if (res?.success) {
+            setTenants(res.data || []);
+        }
+    };
+
+    const fetchOccupancy = async () => {
+        const res = await occupancyApiService.getSpaceOccupancy(id);
+        if (res?.success) {
+            setOccupancy(res.data.current || { status: "vacant" });
+            setOccupancyHistory(res.data.history || []);
+        }
+    };
+
+    const onMoveInOutSuccess = async () => {
+        loadSpace();
+        loadOwners();
+        fetchTenants();
+        fetchOccupancy();
     }
 
     const loadMaintenances = async (spaceId: string) => {
@@ -62,9 +122,13 @@ export default function SpaceDetailPage() {
         const params = new URLSearchParams();
         if (maintenanceSearch) params.append("search", maintenanceSearch);
         params.append("space_id", spaceId);
-        params.append("skip", ((maintenancePage - 1) * maintenancePageSize).toString());
+        params.append(
+            "skip",
+            ((maintenancePage - 1) * maintenancePageSize).toString(),
+        );
         params.append("limit", maintenancePageSize.toString());
-        const response = await ownerMaintenancesApiService.getOwnerMaintenancesBySpace(params);
+        const response =
+            await ownerMaintenancesApiService.getOwnerMaintenancesBySpace(params);
         if (response?.success) {
             setMaintenanceItems(response.data?.maintenances || []);
             setMaintenanceTotal(response.data?.total_records || 0);
@@ -117,6 +181,7 @@ export default function SpaceDetailPage() {
 
     return (
         <ContentContainer>
+            <LoaderOverlay />
             {space && (
                 <div className="space-y-6">
                     {/* Header */}
@@ -139,12 +204,22 @@ export default function SpaceDetailPage() {
                                     {getKindIcon(space?.kind)}
                                 </span>
 
-                                {/* Text content */}
+                                    {/* Text content */}
                                 <div className="flex flex-col gap-1">
                                     {/* Title */}
-                                    <h1 className="text-2xl font-semibold leading-tight">
-                                        {space.name || "Unnamed Space"}
-                                    </h1>
+                                    <div className="flex items-center gap-3">
+                                        <h1 className="text-2xl font-semibold leading-tight">
+                                            {space.name || "Unnamed Space"}
+                                        </h1>
+                                        <Button
+                                            variant="ghost"
+                                            onClick={() => setIsSpaceFormOpen(true)}
+                                            size="icon"
+                                            className="h-8 px-3"
+                                        >
+                                            <Pencil className="h-4 w-4" />
+                                        </Button>
+                                    </div>
 
                                     {/* Code */}
                                     <p className="text-sm text-muted-foreground">
@@ -153,27 +228,41 @@ export default function SpaceDetailPage() {
 
                                     {/* Badges */}
                                     <div className="flex items-center gap-2 mt-1">
-                                        <Badge
-                                            className={getKindColor(space?.kind)}
-                                        >
+                                        <Badge className={getKindColor(space?.kind)}>
                                             {space?.kind.replace("_", " ")}
                                         </Badge>
 
-                                        <Badge
-                                            className={getStatusColor(space?.status)}
-                                        >
+                                        <Badge className={getStatusColor(space?.status)}>
                                             {space?.status.replace("_", " ")}
                                         </Badge>
                                     </div>
                                 </div>
                             </div>
                         </div>
+                        {owners.length > 0 && (
+                            <Button
+                                onClick={() => {
+                                    setMaintenanceRecord({
+                                        site_name: space.site_name,
+                                        space_name: space.name,
+                                        building_name: space.building_block,
+                                    });
+                                    setMaintenanceMode("create");
+                                    setIsMaintenanceOpen(true);
+                                }}
+                                className="gap-2"
+                            >
+                                <Wrench className="h-4 w-4" />
+                                Create Maintenance
+                            </Button>
+                        )}
                     </div>
                     <Separator />
 
                     <Tabs defaultValue="info">
-                        <TabsList className="grid w-full grid-cols-2">
+                        <TabsList className="grid w-full grid-cols-3">
                             <TabsTrigger value="info">Space Information</TabsTrigger>
+                            <TabsTrigger value="occupancy">Occupany Information</TabsTrigger>
                             <TabsTrigger value="maintenance">Maintenance Charges</TabsTrigger>
                         </TabsList>
 
@@ -198,42 +287,79 @@ export default function SpaceDetailPage() {
                                 </CardContent>
                             </Card>
 
-                            <Card>
-                                <CardHeader>
-                                    <CardTitle><h1 className="flex items-center gap-2">
-                                        <FileText className="h-5 w-5" /> Ownership
-                                    </h1></CardTitle>
-                                </CardHeader>
-                                <CardContent>
-                                    <SpaceOwnershipSection
-                                        spaceId={id!}
-                                        actionSlot={
+                            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                <Card>
+                                    <CardHeader>
+                                        <div className="flex items-center justify-between">
+                                            <CardTitle><h1 className="flex items-center gap-2">
+                                                <FileText className="h-5 w-5" /> Ownership
+                                            </h1></CardTitle>
                                             <Button
-                                                onClick={() => {
-                                                    setMaintenanceRecord({
-
-                                                        site_name: space.site_name,
-                                                        space_name: space.name,
-                                                        building_name: space.building_block,
-                                                    });
-                                                    setMaintenanceMode("create");
-                                                    setIsMaintenanceOpen(true);
-                                                }}
-                                                className="gap-2"
+                                                variant="ghost"
+                                                size="sm"
+                                                onClick={() => setIsHistoryOpen(true)}
+                                                className="flex items-center gap-2 text-muted-foreground hover:text-foreground"
                                             >
-                                                <Wrench className="h-4 w-4" />
-                                                Create Maintenance
+                                                <History className="h-4 w-4" />
+                                                View History
                                             </Button>
-                                        }
-                                    />
-                                </CardContent>
-                            </Card>
-                        </TabsContent>
+                                        </div>
+                                    </CardHeader>
+                                    <CardContent>
+                                        <SpaceOwnershipSection
+                                            spaceId={id!}
+                                            owners={owners}
+                                            onRefresh={loadOwners}
+                                        // actionSlot={
 
+                                        // }
+                                        />
+                                    </CardContent>
+                                </Card>
+                                <SpaceTenantSection
+                                    spaceId={id}
+                                    tenants={tenants}
+                                />
+                            </div>
+                            <OwnershipHistoryDialog
+                                open={isHistoryOpen}
+                                onClose={() => setIsHistoryOpen(false)}
+                                spaceId={id!}
+                            />
+                        </TabsContent>
+                        <TabsContent value="occupancy" className="space-y-6">
+                            <OccupancyTab
+                                spaceId={id}
+                                owners={owners}
+                                tenants={tenants.active}
+                                occupancy={occupancy}
+                                history={occupancyHistory}
+                                onSucess={onMoveInOutSuccess}
+                            />
+                        </TabsContent>
                         <TabsContent value="maintenance" className="space-y-4">
                             <Card>
                                 <CardHeader>
-                                    <CardTitle>Maintenance Charges</CardTitle>
+                                    <CardTitle className="flex items-center justify-between">
+                                        <span>Maintenance Charges</span>
+
+                                        <Button
+                                            onClick={() => {
+                                                setMaintenanceRecord({
+                                                    site_name: space.site_name,
+                                                    space_name: space.name,
+                                                    building_name: space.building_block,
+                                                });
+                                                setMaintenanceMode("create");
+                                                setIsMaintenanceOpen(true);
+                                            }}
+                                            className="gap-2"
+                                        >
+                                            <Wrench className="h-4 w-4" />
+                                            Create Maintenance
+                                        </Button>
+                                    </CardTitle>
+
                                 </CardHeader>
                                 <CardContent>
                                     <div className="flex flex-wrap items-center gap-2 mb-4">
@@ -244,6 +370,7 @@ export default function SpaceDetailPage() {
                                             onChange={(e) => setMaintenanceSearch(e.target.value)}
                                             className="max-w-sm"
                                         />
+
                                     </div>
                                     <div className="relative">
                                         {maintenanceLoading && (
@@ -334,7 +461,10 @@ export default function SpaceDetailPage() {
                             };
                             delete payloadToSave.start_date;
                             delete payloadToSave.end_date;
-                            const response = await ownerMaintenancesApiService.createOwnerMaintenance(payloadToSave);
+                            const response =
+                                await ownerMaintenancesApiService.createOwnerMaintenance(
+                                    payloadToSave,
+                                );
 
                             if (response?.success) {
                                 setIsMaintenanceOpen(false);
@@ -342,15 +472,47 @@ export default function SpaceDetailPage() {
                                     `Space maintenance has been created successfully.`,
                                 );
                                 return { success: true };
-                            }
-                            else {
+                            } else {
                                 return { success: false };
                             }
-
                         }}
                         mode={maintenanceMode}
                         record={maintenanceRecord as any}
                         defaultSpaceId={space.id}
+                    />
+
+                    {/* Space Form */}
+                    <SpaceForm
+                        space={space}
+                        isOpen={isSpaceFormOpen}
+                        onClose={() => setIsSpaceFormOpen(false)}
+                        mode="edit"
+                        onSave={async (spaceData: Partial<Space>) => {
+                            if (!space) return { success: false };
+                            
+                            const updatedSpace = {
+                                ...space,
+                                ...spaceData,
+                            };
+                            
+                            const response = await withLoader(async () => {
+                                return await spacesApiService.updateSpace(updatedSpace);
+                            });
+                            
+                            if (response?.success) {
+                                setIsSpaceFormOpen(false);
+                                toast.success("Space updated successfully.");
+                                // Reload space data
+                                await loadSpace();
+                            } else if (response && !response.success) {
+                                if (response?.message) {
+                                    toast.error(response.message);
+                                } else {
+                                    toast.error("Failed to update space.");
+                                }
+                            }
+                            return response;
+                        }}
                     />
                 </div>
             )}
