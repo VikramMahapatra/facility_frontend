@@ -81,7 +81,7 @@ const Tenants = () => {
   const [typeList, setTypeList] = useState([]);
   const [siteList, setSiteList] = useState([]);
   const [formMode, setFormMode] = useState<"create" | "edit" | "view">(
-    "create"
+    "create",
   );
   const [isFormOpen, setIsFormOpen] = useState(false);
   const [page, setPage] = useState(1); // current page
@@ -230,22 +230,21 @@ const Tenants = () => {
         // FIX: Update with response.data instead of updatedTenant
         loadTenantOverview();
         setTenants((prev) =>
-          prev.map((t) => (t.id === response.data.id ? response.data : t))
+          prev.map((t) => (t.id === response.data.id ? response.data : t)),
         );
       }
     }
 
-
     if (response?.success) {
       setIsFormOpen(false);
       toast.success(
-        `Tenant ${tenantData.name} has been ${formMode === "create" ? "created" : "updated"
-        } successfully.`
+        `Tenant ${tenantData.name} has been ${
+          formMode === "create" ? "created" : "updated"
+        } successfully.`,
       );
     }
     return response;
   };
-
 
   const getStatusColor = (status: string) => {
     switch (status) {
@@ -456,7 +455,8 @@ const Tenants = () => {
                         <CardDescription>
                           {tenantSpaces.slice(0, 2).map((tenant_space) => {
                             const isSpaceStatus =
-                              tenant_space.status == "approved" || tenant_space.status == "leased"
+                              tenant_space.status == "approved" ||
+                              tenant_space.status == "leased"
                                 ? "active"
                                 : tenant_space.status == "pending"
                                   ? "inactive"
@@ -535,16 +535,16 @@ const Tenants = () => {
                                   {(tenant.contact_info.address.city ||
                                     tenant.contact_info.address.state ||
                                     tenant.contact_info.address.pincode) && (
-                                      <div>
-                                        {[
-                                          tenant.contact_info.address.city,
-                                          tenant.contact_info.address.state,
-                                          tenant.contact_info.address.pincode,
-                                        ]
-                                          .filter(Boolean)
-                                          .join(", ")}
-                                      </div>
-                                    )}
+                                    <div>
+                                      {[
+                                        tenant.contact_info.address.city,
+                                        tenant.contact_info.address.state,
+                                        tenant.contact_info.address.pincode,
+                                      ]
+                                        .filter(Boolean)
+                                        .join(", ")}
+                                    </div>
+                                  )}
                                 </div>
                               </div>
                             )}
@@ -599,7 +599,7 @@ const Tenants = () => {
                             <div className="text-sm text-muted-foreground">
                               No active leases
                             </div>
-                            {canWrite(resource) && tenantSpaces.length > 0 && (
+                            {canWrite(resource) && tenantSpaces.length > 0 && tenant.status === "active" && (
                               <Button
                                 size="sm"
                                 variant="outline"
@@ -610,6 +610,7 @@ const Tenants = () => {
                                     async () => {
                                       return await leasesApiService.getTenantLeaseDetail(
                                         tenant.id!,
+                                        tenantSpaces[0].space_id,
                                       );
                                     },
                                   );

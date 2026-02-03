@@ -67,6 +67,7 @@ export default function TenantApprovalPage() {
   const [totalItems, setTotalItems] = useState(0);
   const [showAddLeaseDialog, setShowAddLeaseDialog] = useState(false);
   const [approvedTenantId, setApprovedTenantId] = useState<string | null>(null);
+  const [approvedSpaceId, setApprovedSpaceId] = useState<string | null>(null);
   const [isLeaseFormOpen, setIsLeaseFormOpen] = useState(false);
   const [prefilledLeaseData, setPrefilledLeaseData] =
     useState<Partial<Lease> | null>(null);
@@ -115,6 +116,7 @@ export default function TenantApprovalPage() {
     if (response?.success) {
       toast.success("Tenant approved successfully.");
       setApprovedTenantId(tenantId);
+      setApprovedSpaceId(spaceId);
       setShowAddLeaseDialog(true);
       fetchTenants();
     } else {
@@ -315,6 +317,7 @@ export default function TenantApprovalPage() {
                   const response = await withLoader(async () => {
                     return await leasesApiService.getTenantLeaseDetail(
                       approvedTenantId,
+                      approvedSpaceId,
                     );
                   });
                   if (

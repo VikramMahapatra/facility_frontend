@@ -32,8 +32,10 @@ import {
     Clock,
     History,
     Users,
+    Pencil,
 } from "lucide-react";
 import { SpaceMaintenanceForm } from "@/components/SpaceMaintenanceForm";
+import { SpaceForm } from "@/components/SpaceForm";
 import { toast } from "sonner";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { ownerMaintenancesApiService } from "@/services/spaces_sites/ownermaintenancesapi";
@@ -69,6 +71,7 @@ export default function SpaceDetailPage() {
     });
     const [occupancy, setOccupancy] = useState<OccupancyRecord>({ status: "vacant" });
     const [occupancyHistory, setOccupancyHistory] = useState<TimelineEvent[]>([]);
+    const [isSpaceFormOpen, setIsSpaceFormOpen] = useState(false);
 
     useEffect(() => {
         if (!id) return;
@@ -201,12 +204,22 @@ export default function SpaceDetailPage() {
                                     {getKindIcon(space?.kind)}
                                 </span>
 
-                                {/* Text content */}
+                                    {/* Text content */}
                                 <div className="flex flex-col gap-1">
                                     {/* Title */}
-                                    <h1 className="text-2xl font-semibold leading-tight">
-                                        {space.name || "Unnamed Space"}
-                                    </h1>
+                                    <div className="flex items-center gap-3">
+                                        <h1 className="text-2xl font-semibold leading-tight">
+                                            {space.name || "Unnamed Space"}
+                                        </h1>
+                                        <Button
+                                            variant="ghost"
+                                            onClick={() => setIsSpaceFormOpen(true)}
+                                            size="icon"
+                                            className="h-8 px-3"
+                                        >
+                                            <Pencil className="h-4 w-4" />
+                                        </Button>
+                                    </div>
 
                                     {/* Code */}
                                     <p className="text-sm text-muted-foreground">
@@ -466,6 +479,40 @@ export default function SpaceDetailPage() {
                         mode={maintenanceMode}
                         record={maintenanceRecord as any}
                         defaultSpaceId={space.id}
+                    />
+
+                    {/* Space Form */}
+                    <SpaceForm
+                        space={space}
+                        isOpen={isSpaceFormOpen}
+                        onClose={() => setIsSpaceFormOpen(false)}
+                        mode="edit"
+                        onSave={async (spaceData: Partial<Space>) => {
+                            if (!space) return { success: false };
+                            
+                            const updatedSpace = {
+                                ...space,
+                                ...spaceData,
+                            };
+                            
+                            const response = await withLoader(async () => {
+                                return await spacesApiService.updateSpace(updatedSpace);
+                            });
+                            
+                            if (response?.success) {
+                                setIsSpaceFormOpen(false);
+                                toast.success("Space updated successfully.");
+                                // Reload space data
+                                await loadSpace();
+                            } else if (response && !response.success) {
+                                if (response?.message) {
+                                    toast.error(response.message);
+                                } else {
+                                    toast.error("Failed to update space.");
+                                }
+                            }
+                            return response;
+                        }}
                     />
                 </div>
             )}
