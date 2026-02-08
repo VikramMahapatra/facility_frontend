@@ -94,6 +94,16 @@ export const tenantSchema = z
         })
       )
       .optional(),
+    tenant_spaces: z
+      .array(
+        z.object({
+          id: z.string().optional(),
+          site_id: z.string().optional(),
+          building_block_id: z.string().optional(),
+          space_id: z.string().optional(),
+        })
+      )
+      .optional(),
   })
   .superRefine((val, ctx) => {
     // For commercial tenants, either legal_name or contact name should be present (soft rule)

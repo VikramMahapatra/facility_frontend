@@ -30,6 +30,7 @@ import {
   FolderTree,
   Ticket,
   CheckCircle2,
+  Move,
 } from "lucide-react";
 
 export const navigationItems = [
@@ -96,7 +97,6 @@ export const navigationItems = [
         icon: Wrench,
         resource: "spaces",
       },
-
     ],
   },
   {
@@ -331,7 +331,13 @@ export const navigationItems = [
         url: "/tenant-space-approvals",
         icon: CheckCircle2,
         resource: "tenant_space_approvals",
-      }
+      },
+      {
+        title: "Space Move/Out",
+        url: "/space-move-out-approvals",
+        icon: Move,
+        resource: "tenant_space_approvals",
+      },
     ],
   },
   {
@@ -389,8 +395,6 @@ export const navigationItems = [
   },
 ];
 
-
-
 export const pageHeaderOverrides = [
   {
     match: (path: string) => path === "/profile",
@@ -403,5 +407,5 @@ export const pageHeaderOverrides = [
         },
       },
     },
-  }
+  },
 ];

@@ -11,6 +11,18 @@ class SiteApiService {
     return await apiService.request(`/sites/lookup?${params.toString()}`);
   }
 
+  async getMasterSiteLookup(search?: string, kind?: string) {
+    return await apiService.request("/master/site-lookup", {
+      method: "POST",
+      body: JSON.stringify({
+        search: search || "",
+        skip: 0,
+        limit: 100,
+        kind: kind || "",
+      }),
+    });
+  }
+
   async addSite(siteData: any) {
     return await apiService.request("/sites/", {
       method: "POST",

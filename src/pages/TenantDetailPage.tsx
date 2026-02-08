@@ -118,7 +118,7 @@ export default function TenantDetailPage() {
   const paymentStartIndex = (paymentPage - 1) * paymentPageSize;
   const pagedPayments = paymentHistory.slice(
     paymentStartIndex,
-    paymentStartIndex + paymentPageSize,
+    paymentStartIndex + paymentPageSize
   );
 
   const leaseBadge = (status?: Lease["status"]) => {
@@ -407,12 +407,12 @@ export default function TenantDetailPage() {
               {(() => {
                 const familyItems = Array.isArray(tenant.family_info)
                   ? tenant.family_info.filter(
-                      (member) => member.member || member.relation,
+                      (member) => member.member || member.relation
                     )
                   : [];
                 const vehicleItems = Array.isArray(tenant.vehicle_info)
                   ? tenant.vehicle_info.filter(
-                      (vehicle) => vehicle.type || vehicle.number,
+                      (vehicle) => vehicle.type || vehicle.number
                     )
                   : [];
 
@@ -512,7 +512,7 @@ export default function TenantDetailPage() {
                         ? leasesBySpace.get(space.space_id)
                         : [];
                       const activeLease = leases?.find(
-                        (l) => l.status === "active",
+                        (l) => l.status === "active"
                       );
 
                       return (
@@ -542,7 +542,7 @@ export default function TenantDetailPage() {
                                     <Badge
                                       variant="outline"
                                       className={`${getStatusColor(
-                                        space.status,
+                                        space.status
                                       )} border-0`}
                                     >
                                       {space.status}
@@ -595,11 +595,11 @@ export default function TenantDetailPage() {
                                       {lease.start_date && lease.end_date && (
                                         <div className="text-xs">
                                           {new Date(
-                                            lease.start_date,
+                                            lease.start_date
                                           ).toLocaleDateString()}{" "}
                                           -{" "}
                                           {new Date(
-                                            lease.end_date,
+                                            lease.end_date
                                           ).toLocaleDateString()}
                                         </div>
                                       )}
@@ -627,9 +627,9 @@ export default function TenantDetailPage() {
                                           async () => {
                                             return await leasesApiService.getTenantLeaseDetail(
                                               id,
-                                              space.space_id,
+                                              space.space_id
                                             );
-                                          },
+                                          }
                                         );
                                         if (
                                           response?.success &&
@@ -711,8 +711,8 @@ export default function TenantDetailPage() {
                             typeof payment.amount === "number"
                               ? payment.amount
                               : payment.amount
-                                ? Number(payment.amount)
-                                : undefined;
+                              ? Number(payment.amount)
+                              : undefined;
                           const reference =
                             payment.reference ||
                             payment.reference_no ||
@@ -731,10 +731,10 @@ export default function TenantDetailPage() {
                                   {payment.description &&
                                     (() => {
                                       const description = String(
-                                        payment.description,
+                                        payment.description
                                       );
                                       const match = description.match(
-                                        /^lease charge\s*:\s*(.+)$/i,
+                                        /^lease charge\s*:\s*(.+)$/i
                                       );
                                       if (!match) {
                                         return (
@@ -748,7 +748,7 @@ export default function TenantDetailPage() {
                                           <span>Lease Charge:</span>
                                           <Badge
                                             className={`text-xs border-0 ${getChargeCodeBadgeClass(
-                                              match[1],
+                                              match[1]
                                             )}`}
                                           >
                                             {match[1].trim()}
@@ -772,14 +772,14 @@ export default function TenantDetailPage() {
                                         String(
                                           payment.charge_code ||
                                             payment.charge_code_name ||
-                                            payment.charge_code_id,
-                                        ),
+                                            payment.charge_code_id
+                                        )
                                       )}`}
                                     >
                                       {String(
                                         payment.charge_code ||
                                           payment.charge_code_name ||
-                                          payment.charge_code_id,
+                                          payment.charge_code_id
                                       )}
                                     </Badge>
                                   )}
@@ -804,7 +804,7 @@ export default function TenantDetailPage() {
                                   {payment.method ? (
                                     <Badge
                                       className={`text-xs border-0 ${getMethodBadgeClass(
-                                        payment.method,
+                                        payment.method
                                       )}`}
                                     >
                                       {String(payment.method).toUpperCase()}
@@ -909,9 +909,16 @@ export default function TenantDetailPage() {
         onSave={async (tenantData: Partial<Tenant>) => {
           if (!tenant) return { success: false };
 
+          const preservedTenantSpaces = (tenant as any).tenant_spaces
+            ? (tenant as any).tenant_spaces.filter(
+                (space: any) => space.id && space.id.length > 0
+              )
+            : undefined;
+
           const updatedTenant = {
             ...tenant,
             ...tenantData,
+            tenant_spaces: preservedTenantSpaces,
           };
 
           const response = await withLoader(async () => {

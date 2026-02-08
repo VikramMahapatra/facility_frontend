@@ -38,7 +38,7 @@ export const leaseSchema = z
     status: z.enum(["draft", "active", "expired", "terminated"], {
       required_error: "Status is required",
     }),
-    auto_move_in_space_occupancy: z.boolean().optional(),
+    auto_move_in: z.boolean().optional(),
   })
   .superRefine((val, ctx) => {
     // Since kind is not used by API, require tenant_id (since that's what the form shows)
