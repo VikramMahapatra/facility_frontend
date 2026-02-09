@@ -37,7 +37,7 @@ const Login = () => {
       setIsGoogleLoading(true);
       try {
         const response = await authApiService.authenticateGoogle(
-          tokenResponse.access_token
+          tokenResponse.access_token,
         );
 
         if (response.success) {
@@ -46,19 +46,26 @@ const Login = () => {
             if (authResponse.needs_registration) {
               navigate("/signup", {
                 state: {
-                  googleData: {
+                  userData: {
                     email: authResponse.email,
                     name: authResponse.name,
                     picture: authResponse.picture,
                   },
                 },
               });
+              toast.success("OTP verified successful");
             } else {
-              setUser(authResponse.user);
-              if (
-                authResponse.user.status.toLowerCase() === "pending_approval"
-              ) {
-                const user = authResponse.user;
+              const user = authResponse.user;
+              setUser(user);
+
+              // Super Admin
+              if (user.account_type === "super_admin") {
+                navigate("/super-admin/dashboard");
+                toast.success("Super Admin login successful");
+                return;
+              }
+
+              if (user.status.toLowerCase() === "pending_approval") {
                 navigate("/registration-status", {
                   state: {
                     userData: {
@@ -67,19 +74,19 @@ const Login = () => {
                     },
                   },
                 });
+                toast.success("OTP verified successful");
               } else {
                 navigate("/dashboard");
+                toast.success("Login successful");
               }
             }
             setIsGoogleLoading(false);
           }, 1000);
         } else {
           setIsGoogleLoading(false);
-          toast.error("Google login failed. Please try again.");
         }
       } catch (error) {
         setIsGoogleLoading(false);
-        toast.error("Google login failed. Please try again.");
       }
     },
     onError: (error) => {
@@ -160,7 +167,7 @@ const Login = () => {
 
   const handleOtpKeyDown = (
     index: number,
-    e: React.KeyboardEvent<HTMLInputElement>
+    e: React.KeyboardEvent<HTMLInputElement>,
   ) => {
     if (e.key === "Backspace" && !otp[index] && index > 0) {
       otpInputRefs.current[index - 1]?.focus();
@@ -179,7 +186,7 @@ const Login = () => {
       if (loginMethod === "phone") {
         const response = (await authApiService.verifyOtp(
           mobileNumber,
-          otpToVerify
+          otpToVerify,
         )) as any;
         if (response?.success) {
           const authResponse = response.data;
@@ -259,7 +266,7 @@ const Login = () => {
     try {
       const response = (await authApiService.verifyEmailOtp(
         email,
-        otpToVerify
+        otpToVerify,
       )) as any;
       if (response?.success) {
         const authResponse = response.data;
@@ -271,12 +278,19 @@ const Login = () => {
               },
             },
           });
+          toast.success("OTP verified successful");
         } else {
-          setUser(authResponse?.user);
-          if (
-            authResponse?.user?.status?.toLowerCase() === "pending_approval"
-          ) {
-            const user = authResponse.user;
+          const user = authResponse.user;
+          setUser(user);
+
+          // Super Admin
+          if (user.account_type === "super_admin") {
+            navigate("/super-admin/dashboard");
+            toast.success("Super Admin login successful");
+            return;
+          }
+
+          if (user?.status?.toLowerCase() === "pending_approval") {
             navigate("/registration-status", {
               state: {
                 userData: {
@@ -285,11 +299,12 @@ const Login = () => {
                 },
               },
             });
+            toast.success("OTP verified successful");
           } else {
             navigate("/dashboard");
+            toast.success("Login successful");
           }
         }
-        toast.success("Login successful");
       } else {
         toast.error("Invalid OTP. Please try again.");
         setOtp(["", "", "", "", "", ""]);

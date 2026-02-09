@@ -25,15 +25,14 @@ import { toast } from "sonner";
 const SignUp = () => {
   const navigate = useNavigate();
   const location = useLocation();
-  const googleData = location.state?.googleData;
-  const phoneData = location.state?.phoneData;
+  const userData = location.state?.userData;
 
   // Pre-fill from Google data, phone data, or empty for direct signup
   const [formData, setFormData] = useState({
-    name: googleData?.name || phoneData?.name || "",
-    email: googleData?.email || phoneData?.email || "",
-    phone: phoneData?.phone || "",
-    pictureUrl: googleData?.picture || "",
+    name: userData?.name || "",
+    email: userData?.email || "",
+    phone: userData?.phone || "",
+    pictureUrl: userData?.picture || "",
     accountType: "",
     organizationName: "",
     // Tenant specific fields
@@ -256,9 +255,14 @@ const SignUp = () => {
     }
   };
 
+  useEffect(() => {
+    if (!userData) {
+      navigate("/login");
+    }
+  }, [userData, navigate]); // run when isLoggedIn changes
   // Determine if this is a Google signup, phone signup, or direct signup
-  const isGoogleSignup = !!googleData;
-  const isPhoneSignup = !!phoneData;
+  const isGoogleSignup = !!userData.email;
+  const isPhoneSignup = !!userData.phone;
 
   // Check if location fields should be shown
   const showLocationFields =
@@ -274,9 +278,9 @@ const SignUp = () => {
             {isGoogleSignup ? (
               <>
                 <Avatar className="w-20 h-20 mx-auto mb-4">
-                  <AvatarImage src={googleData.picture} />
+                  <AvatarImage src={userData.picture} />
                   <AvatarFallback className="bg-gradient-primary text-white text-xl">
-                    {googleData.name?.charAt(0) || "U"}
+                    {userData.name?.charAt(0) || "U"}
                   </AvatarFallback>
                 </Avatar>
                 <h1 className="text-2xl font-bold">Complete Your Profile</h1>
