@@ -205,10 +205,10 @@ export function UserForm({
                         {mode === "view" && "User Details"}
                     </DialogTitle>
                 </DialogHeader>
-                <div className="overflow-y-auto flex-1 pr-2 -mr-2">
+                <div className="overflow-y-auto space-y-4 flex-1 pr-2 -mr-2">
                     <form
                         onSubmit={handleSubmit(onSubmitForm)}
-                        className="space-y-4"
+                        className="space-y-2"
                         id="user-form"
                     >
                         <div className="space-y-4">
@@ -287,6 +287,11 @@ export function UserForm({
                                                 disabled={isReadOnly || isGlobalUser}
                                                 onBlur={() => checkGlobalUser(field.value, getValues("phone"))}
                                             />
+                                            {errors.email && (
+                                                <p className="text-sm text-red-500">
+                                                    {errors.email.message}
+                                                </p>
+                                            )}
                                         </div>
                                     )}
                                 />
@@ -296,7 +301,7 @@ export function UserForm({
 
                                     render={({ field }) => (
                                         <div className="space-y-2">
-                                            <Label>Phone</Label>
+                                            <Label>Phone *</Label>
                                             <PhoneInput
                                                 country="in"
                                                 value={field.value || ""}
@@ -317,6 +322,11 @@ export function UserForm({
                                                 enableSearch={true}
                                                 disabled={isReadOnly || isGlobalUser}
                                             />
+                                            {errors.phone && (
+                                                <p className="text-sm text-red-500">
+                                                    {errors.phone.message}
+                                                </p>
+                                            )}
                                         </div>
                                     )}
                                 />
