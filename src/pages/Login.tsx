@@ -183,47 +183,52 @@ const Login = () => {
 
     setIsVerifyingOtp(true);
     try {
-      if (loginMethod === "phone") {
-        const response = (await authApiService.verifyOtp(
-          mobileNumber,
-          otpToVerify,
-        )) as any;
-        if (response?.success) {
-          const authResponse = response.data;
-          if (authResponse?.needs_registration) {
-            navigate("/signup", {
+      const response = (await authApiService.verifyOtp(
+        mobileNumber,
+        otpToVerify,
+      )) as any;
+      if (response?.success) {
+        const authResponse = response.data;
+        if (authResponse?.needs_registration) {
+          navigate("/signup", {
+            state: {
+              userData: {
+                mobile: authResponse.mobile,
+                email: authResponse.email
+              },
+            },
+          });
+        } else {
+          const user = authResponse.user;
+          setUser(user);
+
+          // Super Admin
+          if (user.default_account_type === "super_admin") {
+            navigate("/super-admin/dashboard");
+            toast.success("Super Admin login successful");
+            return;
+          }
+
+          if (user?.status?.toLowerCase() === "pending_approval") {
+            navigate("/registration-status", {
               state: {
-                mobileData: {
-                  mobile: mobileNumber,
+                userData: {
+                  email: user.email,
+                  name: user.full_name,
                 },
               },
             });
+            toast.success("OTP verified successful");
           } else {
-            setUser(authResponse?.user);
-            if (
-              authResponse?.user?.status?.toLowerCase() === "pending_approval"
-            ) {
-              const user = authResponse.user;
-              navigate("/registration-status", {
-                state: {
-                  userData: {
-                    email: user.email,
-                    name: user.full_name,
-                  },
-                },
-              });
-            } else {
-              navigate("/dashboard");
-            }
+            navigate("/dashboard");
+            toast.success("Login successful");
           }
-          toast.success("Login successful");
-        } else {
-          toast.error("Invalid OTP. Please try again.");
-          setOtp(["", "", "", "", "", ""]);
-          otpInputRefs.current[0]?.focus();
         }
+        toast.success("Login successful");
       } else {
-        await handleVerifyEmailOtp(otpToVerify);
+        toast.error("Invalid OTP. Please try again.");
+        setOtp(["", "", "", "", "", ""]);
+        otpInputRefs.current[0]?.focus();
       }
     } catch (error) {
       toast.error("Failed to verify OTP. Please try again.");
@@ -252,70 +257,6 @@ const Login = () => {
       toast.error("Failed to send OTP. Please try again.");
     } finally {
       setIsEmailLoading(false);
-    }
-  };
-
-  const handleVerifyEmailOtp = async (otpValue?: string) => {
-    const otpToVerify = otpValue || otp.join("");
-    if (otpToVerify.length !== 6) {
-      toast.error("Please enter 6-digit OTP");
-      return;
-    }
-
-    setIsVerifyingOtp(true);
-    try {
-      const response = (await authApiService.verifyEmailOtp(
-        email,
-        otpToVerify,
-      )) as any;
-      if (response?.success) {
-        const authResponse = response.data;
-        if (authResponse?.needs_registration) {
-          navigate("/signup", {
-            state: {
-              emailData: {
-                email: email,
-              },
-            },
-          });
-          toast.success("OTP verified successful");
-        } else {
-          const user = authResponse.user;
-          setUser(user);
-
-          // Super Admin
-          if (user.default_account_type === "super_admin") {
-            navigate("/super-admin/dashboard");
-            toast.success("Super Admin login successful");
-            return;
-          }
-
-          if (user?.status?.toLowerCase() === "pending_approval") {
-            navigate("/registration-status", {
-              state: {
-                userData: {
-                  email: user.email,
-                  name: user.full_name,
-                },
-              },
-            });
-            toast.success("OTP verified successful");
-          } else {
-            navigate("/dashboard");
-            toast.success("Login successful");
-          }
-        }
-      } else {
-        toast.error("Invalid OTP. Please try again.");
-        setOtp(["", "", "", "", "", ""]);
-        otpInputRefs.current[0]?.focus();
-      }
-    } catch (error) {
-      toast.error("Failed to verify OTP. Please try again.");
-      setOtp(["", "", "", "", "", ""]);
-      otpInputRefs.current[0]?.focus();
-    } finally {
-      setIsVerifyingOtp(false);
     }
   };
 
