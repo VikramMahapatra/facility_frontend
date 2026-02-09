@@ -58,13 +58,17 @@ export function ManageTenantSpacesForm({
                 if (!open) handleClose();
             }}
         >
-            <DialogContent className="max-w-[900px] max-h-[90vh] flex flex-col">
+            <DialogContent className="max-w-[900px] max-h-[90vh] flex flex-col overflow-hidden">
                 <DialogHeader>
                     <DialogTitle>Manage Spaces</DialogTitle>
                 </DialogHeader>
 
-                <form onSubmit={handleSubmit(onSubmitForm)}>
-                    <div className="overflow-y-auto flex-1 pr-2 -mr-2">
+                <form
+                    onSubmit={handleSubmit(onSubmitForm)}
+                    className="flex flex-col flex-1 min-h-0"
+                >
+                    {/* Scroll only the form content, keep footer visible */}
+                    <div className="flex-1 min-h-0 overflow-y-auto pr-2 -mr-2">
                         <SpacesForm
                             form={form}
                             name="tenant_spaces"
@@ -76,14 +80,14 @@ export function ManageTenantSpacesForm({
                         />
                     </div>
 
-                    <div className="flex justify-end gap-2 mt-4">
-                        <Button type="button" variant="outline" onClick={onClose}>
+                    <DialogFooter className="mt-4 pt-4 border-t flex justify-end gap-2">
+                        <Button type="button" variant="outline" onClick={handleClose}>
                             Cancel
                         </Button>
                         <Button type="submit" disabled={isSubmitting}>
                             {isSubmitting ? "Saving..." : "Save Changes"}
                         </Button>
-                    </div>
+                    </DialogFooter>
                 </form>
             </DialogContent>
         </Dialog>
