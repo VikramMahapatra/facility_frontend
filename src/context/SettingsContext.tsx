@@ -6,7 +6,7 @@ import {
   ReactNode,
 } from "react";
 import { settingsApiService } from "@/services/system/settingsapi";
-import { useAuth } from "./AuthContext";
+import { AuthContext } from "./AuthContext";
 
 interface SettingsContextType {
   systemName: string;
@@ -21,7 +21,10 @@ const SettingsContext = createContext<SettingsContextType | undefined>(
 export const SettingsProvider = ({ children }: { children: ReactNode }) => {
   const [systemName, setSystemName] = useState<string>("FacilityOS");
   const [loading, setLoading] = useState(true);
-  const { user } = useAuth()
+
+  // Use useContext directly to avoid hook error - handle undefined gracefully
+  const authContext = useContext(AuthContext);
+  const user = authContext?.user || null;
 
   const loadSettings = async () => {
     console.log("user", user);
@@ -33,11 +36,12 @@ export const SettingsProvider = ({ children }: { children: ReactNode }) => {
         document.title = `${name} - Enterprise Facility Management`;
       }
     }
+    setLoading(false);
   };
 
   useEffect(() => {
     loadSettings();
-  }, []);
+  }, [user]);
 
   const refreshSettings = async () => {
     await loadSettings();

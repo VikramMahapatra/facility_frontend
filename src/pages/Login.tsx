@@ -5,7 +5,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import Navigation from "@/components/Navigation";
 import { useNavigate } from "react-router-dom";
-import { Chrome, Phone, Loader2 } from "lucide-react";
+import { Chrome, Phone, Loader2, Mail } from "lucide-react";
 import { useGoogleLogin } from "@react-oauth/google";
 import { authApiService } from "@/services/authapi";
 import { useAuth } from "@/context/AuthContext";
@@ -18,9 +18,11 @@ const Login = () => {
   const [isLoading, setIsLoading] = useState(false);
   const [isGoogleLoading, setIsGoogleLoading] = useState(false);
   const [isMobileLoading, setIsMobileLoading] = useState(false);
+  const [isEmailLoading, setIsEmailLoading] = useState(false);
   const [mobileNumber, setMobileNumber] = useState("");
+  const [email, setEmail] = useState("");
   const [showOtp, setShowOtp] = useState(false);
-  const [showPhoneLogin, setShowPhoneLogin] = useState(true);
+  const [loginMethod, setLoginMethod] = useState<"phone" | "email">("phone");
   const [otp, setOtp] = useState(["", "", "", "", "", ""]);
   const [isVerifyingOtp, setIsVerifyingOtp] = useState(false);
   const otpInputRefs = useRef<(HTMLInputElement | null)[]>([]);
@@ -35,7 +37,7 @@ const Login = () => {
       setIsGoogleLoading(true);
       try {
         const response = await authApiService.authenticateGoogle(
-          tokenResponse.access_token
+          tokenResponse.access_token,
         );
 
         if (response.success) {
@@ -63,9 +65,7 @@ const Login = () => {
                 return;
               }
 
-              if (
-                user.status.toLowerCase() === "pending_approval"
-              ) {
+              if (user.status.toLowerCase() === "pending_approval") {
                 navigate("/registration-status", {
                   state: {
                     userData: {
@@ -160,14 +160,14 @@ const Login = () => {
     if (value && index === 5) {
       const fullOtp = newOtp.join("");
       if (fullOtp.length === 6) {
-        handleVerifyOtp(fullOtp);
+        setTimeout(() => handleVerifyOtp(fullOtp), 100);
       }
     }
   };
 
   const handleOtpKeyDown = (
     index: number,
-    e: React.KeyboardEvent<HTMLInputElement>
+    e: React.KeyboardEvent<HTMLInputElement>,
   ) => {
     if (e.key === "Backspace" && !otp[index] && index > 0) {
       otpInputRefs.current[index - 1]?.focus();
@@ -183,17 +183,98 @@ const Login = () => {
 
     setIsVerifyingOtp(true);
     try {
-      const response = await authApiService.verifyOtp(
-        mobileNumber,
-        otpToVerify
-      );
+      if (loginMethod === "phone") {
+        const response = (await authApiService.verifyOtp(
+          mobileNumber,
+          otpToVerify,
+        )) as any;
+        if (response?.success) {
+          const authResponse = response.data;
+          if (authResponse?.needs_registration) {
+            navigate("/signup", {
+              state: {
+                mobileData: {
+                  mobile: mobileNumber,
+                },
+              },
+            });
+          } else {
+            setUser(authResponse?.user);
+            if (
+              authResponse?.user?.status?.toLowerCase() === "pending_approval"
+            ) {
+              const user = authResponse.user;
+              navigate("/registration-status", {
+                state: {
+                  userData: {
+                    email: user.email,
+                    name: user.full_name,
+                  },
+                },
+              });
+            } else {
+              navigate("/dashboard");
+            }
+          }
+          toast.success("Login successful");
+        } else {
+          toast.error("Invalid OTP. Please try again.");
+          setOtp(["", "", "", "", "", ""]);
+          otpInputRefs.current[0]?.focus();
+        }
+      } else {
+        await handleVerifyEmailOtp(otpToVerify);
+      }
+    } catch (error) {
+      toast.error("Failed to verify OTP. Please try again.");
+      setOtp(["", "", "", "", "", ""]);
+      otpInputRefs.current[0]?.focus();
+    } finally {
+      setIsVerifyingOtp(false);
+    }
+  };
+
+  const handleEmailLogin = async () => {
+    if (!email || !email.includes("@")) {
+      toast.error("Please enter a valid email address");
+      return;
+    }
+    setIsEmailLoading(true);
+    try {
+      const response = (await authApiService.sendEmailOtp(email)) as any;
+      if (response?.success) {
+        setShowOtp(true);
+        toast.success("OTP sent to your email");
+      } else {
+        toast.error("Failed to send OTP. Please try again.");
+      }
+    } catch (error) {
+      toast.error("Failed to send OTP. Please try again.");
+    } finally {
+      setIsEmailLoading(false);
+    }
+  };
+
+  const handleVerifyEmailOtp = async (otpValue?: string) => {
+    const otpToVerify = otpValue || otp.join("");
+    if (otpToVerify.length !== 6) {
+      toast.error("Please enter 6-digit OTP");
+      return;
+    }
+
+    setIsVerifyingOtp(true);
+    try {
+      const response = (await authApiService.verifyEmailOtp(
+        email,
+        otpToVerify,
+      )) as any;
       if (response?.success) {
         const authResponse = response.data;
-        if (authResponse.needs_registration) {
+        if (authResponse?.needs_registration) {
           navigate("/signup", {
             state: {
-              userData: {
-                phone: mobileNumber,
+              emailData: {
+                email: email,
               },
             },
           });
@@ -209,9 +290,7 @@ const Login = () => {
             return;
           }
 
-          if (
-            user?.status?.toLowerCase() === "pending_approval"
-          ) {
+          if (user?.status?.toLowerCase() === "pending_approval") {
             navigate("/registration-status", {
               state: {
                 userData: {
@@ -226,7 +305,6 @@ const Login = () => {
             toast.success("Login successful");
           }
         }
-
       } else {
         toast.error("Invalid OTP. Please try again.");
         setOtp(["", "", "", "", "", ""]);
@@ -243,7 +321,11 @@ const Login = () => {
 
   const handleResendOtp = async () => {
     setOtp(["", "", "", "", "", ""]);
-    await handleMobileLogin();
+    if (loginMethod === "phone") {
+      await handleMobileLogin();
+    } else {
+      await handleEmailLogin();
+    }
   };
 
   useEffect(() => {
@@ -275,46 +357,114 @@ const Login = () => {
               {!showOtp ? (
                 <>
                   <div className="space-y-3">
-                    <div className="relative">
-                      <Label htmlFor="mobile">Phone Number</Label>
-                      <PhoneInput
-                        country={"in"}
-                        value={mobileNumber}
-                        onChange={(value) => {
-                          const digits = value.replace(/\D/g, "");
-                          const finalValue = "+" + digits;
-                          setMobileNumber(finalValue);
+                    {/* Toggle between Phone and Email */}
+                    <div className="flex gap-2 p-1 bg-muted rounded-lg">
+                      <Button
+                        type="button"
+                        variant={loginMethod === "phone" ? "default" : "ghost"}
+                        size="sm"
+                        className="flex-1"
+                        onClick={() => {
+                          setLoginMethod("phone");
+                          setEmail("");
+                          setMobileNumber("");
                         }}
-                        disabled={isLoading || isMobileLoading}
-                        inputProps={{
-                          name: "mobile",
-                          required: true,
-                          id: "mobile",
+                      >
+                        <Phone className="w-4 h-4 mr-2" />
+                        Phone
+                      </Button>
+                      <Button
+                        type="button"
+                        variant={loginMethod === "email" ? "default" : "ghost"}
+                        size="sm"
+                        className="flex-1"
+                        onClick={() => {
+                          setLoginMethod("email");
+                          setEmail("");
+                          setMobileNumber("");
                         }}
-                        containerClass="w-full relative mt-2"
-                        inputClass="!w-full !h-10 !pl-12 !rounded-md !border !border-input !bg-background !px-3 !py-2 !text-base !ring-offset-background placeholder:!text-muted-foreground focus-visible:!outline-none focus-visible:!ring-2 focus-visible:!ring-ring focus-visible:!ring-offset-2 disabled:!cursor-not-allowed disabled:!opacity-50 md:!text-sm"
-                        buttonClass="!border-none !bg-transparent !absolute !left-2 !top-1/2 !-translate-y-1/2 z-10"
-                        dropdownClass="!absolute !z-50 !bg-white !border !border-gray-200 !rounded-md !shadow-lg max-h-60 overflow-y-auto"
-                        enableSearch={true}
-                      />
+                      >
+                        <Mail className="w-4 h-4 mr-2" />
+                        Email
+                      </Button>
                     </div>
-                    <Button
-                      onClick={handleMobileLogin}
-                      disabled={
-                        isLoading ||
-                        isMobileLoading ||
-                        !mobileNumber ||
-                        mobileNumber.length < 10
-                      }
-                      variant="outline"
-                      size="lg"
-                      className="w-full"
-                    >
-                      <Phone className="w-5 h-5 mr-2" />
-                      {isMobileLoading
-                        ? "Sending OTP..."
-                        : "Continue with Phone"}
-                    </Button>
+
+                    {loginMethod === "phone" ? (
+                      <>
+                        <div className="relative">
+                          <Label htmlFor="mobile">Phone Number</Label>
+                          <PhoneInput
+                            country={"in"}
+                            value={mobileNumber}
+                            onChange={(value) => {
+                              const digits = value.replace(/\D/g, "");
+                              const finalValue = "+" + digits;
+                              setMobileNumber(finalValue);
+                            }}
+                            disabled={isLoading || isMobileLoading}
+                            inputProps={{
+                              name: "mobile",
+                              required: true,
+                              id: "mobile",
+                            }}
+                            containerClass="w-full relative mt-2"
+                            inputClass="!w-full !h-10 !pl-12 !rounded-md !border !border-input !bg-background !px-3 !py-2 !text-base !ring-offset-background placeholder:!text-muted-foreground focus-visible:!outline-none focus-visible:!ring-2 focus-visible:!ring-ring focus-visible:!ring-offset-2 disabled:!cursor-not-allowed disabled:!opacity-50 md:!text-sm"
+                            buttonClass="!border-none !bg-transparent !absolute !left-2 !top-1/2 !-translate-y-1/2 z-10"
+                            dropdownClass="!absolute !z-50 !bg-white !border !border-gray-200 !rounded-md !shadow-lg max-h-60 overflow-y-auto"
+                            enableSearch={true}
+                          />
+                        </div>
+                        <Button
+                          onClick={handleMobileLogin}
+                          disabled={
+                            isLoading ||
+                            isMobileLoading ||
+                            !mobileNumber ||
+                            mobileNumber.length < 10
+                          }
+                          variant="outline"
+                          size="lg"
+                          className="w-full"
+                        >
+                          <Phone className="w-5 h-5 mr-2" />
+                          {isMobileLoading
+                            ? "Sending OTP..."
+                            : "Continue with Phone"}
+                        </Button>
+                      </>
+                    ) : (
+                      <>
+                        <div className="relative">
+                          <Label htmlFor="email">Email Address</Label>
+                          <Input
+                            id="email"
+                            type="email"
+                            placeholder="Enter your email"
+                            value={email}
+                            onChange={(e) => setEmail(e.target.value)}
+                            disabled={isLoading || isEmailLoading}
+                            className="mt-2"
+                          />
+                        </div>
+                        <Button
+                          onClick={handleEmailLogin}
+                          disabled={
+                            isLoading ||
+                            isEmailLoading ||
+                            !email ||
+                            !email.includes("@")
+                          }
+                          variant="outline"
+                          size="lg"
+                          className="w-full"
+                        >
+                          <Mail className="w-5 h-5 mr-2" />
+                          {isEmailLoading
+                            ? "Sending OTP..."
+                            : "Continue with Email"}
+                        </Button>
+                      </>
+                    )}
                   </div>
 
                   <div className="flex items-center gap-3">
@@ -348,7 +498,8 @@ const Login = () => {
                 <div className="space-y-4">
                   <div className="text-center">
                     <p className="text-sm text-muted-foreground mb-2">
-                      Enter the 6-digit OTP sent to {mobileNumber}
+                      Enter the 6-digit OTP sent to{" "}
+                      {loginMethod === "phone" ? mobileNumber : email}
                     </p>
                     <div className="flex justify-center gap-2">
                       {otp.map((digit, index) => (
@@ -378,19 +529,30 @@ const Login = () => {
                   >
                     {isVerifyingOtp ? "Verifying..." : "Verify OTP"}
                   </Button>
-                  <Button
-                    onClick={() => {
-                      setShowOtp(false);
-                      setShowPhoneLogin(true);
-                      setOtp(["", "", "", "", "", ""]);
-                      setMobileNumber("");
-                    }}
-                    variant="outline"
-                    size="lg"
-                    className="w-full"
-                  >
-                    Cancel
-                  </Button>
+                  <div className="flex gap-2">
+                    <Button
+                      onClick={handleResendOtp}
+                      variant="outline"
+                      size="lg"
+                      className="flex-1"
+                      disabled={isEmailLoading || isMobileLoading}
+                    >
+                      Resend OTP
+                    </Button>
+                    <Button
+                      onClick={() => {
+                        setShowOtp(false);
+                        setOtp(["", "", "", "", "", ""]);
+                        setMobileNumber("");
+                        setEmail("");
+                      }}
+                      variant="outline"
+                      size="lg"
+                      className="flex-1"
+                    >
+                      Cancel
+                    </Button>
+                  </div>
                 </div>
               )}
             </CardContent>
