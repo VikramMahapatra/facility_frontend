@@ -43,7 +43,7 @@ const emptyFormData: Partial<LeaseFormValues> = {
   cam_rate: "" as any,
   utilities: { electricity: undefined, water: undefined },
   status: "draft",
-  auto_move_in_space_occupancy: false,
+  auto_move_in: false,
 };
 
 interface LeaseFormProps {
@@ -90,7 +90,7 @@ export function LeaseForm({
       cam_rate: "" as any,
       utilities: { electricity: undefined, water: undefined },
       status: "draft",
-      auto_move_in_space_occupancy: false,
+      auto_move_in: false,
     },
     mode: "onChange",
     reValidateMode: "onChange",
@@ -697,11 +697,11 @@ export function LeaseForm({
 
                     <div className="flex items-center gap-2 h-10">
                       <Controller
-                        name="auto_move_in_space_occupancy"
+                        name="auto_move_in"
                         control={control}
                         render={({ field }) => (
                           <Checkbox
-                            id="auto_move_in_space_occupancy"
+                            id="auto_move_in"
                             checked={field.value || false}
                             onCheckedChange={field.onChange}
                             disabled={isReadOnly}
@@ -709,7 +709,7 @@ export function LeaseForm({
                         )}
                       />
                       <Label
-                        htmlFor="auto_move_in_space_occupancy"
+                        htmlFor="auto_move_in"
                         className="text-sm font-normal cursor-pointer leading-none"
                       >
                         Auto move tenant to space

@@ -197,20 +197,20 @@ export default function TenantFormPage() {
               (tenant as any).family_info.length > 0
                 ? (tenant as any).family_info
                 : (tenant as any).family_info &&
-                    typeof (tenant as any).family_info === "object"
-                  ? [(tenant as any).family_info]
-                  : [{ member: "", relation: "" }],
+                  typeof (tenant as any).family_info === "object"
+                ? [(tenant as any).family_info]
+                : [{ member: "", relation: "" }],
             vehicle_info:
               (tenant as any).vehicle_info &&
               Array.isArray((tenant as any).vehicle_info) &&
               (tenant as any).vehicle_info.length > 0
                 ? (tenant as any).vehicle_info
                 : (tenant as any).vehicle_info &&
-                    typeof (tenant as any).vehicle_info === "object"
-                  ? [(tenant as any).vehicle_info]
-                  : [{ type: "", number: "" }],
+                  typeof (tenant as any).vehicle_info === "object"
+                ? [(tenant as any).vehicle_info]
+                : [{ type: "", number: "" }],
           }
-        : emptyFormData,
+        : emptyFormData
     );
 
     // Preload building and space lists for existing tenant spaces (edit mode)
@@ -272,7 +272,7 @@ export default function TenantFormPage() {
       if (!spaceList[key]) {
         const lookup = await spacesApiService.getSpaceLookup(
           siteId,
-          buildingId || "",
+          buildingId || ""
         );
         if (lookup.success) {
           setSpaceList((prev) => ({
@@ -316,14 +316,14 @@ export default function TenantFormPage() {
         setCreatedTenantId(tenantId);
         setShowAddLeaseDialog(true);
         toast.success(
-          `Tenant ${tenantData.name} has been created successfully.`,
+          `Tenant ${tenantData.name} has been created successfully.`
         );
       } else {
         navigate(-1);
         toast.success(
           `Tenant ${tenantData.name} has been ${
             formMode === "create" ? "created" : "updated"
-          } successfully.`,
+          } successfully.`
         );
       }
     } else if (response && !response.success) {
@@ -339,7 +339,7 @@ export default function TenantFormPage() {
     const allTenantSpaces = getValues("tenant_spaces") || [];
 
     const validTenantSpaces = allTenantSpaces.filter(
-      (space: any) => space.site_id && space.space_id,
+      (space: any) => space.site_id && space.space_id
     );
 
     // Ensure we have at least one valid space entry
@@ -369,7 +369,7 @@ export default function TenantFormPage() {
       toast.error(
         `Duplicate space entries detected at Space #${duplicates
           .map((d) => d + 1)
-          .join(", #")}. Please remove duplicate spaces.`,
+          .join(", #")}. Please remove duplicate spaces.`
       );
       return;
     }
@@ -409,7 +409,7 @@ export default function TenantFormPage() {
   const updateFamilyMember = (
     index: number,
     field: "member" | "relation",
-    value: string,
+    value: string
   ) => {
     const currentFamilyInfo = getValues("family_info") || [];
     const updated = [...currentFamilyInfo];
@@ -435,7 +435,7 @@ export default function TenantFormPage() {
   const updateVehicle = (
     index: number,
     field: "type" | "number",
-    value: string,
+    value: string
   ) => {
     const currentVehicleInfo = getValues("vehicle_info") || [];
     const updated = [...currentVehicleInfo];
@@ -480,7 +480,7 @@ export default function TenantFormPage() {
   const updateSpaceEntry = (
     index: number,
     field: "site_id" | "building_block_id" | "space_id",
-    value: string | boolean,
+    value: string | boolean
   ) => {
     const currentSpaceInfo = getValues("tenant_spaces") || [];
     const updated = [...currentSpaceInfo];
@@ -527,12 +527,12 @@ export default function TenantFormPage() {
             space.site_id === currentEntry.site_id &&
             (space.building_block_id || "") ===
               (currentEntry.building_block_id || "") &&
-            space.space_id === currentEntry.space_id,
+            space.space_id === currentEntry.space_id
         );
 
         if (duplicateIndex !== -1) {
           toast.error(
-            "This space is already added. Please select a different space.",
+            "This space is already added. Please select a different space."
           );
           // Revert the change
           updated[index] = { ...currentSpaceInfo[index] };
@@ -569,15 +569,15 @@ export default function TenantFormPage() {
                   {formMode === "create"
                     ? "Create New Tenant"
                     : formMode === "edit"
-                      ? "Edit Tenant"
-                      : "Tenant Details"}
+                    ? "Edit Tenant"
+                    : "Tenant Details"}
                 </h1>
                 <p className="text-muted-foreground">
                   {formMode === "create"
                     ? "Add a new tenant to the system"
                     : formMode === "edit"
-                      ? "Update tenant information"
-                      : "View tenant details"}
+                    ? "Update tenant information"
+                    : "View tenant details"}
                 </p>
               </div>
             </div>
@@ -600,8 +600,8 @@ export default function TenantFormPage() {
                       ? "Creating..."
                       : "Updating..."
                     : formMode === "create"
-                      ? "Create Tenant"
-                      : "Update Tenant"}
+                    ? "Create Tenant"
+                    : "Update Tenant"}
                 </Button>
               )}
             </div>
@@ -936,7 +936,7 @@ export default function TenantFormPage() {
                                     updateSpaceEntry(
                                       index,
                                       "building_block_id",
-                                      v === "none" ? "" : v,
+                                      v === "none" ? "" : v
                                     );
                                   }}
                                   disabled={isReadOnly || !location?.site_id}
@@ -990,7 +990,7 @@ export default function TenantFormPage() {
                                       updateSpaceEntry(
                                         index,
                                         "space_id",
-                                        value,
+                                        value
                                       );
                                     }}
                                     disabled={isReadOnly || !location?.site_id}
@@ -1097,7 +1097,7 @@ export default function TenantFormPage() {
                             updateFamilyMember(
                               index,
                               "relation",
-                              e.target.value,
+                              e.target.value
                             )
                           }
                           placeholder="Enter relation"
@@ -1283,7 +1283,7 @@ export default function TenantFormPage() {
                 if (createdTenantId) {
                   const response = await withLoader(async () => {
                     return await leasesApiService.getTenantLeaseDetail(
-                      createdTenantId,
+                      createdTenantId
                     );
                   });
                   if (
