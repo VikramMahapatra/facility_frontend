@@ -13,10 +13,6 @@ const ProtectedRoute = () => {
 
     if (!user?.is_authenticated) return <Navigate to="/login" replace />;
 
-    // ✅ Layout based on user type
-    if (user.default_account_type === "super_admin") {
-        return <SuperAdminLayout />;
-    }
 
     const path = location.pathname;
     const resource = resourceMap[path];
@@ -25,7 +21,7 @@ const ProtectedRoute = () => {
         return <Forbidden />;
     }
 
-    return <MainLayout />;
+    return <Outlet />;
 };
 
 export default ProtectedRoute;

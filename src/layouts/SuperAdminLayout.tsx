@@ -24,15 +24,6 @@ const SuperAdminLayout: React.FC = () => {
                         <li>
                             <NavLink to="/super-admin/pending-approvals">Pending Approvals</NavLink>
                         </li>
-                        <li>
-                            <NavLink to="/super-admin/organizations">Organizations</NavLink>
-                        </li>
-                        <li>
-                            <NavLink to="/super-admin/users">Users Management</NavLink>
-                        </li>
-                        <li>
-                            <NavLink to="/super-admin/settings">System Settings</NavLink>
-                        </li>
                     </ul>
                 </nav>
             </aside>

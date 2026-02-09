@@ -16,7 +16,6 @@ const SuperAdminDashboard: React.FC = () => {
         loadStats();
     }, []);
 
-    if (loading) return <div className="p-6">Loading dashboard stats...</div>;
 
     return (
         <div className="p-6">

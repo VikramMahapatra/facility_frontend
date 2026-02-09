@@ -57,7 +57,7 @@ const Login = () => {
               setUser(user);
 
               // Super Admin
-              if (user.account_type === "super_admin") {
+              if (user.default_account_type === "super_admin") {
                 navigate("/super-admin/dashboard");
                 toast.success("Super Admin login successful");
                 return;
@@ -203,7 +203,7 @@ const Login = () => {
           setUser(user);
 
           // Super Admin
-          if (user.account_type === "super_admin") {
+          if (user.default_account_type === "super_admin") {
             navigate("/super-admin/dashboard");
             toast.success("Super Admin login successful");
             return;
