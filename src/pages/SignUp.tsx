@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
@@ -16,13 +16,13 @@ import { toast } from "sonner";
 const SignUp = () => {
   const navigate = useNavigate();
   const location = useLocation();
-  const googleData = location.state?.googleData;
+  const userData = location.state?.userData;
 
   const [formData, setFormData] = useState({
-    name: googleData?.name || "",
-    email: googleData?.email || "",
-    phone: "",
-    pictureUrl: googleData?.picture || "",
+    name: userData?.name || "",
+    email: userData?.email || "",
+    phone: userData?.phone || "",
+    pictureUrl: userData?.picture || "",
     accountType: "",
     organizationName: "",
   });
@@ -95,11 +95,11 @@ const SignUp = () => {
     }
   };
 
-  if (!googleData) {
-    // Redirect back if no Google data
-    navigate('/login');
-    return null;
-  }
+  useEffect(() => {
+    if (!userData) {
+      navigate("/login");
+    }
+  }, [userData, navigate]); // run when isLoggedIn changes
 
 
   return (
@@ -110,9 +110,9 @@ const SignUp = () => {
         <div className="w-full max-w-lg">
           <div className="text-center mb-8">
             <Avatar className="w-20 h-20 mx-auto mb-4">
-              <AvatarImage src={googleData.picture} />
+              <AvatarImage src={userData?.picture} />
               <AvatarFallback className="bg-gradient-primary text-white text-xl">
-                {googleData.name.charAt(0)}
+                {userData && userData.name ? userData.name.charAt(0) : "F"}
               </AvatarFallback>
             </Avatar>
             <h1 className="text-2xl font-bold">Complete Your Profile</h1>

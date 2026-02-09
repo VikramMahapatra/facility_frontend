@@ -54,47 +54,7 @@ export function StatsGrid() {
     if (overview?.success) setOverviewData(overview.data);
   };
 
-  const sortedStats = overviewData?.stats
-    ? [...overviewData.stats].sort((a: any, b: any) => {
-        const aTitleLower = a.title?.toLowerCase() || "";
-        const bTitleLower = b.title?.toLowerCase() || "";
-        const aIsComingSoon = aTitleLower.includes("monthly revenue");
-        const bIsComingSoon = bTitleLower.includes("monthly revenue");
-        const aIsRentCollection = aTitleLower.includes("rent collection");
-        const bIsRentCollection = bTitleLower.includes("rent collection");
-
-        if (
-          aIsComingSoon &&
-          !bIsComingSoon &&
-          !aIsRentCollection &&
-          !bIsRentCollection
-        )
-          return 1;
-        if (
-          !aIsComingSoon &&
-          bIsComingSoon &&
-          !aIsRentCollection &&
-          !bIsRentCollection
-        )
-          return -1;
-        if (
-          aIsRentCollection &&
-          !bIsRentCollection &&
-          !aIsComingSoon &&
-          !bIsComingSoon
-        )
-          return 1;
-        if (
-          !aIsRentCollection &&
-          bIsRentCollection &&
-          !aIsComingSoon &&
-          !bIsComingSoon
-        )
-          return -1;
-
-        return 0;
-      })
-    : [];
+  const sortedStats = overviewData?.stats ?? [];
 
   return (
     <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-6 gap-6 mb-8">
@@ -113,9 +73,8 @@ export function StatsGrid() {
         return (
           <Card
             key={index}
-            className={`border-l-4 border-l-primary relative ${
-              isComingSoonCard ? "overflow-hidden" : ""
-            }`}
+            className={`border-l-4 border-l-primary relative ${isComingSoonCard ? "overflow-hidden" : ""
+              }`}
           >
             <ContentContainer>
               <LoaderOverlay />
@@ -138,11 +97,6 @@ export function StatsGrid() {
                 </div>
               </CardContent>
             </ContentContainer>
-            {isComingSoonCard && (
-              <div className="absolute inset-0 bg-background/70 backdrop-blur-sm flex items-center justify-center text-muted-foreground font-semibold pointer-events-none">
-                Not Available
-              </div>
-            )}
           </Card>
         );
       })}

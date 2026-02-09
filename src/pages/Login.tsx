@@ -44,19 +44,28 @@ const Login = () => {
             if (authResponse.needs_registration) {
               navigate("/signup", {
                 state: {
-                  googleData: {
+                  userData: {
                     email: authResponse.email,
                     name: authResponse.name,
                     picture: authResponse.picture,
                   },
                 },
               });
+              toast.success("OTP verified successful");
             } else {
-              setUser(authResponse.user);
+              const user = authResponse.user;
+              setUser(user);
+
+              // Super Admin
+              if (user.account_type === "super_admin") {
+                navigate("/super-admin/dashboard");
+                toast.success("Super Admin login successful");
+                return;
+              }
+
               if (
-                authResponse.user.status.toLowerCase() === "pending_approval"
+                user.status.toLowerCase() === "pending_approval"
               ) {
-                const user = authResponse.user;
                 navigate("/registration-status", {
                   state: {
                     userData: {
@@ -65,19 +74,19 @@ const Login = () => {
                     },
                   },
                 });
+                toast.success("OTP verified successful");
               } else {
                 navigate("/dashboard");
+                toast.success("Login successful");
               }
             }
             setIsGoogleLoading(false);
           }, 1000);
         } else {
           setIsGoogleLoading(false);
-          toast.error("Google login failed. Please try again.");
         }
       } catch (error) {
         setIsGoogleLoading(false);
-        toast.error("Google login failed. Please try again.");
       }
     },
     onError: (error) => {
@@ -180,20 +189,29 @@ const Login = () => {
       );
       if (response?.success) {
         const authResponse = response.data;
-        if (authResponse?.needs_registration) {
+        if (authResponse.needs_registration) {
           navigate("/signup", {
             state: {
-              mobileData: {
-                mobile: mobileNumber,
+              userData: {
+                phone: mobileNumber,
               },
             },
           });
+          toast.success("OTP verified successful");
         } else {
-          setUser(authResponse?.user);
+          const user = authResponse.user;
+          setUser(user);
+
+          // Super Admin
+          if (user.account_type === "super_admin") {
+            navigate("/super-admin/dashboard");
+            toast.success("Super Admin login successful");
+            return;
+          }
+
           if (
-            authResponse?.user?.status?.toLowerCase() === "pending_approval"
+            user?.status?.toLowerCase() === "pending_approval"
           ) {
-            const user = authResponse.user;
             navigate("/registration-status", {
               state: {
                 userData: {
@@ -202,11 +220,13 @@ const Login = () => {
                 },
               },
             });
+            toast.success("OTP verified successful");
           } else {
             navigate("/dashboard");
+            toast.success("Login successful");
           }
         }
-        toast.success("Login successful");
+
       } else {
         toast.error("Invalid OTP. Please try again.");
         setOtp(["", "", "", "", "", ""]);
