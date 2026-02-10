@@ -1,0 +1,31 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="860" height="220" viewBox="0 0 860 220">
+  <title>Zentrixel</title>
+  <defs>
+    <linearGradient id="zgrad" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0%" stop-color="#0EA5E9"/>
+      <stop offset="50%" stop-color="#2563EB"/>
+      <stop offset="100%" stop-color="#7C3AED"/>
+    </linearGradient>
+    <linearGradient id="xgrad" x1="0" y1="1" x2="1" y2="0">
+      <stop offset="0%" stop-color="#22C55E"/>
+      <stop offset="100%" stop-color="#06B6D4"/>
+    </linearGradient>
+  </defs>
+
+  <!-- Mark -->
+  <g transform="translate(20,20)">
+    <path d="M70 0 L140 40 L140 120 L70 160 L0 120 L0 40 Z" fill="url(#zgrad)" opacity="0.95"/>
+    <path d="M20 55 L70 25 L120 55 L70 85 Z" fill="#0B1220" opacity="0.65"/>
+    <circle cx="40" cy="80" r="10" fill="url(#xgrad)"/>
+  </g>
+
+  <!-- Wordmark -->
+  <g transform="translate(190,68)">
+    <text x="0" y="56" font-family="Inter, ui-sans-serif, system-ui, -apple-system, Segoe UI, Roboto, Arial" font-size="78" font-weight="700" fill="#0B1220">
+      Zentrixel
+    </text>
+    <text x="4" y="102" font-family="Inter, ui-sans-serif, system-ui, -apple-system, Segoe UI, Roboto, Arial" font-size="26" font-weight="400" fill="#334155">
+      Where Trust Meets Digital Innovation
+    </text>
+  </g>
+</svg>

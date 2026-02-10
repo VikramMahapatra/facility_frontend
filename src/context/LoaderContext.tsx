@@ -1,4 +1,11 @@
-import { createContext, useContext, useState, ReactNode } from "react";
+import {
+    createContext,
+    useCallback,
+    useContext,
+    useMemo,
+    useState,
+    ReactNode,
+} from "react";
 
 type LoaderContextType = {
     loading: boolean;
@@ -19,23 +26,29 @@ const LoaderContext = createContext<LoaderContextType>({
 export const LoaderProvider = ({ children }: { children: ReactNode }) => {
     const [loading, setLoading] = useState(false);
 
-    const showLoader = () => setLoading(true);
-    const hideLoader = () => setLoading(false);
+    const showLoader = useCallback(() => setLoading(true), []);
+    const hideLoader = useCallback(() => setLoading(false), []);
 
     // ⭐ Generic return type <T> fixes type errors
-    const withLoader = async <T,>(callback: () => Promise<T>): Promise<T> => {
-        showLoader();
-        try {
-            return await callback();
-        } finally {
-            hideLoader();
-        }
-    };
+    const withLoader = useCallback(
+        async <T,>(callback: () => Promise<T>): Promise<T> => {
+            showLoader();
+            try {
+                return await callback();
+            } finally {
+                hideLoader();
+            }
+        },
+        [showLoader, hideLoader]
+    );
+
+    const value = useMemo(
+        () => ({ loading, showLoader, hideLoader, withLoader }),
+        [loading, showLoader, hideLoader, withLoader]
+    );
 
     return (
-        <LoaderContext.Provider
-            value={{ loading, showLoader, hideLoader, withLoader }}
-        >
+        <LoaderContext.Provider value={value}>
             {children}
         </LoaderContext.Provider>
     );

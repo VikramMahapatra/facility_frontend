@@ -198,12 +198,13 @@ const Login = () => {
 
       if (response?.success) {
         const authResponse = response.data;
+        console.log("Auth Response after OTP verification:", authResponse);
         if (authResponse?.needs_registration) {
           navigate("/signup", {
             state: {
               userData: {
                 mobile: authResponse.mobile,
-                email: authResponse.email
+                email: authResponse.email,
               },
             },
           });
