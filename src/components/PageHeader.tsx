@@ -5,19 +5,28 @@ import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { useAuth } from "../context/AuthContext";
 import { Button } from "@/components/ui/button";
 import { Bell, LogOut, ChevronRight, Home } from "lucide-react";
-import { useNavigate } from "react-router-dom";
+import { useLocation, useNavigate } from "react-router-dom";
 import { notificationsApiService } from "@/services/system/notificationsapi";
 import { useEffect, useState } from "react";
 
 export const PageHeader = () => {
     const [notiCount, setNotiCount] = useState(0);
+    const [isLoggingOut, setIsLoggingOut] = useState(false);
     const { title, icon: Icon, breadcrumb } = usePageHeader();
     const { user, handleLogout } = useAuth();
     const navigate = useNavigate();
+    const location = useLocation();
+    const isSuperAdminRoute = location.pathname.startsWith("/super-admin");
 
     useEffect(() => {
+        // Super Admin screens didn't previously call notifications APIs
+        // (they used a separate header). Keep behavior consistent.
+        if (isSuperAdminRoute) {
+            setNotiCount(0);
+            return;
+        }
         loadNotificationCount();
-    }, []);
+    }, [location.pathname]);
 
     const handleNotificationClick = () => {
         navigate("/notifications");
@@ -27,9 +36,21 @@ export const PageHeader = () => {
         navigate("/profile"); // or /account/profile
     };
 
+    const handleLogoutClick = async () => {
+        if (isLoggingOut) return; // Prevent multiple clicks
+        setIsLoggingOut(true);
+        try {
+            await handleLogout();
+        } catch (error) {
+            // Error handling is done in AuthContext
+            setIsLoggingOut(false);
+        }
+    };
+
     const loadNotificationCount = async () => {
         const response = await notificationsApiService.getNotificationCount();
         if (response?.success) setNotiCount(response.data || 0);
+        else setNotiCount(0);
     }
 
     return (
@@ -64,17 +85,19 @@ export const PageHeader = () => {
             </div>
             <div className="flex items-center gap-4">
                 {/* Notifications */}
-                <Button
-                    variant="ghost"
-                    size="icon"
-                    className="relative text-muted-foreground hover:text-foreground"
-                    onClick={handleNotificationClick}
-                >
-                    <Bell className="h-5 w-5" />
-                    <span className="absolute -top-1 -right-1 flex h-4 w-4 items-center justify-center rounded-full bg-destructive text-[10px] font-medium text-white">
-                        {notiCount}
-                    </span>
-                </Button>
+                {!isSuperAdminRoute && (
+                    <Button
+                        variant="ghost"
+                        size="icon"
+                        className="relative text-muted-foreground hover:text-foreground"
+                        onClick={handleNotificationClick}
+                    >
+                        <Bell className="h-5 w-5" />
+                        <span className="absolute -top-1 -right-1 flex h-4 w-4 items-center justify-center rounded-full bg-destructive text-[10px] font-medium text-white">
+                            {notiCount}
+                        </span>
+                    </Button>
+                )}
                 {/* User */}
                 <button
                     onClick={handleProfileClick}
@@ -82,14 +105,14 @@ export const PageHeader = () => {
                 >
                     <Avatar>
                         <AvatarFallback className="bg-gradient-primary text-white">
-                            {user.name.charAt(0)}
+                            {user?.name?.charAt(0) || "U"}
                         </AvatarFallback>
                     </Avatar>
 
                     <div className="text-right">
-                        <p className="text-sm font-medium">{user.name}</p>
+                        <p className="text-sm font-medium">{user?.name || "-"}</p>
                         <p className="text-xs text-muted-foreground">
-                            {user.default_account_type}
+                            {user?.default_account_type || "-"}
                         </p>
                     </div>
                 </button>
@@ -97,11 +120,12 @@ export const PageHeader = () => {
                 <Button
                     variant="ghost"
                     size="sm"
-                    onClick={handleLogout}
-                    className="text-muted-foreground hover:text-destructive"
+                    onClick={handleLogoutClick}
+                    disabled={isLoggingOut}
+                    className="text-muted-foreground hover:text-destructive disabled:opacity-50"
                 >
                     <LogOut className="w-4 h-4 mr-2" />
-                    Logout
+                    {isLoggingOut ? "Logging out..." : "Logout"}
                 </Button>
             </div>
         </header >

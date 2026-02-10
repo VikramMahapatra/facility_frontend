@@ -408,4 +408,36 @@ export const pageHeaderOverrides = [
       },
     },
   },
+  {
+    match: (path: string) => path === "/super-admin/dashboard",
+    meta: {
+      title: "Super Admin Dashboard",
+      breadcrumb: {
+        parent: {
+          label: "Super Admin",
+        },
+        current: {
+          label: "Dashboard",
+          url: "/super-admin/dashboard",
+          icon: Shield,
+        },
+      },
+    },
+  },
+  {
+    match: (path: string) => path === "/super-admin/org-approvals",
+    meta: {
+      title: "Organization Approvals",
+      breadcrumb: {
+        parent: {
+          label: "Super Admin",
+        },
+        current: {
+          label: "Approvals",
+          url: "/super-admin/org-approvals",
+          icon: Building2,
+        },
+      },
+    },
+  },
 ];
