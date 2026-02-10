@@ -110,6 +110,7 @@ const App = () => {
               <Route element={<SuperAdminLayout />}>
                 <Route path="/super-admin/dashboard" element={<SuperAdminDashboard />} />
                 <Route path="/super-admin/org-approvals" element={<OrgApprovalPage />} />
+                <Route path="/super-admin/organizations" element={<Organizations />} />
                 <Route path="/super-admin/*" element={<Navigate to="/super-admin/dashboard" />} />
               </Route>
             )}

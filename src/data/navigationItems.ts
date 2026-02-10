@@ -47,9 +47,15 @@ export const superAdminNavigationItems = [
       {
         title: "Organization Approvals",
         url: "/super-admin/org-approvals",
-        icon: Building2,
+        icon: Move,
         resource: "super_admin_org_approvals",
       },
+      {
+        title: "Organizations",
+        url: "/super-admin/organizations",
+        icon: Building2,
+        resource: "organizations",
+      }
     ],
   }];
 
