@@ -2,7 +2,7 @@ import { Outlet, NavLink } from "react-router-dom";
 import { LayoutDashboard, Building2 } from "lucide-react";
 
 import { useAuth } from "@/context/AuthContext";
-import { PageHeader } from "@/components/PageHeader";
+import { SuperAdminPageHeader } from "@/components/SuperAdminPageHeader";
 import zentrixelLogo from "@/assets/zentrixel-logo.svg";
 import {
   Sidebar,
@@ -119,7 +119,7 @@ export default function SuperAdminLayout() {
         <SuperAdminSidebar />
 
         <SidebarInset className="flex-1 min-w-0 flex flex-col overflow-hidden">
-          <PageHeader />
+          <SuperAdminPageHeader />
           <main className="flex-1 min-w-0 overflow-y-auto overflow-x-hidden p-6">
             <Outlet />
           </main>

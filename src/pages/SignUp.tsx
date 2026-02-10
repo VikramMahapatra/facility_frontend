@@ -31,7 +31,7 @@ const SignUp = () => {
   const [formData, setFormData] = useState({
     name: userData?.name || "",
     email: userData?.email || "",
-    phone: userData?.phone || "",
+    phone: userData?.mobile || "",
     pictureUrl: userData?.picture || "",
     accountType: "",
     organizationName: "",
@@ -62,7 +62,7 @@ const SignUp = () => {
       icon: <Users className="w-5 h-5" />,
     },
     {
-      value: "space_owner",
+      value: "owner",
       label: "Space Owner",
       description: "Owners of individual spaces/units",
       icon: <Home className="w-5 h-5" />,
@@ -101,7 +101,7 @@ const SignUp = () => {
       try {
         const response = await spacesApiService.getMasterSpaceLookup(
           siteId,
-          buildingId
+          buildingId,
         );
         if (response?.success) {
           setSpaceList(response.data || []);
@@ -110,7 +110,7 @@ const SignUp = () => {
         console.error("Failed to load spaces:", error);
       }
     },
-    []
+    [],
   );
 
   // Load sites on mount
@@ -177,7 +177,7 @@ const SignUp = () => {
     }
 
     // Validation for space_owner
-    if (formData.accountType === "space_owner") {
+    if (formData.accountType === "owner") {
       if (!formData.siteId) {
         toast.error("Please select a site");
         return;
@@ -196,8 +196,8 @@ const SignUp = () => {
         name: formData.name,
         email: formData.email,
         phone: formData.phone,
-        pictureUrl: formData.pictureUrl,
-        accountType: formData.accountType,
+        pictureUrl: formData.pictureUrl || undefined,
+        account_type: formData.accountType,
       };
 
       if (formData.accountType === "organization") {
@@ -207,7 +207,7 @@ const SignUp = () => {
         registrationData.siteId = formData.siteId;
         registrationData.buildingId = formData.buildingId || undefined;
         registrationData.spaceId = formData.spaceId;
-      } else if (formData.accountType === "space_owner") {
+      } else if (formData.accountType === "owner") {
         registrationData.siteId = formData.siteId;
         registrationData.buildingId = formData.buildingId || undefined;
         registrationData.spaceId = formData.spaceId;
@@ -238,14 +238,14 @@ const SignUp = () => {
               accountType: user.accountType,
               organizationName: user.organizationName,
               isAuthenticated: true,
-            })
+            }),
           );
 
           navigate("/dashboard");
         }
       } else {
         toast.error(
-          userResponse?.message || "Signup failed, please try again."
+          userResponse?.message || "Signup failed, please try again.",
         );
       }
     } catch (error) {
@@ -262,11 +262,11 @@ const SignUp = () => {
   }, [userData, navigate]); // run when isLoggedIn changes
   // Determine if this is a Google signup, phone signup, or direct signup
   const isGoogleSignup = !!userData.email;
-  const isPhoneSignup = !!userData.phone;
+  const isPhoneSignup = !!userData.mobile && !userData.email;
 
   // Check if location fields should be shown
   const showLocationFields =
-    formData.accountType === "tenant" || formData.accountType === "space_owner";
+    formData.accountType === "tenant" || formData.accountType === "owner";
 
   return (
     <div className="min-h-screen bg-background">
