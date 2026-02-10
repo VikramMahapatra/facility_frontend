@@ -31,7 +31,27 @@ import {
   Ticket,
   CheckCircle2,
   Move,
+  LayoutDashboard,
 } from "lucide-react";
+
+export const superAdminNavigationItems = [
+  {
+    title: "Administration",
+    items: [
+      {
+        title: "Dashboard",
+        url: "/super-admin/dashboard",
+        icon: LayoutDashboard,
+        resource: "super_admin_dashboard",
+      },
+      {
+        title: "Organization Approvals",
+        url: "/super-admin/org-approvals",
+        icon: Building2,
+        resource: "super_admin_org_approvals",
+      },
+    ],
+  }];
 
 export const navigationItems = [
   {

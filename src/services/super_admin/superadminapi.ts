@@ -7,6 +7,11 @@ class SuperAdminApiService {
         return await apiService.request('/super-admin/stats');
     }
 
+    async fetchRecentPendingOrganizations() {
+        return await apiService.request('/super-admin/orgs/recent-pending');
+    }
+
+
     async fetchPendingOrganizations() {
         return await apiService.request('/super-admin/orgs/pending');
     }
