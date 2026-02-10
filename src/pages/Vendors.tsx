@@ -262,7 +262,7 @@ export default function Vendors() {
               }`}
           />
         ))}
-        <span className="ml-1 text-sm text-muted-foreground">({rating})</span>
+        {rating > 0 && <span className="ml-1 text-sm text-muted-foreground">({rating})</span>}
       </div>
     );
   };

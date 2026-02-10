@@ -384,14 +384,32 @@ export default function UserManagementDetailPage() {
                 </Button>
               </div>
 
-              {user?.accounts.map(account => (
-                <AccountCard
-                  key={account.id}
-                  account={account}
-                  onEdit={() => openEditAccount(account)}
-                  onMarkASDefault={() => onMarkASDefault(account)}
-                />
-              ))}
+              {user?.accounts && user.accounts.length > 0 ? (
+                user.accounts.map(account => (
+                  <AccountCard
+                    key={account.id}
+                    account={account}
+                    onEdit={() => openEditAccount(account)}
+                    onMarkASDefault={() => onMarkASDefault(account)}
+                  />
+                ))) : (
+                <Card className="p-6 text-center border-dashed border-2 border-gray-200">
+                  <CardContent className="space-y-4">
+                    <div className="text-center py-12">
+                      <Shield className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
+                      <h3 className="text-lg font-semibold text-sidebar-primary mb-2">
+                        No accounts assigned
+                      </h3>
+                      <p className="text-muted-foreground mb-4">
+                        This user does not have any accounts yet. Accounts are required to access different roles and spaces.
+                      </p>
+                      <Button onClick={() => setOpenAddAccount(true)} variant="outline">
+                        + Add Account
+                      </Button>
+                    </div>
+                  </CardContent>
+                </Card>
+              )}
             </div>
           )}
           <AccountEditModal

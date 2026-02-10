@@ -60,19 +60,39 @@ export const PageHeader = () => {
                 <Separator orientation="vertical" className="mr-2 h-4" />
                 {breadcrumb ? (
                     <div className="flex items-center gap-2 text-sm text-muted-foreground">
+                        {/* Section */}
                         {breadcrumb.parent && (
                             <>
                                 <Home className="h-4 w-4" />
-                                <span className="font-medium">{breadcrumb.parent.label}</span>
+                                <span className="font-medium">{breadcrumb.parent.sectionLabel}</span>
                                 <ChevronRight className="h-4 w-4" />
                             </>
                         )}
-                        {breadcrumb?.current?.icon && (
-                            <breadcrumb.current.icon className="h-4 w-4 " />
+
+                        {/* Parent Item */}
+                        {breadcrumb.parent && (
+                            <>
+                                {breadcrumb.parent.icon && (
+                                    <breadcrumb.parent.icon className="h-4 w-4" />
+                                )}
+                                {breadcrumb.current ? (
+                                    <a
+                                        href={breadcrumb.parent.url} // link to list page
+                                        className="font-medium hover:underline"
+                                    >
+                                        {breadcrumb.parent.label}
+                                    </a>
+                                ) : (
+                                    <span className="font-medium">{breadcrumb.parent.label}</span>
+                                )}
+                                {breadcrumb.current && <ChevronRight className="h-4 w-4" />}
+                            </>
                         )}
-                        <span className="font-medium ">
-                            {breadcrumb.current.label}
-                        </span>
+
+                        {/* Current page */}
+                        {breadcrumb.current && (
+                            <span className="font-medium">{breadcrumb.current.label}</span>
+                        )}
                     </div>
                 ) : (
                     <>

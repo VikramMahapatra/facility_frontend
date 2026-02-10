@@ -183,10 +183,19 @@ const Login = () => {
 
     setIsVerifyingOtp(true);
     try {
-      const response = (await authApiService.verifyOtp(
-        mobileNumber,
-        otpToVerify,
-      )) as any;
+      let response;
+      if (loginMethod === "phone") {
+        response = (await authApiService.verifyOtp(
+          mobileNumber,
+          otpToVerify,
+        )) as any;
+      } else {
+        response = (await authApiService.verifyEmailOtp(
+          email,
+          otpToVerify,
+        )) as any;
+      }
+
       if (response?.success) {
         const authResponse = response.data;
         if (authResponse?.needs_registration) {
