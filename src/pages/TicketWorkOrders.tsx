@@ -259,10 +259,8 @@ export default function TicketWorkOrders() {
     if (response?.success) {
       setIsFormOpen(false);
       toast.success(
-        `Ticket work order has been ${
-          formMode === "create" ? "created" : "updated"
-        }
-        } successfully.`
+        `Ticket work order has been ${formMode === "create" ? "created" : "updated"}
+        successfully.`
       );
     }
   };
