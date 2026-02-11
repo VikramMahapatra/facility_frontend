@@ -55,7 +55,11 @@ export default function Organizations() {
   const resource = "organizations";
 
   useEffect(() => {
-    loadOrganisation();
+    if (user.default_account_type === "super_admin") {
+      loadAllOrganisation();
+    } else {
+      loadOrganisation();
+    }
   }, []);
 
   const loadOrganisation = async () => {
@@ -63,6 +67,13 @@ export default function Organizations() {
       return await organisationApiService.getOrg();
     });
     if (organisationObj.success) setOrganizations([organisationObj.data]);
+  }
+
+  const loadAllOrganisation = async () => {
+    const response = await withLoader(async () => {
+      return await organisationApiService.getAllOrg();
+    });
+    if (response.success) setOrganizations(response.data);
   }
 
   const filteredOrganizations = organizations.filter(org => {
@@ -232,64 +243,71 @@ export default function Organizations() {
           </Card>
         </div>
 
-
-        {/* Only show the Gera organization, with edit option */}
-        <div className="relative max-w-xl mx-auto">
-          <ContentContainer>
-            <LoaderOverlay />
+        <ContentContainer>
+          <LoaderOverlay />
+          {/* Only show the Gera organization, with edit option */}
+          <div
+            className={
+              user.default_account_type === "super_admin"
+                ? "grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 mt-6"
+                : "relative max-w-xl mx-auto"
+            }
+          >
             {filteredOrganizations.length > 0 ? (
-              <Card className="hover:shadow-lg transition-shadow">
-                <CardHeader className="pb-3">
-                  <div className="flex items-start justify-between">
-                    <div className="space-y-1">
-                      <CardTitle className="text-lg flex items-center gap-2">
-                        <Building2 className="h-5 w-5 text-sidebar-primary" />
-                        {filteredOrganizations[0].name}
-                      </CardTitle>
-                      <p className="text-sm text-muted-foreground">{filteredOrganizations[0].legal_name}</p>
-                    </div>
-                    <div className="flex flex-col gap-1">
-                      <Badge className={getPlanColor(filteredOrganizations[0].plan)}>
-                        {filteredOrganizations[0].plan}
-                      </Badge>
-                      <Badge className={getStatusColor(filteredOrganizations[0].status)}>
-                        {filteredOrganizations[0].status}
-                      </Badge>
-                    </div>
-                  </div>
-                </CardHeader>
-                <CardContent className="space-y-4">
-                  <div className="space-y-2">
-                    <div className="flex items-center gap-2 text-sm">
-                      <Mail className="h-3 w-3 text-muted-foreground" />
-                      <span className="text-muted-foreground">{filteredOrganizations[0].billing_email}</span>
-                    </div>
-                    {filteredOrganizations[0].contact_phone && (
-                      <div className="flex items-center gap-2 text-sm">
-                        <Phone className="h-3 w-3 text-muted-foreground" />
-                        <span className="text-muted-foreground">{filteredOrganizations[0].contact_phone}</span>
+              filteredOrganizations.map((org) => (
+                <Card className="hover:shadow-lg transition-shadow">
+                  <CardHeader className="pb-3">
+                    <div className="flex items-start justify-between">
+                      <div className="space-y-1">
+                        <CardTitle className="text-lg flex items-center gap-2">
+                          <Building2 className="h-5 w-5 text-sidebar-primary" />
+                          {org.name}
+                        </CardTitle>
+                        <p className="text-sm text-muted-foreground">{org.legal_name}</p>
                       </div>
-                    )}
-                    {filteredOrganizations[0].gst_vat_id && (
-                      <div className="flex items-center gap-2 text-sm">
-                        <MapPin className="h-3 w-3 text-muted-foreground" />
-                        <span className="text-muted-foreground">GST: {filteredOrganizations[0].gst_vat_id}</span>
+                      <div className="flex flex-col gap-1">
+                        <Badge className={getPlanColor(org.plan)}>
+                          {org.plan}
+                        </Badge>
+                        <Badge className={getStatusColor(org.status)}>
+                          {org.status}
+                        </Badge>
                       </div>
-                    )}
-                  </div>
-                  <div className="flex items-center gap-2 text-xs text-muted-foreground">
-                    <Calendar className="h-3 w-3" />
-                    <span>Created: {new Date(filteredOrganizations[0].created_at).toLocaleDateString()}</span>
-                  </div>
-                  <div className="flex items-center justify-end gap-2 pt-2">
-                    {canWrite(resource) && (
-                      <Button size="sm" variant="outline" onClick={() => handleEdit(filteredOrganizations[0])}>
-                        <Edit className="h-3 w-3" /> Edit
-                      </Button>
-                    )}
-                  </div>
-                </CardContent>
-              </Card>
+                    </div>
+                  </CardHeader>
+                  <CardContent className="space-y-4">
+                    <div className="space-y-2">
+                      <div className="flex items-center gap-2 text-sm">
+                        <Mail className="h-3 w-3 text-muted-foreground" />
+                        <span className="text-muted-foreground">{org.billing_email}</span>
+                      </div>
+                      {org.contact_phone && (
+                        <div className="flex items-center gap-2 text-sm">
+                          <Phone className="h-3 w-3 text-muted-foreground" />
+                          <span className="text-muted-foreground">{org.contact_phone}</span>
+                        </div>
+                      )}
+                      {org.gst_vat_id && (
+                        <div className="flex items-center gap-2 text-sm">
+                          <MapPin className="h-3 w-3 text-muted-foreground" />
+                          <span className="text-muted-foreground">GST: {org.gst_vat_id}</span>
+                        </div>
+                      )}
+                    </div>
+                    <div className="flex items-center gap-2 text-xs text-muted-foreground">
+                      <Calendar className="h-3 w-3" />
+                      <span>Created: {new Date(org.created_at).toLocaleDateString()}</span>
+                    </div>
+                    <div className="flex items-center justify-end gap-2 pt-2">
+                      {canWrite(resource) && (
+                        <Button size="sm" variant="outline" onClick={() => handleEdit(org)}>
+                          <Edit className="h-3 w-3" /> Edit
+                        </Button>
+                      )}
+                    </div>
+                  </CardContent>
+                </Card>
+              ))
             ) : (
               <div className="text-center py-12">
                 <Building2 className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
@@ -297,8 +315,9 @@ export default function Organizations() {
                 <p className="text-muted-foreground">You have not been assigned to any organization yet.</p>
               </div>
             )}
-          </ContentContainer>
-        </div>
+
+          </div>
+        </ContentContainer>
       </div>
       <OrganizationForm
         organization={selectedOrg}

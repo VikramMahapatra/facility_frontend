@@ -3,13 +3,14 @@ import { Separator } from "@/components/ui/separator";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { useAuth } from "../context/AuthContext";
 import { Button } from "@/components/ui/button";
-import { LogOut } from "lucide-react";
+import { ChevronRight, Home, LogOut } from "lucide-react";
 import { useState } from "react";
+import { useSuperAdminPageHeader } from "@/hooks/use-pageheader";
 
 export const SuperAdminPageHeader = () => {
   const [isLoggingOut, setIsLoggingOut] = useState(false);
   const { user, handleLogout } = useAuth();
-
+  const { title, icon: Icon, breadcrumb } = useSuperAdminPageHeader();
 
   const handleLogoutClick = async () => {
     if (isLoggingOut) return; // Prevent multiple clicks
@@ -27,6 +28,52 @@ export const SuperAdminPageHeader = () => {
       <div className="flex items-center gap-2">
         <SidebarTrigger className="-ml-1" />
         <Separator orientation="vertical" className="mr-2 h-4" />
+        {breadcrumb ? (
+          <div className="flex items-center gap-2 text-sm text-muted-foreground">
+            {/* Section */}
+            {breadcrumb.parent && (
+              <>
+                <Home className="h-4 w-4" />
+                <span className="font-medium">
+                  {breadcrumb.parent.sectionLabel}
+                </span>
+                <ChevronRight className="h-4 w-4" />
+              </>
+            )}
+
+            {/* Parent Item */}
+            {breadcrumb.parent && (
+              <>
+                {breadcrumb.parent.icon && (
+                  <breadcrumb.parent.icon className="h-4 w-4" />
+                )}
+                {breadcrumb.current ? (
+                  <a
+                    href={breadcrumb.parent.url} // link to list page
+                    className="font-medium hover:underline"
+                  >
+                    {breadcrumb.parent.label}
+                  </a>
+                ) : (
+                  <span className="font-medium">{breadcrumb.parent.label}</span>
+                )}
+                {breadcrumb.current && <ChevronRight className="h-4 w-4" />}
+              </>
+            )}
+
+            {/* Current page */}
+            {breadcrumb.current && (
+              <span className="font-medium">{breadcrumb.current.label}</span>
+            )}
+          </div>
+        ) : (
+          <>
+            {Icon && <Icon className="h-5 w-5 text-sidebar-primary" />}
+            <h1 className="text-lg font-semibold text-sidebar-primary">
+              {title}
+            </h1>
+          </>
+        )}
       </div>
       <div className="flex items-center gap-4">
         {/* User */}
