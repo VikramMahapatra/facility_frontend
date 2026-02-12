@@ -17,7 +17,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { Upload, X } from "lucide-react";
+import { Upload, X, FileText } from "lucide-react";
 import { Controller, useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { contractApiService } from "@/services/procurements/contractapi";
@@ -578,16 +578,16 @@ export function ContractForm({
                     disabled={isReadOnly}
                   >
                     <Upload className="h-4 w-4 mr-2" />
-                    Upload Images
+                    Upload Documents
                   </Button>
                   <div className="text-xs text-muted-foreground space-y-1">
-                    <p>• Only JPG, PNG, JPEG files must be uploaded</p>
+                    <p>• Only JPG, PNG, JPEG, and PDF files must be uploaded</p>
                     <p>• Uploaded files must be less than 2MB</p>
                   </div>
                   <input
                     ref={fileInputRef}
                     type="file"
-                    accept="image/png,image/jpeg,image/jpg"
+                    accept="image/png,image/jpeg,image/jpg,application/pdf"
                     multiple
                     className="hidden"
                     onChange={(e) => {
@@ -597,6 +597,7 @@ export function ContractForm({
                         "image/png",
                         "image/jpeg",
                         "image/jpg",
+                        "application/pdf",
                       ];
 
                       const validFiles: File[] = [];
@@ -611,18 +612,23 @@ export function ContractForm({
                           return;
                         }
 
-                        // Validation 2: File type (png, jpeg, jpg)
+                        // Validation 2: File type (png, jpeg, jpg, pdf)
                         const fileType = file.type.toLowerCase();
                         if (!ALLOWED_TYPES.includes(fileType)) {
                           toast.error(
-                            `${file.name} is not a valid image type. Only PNG, JPEG, and JPG are allowed.`,
+                            `${file.name} is not a valid file type. Only PNG, JPEG, JPG, and PDF are allowed.`,
                           );
                           return;
                         }
 
                         // If file passes both validations, add it
                         validFiles.push(file);
-                        validPreviews.push(URL.createObjectURL(file));
+                        // For PDFs, we don't create a preview URL, we'll use null
+                        if (fileType === "application/pdf") {
+                          validPreviews.push("");
+                        } else {
+                          validPreviews.push(URL.createObjectURL(file));
+                        }
                       });
 
                       if (validFiles.length > 0) {
@@ -639,44 +645,55 @@ export function ContractForm({
                   {uploadedImages.length > 0 && (
                     <div className="space-y-2">
                       <div className="grid grid-cols-3 gap-2 mt-2">
-                        {uploadedImages.map((file, index) => (
-                          <div key={index} className="relative group">
-                            <img
-                              src={imagePreviews[index]}
-                              alt={`Upload ${index + 1}`}
-                              className="w-full h-24 object-cover rounded border"
-                            />
-                            {!isReadOnly && (
-                              <Button
-                                type="button"
-                                variant="destructive"
-                                size="sm"
-                                className="absolute top-1 right-1 h-6 w-6 p-0 opacity-0 group-hover:opacity-100 transition-opacity"
-                                onClick={() => {
-                                  setUploadedImages((prev) =>
-                                    prev.filter((_, i) => i !== index),
-                                  );
-                                  setImagePreviews((prev) => {
-                                    URL.revokeObjectURL(prev[index]);
-                                    return prev.filter((_, i) => i !== index);
-                                  });
-                                }}
-                              >
-                                <X className="h-3 w-3" />
-                              </Button>
-                            )}
-                            <p className="text-xs text-muted-foreground mt-1 truncate">
-                              {file.name}
-                            </p>
-                            <p className="text-xs text-muted-foreground">
-                              {(file.size / 1024).toFixed(2)} KB
-                            </p>
-                          </div>
-                        ))}
+                        {uploadedImages.map((file, index) => {
+                          const isPdf = file.type.toLowerCase() === "application/pdf";
+                          return (
+                            <div key={index} className="relative group">
+                              {isPdf ? (
+                                <div className="w-full h-24 flex items-center justify-center bg-muted rounded border">
+                                  <FileText className="h-8 w-8 text-muted-foreground" />
+                                </div>
+                              ) : (
+                                <img
+                                  src={imagePreviews[index]}
+                                  alt={`Upload ${index + 1}`}
+                                  className="w-full h-24 object-cover rounded border"
+                                />
+                              )}
+                              {!isReadOnly && (
+                                <Button
+                                  type="button"
+                                  variant="destructive"
+                                  size="sm"
+                                  className="absolute top-1 right-1 h-6 w-6 p-0 opacity-0 group-hover:opacity-100 transition-opacity"
+                                  onClick={() => {
+                                    setUploadedImages((prev) =>
+                                      prev.filter((_, i) => i !== index),
+                                    );
+                                    setImagePreviews((prev) => {
+                                      if (prev[index]) {
+                                        URL.revokeObjectURL(prev[index]);
+                                      }
+                                      return prev.filter((_, i) => i !== index);
+                                    });
+                                  }}
+                                >
+                                  <X className="h-3 w-3" />
+                                </Button>
+                              )}
+                              <p className="text-xs text-muted-foreground mt-1 truncate">
+                                {file.name}
+                              </p>
+                              <p className="text-xs text-muted-foreground">
+                                {(file.size / 1024).toFixed(2)} KB
+                              </p>
+                            </div>
+                          );
+                        })}
                       </div>
                       <div className="text-xs text-muted-foreground bg-muted p-2 rounded">
                         <p>
-                          Total: {uploadedImages.length} image(s),{" "}
+                          Total: {uploadedImages.length} file(s),{" "}
                           {(
                             uploadedImages.reduce(
                               (sum, file) => sum + file.size,
