@@ -183,9 +183,6 @@ export default function PendingApprovals() {
       setSelectedRoleIds([]);
       setRoleValidationError("");
       loadUsersForApproval();
-    } else {
-      const errorMessage = resp?.data?.message || resp?.message || "Failed to approve user";
-      toast.error(errorMessage);
     }
     setIsSubmitting(false);
   };

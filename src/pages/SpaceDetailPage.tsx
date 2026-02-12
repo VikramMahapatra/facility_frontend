@@ -204,7 +204,7 @@ export default function SpaceDetailPage() {
                                     {getKindIcon(space?.kind)}
                                 </span>
 
-                                    {/* Text content */}
+                                {/* Text content */}
                                 <div className="flex flex-col gap-1">
                                     {/* Title */}
                                     <div className="flex items-center gap-3">
@@ -239,23 +239,6 @@ export default function SpaceDetailPage() {
                                 </div>
                             </div>
                         </div>
-                        {owners.length > 0 && (
-                            <Button
-                                onClick={() => {
-                                    setMaintenanceRecord({
-                                        site_name: space.site_name,
-                                        space_name: space.name,
-                                        building_name: space.building_block,
-                                    });
-                                    setMaintenanceMode("create");
-                                    setIsMaintenanceOpen(true);
-                                }}
-                                className="gap-2"
-                            >
-                                <Wrench className="h-4 w-4" />
-                                Create Maintenance
-                            </Button>
-                        )}
                     </div>
                     <Separator />
 
@@ -342,22 +325,23 @@ export default function SpaceDetailPage() {
                                 <CardHeader>
                                     <CardTitle className="flex items-center justify-between">
                                         <span>Maintenance Charges</span>
-
-                                        <Button
-                                            onClick={() => {
-                                                setMaintenanceRecord({
-                                                    site_name: space.site_name,
-                                                    space_name: space.name,
-                                                    building_name: space.building_block,
-                                                });
-                                                setMaintenanceMode("create");
-                                                setIsMaintenanceOpen(true);
-                                            }}
-                                            className="gap-2"
-                                        >
-                                            <Wrench className="h-4 w-4" />
-                                            Create Maintenance
-                                        </Button>
+                                        {owners.length > 0 && (
+                                            <Button
+                                                onClick={() => {
+                                                    setMaintenanceRecord({
+                                                        site_name: space.site_name,
+                                                        space_name: space.name,
+                                                        building_name: space.building_block,
+                                                    });
+                                                    setMaintenanceMode("create");
+                                                    setIsMaintenanceOpen(true);
+                                                }}
+                                                className="gap-2"
+                                            >
+                                                <Wrench className="h-4 w-4" />
+                                                Create Maintenance
+                                            </Button>
+                                        )}
                                     </CardTitle>
 
                                 </CardHeader>
@@ -489,16 +473,16 @@ export default function SpaceDetailPage() {
                         mode="edit"
                         onSave={async (spaceData: Partial<Space>) => {
                             if (!space) return { success: false };
-                            
+
                             const updatedSpace = {
                                 ...space,
                                 ...spaceData,
                             };
-                            
+
                             const response = await withLoader(async () => {
                                 return await spacesApiService.updateSpace(updatedSpace);
                             });
-                            
+
                             if (response?.success) {
                                 setIsSpaceFormOpen(false);
                                 toast.success("Space updated successfully.");

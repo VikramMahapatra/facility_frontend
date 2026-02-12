@@ -204,14 +204,14 @@ const SignUp = () => {
       if (formData.accountType === "organization") {
         registrationData.organizationName = formData.organizationName;
       } else if (formData.accountType === "tenant") {
-        registrationData.tenantType = formData.tenantType;
-        registrationData.siteId = formData.siteId;
-        registrationData.buildingId = formData.buildingId || undefined;
-        registrationData.spaceId = formData.spaceId;
+        registrationData.tenant_type = formData.tenantType;
+        registrationData.site_id = formData.siteId;
+        registrationData.building_id = formData.buildingId || undefined;
+        registrationData.space_id = formData.spaceId;
       } else if (formData.accountType === "owner") {
-        registrationData.siteId = formData.siteId;
-        registrationData.buildingId = formData.buildingId || undefined;
-        registrationData.spaceId = formData.spaceId;
+        registrationData.site_id = formData.siteId;
+        registrationData.building_id = formData.buildingId || undefined;
+        registrationData.space_id = formData.spaceId;
       }
 
       // registration process
