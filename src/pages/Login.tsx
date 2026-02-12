@@ -273,10 +273,10 @@ const Login = () => {
 
   const handleResendOtp = async () => {
     if (resendTimer > 0) return; // Prevent clicking during countdown
-    
+
     setOtp(["", "", "", "", "", ""]);
     setResendTimer(30); // Start 30 second timer
-    
+
     if (loginMethod === "phone") {
       await handleMobileLogin();
     } else {
@@ -466,6 +466,20 @@ const Login = () => {
                       </>
                     )}
                   </Button>
+
+                  {/* Signup Link */}
+                  <div className="text-center text-sm">
+                    <span className="text-muted-foreground">
+                      Don't have an account?{" "}
+                    </span>
+                    <button
+                      type="button"
+                      onClick={() => navigate("/signup")}
+                      className="text-primary hover:underline font-medium"
+                    >
+                      Signup
+                    </button>
+                  </div>
                 </>
               ) : (
                 <div className="space-y-4">
@@ -508,9 +522,13 @@ const Login = () => {
                       variant="outline"
                       size="lg"
                       className="flex-1"
-                      disabled={isEmailLoading || isMobileLoading || resendTimer > 0}
+                      disabled={
+                        isEmailLoading || isMobileLoading || resendTimer > 0
+                      }
                     >
-                      {resendTimer > 0 ? `Resend OTP (${resendTimer}s)` : "Resend OTP"}
+                      {resendTimer > 0
+                        ? `Resend OTP (${resendTimer}s)`
+                        : "Resend OTP"}
                     </Button>
                     <Button
                       onClick={() => {

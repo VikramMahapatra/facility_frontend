@@ -28,9 +28,10 @@ const SignUp = () => {
   const userData = location.state?.userData;
 
   // Pre-fill from Google data, phone data, or empty for direct signup
+  // Only pre-fill email if coming from Google login (not from signup link)
   const [formData, setFormData] = useState({
     name: userData?.name || "",
-    email: userData?.email || "",
+    email: userData?.email || "", // Only filled if coming from Google
     phone: userData?.mobile || "",
     pictureUrl: userData?.picture || "",
     accountType: "",
@@ -255,14 +256,9 @@ const SignUp = () => {
     }
   };
 
-  useEffect(() => {
-    if (!userData) {
-      navigate("/login");
-    }
-  }, [userData, navigate]); // run when isLoggedIn changes
   // Determine if this is a Google signup, phone signup, or direct signup
-  const isGoogleSignup = !!userData.email;
-  const isPhoneSignup = !!userData.mobile && !userData.email;
+  const isGoogleSignup = !!userData?.email;
+  const isPhoneSignup = !!userData?.mobile && !userData?.email;
 
   // Check if location fields should be shown
   const showLocationFields =
@@ -278,9 +274,9 @@ const SignUp = () => {
             {isGoogleSignup ? (
               <>
                 <Avatar className="w-20 h-20 mx-auto mb-4">
-                  <AvatarImage src={userData.picture} />
+                  <AvatarImage src={userData?.picture} />
                   <AvatarFallback className="bg-gradient-primary text-white text-xl">
-                    {userData.name?.charAt(0) || "U"}
+                    {userData?.name?.charAt(0) || "U"}
                   </AvatarFallback>
                 </Avatar>
                 <h1 className="text-2xl font-bold">Complete Your Profile</h1>
