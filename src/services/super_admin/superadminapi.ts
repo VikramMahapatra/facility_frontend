@@ -12,8 +12,8 @@ class SuperAdminApiService {
     }
 
 
-    async fetchPendingOrganizations() {
-        return await apiService.request('/super-admin/orgs/pending');
+    async fetchPendingOrganizations(params) {
+        return await apiService.request(`/super-admin/orgs/pending?${params.toString()}`);
     }
 
     async rejectOrganization(orgId: string) {

@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { Check, X, Clock, UserCircle } from "lucide-react";
+import { Check, X, Clock, UserCircle, Search } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import {
   Table,
@@ -46,6 +46,8 @@ import LoaderOverlay from "@/components/LoaderOverlay";
 import ContentContainer from "@/components/ContentContainer";
 import { useAuth } from "@/context/AuthContext";
 import { PageHeader } from "@/components/PageHeader";
+import { Input } from "@/components/ui/input";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 
 
 export default function PendingApprovals() {
@@ -63,16 +65,29 @@ export default function PendingApprovals() {
   const [totalItems, setTotalItems] = useState(0);
   const { withLoader } = useLoader();
   const { user, handleLogout } = useAuth();
-
+  const [search, setSearch] = useState("");
+  const [status, setStatus] = useState<string>("pending");
+  const [pendingCount, setPendingCount] = useState(0);
 
   useSkipFirstEffect(() => {
     loadUsersForApproval();
   }, [page]);
 
   useEffect(() => {
-    loadUsersForApproval();
     loadApprovalRules();
   }, []);
+
+  useEffect(() => {
+    updateApprovalPage();
+  }, [search, status]);
+
+  const updateApprovalPage = () => {
+    if (page === 1) {
+      loadUsersForApproval();
+    } else {
+      setPage(1);
+    }
+  };
 
   const loadApprovalRules = async () => {
     const response = await withLoader(async () => {
@@ -94,6 +109,10 @@ export default function PendingApprovals() {
     const params = new URLSearchParams();
     params.append("skip", skip.toString());
     params.append("limit", limit.toString());
+
+    if (status && status !== "all") {
+      params.append("status", status);
+    }
     const response = await withLoader(async () => {
       return await pendingApprovalApiService.getUsers(params);
     });
@@ -101,6 +120,7 @@ export default function PendingApprovals() {
     if (response?.success) {
       setUsers(response.data?.users ?? []);
       setTotalItems(response.data?.total ?? 0);
+      setPendingCount(response.data?.total_pending || 0);
     }
   }
 
@@ -110,16 +130,17 @@ export default function PendingApprovals() {
     const userData = localStorage.getItem('loggedInUser');
     const currentUser = JSON.parse(userData);
 
-    console.log("user data", userData);
     console.log("current user", currentUser);
+    console.log("target user", user);
 
-    if (!user.account_type?.length) return false;
-    if (!currentUser.account_type?.length) return false;
+    if (!user.default_account_type?.length) return false;
+    if (!currentUser.default_account_type?.length) return false;
+
 
     // Check if at least one logged-in role can approve all target user's roles
     return approvalRules.some(rule =>
-      currentUser.account_type.includes(rule.approver_type) &&
-      user.account_type.includes(rule.can_approve_type)
+      currentUser.default_account_type.includes(rule.approver_type) &&
+      user.default_account_type.includes(rule.can_approve_type)
     );
   };
 
@@ -194,6 +215,21 @@ export default function PendingApprovals() {
       .slice(0, 2);
   };
 
+  const statusBadge = (status: string) => {
+    switch (status) {
+      case "pending":
+        return <Badge variant="secondary">pending</Badge>;
+      case "inactive":
+        return <Badge variant="secondary">inactive</Badge>;
+      case "active":
+        return <Badge className="bg-green-600">active</Badge>;
+      case "rejected":
+        return <Badge variant="destructive">rejected</Badge>;
+      default:
+        return <Badge variant="secondary">pending</Badge>;
+    }
+  };
+
   return (
     <div className="relative  flex-1 ">
       <div className="space-y-6">
@@ -205,10 +241,33 @@ export default function PendingApprovals() {
             </p>
           </div>
           <Badge variant="secondary" className="text-lg px-4 py-2">
-            {users.length} Pending
+            {pendingCount} Pending
           </Badge>
         </div>
+        {/* Filters */}
+        <div className="flex flex-col sm:flex-row gap-4">
+          <div className="relative flex-1 max-w-sm">
+            <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground h-4 w-4" />
+            <Input
+              placeholder="Search organization name / email"
+              value={search}
+              onChange={(e) => setSearch(e.target.value)}
+              className="pl-10"
+            />
+          </div>
 
+          <Select value={status} onValueChange={setStatus}>
+            <SelectTrigger className="w-[160px]">
+              <SelectValue placeholder="Status" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="pending">Pending</SelectItem>
+              <SelectItem value="active">Active</SelectItem>
+              <SelectItem value="inactive">Inactive</SelectItem>
+              <SelectItem value="rejected">Rejected</SelectItem>
+            </SelectContent>
+          </Select>
+        </div>
         {users.length === 0 ? (
           <div className="text-center py-12">
             <Check className="h-16 w-16 text-muted-foreground mx-auto mb-4" />
@@ -230,6 +289,7 @@ export default function PendingApprovals() {
                     <TableHead>Contact</TableHead>
                     <TableHead>Requested Type</TableHead>
                     <TableHead>Requested Date</TableHead>
+                    <TableHead>Status</TableHead>
                     <TableHead className="text-right">Actions</TableHead>
                   </TableRow>
                 </TableHeader>
@@ -259,16 +319,19 @@ export default function PendingApprovals() {
                         <TableCell>
                           <div className="flex flex-wrap gap-1">
                             <Badge variant="outline">
-                              {user.account_type}
+                              {user.default_account_type}
                             </Badge>
                           </div>
                         </TableCell>
                         <TableCell className="text-muted-foreground text-sm">
                           {new Date(user.created_at).toLocaleDateString()}
                         </TableCell>
+                        <TableCell>
+                          {statusBadge(user.status || "pending")}
+                        </TableCell>
                         <TableCell className="text-right">
                           <div className="flex justify-end gap-2">
-                            {userCanApprove ? (
+                            {(user.status === "pending" || !user.status) && userCanApprove ? (
                               <>
                                 <Button
                                   variant="default"
