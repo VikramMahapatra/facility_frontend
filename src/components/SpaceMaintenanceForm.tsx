@@ -19,6 +19,7 @@ import {
 } from "@/components/ui/select";
 import { siteApiService } from "@/services/spaces_sites/sitesapi";
 import { buildingApiService } from "@/services/spaces_sites/buildingsapi";
+import { spacesApiService } from "@/services/spaces_sites/spacesapi";
 import { toast } from "sonner";
 import { AsyncAutocompleteRQ } from "./common/async-autocomplete-rq";
 import { withFallback } from "@/helpers/commonHelper";
@@ -112,12 +113,34 @@ export const SpaceMaintenanceForm = ({
     return list;
   };
 
-  const loadSpaces = async (siteId: string) => {
-    const lookup =
-      await ownerMaintenancesApiService.getSpaceOwnerLookup(siteId);
-    const list = lookup?.success ? lookup.data || [] : [];
-    setSpaceList(list);
-    return list;
+  const loadSpaces = async (siteId: string, buildingId?: string) => {
+    if (!siteId) {
+      setSpaceList([]);
+      return [];
+    }
+
+    try {
+      const lookup = await spacesApiService.getSpaceLookup(siteId, buildingId);
+      if (lookup?.success) {
+        const spaces = lookup.data?.spaces || lookup.data || [];
+        setSpaceList(Array.isArray(spaces) ? spaces : []);
+        return Array.isArray(spaces) ? spaces : [];
+      }
+    } catch (error) {
+      console.error("Failed to load spaces with getSpaceLookup:", error);
+    }
+
+    try {
+      const lookup =
+        await ownerMaintenancesApiService.getSpaceOwnerLookup(siteId);
+      const list = lookup?.success ? lookup.data || [] : [];
+      setSpaceList(list);
+      return list;
+    } catch (error) {
+      console.error("Failed to load spaces:", error);
+      setSpaceList([]);
+      return [];
+    }
   };
 
   const loadStatusLookup = async () => {
@@ -168,12 +191,12 @@ export const SpaceMaintenanceForm = ({
           label: (record as any)?.site_name || "Selected Site",
         });
         const buildings = await loadBuildings(siteId);
-        await loadSpaces(siteId);
         const buildingId =
           record?.building_block_id ||
           buildings.find((b: any) => b.name === (record as any)?.building_name)
             ?.id ||
           "";
+        await loadSpaces(siteId, buildingId);
         if (buildingId) {
           setValue("building_block_id", buildingId);
         }
@@ -198,7 +221,14 @@ export const SpaceMaintenanceForm = ({
   useEffect(() => {
     if (selectedSiteId) {
       loadBuildings(selectedSiteId);
-      loadSpaces(selectedSiteId);
+      loadSpaces(selectedSiteId, selectedBuildingId);
+      // Clear space selection when building changes
+      if (selectedBuildingId) {
+        // Don't clear if we're in edit mode or have a prefilled record
+        if (mode === "create" && !hasPrefill) {
+          setValue("space_id", "");
+        }
+      }
     } else {
       setBuildingList([]);
       setSpaceList([]);

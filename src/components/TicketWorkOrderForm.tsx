@@ -106,12 +106,12 @@ export function TicketWorkOrderForm({
             other_expenses: workOrder.other_expenses || undefined,
             estimated_time: workOrder.estimated_time || undefined,
             special_instructions: workOrder.special_instructions || "",
-            tax_code_id: workOrder.tax_code_id || "No_Tax",
+            tax_code_id: workOrder.tax_code_id || "",
           }
         : {
             ...emptyFormData,
             ticket_id: initialTicketId || "",
-          }
+          },
     );
 
     setFormLoading(false);
@@ -125,9 +125,8 @@ export function TicketWorkOrderForm({
 
     if (ticketId) {
       setIsLoadingTicketDetails(true);
-      const response = await ticketWorkOrderApiService.getTicketAssignments(
-        ticketId
-      );
+      const response =
+        await ticketWorkOrderApiService.getTicketAssignments(ticketId);
       if (response.success) {
         setSelectedTicketDetails(response.data);
       }
@@ -149,9 +148,10 @@ export function TicketWorkOrderForm({
       if (selectedTicketId) {
         setIsLoadingTicketDetails(true);
         setSelectedTicketDetails(null);
-        const response = await ticketWorkOrderApiService.getTicketAssignments(
-          selectedTicketId
-        );
+        const response =
+          await ticketWorkOrderApiService.getTicketAssignments(
+            selectedTicketId,
+          );
         if (response.success) {
           setSelectedTicketDetails(response.data);
         }
@@ -185,11 +185,19 @@ export function TicketWorkOrderForm({
   };
 
   const onSubmitForm = async (data: TicketWorkOrderFormValues) => {
-    const formResponse = await onSave({
+    const submitData = {
       ...workOrder,
       ...data,
       assigned_to: data.assigned_to || null,
-    });
+      tax_code_id:
+        data.tax_code_id &&
+        data.tax_code_id !== "NO_TAX" &&
+        data.tax_code_id !== ""
+          ? data.tax_code_id
+          : undefined,
+    };
+
+    const formResponse = await onSave(submitData);
   };
 
   const isReadOnly = mode === "view";
@@ -523,8 +531,8 @@ export function TicketWorkOrderForm({
                     {isSubmitting
                       ? "Saving..."
                       : mode === "create"
-                      ? "Create Work Order"
-                      : "Update Work Order"}
+                        ? "Create Work Order"
+                        : "Update Work Order"}
                   </Button>
                 )}
               </DialogFooter>

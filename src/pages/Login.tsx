@@ -25,6 +25,7 @@ const Login = () => {
   const [loginMethod, setLoginMethod] = useState<"phone" | "email">("phone");
   const [otp, setOtp] = useState(["", "", "", "", "", ""]);
   const [isVerifyingOtp, setIsVerifyingOtp] = useState(false);
+  const [resendTimer, setResendTimer] = useState(0);
   const otpInputRefs = useRef<(HTMLInputElement | null)[]>([]);
   const { setUser } = useAuth();
 
@@ -271,7 +272,11 @@ const Login = () => {
   };
 
   const handleResendOtp = async () => {
+    if (resendTimer > 0) return; // Prevent clicking during countdown
+
     setOtp(["", "", "", "", "", ""]);
+    setResendTimer(30); // Start 30 second timer
+
     if (loginMethod === "phone") {
       await handleMobileLogin();
     } else {
@@ -282,6 +287,23 @@ const Login = () => {
   useEffect(() => {
     if (showOtp) {
       otpInputRefs.current[0]?.focus();
+    }
+  }, [showOtp]);
+
+  // Resend OTP timer countdown
+  useEffect(() => {
+    if (resendTimer > 0) {
+      const timer = setTimeout(() => {
+        setResendTimer(resendTimer - 1);
+      }, 1000);
+      return () => clearTimeout(timer);
+    }
+  }, [resendTimer]);
+
+  // Reset timer when OTP screen is closed
+  useEffect(() => {
+    if (!showOtp) {
+      setResendTimer(0);
     }
   }, [showOtp]);
 
@@ -444,6 +466,20 @@ const Login = () => {
                       </>
                     )}
                   </Button>
+
+                  {/* Signup Link */}
+                  <div className="text-center text-sm">
+                    <span className="text-muted-foreground">
+                      Don't have an account?{" "}
+                    </span>
+                    <button
+                      type="button"
+                      onClick={() => navigate("/signup")}
+                      className="text-primary hover:underline font-medium"
+                    >
+                      Signup
+                    </button>
+                  </div>
                 </>
               ) : (
                 <div className="space-y-4">
@@ -486,9 +522,13 @@ const Login = () => {
                       variant="outline"
                       size="lg"
                       className="flex-1"
-                      disabled={isEmailLoading || isMobileLoading}
+                      disabled={
+                        isEmailLoading || isMobileLoading || resendTimer > 0
+                      }
                     >
-                      Resend OTP
+                      {resendTimer > 0
+                        ? `Resend OTP (${resendTimer}s)`
+                        : "Resend OTP"}
                     </Button>
                     <Button
                       onClick={() => {
