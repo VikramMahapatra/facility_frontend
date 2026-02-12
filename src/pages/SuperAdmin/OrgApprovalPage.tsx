@@ -31,6 +31,7 @@ interface Org {
   id: string;
   name: string;
   email: string;
+  phone?: string;
   created_at: string;
   status?: "pending" | "approved" | "rejected";
 }
@@ -46,6 +47,7 @@ const OrgApprovalPage = () => {
   const [page, setPage] = useState(1);
   const [pageSize] = useState(10);
   const [totalItems, setTotalItems] = useState(0);
+  const [pendingCount, setPendingCount] = useState(0);
 
   useSkipFirstEffect(() => {
     loadOrgs();
@@ -64,43 +66,26 @@ const OrgApprovalPage = () => {
   };
 
   const loadOrgs = async () => {
+
+    const skip = (page - 1) * pageSize;
+    const limit = pageSize;
+
+    const params = new URLSearchParams();
+    if (status && status !== "all")
+      params.append("status", status);
+    params.append("skip", skip.toString());
+    params.append("limit", limit.toString());
+
     const response = (await withLoader(() =>
-      superAdminApiService.fetchPendingOrganizations(),
+      superAdminApiService.fetchPendingOrganizations(params),
     )) as any;
 
     if (response?.success) {
-      const fetchedOrgs = response.data?.pending_orgs || [];
-      setAllOrgs(fetchedOrgs); // Store all orgs for pending count
-      
-      // Client-side filtering and pagination
-      let filteredOrgs = fetchedOrgs;
-      
-      // Filter by search
-      if (search) {
-        filteredOrgs = filteredOrgs.filter(
-          (org: Org) =>
-            org.name?.toLowerCase().includes(search.toLowerCase()) ||
-            org.email?.toLowerCase().includes(search.toLowerCase())
-        );
-      }
+      const fetchedOrgs = response.data?.orgs || [];
 
-      // Filter by status (if status field exists)
-      if (status && status !== "all") {
-        filteredOrgs = filteredOrgs.filter(
-          (org: Org) => (org.status || "pending") === status
-        );
-      }
-
-      // Pagination
-      const skip = (page - 1) * pageSize;
-      const paginatedOrgs = filteredOrgs.slice(skip, skip + pageSize);
-      
-      setOrgs(paginatedOrgs);
-      setTotalItems(filteredOrgs.length);
-    } else {
-      setOrgs([]);
-      setAllOrgs([]);
-      setTotalItems(0);
+      setOrgs(fetchedOrgs);
+      setTotalItems(response.data?.total || 0);
+      setPendingCount(response.data?.total_pending || 0);
     }
   };
 
@@ -145,20 +130,17 @@ const OrgApprovalPage = () => {
   const statusBadge = (status: string) => {
     switch (status) {
       case "pending":
-        return <Badge variant="secondary">Pending</Badge>;
-      case "approved":
-        return <Badge className="bg-green-600">Approved</Badge>;
+        return <Badge variant="secondary">pending</Badge>;
+      case "inactive":
+        return <Badge variant="secondary">inactive</Badge>;
+      case "active":
+        return <Badge className="bg-green-600">active</Badge>;
       case "rejected":
-        return <Badge variant="destructive">Rejected</Badge>;
+        return <Badge variant="destructive">rejected</Badge>;
       default:
-        return <Badge variant="secondary">Pending</Badge>;
+        return <Badge variant="secondary">pending</Badge>;
     }
   };
-
-  // Calculate pending count from all orgs (not filtered)
-  const pendingCount = allOrgs.filter(
-    (org) => (org.status || "pending") === "pending"
-  ).length;
 
   return (
     <div className="space-y-6">
@@ -176,7 +158,30 @@ const OrgApprovalPage = () => {
           {pendingCount} Pending
         </Badge>
       </div>
+      {/* Filters */}
+      <div className="flex flex-col sm:flex-row gap-4">
+        <div className="relative flex-1 max-w-sm">
+          <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground h-4 w-4" />
+          <Input
+            placeholder="Search organization name / email"
+            value={search}
+            onChange={(e) => setSearch(e.target.value)}
+            className="pl-10"
+          />
+        </div>
 
+        <Select value={status} onValueChange={setStatus}>
+          <SelectTrigger className="w-[160px]">
+            <SelectValue placeholder="Status" />
+          </SelectTrigger>
+          <SelectContent>
+            <SelectItem value="pending">Pending</SelectItem>
+            <SelectItem value="active">Active</SelectItem>
+            <SelectItem value="inactive">Inactive</SelectItem>
+            <SelectItem value="rejected">Rejected</SelectItem>
+          </SelectContent>
+        </Select>
+      </div>
       {orgs.length === 0 ? (
         <div className="text-center py-12">
           <CheckCircle2 className="h-16 w-16 text-muted-foreground mx-auto mb-4" />
@@ -189,29 +194,7 @@ const OrgApprovalPage = () => {
         </div>
       ) : (
         <>
-          {/* Filters */}
-          <div className="flex flex-col sm:flex-row gap-4">
-            <div className="relative flex-1 max-w-sm">
-              <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground h-4 w-4" />
-              <Input
-                placeholder="Search organization name / email"
-                value={search}
-                onChange={(e) => setSearch(e.target.value)}
-                className="pl-10"
-              />
-            </div>
 
-            <Select value={status} onValueChange={setStatus}>
-              <SelectTrigger className="w-[160px]">
-                <SelectValue placeholder="Status" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="pending">Pending</SelectItem>
-                <SelectItem value="approved">Approved</SelectItem>
-                <SelectItem value="rejected">Rejected</SelectItem>
-              </SelectContent>
-            </Select>
-          </div>
 
           {/* Table */}
           <div className="relative rounded-md border">
@@ -222,6 +205,7 @@ const OrgApprovalPage = () => {
                   <TableRow>
                     <TableHead>Organization</TableHead>
                     <TableHead>Email</TableHead>
+                    <TableHead>Phone</TableHead>
                     <TableHead>Created On</TableHead>
                     <TableHead>Status</TableHead>
                     <TableHead className="text-right">Actions</TableHead>
@@ -234,7 +218,8 @@ const OrgApprovalPage = () => {
                       <TableCell>
                         <div className="font-medium">{org.name}</div>
                       </TableCell>
-                      <TableCell>{org.email}</TableCell>
+                      <TableCell>{org.email || "-"}</TableCell>
+                      <TableCell>{org.phone || "-"}</TableCell>
                       <TableCell>
                         {org.created_at
                           ? new Date(org.created_at).toLocaleDateString()
@@ -284,7 +269,7 @@ const OrgApprovalPage = () => {
           />
         </>
       )}
-    </div>
+    </div >
   );
 };
 

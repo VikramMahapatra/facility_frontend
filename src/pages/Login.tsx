@@ -54,7 +54,7 @@ const Login = () => {
                   },
                 },
               });
-              toast.success("OTP verified successful");
+              toast.success("OTP verification successful");
             } else {
               const user = authResponse.user;
               setUser(user);
@@ -75,7 +75,7 @@ const Login = () => {
                     },
                   },
                 });
-                toast.success("OTP verified successful");
+                toast.success("OTP verification successful");
               } else {
                 navigate("/dashboard");
                 toast.success("Login successful");
@@ -209,6 +209,7 @@ const Login = () => {
               },
             },
           });
+          toast.success("OTP verification successful");
         } else {
           const user = authResponse.user;
           setUser(user);
@@ -229,13 +230,12 @@ const Login = () => {
                 },
               },
             });
-            toast.success("OTP verified successful");
+            toast.success("OTP verification successful");
           } else {
             navigate("/dashboard");
             toast.success("Login successful");
           }
         }
-        toast.success("Login successful");
       } else {
         toast.error("Invalid OTP. Please try again.");
         setOtp(["", "", "", "", "", ""]);

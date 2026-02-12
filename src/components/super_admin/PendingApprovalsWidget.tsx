@@ -2,11 +2,14 @@ import { useEffect, useState } from "react";
 import { superAdminApiService } from "@/services/super_admin/superadminapi";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { useLoader } from "@/context/LoaderContext";
-import { CheckCircle2 } from "lucide-react";
+import { CheckCircle2, Mail, Phone } from "lucide-react";
+import { Badge } from "@/components/ui/badge";
 
 type PendingOrg = {
     id: string;
     name: string;
+    email?: string;
+    phone?: string;
     created_at?: string;
 };
 
@@ -55,28 +58,46 @@ const PendingApprovalsWidget = () => {
                     </div>
 
                 ) : (
+                    <>
+                        <div className="space-y-3">
+                            {orgs.map((org) => (
+                                <div
+                                    key={org.id}
+                                    className="flex items-center justify-between rounded-lg border bg-background p-4 transition-all hover:shadow-sm hover:border-primary/30"
+                                >
+                                    {/* LEFT SIDE */}
+                                    <div className="flex flex-col gap-1">
+                                        <span className="text-sm font-semibold text-foreground">
+                                            {org.name}
+                                        </span>
 
-                    <div className="space-y-3">
+                                        <div className="flex flex-wrap gap-4 text-xs text-muted-foreground">
 
-                        {orgs.map(org => (
+                                            {org.email && (
+                                                <span className="flex items-center gap-1">
+                                                    <Mail className="h-3.5 w-3.5" />
+                                                    {org.email}
+                                                </span>
+                                            )}
 
-                            <div
-                                key={org.id}
-                                className="flex justify-between items-center border-b pb-2"
-                            >
-                                <span className="text-sm font-medium">
-                                    {org.name}
-                                </span>
+                                            {org.phone && (
+                                                <span className="flex items-center gap-1">
+                                                    <Phone className="h-3.5 w-3.5" />
+                                                    {org.phone}
+                                                </span>
+                                            )}
 
-                                {/* Approve button later */}
-                                {/* <Button size="sm">Approve</Button> */}
+                                        </div>
+                                    </div>
 
-                            </div>
-
-                        ))}
-
-                    </div>
-
+                                    {/* RIGHT SIDE ACTIONS */}
+                                    <div className="flex items-center gap-2">
+                                        <Badge variant="secondary">Pending</Badge>
+                                    </div>
+                                </div>
+                            ))}
+                        </div>
+                    </>
                 )}
 
             </CardContent>

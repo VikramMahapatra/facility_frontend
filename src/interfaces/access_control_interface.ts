@@ -6,7 +6,8 @@ export interface User {
     phone?: string;
     picture_url?: string;
     account_type: string;
-    status: 'active' | 'inactive' | 'pending_approval';
+    default_account_type: string;
+    status: 'active' | 'inactive' | 'pending_approval' | 'rejected' | 'pending';
     created_at: string;
     updated_at: string;
     roles?: Role[];
