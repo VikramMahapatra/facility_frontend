@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useState, useRef } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -17,7 +17,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { Plus, Trash2, ExternalLink } from "lucide-react";
+import { Upload, X } from "lucide-react";
 import { Controller, useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { contractApiService } from "@/services/procurements/contractapi";
@@ -86,13 +86,18 @@ export function ContractForm({
   const [statusList, setStatusList] = useState<any[]>([]);
   const [vendorList, setVendorList] = useState<any[]>([]);
   const [siteList, setSiteList] = useState<any[]>([]);
-
-  const documents = watch("documents") || [];
+  const [uploadedImages, setUploadedImages] = useState<File[]>([]);
+  const [imagePreviews, setImagePreviews] = useState<string[]>([]);
+  const fileInputRef = useRef<HTMLInputElement>(null);
 
   const loadAll = async () => {
     setFormLoading(true);
 
-   
+    // Reset file uploads when form opens
+    setUploadedImages([]);
+    setImagePreviews([]);
+
+    imagePreviews.forEach((url) => URL.revokeObjectURL(url));
 
     reset(
       contract && mode !== "create"
@@ -115,7 +120,7 @@ export function ContractForm({
             },
             documents: contract.documents || [],
           }
-        : emptyFormData
+        : emptyFormData,
     );
     setFormLoading(false);
   };
@@ -169,21 +174,21 @@ export function ContractForm({
     const currentDocuments = getValues("documents") || [];
     setValue(
       "documents",
-      currentDocuments.filter((doc) => doc.id !== documentId)
+      currentDocuments.filter((doc) => doc.id !== documentId),
     );
   };
 
   const updateDocument = (
     documentId: string,
     field: keyof Document,
-    value: string
+    value: string,
   ) => {
     const currentDocuments = getValues("documents") || [];
     setValue(
       "documents",
       currentDocuments.map((doc) =>
-        doc.id === documentId ? { ...doc, [field]: value } : doc
-      )
+        doc.id === documentId ? { ...doc, [field]: value } : doc,
+      ),
     );
   };
 
@@ -197,16 +202,60 @@ export function ContractForm({
   };
 
   const onSubmitForm = async (data: ContractFormValues) => {
-    const formResponse = await onSave({
-      ...contract,
-      ...data,
-    });
+    // Create FormData if there are uploaded files, otherwise use JSON
+    let submitData: any;
+
+    if (uploadedImages.length > 0) {
+      const formData = new FormData();
+      formData.append("title", data.title);
+      formData.append("vendor_id", data.vendor_id);
+      formData.append("site_id", data.site_id);
+      formData.append("start_date", data.start_date);
+      formData.append("end_date", data.end_date);
+      formData.append("value", String(data.value || ""));
+      if (data.type) formData.append("type", data.type);
+      if (data.status) formData.append("status", data.status);
+      if (data.terms?.sla?.response_hrs) {
+        formData.append(
+          "terms.sla.response_hrs",
+          String(data.terms.sla.response_hrs),
+        );
+      }
+      if (data.terms?.penalty?.per_day) {
+        formData.append(
+          "terms.penalty.per_day",
+          String(data.terms.penalty.per_day),
+        );
+      }
+
+      // Append files
+      uploadedImages.forEach((file) => {
+        formData.append("files", file);
+      });
+
+      submitData = formData;
+    } else {
+      submitData = {
+        ...contract,
+        ...data,
+      };
+    }
+
+    const formResponse = await onSave(submitData);
     if (formResponse?.success) {
+      // Clean up preview URLs
+      imagePreviews.forEach((url) => URL.revokeObjectURL(url));
+      setUploadedImages([]);
+      setImagePreviews([]);
       reset(emptyFormData);
     }
   };
 
   const handleClose = () => {
+    // Clean up preview URLs
+    imagePreviews.forEach((url) => URL.revokeObjectURL(url));
+    setUploadedImages([]);
+    setImagePreviews([]);
     reset(emptyFormData);
     onClose();
   };
@@ -378,7 +427,8 @@ export function ContractForm({
                         placeholder="Select site"
                         queryKey={["contract-sites"]}
                         queryFn={async (search) => {
-                          const res = await siteApiService.getSiteLookup(search);
+                          const res =
+                            await siteApiService.getSiteLookup(search);
                           if (res.success) {
                             return res.data.map((s: any) => ({
                               id: s.id,
@@ -516,84 +566,130 @@ export function ContractForm({
                 </div>
               </div>
 
-              {/* Documents */}
-              {/* <div className="border rounded-lg p-4 space-y-4">
-            <div className="flex items-center justify-between">
-              <h3 className="text-sm font-medium text-gray-700">Document URLs</h3>
-              {!isReadOnly && (
-                <Button type="button" variant="outline" size="sm" onClick={addDocument} className="flex items-center">
-                  <Plus className="h-4 w-4 mr-1" />
-                  Add URL
-                </Button>
-              )}
-            </div>
+              {/* Document Upload */}
+              <div className="space-y-2">
+                <Label>Attach Documents</Label>
+                <div className="space-y-2">
+                  <Button
+                    type="button"
+                    variant="outline"
+                    onClick={() => fileInputRef.current?.click()}
+                    className="w-full"
+                    disabled={isReadOnly}
+                  >
+                    <Upload className="h-4 w-4 mr-2" />
+                    Upload Images
+                  </Button>
+                  <div className="text-xs text-muted-foreground space-y-1">
+                    <p>• Only JPG, PNG, JPEG files must be uploaded</p>
+                    <p>• Uploaded files must be less than 2MB</p>
+                  </div>
+                  <input
+                    ref={fileInputRef}
+                    type="file"
+                    accept="image/png,image/jpeg,image/jpg"
+                    multiple
+                    className="hidden"
+                    onChange={(e) => {
+                      const files = Array.from(e.target.files || []);
+                      const MAX_FILE_SIZE = 2 * 1024 * 1024; // 2MB in bytes
+                      const ALLOWED_TYPES = [
+                        "image/png",
+                        "image/jpeg",
+                        "image/jpg",
+                      ];
 
-            <Card className="bg-gray-50">
-              <CardContent className="p-4">
-                <div className="space-y-3">
-                  {documents.map((doc: Document, index: number) => (
-                    <div key={doc.id} className="flex items-center space-x-3 p-3 bg-white rounded border">
-                      <div className="flex-shrink-0 w-6 text-center">
-                        <span className="text-sm font-medium text-gray-600">{index + 1}</span>
+                      const validFiles: File[] = [];
+                      const validPreviews: string[] = [];
+
+                      files.forEach((file) => {
+                        // Validation 1: File size (2MB)
+                        if (file.size > MAX_FILE_SIZE) {
+                          toast.error(
+                            `${file.name} exceeds 2MB limit. Please choose a smaller file.`,
+                          );
+                          return;
+                        }
+
+                        // Validation 2: File type (png, jpeg, jpg)
+                        const fileType = file.type.toLowerCase();
+                        if (!ALLOWED_TYPES.includes(fileType)) {
+                          toast.error(
+                            `${file.name} is not a valid image type. Only PNG, JPEG, and JPG are allowed.`,
+                          );
+                          return;
+                        }
+
+                        // If file passes both validations, add it
+                        validFiles.push(file);
+                        validPreviews.push(URL.createObjectURL(file));
+                      });
+
+                      if (validFiles.length > 0) {
+                        setUploadedImages((prev) => [...prev, ...validFiles]);
+                        setImagePreviews((prev) => [...prev, ...validPreviews]);
+                      }
+
+                      // Reset file input to allow selecting the same file again
+                      if (e.target) {
+                        (e.target as HTMLInputElement).value = "";
+                      }
+                    }}
+                  />
+                  {uploadedImages.length > 0 && (
+                    <div className="space-y-2">
+                      <div className="grid grid-cols-3 gap-2 mt-2">
+                        {uploadedImages.map((file, index) => (
+                          <div key={index} className="relative group">
+                            <img
+                              src={imagePreviews[index]}
+                              alt={`Upload ${index + 1}`}
+                              className="w-full h-24 object-cover rounded border"
+                            />
+                            {!isReadOnly && (
+                              <Button
+                                type="button"
+                                variant="destructive"
+                                size="sm"
+                                className="absolute top-1 right-1 h-6 w-6 p-0 opacity-0 group-hover:opacity-100 transition-opacity"
+                                onClick={() => {
+                                  setUploadedImages((prev) =>
+                                    prev.filter((_, i) => i !== index),
+                                  );
+                                  setImagePreviews((prev) => {
+                                    URL.revokeObjectURL(prev[index]);
+                                    return prev.filter((_, i) => i !== index);
+                                  });
+                                }}
+                              >
+                                <X className="h-3 w-3" />
+                              </Button>
+                            )}
+                            <p className="text-xs text-muted-foreground mt-1 truncate">
+                              {file.name}
+                            </p>
+                            <p className="text-xs text-muted-foreground">
+                              {(file.size / 1024).toFixed(2)} KB
+                            </p>
+                          </div>
+                        ))}
                       </div>
-
-                      <div className="w-56">
-                        <Input
-                          placeholder="Name"
-                          value={doc.name}
-                          onChange={(e) => updateDocument(doc.id, "name", e.target.value)}
-                          disabled={isReadOnly}
-                          className="h-8"
-                        />
+                      <div className="text-xs text-muted-foreground bg-muted p-2 rounded">
+                        <p>
+                          Total: {uploadedImages.length} image(s),{" "}
+                          {(
+                            uploadedImages.reduce(
+                              (sum, file) => sum + file.size,
+                              0,
+                            ) / 1024
+                          ).toFixed(2)}{" "}
+                          KB
+                        </p>
                       </div>
-
-                      <div className="flex-1">
-                        <Input
-                          placeholder="Enter document URL..."
-                          value={doc.url}
-                          onChange={(e) => updateDocument(doc.id, "url", e.target.value)}
-                          disabled={isReadOnly}
-                          className="h-8"
-                        />
-                      </div>
-
-                      <div className="flex items-center space-x-2 flex-shrink-0">
-                        {doc.url && isValidUrl(doc.url) && (
-                          <Button
-                            type="button"
-                            variant="ghost"
-                            size="sm"
-                            onClick={() => window.open(doc.url, "_blank")}
-                            className="h-8 w-8 p-0"
-                          >
-                            <ExternalLink className="h-4 w-4" />
-                          </Button>
-                        )}
-                        {!isReadOnly && (
-                          <Button
-                            type="button"
-                            variant="ghost"
-                            size="sm"
-                            onClick={() => removeDocument(doc.id)}
-                            className="h-8 w-8 p-0 text-red-500 hover:text-red-700"
-                          >
-                            <Trash2 className="h-4 w-4" />
-                          </Button>
-                        )}
-                      </div>
-                    </div>
-                  ))}
-
-                  {documents.length === 0 && (
-                    <div className="text-center py-8 text-gray-500">
-                      <p className="text-sm">No URLs added yet</p>
-                      <p className="text-xs">Click "Add URL" to add your first document URL</p>
                     </div>
                   )}
                 </div>
-              </CardContent>
-            </Card>
-          </div> */}
+              </div>
 
               <DialogFooter>
                 <Button
@@ -609,8 +705,8 @@ export function ContractForm({
                     {isSubmitting
                       ? "Saving..."
                       : mode === "create"
-                      ? "Create Contract"
-                      : "Update Contract"}
+                        ? "Create Contract"
+                        : "Update Contract"}
                   </Button>
                 )}
               </DialogFooter>
