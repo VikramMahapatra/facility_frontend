@@ -109,6 +109,9 @@ export default function PendingApprovals() {
     const params = new URLSearchParams();
     params.append("skip", skip.toString());
     params.append("limit", limit.toString());
+    if (search) {
+      params.append("search", search);
+    }
 
     if (status && status !== "all") {
       params.append("status", status);
