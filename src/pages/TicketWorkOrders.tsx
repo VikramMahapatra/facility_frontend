@@ -1,4 +1,5 @@
 import { useState, useEffect } from "react";
+import { useNavigate } from "react-router-dom";
 import {
   Wrench,
   Search,
@@ -95,6 +96,7 @@ interface TicketWorkOrderOverview {
 }
 
 export default function TicketWorkOrders() {
+  const navigate = useNavigate();
   const [searchTerm, setSearchTerm] = useState("");
   const [selectedSite, setSelectedSite] = useState<string>("all");
   const [selectedStatus, setSelectedStatus] = useState<string>("all");
@@ -449,7 +451,12 @@ export default function TicketWorkOrders() {
                     workOrders.map((workOrder) => (
                       <TableRow key={workOrder.id}>
                         <TableCell className="font-medium">
-                          {workOrder.ticket_no || workOrder.ticket_id}
+                          <button
+                            onClick={() => navigate(`/tickets/${workOrder.ticket_id}`)}
+                            className="text-primary hover:underline cursor-pointer"
+                          >
+                            {workOrder.ticket_no || workOrder.ticket_id}
+                          </button>
                         </TableCell>
                         <TableCell className="max-w-md">
                           {workOrder.description}

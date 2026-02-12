@@ -147,7 +147,7 @@ export const PageHeader = () => {
           className="text-muted-foreground hover:text-destructive disabled:opacity-50"
         >
           <LogOut className="w-4 h-4 mr-2" />
-          {isLoggingOut ? "Logging out..." : "Logout"}
+          {isLoggingOut ? "Logout" : "Logout"}
         </Button>
       </div>
     </header>
