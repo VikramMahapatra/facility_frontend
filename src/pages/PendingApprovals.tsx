@@ -116,6 +116,9 @@ export default function PendingApprovals() {
     const params = new URLSearchParams();
     params.append("skip", skip.toString());
     params.append("limit", limit.toString());
+    if (search) {
+      params.append("search", search);
+    }
 
     if (status && status !== "all") {
       params.append("status", status);
@@ -203,9 +206,6 @@ export default function PendingApprovals() {
       }
       
       loadUsersForApproval();
-    } else {
-      const errorMessage = resp?.data?.message || resp?.message || "Failed to approve user";
-      toast.error(errorMessage);
     }
     setIsSubmitting(false);
   };
