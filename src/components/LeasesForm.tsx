@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -16,6 +16,7 @@ import {
   DialogTitle,
   DialogFooter,
 } from "@/components/ui/dialog";
+import { Upload, X, FileText } from "lucide-react";
 import { toast } from "sonner";
 import { Controller, useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
@@ -100,9 +101,18 @@ export function LeaseForm({
   const [buildingList, setBuildingList] = useState<any[]>([]);
   const [spaceList, setSpaceList] = useState<any[]>([]);
   const [leasePartnerList, setLeasePartnerList] = useState<any[]>([]);
+  const [uploadedImages, setUploadedImages] = useState<File[]>([]);
+  const [imagePreviews, setImagePreviews] = useState<string[]>([]);
+  const fileInputRef = useRef<HTMLInputElement>(null);
   const isReadOnly = mode === "view";
   const loadAll = async () => {
     setFormLoading(true);
+
+    // Reset file uploads when form opens
+    setUploadedImages([]);
+    setImagePreviews([]);
+    // Clean up previous preview URLs
+    imagePreviews.forEach((url) => URL.revokeObjectURL(url));
 
     // Get site_id and building_id from lease prop, regardless of mode
     const leaseSiteId = lease?.site_id;
@@ -282,8 +292,48 @@ export function LeaseForm({
     try {
       const { kind, ...updated } = data;
       console.log("Submitting lease data:", updated);
-      const formResponse = await onSave(updated);
+      
+      // Create FormData if there are uploaded files, otherwise use JSON
+      let submitData: any;
+      
+      if (uploadedImages.length > 0) {
+        const formData = new FormData();
+        Object.keys(updated).forEach((key) => {
+          const value = (updated as any)[key];
+          if (value !== undefined && value !== null && value !== "") {
+            if (typeof value === "object" && !Array.isArray(value)) {
+              // Handle nested objects like utilities
+              Object.keys(value).forEach((nestedKey) => {
+                const nestedValue = (value as any)[nestedKey];
+                if (nestedValue !== undefined && nestedValue !== null && nestedValue !== "") {
+                  formData.append(`${key}.${nestedKey}`, String(nestedValue));
+                }
+              });
+            } else {
+              formData.append(key, String(value));
+            }
+          }
+        });
+        
+        // Append files
+        uploadedImages.forEach((file) => {
+          formData.append("files", file);
+        });
+        
+        submitData = formData;
+      } else {
+        submitData = updated;
+      }
+      
+      const formResponse = await onSave(submitData);
       console.log("Lease save response:", formResponse);
+      
+      if (formResponse?.success) {
+        // Clean up preview URLs
+        imagePreviews.forEach((url) => URL.revokeObjectURL(url));
+        setUploadedImages([]);
+        setImagePreviews([]);
+      }
     } catch (error) {
       console.error("Error submitting lease form:", error);
       toast.error("Failed to submit lease form. Please try again.");
@@ -291,6 +341,10 @@ export function LeaseForm({
   };
 
   const handleClose = () => {
+    // Clean up preview URLs
+    imagePreviews.forEach((url) => URL.revokeObjectURL(url));
+    setUploadedImages([]);
+    setImagePreviews([]);
     reset(emptyFormData);
     setBuildingList([]);
     setSpaceList([]);
@@ -717,6 +771,148 @@ export function LeaseForm({
                     </div>
                   </div>
                 )}
+              </div>
+
+              {/* Document Upload */}
+              <div className="space-y-2">
+                <Label>Attach Documents</Label>
+                <div className="space-y-2">
+                  <Button
+                    type="button"
+                    variant="outline"
+                    onClick={() => fileInputRef.current?.click()}
+                    className="w-full"
+                    disabled={isReadOnly}
+                  >
+                    <Upload className="h-4 w-4 mr-2" />
+                    Upload Documents
+                  </Button>
+                  <div className="text-xs text-muted-foreground space-y-1">
+                    <p>• Only JPG, PNG, JPEG, and PDF files must be uploaded</p>
+                    <p>• Uploaded files must be less than 2MB</p>
+                  </div>
+                  <input
+                    ref={fileInputRef}
+                    type="file"
+                    accept="image/png,image/jpeg,image/jpg,application/pdf"
+                    multiple
+                    className="hidden"
+                    onChange={(e) => {
+                      const files = Array.from(e.target.files || []);
+                      const MAX_FILE_SIZE = 2 * 1024 * 1024; // 2MB in bytes
+                      const ALLOWED_TYPES = [
+                        "image/png",
+                        "image/jpeg",
+                        "image/jpg",
+                        "application/pdf",
+                      ];
+
+                      const validFiles: File[] = [];
+                      const validPreviews: string[] = [];
+
+                      files.forEach((file) => {
+                        // Validation 1: File size (2MB)
+                        if (file.size > MAX_FILE_SIZE) {
+                          toast.error(
+                            `${file.name} exceeds 2MB limit. Please choose a smaller file.`,
+                          );
+                          return;
+                        }
+
+                        // Validation 2: File type (png, jpeg, jpg, pdf)
+                        const fileType = file.type.toLowerCase();
+                        if (!ALLOWED_TYPES.includes(fileType)) {
+                          toast.error(
+                            `${file.name} is not a valid file type. Only PNG, JPEG, JPG, and PDF are allowed.`,
+                          );
+                          return;
+                        }
+
+                        // If file passes both validations, add it
+                        validFiles.push(file);
+                        // For PDFs, we don't create a preview URL, we'll use empty string
+                        if (fileType === "application/pdf") {
+                          validPreviews.push("");
+                        } else {
+                          validPreviews.push(URL.createObjectURL(file));
+                        }
+                      });
+
+                      if (validFiles.length > 0) {
+                        setUploadedImages((prev) => [...prev, ...validFiles]);
+                        setImagePreviews((prev) => [...prev, ...validPreviews]);
+                      }
+
+                      // Reset file input to allow selecting the same file again
+                      if (e.target) {
+                        (e.target as HTMLInputElement).value = "";
+                      }
+                    }}
+                  />
+                  {uploadedImages.length > 0 && (
+                    <div className="space-y-2">
+                      <div className="grid grid-cols-3 gap-2 mt-2">
+                        {uploadedImages.map((file, index) => {
+                          const isPdf = file.type.toLowerCase() === "application/pdf";
+                          return (
+                            <div key={index} className="relative group">
+                              {isPdf ? (
+                                <div className="w-full h-24 flex items-center justify-center bg-muted rounded border">
+                                  <FileText className="h-8 w-8 text-muted-foreground" />
+                                </div>
+                              ) : (
+                                <img
+                                  src={imagePreviews[index]}
+                                  alt={`Upload ${index + 1}`}
+                                  className="w-full h-24 object-cover rounded border"
+                                />
+                              )}
+                              {!isReadOnly && (
+                                <Button
+                                  type="button"
+                                  variant="destructive"
+                                  size="sm"
+                                  className="absolute top-1 right-1 h-6 w-6 p-0 opacity-0 group-hover:opacity-100 transition-opacity"
+                                  onClick={() => {
+                                    setUploadedImages((prev) =>
+                                      prev.filter((_, i) => i !== index),
+                                    );
+                                    setImagePreviews((prev) => {
+                                      if (prev[index]) {
+                                        URL.revokeObjectURL(prev[index]);
+                                      }
+                                      return prev.filter((_, i) => i !== index);
+                                    });
+                                  }}
+                                >
+                                  <X className="h-3 w-3" />
+                                </Button>
+                              )}
+                              <p className="text-xs text-muted-foreground mt-1 truncate">
+                                {file.name}
+                              </p>
+                              <p className="text-xs text-muted-foreground">
+                                {(file.size / 1024).toFixed(2)} KB
+                              </p>
+                            </div>
+                          );
+                        })}
+                      </div>
+                      <div className="text-xs text-muted-foreground bg-muted p-2 rounded">
+                        <p>
+                          Total: {uploadedImages.length} file(s),{" "}
+                          {(
+                            uploadedImages.reduce(
+                              (sum, file) => sum + file.size,
+                              0,
+                            ) / 1024
+                          ).toFixed(2)}{" "}
+                          KB
+                        </p>
+                      </div>
+                    </div>
+                  )}
+                </div>
               </div>
 
               <DialogFooter>

@@ -13,15 +13,8 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { PropertySidebar } from "@/components/PropertySidebar";
-import {
-  SidebarProvider,
-  SidebarInset,
-  SidebarTrigger,
-} from "@/components/ui/sidebar";
 import { LeaseForm } from "@/components/LeasesForm";
 import { PaymentTermsForm } from "@/components/PaymentTermsForm";
-import { LogOut } from "lucide-react";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -32,18 +25,15 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
-import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { toast } from "sonner";
 import { Pagination } from "@/components/Pagination";
 import { siteApiService } from "@/services/spaces_sites/sitesapi";
 import { leasesApiService } from "@/services/leasing_tenants/leasesapi";
-import { strict } from "assert";
 import { Lease, LeaseOverview } from "@/interfaces/leasing_tenants_interface";
 import { useAuth } from "../context/AuthContext";
 import { useLoader } from "@/context/LoaderContext";
 import LoaderOverlay from "@/components/LoaderOverlay";
 import ContentContainer from "@/components/ContentContainer";
-import { PageHeader } from "@/components/PageHeader";
 import { useSkipFirstEffect } from "@/hooks/use-skipfirst-effect";
 
 export default function Leases() {
@@ -62,9 +52,9 @@ export default function Leases() {
   const [siteList, setSiteList] = useState<any[]>([]);
   const [createdLeaseId, setCreatedLeaseId] = useState<string | null>(null);
   const [isPaymentTermsFormOpen, setIsPaymentTermsFormOpen] = useState(false);
-  const { canRead, canWrite, canDelete } = useAuth();
+  const { canWrite, canDelete } = useAuth();
   const { withLoader } = useLoader();
-  const { user, handleLogout } = useAuth();
+
   const resource = "leases"; // must match resource name from backend policies
 
   const [leaseOverview, setLeaseOverview] = useState<LeaseOverview>({
@@ -182,7 +172,10 @@ export default function Leases() {
         updateLeasePage();
 
         // Extract leaseId from response
-        const leaseId = response.data?.id || response.data?.data?.id || response.data?.lease_id;
+        const leaseId =
+          response.data?.id ||
+          response.data?.data?.id ||
+          response.data?.lease_id;
 
         if (leaseId) {
           // Close lease form
@@ -215,7 +208,8 @@ export default function Leases() {
         setIsFormOpen(false);
       }
       toast.success(
-        `Lease has been ${formMode === "create" ? "created" : "updated"
+        `Lease has been ${
+          formMode === "create" ? "created" : "updated"
         } successfully.`,
       );
     }
@@ -334,8 +328,8 @@ export default function Leases() {
                   {leaseOverview.avgLeaseTermMonths < 12
                     ? `${leaseOverview.avgLeaseTermMonths.toFixed(0)} months`
                     : `${(leaseOverview.avgLeaseTermMonths / 12).toFixed(
-                      1,
-                    )} years`}
+                        1,
+                      )} years`}
                 </div>
                 <p className="text-sm text-muted-foreground">Avg Lease Term</p>
               </CardContent>
@@ -414,7 +408,7 @@ export default function Leases() {
                       </div>
                       <div>
                         {!lease.deposit_amount ||
-                          Number(lease.deposit_amount) === 0
+                        Number(lease.deposit_amount) === 0
                           ? "-"
                           : formatCurrency(lease.deposit_amount as any)}
                       </div>

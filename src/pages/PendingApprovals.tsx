@@ -48,6 +48,9 @@ import { useAuth } from "@/context/AuthContext";
 import { PageHeader } from "@/components/PageHeader";
 import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { LeaseForm } from "@/components/LeasesForm";
+import { leasesApiService } from "@/services/leasing_tenants/leasesapi";
+import { Lease } from "@/interfaces/leasing_tenants_interface";
 
 
 export default function PendingApprovals() {
@@ -68,6 +71,10 @@ export default function PendingApprovals() {
   const [search, setSearch] = useState("");
   const [status, setStatus] = useState<string>("pending");
   const [pendingCount, setPendingCount] = useState(0);
+  const [showAddLeaseDialog, setShowAddLeaseDialog] = useState(false);
+  const [approvedUserId, setApprovedUserId] = useState<string | null>(null);
+  const [isLeaseFormOpen, setIsLeaseFormOpen] = useState(false);
+  const [prefilledLeaseData, setPrefilledLeaseData] = useState<Lease | null>(null);
 
   useSkipFirstEffect(() => {
     loadUsersForApproval();
@@ -181,10 +188,23 @@ export default function PendingApprovals() {
     if (resp?.success) {
       toast.success("User has been approved successfully.");
       setIsApproveDialogOpen(false);
-      setSelectedUser(null);
       setActionType(null);
       setSelectedRoleIds([]);
       setRoleValidationError("");
+      
+      // Check if user is a tenant type (not space or other types), then show lease dialog
+      const accountType = selectedUser?.default_account_type || selectedUser?.account_type;
+      const isTenant = 
+        (Array.isArray(accountType) && accountType.includes("tenant") && !accountType.includes("space")) ||
+        (!Array.isArray(accountType) && accountType === "tenant");
+      
+      if (isTenant) {
+        setApprovedUserId(selectedUser.id);
+        setShowAddLeaseDialog(true);
+      } else {
+        setSelectedUser(null);
+      }
+      
       loadUsersForApproval();
     }
     setIsSubmitting(false);
@@ -480,6 +500,82 @@ export default function PendingApprovals() {
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
+
+      {/* Add Lease Dialog */}
+      <AlertDialog
+        open={showAddLeaseDialog}
+        onOpenChange={setShowAddLeaseDialog}
+      >
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Add Lease?</AlertDialogTitle>
+            <AlertDialogDescription>
+              Do you want to add a lease for this tenant?
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel
+              onClick={() => {
+                setShowAddLeaseDialog(false);
+                setApprovedUserId(null);
+                setSelectedUser(null);
+              }}
+            >
+              No
+            </AlertDialogCancel>
+            <AlertDialogAction
+              onClick={async () => {
+                setShowAddLeaseDialog(false);
+                // For user approval, we use user_id as tenant_id
+                // The user will need to select site/building/space in the lease form
+                if (approvedUserId) {
+                  setPrefilledLeaseData({
+                    tenant_id: approvedUserId,
+                  } as Lease);
+                }
+                setIsLeaseFormOpen(true);
+              }}
+            >
+              Yes
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+
+      {/* Lease Form */}
+      <LeaseForm
+        lease={prefilledLeaseData ? (prefilledLeaseData as Lease) : undefined}
+        isOpen={isLeaseFormOpen}
+        disableLocationFields={true}
+        onClose={() => {
+          setIsLeaseFormOpen(false);
+          setApprovedUserId(null);
+          setSelectedUser(null);
+          setPrefilledLeaseData(null);
+        }}
+        onSave={async (leaseData: Partial<Lease>) => {
+          const response = await withLoader(async () => {
+            return await leasesApiService.addLease(leaseData);
+          });
+
+          if (response?.success) {
+            setIsLeaseFormOpen(false);
+            setApprovedUserId(null);
+            setSelectedUser(null);
+            setPrefilledLeaseData(null);
+            toast.success(`Lease has been created successfully.`);
+            loadUsersForApproval();
+          } else if (response && !response.success) {
+            if (response?.message) {
+              toast.error(response.message);
+            } else {
+              toast.error("Failed to create lease.");
+            }
+          }
+          return response;
+        }}
+        mode="create"
+      />
     </div>
   );
 }
