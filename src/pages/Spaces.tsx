@@ -41,7 +41,13 @@ import {
 import { Pagination } from "@/components/Pagination";
 import { siteApiService } from "@/services/spaces_sites/sitesapi";
 import { spacesApiService } from "@/services/spaces_sites/spacesapi";
-import { getKindColor, getKindIcon, getStatusColor, SpaceKind, spaceKinds } from "@/interfaces/spaces_interfaces";
+import {
+  getKindColor,
+  getKindIcon,
+  getStatusColor,
+  SpaceKind,
+  spaceKinds,
+} from "@/interfaces/spaces_interfaces";
 import { useSkipFirstEffect } from "@/hooks/use-skipfirst-effect";
 import { useAuth } from "../context/AuthContext";
 import { useLoader } from "@/context/LoaderContext";
@@ -57,7 +63,6 @@ export interface Space {
   org_id: string;
   site_id: string;
   site_name?: string;
-  code: string;
   name?: string;
   kind: SpaceKind;
   floor?: string;
@@ -89,7 +94,7 @@ export default function Spaces() {
   const [spaces, setSpaces] = useState<Space[]>([]);
   const [selectedSpace, setSelectedSpace] = useState<Space | undefined>();
   const [formMode, setFormMode] = useState<"create" | "edit" | "view">(
-    "create"
+    "create",
   );
   const [isFormOpen, setIsFormOpen] = useState(false);
   const [deleteSpaceId, setDeleteSpaceId] = useState<string | null>(null);
@@ -238,7 +243,7 @@ export default function Spaces() {
         // Update the edited space in local state
         loadSpaceOverView();
         setSpaces((prev) =>
-          prev.map((s) => (s.id === updatedSpace.id ? response.data : s))
+          prev.map((s) => (s.id === updatedSpace.id ? response.data : s)),
         );
       }
     }
@@ -246,8 +251,9 @@ export default function Spaces() {
     if (response?.success) {
       setIsFormOpen(false);
       toast.success(
-        `Space ${spaceData.code} has been ${formMode === "create" ? "created" : "updated"
-        } successfully.`
+        `Space ${spaceData.name} has been ${
+          formMode === "create" ? "created" : "updated"
+        } successfully.`,
       );
     }
     return response;
@@ -316,10 +322,7 @@ export default function Spaces() {
             </SelectContent>
           </Select>
 
-          <Select
-            value={selectedStatus}
-            onValueChange={setSelectedStatus}
-          >
+          <Select value={selectedStatus} onValueChange={setSelectedStatus}>
             <SelectTrigger className="w-[180px]">
               <SelectValue placeholder="All Status" />
             </SelectTrigger>
@@ -327,9 +330,7 @@ export default function Spaces() {
               <SelectItem value="all">All Status</SelectItem>
               <SelectItem value="available">Available</SelectItem>
               <SelectItem value="occupied">Occupied</SelectItem>
-              <SelectItem value="out_of_service">
-                Out of Service
-              </SelectItem>
+              <SelectItem value="out_of_service">Out of Service</SelectItem>
             </SelectContent>
           </Select>
         </div>
@@ -343,9 +344,7 @@ export default function Spaces() {
                 <div className="text-2xl font-bold text-sidebar-primary">
                   {spaceOverview.totalSpaces}
                 </div>
-                <p className="text-sm text-muted-foreground">
-                  Total Spaces
-                </p>
+                <p className="text-sm text-muted-foreground">Total Spaces</p>
               </CardContent>
             </Card>
             <Card>
@@ -369,9 +368,7 @@ export default function Spaces() {
                 <div className="text-2xl font-bold text-red-600">
                   {spaceOverview.outOfServices}
                 </div>
-                <p className="text-sm text-muted-foreground">
-                  Out of Service
-                </p>
+                <p className="text-sm text-muted-foreground">Out of Service</p>
               </CardContent>
             </Card>
           </div>
@@ -390,11 +387,8 @@ export default function Spaces() {
                         <span className="text-xl">
                           {getKindIcon(space.kind)}
                         </span>
-                        {space.name || space.code}
+                        {space.name}
                       </CardTitle>
-                      <p className="text-sm text-muted-foreground">
-                        {space.code}
-                      </p>
                     </div>
                     <Badge className={getStatusColor(space.status)}>
                       {space.status.replace("_", " ")}
@@ -429,31 +423,29 @@ export default function Spaces() {
                           Block: {space.building_block}
                         </span>
                       )}
-                      {Number(space.floor) !== 0 &&
-                        Number(space.floor) > 0 && (
-                          <span className="text-muted-foreground">
-                            Floor: {space.floor}
-                          </span>
-                        )}
+                      {Number(space.floor) !== 0 && Number(space.floor) > 0 && (
+                        <span className="text-muted-foreground">
+                          Floor: {space.floor}
+                        </span>
+                      )}
                     </div>
                   </div>
 
                   {/* Bed/Bath info for residential */}
-                  {(Number(space.beds) > 0 ||
-                    Number(space.baths) > 0) && (
-                      <div className="flex items-center gap-4 text-sm">
-                        {Number(space.beds) > 0 && (
-                          <span className="text-muted-foreground">
-                            🛏️ {space.beds} beds
-                          </span>
-                        )}
-                        {Number(space.baths) > 0 && (
-                          <span className="text-muted-foreground">
-                            🚿 {space.baths} baths
-                          </span>
-                        )}
-                      </div>
-                    )}
+                  {(Number(space.beds) > 0 || Number(space.baths) > 0) && (
+                    <div className="flex items-center gap-4 text-sm">
+                      {Number(space.beds) > 0 && (
+                        <span className="text-muted-foreground">
+                          🛏️ {space.beds} beds
+                        </span>
+                      )}
+                      {Number(space.baths) > 0 && (
+                        <span className="text-muted-foreground">
+                          🚿 {space.baths} baths
+                        </span>
+                      )}
+                    </div>
+                  )}
 
                   {/* Key Attributes */}
                   {space.attributes &&

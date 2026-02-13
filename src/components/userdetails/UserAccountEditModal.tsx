@@ -72,9 +72,9 @@ export default function AccountEditModal({
     }, [open, account, form]);
 
     const getTitle = () => {
-        if (mode === "create") return "Add Account";
-        if (mode === "edit") return "Edit Account";
-        return "Account Details";
+        if (mode === "create") return "Add User";
+        if (mode === "edit") return "Edit User";
+        return "User Details";
     };
 
     return (

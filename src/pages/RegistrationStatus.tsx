@@ -26,8 +26,9 @@ export default function RegistrationStatus() {
               <span className="text-white font-bold text-2xl">F</span>
             </div>
             <h1 className="text-2xl font-bold">Registration Submitted</h1>
-            <p className="text-muted-foreground mt-2">
-              Your account request has been submitted successfully
+            <p className="text-foreground">
+              Hi <span className="font-medium">{user?.name || "User"}</span>,
+              your account request has been submitted successfully.
             </p>
           </div>
 
@@ -40,10 +41,6 @@ export default function RegistrationStatus() {
               </div>
 
               <div className="text-center space-y-3">
-                <p className="text-foreground">
-                  Hi <span className="font-medium">{user?.name || "User"}</span>
-                  , your account request has been submitted successfully.
-                </p>
                 <p className="text-muted-foreground">
                   Our team will review your application and notify you at{" "}
                   <span className="font-medium text-foreground">

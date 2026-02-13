@@ -46,13 +46,13 @@ export default function AccountCard({
                 <div className="flex items-start justify-between">
                     <div>
                         <h3 className="text-lg font-semibold capitalize flex items-center gap-2">
-                            {account.account_type} Account
+                            {account.account_type}
                             {!account.is_default ? (
                                 <Button
                                     size="icon"
                                     variant="ghost"
                                     onClick={() => onMarkASDefault(account)}
-                                    title="Mark as default account"
+                                    title="Mark as default user"
                                 >
                                     <Star className="h-5 w-5" />
                                 </Button>
@@ -62,7 +62,7 @@ export default function AccountCard({
                                     variant="ghost"
                                     disabled
                                     className="cursor-default"
-                                    title="This account is used by default for login and actions"
+                                    title="This user is used by default for login and actions"
                                 >
                                     <Star className="h-5 w-5 text-yellow-500 fill-yellow-500" />
                                 </Button>
@@ -77,7 +77,7 @@ export default function AccountCard({
                             size="icon"
                             variant="ghost"
                             onClick={onEdit}
-                            title="Edit account"
+                            title="Edit user"
                         >
                             <Pencil className="h-4 w-4" />
                         </Button>
@@ -85,7 +85,7 @@ export default function AccountCard({
                             size="icon"
                             variant="ghost"
                             //onClick={() => onDeactivate(account)}
-                            title="Deactivate account"
+                            title="Deactivate user"
                             className="text-destructive hover:text-destructive"
                             disabled={account.is_default} // UX rule
                         >

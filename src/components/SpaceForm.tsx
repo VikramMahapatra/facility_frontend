@@ -24,7 +24,7 @@ import { toast } from "sonner";
 import { siteApiService } from "@/services/spaces_sites/sitesapi";
 import { buildingApiService } from "@/services/spaces_sites/buildingsapi";
 import { SpaceKind, spaceKinds } from "@/interfaces/spaces_interfaces";
-import { AsyncAutocompleteRQ } from "./common/async-autocomplete-rq";
+
 import { withFallback } from "@/helpers/commonHelper";
 
 interface Space {
@@ -32,7 +32,6 @@ interface Space {
   org_id: string;
   site_id: string;
   site_name?: string;
-  code: string;
   name?: string;
   kind: SpaceKind;
   floor?: string;
@@ -61,7 +60,6 @@ interface SpaceFormProps {
 }
 
 const emptyFormData: SpaceFormValues = {
-  code: "",
   name: "",
   kind: "room",
   site_id: "",
@@ -108,35 +106,33 @@ export function SpaceForm({
     reset(
       space && mode !== "create"
         ? {
-          code: space.code || "",
-          name: space.name || "",
-          kind: space.kind || "room",
-          site_id: space.site_id || "",
-          floor:
-            space.floor !== undefined && space.floor !== null
-              ? Number(space.floor)
-              : undefined,
-          building_block_id: space.building_block_id || "",
-          area_sqft: space.area_sqft,
-          beds: space.beds,
-          baths: space.baths,
-          status: space.status || "available",
-          attributes: {
-            view: space.attributes?.view || "",
+            name: space.name || "",
+            kind: space.kind || "room",
+            site_id: space.site_id || "",
+            floor:
+              space.floor !== undefined && space.floor !== null
+                ? Number(space.floor)
+                : undefined,
+            building_block_id: space.building_block_id || "",
+            area_sqft: space.area_sqft,
+            beds: space.beds,
+            baths: space.baths,
+            status: space.status || "available",
+            attributes: {
+              view: space.attributes?.view || "",
 
-            furnished: space.attributes?.furnished as
-              | "unfurnished"
-              | "semi"
-              | "fully"
-              | undefined,
-            star_rating: space.attributes?.star_rating || "",
-          },
-        }
-        : emptyFormData
+              furnished: space.attributes?.furnished as
+                | "unfurnished"
+                | "semi"
+                | "fully"
+                | undefined,
+              star_rating: space.attributes?.star_rating || "",
+            },
+          }
+        : emptyFormData,
     );
 
     setFormLoading(false);
-
 
     if (space?.site_id) {
       loadBuildingLookup(space.site_id);
@@ -150,6 +146,10 @@ export function SpaceForm({
   }, [space, mode, isOpen, reset]);
 
   useEffect(() => {
+    loadSiteLookup();
+  }, []);
+
+  useEffect(() => {
     if (selectedSiteId) {
       loadBuildingLookup();
     } else {
@@ -157,13 +157,17 @@ export function SpaceForm({
     }
   }, [selectedSiteId]);
 
-
   const loadBuildingLookup = async (siteId?: string) => {
     const id = siteId || selectedSiteId;
     if (!id) return;
 
     const response = await buildingApiService.getBuildingLookup(id);
     if (response.success) setBuildingList(response.data || []);
+  };
+
+  const loadSiteLookup = async () => {
+    const response = await siteApiService.getSiteLookup();
+    if (response.success) setSiteList(response.data || []);
   };
 
   const onSubmitForm = async (data: SpaceFormValues) => {
@@ -190,9 +194,11 @@ export function SpaceForm({
 
   const fallbackBuilding = space?.building_block_id
     ? {
-      id: space.building_block_id,
-      name: space.building_block || `Building (${space.building_block_id.slice(0, 6)})`,
-    }
+        id: space.building_block_id,
+        name:
+          space.building_block ||
+          `Building (${space.building_block_id.slice(0, 6)})`,
+      }
     : null;
 
   const building_blocks = withFallback(buildingList, fallbackBuilding);
@@ -216,32 +222,19 @@ export function SpaceForm({
             <p className="text-center">Loading...</p>
           ) : (
             <div className="space-y-4">
-              <div className="grid grid-cols-2 gap-4">
-                <div className="space-y-2">
-                  <Label htmlFor="code">Code *</Label>
-                  <Input
-                    id="code"
-                    {...register("code")}
-                    placeholder="e.g., 101, A-1203, SH-12"
-                    disabled={isReadOnly}
-                    className={errors.code ? "border-red-500" : ""}
-                  />
-                  {errors.code && (
-                    <p className="text-sm text-red-500">
-                      {errors.code.message}
-                    </p>
-                  )}
-                </div>
-                <div className="space-y-2">
-                  <Label htmlFor="name">Name *</Label>
-                  <Input
-                    id="name"
-                    {...register("name")}
-                    placeholder="Space name"
-                    disabled={isReadOnly}
-                    className={errors.name ? "border-red-500" : ""}
-                  />
-                </div>
+              {/* Unit Name - Full Row */}
+              <div className="space-y-2">
+                <Label htmlFor="name">Unit *</Label>
+                <Input
+                  id="name"
+                  {...register("name")}
+                  placeholder="Space name"
+                  disabled={isReadOnly}
+                  className={errors.name ? "border-red-500" : ""}
+                />
+                {errors.name && (
+                  <p className="text-sm text-red-500">{errors.name.message}</p>
+                )}
               </div>
 
               <div className="grid grid-cols-2 gap-4">
@@ -251,33 +244,30 @@ export function SpaceForm({
                   render={({ field }) => (
                     <div className="space-y-2">
                       <Label htmlFor="site_id">Site *</Label>
-                      <AsyncAutocompleteRQ
+                      <Select
                         value={field.value}
-                        onChange={(value) => {
-                          field.onChange(value);
-                          // clear building when site changes
-                          reset({ ...watch(), building_block_id: "" });
-                        }}
-                        placeholder="Select site"
+                        onValueChange={field.onChange}
                         disabled={isReadOnly}
-                        queryKey={["sites"]}
-                        queryFn={async (search) => {
-                          const res = await siteApiService.getSiteLookup(search);
-                          return res.data.map((s) => ({
-                            id: s.id,
-                            label: s.name,
-                          }));
-                        }}
-                        fallbackOption={
-                          space?.site_id
-                            ? {
-                              id: space.site_id,
-                              label: space.site_name || "Selected Site",
-                            }
-                            : undefined
-                        }
-                        minSearchLength={1}
-                      />
+                      >
+                        <SelectTrigger
+                          className={errors.site_id ? "border-red-500" : ""}
+                        >
+                          <SelectValue placeholder="Select Site" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          {siteList.length === 0 ? (
+                            <SelectItem value="none" disabled>
+                              No sites available
+                            </SelectItem>
+                          ) : (
+                            siteList.map((site) => (
+                              <SelectItem key={site.id} value={site.id}>
+                                {site.name}
+                              </SelectItem>
+                            ))
+                          )}
+                        </SelectContent>
+                      </Select>
                       {errors.site_id && (
                         <p className="text-sm text-red-500">
                           {errors.site_id.message}
@@ -294,7 +284,9 @@ export function SpaceForm({
                       <Label htmlFor="building_block_id">Building Block</Label>
                       <Select
                         value={field.value || "none"}
-                        onValueChange={(value) => field.onChange(value === "none" ? "" : value)}
+                        onValueChange={(value) =>
+                          field.onChange(value === "none" ? "" : value)
+                        }
                         disabled={isReadOnly}
                       >
                         <SelectTrigger
