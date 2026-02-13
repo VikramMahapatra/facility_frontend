@@ -23,7 +23,16 @@ import { SpaceFormValues, spaceSchema } from "@/schemas/space.schema";
 import { toast } from "sonner";
 import { siteApiService } from "@/services/spaces_sites/sitesapi";
 import { buildingApiService } from "@/services/spaces_sites/buildingsapi";
+import { spacesApiService } from "@/services/spaces_sites/spacesapi";
 import { SpaceKind, spaceKinds } from "@/interfaces/spaces_interfaces";
+import {
+  Popover,
+  PopoverContent,
+  PopoverTrigger,
+} from "@/components/ui/popover";
+import { Checkbox } from "@/components/ui/checkbox";
+import { Badge } from "@/components/ui/badge";
+import { ChevronsUpDown, X, Plus } from "lucide-react";
 
 import { withFallback } from "@/helpers/commonHelper";
 
@@ -34,6 +43,7 @@ interface Space {
   site_name?: string;
   name?: string;
   kind: SpaceKind;
+  category?: "residential" | "commercial";
   floor?: string;
   building_block_id?: string;
   building_block?: string;
@@ -46,6 +56,10 @@ interface Space {
     furnished?: string;
     star_rating?: string;
   };
+  accessories?: Array<{
+    accessory_id: string;
+    quantity: number;
+  }>;
   status: "available" | "occupied" | "out_of_service";
   created_at: string;
   updated_at: string;
@@ -59,9 +73,37 @@ interface SpaceFormProps {
   mode: "create" | "edit" | "view";
 }
 
+// Mapping of space kinds to categories
+const kindToCategory: Record<SpaceKind, "residential" | "commercial"> = {
+  room: "residential",
+  apartment: "residential",
+  villa: "residential",
+  row_house: "residential",
+  bungalow: "residential",
+  duplex: "residential",
+  penthouse: "residential",
+  studio_apartment: "residential",
+  farm_house: "residential",
+  shop: "commercial",
+  office: "commercial",
+  warehouse: "commercial",
+  meeting_room: "commercial",
+  hall: "commercial",
+  common_area: "commercial",
+  parking: "commercial",
+};
+
+const getKindsByCategory = (
+  category?: "residential" | "commercial",
+): readonly SpaceKind[] => {
+  if (!category) return spaceKinds;
+  return spaceKinds.filter((kind) => kindToCategory[kind] === category);
+};
+
 const emptyFormData: SpaceFormValues = {
   name: "",
   kind: "room",
+  category: undefined,
   site_id: "",
   floor: undefined,
   building_block_id: "",
@@ -74,6 +116,7 @@ const emptyFormData: SpaceFormValues = {
     furnished: undefined,
     star_rating: "",
   },
+  accessories: [],
 };
 
 export function SpaceForm({
@@ -89,6 +132,7 @@ export function SpaceForm({
     control,
     reset,
     watch,
+    setValue,
     formState: { errors, isSubmitting, isValid },
   } = useForm<SpaceFormValues>({
     resolver: zodResolver(spaceSchema),
@@ -99,7 +143,12 @@ export function SpaceForm({
   const [formLoading, setFormLoading] = useState(true);
   const [siteList, setSiteList] = useState<any[]>([]);
   const [buildingList, setBuildingList] = useState<any[]>([]);
+  const [accessoriesList, setAccessoriesList] = useState<any[]>([]);
+  const [accessoriesPopoverOpen, setAccessoriesPopoverOpen] = useState(false);
   const selectedSiteId = watch("site_id");
+  const selectedCategory = watch("category");
+  const selectedKind = watch("kind");
+  const selectedAccessories = watch("accessories") || [];
 
   const loadAll = async () => {
     setFormLoading(true);
@@ -108,6 +157,7 @@ export function SpaceForm({
         ? {
             name: space.name || "",
             kind: space.kind || "room",
+            category: space.category,
             site_id: space.site_id || "",
             floor:
               space.floor !== undefined && space.floor !== null
@@ -128,11 +178,14 @@ export function SpaceForm({
                 | undefined,
               star_rating: space.attributes?.star_rating || "",
             },
+            accessories: space.accessories || [],
           }
         : emptyFormData,
     );
 
     setFormLoading(false);
+
+    Promise.all([loadSiteLookup(), loadAccessoriesLookup()]);
 
     if (space?.site_id) {
       loadBuildingLookup(space.site_id);
@@ -146,8 +199,10 @@ export function SpaceForm({
   }, [space, mode, isOpen, reset]);
 
   useEffect(() => {
-    loadSiteLookup();
-  }, []);
+    if (isOpen) {
+      loadAccessoriesLookup();
+    }
+  }, [isOpen]);
 
   useEffect(() => {
     if (selectedSiteId) {
@@ -170,6 +225,60 @@ export function SpaceForm({
     if (response.success) setSiteList(response.data || []);
   };
 
+  const loadAccessoriesLookup = async () => {
+    const response = await spacesApiService.getAccessoriesLookup();
+    if (response.success) setAccessoriesList(response.data || []);
+  };
+
+  const handleAccessoryToggle = (accessoryId: string) => {
+    const currentAccessories = selectedAccessories || [];
+    const isSelected = currentAccessories.some(
+      (acc: any) => acc.accessory_id === accessoryId,
+    );
+
+    if (isSelected) {
+      setValue(
+        "accessories",
+        currentAccessories.filter(
+          (acc: any) => acc.accessory_id !== accessoryId,
+        ),
+      );
+    } else {
+      setValue("accessories", [
+        ...currentAccessories,
+        { accessory_id: accessoryId, quantity: 1 },
+      ]);
+    }
+  };
+
+  const handleAccessoryRemove = (accessoryId: string) => {
+    const currentAccessories = selectedAccessories || [];
+    setValue(
+      "accessories",
+      currentAccessories.filter((acc: any) => acc.accessory_id !== accessoryId),
+    );
+  };
+
+  const handleAccessoryQuantityChange = (
+    accessoryId: string,
+    quantity: number,
+  ) => {
+    const currentAccessories = selectedAccessories || [];
+    setValue(
+      "accessories",
+      currentAccessories.map((acc: any) =>
+        acc.accessory_id === accessoryId ? { ...acc, quantity: quantity } : acc,
+      ),
+    );
+  };
+
+  const getAccessoryName = (accessoryId: string) => {
+    const accessory = accessoriesList.find(
+      (a) => (a.id ?? a.value ?? a).toString() === accessoryId,
+    );
+    return accessory?.name ?? accessory?.label ?? accessory ?? accessoryId;
+  };
+
   const onSubmitForm = async (data: SpaceFormValues) => {
     const formResponse = await onSave({
       ...space,
@@ -184,7 +293,23 @@ export function SpaceForm({
   };
 
   const isReadOnly = mode === "view";
-  const selectedKind = watch("kind");
+
+  // Filter kinds based on selected category
+  const filteredKinds = getKindsByCategory(selectedCategory);
+
+  // Reset kind when category changes if current kind doesn't belong to new category
+  useEffect(() => {
+    if (selectedCategory && selectedKind) {
+      const currentKindCategory = kindToCategory[selectedKind as SpaceKind];
+      if (currentKindCategory !== selectedCategory) {
+        // Reset to first available kind in the selected category
+        const firstKind = filteredKinds[0];
+        if (firstKind) {
+          setValue("kind", firstKind);
+        }
+      }
+    }
+  }, [selectedCategory, selectedKind, filteredKinds, setValue]);
 
   const handleClose = () => {
     reset(emptyFormData);
@@ -205,7 +330,7 @@ export function SpaceForm({
 
   return (
     <Dialog open={isOpen} onOpenChange={handleClose}>
-      <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
+      <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
         <DialogHeader>
           <DialogTitle>
             {mode === "create" && "Create New Space"}
@@ -222,22 +347,8 @@ export function SpaceForm({
             <p className="text-center">Loading...</p>
           ) : (
             <div className="space-y-4">
-              {/* Unit Name - Full Row */}
-              <div className="space-y-2">
-                <Label htmlFor="name">Unit *</Label>
-                <Input
-                  id="name"
-                  {...register("name")}
-                  placeholder="Space name"
-                  disabled={isReadOnly}
-                  className={errors.name ? "border-red-500" : ""}
-                />
-                {errors.name && (
-                  <p className="text-sm text-red-500">{errors.name.message}</p>
-                )}
-              </div>
-
-              <div className="grid grid-cols-2 gap-4">
+              {/* Row 1: Site, Building, Unit */}
+              <div className="grid grid-cols-3 gap-4">
                 <Controller
                   name="site_id"
                   control={control}
@@ -316,27 +427,58 @@ export function SpaceForm({
                     </div>
                   )}
                 />
-              </div>
-
-              <div className="grid grid-cols-2 gap-4">
                 <div className="space-y-2">
-                  <Label htmlFor="floor">Floor</Label>
+                  <Label htmlFor="name">Unit *</Label>
                   <Input
-                    id="floor"
-                    type="number"
-                    {...register("floor", {
-                      setValueAs: (v) => (v === "" ? undefined : Number(v)),
-                    })}
-                    placeholder="0, 1, 2 , ..."
+                    id="name"
+                    {...register("name")}
+                    placeholder="Space name"
                     disabled={isReadOnly}
-                    className={errors.floor ? "border-red-500" : ""}
+                    className={errors.name ? "border-red-500" : ""}
                   />
-                  {errors.floor && (
+                  {errors.name && (
                     <p className="text-sm text-red-500">
-                      {errors.floor.message}
+                      {errors.name.message}
                     </p>
                   )}
                 </div>
+              </div>
+
+              {/* Row 2: Category, Type, Status */}
+              <div className="grid grid-cols-3 gap-4">
+                <Controller
+                  name="category"
+                  control={control}
+                  render={({ field }) => (
+                    <div className="space-y-2">
+                      <Label htmlFor="category">Category</Label>
+                      <Select
+                        value={field.value || ""}
+                        onValueChange={(value) =>
+                          field.onChange(value === "" ? undefined : value)
+                        }
+                        disabled={isReadOnly}
+                      >
+                        <SelectTrigger
+                          className={errors.category ? "border-red-500" : ""}
+                        >
+                          <SelectValue placeholder="Select category" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="residential">
+                            Residential
+                          </SelectItem>
+                          <SelectItem value="commercial">Commercial</SelectItem>
+                        </SelectContent>
+                      </Select>
+                      {errors.category && (
+                        <p className="text-sm text-red-500">
+                          {errors.category.message}
+                        </p>
+                      )}
+                    </div>
+                  )}
+                />
                 <Controller
                   name="kind"
                   control={control}
@@ -346,21 +488,35 @@ export function SpaceForm({
                       <Select
                         value={field.value}
                         onValueChange={field.onChange}
-                        disabled={isReadOnly}
+                        disabled={isReadOnly || !selectedCategory}
                       >
                         <SelectTrigger
                           className={errors.kind ? "border-red-500" : ""}
                         >
-                          <SelectValue placeholder="Select type" />
+                          <SelectValue
+                            placeholder={
+                              selectedCategory
+                                ? "Select type"
+                                : "Select category first"
+                            }
+                          />
                         </SelectTrigger>
                         <SelectContent>
-                          {spaceKinds.map((kind) => (
-                            <SelectItem key={kind} value={kind}>
-                              {kind
-                                .replace("_", " ")
-                                .replace(/\b\w/g, (l) => l.toUpperCase())}
+                          {filteredKinds.length === 0 ? (
+                            <SelectItem value="" disabled>
+                              {selectedCategory
+                                ? `No ${selectedCategory} types available`
+                                : "Select category first"}
                             </SelectItem>
-                          ))}
+                          ) : (
+                            filteredKinds.map((kind) => (
+                              <SelectItem key={kind} value={kind}>
+                                {kind
+                                  .replace("_", " ")
+                                  .replace(/\b\w/g, (l) => l.toUpperCase())}
+                              </SelectItem>
+                            ))
+                          )}
                         </SelectContent>
                       </Select>
                       {errors.kind && (
@@ -371,72 +527,6 @@ export function SpaceForm({
                     </div>
                   )}
                 />
-              </div>
-
-              <div className="grid grid-cols-2 gap-4">
-                <div className="space-y-2">
-                  <Label htmlFor="area_sqft">Area (sq ft)</Label>
-                  <Input
-                    id="area_sqft"
-                    type="number"
-                    step="any"
-                    {...register("area_sqft", {
-                      setValueAs: (v) => (v === "" ? undefined : Number(v)),
-                    })}
-                    disabled={isReadOnly}
-                    className={errors.area_sqft ? "border-red-500" : ""}
-                    min="0"
-                  />
-                  {errors.area_sqft && (
-                    <p className="text-sm text-red-500">
-                      {errors.area_sqft.message}
-                    </p>
-                  )}
-                </div>
-              </div>
-
-              {selectedKind && ["room", "apartment"].includes(selectedKind) && (
-                <div className="grid grid-cols-2 gap-4">
-                  <div className="space-y-2">
-                    <Label htmlFor="beds">Beds</Label>
-                    <Input
-                      id="beds"
-                      type="number"
-                      {...register("beds", {
-                        setValueAs: (v) => (v === "" ? undefined : Number(v)),
-                      })}
-                      disabled={isReadOnly}
-                      className={errors.beds ? "border-red-500" : ""}
-                      min="0"
-                    />
-                    {errors.beds && (
-                      <p className="text-sm text-red-500">
-                        {errors.beds.message}
-                      </p>
-                    )}
-                  </div>
-                  <div className="space-y-2">
-                    <Label htmlFor="baths">Baths</Label>
-                    <Input
-                      id="baths"
-                      type="number"
-                      {...register("baths", {
-                        setValueAs: (v) => (v === "" ? undefined : Number(v)),
-                      })}
-                      disabled={isReadOnly}
-                      className={errors.baths ? "border-red-500" : ""}
-                      min="0"
-                    />
-                    {errors.baths && (
-                      <p className="text-sm text-red-500">
-                        {errors.baths.message}
-                      </p>
-                    )}
-                  </div>
-                </div>
-              )}
-
-              <div className="grid grid-cols-2 gap-4">
                 <Controller
                   name="status"
                   control={control}
@@ -469,6 +559,87 @@ export function SpaceForm({
                     </div>
                   )}
                 />
+              </div>
+
+              {/* Row 3: Floor, Area, Bed, Bath */}
+              <div className="grid grid-cols-4 gap-4">
+                <div className="space-y-2">
+                  <Label htmlFor="floor">Floor</Label>
+                  <Input
+                    id="floor"
+                    type="number"
+                    {...register("floor", {
+                      setValueAs: (v) => (v === "" ? undefined : Number(v)),
+                    })}
+                    placeholder="0, 1, 2 , ..."
+                    disabled={isReadOnly}
+                    className={errors.floor ? "border-red-500" : ""}
+                  />
+                  {errors.floor && (
+                    <p className="text-sm text-red-500">
+                      {errors.floor.message}
+                    </p>
+                  )}
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="area_sqft">Area (sq ft)</Label>
+                  <Input
+                    id="area_sqft"
+                    type="number"
+                    step="any"
+                    {...register("area_sqft", {
+                      setValueAs: (v) => (v === "" ? undefined : Number(v)),
+                    })}
+                    disabled={isReadOnly}
+                    className={errors.area_sqft ? "border-red-500" : ""}
+                    min="0"
+                  />
+                  {errors.area_sqft && (
+                    <p className="text-sm text-red-500">
+                      {errors.area_sqft.message}
+                    </p>
+                  )}
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="beds">Beds</Label>
+                  <Input
+                    id="beds"
+                    type="number"
+                    {...register("beds", {
+                      setValueAs: (v) => (v === "" ? undefined : Number(v)),
+                    })}
+                    disabled={isReadOnly}
+                    className={errors.beds ? "border-red-500" : ""}
+                    min="0"
+                  />
+                  {errors.beds && (
+                    <p className="text-sm text-red-500">
+                      {errors.beds.message}
+                    </p>
+                  )}
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="baths">Baths</Label>
+                  <Input
+                    id="baths"
+                    type="number"
+                    {...register("baths", {
+                      setValueAs: (v) => (v === "" ? undefined : Number(v)),
+                    })}
+                    disabled={isReadOnly}
+                    className={errors.baths ? "border-red-500" : ""}
+                    min="0"
+                  />
+                  {errors.baths && (
+                    <p className="text-sm text-red-500">
+                      {errors.baths.message}
+                    </p>
+                  )}
+                </div>
+              </div>
+
+              {/* Row 4: View, Furnished, Star Rating */}
+              <div className="grid grid-cols-3 gap-4">
                 <div className="space-y-2">
                   <Label htmlFor="view">View</Label>
                   <Input
@@ -478,9 +649,6 @@ export function SpaceForm({
                     disabled={isReadOnly}
                   />
                 </div>
-              </div>
-
-              <div className="grid grid-cols-2 gap-4">
                 <Controller
                   name="attributes.furnished"
                   control={control}
@@ -530,6 +698,151 @@ export function SpaceForm({
                           ))}
                         </SelectContent>
                       </Select>
+                    </div>
+                  )}
+                />
+              </div>
+
+              {/* Accessories Section */}
+              <div className="space-y-2">
+                <Label>Accessories</Label>
+                <Controller
+                  name="accessories"
+                  control={control}
+                  render={({ field }) => (
+                    <div className="space-y-2">
+                      <Popover
+                        open={accessoriesPopoverOpen}
+                        onOpenChange={setAccessoriesPopoverOpen}
+                      >
+                        <PopoverTrigger asChild>
+                          <Button
+                            variant="outline"
+                            role="combobox"
+                            aria-expanded={accessoriesPopoverOpen}
+                            className="w-1/2 justify-between"
+                            disabled={isReadOnly}
+                          >
+                            {selectedAccessories.length > 0 ? (
+                              <div className="flex flex-wrap gap-1">
+                                {selectedAccessories
+                                  .slice(0, 2)
+                                  .map((acc: any) => (
+                                    <Badge
+                                      key={acc.accessory_id}
+                                      variant="secondary"
+                                      className="text-xs"
+                                    >
+                                      {getAccessoryName(acc.accessory_id)} (
+                                      {acc.quantity})
+                                    </Badge>
+                                  ))}
+                                {selectedAccessories.length > 2 && (
+                                  <Badge
+                                    variant="secondary"
+                                    className="text-xs"
+                                  >
+                                    +{selectedAccessories.length - 2} more
+                                  </Badge>
+                                )}
+                              </div>
+                            ) : (
+                              "Select accessories..."
+                            )}
+                            <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
+                          </Button>
+                        </PopoverTrigger>
+                        <PopoverContent className="w-full p-0" align="start">
+                          <div className="max-h-96 overflow-y-auto">
+                            <div className="p-1">
+                              {accessoriesList.map((acc: any) => {
+                                const accessoryId = (
+                                  acc.id ??
+                                  acc.value ??
+                                  acc
+                                ).toString();
+                                const accessoryName =
+                                  acc.name ?? acc.label ?? acc;
+                                const isSelected = selectedAccessories.some(
+                                  (a: any) => a.accessory_id === accessoryId,
+                                );
+
+                                return (
+                                  <div
+                                    key={accessoryId}
+                                    className="flex items-center space-x-2 px-2 py-1.5 hover:bg-accent hover:text-accent-foreground rounded-sm cursor-pointer"
+                                    onClick={() =>
+                                      !isReadOnly &&
+                                      handleAccessoryToggle(accessoryId)
+                                    }
+                                  >
+                                    <Checkbox
+                                      checked={isSelected}
+                                      onChange={() =>
+                                        !isReadOnly &&
+                                        handleAccessoryToggle(accessoryId)
+                                      }
+                                      disabled={isReadOnly}
+                                    />
+                                    <span className="text-sm flex-1">
+                                      {accessoryName}
+                                    </span>
+                                  </div>
+                                );
+                              })}
+                            </div>
+                          </div>
+                        </PopoverContent>
+                      </Popover>
+
+                      {/* Selected Accessories Display with Quantity */}
+                      {selectedAccessories.length > 0 && (
+                        <div className="mt-2 space-y-2">
+                          {selectedAccessories.map((acc: any) => (
+                            <div
+                              key={acc.accessory_id}
+                              className="flex items-center gap-2 p-2 border rounded-md"
+                            >
+                              <Badge
+                                variant="secondary"
+                                className="text-xs flex-1"
+                              >
+                                {getAccessoryName(acc.accessory_id)}
+                              </Badge>
+                              <div className="flex items-center gap-2">
+                                <Label className="text-xs">Qty:</Label>
+                                <Input
+                                  type="number"
+                                  min="1"
+                                  value={acc.quantity || 1}
+                                  onChange={(e) => {
+                                    const qty = parseInt(e.target.value) || 1;
+                                    handleAccessoryQuantityChange(
+                                      acc.accessory_id,
+                                      qty,
+                                    );
+                                  }}
+                                  disabled={isReadOnly}
+                                  className="w-20 h-8 text-xs"
+                                />
+                              </div>
+                              {!isReadOnly && (
+                                <Button
+                                  type="button"
+                                  variant="ghost"
+                                  size="sm"
+                                  onClick={() =>
+                                    handleAccessoryRemove(acc.accessory_id)
+                                  }
+                                  className="h-8 w-8 p-0"
+                                >
+                                  <X className="h-3 w-3" />
+                                </Button>
+                              )}
+                            </div>
+                          ))}
+                        </div>
+                      )}
                     </div>
                   )}
                 />

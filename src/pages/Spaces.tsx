@@ -28,6 +28,7 @@ import {
   SidebarTrigger,
 } from "@/components/ui/sidebar";
 import { SpaceForm } from "@/components/SpaceForm";
+import { SpaceBulkUploadDialog } from "@/components/SpaceBulkUploadDialog";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -65,6 +66,7 @@ export interface Space {
   site_name?: string;
   name?: string;
   kind: SpaceKind;
+  category?: "residential" | "commercial";
   floor?: string;
   building_block_id?: string;
   building_block?: string;
@@ -205,6 +207,20 @@ export default function Spaces() {
       }
     }
   };
+  const handleBulkImport = async (data: any[]) => {
+    // TODO: Add API call here when ready
+    // const response = await spacesApiService.bulkUploadSpaces(data);
+    // if (response.success) {
+    //   updateSpacePage();
+    //   toast.success(`${data.length} spaces have been imported successfully.`);
+    // }
+    console.log("Bulk import data:", data);
+    toast.success(
+      `${data.length} spaces ready to import (API integration pending).`,
+    );
+    updateSpacePage();
+  };
+
   const handleSave = async (spaceData: Partial<Space>) => {
     let response;
     const attributes = spaceData.attributes ? { ...spaceData.attributes } : {};
@@ -273,10 +289,13 @@ export default function Spaces() {
             </p>
           </div>
           {canWrite(resource) && (
-            <Button onClick={handleCreate} className="gap-2">
-              <Plus className="h-4 w-4" />
-              Add New Space
-            </Button>
+            <div className="flex items-center gap-2">
+              <SpaceBulkUploadDialog onImport={handleBulkImport} />
+              <Button onClick={handleCreate} className="gap-2">
+                <Plus className="h-4 w-4" />
+                Add New Space
+              </Button>
+            </div>
           )}
         </div>
 
@@ -397,11 +416,24 @@ export default function Spaces() {
                 </CardHeader>
 
                 <CardContent className="space-y-4">
-                  {/* Kind and Location */}
+                  {/* Category, Kind and Location */}
                   <div className="flex items-center justify-between">
-                    <Badge className={getKindColor(space.kind)}>
-                      {space.kind.replace("_", " ")}
-                    </Badge>
+                    <div className="flex items-center gap-2">
+                      {space.category && (
+                        <Badge
+                          className={
+                            space.category === "residential"
+                              ? "bg-blue-100 text-blue-800"
+                              : "bg-purple-100 text-purple-800"
+                          }
+                        >
+                          {space.category}
+                        </Badge>
+                      )}
+                      <Badge className={getKindColor(space.kind)}>
+                        {space.kind.replace("_", " ")}
+                      </Badge>
+                    </div>
                     {Number(space.area_sqft) > 0 && (
                       <div className="text-sm text-muted-foreground">
                         {space.area_sqft} sq ft
