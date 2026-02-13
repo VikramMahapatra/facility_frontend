@@ -25,6 +25,7 @@ export const spaceSchema = z.object({
     ] as const, {
         required_error: "Kind is required",
     }),
+    category: z.enum(['residential', 'commercial']).optional(),
     floor: z.coerce.number({
         invalid_type_error: "Expected number"
     }).int("Floor must be a whole number").optional(),
@@ -47,6 +48,10 @@ export const spaceSchema = z.object({
         furnished: z.enum(['unfurnished', 'semi', 'fully']).optional(),
         star_rating: z.string().optional(),
     }).optional(),
+    accessories: z.array(z.object({
+        accessory_id: z.string(),
+        quantity: z.coerce.number().min(1, "Quantity must be at least 1").int("Quantity must be a whole number"),
+    })).optional(),
 });
 
 export type SpaceFormValues = z.infer<typeof spaceSchema>;

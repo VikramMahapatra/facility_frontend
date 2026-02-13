@@ -13,11 +13,20 @@ import {
 import Navigation from "@/components/Navigation";
 import { useNavigate, useLocation } from "react-router-dom";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
-import { Building2, Users, Home, UserPlus } from "lucide-react";
+import {
+  Building2,
+  Users,
+  Home,
+  UserPlus,
+  Sparkles,
+  Zap,
+  Crown,
+} from "lucide-react";
 import { authApiService } from "@/services/authapi";
 import { siteApiService } from "@/services/spaces_sites/sitesapi";
 import { buildingApiService } from "@/services/spaces_sites/buildingsapi";
 import { spacesApiService } from "@/services/spaces_sites/spacesapi";
+import { AsyncAutocompleteRQ } from "@/components/common/async-autocomplete-rq";
 import "react-phone-input-2/lib/style.css";
 import PhoneInput from "react-phone-input-2";
 import { toast } from "sonner";
@@ -36,6 +45,7 @@ const SignUp = () => {
     pictureUrl: userData?.picture || "",
     accountType: "",
     organizationName: "",
+    plan: "",
     // Tenant specific fields
     tenantType: "",
     // Location fields for tenant and space_owner
@@ -45,7 +55,6 @@ const SignUp = () => {
   });
 
   const [isLoading, setIsLoading] = useState(false);
-  const [siteList, setSiteList] = useState<any[]>([]);
   const [buildingList, setBuildingList] = useState<any[]>([]);
   const [spaceList, setSpaceList] = useState<any[]>([]);
 
@@ -75,17 +84,6 @@ const SignUp = () => {
     { value: "commercial", label: "Commercial" },
   ];
 
-  const loadSites = useCallback(async () => {
-    try {
-      const response = await siteApiService.getMasterSiteLookup();
-      if (response?.success) {
-        setSiteList(response.data?.sites || response.data || []);
-      }
-    } catch (error) {
-      console.error("Failed to load sites:", error);
-    }
-  }, []);
-
   const loadBuildings = useCallback(async (siteId: string) => {
     try {
       const response = await buildingApiService.getMasterBuildingLookup(siteId);
@@ -113,11 +111,6 @@ const SignUp = () => {
     },
     [],
   );
-
-  // Load sites on mount
-  useEffect(() => {
-    loadSites();
-  }, [loadSites]);
 
   // Load buildings when site changes
   useEffect(() => {
@@ -203,6 +196,7 @@ const SignUp = () => {
 
       if (formData.accountType === "organization") {
         registrationData.organizationName = formData.organizationName;
+        registrationData.plan = formData.plan;
       } else if (formData.accountType === "tenant") {
         registrationData.tenant_type = formData.tenantType;
         registrationData.site_id = formData.siteId;
@@ -269,7 +263,7 @@ const SignUp = () => {
       <Navigation />
 
       <div className="flex items-center justify-center min-h-[calc(100vh-4rem)] py-12 px-6">
-        <div className="w-full max-w-lg">
+        <div className="w-full max-w-3xl">
           <div className="text-center mb-8">
             {isGoogleSignup ? (
               <>
@@ -305,117 +299,162 @@ const SignUp = () => {
             </CardHeader>
             <CardContent>
               <form onSubmit={handleSubmit} className="space-y-6">
-                <div className="space-y-2">
-                  <Label htmlFor="name">Full Name *</Label>
-                  <Input
-                    id="name"
-                    value={formData.name}
-                    onChange={(e) =>
-                      setFormData({ ...formData, name: e.target.value })
-                    }
-                    placeholder="Enter your full name"
-                    required
-                  />
-                </div>
+                {/* Row 1: Full Name and Account Type - 2 Columns */}
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <div className="space-y-2">
+                    <Label htmlFor="name">Full Name *</Label>
+                    <Input
+                      id="name"
+                      value={formData.name}
+                      onChange={(e) =>
+                        setFormData({ ...formData, name: e.target.value })
+                      }
+                      placeholder="Enter your full name"
+                      required
+                    />
+                  </div>
 
-                <div className="space-y-2">
-                  <Label htmlFor="email">Email Address *</Label>
-                  <Input
-                    id="email"
-                    type="email"
-                    value={formData.email}
-                    onChange={(e) =>
-                      setFormData({ ...formData, email: e.target.value })
-                    }
-                    placeholder="Enter your email address"
-                    required
-                    disabled={isGoogleSignup}
-                  />
-                </div>
-
-                <div className="space-y-2">
-                  <Label htmlFor="phone">Phone *</Label>
-                  <PhoneInput
-                    country={"in"}
-                    value={formData.phone}
-                    onChange={(value) => {
-                      const digits = value.replace(/\D/g, "");
-                      const finalValue = "+" + digits;
-                      setFormData({ ...formData, phone: finalValue })
-                    }}
-                    inputProps={{
-                      name: "phone",
-                      required: true,
-                    }}
-                    disabled={isPhoneSignup}
-                    containerClass="w-full relative"
-                    inputClass="!w-full !h-10 !pl-12 !rounded-md !border !border-input !bg-background !px-3 !py-2 !text-base !ring-offset-background placeholder:!text-muted-foreground focus-visible:!outline-none focus-visible:!ring-2 focus-visible:!ring-ring focus-visible:!ring-offset-2 disabled:!cursor-not-allowed disabled:!opacity-50 md:!text-sm"
-                    buttonClass="!border-none !bg-transparent !absolute !left-2 !top-1/2 !-translate-y-1/2 z-10"
-                    dropdownClass="!absolute !z-50 !bg-white !border !border-gray-200 !rounded-md !shadow-lg max-h-60 overflow-y-auto"
-                    enableSearch={true}
-                  />
-                </div>
-
-                <div className="space-y-3">
-                  <Label>Account Type *</Label>
-                  <Select
-                    value={formData.accountType}
-                    onValueChange={(value) =>
-                      setFormData({
-                        ...formData,
-                        accountType: value,
-                        // Reset dependent fields when account type changes
-                        tenantType: "",
-                        siteId: "",
-                        buildingId: "",
-                        spaceId: "",
-                        organizationName: "",
-                      })
-                    }
-                  >
-                    <SelectTrigger>
-                      <SelectValue placeholder="Select your account type" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      {accountTypes.map((type) => (
-                        <SelectItem key={type.value} value={type.value}>
-                          <div className="flex items-center space-x-3">
-                            {type.icon}
-                            <div>
-                              <div className="font-medium">{type.label}</div>
-                              <div className="text-xs text-muted-foreground">
-                                {type.description}
+                  <div className="space-y-3">
+                    <Label>User Type *</Label>
+                    <Select
+                      value={formData.accountType}
+                      onValueChange={(value) =>
+                        setFormData({
+                          ...formData,
+                          accountType: value,
+                          // Reset dependent fields when account type changes
+                          tenantType: "",
+                          siteId: "",
+                          buildingId: "",
+                          spaceId: "",
+                          organizationName: "",
+                          plan: "basic",
+                        })
+                      }
+                    >
+                      <SelectTrigger>
+                        <SelectValue placeholder="Select your user type" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {accountTypes.map((type) => (
+                          <SelectItem key={type.value} value={type.value}>
+                            <div className="flex items-center space-x-3">
+                              {type.icon}
+                              <div>
+                                <div className="font-medium">{type.label}</div>
+                                <div className="text-xs text-muted-foreground">
+                                  {type.description}
+                                </div>
                               </div>
                             </div>
-                          </div>
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  </div>
+                </div>
+
+                {/* Row 2: Email and Phone - 2 Columns */}
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <div className="space-y-2">
+                    <Label htmlFor="email">Email Address *</Label>
+                    <Input
+                      id="email"
+                      type="email"
+                      value={formData.email}
+                      onChange={(e) =>
+                        setFormData({ ...formData, email: e.target.value })
+                      }
+                      placeholder="Enter your email address"
+                      required
+                      disabled={isGoogleSignup}
+                    />
+                  </div>
+
+                  <div className="space-y-2">
+                    <Label htmlFor="phone">Phone *</Label>
+                    <PhoneInput
+                      country={"in"}
+                      value={formData.phone}
+                      onChange={(value) => {
+                        const digits = value.replace(/\D/g, "");
+                        const finalValue = "+" + digits;
+                        setFormData({ ...formData, phone: finalValue });
+                      }}
+                      inputProps={{
+                        name: "phone",
+                        required: true,
+                      }}
+                      disabled={isPhoneSignup}
+                      containerClass="w-full relative"
+                      inputClass="!w-full !h-10 !pl-12 !rounded-md !border !border-input !bg-background !px-3 !py-2 !text-base !ring-offset-background placeholder:!text-muted-foreground focus-visible:!outline-none focus-visible:!ring-2 focus-visible:!ring-ring focus-visible:!ring-offset-2 disabled:!cursor-not-allowed disabled:!opacity-50 md:!text-sm"
+                      buttonClass="!border-none !bg-transparent !absolute !left-2 !top-1/2 !-translate-y-1/2 z-10"
+                      dropdownClass="!absolute !z-50 !bg-white !border !border-gray-200 !rounded-md !shadow-lg max-h-60 overflow-y-auto"
+                      enableSearch={true}
+                    />
+                  </div>
                 </div>
 
                 {/* Organization specific fields */}
                 {formData.accountType === "organization" && (
-                  <div className="space-y-2">
-                    <Label htmlFor="organizationName">
-                      Organization Name *
-                    </Label>
-                    <Input
-                      id="organizationName"
-                      value={formData.organizationName}
-                      onChange={(e) =>
-                        setFormData({
-                          ...formData,
-                          organizationName: e.target.value,
-                        })
-                      }
-                      placeholder="Enter your organization name"
-                      required
-                    />
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div className="space-y-2">
+                      <Label htmlFor="organizationName">
+                        Organization Name *
+                      </Label>
+                      <Input
+                        id="organizationName"
+                        value={formData.organizationName}
+                        onChange={(e) =>
+                          setFormData({
+                            ...formData,
+                            organizationName: e.target.value,
+                          })
+                        }
+                        placeholder="Enter your organization name"
+                        required
+                      />
+                    </div>
+                    <div className="space-y-2">
+                      <Label htmlFor="plan">Select Plan *</Label>
+                      <Select
+                        value={formData.plan}
+                        onValueChange={(value) =>
+                          setFormData({
+                            ...formData,
+                            plan: value,
+                          })
+                        }
+                      >
+                        <SelectTrigger>
+                          <SelectValue placeholder="Select plan" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="basic">
+                            <div className="flex items-center space-x-2">
+                              <Sparkles className="h-4 w-4" />
+                              <span>Basic</span>
+                            </div>
+                          </SelectItem>
+                          <SelectItem value="pro">
+                            <div className="flex items-center space-x-2">
+                              <Zap className="h-4 w-4" />
+                              <span>Pro</span>
+                            </div>
+                          </SelectItem>
+                          <SelectItem value="enterprise">
+                            <div className="flex items-center space-x-2">
+                              <Crown className="h-4 w-4" />
+                              <span>Enterprise</span>
+                            </div>
+                          </SelectItem>
+                        </SelectContent>
+                      </Select>
+                    </div>
                   </div>
                 )}
 
-                {/* Tenant specific fields */}
+                {/* Tenant specific fields 
                 {formData.accountType === "tenant" && (
                   <div className="space-y-2">
                     <Label>Tenant Type *</Label>
@@ -437,16 +476,16 @@ const SignUp = () => {
                       </SelectContent>
                     </Select>
                   </div>
-                )}
+                )}*/}
 
-                {/* Location fields for tenant and space_owner */}
+                {/* Row 4: Site, Building, Space - 3 Columns */}
                 {showLocationFields && (
-                  <>
+                  <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                     <div className="space-y-2">
                       <Label>Site *</Label>
-                      <Select
+                      <AsyncAutocompleteRQ
                         value={formData.siteId}
-                        onValueChange={(value) =>
+                        onChange={(value) =>
                           setFormData({
                             ...formData,
                             siteId: value,
@@ -454,18 +493,23 @@ const SignUp = () => {
                             spaceId: "",
                           })
                         }
-                      >
-                        <SelectTrigger>
-                          <SelectValue placeholder="Select site" />
-                        </SelectTrigger>
-                        <SelectContent>
-                          {siteList.map((site) => (
-                            <SelectItem key={site.id} value={site.id}>
-                              {site.name}
-                            </SelectItem>
-                          ))}
-                        </SelectContent>
-                      </Select>
+                        placeholder="Select site"
+                        queryKey={["signup-sites"]}
+                        queryFn={async (search) => {
+                          const response =
+                            await siteApiService.getMasterSiteLookup(search);
+                          if (response?.success) {
+                            const sites =
+                              response.data?.sites || response.data || [];
+                            return sites.map((s: any) => ({
+                              id: s.id,
+                              label: s.name,
+                            }));
+                          }
+                          return [];
+                        }}
+                        minSearchLength={1}
+                      />
                     </div>
 
                     <div className="space-y-2">
@@ -521,13 +565,13 @@ const SignUp = () => {
                         <SelectContent>
                           {spaceList.map((space) => (
                             <SelectItem key={space.id} value={space.id}>
-                              {space.name || space.code}
+                              {space.name}
                             </SelectItem>
                           ))}
                         </SelectContent>
                       </Select>
                     </div>
-                  </>
+                  </div>
                 )}
 
                 <Button

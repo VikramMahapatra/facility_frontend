@@ -9,8 +9,14 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
-import { LogOut, } from "lucide-react";
-import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
+import { LogOut } from "lucide-react";
+import {
+  Card,
+  CardContent,
+  CardHeader,
+  CardTitle,
+  CardDescription,
+} from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { toast } from "sonner";
@@ -47,16 +53,23 @@ import ContentContainer from "@/components/ContentContainer";
 import { useAuth } from "@/context/AuthContext";
 import { PageHeader } from "@/components/PageHeader";
 import { Input } from "@/components/ui/input";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 import { LeaseForm } from "@/components/LeasesForm";
 import { leasesApiService } from "@/services/leasing_tenants/leasesapi";
 import { Lease } from "@/interfaces/leasing_tenants_interface";
 
-
 export default function PendingApprovals() {
   const [users, setUsers] = useState<User[]>([]);
   const [selectedUser, setSelectedUser] = useState<User | null>(null);
-  const [actionType, setActionType] = useState<'approve' | 'reject' | null>(null);
+  const [actionType, setActionType] = useState<"approve" | "reject" | null>(
+    null,
+  );
   const [approvalRules, setApprovalRules] = useState<ApprovalRule[]>([]);
   const [roleList, setRoleList] = useState<any[]>([]);
   const [selectedRoleIds, setSelectedRoleIds] = useState<string[]>([]);
@@ -74,7 +87,9 @@ export default function PendingApprovals() {
   const [showAddLeaseDialog, setShowAddLeaseDialog] = useState(false);
   const [approvedUserId, setApprovedUserId] = useState<string | null>(null);
   const [isLeaseFormOpen, setIsLeaseFormOpen] = useState(false);
-  const [prefilledLeaseData, setPrefilledLeaseData] = useState<Lease | null>(null);
+  const [prefilledLeaseData, setPrefilledLeaseData] = useState<Lease | null>(
+    null,
+  );
 
   useSkipFirstEffect(() => {
     loadUsersForApproval();
@@ -101,12 +116,12 @@ export default function PendingApprovals() {
       return await approvalRulesApiService.getRules();
     });
     if (response?.success) setApprovalRules(response.data?.rules || []);
-  }
+  };
 
   const loadRolesLookup = async () => {
     const lookup = await userManagementApiService.getUserRolesLookup();
     if (lookup?.success) setRoleList(lookup.data || []);
-  }
+  };
 
   const loadUsersForApproval = async () => {
     const skip = (page - 1) * pageSize;
@@ -132,12 +147,11 @@ export default function PendingApprovals() {
       setTotalItems(response.data?.total ?? 0);
       setPendingCount(response.data?.total_pending || 0);
     }
-  }
-
+  };
 
   // Check if current user can approve a specific user based on their roles
   const canApprove = (user: User): boolean => {
-    const userData = localStorage.getItem('loggedInUser');
+    const userData = localStorage.getItem("loggedInUser");
     const currentUser = JSON.parse(userData);
 
     console.log("current user", currentUser);
@@ -146,25 +160,25 @@ export default function PendingApprovals() {
     if (!user.default_account_type?.length) return false;
     if (!currentUser.default_account_type?.length) return false;
 
-
     // Check if at least one logged-in role can approve all target user's roles
-    return approvalRules.some(rule =>
-      currentUser.default_account_type.includes(rule.approver_type) &&
-      user.default_account_type.includes(rule.can_approve_type)
+    return approvalRules.some(
+      (rule) =>
+        currentUser.default_account_type.includes(rule.approver_type) &&
+        user.default_account_type.includes(rule.can_approve_type),
     );
   };
 
   const handleApprove = async (user: User) => {
     setSelectedUser(user);
-    setActionType('approve');
-    setSelectedRoleIds(user.roles?.map(r => r.id) || []);
+    setActionType("approve");
+    setSelectedRoleIds(user.roles?.map((r) => r.id) || []);
     setIsApproveDialogOpen(true);
     await loadRolesLookup();
   };
 
   const handleReject = (user: User) => {
     setSelectedUser(user);
-    setActionType('reject');
+    setActionType("reject");
   };
 
   const confirmApprove = async () => {
@@ -181,9 +195,9 @@ export default function PendingApprovals() {
 
     const resp = await pendingApprovalApiService.updateUser({
       user_id: selectedUser.id,
-      status: 'approve',
-      role_ids: selectedRoleIds
-    })
+      status: "approve",
+      role_ids: selectedRoleIds,
+    });
 
     if (resp?.success) {
       toast.success("User has been approved successfully.");
@@ -191,20 +205,23 @@ export default function PendingApprovals() {
       setActionType(null);
       setSelectedRoleIds([]);
       setRoleValidationError("");
-      
+
       // Check if user is a tenant type (not space or other types), then show lease dialog
-      const accountType = selectedUser?.default_account_type || selectedUser?.account_type;
-      const isTenant = 
-        (Array.isArray(accountType) && accountType.includes("tenant") && !accountType.includes("space")) ||
+      const accountType =
+        selectedUser?.default_account_type || selectedUser?.account_type;
+      const isTenant =
+        (Array.isArray(accountType) &&
+          accountType.includes("tenant") &&
+          !accountType.includes("space")) ||
         (!Array.isArray(accountType) && accountType === "tenant");
-      
+
       if (isTenant) {
         setApprovedUserId(selectedUser.id);
         setShowAddLeaseDialog(true);
       } else {
         setSelectedUser(null);
       }
-      
+
       loadUsersForApproval();
     }
     setIsSubmitting(false);
@@ -213,7 +230,10 @@ export default function PendingApprovals() {
   const confirmReject = async () => {
     if (!selectedUser) return;
 
-    const resp = await pendingApprovalApiService.updateUser({ user_id: selectedUser.id, status: 'reject' })
+    const resp = await pendingApprovalApiService.updateUser({
+      user_id: selectedUser.id,
+      status: "reject",
+    });
 
     if (resp?.success) {
       toast.success("User has been rejected successfully.");
@@ -221,7 +241,7 @@ export default function PendingApprovals() {
       setActionType(null);
       loadUsersForApproval();
     } else {
-      const errorMessage = resp?.data?.message || resp?.message || "Failed to reject user";
+      const errorMessage = resp?.data?.message || resp?.message;
       toast.error(errorMessage);
     }
   };
@@ -255,7 +275,9 @@ export default function PendingApprovals() {
       <div className="space-y-6">
         <div className="flex items-center justify-between">
           <div>
-            <h1 className="text-3xl font-bold text-foreground">User Approval Queue</h1>
+            <h1 className="text-3xl font-bold text-foreground">
+              User Approval Queue
+            </h1>
             <p className="text-muted-foreground mt-1">
               Review and approve new user registration requests
             </p>
@@ -326,7 +348,9 @@ export default function PendingApprovals() {
                               </AvatarFallback>
                             </Avatar>
                             <div>
-                              <div className="font-medium">{user.full_name}</div>
+                              <div className="font-medium">
+                                {user.full_name}
+                              </div>
                               <div className="text-xs text-muted-foreground">
                                 {user.email}
                               </div>
@@ -351,7 +375,8 @@ export default function PendingApprovals() {
                         </TableCell>
                         <TableCell className="text-right">
                           <div className="flex justify-end gap-2">
-                            {(user.status === "pending" || !user.status) && userCanApprove ? (
+                            {(user.status === "pending" || !user.status) &&
+                            userCanApprove ? (
                               <>
                                 <Button
                                   variant="default"
@@ -371,9 +396,7 @@ export default function PendingApprovals() {
                                 </Button>
                               </>
                             ) : (
-                              <Badge variant="secondary">
-                                No Permission
-                              </Badge>
+                              <Badge variant="secondary">No Permission</Badge>
                             )}
                           </div>
                         </TableCell>
@@ -398,16 +421,19 @@ export default function PendingApprovals() {
         )}
       </div>
       {/* Approve Dialog with Role Selection */}
-      <Dialog open={isApproveDialogOpen} onOpenChange={(open) => {
-        setIsApproveDialogOpen(open);
-        if (!open) {
-          setSelectedUser(null);
-          setActionType(null);
-          setSelectedRoleIds([]);
-          setRoleValidationError("");
-          setIsSubmitting(false);
-        }
-      }}>
+      <Dialog
+        open={isApproveDialogOpen}
+        onOpenChange={(open) => {
+          setIsApproveDialogOpen(open);
+          if (!open) {
+            setSelectedUser(null);
+            setActionType(null);
+            setSelectedRoleIds([]);
+            setRoleValidationError("");
+            setIsSubmitting(false);
+          }
+        }}
+      >
         <DialogContent className="max-w-2xl">
           <DialogHeader>
             <DialogTitle>Approve User - {selectedUser?.full_name}</DialogTitle>
@@ -427,11 +453,15 @@ export default function PendingApprovals() {
                             setSelectedRoleIds([...selectedRoleIds, role.id]);
                             setRoleValidationError(""); // Clear error when role is selected
                           } else {
-                            const newSelectedIds = selectedRoleIds.filter((id) => id !== role.id);
+                            const newSelectedIds = selectedRoleIds.filter(
+                              (id) => id !== role.id,
+                            );
                             setSelectedRoleIds(newSelectedIds);
                             // Show validation error if no roles are selected after unchecking
                             if (newSelectedIds.length === 0) {
-                              setRoleValidationError("At least one role must be selected");
+                              setRoleValidationError(
+                                "At least one role must be selected",
+                              );
                             } else {
                               setRoleValidationError(""); // Clear error if roles still selected
                             }
@@ -470,10 +500,7 @@ export default function PendingApprovals() {
             >
               Cancel
             </Button>
-            <Button
-              onClick={confirmApprove}
-              disabled={isSubmitting}
-            >
+            <Button onClick={confirmApprove} disabled={isSubmitting}>
               {isSubmitting ? "Submitting..." : "Approve"}
             </Button>
           </DialogFooter>
@@ -481,15 +508,19 @@ export default function PendingApprovals() {
       </Dialog>
 
       {/* Reject Alert Dialog */}
-      <AlertDialog open={!!selectedUser && actionType === 'reject'} onOpenChange={() => {
-        setSelectedUser(null);
-        setActionType(null);
-      }}>
+      <AlertDialog
+        open={!!selectedUser && actionType === "reject"}
+        onOpenChange={() => {
+          setSelectedUser(null);
+          setActionType(null);
+        }}
+      >
         <AlertDialogContent>
           <AlertDialogHeader>
             <AlertDialogTitle>Reject User</AlertDialogTitle>
             <AlertDialogDescription>
-              Are you sure you want to reject {selectedUser?.full_name}? Their registration request will be permanently deleted.
+              Are you sure you want to reject {selectedUser?.full_name}? Their
+              registration request will be permanently deleted.
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
@@ -568,8 +599,6 @@ export default function PendingApprovals() {
           } else if (response && !response.success) {
             if (response?.message) {
               toast.error(response.message);
-            } else {
-              toast.error("Failed to create lease.");
             }
           }
           return response;

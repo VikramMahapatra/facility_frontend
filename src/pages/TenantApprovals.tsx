@@ -119,12 +119,6 @@ export default function TenantApprovalPage() {
       setApprovedSpaceId(spaceId);
       setShowAddLeaseDialog(true);
       fetchTenants();
-    } else {
-      const errorMessage =
-        response?.data?.message ||
-        response?.message ||
-        "Failed to approve tenant";
-      toast.error(errorMessage);
     }
   };
 
@@ -372,8 +366,6 @@ export default function TenantApprovalPage() {
           } else if (response && !response.success) {
             if (response?.message) {
               toast.error(response.message);
-            } else {
-              toast.error("Failed to create lease.");
             }
           }
           return response;

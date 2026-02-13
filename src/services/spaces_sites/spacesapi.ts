@@ -263,6 +263,10 @@ class SpacesApiService {
       }, 500);
     });
   }
+
+  async getAccessoriesLookup() {
+    return await apiService.request("/master/accessories");
+  }
 }
 
 export const spacesApiService = new SpacesApiService(); //

@@ -116,6 +116,7 @@ const Login = () => {
       const response = (await authApiService.sendOtp(mobileNumber)) as any;
       if (response?.success) {
         setShowOtp(true);
+        setResendTimer(30); // Start timer immediately when OTP is sent
         toast.success("OTP sent to your mobile number");
       } else {
         toast.error("Failed to send OTP. Please try again.");
@@ -172,6 +173,32 @@ const Login = () => {
   ) => {
     if (e.key === "Backspace" && !otp[index] && index > 0) {
       otpInputRefs.current[index - 1]?.focus();
+    }
+  };
+
+  const handleOtpPaste = (e: React.ClipboardEvent<HTMLInputElement>) => {
+    e.preventDefault();
+    const pastedData = e.clipboardData.getData("text").trim();
+    const digits = pastedData.replace(/\D/g, "").slice(0, 6).split("");
+    
+    if (digits.length > 0) {
+      const newOtp = [...otp];
+      digits.forEach((digit, i) => {
+        if (i < 6 && /^\d$/.test(digit)) {
+          newOtp[i] = digit;
+        }
+      });
+      setOtp(newOtp);
+      
+      // Focus on the last filled box or the last box
+      const nextIndex = Math.min(digits.length - 1, 5);
+      setTimeout(() => {
+        otpInputRefs.current[nextIndex]?.focus();
+        // Auto-verify if all 6 digits are filled
+        if (newOtp.join("").length === 6) {
+          setTimeout(() => handleVerifyOtp(newOtp.join("")), 100);
+        }
+      }, 0);
     }
   };
 
@@ -260,6 +287,7 @@ const Login = () => {
       const response = (await authApiService.sendEmailOtp(email)) as any;
       if (response?.success) {
         setShowOtp(true);
+        setResendTimer(30); // Start timer immediately when OTP is sent
         toast.success("OTP sent to your email");
       } else {
         toast.error("Failed to send OTP. Please try again.");
@@ -468,7 +496,7 @@ const Login = () => {
                   </Button>
 
                   {/* Signup Link */}
-                  <div className="text-center text-sm">
+                  {/*<div className="text-center text-sm">
                     <span className="text-muted-foreground">
                       Don't have an account?{" "}
                     </span>
@@ -479,7 +507,7 @@ const Login = () => {
                     >
                       Signup
                     </button>
-                  </div>
+                  </div>*/}
                 </>
               ) : (
                 <div className="space-y-4">
@@ -500,6 +528,7 @@ const Login = () => {
                           onChange={(e) =>
                             handleOtpChange(index, e.target.value)
                           }
+                          onPaste={handleOtpPaste}
                           onKeyDown={(e) => handleOtpKeyDown(index, e)}
                           disabled={isVerifyingOtp}
                           className="w-12 h-12 text-center text-lg font-semibold"
