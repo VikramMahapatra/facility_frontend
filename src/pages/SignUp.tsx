@@ -338,9 +338,11 @@ const SignUp = () => {
                   <PhoneInput
                     country={"in"}
                     value={formData.phone}
-                    onChange={(value) =>
-                      setFormData({ ...formData, phone: value })
-                    }
+                    onChange={(value) => {
+                      const digits = value.replace(/\D/g, "");
+                      const finalValue = "+" + digits;
+                      setFormData({ ...formData, phone: finalValue })
+                    }}
                     inputProps={{
                       name: "phone",
                       required: true,
