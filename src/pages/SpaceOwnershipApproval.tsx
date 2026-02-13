@@ -12,6 +12,7 @@ import { useLoader } from "@/context/LoaderContext";
 import LoaderOverlay from "@/components/LoaderOverlay";
 import ContentContainer from "@/components/ContentContainer";
 import { toast } from "sonner";
+import { useNavigate } from "react-router";
 
 export default function SpaceOwnerApproval() {
     const { withLoader } = useLoader();
@@ -20,6 +21,7 @@ export default function SpaceOwnerApproval() {
     const [page, setPage] = useState(1);
     const [pageSize] = useState(6);
     const [totalItems, setTotalItems] = useState(0);
+    const navigate = useNavigate();
 
     useSkipFirstEffect(() => {
         loadPendingOwnerRequests();
@@ -126,30 +128,21 @@ export default function SpaceOwnerApproval() {
                         {requests.map((req) => (
                             <Card key={req.id} className="rounded-2xl shadow-sm">
                                 <CardContent className="p-4 flex flex-col gap-3">
-                                    <div className="flex justify-between items-start">
-                                        <div className="space-y-1 flex-1">
-                                            <div className="flex items-center gap-2">
-                                                <Home className="h-5 w-5 text-sidebar-primary" />
-                                                <h2 className="font-semibold text-lg">{req.space_name}</h2>
+
+                                    <div className="grid grid-cols-2 md:grid-cols-5 gap-4 text-sm pt-2">
+                                        <div className="flex justify-between items-start">
+                                            <div className="space-y-1 flex-1">
+                                                <div className="flex items-center gap-2">
+                                                    <Home className="h-5 w-5 text-sidebar-primary" />
+                                                    <h2 className="font-semibold text-lg cursor-pointer hover:underline"
+                                                        onClick={() =>
+                                                            navigate(`/spaces/${req.space_id}`)
+                                                        }>
+                                                        {req.space_name}
+                                                    </h2>
+                                                </div>
                                             </div>
-                                            {/* {req.owner_name && (
-                        <div className="flex items-center gap-2 mt-1">
-                          <User className="h-3.5 w-3.5 text-muted-foreground" />
-                          <p className="text-sm text-muted-foreground">
-                            {req.owner_name}
-                          </p>
-                        </div>
-                      )} */}
                                         </div>
-
-                                        {req.ownership_type && (
-                                            <Badge className={getOwnershipTypeBadgeClass(req.ownership_type)}>
-                                                {req.ownership_type}
-                                            </Badge>
-                                        )}
-                                    </div>
-
-                                    <div className="grid grid-cols-2 md:grid-cols-4 gap-4 text-sm pt-2">
                                         {req.owner_name && (
                                             <div className="flex items-start gap-2">
                                                 <User className="h-4 w-4 text-muted-foreground mt-0.5 flex-shrink-0" />
@@ -164,61 +157,40 @@ export default function SpaceOwnerApproval() {
                                             <div className="flex items-start gap-2">
                                                 <Percent className="h-4 w-4 text-muted-foreground mt-0.5 flex-shrink-0" />
                                                 <div className="min-w-0">
-                                                    <p className="text-muted-foreground text-xs mb-1">Ownership %</p>
+                                                    <p className="text-muted-foreground text-xs mb-1">Ownership</p>
                                                     <p className="font-medium">{req.ownership_percentage}%</p>
                                                 </div>
                                             </div>
                                         )}
 
-                                        {req.start_date && (
-                                            <div className="flex items-start gap-2">
-                                                <Calendar className="h-4 w-4 text-muted-foreground mt-0.5 flex-shrink-0" />
-                                                <div className="min-w-0">
-                                                    <p className="text-muted-foreground text-xs mb-1">Start Date</p>
-                                                    <p className="font-medium">
-                                                        {format(new Date(req.start_date), "dd MMM yyyy")}
-                                                    </p>
-                                                </div>
-                                            </div>
-                                        )}
-
-                                        {req.end_date && (
-                                            <div className="flex items-start gap-2">
-                                                <Calendar className="h-4 w-4 text-muted-foreground mt-0.5 flex-shrink-0" />
-                                                <div className="min-w-0">
-                                                    <p className="text-muted-foreground text-xs mb-1">End Date</p>
-                                                    <p className="font-medium">
-                                                        {format(new Date(req.end_date), "dd MMM yyyy")}
-                                                    </p>
-                                                </div>
-                                            </div>
-                                        )}
-                                    </div>
-
-                                    {req.is_active !== undefined && (
-                                        <div className="flex items-center gap-2 pt-2 border-t">
-                                            <Tag className="h-4 w-4 text-muted-foreground flex-shrink-0" />
+                                        {req.status && (
                                             <div className="flex items-center gap-2">
-                                                <p className="text-muted-foreground text-sm">Status:</p>
-                                                <Badge className={getStatusBadgeClass(req.is_active)}>
-                                                    {req.is_active ? "Active" : "Inactive"}
-                                                </Badge>
+                                                <Tag className="h-4 w-4 text-muted-foreground mt-0.5 flex-shrink-0" />
+                                                <div className="min-w-0">
+                                                    <p className="text-muted-foreground text-xs mb-1">Status:</p>
+                                                    <Badge className={getStatusBadgeClass(req.status)}>
+                                                        {req.status}
+                                                    </Badge>
+                                                </div>
                                             </div>
-                                        </div>
-                                    )}
+                                        )}
 
-                                    <div className="flex justify-end gap-2 pt-2">
-                                        <Button
-                                            variant="outline"
-                                            size="sm"
-                                            onClick={() => handleReject(req.id)}
-                                        >
-                                            <X className="h-4 w-4 mr-1" /> Reject
-                                        </Button>
-                                        <Button size="sm" onClick={() => handleApprove(req.id)}>
-                                            <Check className="h-4 w-4 mr-1" /> Approve
-                                        </Button>
+                                        <div className="flex items-center gap-2">
+                                            <Button
+                                                variant="outline"
+                                                size="sm"
+                                                onClick={() => handleReject(req.id)}
+                                            >
+                                                <X className="h-4 w-4 mr-1" /> Reject
+                                            </Button>
+                                            <Button size="sm" onClick={() => handleApprove(req.id)}>
+                                                <Check className="h-4 w-4 mr-1" /> Approve
+                                            </Button>
+                                        </div>
                                     </div>
+
+
+
                                 </CardContent>
                             </Card>
                         ))}
