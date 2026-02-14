@@ -128,7 +128,6 @@ export default function SpaceOwnerApproval() {
                         {requests.map((req) => (
                             <Card key={req.id} className="rounded-2xl shadow-sm">
                                 <CardContent className="p-4 flex flex-col gap-3">
-
                                     <div className="grid grid-cols-2 md:grid-cols-5 gap-4 text-sm pt-2">
                                         <div className="flex justify-between items-start">
                                             <div className="space-y-1 flex-1">

@@ -29,6 +29,7 @@ import LoaderOverlay from "@/components/LoaderOverlay";
 import ContentContainer from "@/components/ContentContainer";
 import { useAuth } from "@/context/AuthContext";
 import { PageHeader } from "@/components/PageHeader";
+import { getUserAccountTypeBadge } from "@/components/common/AccountTypes";
 
 export default function RolesManagement() {
   const [roles, setRoles] = useState<Role[]>([]);
@@ -144,12 +145,11 @@ export default function RolesManagement() {
       }
     }
 
-    if (!response?.success && response) {
-      const errorMessage = response?.data?.message || response?.message || "Failed to save role";
-      toast.error(errorMessage);
-    }
     return response;
   };
+
+
+
 
   return (
     <div className="relative  flex-1 ">
@@ -187,6 +187,7 @@ export default function RolesManagement() {
               <TableHeader>
                 <TableRow>
                   <TableHead>Role Name</TableHead>
+                  <TableHead>User Types</TableHead>
                   <TableHead>Description</TableHead>
                   <TableHead className="text-right">Actions</TableHead>
                 </TableRow>
@@ -205,6 +206,13 @@ export default function RolesManagement() {
                         <Badge variant="outline" className="font-medium">
                           {role.name}
                         </Badge>
+                      </TableCell>
+                      <TableCell>
+                        <div className="flex flex-wrap gap-1">
+                          {role.account_types?.map((account_type) => (
+                            getUserAccountTypeBadge(account_type)
+                          ))}
+                        </div>
                       </TableCell>
                       <TableCell className="text-muted-foreground">
                         {role.description || "No description"}

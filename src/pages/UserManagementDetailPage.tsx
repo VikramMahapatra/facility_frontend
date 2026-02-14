@@ -205,8 +205,7 @@ export default function UserManagementDetailPage() {
       setIsAccountModalOpen(false);
       setEditingAccount(null);
       toast.success(
-        `${accountData.account_type} user has been ${
-          accountMode === "create" ? "created" : "updated"
+        `${accountData.account_type} user has been ${accountMode === "create" ? "created" : "updated"
         } successfully.`,
       );
     }
@@ -378,11 +377,11 @@ export default function UserManagementDetailPage() {
               <div className="flex items-center justify-between">
                 <h2 className="text-xl font-semibold flex items-center gap-2">
                   <Shield className="h-5 w-5" />
-                  Users
+                  User Types
                 </h2>
 
                 <Button onClick={() => setOpenAddAccount(true)}>
-                  + Add User
+                  + Add User Type
                 </Button>
               </div>
 

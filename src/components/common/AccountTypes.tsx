@@ -1,10 +1,11 @@
 import { Building2, Home, Truck, UserCog, Users } from "lucide-react";
+import { Badge } from "@/components/ui/badge";
 
 export const accountTypes = [
     {
         value: "organization",
-        label: "Organization",
-        description: "Property owners and facility managers",
+        label: "Org Admin",
+        description: "manages the entire organization and all its properties",
         icon: <Building2 className="w-5 h-5" />,
     },
     {
@@ -32,3 +33,41 @@ export const accountTypes = [
         icon: <Truck className="w-5 h-5" />,
     },
 ];
+
+export const userAccountTypes = [
+    "organization",
+    "staff",
+    "tenant",
+    "owner",
+    "vendor",
+] as const; // <-- as const makes it a tuple of string literals
+
+export type AccountType = typeof accountTypes[number];
+
+export const getUserAccountTypeBadge = (status: string) => {
+    const normalizedStatus = status.toLowerCase();
+
+    const variants = {
+        tenant: "default",
+        owner: "default",
+        vendor: "default",
+        staff: "secondary",
+        organization: "destructive",
+        pending: "secondary",
+    } as const;
+
+    const labels = {
+        tenant: "tenant",
+        owner: "space owner",
+        vendor: "vendor",
+        staff: "staff",
+        pending: "pending",
+        organization: "org admin", // <-- display this instead of "organization"
+    } as const;
+
+    return (
+        <Badge variant={variants[normalizedStatus as keyof typeof variants] || "outline"}>
+            {labels[normalizedStatus as keyof typeof labels] || normalizedStatus}
+        </Badge>
+    );
+};

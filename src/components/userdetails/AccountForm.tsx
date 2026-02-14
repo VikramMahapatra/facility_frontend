@@ -75,7 +75,7 @@ export default function AccountForm({
                         {/* User Type (read-only for edit) */}
                         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                             <div>
-                                <label className="text-sm font-medium">User Type</label>
+                                <label className="text-sm font-medium">Type</label>
                                 {mode === "create" ? (
                                     <Controller
                                         name="account_type"
@@ -166,7 +166,7 @@ export default function AccountForm({
                         </div>
 
                         {/* Roles */}
-                        <RolesSelector control={control} errors={errors} roleList={roleList} />
+                        {/* <RolesSelector control={control} errors={errors} roleList={roleList} /> */}
 
                         {/* Tenant */}
                         {

@@ -1,3 +1,4 @@
+import { AccountType } from "@/components/common/AccountTypes";
 
 export interface User {
     id: string;
@@ -23,7 +24,7 @@ export interface TenantSpace {
 
 export interface UserAccount {
     id: string;
-    account_type: "owner" | "tenant" | "staff" | "admin";
+    account_type: AccountType;
     status: "active" | "inactive";
     roles: Role[];
     tenant_spaces?: TenantSpace[];
@@ -41,7 +42,4 @@ export interface Role {
     name: string;
     description: string;
 }
-
-
-
 
