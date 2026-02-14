@@ -41,7 +41,6 @@ interface Space {
   org_id: string;
   site_id: string;
   site_name?: string;
-  code?: string;
   name?: string;
   kind: SpaceKind;
   category?: "residential" | "commercial";
@@ -102,7 +101,6 @@ const getKindsByCategory = (
 };
 
 const emptyFormData: SpaceFormValues = {
-  code: "",
   name: "",
   kind: "room",
   category: undefined,
@@ -157,7 +155,6 @@ export function SpaceForm({
     reset(
       space && mode !== "create"
         ? {
-            code: space.code || space.name || "",
             name: space.name || "",
             kind: space.kind || "room",
             category: space.category,
@@ -343,31 +340,13 @@ export function SpaceForm({
         </DialogHeader>
 
         <form
-          onSubmit={isSubmitting ? undefined : handleSubmit(onSubmitForm, (errors) => {
-            console.log("Form validation errors:", errors);
-            console.log("Accessories field errors:", errors.accessories);
-          })}
+          onSubmit={isSubmitting ? undefined : handleSubmit(onSubmitForm)}
           className="space-y-4"
         >
           {formLoading ? (
             <p className="text-center">Loading...</p>
           ) : (
             <div className="space-y-4">
-              {/* Code Field - Full Row */}
-              <div className="space-y-2">
-                <Label htmlFor="code">Code *</Label>
-                <Input
-                  id="code"
-                  {...register("code")}
-                  placeholder="Space code"
-                  disabled={isReadOnly}
-                  className={errors.code ? "border-red-500" : ""}
-                />
-                {errors.code && (
-                  <p className="text-sm text-red-500">{errors.code.message}</p>
-                )}
-              </div>
-
               {/* Row 1: Site, Building, Unit */}
               <div className="grid grid-cols-3 gap-4">
                 <Controller
@@ -727,181 +706,145 @@ export function SpaceForm({
               {/* Accessories Section */}
               <div className="space-y-2">
                 <Label>Accessories</Label>
-                {errors.accessories && (
-                  <p className="text-sm text-red-500">
-                    {errors.accessories.message}
-                  </p>
-                )}
                 <Controller
                   name="accessories"
                   control={control}
-                  render={({ field }) => {
-                    const currentAccessories = field.value || [];
-                    
-                    return (
-                      <div className="space-y-2">
-                        <Popover
-                          open={accessoriesPopoverOpen}
-                          onOpenChange={setAccessoriesPopoverOpen}
-                        >
-                          <PopoverTrigger asChild>
-                            <Button
-                              variant="outline"
-                              role="combobox"
-                              aria-expanded={accessoriesPopoverOpen}
-                              className="w-full justify-between"
-                              disabled={isReadOnly}
-                            >
-                              {currentAccessories.length > 0 ? (
-                                <div className="flex flex-wrap gap-1">
-                                  {currentAccessories
-                                    .slice(0, 2)
-                                    .map((acc: any) => (
-                                      <Badge
-                                        key={acc.accessory_id}
-                                        variant="secondary"
-                                        className="text-xs"
-                                      >
-                                        {getAccessoryName(acc.accessory_id)} (
-                                        {acc.quantity})
-                                      </Badge>
-                                    ))}
-                                  {currentAccessories.length > 2 && (
+                  render={({ field }) => (
+                    <div className="space-y-2">
+                      <Popover
+                        open={accessoriesPopoverOpen}
+                        onOpenChange={setAccessoriesPopoverOpen}
+                      >
+                        <PopoverTrigger asChild>
+                          <Button
+                            variant="outline"
+                            role="combobox"
+                            aria-expanded={accessoriesPopoverOpen}
+                            className="w-1/2 justify-between"
+                            disabled={isReadOnly}
+                          >
+                            {selectedAccessories.length > 0 ? (
+                              <div className="flex flex-wrap gap-1">
+                                {selectedAccessories
+                                  .slice(0, 2)
+                                  .map((acc: any) => (
                                     <Badge
+                                      key={acc.accessory_id}
                                       variant="secondary"
                                       className="text-xs"
                                     >
-                                      +{currentAccessories.length - 2} more
+                                      {getAccessoryName(acc.accessory_id)} (
+                                      {acc.quantity})
                                     </Badge>
-                                  )}
-                                </div>
-                              ) : (
-                                "Select accessories..."
-                              )}
-                              <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
-                            </Button>
-                          </PopoverTrigger>
-                          <PopoverContent className="w-full p-0" align="start">
-                            <div className="max-h-96 overflow-y-auto">
-                              <div className="p-1">
-                                {accessoriesList.map((acc: any) => {
-                                  const accessoryId = (
-                                    acc.id ??
-                                    acc.value ??
-                                    acc
-                                  ).toString();
-                                  const accessoryName =
-                                    acc.name ?? acc.label ?? acc;
-                                  const isSelected = currentAccessories.some(
-                                    (a: any) => a.accessory_id === accessoryId,
-                                  );
-
-                                  return (
-                                    <div
-                                      key={accessoryId}
-                                      className="flex items-center space-x-2 px-2 py-1.5 hover:bg-accent hover:text-accent-foreground rounded-sm cursor-pointer"
-                                      onClick={() => {
-                                        if (!isReadOnly) {
-                                          const newAccessories = isSelected
-                                            ? currentAccessories.filter(
-                                                (a: any) => a.accessory_id !== accessoryId,
-                                              )
-                                            : [
-                                                ...currentAccessories,
-                                                { accessory_id: accessoryId, quantity: 1 },
-                                              ];
-                                          field.onChange(newAccessories);
-                                          setValue("accessories", newAccessories, { shouldValidate: true });
-                                        }
-                                      }}
-                                    >
-                                      <Checkbox
-                                        checked={isSelected}
-                                        onChange={() => {
-                                          if (!isReadOnly) {
-                                            const newAccessories = isSelected
-                                              ? currentAccessories.filter(
-                                                  (a: any) => a.accessory_id !== accessoryId,
-                                                )
-                                              : [
-                                                  ...currentAccessories,
-                                                  { accessory_id: accessoryId, quantity: 1 },
-                                                ];
-                                            field.onChange(newAccessories);
-                                            setValue("accessories", newAccessories, { shouldValidate: true });
-                                          }
-                                        }}
-                                        disabled={isReadOnly}
-                                      />
-                                      <span className="text-sm flex-1">
-                                        {accessoryName}
-                                      </span>
-                                    </div>
-                                  );
-                                })}
-                              </div>
-                            </div>
-                          </PopoverContent>
-                        </Popover>
-
-                        {/* Selected Accessories Display with Quantity */}
-                        {currentAccessories.length > 0 && (
-                          <div className="mt-2 space-y-2">
-                            {currentAccessories.map((acc: any) => (
-                              <div
-                                key={acc.accessory_id}
-                                className="flex items-center gap-2 p-2 border rounded-md"
-                              >
-                                <Badge
-                                  variant="secondary"
-                                  className="text-xs flex-1"
-                                >
-                                  {getAccessoryName(acc.accessory_id)}
-                                </Badge>
-                                <div className="flex items-center gap-2">
-                                  <Label className="text-xs">Qty:</Label>
-                                  <Input
-                                    type="number"
-                                    min="1"
-                                    value={acc.quantity || 1}
-                                    onChange={(e) => {
-                                      const qty = parseInt(e.target.value) || 1;
-                                      const newAccessories = currentAccessories.map((a: any) =>
-                                        a.accessory_id === acc.accessory_id
-                                          ? { ...a, quantity: qty }
-                                          : a,
-                                      );
-                                      field.onChange(newAccessories);
-                                      setValue("accessories", newAccessories, { shouldValidate: true });
-                                    }}
-                                    disabled={isReadOnly}
-                                    className="w-16 h-7 text-xs"
-                                  />
-                                </div>
-                                {!isReadOnly && (
-                                  <Button
-                                    type="button"
-                                    variant="ghost"
-                                    size="sm"
-                                    onClick={() => {
-                                      const newAccessories = currentAccessories.filter(
-                                        (a: any) => a.accessory_id !== acc.accessory_id,
-                                      );
-                                      field.onChange(newAccessories);
-                                      setValue("accessories", newAccessories, { shouldValidate: true });
-                                    }}
-                                    className="h-8 w-8 p-0"
+                                  ))}
+                                {selectedAccessories.length > 2 && (
+                                  <Badge
+                                    variant="secondary"
+                                    className="text-xs"
                                   >
-                                    <X className="h-3 w-3" />
-                                  </Button>
+                                    +{selectedAccessories.length - 2} more
+                                  </Badge>
                                 )}
                               </div>
-                            ))}
+                            ) : (
+                              "Select accessories..."
+                            )}
+                            <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
+                          </Button>
+                        </PopoverTrigger>
+                        <PopoverContent className="w-full p-0" align="start">
+                          <div className="max-h-96 overflow-y-auto">
+                            <div className="p-1">
+                              {accessoriesList.map((acc: any) => {
+                                const accessoryId = (
+                                  acc.id ??
+                                  acc.value ??
+                                  acc
+                                ).toString();
+                                const accessoryName =
+                                  acc.name ?? acc.label ?? acc;
+                                const isSelected = selectedAccessories.some(
+                                  (a: any) => a.accessory_id === accessoryId,
+                                );
+
+                                return (
+                                  <div
+                                    key={accessoryId}
+                                    className="flex items-center space-x-2 px-2 py-1.5 hover:bg-accent hover:text-accent-foreground rounded-sm cursor-pointer"
+                                    onClick={() =>
+                                      !isReadOnly &&
+                                      handleAccessoryToggle(accessoryId)
+                                    }
+                                  >
+                                    <Checkbox
+                                      checked={isSelected}
+                                      onChange={() =>
+                                        !isReadOnly &&
+                                        handleAccessoryToggle(accessoryId)
+                                      }
+                                      disabled={isReadOnly}
+                                    />
+                                    <span className="text-sm flex-1">
+                                      {accessoryName}
+                                    </span>
+                                  </div>
+                                );
+                              })}
+                            </div>
                           </div>
-                        )}
-                      </div>
-                    );
-                  }}
+                        </PopoverContent>
+                      </Popover>
+
+                      {/* Selected Accessories Display with Quantity */}
+                      {selectedAccessories.length > 0 && (
+                        <div className="mt-2 space-y-2">
+                          {selectedAccessories.map((acc: any) => (
+                            <div
+                              key={acc.accessory_id}
+                              className="flex items-center gap-2 p-2 border rounded-md"
+                            >
+                              <Badge
+                                variant="secondary"
+                                className="text-xs flex-1"
+                              >
+                                {getAccessoryName(acc.accessory_id)}
+                              </Badge>
+                              <div className="flex items-center gap-2">
+                                <Label className="text-xs">Qty:</Label>
+                                <Input
+                                  type="number"
+                                  min="1"
+                                  value={acc.quantity || 1}
+                                  onChange={(e) => {
+                                    const qty = parseInt(e.target.value) || 1;
+                                    handleAccessoryQuantityChange(
+                                      acc.accessory_id,
+                                      qty,
+                                    );
+                                  }}
+                                  disabled={isReadOnly}
+                                  className="w-20 h-8 text-xs"
+                                />
+                              </div>
+                              {!isReadOnly && (
+                                <Button
+                                  type="button"
+                                  variant="ghost"
+                                  size="sm"
+                                  onClick={() =>
+                                    handleAccessoryRemove(acc.accessory_id)
+                                  }
+                                  className="h-8 w-8 p-0"
+                                >
+                                  <X className="h-3 w-3" />
+                                </Button>
+                              )}
+                            </div>
+                          ))}
+                        </div>
+                      )}
+                    </div>
+                  )}
                 />
               </div>
 
