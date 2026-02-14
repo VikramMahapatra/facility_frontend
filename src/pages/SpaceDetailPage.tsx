@@ -72,6 +72,7 @@ export default function SpaceDetailPage() {
   });
   const [occupancyHistory, setOccupancyHistory] = useState<TimelineEvent[]>([]);
   const [isSpaceFormOpen, setIsSpaceFormOpen] = useState(false);
+  const [accessoriesList, setAccessoriesList] = useState<any[]>([]);
 
   useEffect(() => {
     if (!id) return;
@@ -79,6 +80,7 @@ export default function SpaceDetailPage() {
     loadOwners();
     fetchTenants();
     fetchOccupancy();
+    loadAccessoriesLookup();
   }, [id]);
 
   const loadSpace = async () => {
@@ -108,6 +110,18 @@ export default function SpaceDetailPage() {
       setOccupancy(res.data.current || { status: "vacant" });
       setOccupancyHistory(res.data.history || []);
     }
+  };
+
+  const loadAccessoriesLookup = async () => {
+    const response = await spacesApiService.getAccessoriesLookup();
+    if (response.success) setAccessoriesList(response.data || []);
+  };
+
+  const getAccessoryName = (accessoryId: string) => {
+    const accessory = accessoriesList.find(
+      (a) => (a.id ?? a.value ?? a).toString() === accessoryId,
+    );
+    return accessory?.name ?? accessory?.label ?? accessory ?? accessoryId;
   };
 
   const onMoveInOutSuccess = async () => {
@@ -248,9 +262,23 @@ export default function SpaceDetailPage() {
               <Card>
                 <CardHeader>
                   <CardTitle>
-                    <h1 className="flex items-center gap-2">
-                      <Home className="h-5 w-5" /> Space Information
-                    </h1>
+                    <div className="flex items-center gap-2">
+                      <h1 className="flex items-center gap-2">
+                        <Home className="h-5 w-5" /> Space Information
+                      </h1>
+                      {space.category && (
+                        <Badge
+                          className={
+                            space.category === "residential"
+                              ? "bg-blue-100 text-blue-800"
+                              : "bg-purple-100 text-purple-800"
+                          }
+                        >
+                          {space.category.charAt(0).toUpperCase() +
+                            space.category.slice(1)}
+                        </Badge>
+                      )}
+                    </div>
                   </CardTitle>
                 </CardHeader>
                 <CardContent className="grid grid-cols-2 gap-4 text-sm">
@@ -262,6 +290,22 @@ export default function SpaceDetailPage() {
                   <Info label="Baths" value={space.baths} />
                   <Info label="View" value={space.attributes?.view} />
                   <Info label="Furnished" value={space.attributes?.furnished} />
+                  {space.accessories && space.accessories.length > 0 && (
+                    <div className="col-span-2">
+                      <p className="text-muted-foreground mb-2">Accessories</p>
+                      <div className="flex flex-wrap gap-2">
+                        {space.accessories.map((acc: any, index: number) => (
+                          <Badge
+                            key={index}
+                            variant="secondary"
+                            className="text-xs"
+                          >
+                            {getAccessoryName(acc.accessory_id)} (Qty: {acc.quantity})
+                          </Badge>
+                        ))}
+                      </div>
+                    </div>
+                  )}
                 </CardContent>
               </Card>
 

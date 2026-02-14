@@ -74,6 +74,10 @@ export interface Space {
   beds?: number;
   baths?: number;
   attributes: Record<string, any>;
+  accessories?: Array<{
+    accessory_id: string;
+    quantity: number;
+  }>;
   status: "available" | "occupied" | "out_of_service";
   created_at: string;
   updated_at: string;
@@ -239,6 +243,7 @@ export default function Spaces() {
           ? spaceData.building_block_id
           : undefined,
       attributes: Object.keys(attributes).length > 0 ? attributes : undefined,
+      accessories: spaceData.accessories || [],
     };
 
     if (formMode === "create") {
@@ -251,6 +256,7 @@ export default function Spaces() {
       const updatedSpace = {
         ...selectedSpace,
         ...spaceToSave,
+        accessories: spaceToSave.accessories || [],
       };
 
       response = await spacesApiService.updateSpace(updatedSpace);
