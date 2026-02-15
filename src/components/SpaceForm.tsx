@@ -24,6 +24,7 @@ import { toast } from "sonner";
 import { siteApiService } from "@/services/spaces_sites/sitesapi";
 import { buildingApiService } from "@/services/spaces_sites/buildingsapi";
 import { spacesApiService } from "@/services/spaces_sites/spacesapi";
+import { maintenanceTemplateApiService } from "@/services/spaces_sites/maintenanceTemplateApi";
 import { SpaceKind, spaceKinds } from "@/interfaces/spaces_interfaces";
 import {
   Popover,
@@ -60,6 +61,7 @@ interface Space {
     accessory_id: string;
     quantity: number;
   }>;
+  maintenance_template_id?: string;
   status: "available" | "occupied" | "out_of_service";
   created_at: string;
   updated_at: string;
@@ -117,6 +119,7 @@ const emptyFormData: SpaceFormValues = {
     star_rating: "",
   },
   accessories: [],
+  maintenance_template_id: undefined,
 };
 
 export function SpaceForm({
@@ -144,6 +147,7 @@ export function SpaceForm({
   const [siteList, setSiteList] = useState<any[]>([]);
   const [buildingList, setBuildingList] = useState<any[]>([]);
   const [accessoriesList, setAccessoriesList] = useState<any[]>([]);
+  const [maintenanceTemplateList, setMaintenanceTemplateList] = useState<any[]>([]);
   const [accessoriesPopoverOpen, setAccessoriesPopoverOpen] = useState(false);
   const selectedSiteId = watch("site_id");
   const selectedCategory = watch("category");
@@ -179,13 +183,14 @@ export function SpaceForm({
             star_rating: space.attributes?.star_rating || "",
           },
           accessories: space.accessories || [],
+          maintenance_template_id: space.maintenance_template_id,
         }
         : emptyFormData,
     );
 
     setFormLoading(false);
 
-    Promise.all([loadSiteLookup(), loadAccessoriesLookup()]);
+    Promise.all([loadSiteLookup(), loadAccessoriesLookup(), loadMaintenanceTemplateLookup()]);
 
     if (space?.site_id) {
       loadBuildingLookup(space.site_id);
@@ -228,6 +233,11 @@ export function SpaceForm({
   const loadAccessoriesLookup = async () => {
     const response = await spacesApiService.getAccessoriesLookup();
     if (response.success) setAccessoriesList(response.data || []);
+  };
+
+  const loadMaintenanceTemplateLookup = async () => {
+    const response = await maintenanceTemplateApiService.getMaintenanceTemplateLookup();
+    if (response.success) setMaintenanceTemplateList(response.data || []);
   };
 
   const handleAccessoryToggle = (accessoryId: string) => {
@@ -706,101 +716,102 @@ export function SpaceForm({
                 />
               </div>
 
-              {/* Accessories Section */}
-              <div className="space-y-2">
-                <Label>Accessories</Label>
-                <Controller
-                  name="accessories"
-                  control={control}
-                  render={({ field }) => (
-                    <div className="space-y-2">
-                      <Popover
-                        open={accessoriesPopoverOpen}
-                        onOpenChange={setAccessoriesPopoverOpen}
-                      >
-                        <PopoverTrigger asChild>
-                          <Button
-                            variant="outline"
-                            role="combobox"
-                            aria-expanded={accessoriesPopoverOpen}
-                            className="w-1/2 justify-between"
-                            disabled={isReadOnly}
-                          >
-                            {selectedAccessories.length > 0 ? (
-                              <div className="flex flex-wrap gap-1">
-                                {selectedAccessories
-                                  .slice(0, 2)
-                                  .map((acc: any) => (
+              {/* Accessories and Maintenance Template Section */}
+              <div className="grid grid-cols-2 gap-4">
+                {/* Accessories Section */}
+                <div className="space-y-2">
+                  <Label>Accessories</Label>
+                  <Controller
+                    name="accessories"
+                    control={control}
+                    render={({ field }) => (
+                      <div className="space-y-2">
+                        <Popover
+                          open={accessoriesPopoverOpen}
+                          onOpenChange={setAccessoriesPopoverOpen}
+                        >
+                          <PopoverTrigger asChild>
+                            <Button
+                              variant="outline"
+                              role="combobox"
+                              aria-expanded={accessoriesPopoverOpen}
+                              className="w-full justify-between"
+                              disabled={isReadOnly}
+                            >
+                              {selectedAccessories.length > 0 ? (
+                                <div className="flex flex-wrap gap-1">
+                                  {selectedAccessories
+                                    .slice(0, 2)
+                                    .map((acc: any) => (
+                                      <Badge
+                                        key={acc.accessory_id}
+                                        variant="secondary"
+                                        className="text-xs"
+                                      >
+                                        {getAccessoryName(acc.accessory_id)} (
+                                        {acc.quantity})
+                                      </Badge>
+                                    ))}
+                                  {selectedAccessories.length > 2 && (
                                     <Badge
-                                      key={acc.accessory_id}
                                       variant="secondary"
                                       className="text-xs"
                                     >
-                                      {getAccessoryName(acc.accessory_id)} (
-                                      {acc.quantity})
+                                      +{selectedAccessories.length - 2} more
                                     </Badge>
-                                  ))}
-                                {selectedAccessories.length > 2 && (
-                                  <Badge
-                                    variant="secondary"
-                                    className="text-xs"
-                                  >
-                                    +{selectedAccessories.length - 2} more
-                                  </Badge>
-                                )}
-                              </div>
-                            ) : (
-                              "Select accessories..."
-                            )}
-                            <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
-                          </Button>
-                        </PopoverTrigger>
-                        <PopoverContent className="w-full p-0" align="start">
-                          <div className="max-h-96 overflow-y-auto">
-                            <div className="p-1">
-                              {accessoriesList.map((acc: any) => {
-                                const accessoryId = (
-                                  acc.id ??
-                                  acc.value ??
-                                  acc
-                                ).toString();
-                                const accessoryName =
-                                  acc.name ?? acc.label ?? acc;
-                                const isSelected = selectedAccessories.some(
-                                  (a: any) => a.accessory_id === accessoryId,
-                                );
+                                  )}
+                                </div>
+                              ) : (
+                                "Select accessories..."
+                              )}
+                              <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
+                            </Button>
+                          </PopoverTrigger>
+                          <PopoverContent className="w-full p-0" align="start">
+                            <div className="max-h-96 overflow-y-auto">
+                              <div className="p-1">
+                                {accessoriesList.map((acc: any) => {
+                                  const accessoryId = (
+                                    acc.id ??
+                                    acc.value ??
+                                    acc
+                                  ).toString();
+                                  const accessoryName =
+                                    acc.name ?? acc.label ?? acc;
+                                  const isSelected = selectedAccessories.some(
+                                    (a: any) => a.accessory_id === accessoryId,
+                                  );
 
-                                return (
-                                  <div
-                                    key={accessoryId}
-                                    className="flex items-center space-x-2 px-2 py-1.5 hover:bg-accent hover:text-accent-foreground rounded-sm cursor-pointer"
-                                    onClick={() =>
-                                      !isReadOnly &&
-                                      handleAccessoryToggle(accessoryId)
-                                    }
-                                  >
-                                    <Checkbox
-                                      checked={isSelected}
-                                      onChange={() =>
+                                  return (
+                                    <div
+                                      key={accessoryId}
+                                      className="flex items-center space-x-2 px-2 py-1.5 hover:bg-accent hover:text-accent-foreground rounded-sm cursor-pointer"
+                                      onClick={() =>
                                         !isReadOnly &&
                                         handleAccessoryToggle(accessoryId)
                                       }
-                                      disabled={isReadOnly}
-                                    />
-                                    <span className="text-sm flex-1">
-                                      {accessoryName}
-                                    </span>
-                                  </div>
-                                );
-                              })}
+                                    >
+                                      <Checkbox
+                                        checked={isSelected}
+                                        onChange={() =>
+                                          !isReadOnly &&
+                                          handleAccessoryToggle(accessoryId)
+                                        }
+                                        disabled={isReadOnly}
+                                      />
+                                      <span className="text-sm flex-1">
+                                        {accessoryName}
+                                      </span>
+                                    </div>
+                                  );
+                                })}
+                              </div>
                             </div>
-                          </div>
-                        </PopoverContent>
-                      </Popover>
+                          </PopoverContent>
+                        </Popover>
 
-                      {/* Selected Accessories Display with Quantity */}
-                      {selectedAccessories.length > 0 && (
-                        <div className="grid grid-cols-2 ">
+                        {/* Selected Accessories Display with Quantity */}
+                        {selectedAccessories.length > 0 && (
                           <div className="space-y-2">
                             {selectedAccessories.map((acc: any) => (
                               <div
@@ -846,11 +857,59 @@ export function SpaceForm({
                               </div>
                             ))}
                           </div>
-                        </div>
-                      )}
-                    </div>
-                  )}
-                />
+                        )}
+                      </div>
+                    )}
+                  />
+                </div>
+
+                {/* Maintenance Template */}
+                <div className="space-y-2">
+                  <Controller
+                    name="maintenance_template_id"
+                    control={control}
+                    render={({ field }) => (
+                      <div className="space-y-2">
+                        <Label htmlFor="maintenance_template_id">
+                          Maintenance Template
+                        </Label>
+                        <Select
+                          value={field.value || "none"}
+                          onValueChange={(value) =>
+                            field.onChange(value === "none" ? undefined : value)
+                          }
+                          disabled={isReadOnly}
+                        >
+                          <SelectTrigger
+                            className={
+                              errors.maintenance_template_id
+                                ? "border-red-500"
+                                : ""
+                            }
+                          >
+                            <SelectValue placeholder="Select maintenance template" />
+                          </SelectTrigger>
+                          <SelectContent>
+                            <SelectItem value="none">No Template</SelectItem>
+                            {maintenanceTemplateList.map((template: any) => (
+                              <SelectItem
+                                key={template.id || template.value}
+                                value={template.id || template.value}
+                              >
+                                {template.name || template.label}
+                              </SelectItem>
+                            ))}
+                          </SelectContent>
+                        </Select>
+                        {errors.maintenance_template_id && (
+                          <p className="text-sm text-red-500">
+                            {errors.maintenance_template_id.message}
+                          </p>
+                        )}
+                      </div>
+                    )}
+                  />
+                </div>
               </div>
 
               <DialogFooter>

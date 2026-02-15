@@ -51,6 +51,7 @@ export const spaceSchema = z.object({
         accessory_id: z.string(),
         quantity: z.coerce.number().min(1, "Quantity must be at least 1").int("Quantity must be a whole number"),
     })).optional(),
+    maintenance_template_id: z.string().optional(),
 });
 
 export type SpaceFormValues = z.infer<typeof spaceSchema>;
