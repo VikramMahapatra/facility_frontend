@@ -17,6 +17,7 @@ import { useEffect, useState } from "react";
 import { spacesApiService } from "@/services/spaces_sites/spacesapi";
 import { OwnershipDialog } from "./OwnershipDialog";
 import { Calendar, User } from "lucide-react";
+import { on } from "events";
 
 export function SpaceOwnershipSection({
   spaceId,
@@ -75,6 +76,7 @@ export function SpaceOwnershipSection({
         spaceId={spaceId}
         onSuccess={() => {
           setOpen(false);
+          onRefresh();
         }}
         type="owner"
       />

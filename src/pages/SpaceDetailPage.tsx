@@ -236,7 +236,15 @@ export default function SpaceDetailPage() {
                   </div>
 
                   {/* Badges */}
+
                   <div className="flex items-center gap-2 mt-1">
+                    {space.category && (
+                      <Badge
+                        variant="secondary"
+                      >
+                        {space.category}
+                      </Badge>
+                    )}
                     <Badge className={getKindColor(space?.kind)}>
                       {space?.kind.replace("_", " ")}
                     </Badge>
@@ -266,18 +274,7 @@ export default function SpaceDetailPage() {
                       <h1 className="flex items-center gap-2">
                         <Home className="h-5 w-5" /> Space Information
                       </h1>
-                      {space.category && (
-                        <Badge
-                          className={
-                            space.category === "residential"
-                              ? "bg-blue-100 text-blue-800"
-                              : "bg-purple-100 text-purple-800"
-                          }
-                        >
-                          {space.category.charAt(0).toUpperCase() +
-                            space.category.slice(1)}
-                        </Badge>
-                      )}
+
                     </div>
                   </CardTitle>
                 </CardHeader>
@@ -334,9 +331,9 @@ export default function SpaceDetailPage() {
                       spaceId={id!}
                       owners={owners}
                       onRefresh={loadOwners}
-                      // actionSlot={
+                    // actionSlot={
 
-                      // }
+                    // }
                     />
                   </CardContent>
                 </Card>

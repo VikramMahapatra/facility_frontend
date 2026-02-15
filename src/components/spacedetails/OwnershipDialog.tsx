@@ -42,7 +42,7 @@ export function OwnershipDialog({
             }
 
             if (res.success) {
-                toast.success(`${type == "owner" ? "Ownership" : "Tenant assignment"} request submitted`);
+                toast.success(`${type == "owner" ? "Ownership" : "Tenant"} assigned successfully`);
                 onSuccess();
             }
 

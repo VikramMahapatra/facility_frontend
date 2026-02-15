@@ -2,7 +2,6 @@ import * as z from "zod";
 import { spaceKinds } from "@/interfaces/spaces_interfaces";
 
 export const spaceSchema = z.object({
-    code: z.string().min(1, "Code is required"),
     name: z.string().optional(),
     site_id: z.string().min(1, "Site is required"),
     kind: z.enum([
@@ -15,7 +14,7 @@ export const spaceSchema = z.object({
         'hall',
         'common_area',
         'parking',
-         'villa',
+        'villa',
         'row_house',
         'bungalow',
         'duplex',

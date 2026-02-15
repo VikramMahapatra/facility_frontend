@@ -155,31 +155,31 @@ export function SpaceForm({
     reset(
       space && mode !== "create"
         ? {
-            name: space.name || "",
-            kind: space.kind || "room",
-            category: space.category,
-            site_id: space.site_id || "",
-            floor:
-              space.floor !== undefined && space.floor !== null
-                ? Number(space.floor)
-                : undefined,
-            building_block_id: space.building_block_id || "",
-            area_sqft: space.area_sqft,
-            beds: space.beds,
-            baths: space.baths,
-            status: space.status || "available",
-            attributes: {
-              view: space.attributes?.view || "",
+          name: space.name || "",
+          kind: space.kind || "room",
+          category: space.category,
+          site_id: space.site_id || "",
+          floor:
+            space.floor !== undefined && space.floor !== null
+              ? Number(space.floor)
+              : undefined,
+          building_block_id: space.building_block_id || "",
+          area_sqft: space.area_sqft,
+          beds: space.beds,
+          baths: space.baths,
+          status: space.status || "available",
+          attributes: {
+            view: space.attributes?.view || "",
 
-              furnished: space.attributes?.furnished as
-                | "unfurnished"
-                | "semi"
-                | "fully"
-                | undefined,
-              star_rating: space.attributes?.star_rating || "",
-            },
-            accessories: space.accessories || [],
-          }
+            furnished: space.attributes?.furnished as
+              | "unfurnished"
+              | "semi"
+              | "fully"
+              | undefined,
+            star_rating: space.attributes?.star_rating || "",
+          },
+          accessories: space.accessories || [],
+        }
         : emptyFormData,
     );
 
@@ -319,11 +319,11 @@ export function SpaceForm({
 
   const fallbackBuilding = space?.building_block_id
     ? {
-        id: space.building_block_id,
-        name:
-          space.building_block ||
-          `Building (${space.building_block_id.slice(0, 6)})`,
-      }
+      id: space.building_block_id,
+      name:
+        space.building_block ||
+        `Building (${space.building_block_id.slice(0, 6)})`,
+    }
     : null;
 
   const building_blocks = withFallback(buildingList, fallbackBuilding);
@@ -340,7 +340,10 @@ export function SpaceForm({
         </DialogHeader>
 
         <form
-          onSubmit={isSubmitting ? undefined : handleSubmit(onSubmitForm)}
+          //onSubmit={isSubmitting ? undefined : handleSubmit(onSubmitForm)}
+          onSubmit={handleSubmit(onSubmitForm, (err) => {
+            console.log(JSON.stringify(err, null, 2));
+          })}
           className="space-y-4"
         >
           {formLoading ? (
@@ -797,50 +800,52 @@ export function SpaceForm({
 
                       {/* Selected Accessories Display with Quantity */}
                       {selectedAccessories.length > 0 && (
-                        <div className="mt-2 space-y-2">
-                          {selectedAccessories.map((acc: any) => (
-                            <div
-                              key={acc.accessory_id}
-                              className="flex items-center gap-2 p-2 border rounded-md"
-                            >
-                              <Badge
-                                variant="secondary"
-                                className="text-xs flex-1"
+                        <div className="grid grid-cols-2 ">
+                          <div className="space-y-2">
+                            {selectedAccessories.map((acc: any) => (
+                              <div
+                                key={acc.accessory_id}
+                                className="flex items-center gap-2 p-2 border rounded-md"
                               >
-                                {getAccessoryName(acc.accessory_id)}
-                              </Badge>
-                              <div className="flex items-center gap-2">
-                                <Label className="text-xs">Qty:</Label>
-                                <Input
-                                  type="number"
-                                  min="1"
-                                  value={acc.quantity || 1}
-                                  onChange={(e) => {
-                                    const qty = parseInt(e.target.value) || 1;
-                                    handleAccessoryQuantityChange(
-                                      acc.accessory_id,
-                                      qty,
-                                    );
-                                  }}
-                                  disabled={isReadOnly}
-                                  className="w-20 h-8 text-xs"
-                                />
-                              </div>
-                              {!isReadOnly && (
-                                <Button
-                                  type="button"
-                                  variant="ghost"
-                                  size="sm"
-                                  onClick={() =>
-                                    handleAccessoryRemove(acc.accessory_id)
-                                  }
-                                  className="h-8 w-8 p-0"
+                                <Badge
+                                  variant="secondary"
+                                  className="text-xs flex-1"
                                 >
-                                  <X className="h-3 w-3" />
-                                </Button>
-                              )}
-                            </div>
-                          ))}
+                                  {getAccessoryName(acc.accessory_id)}
+                                </Badge>
+                                <div className="flex items-center gap-2">
+                                  <Label className="text-xs">Qty:</Label>
+                                  <Input
+                                    type="number"
+                                    min="1"
+                                    value={acc.quantity || 1}
+                                    onChange={(e) => {
+                                      const qty = parseInt(e.target.value) || 1;
+                                      handleAccessoryQuantityChange(
+                                        acc.accessory_id,
+                                        qty,
+                                      );
+                                    }}
+                                    disabled={isReadOnly}
+                                    className="w-20 h-8 text-xs"
+                                  />
+                                </div>
+                                {!isReadOnly && (
+                                  <Button
+                                    type="button"
+                                    variant="ghost"
+                                    size="sm"
+                                    onClick={() =>
+                                      handleAccessoryRemove(acc.accessory_id)
+                                    }
+                                    className="h-8 w-8 p-0"
+                                  >
+                                    <X className="h-3 w-3" />
+                                  </Button>
+                                )}
+                              </div>
+                            ))}
+                          </div>
                         </div>
                       )}
                     </div>

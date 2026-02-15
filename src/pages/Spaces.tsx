@@ -273,8 +273,7 @@ export default function Spaces() {
     if (response?.success) {
       setIsFormOpen(false);
       toast.success(
-        `Space ${spaceData.name} has been ${
-          formMode === "create" ? "created" : "updated"
+        `Space ${spaceData.name} has been ${formMode === "create" ? "created" : "updated"
         } successfully.`,
       );
     }
@@ -427,11 +426,7 @@ export default function Spaces() {
                     <div className="flex items-center gap-2">
                       {space.category && (
                         <Badge
-                          className={
-                            space.category === "residential"
-                              ? "bg-blue-100 text-blue-800"
-                              : "bg-purple-100 text-purple-800"
-                          }
+                          variant="secondary"
                         >
                           {space.category}
                         </Badge>

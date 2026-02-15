@@ -1,4 +1,7 @@
+import { openGlobalModal } from "@/context/ModalContext";
 import { toast } from "sonner";
+
+
 const AUTH_API_BASE_URL = import.meta.env.VITE_AUTH_API_BASE_URL;
 const FACILITY_API_BASE_URL = import.meta.env.VITE_FACILITY_API_BASE_URL;
 
@@ -36,6 +39,32 @@ class ApiService {
         return headers;
     }
 
+    private handleErrorByStatusCode(result: any) {
+
+        const message = result?.message || "Something went wrong";
+        const statusCode = result?.status_code?.toString();
+
+        // 🚨 ALERT LEVEL (High priority errors)
+        const MODAL_CODES = ["999", "777"]; // example
+
+        // 🔔 TOAST LEVEL (normal errors)
+        const TOAST_CODES = ["400", "500", "12"];
+
+        if (MODAL_CODES.includes(statusCode)) {
+            openGlobalModal(message);
+            return;
+        }
+
+        if (statusCode === "210") {
+            // handled separately (token refresh)
+            return;
+        }
+
+        // default fallback
+        toast.error(message);
+    }
+
+
     public async request(
         endpoint: string,
         options: RequestInit = {},
@@ -48,7 +77,6 @@ class ApiService {
                 ...options.headers,
             },
         };
-        const errorMessage = "Something went wrong";
 
         try {
             console.log('API request config: ', config, url);
@@ -62,15 +90,6 @@ class ApiService {
             console.log('API response data: ', result);
 
             if (result?.status?.toString().toLowerCase() === "failed" || result?.status.toString().toLowerCase() === "failure") {
-                let message = errorMessage;
-
-                if (result.status_code != "210" && result.status_code != "400" && result.status_code != "500" && result.status_code != "11"
-                    || (result.status_code != "11" && result?.status.toString().toLowerCase() === "failure")
-                )
-                    message = result.message
-
-                toast.error(message);
-
                 // ✅ Handle token expiration or invalid authentication
                 if (result.status_code === "210" && !isRetry) {
                     console.warn("Access token expired, attempting refresh...");
@@ -90,12 +109,13 @@ class ApiService {
                     this.logoutUser();
                     return;
                 }
+                this.handleErrorByStatusCode(result);
                 return { success: false };
             }
             return { success: true, data: result.data };
         } catch (error) {
             console.log('API request failed:', error);
-            toast.error(errorMessage);
+            toast.error("Something went wrong");
             return { success: false };
         }
     }
