@@ -123,6 +123,12 @@ export const navigationItems = [
         icon: Wrench,
         resource: "spaces",
       },
+      {
+        title: "Maintenance Templates",
+        url: "/maintenance-templates",
+        icon: FileText,
+        resource: "maintenance_templates",
+      },
     ],
   },
   {

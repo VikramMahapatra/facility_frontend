@@ -77,6 +77,7 @@ import "./App.css";
 import SpaceDetailPage from "./pages/SpaceDetailPage";
 import SpaceOwnershipApproval from "./pages/SpaceOwnershipApproval";
 import SpaceMaintenance from "./pages/SpaceMaintenance";
+import MaintenanceTemplates from "./pages/MaintenanceTemplates";
 import TenantApprovalPage from "./pages/TenantApprovals";
 import SpaceMoveOutApprovals from "./pages/SpaceMoveOutApproval";
 import SuperAdminDashboard from "./pages/SuperAdmin/SuperAdminDashboard";
@@ -153,6 +154,10 @@ const App = () => {
                   <Route
                     path="/space-maintenance"
                     element={<SpaceMaintenance />}
+                  />
+                  <Route
+                    path="/maintenance-templates"
+                    element={<MaintenanceTemplates />}
                   />
                   <Route path="/leases" element={<Leases />} />
                   <Route path="/leases/:id" element={<LeaseDetailPage />} />
