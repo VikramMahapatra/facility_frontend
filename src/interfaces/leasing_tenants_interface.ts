@@ -47,17 +47,12 @@ export interface Tenant {
   phone: string;
   kind: "residential" | "commercial";
   status: "active" | "inactive" | "suspended";
-  contact_info?: {
-    name: string;
-    email: string;
-    phone: string;
-    address?: {
-      line1: string;
-      line2?: string;
-      city: string;
-      state: string;
-      pincode: string;
-    };
+  address?: {
+    line1: string;
+    line2?: string;
+    city: string;
+    state: string;
+    pincode: string;
   };
   legal_name?: string;
   type?: string;

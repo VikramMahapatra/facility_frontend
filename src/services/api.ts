@@ -1,9 +1,33 @@
 import { openGlobalModal } from "@/context/ModalContext";
+import { showErrorToast } from "@/helpers/customToastUI";
 import { toast } from "sonner";
 
 
 const AUTH_API_BASE_URL = import.meta.env.VITE_AUTH_API_BASE_URL;
 const FACILITY_API_BASE_URL = import.meta.env.VITE_FACILITY_API_BASE_URL;
+
+
+const ERROR_TITLES: Record<string, string> = {
+    "400": "Invalid Request",
+    "401": "Authentication Required",
+    "403": "Access Denied",
+    "404": "Not Found",
+    "500": "Server Error",
+    "999": "Critical Error"
+};
+
+function normalizeError(result: any) {
+    const statusCode = result?.status_code?.toString();
+
+    return {
+        title:
+            ERROR_TITLES[statusCode] || "Action Failed",
+
+        message:
+            result?.message || "Something went wrong",
+    };
+}
+
 
 class ApiService {
     private token: string | null = null;
@@ -61,7 +85,8 @@ class ApiService {
         }
 
         // default fallback
-        toast.error(message);
+        const error = normalizeError(result);
+        showErrorToast(error.title, error.message);
     }
 
 

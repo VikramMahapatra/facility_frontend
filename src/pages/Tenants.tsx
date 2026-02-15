@@ -221,8 +221,8 @@ const Tenants = () => {
     } else if (formMode === "edit" && selectedTenant) {
       const preservedTenantSpaces = (selectedTenant as any).tenant_spaces
         ? (selectedTenant as any).tenant_spaces.filter(
-            (space: any) => space.id && space.id.length > 0
-          )
+          (space: any) => space.id && space.id.length > 0
+        )
         : undefined;
 
       const updatedTenant = {
@@ -245,8 +245,7 @@ const Tenants = () => {
     if (response?.success) {
       setIsFormOpen(false);
       toast.success(
-        `Tenant ${tenantData.name} has been ${
-          formMode === "create" ? "created" : "updated"
+        `Tenant ${tenantData.name} has been ${formMode === "create" ? "created" : "updated"
         } successfully.`
       );
     }
@@ -463,11 +462,11 @@ const Tenants = () => {
                           {tenantSpaces.slice(0, 2).map((tenant_space) => {
                             const isSpaceStatus =
                               tenant_space.status == "approved" ||
-                              tenant_space.status == "leased"
+                                tenant_space.status == "leased"
                                 ? "active"
                                 : tenant_space.status == "pending"
-                                ? "inactive"
-                                : "suspended";
+                                  ? "inactive"
+                                  : "suspended";
                             return (
                               <>
                                 <div className="flex items-center gap-1">
@@ -521,37 +520,37 @@ const Tenants = () => {
                             <Phone className="h-4 w-4 text-muted-foreground" />
                             <span>{tenant.phone}</span>
                           </div>
-                          {tenant.contact_info?.address &&
-                            (tenant.contact_info.address.line1 ||
-                              tenant.contact_info.address.city ||
-                              tenant.contact_info.address.state ||
-                              tenant.contact_info.address.pincode) && (
+                          {tenant.address &&
+                            (tenant.address.line1 ||
+                              tenant.address.city ||
+                              tenant.address.state ||
+                              tenant.address.pincode) && (
                               <div className="flex items-start gap-2 text-sm">
                                 <MapPin className="h-4 w-4 text-muted-foreground mt-0.5" />
                                 <div>
-                                  {tenant.contact_info.address.line1 && (
+                                  {tenant.address.line1 && (
                                     <div>
-                                      {tenant.contact_info.address.line1}
+                                      {tenant.address.line1}
                                     </div>
                                   )}
-                                  {tenant.contact_info.address.line2 && (
+                                  {tenant.address.line2 && (
                                     <div>
-                                      {tenant.contact_info.address.line2}
+                                      {tenant.address.line2}
                                     </div>
                                   )}
-                                  {(tenant.contact_info.address.city ||
-                                    tenant.contact_info.address.state ||
-                                    tenant.contact_info.address.pincode) && (
-                                    <div>
-                                      {[
-                                        tenant.contact_info.address.city,
-                                        tenant.contact_info.address.state,
-                                        tenant.contact_info.address.pincode,
-                                      ]
-                                        .filter(Boolean)
-                                        .join(", ")}
-                                    </div>
-                                  )}
+                                  {(tenant.address.city ||
+                                    tenant.address.state ||
+                                    tenant.address.pincode) && (
+                                      <div>
+                                        {[
+                                          tenant.address.city,
+                                          tenant.address.state,
+                                          tenant.address.pincode,
+                                        ]
+                                          .filter(Boolean)
+                                          .join(", ")}
+                                      </div>
+                                    )}
                                 </div>
                               </div>
                             )}
@@ -608,7 +607,8 @@ const Tenants = () => {
                             </div>
                             {canWrite(resource) &&
                               tenantSpaces.length > 0 &&
-                              tenant.status === "active" && (
+                              tenant.status === "active" &&
+                              tenantSpaces[0].status === "approved" && (
                                 <Button
                                   size="sm"
                                   variant="outline"
@@ -657,18 +657,16 @@ const Tenants = () => {
                       </div>
                     </div>
 
-                    {tenant.kind === "commercial" &&
-                      "contact_info" in tenant && (
-                        <div className="mt-4 p-3 bg-muted rounded-lg">
-                          <div className="text-sm font-medium mb-1">
-                            Business Contact
-                          </div>
-                          <div className="text-sm text-muted-foreground">
-                            {tenant.contact_info.name} •{" "}
-                            {tenant.contact_info.email}
-                          </div>
+                    {tenant.legal_name && (
+                      <div className="mt-4 p-3 bg-muted rounded-lg">
+                        <div className="text-sm font-medium mb-1">
+                          Business Contact
                         </div>
-                      )}
+                        <div className="text-sm text-muted-foreground">
+                          {tenant.legal_name} {tenant.legal_name && tenant.type && "•"} {tenant.type}
+                        </div>
+                      </div>
+                    )}
                   </CardContent>
                   <div className="flex items-center justify-end gap-2 px-6 pb-4 pt-2">
                     <Button
