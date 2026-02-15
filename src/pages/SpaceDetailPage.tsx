@@ -278,13 +278,21 @@ export default function SpaceDetailPage() {
                     </div>
                   </CardTitle>
                 </CardHeader>
-                <CardContent className="grid grid-cols-2 gap-4 text-sm">
+                <CardContent className="grid grid-cols-3 gap-4 text-sm">
                   <Info label="Site" value={space.site_name} />
                   <Info label="Building" value={space.building_block} />
                   <Info label="Floor" value={space.floor} />
                   <Info label="Area (sqft)" value={space.area_sqft} />
                   <Info label="Beds" value={space.beds} />
                   <Info label="Baths" value={space.baths} />
+                  <Info
+                    label="Maintenance"
+                    value={
+                      space.maintenance_amount
+                        ? `₹ ${Number(space.maintenance_amount).toLocaleString()}`
+                        : "-"
+                    }
+                  />
                   <Info label="View" value={space.attributes?.view} />
                   <Info label="Furnished" value={space.attributes?.furnished} />
                   {space.accessories && space.accessories.length > 0 && (

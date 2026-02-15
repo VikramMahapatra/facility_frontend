@@ -33,7 +33,7 @@ export interface MaintenanceTemplate {
   calculation_type: "flat" | "per_sqft" | "per_bed" | "custom";
   amount: number;
   category?: "residential" | "commercial";
-  kind?: string;
+  kind?: SpaceKind;
   site_id?: string;
   site_name?: string;
   is_active?: boolean;
@@ -158,58 +158,20 @@ export function MaintenanceTemplateForm({
           onSubmit={isSubmitting ? undefined : handleSubmit(onSubmitForm)}
           className="space-y-4"
         >
-          <div className="space-y-2">
-            <Label htmlFor="name">Name *</Label>
-            <Input
-              id="name"
-              {...register("name")}
-              disabled={isReadOnly}
-              className={errors.name ? "border-red-500" : ""}
-              placeholder="Enter template name"
-            />
-            {errors.name && (
-              <p className="text-sm text-red-500">{errors.name.message}</p>
-            )}
-          </div>
-
-          <div className="space-y-2">
-            <Controller
-              name="calculation_type"
-              control={control}
-              render={({ field }) => (
-                <div className="space-y-2">
-                  <Label htmlFor="calculation_type">Calculation Type *</Label>
-                  <Select
-                    value={field.value}
-                    onValueChange={field.onChange}
-                    disabled={isReadOnly}
-                  >
-                    <SelectTrigger
-                      className={
-                        errors.calculation_type ? "border-red-500" : ""
-                      }
-                    >
-                      <SelectValue placeholder="Select calculation type" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      {calculationTypes.map((type) => (
-                        <SelectItem key={type.value} value={type.value}>
-                          {type.label}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                  {errors.calculation_type && (
-                    <p className="text-sm text-red-500">
-                      {errors.calculation_type.message}
-                    </p>
-                  )}
-                </div>
+          <div className="grid grid-cols-2 gap-4">
+            <div className="space-y-2">
+              <Label htmlFor="name">Name *</Label>
+              <Input
+                id="name"
+                {...register("name")}
+                disabled={isReadOnly}
+                className={errors.name ? "border-red-500" : ""}
+                placeholder="Enter template name"
+              />
+              {errors.name && (
+                <p className="text-sm text-red-500">{errors.name.message}</p>
               )}
-            />
-          </div>
-
-          <div className="grid grid-cols-3 gap-4">
+            </div>
             <Controller
               name="site_id"
               control={control}
@@ -245,7 +207,11 @@ export function MaintenanceTemplateForm({
                 </div>
               )}
             />
+          </div>
 
+
+
+          <div className="grid grid-cols-2 gap-4">
             <Controller
               name="kind"
               control={control}
@@ -285,6 +251,79 @@ export function MaintenanceTemplateForm({
             />
 
             <div className="space-y-2">
+              <Controller
+                name="category"
+                control={control}
+                render={({ field }) => (
+                  <div className="space-y-2">
+                    <Label htmlFor="category">Category</Label>
+                    <Select
+                      value={field.value || "none"}
+                      onValueChange={(value) =>
+                        field.onChange(value === "none" ? undefined : value)
+                      }
+                      disabled={isReadOnly}
+                    >
+                      <SelectTrigger
+                        className={errors.category ? "border-red-500" : ""}
+                      >
+                        <SelectValue placeholder="Select category" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="none">All Categories</SelectItem>
+                        <SelectItem value="residential">Residential</SelectItem>
+                        <SelectItem value="commercial">Commercial</SelectItem>
+                      </SelectContent>
+                    </Select>
+                    {errors.category && (
+                      <p className="text-sm text-red-500">
+                        {errors.category.message}
+                      </p>
+                    )}
+                  </div>
+                )}
+              />
+            </div>
+
+          </div>
+          <div className="grid grid-cols-2 gap-4">
+            <div className="space-y-2">
+              <Controller
+                name="calculation_type"
+                control={control}
+                render={({ field }) => (
+                  <div className="space-y-2">
+                    <Label htmlFor="calculation_type">Calculation Type *</Label>
+                    <Select
+                      value={field.value}
+                      onValueChange={field.onChange}
+                      disabled={isReadOnly}
+                    >
+                      <SelectTrigger
+                        className={
+                          errors.calculation_type ? "border-red-500" : ""
+                        }
+                      >
+                        <SelectValue placeholder="Select calculation type" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {calculationTypes.map((type) => (
+                          <SelectItem key={type.value} value={type.value}>
+                            {type.label}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                    {errors.calculation_type && (
+                      <p className="text-sm text-red-500">
+                        {errors.calculation_type.message}
+                      </p>
+                    )}
+                  </div>
+                )}
+              />
+            </div>
+            <div className="space-y-2">
               <Label htmlFor="amount">Amount *</Label>
               <Input
                 id="amount"
@@ -300,41 +339,7 @@ export function MaintenanceTemplateForm({
                 <p className="text-sm text-red-500">{errors.amount.message}</p>
               )}
             </div>
-          </div>
 
-          <div className="space-y-2">
-            <Controller
-              name="category"
-              control={control}
-              render={({ field }) => (
-                <div className="space-y-2">
-                  <Label htmlFor="category">Category</Label>
-                  <Select
-                    value={field.value || "none"}
-                    onValueChange={(value) =>
-                      field.onChange(value === "none" ? undefined : value)
-                    }
-                    disabled={isReadOnly}
-                  >
-                    <SelectTrigger
-                      className={errors.category ? "border-red-500" : ""}
-                    >
-                      <SelectValue placeholder="Select category" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="none">All Categories</SelectItem>
-                      <SelectItem value="residential">Residential</SelectItem>
-                      <SelectItem value="commercial">Commercial</SelectItem>
-                    </SelectContent>
-                  </Select>
-                  {errors.category && (
-                    <p className="text-sm text-red-500">
-                      {errors.category.message}
-                    </p>
-                  )}
-                </div>
-              )}
-            />
           </div>
 
           <DialogFooter>

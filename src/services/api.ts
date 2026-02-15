@@ -71,16 +71,8 @@ class ApiService {
         // 🚨 ALERT LEVEL (High priority errors)
         const MODAL_CODES = ["999", "777"]; // example
 
-        // 🔔 TOAST LEVEL (normal errors)
-        const TOAST_CODES = ["400", "500", "12"];
-
         if (MODAL_CODES.includes(statusCode)) {
             openGlobalModal(message);
-            return;
-        }
-
-        if (statusCode === "210") {
-            // handled separately (token refresh)
             return;
         }
 
