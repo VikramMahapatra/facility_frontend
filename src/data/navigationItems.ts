@@ -151,6 +151,41 @@ export const navigationItems = [
     ],
   },
   {
+    title: "Parking & Access",
+    items: [
+      {
+        title: "Parking Zones",
+        url: "/parking-zones",
+        icon: Car,
+        resource: "parking_zones",
+      },
+      {
+        title: "Parking Slots",
+        url: "/parking-slots",
+        icon: MapPin,
+        resource: "parking_slots",
+      },
+      {
+        title: "Parking Passes",
+        url: "/parking-passes",
+        icon: Ticket,
+        resource: "parking_passes",
+      },
+      {
+        title: "Access Logs",
+        url: "/access-logs",
+        icon: Key,
+        resource: "access_logs",
+      },
+      {
+        title: "Visitor Management",
+        url: "/visitors",
+        icon: UserCheck,
+        resource: "visitors",
+      },
+    ],
+  },
+  {
     title: "Ticketing Service",
     items: [
       {
@@ -263,35 +298,7 @@ export const navigationItems = [
   //     },
   //   ],
   // },
-  {
-    title: "Parking & Access",
-    items: [
-      {
-        title: "Parking Zones",
-        url: "/parking-zones",
-        icon: Car,
-        resource: "parking_zones",
-      },
-      {
-        title: "Parking Passes",
-        url: "/parking-passes",
-        icon: Ticket,
-        resource: "parking_passes",
-      },
-      {
-        title: "Access Logs",
-        url: "/access-logs",
-        icon: Key,
-        resource: "access_logs",
-      },
-      {
-        title: "Visitor Management",
-        url: "/visitors",
-        icon: UserCheck,
-        resource: "visitors",
-      },
-    ],
-  },
+
   // {
   //   title: "Energy consumption",
   //   items: [

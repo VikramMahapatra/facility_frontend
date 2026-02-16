@@ -18,13 +18,20 @@ const ERROR_TITLES: Record<string, string> = {
 
 function normalizeError(result: any) {
     const statusCode = result?.status_code?.toString();
+    let message = "Something went wrong";
+
+
+    if (result.status_code != "210" && result.status_code != "400" && result.status_code != "500"
+        && result?.status.toString().toLowerCase() != "failure"
+    )
+        message = result.message
+
 
     return {
         title:
             ERROR_TITLES[statusCode] || "Action Failed",
 
-        message:
-            result?.message || "Something went wrong",
+        message: message,
     };
 }
 
@@ -64,26 +71,18 @@ class ApiService {
     }
 
     private handleErrorByStatusCode(result: any) {
-
-        let message = "Something went wrong";
         const statusCode = result?.status_code?.toString();
-
-
-        if (result.status_code != "210" && result.status_code != "400" && result.status_code != "500"
-            && result?.status.toString().toLowerCase() === "failure"
-        )
-            message = result.message
 
         // 🚨 ALERT LEVEL (High priority errors)
         const MODAL_CODES = ["999", "777"]; // example
 
-        if (MODAL_CODES.includes(statusCode)) {
-            openGlobalModal(message);
-            return;
-        }
-
         // default fallback
         const error = normalizeError(result);
+
+        if (MODAL_CODES.includes(statusCode)) {
+            openGlobalModal(error.message);
+            return;
+        }
         showErrorToast(error.title, error.message);
     }
 

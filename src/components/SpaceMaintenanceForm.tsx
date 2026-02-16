@@ -21,7 +21,6 @@ import { siteApiService } from "@/services/spaces_sites/sitesapi";
 import { buildingApiService } from "@/services/spaces_sites/buildingsapi";
 import { spacesApiService } from "@/services/spaces_sites/spacesapi";
 import { toast } from "sonner";
-import { AsyncAutocompleteRQ } from "./common/async-autocomplete-rq";
 import { withFallback } from "@/helpers/commonHelper";
 import { ownerMaintenancesApiService } from "@/services/spaces_sites/ownermaintenancesapi";
 import { Info } from "lucide-react";
@@ -280,11 +279,8 @@ export const SpaceMaintenanceForm = ({
     });
     if (formResponse?.success) {
       reset(emptyFormData);
-      setIsSubmitted(false);
-    } else {
-      reset(undefined, { keepErrors: true, keepValues: true });
-      setIsSubmitted(false);
     }
+    setIsSubmitted(false);
   };
   const fallbackSpace = record?.space_id
     ? {
@@ -349,30 +345,36 @@ export const SpaceMaintenanceForm = ({
             <p className="text-center">Loading...</p>
           ) : (
             <div className="space-y-4">
-              <div className="grid grid-cols-3 gap-4">
-                <div className="space-y-2">
-                  <Label>Site *</Label>
-                  <AsyncAutocompleteRQ
-                    value={watch("site_id") || ""}
-                    onChange={(value) => {
-                      setValue("site_id", value || "");
-                      setValue("building_block_id", "");
-                      setValue("space_id", "");
-                    }}
-                    placeholder="Select site"
-                    disabled={isReadOnly || isEditMode || hasPrefill}
-                    queryKey={["sites"]}
-                    queryFn={async (search) => {
-                      const res = await siteApiService.getSiteLookup(search);
-                      return res.data.map((s: any) => ({
-                        id: s.id,
-                        label: s.name,
-                      }));
-                    }}
-                    fallbackOption={siteFallback || undefined}
-                    minSearchLength={1}
-                  />
-                </div>
+              <div className="grid grid-cols-2 gap-4">
+                <Controller
+                  name="site_id"
+                  control={control}
+                  render={({ field }) => (
+                    <div className="space-y-2">
+                      <Label>Site *</Label>
+                      <Select
+                        value={field.value || ""}
+                        onValueChange={(value) => {
+                          field.onChange(value);
+                          setValue("building_block_id", "");
+                          setValue("space_id", "");
+                        }}
+                        disabled={isReadOnly || isEditMode || hasPrefill}
+                      >
+                        <SelectTrigger>
+                          <SelectValue placeholder="Select site" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          {siteList.map((site) => (
+                            <SelectItem key={site.id} value={site.id}>
+                              {site.name}
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                    </div>
+                  )}
+                />
 
                 <div className="space-y-2">
                   <Label>Building</Label>
