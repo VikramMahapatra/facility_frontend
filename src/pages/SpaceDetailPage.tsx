@@ -345,7 +345,7 @@ export default function SpaceDetailPage() {
                     />
                   </CardContent>
                 </Card>
-                <SpaceTenantSection spaceId={id} tenants={tenants} />
+                <SpaceTenantSection spaceId={id} tenants={tenants} onRefresh={fetchTenants} />
               </div>
               <OwnershipHistoryDialog
                 open={isHistoryOpen}
