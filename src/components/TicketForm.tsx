@@ -25,7 +25,6 @@ import { slaPoliciesApiService } from "@/services/ticketing_service/slapoliciesa
 import { toast } from "sonner";
 import { ticketSchema, TicketFormValues } from "@/schemas/ticket.schema";
 import { withFallback } from "@/helpers/commonHelper";
-import { AsyncAutocompleteRQ } from "@/components/common/async-autocomplete-rq";
 //import { toast as sonnerToast } from "sonner";
 
 interface TicketFormProps {
@@ -96,6 +95,7 @@ export default function TicketForm({
   const [uploadedImages, setUploadedImages] = useState<File[]>([]);
   const [imagePreviews, setImagePreviews] = useState<string[]>([]);
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const [siteList, setSiteList] = useState<any[]>([]);
   const [spaceList, setSpaceList] = useState<any[]>([]);
   const [buildingList, setBuildingList] = useState<any[]>([]);
   const [tenantList, setTenantList] = useState<any[]>([]);
@@ -117,6 +117,7 @@ export default function TicketForm({
   ];
 
   useEffect(() => {
+    loadSiteLookup();
     loadCategoryLookup(initialData?.site_id || "all");
     loadStaffLookup(initialData?.site_id);
     loadVendorLookup();
@@ -125,6 +126,25 @@ export default function TicketForm({
       loadSpaceLookup(initialData.site_id, initialData.building_id);
     }
   }, []);
+
+  const loadSiteLookup = async () => {
+    const response = await siteApiService.getSiteLookup();
+    if (response?.success) {
+      const sites = response.data || [];
+      setSiteList(sites);
+      
+      // If we have initialData with a site_id that's not in the list, add it as fallback
+      if (initialData?.site_id && !sites.find((s: any) => s.id === initialData.site_id)) {
+        setSiteList([
+          {
+            id: initialData.site_id,
+            name: initialData.site_name || `Site (${initialData.site_id.slice(0, 6)})`,
+          },
+          ...sites,
+        ]);
+      }
+    }
+  };
 
   // Load buildings when site changes
   useEffect(() => {
@@ -385,35 +405,28 @@ export default function TicketForm({
           render={({ field }) => (
             <div className="space-y-2">
               <Label htmlFor="site_id">Site *</Label>
-              <AsyncAutocompleteRQ
+              <Select
                 value={field.value || ""}
-                onChange={(value) => {
+                onValueChange={(value) => {
                   field.onChange(value);
                   // Reset building and space when site changes
                   setValue("building_id", "");
                   setValue("space_id", "");
                 }}
-                placeholder="Select site"
-                queryKey={["sites"]}
-                queryFn={async (search) => {
-                  const res = await siteApiService.getSiteLookup(search);
-                  return res.data.map((s: any) => ({
-                    id: s.id,
-                    label: s.name,
-                  }));
-                }}
-                fallbackOption={
-                  initialData?.site_id
-                    ? {
-                        id: initialData.site_id,
-                        label:
-                          initialData.site_name ||
-                          `Site (${initialData.site_id.slice(0, 6)})`,
-                      }
-                    : undefined
-                }
-                minSearchLength={1}
-              />
+              >
+                <SelectTrigger
+                  className={errors.site_id ? "border-red-500" : ""}
+                >
+                  <SelectValue placeholder="Select site" />
+                </SelectTrigger>
+                <SelectContent>
+                  {siteList.map((site) => (
+                    <SelectItem key={site.id} value={site.id}>
+                      {site.name}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
               {errors.site_id && (
                 <p className="text-sm text-red-500">{errors.site_id.message}</p>
               )}

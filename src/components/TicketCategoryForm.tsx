@@ -20,7 +20,6 @@ import {
 } from "@/schemas/ticketCategory.schema";
 import { toast } from "sonner";
 import { withFallback } from "@/helpers/commonHelper";
-import { AsyncAutocompleteRQ } from "@/components/common/async-autocomplete-rq";
 
 interface TicketCategoryFormProps {
   category?: any;
@@ -62,6 +61,7 @@ export default function TicketCategoryForm({
     reValidateMode: "onChange",
   });
   const [formLoading, setFormLoading] = useState(true);
+  const [siteList, setSiteList] = useState<any[]>([]);
   const [autoAssignRoleList, setAutoAssignRoleList] = useState<any[]>([]);
   const [slaPolicyList, setSlaPolicyList] = useState<any[]>([]);
   const [statusList, setStatusList] = useState<any[]>([]);
@@ -83,10 +83,33 @@ export default function TicketCategoryForm({
 
     setFormLoading(false);
 
-    await Promise.all([loadAutoAssignRoleLookup(), loadStatusLookup()]);
+    await Promise.all([
+      loadSiteLookup(),
+      loadAutoAssignRoleLookup(),
+      loadStatusLookup(),
+    ]);
 
     if (category?.site_id) {
       loadSlaPolicyLookup(category.site_id);
+    }
+  };
+
+  const loadSiteLookup = async () => {
+    const response = await siteApiService.getSiteLookup();
+    if (response?.success) {
+      const sites = response.data || [];
+      setSiteList(sites);
+      
+      // If we have category with a site_id that's not in the list, add it as fallback
+      if (category?.site_id && !sites.find((s: any) => s.id === category.site_id)) {
+        setSiteList([
+          {
+            id: category.site_id,
+            name: category.site_name || "Selected Site",
+          },
+          ...sites,
+        ]);
+      }
     }
   };
 
@@ -209,30 +232,23 @@ export default function TicketCategoryForm({
             render={({ field }) => (
               <div className="space-y-2">
                 <Label htmlFor="site_id">Site *</Label>
-                <AsyncAutocompleteRQ
-                  value={field.value}
-                  onChange={(value) => {
-                    field.onChange(value);
-                  }}
-                  placeholder="Select site"
-                  fallbackOption={
-                    category?.site_id
-                      ? {
-                          id: category.site_id,
-                          label: category.site_name || "Selected Site",
-                        }
-                      : undefined
-                  }
-                  queryKey={["sites"]}
-                  queryFn={async (search) => {
-                    const res = await siteApiService.getSiteLookup(search);
-                    return res.data.map((s: any) => ({
-                      id: s.id,
-                      label: s.name,
-                    }));
-                  }}
-                  minSearchLength={1}
-                />
+                <Select
+                  value={field.value || ""}
+                  onValueChange={field.onChange}
+                >
+                  <SelectTrigger
+                    className={errors.site_id ? "border-red-500" : ""}
+                  >
+                    <SelectValue placeholder="Select site" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {siteList.map((site) => (
+                      <SelectItem key={site.id} value={site.id}>
+                        {site.name}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
                 {errors.site_id && (
                   <p className="text-sm text-red-500">
                     {errors.site_id.message}

@@ -27,7 +27,6 @@ import { SLAPolicy } from "@/interfaces/sla_policy_interface";
 import { slaPoliciesApiService } from "@/services/ticketing_service/slapoliciesapi";
 import { siteApiService } from "@/services/spaces_sites/sitesapi";
 import { withFallback } from "@/helpers/commonHelper";
-import { AsyncAutocompleteRQ } from "./common/async-autocomplete-rq";
 interface SLAPolicyFormProps {
   policy?: SLAPolicy | null;
   isOpen: boolean;
@@ -161,7 +160,7 @@ export function SLAPolicyForm({
   };
 
   const onSubmitForm = async (data: SLAPolicyFormValues) => {
-    // Find site by ID (from AsyncAutocompleteRQ) or by name (fallback)
+    // Find site by ID or by name (fallback)
     const selectedSite = selectedSiteId
       ? siteList.find((site) => site.id === selectedSiteId)
       : siteList.find((site) => site.name === data.site_name);
@@ -240,9 +239,9 @@ export function SLAPolicyForm({
                     name="site_name"
                     control={control}
                     render={({ field }) => (
-                      <AsyncAutocompleteRQ
+                      <Select
                         value={selectedSiteId || ""}
-                        onChange={(value) => {
+                        onValueChange={(value) => {
                           setSelectedSiteId(value);
                           // Find site by ID and set the name in the form
                           const selectedSite = siteList.find(
@@ -254,30 +253,21 @@ export function SLAPolicyForm({
                             field.onChange("");
                           }
                         }}
-                        placeholder="Select site"
                         disabled={isReadOnly}
-                        queryKey={["sites"]}
-                        queryFn={async (search) => {
-                          const res = await siteApiService.getSiteLookup(
-                            search
-                          );
-                          return res.data.map((s: any) => ({
-                            id: s.id,
-                            label: s.name,
-                          }));
-                        }}
-                        fallbackOption={
-                          policy?.site_id || policy?.site_name
-                            ? {
-                                id: policy.site_id || "",
-                                label:
-                                  policy.site_name ||
-                                  `Site (${policy.site_id?.slice(0, 6)})`,
-                              }
-                            : undefined
-                        }
-                        minSearchLength={1}
-                      />
+                      >
+                        <SelectTrigger
+                          className={errors.site_name ? "border-red-500" : ""}
+                        >
+                          <SelectValue placeholder="Select site" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          {siteList.map((site) => (
+                            <SelectItem key={site.id} value={site.id}>
+                              {site.name}
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
                     )}
                   />
                   {errors.site_name && (
