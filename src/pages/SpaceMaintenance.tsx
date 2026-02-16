@@ -30,7 +30,6 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import { siteApiService } from "@/services/spaces_sites/sitesapi";
-import { AsyncAutocompleteRQ } from "@/components/common/async-autocomplete-rq";
 import { toast } from "sonner";
 import { SpaceMaintenanceForm } from "@/components/SpaceMaintenanceForm";
 import { AutoGenerateMaintenanceForm } from "@/components/AutoGenerateMaintenanceForm";
@@ -100,6 +99,7 @@ const SpaceMaintenance = () => {
   const [selectedSite, setSelectedSite] = useState<string>("all");
   const [selectedStatus, setSelectedStatus] = useState<string>("all");
   const [items, setItems] = useState<OwnerMaintenance[]>([]);
+  const [siteList, setSiteList] = useState<any[]>([]);
   const { withLoader } = useLoader();
   const [isFormOpen, setIsFormOpen] = useState(false);
   const [selectedMaintenance, setSelectedMaintenance] =
@@ -137,6 +137,17 @@ const SpaceMaintenance = () => {
   useEffect(() => {
     updateMaintenancePage();
   }, [searchTerm, selectedSite, selectedStatus]);
+
+  useEffect(() => {
+    loadSiteLookup();
+  }, []);
+
+  const loadSiteLookup = async () => {
+    const response = await siteApiService.getSiteLookup();
+    if (response?.success) {
+      setSiteList(response.data || []);
+    }
+  };
 
   const updateMaintenancePage = () => {
     if (page === 1) {
@@ -277,32 +288,22 @@ const SpaceMaintenance = () => {
               onChange={(e) => setSearchTerm(e.target.value)}
               className="max-w-sm"
             />
-            <div className="w-[180px]">
-              <AsyncAutocompleteRQ
-                value={selectedSite === "all" ? "" : selectedSite}
-                onChange={(value) => {
-                  setSelectedSite(value || "all");
-                }}
-                placeholder="All Sites"
-                queryKey={["space-maintenance-sites"]}
-                queryFn={async (search) => {
-                  const res = await siteApiService.getSiteLookup(search);
-                  return res.data.map((s: any) => ({
-                    id: s.id,
-                    label: s.name,
-                  }));
-                }}
-                fallbackOption={
-                  selectedSite === "all"
-                    ? {
-                        id: "all",
-                        label: "All Sites",
-                      }
-                    : undefined
-                }
-                minSearchLength={0}
-              />
-            </div>
+            <Select
+              value={selectedSite}
+              onValueChange={setSelectedSite}
+            >
+              <SelectTrigger className="w-[180px]">
+                <SelectValue placeholder="All Sites" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">All Sites</SelectItem>
+                {siteList.map((site) => (
+                  <SelectItem key={site.id} value={site.id}>
+                    {site.name}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
             <Select value={selectedStatus} onValueChange={setSelectedStatus}>
               <SelectTrigger className="w-[180px]">
                 <SelectValue placeholder="All Status" />
