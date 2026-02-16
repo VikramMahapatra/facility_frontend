@@ -30,6 +30,10 @@ class ParkingZoneApiService {
         });
     }
 
+    async getParkingZoneLookup(params) {
+        return await apiService.request(`/parking-zones/lookup?${params.toString()}`);
+    }
+
 }
 
 export const parkingZoneApiService = new ParkingZoneApiService();

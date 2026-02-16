@@ -11,10 +11,9 @@ export const showErrorToast = (
             <div
                 className="
                     flex gap-4 items-start
-                    max-w-[520px] w-full
+                    max-w-[480px] w-full
                     bg-white/90 backdrop-blur
-                    border border-red-200
-                    rounded-2xl shadow-lg
+                    border border-red-200 shadow-lg
                     p-4
                 "
             >

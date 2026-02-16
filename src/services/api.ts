@@ -1,5 +1,5 @@
 import { openGlobalModal } from "@/context/ModalContext";
-import { showErrorToast } from "@/helpers/customToastUI";
+import { showErrorToast } from "@/helpers/CustomToastUI";
 import { toast } from "sonner";
 
 
@@ -18,13 +18,20 @@ const ERROR_TITLES: Record<string, string> = {
 
 function normalizeError(result: any) {
     const statusCode = result?.status_code?.toString();
+    let message = "Something went wrong";
+
+
+    if (result.status_code != "210" && result.status_code != "400" && result.status_code != "500"
+        && result?.status.toString().toLowerCase() != "failure"
+    )
+        message = result.message
+
 
     return {
         title:
             ERROR_TITLES[statusCode] || "Action Failed",
 
-        message:
-            result?.message || "Something went wrong",
+        message: message,
     };
 }
 
@@ -64,20 +71,18 @@ class ApiService {
     }
 
     private handleErrorByStatusCode(result: any) {
-
-        const message = result?.message || "Something went wrong";
         const statusCode = result?.status_code?.toString();
 
         // 🚨 ALERT LEVEL (High priority errors)
         const MODAL_CODES = ["999", "777"]; // example
 
-        if (MODAL_CODES.includes(statusCode)) {
-            openGlobalModal(message);
-            return;
-        }
-
         // default fallback
         const error = normalizeError(result);
+
+        if (MODAL_CODES.includes(statusCode)) {
+            openGlobalModal(error.message);
+            return;
+        }
         showErrorToast(error.title, error.message);
     }
 
@@ -132,7 +137,7 @@ class ApiService {
             return { success: true, data: result.data };
         } catch (error) {
             console.log('API request failed:', error);
-            toast.error("Something went wrong");
+            showErrorToast("Technical Error!", "Something went wrong");
             return { success: false };
         }
     }
@@ -207,15 +212,15 @@ class ApiService {
             }
 
             if (!response.ok) {
-                toast.error(errorMessage);
                 return { success: false, message: `HTTP error! status: ${response.status}` };
             }
 
             return { success: true, data: result.data };
         } catch (error) {
             console.error('API request failed:', error);
-            toast.error(errorMessage);
-            return { success: false, message: errorMessage };
+            showErrorToast("Technical Error!", "Something went wrong");
+
+            return { success: false, message: "Something went wrong" };
         }
     }
 

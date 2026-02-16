@@ -136,17 +136,52 @@ export const navigationItems = [
     items: [
       { title: "Tenants", url: "/tenants", icon: Users, resource: "tenants" },
       { title: "Leases", url: "/leases", icon: FileText, resource: "leases" },
+      // {
+      //   title: "Lease Charges",
+      //   url: "/lease-charges",
+      //   icon: Receipt,
+      //   resource: "lease_charges",
+      // },
+      // {
+      //   title: "Lease Charge Codes",
+      //   url: "/lease-charge-codes",
+      //   icon: Key,
+      //   resource: "leases_charge_codes",
+      // },
+    ],
+  },
+  {
+    title: "Parking & Access",
+    items: [
       {
-        title: "Lease Charges",
-        url: "/lease-charges",
-        icon: Receipt,
-        resource: "lease_charges",
+        title: "Parking Zones",
+        url: "/parking-zones",
+        icon: Car,
+        resource: "parking_zones",
       },
       {
-        title: "Lease Charge Codes",
-        url: "/lease-charge-codes",
+        title: "Parking Slots",
+        url: "/parking-slots",
+        icon: MapPin,
+        resource: "parking_slots",
+      },
+      {
+        title: "Parking Passes",
+        url: "/parking-passes",
+        icon: Ticket,
+        resource: "parking_passes",
+      },
+      {
+        title: "Access Logs",
+        url: "/access-logs",
         icon: Key,
-        resource: "leases_charge_codes",
+        resource: "access_logs",
+      },
+      {
+        title: "Visitor Management",
+        url: "/visitors",
+        icon: UserCheck,
+        resource: "visitors",
       },
     ],
   },
@@ -263,35 +298,7 @@ export const navigationItems = [
   //     },
   //   ],
   // },
-  {
-    title: "Parking & Access",
-    items: [
-      {
-        title: "Parking Zones",
-        url: "/parking-zones",
-        icon: Car,
-        resource: "parking_zones",
-      },
-      {
-        title: "Parking Passes",
-        url: "/parking-passes",
-        icon: Ticket,
-        resource: "parking_passes",
-      },
-      {
-        title: "Access Logs",
-        url: "/access-logs",
-        icon: Key,
-        resource: "access_logs",
-      },
-      {
-        title: "Visitor Management",
-        url: "/visitors",
-        icon: UserCheck,
-        resource: "visitors",
-      },
-    ],
-  },
+
   // {
   //   title: "Energy consumption",
   //   items: [
