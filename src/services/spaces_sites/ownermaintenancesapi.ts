@@ -17,11 +17,12 @@ class OwnerMaintenancesApiService {
     return await apiService.request(`/owner-maintenances/status-lookup`);
   }
 
-  async getSpaceOwnerLookup(siteId: string) {
+  async getSpaceOwnerLookup(siteId: string, buildingId: string) {
     const params = new URLSearchParams();
     if (siteId) params.append("site_id", siteId);
+    if (buildingId) params.append("building_id", buildingId);
     return await apiService.request(
-      `/owner-maintenances/spaceowner-lookup?${params.toString()}`,
+      `/owner-maintenances/space-owner-lookup?${params.toString()}`,
     );
   }
 
@@ -51,6 +52,16 @@ class OwnerMaintenancesApiService {
     return await apiService.request(
       `/owner-maintenances/auto-generate-maintenance?${params.toString()}`,
       { method: "POST" },
+    );
+  }
+
+  async getCalculatedMaintenances(params: any) {
+    return await apiService.request(
+      `/owner-maintenances/calculated-maintenance-amount`,
+      {
+        method: "POST",
+        body: JSON.stringify(params),
+      }
     );
   }
 }

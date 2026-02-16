@@ -1,5 +1,5 @@
 import { openGlobalModal } from "@/context/ModalContext";
-import { showErrorToast } from "@/helpers/customToastUI";
+import { showErrorToast } from "@/helpers/CustomToastUI";
 import { toast } from "sonner";
 
 
@@ -65,8 +65,14 @@ class ApiService {
 
     private handleErrorByStatusCode(result: any) {
 
-        const message = result?.message || "Something went wrong";
+        let message = "Something went wrong";
         const statusCode = result?.status_code?.toString();
+
+
+        if (result.status_code != "210" && result.status_code != "400" && result.status_code != "500"
+            && result?.status.toString().toLowerCase() === "failure"
+        )
+            message = result.message
 
         // 🚨 ALERT LEVEL (High priority errors)
         const MODAL_CODES = ["999", "777"]; // example
@@ -132,7 +138,7 @@ class ApiService {
             return { success: true, data: result.data };
         } catch (error) {
             console.log('API request failed:', error);
-            toast.error("Something went wrong");
+            showErrorToast("Technical Error!", "Something went wrong");
             return { success: false };
         }
     }
@@ -207,15 +213,15 @@ class ApiService {
             }
 
             if (!response.ok) {
-                toast.error(errorMessage);
                 return { success: false, message: `HTTP error! status: ${response.status}` };
             }
 
             return { success: true, data: result.data };
         } catch (error) {
             console.error('API request failed:', error);
-            toast.error(errorMessage);
-            return { success: false, message: errorMessage };
+            showErrorToast("Technical Error!", "Something went wrong");
+
+            return { success: false, message: "Something went wrong" };
         }
     }
 

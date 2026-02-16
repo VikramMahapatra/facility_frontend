@@ -136,18 +136,18 @@ export const navigationItems = [
     items: [
       { title: "Tenants", url: "/tenants", icon: Users, resource: "tenants" },
       { title: "Leases", url: "/leases", icon: FileText, resource: "leases" },
-      {
-        title: "Lease Charges",
-        url: "/lease-charges",
-        icon: Receipt,
-        resource: "lease_charges",
-      },
-      {
-        title: "Lease Charge Codes",
-        url: "/lease-charge-codes",
-        icon: Key,
-        resource: "leases_charge_codes",
-      },
+      // {
+      //   title: "Lease Charges",
+      //   url: "/lease-charges",
+      //   icon: Receipt,
+      //   resource: "lease_charges",
+      // },
+      // {
+      //   title: "Lease Charge Codes",
+      //   url: "/lease-charge-codes",
+      //   icon: Key,
+      //   resource: "leases_charge_codes",
+      // },
     ],
   },
   {

@@ -324,7 +324,7 @@ export function MaintenanceTemplateForm({
               />
             </div>
             <div className="space-y-2">
-              <Label htmlFor="amount">Amount *</Label>
+              <Label htmlFor="amount">Monthly Amount *</Label>
               <Input
                 id="amount"
                 type="number"
