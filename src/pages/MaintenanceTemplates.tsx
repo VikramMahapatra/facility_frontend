@@ -6,6 +6,7 @@ import {
   Trash2,
   Plus,
   Search,
+  MapPin,
 } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -38,6 +39,7 @@ import LoaderOverlay from "@/components/LoaderOverlay";
 import ContentContainer from "@/components/ContentContainer";
 import { toast } from "sonner";
 import { MaintenanceTemplate } from "@/components/MaintenanceTemplateForm";
+import { getKindColor } from "@/interfaces/spaces_interfaces";
 
 export default function MaintenanceTemplates() {
   const [searchTerm, setSearchTerm] = useState("");
@@ -277,18 +279,17 @@ export default function MaintenanceTemplates() {
                           {template.name}
                         </CardTitle>
                         <div className="flex items-center gap-2">
-                          <Badge
-                            className={getCalculationTypeColor(
-                              template.calculation_type
-                            )}
-                          >
-                            {formatCalculationType(template.calculation_type)}
-                          </Badge>
+
                           {template.category && (
                             <Badge
                               className={getCategoryColor(template.category)}
                             >
                               {template.category}
+                            </Badge>
+                          )}
+                          {template.kind && (
+                            <Badge className={getKindColor(template.kind)}>
+                              {template.kind.replace("_", " ")}
                             </Badge>
                           )}
                         </div>
@@ -302,33 +303,28 @@ export default function MaintenanceTemplates() {
                   </CardHeader>
 
                   <CardContent className="space-y-4">
-                    {/* Site, Kind, Amount in one row */}
-                    <div className="grid grid-cols-3 gap-4 text-sm">
-                      <div>
-                        <p className="text-muted-foreground mb-1">Site</p>
-                        <p className="font-medium truncate">
-                          {template.site_name || "-"}
-                        </p>
+                    <div className="space-y-2 text-sm">
+                      <div className="flex items-center gap-2">
+                        <MapPin className="h-3 w-3 text-muted-foreground" />
+                        <span className="text-muted-foreground">
+                          {template.site_name}
+                        </span>
                       </div>
-                      <div>
-                        <p className="text-muted-foreground mb-1">Kind</p>
-                        {template.kind ? (
-                          <Badge variant="secondary" className="text-xs">
-                            {template.kind
-                              .replace("_", " ")
-                              .replace(/\b\w/g, (l) => l.toUpperCase())}
-                          </Badge>
-                        ) : (
-                          <span className="text-muted-foreground">-</span>
+                      <div className="flex items-center justify-between">
+                        {template.calculation_type && (
+                          <span className="text-muted-foreground">
+                            Calculation Type:  {formatCalculationType(template.calculation_type)}
+                          </span>
+                        )}
+                        {Number(template.amount) !== 0 && Number(template.amount) > 0 && (
+                          <span className="font-semibold text-sidebar-primary">
+                            ₹{template.amount.toLocaleString()}
+                          </span>
                         )}
                       </div>
-                      <div>
-                        <p className="text-muted-foreground mb-1">Amount</p>
-                        <p className="font-semibold text-sidebar-primary">
-                          ₹{template.amount.toLocaleString()}
-                        </p>
-                      </div>
                     </div>
+                    {/* Site, Kind, Amount in one row */}
+
 
                     {/* Actions */}
                     <div className="flex items-center justify-end gap-2 pt-2">

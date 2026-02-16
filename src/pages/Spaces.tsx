@@ -46,8 +46,10 @@ import {
   getKindColor,
   getKindIcon,
   getStatusColor,
+  Space,
   SpaceKind,
   spaceKinds,
+  SpaceOverview,
 } from "@/interfaces/spaces_interfaces";
 import { useSkipFirstEffect } from "@/hooks/use-skipfirst-effect";
 import { useAuth } from "../context/AuthContext";
@@ -59,37 +61,6 @@ import { toast } from "sonner";
 import { PageHeader } from "@/components/PageHeader";
 import { useNavigate } from "react-router-dom";
 
-export interface Space {
-  id: string;
-  org_id: string;
-  site_id: string;
-  site_name?: string;
-  name?: string;
-  kind: SpaceKind;
-  category?: "residential" | "commercial";
-  floor?: string;
-  building_block_id?: string;
-  building_block?: string;
-  area_sqft?: number;
-  beds?: number;
-  baths?: number;
-  attributes: Record<string, any>;
-  accessories?: Array<{
-    accessory_id: string;
-    quantity: number;
-  }>;
-  status: "available" | "occupied" | "out_of_service";
-  created_at: string;
-  updated_at: string;
-  owner_name: string;
-}
-
-interface SpaceOverview {
-  totalSpaces: number;
-  availableSpaces: number;
-  occupiedSpaces: number;
-  outOfServices: number;
-}
 
 export default function Spaces() {
   const navigate = useNavigate();
@@ -441,6 +412,17 @@ export default function Spaces() {
                       </div>
                     )}
                   </div>
+                  {/* Maintenance Amount */}
+                  {Number(space.maintenance_amount) > 0 && (
+                    <div className="flex items-center justify-between rounded-md bg-muted/40 px-3 py-2">
+                      <span className="text-xs text-muted-foreground">
+                        Maintenance
+                      </span>
+                      <span className="text-sm font-semibold">
+                        ₹ {Number(space.maintenance_amount).toLocaleString()}
+                      </span>
+                    </div>
+                  )}
 
                   {/* Location Details */}
                   <div className="space-y-2 text-sm">

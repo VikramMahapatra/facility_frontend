@@ -298,11 +298,11 @@ export default function TenantDetailPage() {
                   </Button>
                 </div>
 
-                <div className="flex items-center gap-2">
+                {/* <div className="flex items-center gap-2">
                   <Badge className={getTenantTypeColor(tenant.kind)}>
                     {tenant.kind}
                   </Badge>
-                </div>
+                </div> */}
               </div>
             </div>
             <div className="flex gap-2"></div>
@@ -373,33 +373,33 @@ export default function TenantDetailPage() {
                 </CardContent>
               </Card>
 
-              {tenant.contact_info?.address &&
-                (tenant.contact_info.address.line1 ||
-                  tenant.contact_info.address.city ||
-                  tenant.contact_info.address.state ||
-                  tenant.contact_info.address.pincode) && (
+              {tenant.address &&
+                (tenant.address.line1 ||
+                  tenant.address.city ||
+                  tenant.address.state ||
+                  tenant.address.pincode) && (
                   <Card>
                     <CardContent className="p-6">
                       <h3 className="font-medium mb-2">Address</h3>
-                      {tenant.contact_info.address.line1 && (
-                        <p>{tenant.contact_info.address.line1}</p>
+                      {tenant.address.line1 && (
+                        <p>{tenant.address.line1}</p>
                       )}
-                      {tenant.contact_info.address.line2 && (
-                        <p>{tenant.contact_info.address.line2}</p>
+                      {tenant.address.line2 && (
+                        <p>{tenant.address.line2}</p>
                       )}
-                      {(tenant.contact_info.address.city ||
-                        tenant.contact_info.address.state ||
-                        tenant.contact_info.address.pincode) && (
-                        <p className="text-muted-foreground">
-                          {[
-                            tenant.contact_info.address.city,
-                            tenant.contact_info.address.state,
-                            tenant.contact_info.address.pincode,
-                          ]
-                            .filter(Boolean)
-                            .join(", ")}
-                        </p>
-                      )}
+                      {(tenant.address.city ||
+                        tenant.address.state ||
+                        tenant.address.pincode) && (
+                          <p className="text-muted-foreground">
+                            {[
+                              tenant.address.city,
+                              tenant.address.state,
+                              tenant.address.pincode,
+                            ]
+                              .filter(Boolean)
+                              .join(", ")}
+                          </p>
+                        )}
                     </CardContent>
                   </Card>
                 )}
@@ -407,13 +407,13 @@ export default function TenantDetailPage() {
               {(() => {
                 const familyItems = Array.isArray(tenant.family_info)
                   ? tenant.family_info.filter(
-                      (member) => member.member || member.relation
-                    )
+                    (member) => member.member || member.relation
+                  )
                   : [];
                 const vehicleItems = Array.isArray(tenant.vehicle_info)
                   ? tenant.vehicle_info.filter(
-                      (vehicle) => vehicle.type || vehicle.number
-                    )
+                    (vehicle) => vehicle.type || vehicle.number
+                  )
                   : [];
 
                 return (
@@ -711,8 +711,8 @@ export default function TenantDetailPage() {
                             typeof payment.amount === "number"
                               ? payment.amount
                               : payment.amount
-                              ? Number(payment.amount)
-                              : undefined;
+                                ? Number(payment.amount)
+                                : undefined;
                           const reference =
                             payment.reference ||
                             payment.reference_no ||
@@ -767,22 +767,22 @@ export default function TenantDetailPage() {
                                   {(payment.charge_code ||
                                     payment.charge_code_name ||
                                     payment.charge_code_id) && (
-                                    <Badge
-                                      className={`text-xs border-0 ${getChargeCodeBadgeClass(
-                                        String(
-                                          payment.charge_code ||
+                                      <Badge
+                                        className={`text-xs border-0 ${getChargeCodeBadgeClass(
+                                          String(
+                                            payment.charge_code ||
                                             payment.charge_code_name ||
                                             payment.charge_code_id
-                                        )
-                                      )}`}
-                                    >
-                                      {String(
-                                        payment.charge_code ||
+                                          )
+                                        )}`}
+                                      >
+                                        {String(
+                                          payment.charge_code ||
                                           payment.charge_code_name ||
                                           payment.charge_code_id
-                                      )}
-                                    </Badge>
-                                  )}
+                                        )}
+                                      </Badge>
+                                    )}
                                 </div>
                               </div>
 
@@ -911,8 +911,8 @@ export default function TenantDetailPage() {
 
           const preservedTenantSpaces = (tenant as any).tenant_spaces
             ? (tenant as any).tenant_spaces.filter(
-                (space: any) => space.id && space.id.length > 0
-              )
+              (space: any) => space.id && space.id.length > 0
+            )
             : undefined;
 
           const updatedTenant = {

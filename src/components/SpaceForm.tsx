@@ -25,7 +25,7 @@ import { siteApiService } from "@/services/spaces_sites/sitesapi";
 import { buildingApiService } from "@/services/spaces_sites/buildingsapi";
 import { spacesApiService } from "@/services/spaces_sites/spacesapi";
 import { maintenanceTemplateApiService } from "@/services/spaces_sites/maintenanceTemplateApi";
-import { SpaceKind, spaceKinds } from "@/interfaces/spaces_interfaces";
+import { Space, SpaceKind, spaceKinds } from "@/interfaces/spaces_interfaces";
 import {
   Popover,
   PopoverContent,
@@ -34,38 +34,7 @@ import {
 import { Checkbox } from "@/components/ui/checkbox";
 import { Badge } from "@/components/ui/badge";
 import { ChevronsUpDown, X, Plus } from "lucide-react";
-
 import { withFallback } from "@/helpers/commonHelper";
-
-interface Space {
-  id: string;
-  org_id: string;
-  site_id: string;
-  site_name?: string;
-  name?: string;
-  kind: SpaceKind;
-  category?: "residential" | "commercial";
-  floor?: string;
-  building_block_id?: string;
-  building_block?: string;
-  area_sqft?: number;
-  beds?: number;
-  baths?: number;
-  attributes?: {
-    view?: string;
-    //smoking?: boolean;
-    furnished?: string;
-    star_rating?: string;
-  };
-  accessories?: Array<{
-    accessory_id: string;
-    quantity: number;
-  }>;
-  maintenance_template_id?: string;
-  status: "available" | "occupied" | "out_of_service";
-  created_at: string;
-  updated_at: string;
-}
 
 interface SpaceFormProps {
   space?: Space;
