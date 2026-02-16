@@ -15,11 +15,11 @@ import {
   getStatusColor,
   HistoryRecord,
   OccupancyRecord,
+  Space,
   TimelineEvent,
 } from "@/interfaces/spaces_interfaces";
 import ContentContainer from "@/components/ContentContainer";
 import LoaderOverlay from "@/components/LoaderOverlay";
-import { Space } from "./Spaces";
 import {
   ArrowLeft,
   FileText,
