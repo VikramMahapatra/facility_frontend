@@ -91,6 +91,13 @@ class SpacesApiService {
     });
   }
 
+  async removeOwner(payload: any) {
+    return await apiService.request(`/spaces/remove-owner`, {
+      method: "POST",
+      body: JSON.stringify(payload),
+    });
+  }
+
   async getPendingOwnerRequests(params?: URLSearchParams) {
     const url = params
       ? `/spaces/pending-owner-request?${params.toString()}`
@@ -118,6 +125,13 @@ class SpacesApiService {
 
   async assignTenant(payload: any) {
     return await apiService.request(`/spaces/assign-tenant`, {
+      method: "POST",
+      body: JSON.stringify(payload),
+    });
+  }
+
+  async removeTenant(payload: any) {
+    return await apiService.request(`/spaces/remove-tenant`, {
       method: "POST",
       body: JSON.stringify(payload),
     });
