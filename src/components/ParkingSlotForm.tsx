@@ -18,16 +18,16 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import {
-  parkingZoneSchema,
-  ParkingZoneFormValues,
-} from "@/schemas/parkingZone.schema";
-import { ParkingSlot, ParkingZone } from "@/interfaces/parking_access_interface";
+import { ParkingSlot } from "@/interfaces/parking_access_interface";
 import { siteApiService } from "@/services/spaces_sites/sitesapi";
-import { AsyncAutocompleteRQ } from "./common/async-autocomplete-rq";
-import { ParkingSlotFormValues, parkingSlotSchema } from "@/schemas/parkingSlot.schema";
+import { spacesApiService } from "@/services/spaces_sites/spacesapi";
+import {
+  ParkingSlotFormValues,
+  parkingSlotSchema,
+} from "@/schemas/parkingSlot.schema";
 import { parkingSlotApiService } from "@/services/parking_access/parkingslotsapi";
 import { parkingZoneApiService } from "@/services/parking_access/parkingzonesapi";
+import { withFallback } from "@/helpers/commonHelper";
 
 interface ParkingSlotFormProps {
   slot?: ParkingSlot | null;
@@ -41,6 +41,8 @@ const emptyFormData: ParkingSlotFormValues = {
   slot_no: "",
   site_id: "",
   zone_id: "",
+  slot_type: "covered",
+  space_id: undefined,
 };
 
 export function ParkingSlotForm({
@@ -71,23 +73,47 @@ export function ParkingSlotForm({
   const [spaces, setSpaces] = useState<any[]>([]);
 
   const loadAll = async () => {
+    setFormLoading(true);
 
-    const sitesResponse = await siteApiService.getSiteLookup();
-    const sites = sitesResponse.success ? sitesResponse.data || [] : [];
-    setSiteList(sites);
+    // Clear zone and space lists when opening form in create mode
+    if (mode === "create") {
+      setZoneList([]);
+      setSpaces([]);
+    }
 
     reset(
       slot && mode !== "create"
         ? {
-          slot_no: slot.slot_no || "",
-          site_id: slot.site_id || "",
-          zone_id: slot.zone_id || "",
-        }
-        : emptyFormData
+            slot_no: slot.slot_no || "",
+            site_id: slot.site_id || "",
+            zone_id: slot.zone_id || "",
+            space_id: slot.space_id || undefined,
+            slot_type: slot.slot_type || "covered",
+          }
+        : emptyFormData,
     );
 
     setFormLoading(false);
 
+    // Load sites for fallback and site lookup
+    const sitesResponse = await siteApiService.getSiteLookup();
+    const sites = sitesResponse.success ? sitesResponse.data || [] : [];
+    setSiteList(sites);
+
+    // Load zones and spaces for the selected site if editing
+    if (slot && mode !== "create" && slot.site_id) {
+      const params = new URLSearchParams({ site_id: slot.site_id });
+      const [zonesResponse, spacesResponse] = await Promise.all([
+        parkingZoneApiService.getParkingZoneLookup(params),
+        spacesApiService.getSpaceLookup(slot.site_id),
+      ]);
+      if (zonesResponse.success) {
+        setZoneList(zonesResponse.data || []);
+      }
+      if (spacesResponse.success) {
+        setSpaces(spacesResponse.data || []);
+      }
+    }
   };
 
   useEffect(() => {
@@ -98,22 +124,76 @@ export function ParkingSlotForm({
 
   const selectedSiteId = watch("site_id");
 
+  useEffect(() => {
+    if (selectedSiteId) {
+      loadparkingZones();
+      loadSpaces();
+    } else {
+      setZoneList([]);
+      setSpaces([]);
+      setValue("zone_id", "");
+      setValue("space_id", undefined);
+    }
+  }, [selectedSiteId]);
+
   const loadparkingZones = async () => {
     if (!selectedSiteId) return;
 
     const params = new URLSearchParams({ site_id: selectedSiteId });
     const response = await parkingZoneApiService.getParkingZoneLookup(params);
-    if (response.success) setZoneList(response.data || []);
+    if (response.success) {
+      setZoneList(response.data || []);
+    } else {
+      setZoneList([]);
+    }
+  };
+
+  const loadSpaces = async () => {
+    if (!selectedSiteId) return;
+
+    const response = await spacesApiService.getSpaceLookup(selectedSiteId);
+    if (response.success) {
+      setSpaces(response.data || []);
+    } else {
+      setSpaces([]);
+    }
   };
 
   const onSubmitForm = async (data: ParkingSlotFormValues) => {
+    // Find zone by ID or by name (fallback)
+    const selectedZone = data.zone_id
+      ? zoneList.find((zone) => zone.id === data.zone_id)
+      : slot?.zone_id
+        ? zoneList.find((zone) => zone.id === slot.zone_id)
+        : null;
+
     await onSave({
       ...slot,
       ...data,
+      zone_id: selectedZone?.id || data.zone_id,
+      zone_name: selectedZone?.name || slot?.zone_name,
     });
   };
 
   const isReadOnly = mode === "view";
+
+  // Create fallback options for fields that might not be in lookup lists
+  const fallbackZone = slot?.zone_id
+    ? {
+        id: slot.zone_id,
+        name: slot.zone_name || `Zone ${slot.zone_id.slice(0, 6)}`,
+      }
+    : null;
+
+  const fallbackSpace = slot?.space_id
+    ? {
+        id: slot.space_id,
+        name: slot.space_name || `Space ${slot.space_id.slice(0, 6)}`,
+      }
+    : null;
+
+  const zones = withFallback(zoneList, fallbackZone);
+  const spacesWithFallback = withFallback(spaces, fallbackSpace);
 
   const handleClose = () => {
     reset(emptyFormData);
@@ -158,7 +238,7 @@ export function ParkingSlotForm({
                         </SelectTrigger>
                         <SelectContent>
                           {siteList.length === 0 ? (
-                            <SelectItem value="none" disabled>
+                            <SelectItem value="no-sites" disabled>
                               No sites available
                             </SelectItem>
                           ) : (
@@ -195,12 +275,12 @@ export function ParkingSlotForm({
                           <SelectValue placeholder="Select Zone" />
                         </SelectTrigger>
                         <SelectContent>
-                          {zoneList.length === 0 ? (
-                            <SelectItem value="none" disabled>
+                          {zones.length === 0 ? (
+                            <SelectItem value="no-zones" disabled>
                               No zones available
                             </SelectItem>
                           ) : (
-                            zoneList.map((zone) => (
+                            zones.map((zone) => (
                               <SelectItem key={zone.id} value={zone.id}>
                                 {zone.name}
                               </SelectItem>
@@ -254,7 +334,9 @@ export function ParkingSlotForm({
                             <SelectItem value="covered">Covered</SelectItem>
                             <SelectItem value="open">Open</SelectItem>
                             <SelectItem value="visitor">Visitor</SelectItem>
-                            <SelectItem value="handicapped">Handicapped</SelectItem>
+                            <SelectItem value="handicapped">
+                              Handicapped
+                            </SelectItem>
                             <SelectItem value="ev">EV</SelectItem>
                           </SelectContent>
                         </Select>
@@ -275,24 +357,31 @@ export function ParkingSlotForm({
                   control={control}
                   render={({ field }) => (
                     <div className="space-y-2">
-                      <Label htmlFor="space_id">Assign to Space (Optional)</Label>
+                      <Label htmlFor="space_id">
+                        Assign to Space (Optional)
+                      </Label>
                       <Select
-                        value={field.value}
-                        onValueChange={field.onChange}
+                        value={field.value || "unassigned"}
+                        onValueChange={(value) =>
+                          field.onChange(
+                            value === "unassigned" ? undefined : value,
+                          )
+                        }
                         disabled={isReadOnly}
                       >
                         <SelectTrigger
                           className={errors.space_id ? "border-red-500" : ""}
                         >
-                          <SelectValue placeholder="Select Space" />
+                          <SelectValue placeholder="Select Space (Optional)" />
                         </SelectTrigger>
                         <SelectContent>
-                          {spaces.length === 0 ? (
-                            <SelectItem value="none" disabled>
+                          <SelectItem value="unassigned">None</SelectItem>
+                          {spacesWithFallback.length === 0 ? (
+                            <SelectItem value="no-spaces" disabled>
                               No spaces available
                             </SelectItem>
                           ) : (
-                            spaces.map((space) => (
+                            spacesWithFallback.map((space) => (
                               <SelectItem key={space.id} value={space.id}>
                                 {space.name}
                               </SelectItem>
@@ -308,24 +397,6 @@ export function ParkingSlotForm({
                     </div>
                   )}
                 />
-                <Label>Assign to Space (Optional)</Label>
-                <Select
-                  value={watch("space_id") || ""}
-                  onValueChange={(value) => setValue("space_id", value)}
-                >
-                  <SelectTrigger>
-                    <SelectValue placeholder="Select space" />
-                  </SelectTrigger>
-
-                  <SelectContent>
-                    {spaces.map((s) => (
-                      <SelectItem key={s.id} value={s.id}>
-                        {s.name}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-
-                </Select>
               </div>
 
               <DialogFooter>
@@ -342,14 +413,12 @@ export function ParkingSlotForm({
                     {isSubmitting
                       ? "Saving..."
                       : mode === "create"
-                        ? "Create Space"
-                        : "Update Space"}
+                        ? "Create Slot"
+                        : "Update Slot"}
                   </Button>
                 )}
               </DialogFooter>
-
             </div>
-
           )}
         </form>
       </DialogContent>
