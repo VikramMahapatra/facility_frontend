@@ -132,7 +132,7 @@ export const toast = {
         showAppToast({
             title,
             message,
-            variant: "success",
+            variant: "error",
         });
     }
 };

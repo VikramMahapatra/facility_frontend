@@ -288,7 +288,7 @@ export default function SpaceDetailPage() {
                     value={
                       space.maintenance_amount
                         ? `₹ ${Number(space.maintenance_amount).toLocaleString()}  
-                          ${space.tax_rate ? `${Number(space.tax_rate).toLocaleString()} %` : ''}`
+                          ${space.tax_rate ? `+ ${Number(space.tax_rate).toLocaleString()} % tax` : ''}`
                         : "-"
                     }
                   />

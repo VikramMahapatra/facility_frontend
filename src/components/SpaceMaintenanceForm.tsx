@@ -29,7 +29,7 @@ import { zodResolver } from "@hookform/resolvers/zod";
 
 export const spaceMaintenanceSchema = z.object({
   site_id: z.string().min(1, "Site is required"),
-  building_block_id: z.string().min(1, "Building block is required"),
+  building_block_id: z.string().optional(),
   space_id: z.string().min(1, "Space is required"),
   start_date: z.string().min(1, "Start date required"),
   end_date: z.string().min(1, "End date required"),

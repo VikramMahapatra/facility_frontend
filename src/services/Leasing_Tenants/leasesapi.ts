@@ -31,8 +31,11 @@ class LeasesApiService {
     });
   }
 
-  async getLeaseLookup(lease_id?: any) {
-    return await apiService.request("/leases/lease-lookup");
+  async getLeaseLookup(siteId?: any, buildingId?: any) {
+    const params = new URLSearchParams();
+    if (siteId) params.append("site_id", siteId);
+    if (buildingId) params.append("building_id", buildingId);
+    return await apiService.request(`/leases/lease-lookup?${params.toString()}`);
   }
 
   async getLeaseKindLookup() {

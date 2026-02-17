@@ -134,7 +134,7 @@ interface LeaseChargeOverview {
 export default function LeaseCharges() {
   // filters
   const [searchTerm, setSearchTerm] = useState("");
-  const [selectedChargeCode, setSelectedChargeCode] = useState<string>("all");
+  const [selectedChargeCode, setSelectedChargeCode] = useState<string>("RENT");
   const [selectedMonth, setSelectedMonth] = useState<string>("all");
   const [deleteId, setDeleteId] = useState<string | null>(null);
   const [leaseCharges, setLeaseCharges] = useState<LeaseCharge[]>([]);
@@ -375,15 +375,6 @@ export default function LeaseCharges() {
           updateLeaseChargePage();
           setDeleteId(null);
           toast.success("The lease charge has been removed successfully.");
-        } else {
-          // Show error popup from backend
-          toast.error(
-            `Cannot Delete Lease Charge\n${authResponse?.message || "Unknown error"
-            }`,
-            {
-              style: { whiteSpace: "pre-line" },
-            }
-          );
         }
       }
     }
@@ -396,7 +387,7 @@ export default function LeaseCharges() {
         <Card>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
             <CardTitle className="text-sm font-medium">
-              Total Charges (All)
+              Total Rent Charges
             </CardTitle>
             <DollarSign className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
@@ -413,7 +404,7 @@ export default function LeaseCharges() {
         <Card>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
             <CardTitle className="text-sm font-medium">
-              Tax Amount (All)
+              Tax Amount
             </CardTitle>
             <TrendingUp className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
@@ -430,7 +421,7 @@ export default function LeaseCharges() {
         <Card>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
             <CardTitle className="text-sm font-medium">
-              This Month (All)
+              This Month
             </CardTitle>
             <Calendar className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
@@ -447,7 +438,7 @@ export default function LeaseCharges() {
         <Card>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
             <CardTitle className="text-sm font-medium">
-              Avg Charge (All)
+              Avg Rent Charge
             </CardTitle>
             <Receipt className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
@@ -463,7 +454,7 @@ export default function LeaseCharges() {
       </div>
 
       {/* Charges by Type summary (current list) */}
-      {Object.keys(chargesByType).length > 0 && (
+      {/* {Object.keys(chargesByType).length > 0 && (
         <Card>
           <CardHeader>
             <CardTitle className="text-lg">Charges by Type</CardTitle>
@@ -505,7 +496,7 @@ export default function LeaseCharges() {
             </div>
           </CardContent>
         </Card>
-      )}
+      )} */}
 
       {/* Filters + actions */}
       <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
@@ -522,7 +513,7 @@ export default function LeaseCharges() {
 
           {/* Type */}
           {/* Charge Code Select */}
-          <Select
+          {/* <Select
             value={selectedChargeCode}
             onValueChange={setSelectedChargeCode}
           >
@@ -537,7 +528,7 @@ export default function LeaseCharges() {
                 </SelectItem>
               ))}
             </SelectContent>
-          </Select>
+          </Select> */}
 
           {/* Month (full name; service converts to 1..12) */}
           {/* Month Select */}
@@ -557,10 +548,10 @@ export default function LeaseCharges() {
         </div>
 
         <div className="flex gap-2">
-          <Button variant="outline" size="sm">
+          {/* <Button variant="outline" size="sm">
             <Filter className="mr-2 h-4 w-4" />
             More Filters
-          </Button>
+          </Button> */}
           {canWrite(resource) && (
             <Button size="sm" onClick={handleCreate}>
               <Plus className="mr-2 h-4 w-4" />
