@@ -9,8 +9,11 @@ export const leaseSchema = z
     partner_id: z.string().optional(),
     tenant_id: z.string().optional(),
     start_date: z.string().min(1, "Start Date is required"),
-    frequency: z.enum(["monthly", "annually"], {
-      required_error: "Frequency is required",
+    frequency: z.enum(["monthly", "quaterly", "annually"], {
+      required_error: "Rent billing frequency is required",
+    }),
+    derived_frequency: z.enum(["monthly", "annually"], {
+      required_error: "Lease tenure is required",
     }),
     lease_term_months: z.coerce
       .number({

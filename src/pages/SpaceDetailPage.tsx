@@ -36,7 +36,7 @@ import {
 } from "lucide-react";
 import { SpaceMaintenanceForm } from "@/components/SpaceMaintenanceForm";
 import { SpaceForm } from "@/components/SpaceForm";
-import { toast } from "sonner";
+import { toast } from "@/components/ui/app-toast";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { ownerMaintenancesApiService } from "@/services/spaces_sites/ownermaintenancesapi";
 import { Pagination } from "@/components/Pagination";
@@ -146,8 +146,6 @@ export default function SpaceDetailPage() {
     if (response?.success) {
       setMaintenanceItems(response.data?.maintenances || []);
       setMaintenanceTotal(response.data?.total_records || 0);
-    } else {
-      toast.error(response?.message || "Failed to load maintenance charges");
     }
     setMaintenanceLoading(false);
   };
@@ -289,7 +287,8 @@ export default function SpaceDetailPage() {
                     label="Maintenance"
                     value={
                       space.maintenance_amount
-                        ? `₹ ${Number(space.maintenance_amount).toLocaleString()}`
+                        ? `₹ ${Number(space.maintenance_amount).toLocaleString()}  
+                          ${space.tax_rate ? `${Number(space.tax_rate).toLocaleString()} %` : ''}`
                         : "-"
                     }
                   />
@@ -417,14 +416,10 @@ export default function SpaceDetailPage() {
                               </div>
                               {getStatusBadge(item.status)}
                             </div>
-                            <div className="text-sm text-muted-foreground mt-1">
-                              {item.building_name || "-"} •{" "}
-                              {item.site_name || "-"}
-                            </div>
-                            <div className="text-xs text-muted-foreground">
+                            <div className="text-xs text-muted-foreground mt-1">
                               Owner: {item.owner_name || "-"}
                             </div>
-                            <div className="grid grid-cols-2 gap-4 mt-3 text-sm">
+                            <div className="grid grid-cols-4 gap-4 mt-3 text-sm">
                               <div className="space-y-1">
                                 <div className="text-muted-foreground flex items-center gap-2">
                                   <Calendar className="h-4 w-4" />
@@ -440,16 +435,11 @@ export default function SpaceDetailPage() {
                                   <IndianRupee className="h-4 w-4" />
                                   Amount
                                 </div>
-                                <div className="font-medium">
-                                  ₹ {item.amount ?? "-"}
+                                <div className="flex items-center gap-2">
+                                  <div className="font-medium">
+                                    ₹ {item.amount ?? "-"}
+                                  </div>
                                 </div>
-                              </div>
-                              <div className="space-y-1">
-                                <div className="text-muted-foreground flex items-center gap-2">
-                                  <Receipt className="h-4 w-4" />
-                                  Invoice
-                                </div>
-                                <div>{item.invoice_id || "-"}</div>
                               </div>
                               <div className="space-y-1">
                                 <div className="text-muted-foreground flex items-center gap-2">
@@ -457,6 +447,13 @@ export default function SpaceDetailPage() {
                                   Created
                                 </div>
                                 <div>{formatDate(item.created_at)}</div>
+                              </div>
+                              <div className="space-y-1">
+                                <div className="text-muted-foreground flex items-center gap-2">
+                                  <Receipt className="h-4 w-4" />
+                                  Invoice
+                                </div>
+                                <div>{item.invoice_id || "-"}</div>
                               </div>
                             </div>
                           </Card>
@@ -533,12 +530,6 @@ export default function SpaceDetailPage() {
                 toast.success("Space updated successfully.");
                 // Reload space data
                 await loadSpace();
-              } else if (response && !response.success) {
-                if (response?.message) {
-                  toast.error(response.message);
-                } else {
-                  toast.error("Failed to update space.");
-                }
               }
               return response;
             }}

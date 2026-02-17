@@ -36,7 +36,7 @@ import {
   ShieldCheck,
 } from "lucide-react";
 import { SLAPolicyForm } from "@/components/SLAPolicyForm";
-import { toast } from "sonner";
+import { toast } from "@/components/ui/app-toast";
 import { slaPoliciesApiService } from "@/services/ticketing_service/slapoliciesapi";
 import { siteApiService } from "@/services/spaces_sites/sitesapi";
 import {
@@ -175,8 +175,7 @@ export default function SLAPolicies() {
     if (response.success) {
       setIsFormOpen(false);
       toast.success(
-        `SLA Policy has been ${
-          formMode === "create" ? "created" : "updated"
+        `SLA Policy has been ${formMode === "create" ? "created" : "updated"
         } successfully.`
       );
     }
@@ -417,15 +416,15 @@ export default function SLAPolicies() {
               {formMode === "create"
                 ? "Create SLA Policy"
                 : formMode === "edit"
-                ? "Edit SLA Policy"
-                : "SLA Policy Details"}
+                  ? "Edit SLA Policy"
+                  : "SLA Policy Details"}
             </DialogTitle>
             <DialogDescription>
               {formMode === "create"
                 ? "Create a new SLA policy for service categories."
                 : formMode === "edit"
-                ? "Update SLA policy details."
-                : "View SLA policy details."}
+                  ? "Update SLA policy details."
+                  : "View SLA policy details."}
             </DialogDescription>
           </DialogHeader>
           <SLAPolicyForm

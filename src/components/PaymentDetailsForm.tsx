@@ -24,7 +24,7 @@ import {
   Smartphone,
   Calendar,
 } from "lucide-react";
-import { toast } from "sonner";
+import { toast } from "@/components/ui/app-toast";
 import { invoiceApiService } from "@/services/financials/invoicesapi";
 import { useLoader } from "@/context/LoaderContext";
 
@@ -235,10 +235,10 @@ export function PaymentDetailsForm({
                   {currency === "INR"
                     ? "₹"
                     : currency === "USD"
-                    ? "$"
-                    : currency === "EUR"
-                    ? "€"
-                    : currency || "₹"}
+                      ? "$"
+                      : currency === "EUR"
+                        ? "€"
+                        : currency || "₹"}
                 </span>
                 <Input
                   type="number"

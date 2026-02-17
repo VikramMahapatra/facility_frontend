@@ -25,7 +25,7 @@ import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { ArrowLeft, UserX, RefreshCw, Users } from "lucide-react";
-import { toast } from "sonner";
+import { toast } from "@/components/ui/app-toast";
 import {
   Table,
   TableBody,
@@ -497,11 +497,11 @@ export default function TicketWorkload() {
                             disabled={
                               isAssigning ||
                               selectedTicket?.id ===
-                                (ticket.id || ticket.ticket_id)
+                              (ticket.id || ticket.ticket_id)
                             }
                           >
                             {isAssigning &&
-                            selectedTicket?.id ===
+                              selectedTicket?.id ===
                               (ticket.id || ticket.ticket_id)
                               ? "Assigning..."
                               : "Assign"}

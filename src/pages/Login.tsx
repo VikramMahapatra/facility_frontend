@@ -11,7 +11,7 @@ import { authApiService } from "@/services/authapi";
 import { useAuth } from "@/context/AuthContext";
 import PhoneInput from "react-phone-input-2";
 import "react-phone-input-2/lib/style.css";
-import { toast } from "sonner";
+import { toast } from "@/components/ui/app-toast";
 
 const Login = () => {
   const navigate = useNavigate();
@@ -180,7 +180,7 @@ const Login = () => {
     e.preventDefault();
     const pastedData = e.clipboardData.getData("text").trim();
     const digits = pastedData.replace(/\D/g, "").slice(0, 6).split("");
-    
+
     if (digits.length > 0) {
       const newOtp = [...otp];
       digits.forEach((digit, i) => {
@@ -189,7 +189,7 @@ const Login = () => {
         }
       });
       setOtp(newOtp);
-      
+
       // Focus on the last filled box or the last box
       const nextIndex = Math.min(digits.length - 1, 5);
       setTimeout(() => {

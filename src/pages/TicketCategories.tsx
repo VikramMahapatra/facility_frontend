@@ -28,7 +28,7 @@ import {
 import { Badge } from "@/components/ui/badge";
 import { Edit, Plus, Trash2, FileText, Archive, Search } from "lucide-react";
 import TicketCategoryForm from "@/components/TicketCategoryForm";
-import { toast } from "sonner";
+import { toast } from "@/components/ui/app-toast";
 import { ticketCategoriesApiService } from "@/services/ticketing_service/ticketcategoriesapi";
 import { siteApiService } from "@/services/spaces_sites/sitesapi";
 import {
@@ -169,8 +169,7 @@ export default function TicketCategories() {
     if (response?.success) {
       setIsFormOpen(false);
       toast.success(
-        `Ticket category has been ${
-          formMode === "create" ? "created" : "updated"
+        `Ticket category has been ${formMode === "create" ? "created" : "updated"
         } successfully.`
       );
     }
@@ -353,15 +352,15 @@ export default function TicketCategories() {
               {formMode === "create"
                 ? "Create Ticket Category"
                 : formMode === "edit"
-                ? "Edit Ticket Category"
-                : "Ticket Category Details"}
+                  ? "Edit Ticket Category"
+                  : "Ticket Category Details"}
             </DialogTitle>
             <DialogDescription>
               {formMode === "create"
                 ? "Add a new ticket category for service requests."
                 : formMode === "edit"
-                ? "Update ticket category details."
-                : "View ticket category details."}
+                  ? "Update ticket category details."
+                  : "View ticket category details."}
             </DialogDescription>
           </DialogHeader>
           <TicketCategoryForm

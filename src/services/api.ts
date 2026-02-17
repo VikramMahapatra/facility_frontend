@@ -1,20 +1,12 @@
+import { showAppToast, showErrorToast } from "@/components/ui/app-toast";
 import { openGlobalModal } from "@/context/ModalContext";
-import { showErrorToast } from "@/helpers/CustomToastUI";
-import { toast } from "sonner";
+import { ERROR_TITLES } from "@/data/errorTitles";
+import { toast } from "@/components/ui/app-toast";
 
 
 const AUTH_API_BASE_URL = import.meta.env.VITE_AUTH_API_BASE_URL;
 const FACILITY_API_BASE_URL = import.meta.env.VITE_FACILITY_API_BASE_URL;
 
-
-const ERROR_TITLES: Record<string, string> = {
-    "400": "Invalid Request",
-    "401": "Authentication Required",
-    "403": "Access Denied",
-    "404": "Not Found",
-    "500": "Server Error",
-    "999": "Critical Error"
-};
 
 function normalizeError(result: any) {
     const statusCode = result?.status_code?.toString();
@@ -83,7 +75,10 @@ class ApiService {
             openGlobalModal(error.message);
             return;
         }
-        showErrorToast(error.title, error.message);
+        showErrorToast(
+            error.title,
+            error.message,
+        );
     }
 
 

@@ -17,7 +17,7 @@ import {
   DialogFooter,
 } from "@/components/ui/dialog";
 import { Upload, X, FileText } from "lucide-react";
-import { toast } from "sonner";
+import { toast } from "@/components/ui/app-toast";
 import { Controller, useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { Checkbox } from "@/components/ui/checkbox";
@@ -37,6 +37,7 @@ const emptyFormData: Partial<LeaseFormValues> = {
   partner_id: "",
   tenant_id: "",
   start_date: "",
+  derived_frequency: "monthly",
   frequency: "monthly",
   lease_term_months: undefined,
   rent_amount: "" as any,
@@ -85,6 +86,7 @@ export function LeaseForm({
       tenant_id: "",
       start_date: "",
       frequency: "monthly",
+      derived_frequency: "monthly",
       lease_term_months: undefined,
       rent_amount: "" as any,
       deposit_amount: "" as any,
@@ -123,24 +125,25 @@ export function LeaseForm({
     reset(
       lease
         ? {
-            kind: (lease.kind as any) || "commercial",
-            site_id: lease.site_id || "",
-            building_id: leaseBuildingId || "",
-            space_id: lease.space_id || "",
-            partner_id: lease.partner_id ? String(lease.partner_id) : "",
-            tenant_id: lease.tenant_id ? String(lease.tenant_id) : "",
-            start_date: lease.start_date || "",
-            frequency: (lease.frequency as "monthly" | "annually") || "monthly",
-            lease_term_months: (lease as any).lease_term_months || undefined,
-            rent_amount: lease.rent_amount as any,
-            deposit_amount: lease.deposit_amount as any,
-            cam_rate: lease.cam_rate as any,
-            utilities: {
-              electricity: lease.utilities?.electricity as any,
-              water: lease.utilities?.water as any,
-            },
-            status: (lease.status as any) || "draft",
-          }
+          kind: (lease.kind as any) || "commercial",
+          site_id: lease.site_id || "",
+          building_id: leaseBuildingId || "",
+          space_id: lease.space_id || "",
+          partner_id: lease.partner_id ? String(lease.partner_id) : "",
+          tenant_id: lease.tenant_id ? String(lease.tenant_id) : "",
+          start_date: lease.start_date || "",
+          frequency: (lease.frequency as "monthly" | "quaterly" | "annually") || "monthly",
+          derived_frequency: (lease.derived_frequency as "monthly" | "annually") || "monthly",
+          lease_term_months: (lease as any).lease_term_months || undefined,
+          rent_amount: lease.rent_amount as any,
+          deposit_amount: lease.deposit_amount as any,
+          cam_rate: lease.cam_rate as any,
+          utilities: {
+            electricity: lease.utilities?.electricity as any,
+            water: lease.utilities?.water as any,
+          },
+          status: (lease.status as any) || "draft",
+        }
         : emptyFormData,
     );
 
@@ -178,7 +181,7 @@ export function LeaseForm({
   const selectedSpaceId = watch("space_id");
   const selectedKind = watch("kind");
   const selectedTenantId = watch("tenant_id");
-  const selectedFrequency = watch("frequency");
+  const selectedFrequency = watch("derived_frequency");
 
   useEffect(() => {
     if (selectedTenantId && selectedKind !== "residential") {
@@ -228,30 +231,30 @@ export function LeaseForm({
   // Create fallback options for site, building, and space from lease prop
   const fallbackSite = lease?.site_id
     ? {
-        id: lease.site_id,
-        name: (lease as any).site_name,
-      }
+      id: lease.site_id,
+      name: (lease as any).site_name,
+    }
     : null;
 
   const fallbackBuilding =
     lease?.building_id || (lease as any)?.building_block_id
       ? {
-          id: (lease as any).building_id || (lease as any).building_block_id,
-          name: (lease as any).building_name,
-        }
+        id: (lease as any).building_id || (lease as any).building_block_id,
+        name: (lease as any).building_name,
+      }
       : null;
 
   const fallbackSpace = lease?.space_id
     ? {
-        id: lease.space_id,
-        name: (lease as any).space_name,
-      }
+      id: lease.space_id,
+      name: (lease as any).space_name,
+    }
     : null;
   const fallbackTenant = lease?.tenant_id
     ? {
-        id: lease.tenant_id,
-        name: (lease as any).tenant_name,
-      }
+      id: lease.tenant_id,
+      name: (lease as any).tenant_name,
+    }
     : null;
 
   const tenants = withFallback(leasePartnerList, fallbackTenant);
@@ -292,10 +295,10 @@ export function LeaseForm({
     try {
       const { kind, ...updated } = data;
       console.log("Submitting lease data:", updated);
-      
+
       // Create FormData if there are uploaded files, otherwise use JSON
       let submitData: any;
-      
+
       if (uploadedImages.length > 0) {
         const formData = new FormData();
         Object.keys(updated).forEach((key) => {
@@ -314,20 +317,20 @@ export function LeaseForm({
             }
           }
         });
-        
+
         // Append files
         uploadedImages.forEach((file) => {
           formData.append("files", file);
         });
-        
+
         submitData = formData;
       } else {
         submitData = updated;
       }
-      
+
       const formResponse = await onSave(submitData);
       console.log("Lease save response:", formResponse);
-      
+
       if (formResponse?.success) {
         // Clean up preview URLs
         imagePreviews.forEach((url) => URL.revokeObjectURL(url));
@@ -370,16 +373,16 @@ export function LeaseForm({
             isSubmitting
               ? undefined
               : handleSubmit(onSubmitForm, (errors) => {
-                  console.log("Form validation errors:", errors);
-                  const firstError = Object.values(errors)[0];
-                  if (firstError?.message) {
-                    toast.error(firstError.message as string);
-                  } else {
-                    toast.error(
-                      "Please fill in all required fields correctly.",
-                    );
-                  }
-                })
+                console.log("Form validation errors:", errors);
+                const firstError = Object.values(errors)[0];
+                if (firstError?.message) {
+                  toast.error(firstError.message as string);
+                } else {
+                  toast.error(
+                    "Please fill in all required fields correctly.",
+                  );
+                }
+              })
           }
           className="space-y-4"
         >
@@ -388,7 +391,7 @@ export function LeaseForm({
           ) : (
             <div className="space-y-4">
               {/* Row 1: Site, Building */}
-              <div className="grid grid-cols-2 gap-4">
+              <div className="grid grid-cols-3 gap-4">
                 <Controller
                   name="site_id"
                   control={control}
@@ -426,7 +429,6 @@ export function LeaseForm({
                     </div>
                   )}
                 />
-
                 <Controller
                   name="building_id"
                   control={control}
@@ -464,10 +466,6 @@ export function LeaseForm({
                     </div>
                   )}
                 />
-              </div>
-
-              {/* Row 2: Space, Tenant */}
-              <div className="grid grid-cols-2 gap-4">
                 <Controller
                   name="space_id"
                   control={control}
@@ -508,6 +506,15 @@ export function LeaseForm({
                     </div>
                   )}
                 />
+              </div>
+
+              {/* Row 2: Space, Tenant */}
+              <div
+                className={`grid gap-4 ${selectedFrequency === "monthly"
+                  ? "grid-cols-4"
+                  : "grid-cols-3"
+                  }`}
+              >
 
                 <div className="space-y-2">
                   <Label>Tenant *</Label>
@@ -541,19 +548,10 @@ export function LeaseForm({
                     </p>
                   )}
                 </div>
-              </div>
-
-              <div
-                className={`grid gap-4 ${
-                  selectedFrequency === "monthly"
-                    ? "grid-cols-4"
-                    : "grid-cols-3"
-                }`}
-              >
-                <div>
-                  <Label>Frequency *</Label>
+                <div className="space-y-2">
+                  <Label>Tenure Frequency*</Label>
                   <Controller
-                    name="frequency"
+                    name="derived_frequency"
                     control={control}
                     render={({ field }) => (
                       <Select
@@ -564,7 +562,7 @@ export function LeaseForm({
                         <SelectTrigger
                           className={errors.frequency ? "border-red-500" : ""}
                         >
-                          <SelectValue placeholder="Select frequency" />
+                          <SelectValue placeholder="Select tenure frequency" />
                         </SelectTrigger>
                         <SelectContent>
                           <SelectItem value="monthly">Monthly</SelectItem>
@@ -573,13 +571,13 @@ export function LeaseForm({
                       </Select>
                     )}
                   />
-                  {errors.frequency && (
+                  {errors.derived_frequency && (
                     <p className="text-sm text-red-500">
-                      {errors.frequency.message as any}
+                      {errors.derived_frequency.message as any}
                     </p>
                   )}
                 </div>
-                <div>
+                <div className="space-y-2">
                   <Label>Start Date *</Label>
                   <Input
                     type="date"
@@ -594,7 +592,7 @@ export function LeaseForm({
                   )}
                 </div>
                 {selectedFrequency === "monthly" && (
-                  <div>
+                  <div className="space-y-2">
                     <Label>Lease Term (Months) *</Label>
                     <Input
                       type="number"
@@ -614,26 +612,11 @@ export function LeaseForm({
                     )}
                   </div>
                 )}
-                <div>
-                  <Label>Rent Amount *</Label>
-                  <Input
-                    type="number"
-                    step="any"
-                    placeholder="Enter rent amount"
-                    disabled={isReadOnly}
-                    {...register("rent_amount")}
-                    className={errors.rent_amount ? "border-red-500" : ""}
-                  />
-                  {errors.rent_amount && (
-                    <p className="text-sm text-red-500">
-                      {errors.rent_amount.message as any}
-                    </p>
-                  )}
-                </div>
+
               </div>
 
               <div className="grid grid-cols-3 gap-4">
-                <div>
+                <div className="space-y-2">
                   <Label>Deposit Amount</Label>
                   <Input
                     type="number"
@@ -649,22 +632,56 @@ export function LeaseForm({
                     </p>
                   )}
                 </div>
-                <div>
-                  <Label>CAM Rate (per sq ft)</Label>
+                <div className="space-y-2">
+                  <Label>Rent Amount *</Label>
                   <Input
                     type="number"
                     step="any"
-                    placeholder="Enter CAM rate"
+                    placeholder="Enter rent amount"
                     disabled={isReadOnly}
-                    {...register("cam_rate")}
-                    className={errors.cam_rate ? "border-red-500" : ""}
+                    {...register("rent_amount")}
+                    className={errors.rent_amount ? "border-red-500" : ""}
                   />
-                  {errors.cam_rate && (
+                  {errors.rent_amount && (
                     <p className="text-sm text-red-500">
-                      {errors.cam_rate.message as any}
+                      {errors.rent_amount.message as any}
                     </p>
                   )}
                 </div>
+                <div className="space-y-2">
+                  <Label>Rent Frequency*</Label>
+                  <Controller
+                    name="frequency"
+                    control={control}
+                    render={({ field }) => (
+                      <Select
+                        value={field.value}
+                        onValueChange={field.onChange}
+                        disabled={isReadOnly}
+                      >
+                        <SelectTrigger
+                          className={errors.frequency ? "border-red-500" : ""}
+                        >
+                          <SelectValue placeholder="Select rent frequency" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="monthly">Monthly</SelectItem>
+                          <SelectItem value="quaterly">Quaterly</SelectItem>
+                          <SelectItem value="annually">Annually</SelectItem>
+                        </SelectContent>
+                      </Select>
+                    )}
+                  />
+                  {errors.frequency && (
+                    <p className="text-sm text-red-500">
+                      {errors.frequency.message as any}
+                    </p>
+                  )}
+                </div>
+              </div>
+
+              <div className="grid grid-cols-3 gap-4">
+
                 <div>
                   <Label>Status</Label>
                   <Controller
@@ -689,59 +706,57 @@ export function LeaseForm({
                     )}
                   />
                 </div>
-              </div>
+                {/* Utilities */}
+                <div
+                  className="grid grid-cols-2 gap-2"
+                >
+                  <div>
+                    <Label>Electricity</Label>
+                    <Controller
+                      name="utilities.electricity"
+                      control={control}
+                      render={({ field }) => (
+                        <Select
+                          value={field.value || ""}
+                          onValueChange={field.onChange}
+                          disabled={isReadOnly}
+                        >
+                          <SelectTrigger>
+                            <SelectValue placeholder="Select" />
+                          </SelectTrigger>
+                          <SelectContent>
+                            <SelectItem value="submeter">Submeter</SelectItem>
+                            <SelectItem value="fixed">Fixed</SelectItem>
+                            <SelectItem value="na">N/A</SelectItem>
+                          </SelectContent>
+                        </Select>
+                      )}
+                    />
+                  </div>
+                  <div>
+                    <Label>Water</Label>
+                    <Controller
+                      name="utilities.water"
+                      control={control}
+                      render={({ field }) => (
+                        <Select
+                          value={field.value || ""}
+                          onValueChange={field.onChange}
+                          disabled={isReadOnly}
+                        >
+                          <SelectTrigger>
+                            <SelectValue placeholder="Select" />
+                          </SelectTrigger>
+                          <SelectContent>
+                            <SelectItem value="submeter">Submeter</SelectItem>
+                            <SelectItem value="fixed">Fixed</SelectItem>
+                            <SelectItem value="na">N/A</SelectItem>
+                          </SelectContent>
+                        </Select>
+                      )}
+                    />
+                  </div>
 
-              {/* Utilities */}
-              <div
-                className={`grid gap-4 ${
-                  mode === "create" ? "grid-cols-3" : "grid-cols-2"
-                }`}
-              >
-                <div>
-                  <Label>Electricity</Label>
-                  <Controller
-                    name="utilities.electricity"
-                    control={control}
-                    render={({ field }) => (
-                      <Select
-                        value={field.value || ""}
-                        onValueChange={field.onChange}
-                        disabled={isReadOnly}
-                      >
-                        <SelectTrigger>
-                          <SelectValue placeholder="Select" />
-                        </SelectTrigger>
-                        <SelectContent>
-                          <SelectItem value="submeter">Submeter</SelectItem>
-                          <SelectItem value="fixed">Fixed</SelectItem>
-                          <SelectItem value="na">N/A</SelectItem>
-                        </SelectContent>
-                      </Select>
-                    )}
-                  />
-                </div>
-                <div>
-                  <Label>Water</Label>
-                  <Controller
-                    name="utilities.water"
-                    control={control}
-                    render={({ field }) => (
-                      <Select
-                        value={field.value || ""}
-                        onValueChange={field.onChange}
-                        disabled={isReadOnly}
-                      >
-                        <SelectTrigger>
-                          <SelectValue placeholder="Select" />
-                        </SelectTrigger>
-                        <SelectContent>
-                          <SelectItem value="submeter">Submeter</SelectItem>
-                          <SelectItem value="fixed">Fixed</SelectItem>
-                          <SelectItem value="na">N/A</SelectItem>
-                        </SelectContent>
-                      </Select>
-                    )}
-                  />
                 </div>
                 {/* Auto Move In Space Occupancy Checkbox - Only show when creating */}
                 {mode === "create" && (
@@ -771,7 +786,9 @@ export function LeaseForm({
                     </div>
                   </div>
                 )}
+
               </div>
+
 
               {/* Document Upload */}
               <div className="space-y-2">

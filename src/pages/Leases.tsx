@@ -25,7 +25,7 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
-import { toast } from "sonner";
+import { toast } from "@/components/ui/app-toast";
 import { Pagination } from "@/components/Pagination";
 import { siteApiService } from "@/services/spaces_sites/sitesapi";
 import { leasesApiService } from "@/services/leasing_tenants/leasesapi";
@@ -208,8 +208,7 @@ export default function Leases() {
         setIsFormOpen(false);
       }
       toast.success(
-        `Lease has been ${
-          formMode === "create" ? "created" : "updated"
+        `Lease has been ${formMode === "create" ? "created" : "updated"
         } successfully.`,
       );
     }
@@ -328,8 +327,8 @@ export default function Leases() {
                   {leaseOverview.avgLeaseTermMonths < 12
                     ? `${leaseOverview.avgLeaseTermMonths.toFixed(0)} months`
                     : `${(leaseOverview.avgLeaseTermMonths / 12).toFixed(
-                        1,
-                      )} years`}
+                      1,
+                    )} years`}
                 </div>
                 <p className="text-sm text-muted-foreground">Avg Lease Term</p>
               </CardContent>
@@ -383,13 +382,15 @@ export default function Leases() {
                       <div className="font-medium text-muted-foreground">
                         Rent Amount
                       </div>
-                      <div className="text-lg font-bold">
-                        {!lease.rent_amount || Number(lease.rent_amount) === 0
-                          ? "-"
-                          : formatCurrency(lease.rent_amount)}
-                      </div>
-                      <div className="text-xs text-muted-foreground">
-                        per month
+                      <div className="flex items-center gap-1">
+                        <div className="text-lg font-bold">
+                          {!lease.rent_amount || Number(lease.rent_amount) === 0
+                            ? "-"
+                            : formatCurrency(lease.rent_amount)}
+                        </div>
+                        <div className="text-xs text-muted-foreground">
+                          {lease.frequency?.toLowerCase()}
+                        </div>
                       </div>
                     </div>
                     <div>
@@ -408,7 +409,7 @@ export default function Leases() {
                       </div>
                       <div>
                         {!lease.deposit_amount ||
-                        Number(lease.deposit_amount) === 0
+                          Number(lease.deposit_amount) === 0
                           ? "-"
                           : formatCurrency(lease.deposit_amount as any)}
                       </div>

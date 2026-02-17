@@ -96,7 +96,9 @@ const App = () => {
       <ModalProvider>
         <TooltipProvider>
           <Toaster />
-          <Sonner />
+          <Sonner
+            richColors
+          />
           <Routes>
             <Route path="/" element={<Home />} />
             <Route path="/features" element={<Features />} />
@@ -157,8 +159,8 @@ const App = () => {
                   <Route path="/tenants/create" element={<TenantFormPage />} />
                   <Route path="/tenants/:id/edit" element={<TenantFormPage />} />
                   <Route path="/tenants/:id/view" element={<TenantDetailPage />} />
-                  <Route path="/lease-charges" element={<LeaseCharges />} />
-                  <Route path="/lease-charge-codes" element={<LeaseChargeCode />} />
+                  <Route path="/rent-charges" element={<LeaseCharges />} />
+                  {/* <Route path="/lease-charge-codes" element={<LeaseChargeCode />} /> */}
                   <Route path="/invoices" element={<Invoices />} />
                   <Route path="/invoices/create" element={<InvoiceFormPage />} />
                   <Route path="/invoices/:id/view" element={<InvoiceDetailPage />} />

@@ -27,7 +27,7 @@ import { useSkipFirstEffect } from "@/hooks/use-skipfirst-effect";
 import { useLoader } from "@/context/LoaderContext";
 import LoaderOverlay from "@/components/LoaderOverlay";
 import ContentContainer from "@/components/ContentContainer";
-import { toast } from "sonner";
+import { toast } from "@/components/ui/app-toast";
 import {
   AlertDialog,
   AlertDialogAction,

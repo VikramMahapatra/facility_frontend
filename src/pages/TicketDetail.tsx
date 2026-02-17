@@ -34,7 +34,7 @@ import {
   Building2,
   MapPin,
 } from "lucide-react";
-import { toast } from "sonner";
+import { toast } from "@/components/ui/app-toast";
 import { ticketsApiService } from "@/services/ticketing_service/ticketsapi";
 import { ticketWorkOrderApiService } from "@/services/ticketing_service/ticketworkorderapi";
 import { vendorsApiService } from "@/services/procurements/vendorsapi";
@@ -305,13 +305,13 @@ export default function TicketDetail() {
           selectedWorkOrder.id ||
           selectedWorkOrder.work_order_id ||
           selectedWorkOrder.wo_id;
-        
+
         if (!workOrderId) {
           toast.error("Work order ID not found. Cannot update work order.");
           console.error("Work order object:", selectedWorkOrder);
           return;
         }
-        
+
         const response = await ticketWorkOrderApiService.updateTicketWorkOrder(
           workOrderId,
           workOrderData,
@@ -526,10 +526,9 @@ export default function TicketDetail() {
                                           <div class="w-full h-32 flex items-center justify-center bg-muted">
                                             <Paperclip class="w-8 h-8 text-muted-foreground" />
                                           </div>
-                                          <p class="p-2 text-xs text-muted-foreground truncate">${
-                                            attachment.file_name ||
+                                          <p class="p-2 text-xs text-muted-foreground truncate">${attachment.file_name ||
                                             `Attachment ${index + 1}`
-                                          }</p>
+                                            }</p>
                                         `;
                                         }
                                       }}
@@ -539,10 +538,10 @@ export default function TicketDetail() {
                                   !attachment.content_type?.startsWith(
                                     "image/",
                                   )) && (
-                                  <div className="w-full h-32 flex items-center justify-center bg-muted">
-                                    <Paperclip className="w-8 h-8 text-muted-foreground" />
-                                  </div>
-                                )}
+                                    <div className="w-full h-32 flex items-center justify-center bg-muted">
+                                      <Paperclip className="w-8 h-8 text-muted-foreground" />
+                                    </div>
+                                  )}
                                 <div className="p-2 bg-background">
                                   <p
                                     className="text-xs text-muted-foreground truncate"
@@ -718,11 +717,10 @@ export default function TicketDetail() {
                           <button
                             key={star}
                             onClick={() => setRating(star)}
-                            className={`text-2xl ${
-                              star <= rating
+                            className={`text-2xl ${star <= rating
                                 ? "text-yellow-500"
                                 : "text-gray-300"
-                            }`}
+                              }`}
                           >
                             ★
                           </button>

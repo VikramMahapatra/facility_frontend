@@ -30,7 +30,7 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import { siteApiService } from "@/services/spaces_sites/sitesapi";
-import { toast } from "sonner";
+import { toast } from "@/components/ui/app-toast";
 import { SpaceMaintenanceForm } from "@/components/SpaceMaintenanceForm";
 import { AutoGenerateMaintenanceForm } from "@/components/AutoGenerateMaintenanceForm";
 import { ownerMaintenancesApiService } from "@/services/spaces_sites/ownermaintenancesapi";
@@ -126,9 +126,9 @@ const SpaceMaintenance = () => {
     selectedStatus === "all"
       ? items
       : items.filter(
-          (item) =>
-            (item.status || "").toLowerCase() === selectedStatus.toLowerCase(),
-        );
+        (item) =>
+          (item.status || "").toLowerCase() === selectedStatus.toLowerCase(),
+      );
 
   useSkipFirstEffect(() => {
     loadMaintenances();
@@ -244,8 +244,7 @@ const SpaceMaintenance = () => {
     if (response?.success) {
       setIsFormOpen(false);
       toast.success(
-        `Space maintenance has been ${
-          formMode === "create" ? "created" : "updated"
+        `Space maintenance has been ${formMode === "create" ? "created" : "updated"
         } successfully.`,
       );
     }

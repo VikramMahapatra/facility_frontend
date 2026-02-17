@@ -12,7 +12,7 @@ import {
   DialogTitle,
   DialogFooter,
 } from "@/components/ui/dialog";
-import { toast } from "sonner";
+import { toast } from "@/components/ui/app-toast";
 import { useEffect, useState } from "react";
 import { spacesApiService } from "@/services/spaces_sites/spacesapi";
 import { occupancyApiService } from "@/services/spaces_sites/spaceoccupancyapi";
@@ -46,30 +46,17 @@ export function SpaceOwnershipSection({
       // Remove ownership
       const removeResponse = await spacesApiService.removeOwner({
         space_id: spaceId,
-        owner_user_id: selectedOwner.owner_user_id || selectedOwner.user_id,
+        owner_id: selectedOwner.owner_user_id || selectedOwner.user_id,
       });
 
       if (removeResponse.success) {
-        // Auto move out after removing owner
-        const moveOutResponse = await occupancyApiService.moveOut(spaceId);
-
-        if (moveOutResponse.success) {
-          toast.success("Ownership removed and space moved out successfully");
-          setRemoveDialogOpen(false);
-          setSelectedOwner(null);
-          onRefresh();
-        } else {
-          toast.success("Ownership removed successfully");
-          setRemoveDialogOpen(false);
-          setSelectedOwner(null);
-          onRefresh();
-        }
-      } else {
-        toast.error(removeResponse.message || "Failed to remove ownership");
+        toast.success("Ownership removed successfully");
+        setRemoveDialogOpen(false);
+        setSelectedOwner(null);
+        onRefresh();
       }
     } catch (error) {
       console.error("Error removing ownership:", error);
-      toast.error("Failed to remove ownership");
     } finally {
       setIsRemoving(false);
     }

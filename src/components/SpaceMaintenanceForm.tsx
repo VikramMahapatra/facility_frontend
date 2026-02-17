@@ -20,24 +20,25 @@ import {
 import { siteApiService } from "@/services/spaces_sites/sitesapi";
 import { buildingApiService } from "@/services/spaces_sites/buildingsapi";
 import { spacesApiService } from "@/services/spaces_sites/spacesapi";
-import { toast } from "sonner";
+import { toast } from "@/components/ui/app-toast";
 import { withFallback } from "@/helpers/commonHelper";
 import { ownerMaintenancesApiService } from "@/services/spaces_sites/ownermaintenancesapi";
 import { Info } from "lucide-react";
+import { z } from "zod";
+import { zodResolver } from "@hookform/resolvers/zod";
 
-interface SpaceMaintenanceFormValues {
-  site_id: string;
-  building_block_id: string;
-  space_id: string;
-  owner_user_id: string;
-  owner_org_id: string;
-  ownership_type: string;
-  ownership_percentage: string;
-  start_date: string;
-  end_date: string;
-  due_date: string;
-  status: string;
-}
+export const spaceMaintenanceSchema = z.object({
+  site_id: z.string().min(1, "Site is required"),
+  building_block_id: z.string().min(1, "Building block is required"),
+  space_id: z.string().min(1, "Space is required"),
+  start_date: z.string().min(1, "Start date required"),
+  end_date: z.string().min(1, "End date required"),
+  due_date: z.string().min(1, "Due date required"),
+  status: z.string().default("pending"),
+});
+
+export type SpaceMaintenanceFormValues =
+  z.infer<typeof spaceMaintenanceSchema>;
 
 interface SpaceMaintenanceFormProps {
   isOpen: boolean;
@@ -52,15 +53,17 @@ const emptyFormData: SpaceMaintenanceFormValues = {
   site_id: "",
   building_block_id: "",
   space_id: "",
-  owner_user_id: "",
-  owner_org_id: "",
-  ownership_type: "",
-  ownership_percentage: "",
   start_date: "",
   end_date: "",
   due_date: "",
   status: "pending",
 };
+
+const emptyCalculatedAmount = {
+  "base_amount": 0,
+  "tax_amount": 0,
+  "total_amount": 0
+}
 
 export const SpaceMaintenanceForm = ({
   isOpen,
@@ -81,9 +84,9 @@ export const SpaceMaintenanceForm = ({
     getValues,
     formState: { errors, isSubmitting, isValid },
   } = useForm<SpaceMaintenanceFormValues>({
+    resolver: zodResolver(spaceMaintenanceSchema),
     defaultValues: emptyFormData,
     mode: "onChange",
-    reValidateMode: "onChange",
   });
   const [formLoading, setFormLoading] = useState(true);
   const [spaceList, setSpaceList] = useState<any[]>([]);
@@ -96,7 +99,7 @@ export const SpaceMaintenanceForm = ({
     id: string;
     label: string;
   } | null>(null);
-  const [calculatedAmount, setCalculatedAmount] = useState<number | null>(0);
+  const [calculatedAmount, setCalculatedAmount] = useState<any>(emptyCalculatedAmount);
   const [isLoading, setIsLoading] = useState(false);
 
   const loadSites = async () => {
@@ -229,7 +232,7 @@ export const SpaceMaintenanceForm = ({
   useEffect(() => {
 
     if (!isReadyForCalculation) {
-      setCalculatedAmount(0);
+      setCalculatedAmount(emptyCalculatedAmount);
       return;
     }
 
@@ -245,7 +248,7 @@ export const SpaceMaintenanceForm = ({
             end_date: endDate,
           });
 
-        setCalculatedAmount(res.data ?? 0);
+        setCalculatedAmount(res.data ?? emptyCalculatedAmount);
 
       } finally {
         setIsLoading(false);
@@ -345,7 +348,7 @@ export const SpaceMaintenanceForm = ({
             <p className="text-center">Loading...</p>
           ) : (
             <div className="space-y-4">
-              <div className="grid grid-cols-2 gap-4">
+              <div className="grid grid-cols-3 gap-4">
                 <Controller
                   name="site_id"
                   control={control}
@@ -375,7 +378,6 @@ export const SpaceMaintenanceForm = ({
                     </div>
                   )}
                 />
-
                 <div className="space-y-2">
                   <Label>Building</Label>
                   <Controller
@@ -409,7 +411,6 @@ export const SpaceMaintenanceForm = ({
                     )}
                   />
                 </div>
-
                 <Controller
                   name="space_id"
                   control={control}
@@ -452,7 +453,8 @@ export const SpaceMaintenanceForm = ({
                     </div>
                   )}
                 />
-
+              </div>
+              <div className="grid grid-cols-4 gap-4">
                 <div className="space-y-2">
                   <Label>Start Date *</Label>
                   <Input
@@ -515,10 +517,12 @@ export const SpaceMaintenanceForm = ({
                     )}
                   />
                 </div>
+              </div>
+              <div className="grid grid-cols-2 gap-4">
                 <div className="space-y-2">
                   <Label>Maintenance Amount</Label>
 
-                  <div className="h-10 flex items-center justify-between rounded-md border px-3 text-sm bg-muted">
+                  <div className="rounded-md border p-3 text-sm bg-muted space-y-1">
 
                     {isLoading ? (
                       <span className="text-muted-foreground">
@@ -526,29 +530,44 @@ export const SpaceMaintenanceForm = ({
                       </span>
                     ) : (
                       <>
-                        <span className="font-medium">
-                          ₹ {calculatedAmount ?? "0.00"}
-                        </span>
+                        <div className="flex justify-between">
+                          <span>Base Amount</span>
+                          <span className="font-medium">
+                            ₹ {calculatedAmount?.base_amount ?? "0.00"}
+                          </span>
+                        </div>
 
-                        <span className="text-xs text-muted-foreground">
+                        <div className="flex justify-between text-muted-foreground">
+                          <span>Tax</span>
+                          <span>
+                            ₹ {calculatedAmount?.tax_amount ?? "0.00"}
+                          </span>
+                        </div>
+
+                        <div className="border-t pt-1 flex justify-between font-semibold">
+                          <span>Total</span>
+                          <span>
+                            ₹ {calculatedAmount?.total_amount ?? "0.00"}
+                          </span>
+                        </div>
+
+                        <div className="text-xs text-muted-foreground">
                           Auto calculated
-                        </span>
+                        </div>
                       </>
                     )}
 
                   </div>
-
-                  {/* Helper text like error message */}
-                  {!isReadyForCalculation && (
-                    <p className="text-xs text-muted-foreground">
-                      Amount will be calculated after selecting space and dates
-                    </p>
-                  )}
                 </div>
 
 
-
-
+                {/* Helper text like error message */}
+                <div className="space-y-4">
+                  <label>&nbsp;</label>
+                  <p className="text-xs text-muted-foreground">
+                    Amount will be calculated after selecting space and dates
+                  </p>
+                </div>
               </div>
             </div>
           )}
@@ -568,6 +587,6 @@ export const SpaceMaintenanceForm = ({
           </DialogFooter>
         </form>
       </DialogContent>
-    </Dialog>
+    </Dialog >
   );
 };

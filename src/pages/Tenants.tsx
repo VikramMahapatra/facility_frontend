@@ -53,7 +53,7 @@ import {
 } from "@/interfaces/leasing_tenants_interface";
 import { LeaseForm } from "@/components/LeasesForm";
 import { useSkipFirstEffect } from "@/hooks/use-skipfirst-effect";
-import { toast } from "sonner";
+import { toast } from "@/components/ui/app-toast";
 import { Pagination } from "@/components/Pagination";
 import { useNavigate } from "react-router-dom";
 import { useAuth } from "../context/AuthContext";

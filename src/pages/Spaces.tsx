@@ -57,7 +57,7 @@ import { useLoader } from "@/context/LoaderContext";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import LoaderOverlay from "@/components/LoaderOverlay";
 import ContentContainer from "@/components/ContentContainer";
-import { toast } from "sonner";
+import { toast } from "@/components/ui/app-toast";
 import { PageHeader } from "@/components/PageHeader";
 import { useNavigate } from "react-router-dom";
 

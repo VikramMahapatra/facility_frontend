@@ -28,7 +28,7 @@ import {
 import { Badge } from "@/components/ui/badge";
 import { Plus, Pencil, Trash2, Search, Car } from "lucide-react";
 import { ParkingZoneForm } from "@/components/ParkingZoneForm";
-import { toast } from "sonner";
+import { toast } from "@/components/ui/app-toast";
 import { parkingZoneApiService } from "@/services/parking_access/parkingzonesapi";
 import { siteApiService } from "@/services/spaces_sites/sitesapi";
 import {

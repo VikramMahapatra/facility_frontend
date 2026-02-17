@@ -40,7 +40,7 @@ import {
   CheckCircle,
   AlertTriangle,
 } from "lucide-react";
-import { toast } from "sonner";
+import { toast } from "@/components/ui/app-toast";
 import { settingsApiService } from "@/services/system/settingsapi";
 import { any } from "zod";
 import { useLoader } from "@/context/LoaderContext";

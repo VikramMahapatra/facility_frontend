@@ -12,7 +12,7 @@ import { Controller, useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { BuildingFormValues, buildingSchema } from "@/schemas/building.schema";
 import { siteApiService } from "@/services/spaces_sites/sitesapi";
-import { toast } from "sonner";
+import { toast } from "@/components/ui/app-toast";
 
 interface BuildingFormProps {
   building?: any;
@@ -90,7 +90,7 @@ export function BuildingForm({ building, isOpen, onClose, onSave, mode }: Buildi
       ...data,
     });
   }
-  
+
 
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>

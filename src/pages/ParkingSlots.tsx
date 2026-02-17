@@ -6,7 +6,7 @@ import { Plus, Pencil, Trash2 } from "lucide-react";
 import { parkingSlotApiService } from "@/services/parking_access/parkingslotsapi";
 
 import { useSearchParams } from "react-router-dom";
-import { toast } from "sonner";
+import { toast } from "@/components/ui/app-toast";
 
 export default function ParkingSlots() {
 

@@ -281,6 +281,7 @@ class SpacesApiService {
   async getAccessoriesLookup() {
     return await apiService.request("/master/accessories");
   }
+
 }
 
 export const spacesApiService = new SpacesApiService(); //

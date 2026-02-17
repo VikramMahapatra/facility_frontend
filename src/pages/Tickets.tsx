@@ -34,7 +34,7 @@ import {
 import TicketForm from "@/components/TicketForm";
 import { LogOut } from "lucide-react";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
-import { toast } from "sonner";
+import { toast } from "@/components/ui/app-toast";
 import { useNavigate } from "react-router-dom";
 import {
   Select,

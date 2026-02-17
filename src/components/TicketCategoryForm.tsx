@@ -18,7 +18,7 @@ import {
   ticketCategorySchema,
   TicketCategoryFormValues,
 } from "@/schemas/ticketCategory.schema";
-import { toast } from "sonner";
+import { toast } from "@/components/ui/app-toast";
 import { withFallback } from "@/helpers/commonHelper";
 import { AsyncAutocompleteRQ } from "@/components/common/async-autocomplete-rq";
 
@@ -74,10 +74,10 @@ export default function TicketCategoryForm({
     reset(
       category
         ? {
-            ...category,
-            sla_hours: category.sla_hours || 24,
-            is_active: category.is_active ?? true,
-          }
+          ...category,
+          sla_hours: category.sla_hours || 24,
+          is_active: category.is_active ?? true,
+        }
         : emptyFormData
     );
 
@@ -161,16 +161,16 @@ export default function TicketCategoryForm({
 
   const fallbackAutoAssignRole = category?.auto_assign_role
     ? {
-        id: category.auto_assign_role,
-        name: category.auto_assign_role_name,
-      }
+      id: category.auto_assign_role,
+      name: category.auto_assign_role_name,
+    }
     : null;
 
   const fallbackSlaPolicy = category?.sla_id
     ? {
-        id: category.sla_id,
-        name: category.sla_name || category.sla_policy_name,
-      }
+      id: category.sla_id,
+      name: category.sla_name || category.sla_policy_name,
+    }
     : null;
 
   const autoAssignRoles = withFallback(
@@ -218,9 +218,9 @@ export default function TicketCategoryForm({
                   fallbackOption={
                     category?.site_id
                       ? {
-                          id: category.site_id,
-                          label: category.site_name || "Selected Site",
-                        }
+                        id: category.site_id,
+                        label: category.site_name || "Selected Site",
+                      }
                       : undefined
                   }
                   queryKey={["sites"]}
@@ -349,8 +349,8 @@ export default function TicketCategoryForm({
                 {isSubmitting
                   ? "Saving..."
                   : mode === "create"
-                  ? "Create Ticket Category"
-                  : "Update Ticket Category"}
+                    ? "Create Ticket Category"
+                    : "Update Ticket Category"}
               </Button>
             )}
           </div>

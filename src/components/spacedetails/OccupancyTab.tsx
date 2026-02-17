@@ -13,7 +13,9 @@ import {
     FileText,
     ShieldCheck,
     Users,
-    History
+    History,
+    UserMinus,
+    FileX
 } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "../ui/button";
@@ -34,34 +36,52 @@ interface Props {
 const EVENT_META: Record<string, any> = {
     owner_requested: {
         label: "Owner Requested",
-        icon: User, // 👤 owner context
+        icon: User,
         color: "text-yellow-600 bg-yellow-100"
     },
     owner_approved: {
         label: "Owner Approved",
-        icon: ShieldCheck, // 🛡 ownership confirmed
+        icon: ShieldCheck,
         color: "text-green-600 bg-green-100"
     },
+    owner_removed: {
+        label: "Owner Removed",
+        icon: UserX,
+        color: "text-red-600 bg-red-100"
+    },
+
     tenant_requested: {
         label: "Tenant Requested",
-        icon: UserPlus, // 🧑➕
+        icon: UserPlus,
         color: "text-yellow-600 bg-yellow-100"
     },
     tenant_approved: {
         label: "Tenant Approved",
-        icon: UserCheck, // 🧑✔
+        icon: UserCheck,
         color: "text-green-600 bg-green-100"
     },
     tenant_rejected: {
         label: "Tenant Rejected",
-        icon: UserX, // 🧑❌
+        icon: UserX,
         color: "text-red-600 bg-red-100"
     },
+    tenant_removed: {
+        label: "Tenant Removed",
+        icon: UserMinus,
+        color: "text-red-600 bg-red-100"
+    },
+
     lease_created: {
         label: "Lease Created",
-        icon: FileText, // 📄
+        icon: FileText,
         color: "text-green-600 bg-green-100"
     },
+    lease_terminated: {
+        label: "Lease Terminated",
+        icon: FileX, // 📄❌ lease ended
+        color: "text-red-600 bg-red-100"
+    },
+
     moved_in: {
         label: "Moved In",
         icon: LogIn,
@@ -73,6 +93,7 @@ const EVENT_META: Record<string, any> = {
         color: "text-gray-600 bg-gray-100"
     }
 };
+
 
 export default function OccupancyTab({ spaceId, owners, tenants, occupancy, history, onSucess }: Props) {
     const [isMoveInOpen, setIsMoveInOpen] = useState(false);

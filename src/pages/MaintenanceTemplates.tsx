@@ -37,9 +37,8 @@ import { useAuth } from "../context/AuthContext";
 import { useLoader } from "@/context/LoaderContext";
 import LoaderOverlay from "@/components/LoaderOverlay";
 import ContentContainer from "@/components/ContentContainer";
-import { toast } from "sonner";
-import { MaintenanceTemplate } from "@/components/MaintenanceTemplateForm";
-import { getKindColor } from "@/interfaces/spaces_interfaces";
+import { toast } from "@/components/ui/app-toast";
+import { getKindColor, MaintenanceTemplate } from "@/interfaces/spaces_interfaces";
 
 export default function MaintenanceTemplates() {
   const [searchTerm, setSearchTerm] = useState("");
@@ -191,10 +190,6 @@ export default function MaintenanceTemplates() {
           loadTemplates();
           setDeleteId(null);
           toast.success("Maintenance template deleted successfully.");
-        } else {
-          toast.error(`Cannot Delete Template\n${authResponse.message}`, {
-            style: { whiteSpace: "pre-line" },
-          });
         }
       }
     }
@@ -313,15 +308,24 @@ export default function MaintenanceTemplates() {
                       <div className="flex items-center justify-between">
                         {template.calculation_type && (
                           <span className="text-muted-foreground">
-                            Calculation Type:  {formatCalculationType(template.calculation_type)}
+                            Calculation Type: {formatCalculationType(template.calculation_type)}
                           </span>
                         )}
-                        {Number(template.amount) !== 0 && Number(template.amount) > 0 && (
-                          <span className="font-semibold text-sidebar-primary">
-                            ₹{template.amount.toLocaleString()}
-                          </span>
+                        {Number(template.amount) > 0 && (
+                          <div className="flex items-center gap-2">
+                            <span className="font-semibold text-sidebar-primary">
+                              ₹{Number(template.amount).toLocaleString()}
+                            </span>
+                            {template.tax_rate && (
+                              <span className="text-xs text-muted-foreground">
+                                + {template.tax_rate}% Tax
+                              </span>
+                            )}
+                          </div>
                         )}
                       </div>
+
+
                     </div>
                     {/* Site, Kind, Amount in one row */}
 

@@ -29,7 +29,7 @@ import { spacesApiService } from "@/services/spaces_sites/spacesapi";
 import { AsyncAutocompleteRQ } from "@/components/common/async-autocomplete-rq";
 import "react-phone-input-2/lib/style.css";
 import PhoneInput from "react-phone-input-2";
-import { toast } from "sonner";
+import { toast } from "@/components/ui/app-toast";
 
 const SignUp = () => {
   const navigate = useNavigate();

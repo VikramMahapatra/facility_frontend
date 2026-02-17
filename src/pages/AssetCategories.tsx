@@ -26,7 +26,7 @@ import {
 } from "@/components/ui/table";
 import { Edit, Plus, Trash2, FolderTree, Search } from "lucide-react";
 import AssetCategoryForm from "@/components/AssetCategoryForm";
-import { toast } from "sonner";
+import { toast } from "@/components/ui/app-toast";
 import { assetCategoriesApiService } from "@/services/maintenance_assets/assetcategoriesapi";
 import {
   AlertDialog,
