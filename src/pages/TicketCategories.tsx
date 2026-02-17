@@ -55,7 +55,6 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { PageHeader } from "@/components/PageHeader";
-import { AsyncAutocompleteRQ } from "@/components/common/async-autocomplete-rq";
 
 export default function TicketCategories() {
   const [isFormOpen, setIsFormOpen] = useState(false);
@@ -224,26 +223,22 @@ export default function TicketCategories() {
               className="pl-10"
             />
           </div>
-          <div className="w-[160px]">
-            <AsyncAutocompleteRQ
-              value={selectedSite === "all" ? "" : selectedSite}
-              onChange={(value) => {
-                setSelectedSite(value || "all");
-              }}
-              placeholder="All Sites"
-              queryKey={["sites"]}
-              queryFn={async (search) => {
-                const res = await siteApiService.getSiteLookup(search);
-                const sites = res.data.map((s: any) => ({
-                  id: s.id,
-                  label: s.name,
-                }));
-                // Always include "All Sites" option at the beginning
-                return [{ id: "all", label: "All Sites" }, ...sites];
-              }}
-              minSearchLength={0}
-            />
-          </div>
+          <Select
+            value={selectedSite}
+            onValueChange={setSelectedSite}
+          >
+            <SelectTrigger className="w-[160px]">
+              <SelectValue placeholder="All Sites" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="all">All Sites</SelectItem>
+              {siteList.map((site) => (
+                <SelectItem key={site.id} value={site.id}>
+                  {site.name}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
         </div>
         <div className="relative rounded-md border">
           <ContentContainer>

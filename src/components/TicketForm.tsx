@@ -95,6 +95,7 @@ export default function TicketForm({
   const [uploadedImages, setUploadedImages] = useState<File[]>([]);
   const [imagePreviews, setImagePreviews] = useState<string[]>([]);
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const [siteList, setSiteList] = useState<any[]>([]);
   const [spaceList, setSpaceList] = useState<any[]>([]);
   const [buildingList, setBuildingList] = useState<any[]>([]);
   const [tenantList, setTenantList] = useState<any[]>([]);
@@ -116,6 +117,7 @@ export default function TicketForm({
   ];
 
   useEffect(() => {
+    loadSiteLookup();
     loadCategoryLookup(initialData?.site_id || "all");
     loadStaffLookup(initialData?.site_id);
     loadVendorLookup();
@@ -124,6 +126,25 @@ export default function TicketForm({
       loadSpaceLookup(initialData.site_id, initialData.building_id);
     }
   }, []);
+
+  const loadSiteLookup = async () => {
+    const response = await siteApiService.getSiteLookup();
+    if (response?.success) {
+      const sites = response.data || [];
+      setSiteList(sites);
+      
+      // If we have initialData with a site_id that's not in the list, add it as fallback
+      if (initialData?.site_id && !sites.find((s: any) => s.id === initialData.site_id)) {
+        setSiteList([
+          {
+            id: initialData.site_id,
+            name: initialData.site_name || `Site (${initialData.site_id.slice(0, 6)})`,
+          },
+          ...sites,
+        ]);
+      }
+    }
+  };
 
   // Load buildings when site changes
   useEffect(() => {

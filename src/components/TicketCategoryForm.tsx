@@ -62,6 +62,7 @@ export default function TicketCategoryForm({
     reValidateMode: "onChange",
   });
   const [formLoading, setFormLoading] = useState(true);
+  const [siteList, setSiteList] = useState<any[]>([]);
   const [autoAssignRoleList, setAutoAssignRoleList] = useState<any[]>([]);
   const [slaPolicyList, setSlaPolicyList] = useState<any[]>([]);
   const [statusList, setStatusList] = useState<any[]>([]);
@@ -83,10 +84,33 @@ export default function TicketCategoryForm({
 
     setFormLoading(false);
 
-    await Promise.all([loadAutoAssignRoleLookup(), loadStatusLookup()]);
+    await Promise.all([
+      loadSiteLookup(),
+      loadAutoAssignRoleLookup(),
+      loadStatusLookup(),
+    ]);
 
     if (category?.site_id) {
       loadSlaPolicyLookup(category.site_id);
+    }
+  };
+
+  const loadSiteLookup = async () => {
+    const response = await siteApiService.getSiteLookup();
+    if (response?.success) {
+      const sites = response.data || [];
+      setSiteList(sites);
+      
+      // If we have category with a site_id that's not in the list, add it as fallback
+      if (category?.site_id && !sites.find((s: any) => s.id === category.site_id)) {
+        setSiteList([
+          {
+            id: category.site_id,
+            name: category.site_name || "Selected Site",
+          },
+          ...sites,
+        ]);
+      }
     }
   };
 
@@ -210,19 +234,11 @@ export default function TicketCategoryForm({
               <div className="space-y-2">
                 <Label htmlFor="site_id">Site *</Label>
                 <AsyncAutocompleteRQ
-                  value={field.value}
+                  value={field.value || ""}
                   onChange={(value) => {
                     field.onChange(value);
                   }}
                   placeholder="Select site"
-                  fallbackOption={
-                    category?.site_id
-                      ? {
-                        id: category.site_id,
-                        label: category.site_name || "Selected Site",
-                      }
-                      : undefined
-                  }
                   queryKey={["sites"]}
                   queryFn={async (search) => {
                     const res = await siteApiService.getSiteLookup(search);
@@ -231,6 +247,14 @@ export default function TicketCategoryForm({
                       label: s.name,
                     }));
                   }}
+                  fallbackOption={
+                    category?.site_id
+                      ? {
+                        id: category.site_id,
+                        label: category.site_name || "Selected Site",
+                      }
+                      : undefined
+                  }
                   minSearchLength={1}
                 />
                 {errors.site_id && (
