@@ -48,7 +48,7 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
-import { toast } from "sonner";
+import { toast } from "@/components/ui/app-toast";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { leaseChargeApiService } from "@/services/leasing_tenants/leasechargeapi";
 import { LeaseChargeForm } from "@/components/LeaseChargeForm";

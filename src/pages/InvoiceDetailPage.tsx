@@ -31,7 +31,7 @@ import {
 } from "lucide-react";
 import { Invoice, PaymentInput } from "@/interfaces/invoices_interfaces";
 import { invoiceApiService } from "@/services/financials/invoicesapi";
-import { toast } from "sonner";
+import { toast } from "@/components/ui/app-toast";
 import ContentContainer from "@/components/ContentContainer";
 import { useLoader } from "@/context/LoaderContext";
 import LoaderOverlay from "@/components/LoaderOverlay";
@@ -142,10 +142,10 @@ export default function InvoiceDetailPage() {
       currency === "INR"
         ? "₹"
         : currency === "USD"
-        ? "$"
-        : currency === "EUR"
-        ? "€"
-        : currency;
+          ? "$"
+          : currency === "EUR"
+            ? "€"
+            : currency;
     return `${symbol} ${numAmount.toLocaleString("en-IN", {
       minimumFractionDigits: 2,
       maximumFractionDigits: 2,
@@ -177,8 +177,8 @@ export default function InvoiceDetailPage() {
       outstanding <= 0 && paid > 0
         ? "Paid"
         : paid > 0
-        ? "Partially Paid"
-        : "Unpaid";
+          ? "Partially Paid"
+          : "Unpaid";
 
     return { paid, outstanding, status };
   };
@@ -251,8 +251,8 @@ export default function InvoiceDetailPage() {
                         {invoice.billable_item_type === "lease charge"
                           ? "Lease Charge"
                           : invoice.billable_item_type === "work order"
-                          ? "Work Order"
-                          : invoice.billable_item_type || "-"}
+                            ? "Work Order"
+                            : invoice.billable_item_type || "-"}
                       </p>
                     </div>
                     <div>
@@ -381,11 +381,10 @@ export default function InvoiceDetailPage() {
                         Outstanding
                       </Label>
                       <p
-                        className={`text-lg font-semibold ${
-                          paymentSummary.outstanding > 0
+                        className={`text-lg font-semibold ${paymentSummary.outstanding > 0
                             ? "text-orange-600"
                             : "text-green-600"
-                        }`}
+                          }`}
                       >
                         {formatCurrency(
                           paymentSummary.outstanding,
@@ -450,12 +449,12 @@ export default function InvoiceDetailPage() {
                                 <strong>Date:</strong>{" "}
                                 {payment.paid_at
                                   ? new Date(
-                                      payment.paid_at
-                                    ).toLocaleDateString("en-IN", {
-                                      year: "numeric",
-                                      month: "long",
-                                      day: "numeric",
-                                    })
+                                    payment.paid_at
+                                  ).toLocaleDateString("en-IN", {
+                                    year: "numeric",
+                                    month: "long",
+                                    day: "numeric",
+                                  })
                                   : "-"}
                               </p>
                               {payment.billable_item_name && (

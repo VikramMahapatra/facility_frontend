@@ -18,7 +18,7 @@ import {
   ticketCategorySchema,
   TicketCategoryFormValues,
 } from "@/schemas/ticketCategory.schema";
-import { toast } from "sonner";
+import { toast } from "@/components/ui/app-toast";
 import { withFallback } from "@/helpers/commonHelper";
 
 interface TicketCategoryFormProps {
@@ -74,10 +74,10 @@ export default function TicketCategoryForm({
     reset(
       category
         ? {
-            ...category,
-            sla_hours: category.sla_hours || 24,
-            is_active: category.is_active ?? true,
-          }
+          ...category,
+          sla_hours: category.sla_hours || 24,
+          is_active: category.is_active ?? true,
+        }
         : emptyFormData
     );
 
@@ -184,16 +184,16 @@ export default function TicketCategoryForm({
 
   const fallbackAutoAssignRole = category?.auto_assign_role
     ? {
-        id: category.auto_assign_role,
-        name: category.auto_assign_role_name,
-      }
+      id: category.auto_assign_role,
+      name: category.auto_assign_role_name,
+    }
     : null;
 
   const fallbackSlaPolicy = category?.sla_id
     ? {
-        id: category.sla_id,
-        name: category.sla_name || category.sla_policy_name,
-      }
+      id: category.sla_id,
+      name: category.sla_name || category.sla_policy_name,
+    }
     : null;
 
   const autoAssignRoles = withFallback(
@@ -232,6 +232,7 @@ export default function TicketCategoryForm({
             render={({ field }) => (
               <div className="space-y-2">
                 <Label htmlFor="site_id">Site *</Label>
+<<<<<<< HEAD
                 <Select
                   value={field.value || ""}
                   onValueChange={field.onChange}
@@ -249,6 +250,32 @@ export default function TicketCategoryForm({
                     ))}
                   </SelectContent>
                 </Select>
+=======
+                <AsyncAutocompleteRQ
+                  value={field.value}
+                  onChange={(value) => {
+                    field.onChange(value);
+                  }}
+                  placeholder="Select site"
+                  fallbackOption={
+                    category?.site_id
+                      ? {
+                        id: category.site_id,
+                        label: category.site_name || "Selected Site",
+                      }
+                      : undefined
+                  }
+                  queryKey={["sites"]}
+                  queryFn={async (search) => {
+                    const res = await siteApiService.getSiteLookup(search);
+                    return res.data.map((s: any) => ({
+                      id: s.id,
+                      label: s.name,
+                    }));
+                  }}
+                  minSearchLength={1}
+                />
+>>>>>>> origin/dev
                 {errors.site_id && (
                   <p className="text-sm text-red-500">
                     {errors.site_id.message}
@@ -365,8 +392,8 @@ export default function TicketCategoryForm({
                 {isSubmitting
                   ? "Saving..."
                   : mode === "create"
-                  ? "Create Ticket Category"
-                  : "Update Ticket Category"}
+                    ? "Create Ticket Category"
+                    : "Update Ticket Category"}
               </Button>
             )}
           </div>

@@ -24,7 +24,7 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
-import { toast } from "sonner";
+import { toast } from "@/components/ui/app-toast";
 import * as XLSX from "xlsx";
 import type { Meter, MeterReading } from "@/data/mockEnergyData";
 import { meterReadingApiService } from "@/services/energy_iot/meterreadingsapi";
@@ -239,7 +239,7 @@ export function BulkUploadDialog({ type, onImport }: BulkUploadDialogProps) {
       }
     } catch (err) {
       console.error("Import failed:", err);
-       toast.error("A technical error occurred during import.");
+      toast.error("A technical error occurred during import.");
     }
   };
 

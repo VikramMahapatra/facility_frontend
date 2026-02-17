@@ -17,7 +17,7 @@ import {
 } from "../ui/dialog";
 import { OwnershipDialog } from "./OwnershipDialog";
 import { Badge } from "../ui/badge";
-import { toast } from "sonner";
+import { toast } from "@/components/ui/app-toast";
 
 interface Tenant {
   id?: string;
@@ -72,35 +72,25 @@ export default function SpaceTenantSection({ spaceId, tenants, onRefresh }: Prop
 
     setIsRemoving(true);
     try {
-      const tenantId = selectedTenant.tenant_id || selectedTenant.id || selectedTenant.tenantId;
-      
+      const tenantUserId = selectedTenant.user_id;
+
       // Remove tenant (this will terminate the active lease)
       const removeResponse = await spacesApiService.removeTenant({
         space_id: spaceId,
-        tenant_user_id: tenantId,
+        tenant_user_id: tenantUserId,
       });
 
       if (removeResponse.success) {
         // Auto move out after removing tenant
-        const moveOutResponse = await occupancyApiService.moveOut(spaceId);
-        
-        if (moveOutResponse.success) {
-          toast.success("Tenant removed, lease terminated, and space moved out successfully");
-        } else {
-          toast.success("Tenant removed and lease terminated successfully");
-        }
-        
+        toast.success("Tenant removed, lease terminated, and space moved out successfully");
         setRemoveDialogOpen(false);
         setSelectedTenant(null);
         if (onRefresh) {
           onRefresh();
         }
-      } else {
-        toast.error(removeResponse.message || "Failed to remove tenant");
       }
     } catch (error) {
       console.error("Error removing tenant:", error);
-      toast.error("Failed to remove tenant");
     } finally {
       setIsRemoving(false);
     }

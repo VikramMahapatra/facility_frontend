@@ -23,7 +23,7 @@ import {
   ServiceRequestFormValues,
   serviceRequestSchema,
 } from "@/schemas/serviceRequest.schema";
-import { toast } from "sonner";
+import { toast } from "@/components/ui/app-toast";
 import { siteApiService } from "@/services/spaces_sites/sitesapi";
 import { spacesApiService } from "@/services/spaces_sites/spacesapi";
 import { organisationApiService } from "@/services/spaces_sites/organisationapi";
@@ -166,7 +166,7 @@ export function ServiceRequestForm({
     if (serviceRequest && mode !== "create") {
       const validRequesterKind =
         serviceRequest.requester_kind === "resident" ||
-        serviceRequest.requester_kind === "merchant"
+          serviceRequest.requester_kind === "merchant"
           ? serviceRequest.requester_kind
           : "resident";
       reset({
@@ -314,8 +314,8 @@ export function ServiceRequestForm({
       kind === "resident"
         ? "individual"
         : kind === "merchant"
-        ? "commercial"
-        : kind;
+          ? "commercial"
+          : kind;
     const lookup = await leasesApiService.getLeasePartnerLookup(Kind, site_id);
     if (lookup.success) setCustomerList(lookup.data || []);
   };
@@ -759,17 +759,17 @@ export function ServiceRequestForm({
                               prev.map((cm) =>
                                 cm.id === c.id
                                   ? {
-                                      ...cm,
-                                      replies: [
-                                        ...(cm.replies || []),
-                                        {
-                                          id: `r-${Date.now()}`,
-                                          author: "You",
-                                          ts: new Date().toISOString(),
-                                          text: replyText.trim(),
-                                        },
-                                      ],
-                                    }
+                                    ...cm,
+                                    replies: [
+                                      ...(cm.replies || []),
+                                      {
+                                        id: `r-${Date.now()}`,
+                                        author: "You",
+                                        ts: new Date().toISOString(),
+                                        text: replyText.trim(),
+                                      },
+                                    ],
+                                  }
                                   : cm
                               )
                             );
@@ -843,8 +843,8 @@ export function ServiceRequestForm({
                 {isSubmitting
                   ? "Saving..."
                   : mode === "create"
-                  ? "Create Service Request"
-                  : "Update Service Request"}
+                    ? "Create Service Request"
+                    : "Update Service Request"}
               </Button>
             )}
           </DialogFooter>

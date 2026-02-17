@@ -28,6 +28,7 @@ export interface Lease {
   is_system?: boolean;
   auto_move_in_space_occupancy?: boolean;
   lease_term_months?: number;
+  derived_frequency?: string;
 }
 
 export interface LeaseOverview {

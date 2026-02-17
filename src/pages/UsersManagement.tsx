@@ -30,7 +30,7 @@ import { Badge } from "@/components/ui/badge";
 import { LogOut } from "lucide-react";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { userManagementApiService } from "@/services/access_control/usermanagementapi";
-import { toast } from "sonner";
+import { toast } from "@/components/ui/app-toast";
 import {
   AlertDialog,
   AlertDialogAction,

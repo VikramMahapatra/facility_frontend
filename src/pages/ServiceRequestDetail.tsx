@@ -20,7 +20,7 @@ export default function ServiceRequestDetail() {
   const navigate = useNavigate();
   const { toast } = useToast();
   const [newComment, setNewComment] = useState("");
-  
+
   const serviceRequest = mockServiceRequests.find((sr) => sr.id === id);
 
   if (!serviceRequest) {
@@ -38,7 +38,7 @@ export default function ServiceRequestDetail() {
 
   const handleAddComment = () => {
     if (!newComment.trim()) return;
-    
+
     toast({
       title: "Comment added",
       description: "Your comment has been posted successfully.",
@@ -73,7 +73,7 @@ export default function ServiceRequestDetail() {
     });
   };
 
-  const linkedWorkOrder = serviceRequest.work_order_id 
+  const linkedWorkOrder = serviceRequest.work_order_id
     ? mockWorkOrders.find(wo => wo.id === serviceRequest.work_order_id)
     : null;
 
@@ -81,7 +81,7 @@ export default function ServiceRequestDetail() {
     <SidebarProvider>
       <div className="min-h-screen flex w-full bg-background">
         <PropertySidebar />
-        
+
         <div className="flex-1 flex flex-col">
           <header className="bg-card border-b border-border">
             <div className="flex items-center justify-between px-6 py-4">
@@ -134,12 +134,12 @@ export default function ServiceRequestDetail() {
                           {new Date(serviceRequest.created_at).toLocaleString()}
                         </CardDescription>
                       </div>
-                      <Badge 
+                      <Badge
                         variant={
                           serviceRequest.status === 'resolved' ? 'default' :
-                          serviceRequest.status === 'closed' ? 'secondary' :
-                          serviceRequest.status === 'in_progress' ? 'secondary' :
-                          serviceRequest.status === 'on_hold' ? 'outline' : 'outline'
+                            serviceRequest.status === 'closed' ? 'secondary' :
+                              serviceRequest.status === 'in_progress' ? 'secondary' :
+                                serviceRequest.status === 'on_hold' ? 'outline' : 'outline'
                         }
                       >
                         {serviceRequest.status.replace('_', ' ')}
@@ -154,10 +154,10 @@ export default function ServiceRequestDetail() {
                       </div>
                       <div>
                         <p className="text-sm text-muted-foreground">Priority</p>
-                        <Badge 
+                        <Badge
                           variant={
                             serviceRequest.priority === 'high' ? 'destructive' :
-                            serviceRequest.priority === 'medium' ? 'default' : 'secondary'
+                              serviceRequest.priority === 'medium' ? 'default' : 'secondary'
                           }
                         >
                           {serviceRequest.priority}
@@ -206,7 +206,7 @@ export default function ServiceRequestDetail() {
                               </span>
                             </div>
                             <p className="mt-1 text-sm">{comment.content}</p>
-                            
+
                             {/* Reactions */}
                             <div className="flex items-center space-x-2 mt-2">
                               {comment.reactions.map((reaction, idx) => (
@@ -294,8 +294,8 @@ export default function ServiceRequestDetail() {
                           <span className="font-medium">#{linkedWorkOrder.id}</span>
                         </div>
                         <p className="text-sm">{linkedWorkOrder.title}</p>
-                        <Button 
-                          variant="outline" 
+                        <Button
+                          variant="outline"
                           className="w-full"
                           onClick={() => navigate(`/work-orders/${linkedWorkOrder.id}`)}
                         >

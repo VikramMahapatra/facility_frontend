@@ -22,7 +22,7 @@ import {
 } from "@/components/ui/table";
 import { useLoader } from "@/context/LoaderContext";
 import { useEffect, useState } from "react";
-import { toast } from "sonner";
+import { toast } from "@/components/ui/app-toast";
 import { Check, X, Search, CheckCircle2 } from "lucide-react";
 import { Pagination } from "@/components/Pagination";
 import { useSkipFirstEffect } from "@/hooks/use-skipfirst-effect";

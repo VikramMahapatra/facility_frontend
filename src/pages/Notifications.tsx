@@ -12,7 +12,7 @@ import { notificationsApiService } from "@/services/system/notificationsapi";
 import { notificationSettingsApiService } from "@/services/system/notificationsettingsapi";
 import { useSkipFirstEffect } from "@/hooks/use-skipfirst-effect";
 import { Pagination } from "@/components/Pagination";
-import { toast } from "sonner";
+import { toast } from "@/components/ui/app-toast";
 import { useLoader } from "@/context/LoaderContext";
 import LoaderOverlay from "@/components/LoaderOverlay";
 import ContentContainer from "@/components/ContentContainer";

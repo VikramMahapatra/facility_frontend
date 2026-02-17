@@ -23,7 +23,7 @@ import {
   spaceGroupSchema,
 } from "@/schemas/spaceGroup.schema";
 import { SpaceGroup } from "@/pages/SpaceGroups";
-import { toast } from "sonner";
+import { toast } from "@/components/ui/app-toast";
 import { siteApiService } from "@/services/spaces_sites/sitesapi";
 import {
   amenitiesByKind,
@@ -127,8 +127,8 @@ export function SpaceGroupForm({
             {mode === "create"
               ? "Create New Group"
               : mode === "edit"
-              ? "Edit Group"
-              : "View Group"}
+                ? "Edit Group"
+                : "View Group"}
           </DialogTitle>
         </DialogHeader>
 
@@ -289,8 +289,8 @@ export function SpaceGroupForm({
                 {isSubmitting
                   ? "Saving..."
                   : mode === "create"
-                  ? "Create Space Group "
-                  : "Update Space Group"}
+                    ? "Create Space Group "
+                    : "Update Space Group"}
               </Button>
             )}
           </DialogFooter>

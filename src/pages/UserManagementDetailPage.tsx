@@ -21,7 +21,7 @@ import {
 } from "lucide-react";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { userManagementApiService } from "@/services/access_control/usermanagementapi";
-import { toast } from "sonner";
+import { toast } from "@/components/ui/app-toast";
 import ContentContainer from "@/components/ContentContainer";
 import { useLoader } from "@/context/LoaderContext";
 import LoaderOverlay from "@/components/LoaderOverlay";

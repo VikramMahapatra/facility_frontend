@@ -13,7 +13,7 @@ import {
 } from "@/components/ui/select";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { ArrowLeft, Trash2, Plus } from "lucide-react";
-import { toast } from "sonner";
+import { toast } from "@/components/ui/app-toast";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -156,60 +156,60 @@ export default function TenantFormPage() {
     reset(
       tenant && formMode !== "create"
         ? {
-            name: tenant.name || "",
-            email: tenant.email || "",
-            phone: tenant.phone || "",
-            kind: tenant.kind || "residential",
-            status: tenant.status || "inactive",
-            tenant_spaces:
-              (tenant as any).tenant_spaces &&
+          name: tenant.name || "",
+          email: tenant.email || "",
+          phone: tenant.phone || "",
+          kind: tenant.kind || "residential",
+          status: tenant.status || "inactive",
+          tenant_spaces:
+            (tenant as any).tenant_spaces &&
               Array.isArray((tenant as any).tenant_spaces) &&
               (tenant as any).tenant_spaces.length > 0
-                ? (tenant as any).tenant_spaces
-                : [
-                    {
-                      site_id: "",
-                      building_block_id: "",
-                      space_id: "",
-                    },
-                  ],
-            type: tenant.type || "",
-            legal_name: tenant.legal_name || "",
-            contact_info: tenant.contact_info
-              ? {
-                  name: tenant.contact_info.name || "",
-                  email: tenant.contact_info.email || "",
-                  phone: tenant.contact_info.phone || "",
-                  address: tenant.contact_info.address
-                    ? {
-                        line1: tenant.contact_info.address.line1 || "",
-                        line2: tenant.contact_info.address.line2 || "",
-                        city: tenant.contact_info.address.city || "",
-                        state: tenant.contact_info.address.state || "",
-                        pincode: tenant.contact_info.address.pincode || "",
-                      }
-                    : {},
+              ? (tenant as any).tenant_spaces
+              : [
+                {
+                  site_id: "",
+                  building_block_id: "",
+                  space_id: "",
+                },
+              ],
+          type: tenant.type || "",
+          legal_name: tenant.legal_name || "",
+          contact_info: tenant.contact_info
+            ? {
+              name: tenant.contact_info.name || "",
+              email: tenant.contact_info.email || "",
+              phone: tenant.contact_info.phone || "",
+              address: tenant.contact_info.address
+                ? {
+                  line1: tenant.contact_info.address.line1 || "",
+                  line2: tenant.contact_info.address.line2 || "",
+                  city: tenant.contact_info.address.city || "",
+                  state: tenant.contact_info.address.state || "",
+                  pincode: tenant.contact_info.address.pincode || "",
                 }
-              : emptyFormData.contact_info,
-            family_info:
-              (tenant as any).family_info &&
+                : {},
+            }
+            : emptyFormData.contact_info,
+          family_info:
+            (tenant as any).family_info &&
               Array.isArray((tenant as any).family_info) &&
               (tenant as any).family_info.length > 0
-                ? (tenant as any).family_info
-                : (tenant as any).family_info &&
-                  typeof (tenant as any).family_info === "object"
+              ? (tenant as any).family_info
+              : (tenant as any).family_info &&
+                typeof (tenant as any).family_info === "object"
                 ? [(tenant as any).family_info]
                 : [{ member: "", relation: "" }],
-            vehicle_info:
-              (tenant as any).vehicle_info &&
+          vehicle_info:
+            (tenant as any).vehicle_info &&
               Array.isArray((tenant as any).vehicle_info) &&
               (tenant as any).vehicle_info.length > 0
-                ? (tenant as any).vehicle_info
-                : (tenant as any).vehicle_info &&
-                  typeof (tenant as any).vehicle_info === "object"
+              ? (tenant as any).vehicle_info
+              : (tenant as any).vehicle_info &&
+                typeof (tenant as any).vehicle_info === "object"
                 ? [(tenant as any).vehicle_info]
                 : [{ type: "", number: "" }],
-          }
+        }
         : emptyFormData
     );
 
@@ -321,8 +321,7 @@ export default function TenantFormPage() {
       } else {
         navigate(-1);
         toast.success(
-          `Tenant ${tenantData.name} has been ${
-            formMode === "create" ? "created" : "updated"
+          `Tenant ${tenantData.name} has been ${formMode === "create" ? "created" : "updated"
           } successfully.`
         );
       }
@@ -356,7 +355,7 @@ export default function TenantFormPage() {
         if (
           space1.site_id === space2.site_id &&
           (space1.building_block_id || "") ===
-            (space2.building_block_id || "") &&
+          (space2.building_block_id || "") &&
           space1.space_id === space2.space_id
         ) {
           if (!duplicates.includes(i)) duplicates.push(i);
@@ -464,12 +463,12 @@ export default function TenantFormPage() {
     const ensured =
       remaining.length === 0
         ? [
-            {
-              site_id: "",
-              building_block_id: "",
-              space_id: "",
-            },
-          ]
+          {
+            site_id: "",
+            building_block_id: "",
+            space_id: "",
+          },
+        ]
         : remaining;
     setValue("tenant_spaces", ensured, {
       shouldValidate: true,
@@ -526,7 +525,7 @@ export default function TenantFormPage() {
             space.space_id &&
             space.site_id === currentEntry.site_id &&
             (space.building_block_id || "") ===
-              (currentEntry.building_block_id || "") &&
+            (currentEntry.building_block_id || "") &&
             space.space_id === currentEntry.space_id
         );
 
@@ -569,15 +568,15 @@ export default function TenantFormPage() {
                   {formMode === "create"
                     ? "Create New Tenant"
                     : formMode === "edit"
-                    ? "Edit Tenant"
-                    : "Tenant Details"}
+                      ? "Edit Tenant"
+                      : "Tenant Details"}
                 </h1>
                 <p className="text-muted-foreground">
                   {formMode === "create"
                     ? "Add a new tenant to the system"
                     : formMode === "edit"
-                    ? "Update tenant information"
-                    : "View tenant details"}
+                      ? "Update tenant information"
+                      : "View tenant details"}
                 </p>
               </div>
             </div>
@@ -600,8 +599,8 @@ export default function TenantFormPage() {
                       ? "Creating..."
                       : "Updating..."
                     : formMode === "create"
-                    ? "Create Tenant"
-                    : "Update Tenant"}
+                      ? "Create Tenant"
+                      : "Update Tenant"}
                 </Button>
               )}
             </div>
@@ -666,9 +665,8 @@ export default function TenantFormPage() {
                           required: true,
                         }}
                         containerClass="w-full relative"
-                        inputClass={`!w-full !h-10 !pl-12 !rounded-md !border !border-input !bg-background !px-3 !py-2 !text-base !ring-offset-background placeholder:!text-muted-foreground focus-visible:!outline-none focus-visible:!ring-2 focus-visible:!ring-ring focus-visible:!ring-offset-2 disabled:!cursor-not-allowed disabled:!opacity-50 md:!text-sm ${
-                          errors.phone ? "!border-red-500" : ""
-                        }`}
+                        inputClass={`!w-full !h-10 !pl-12 !rounded-md !border !border-input !bg-background !px-3 !py-2 !text-base !ring-offset-background placeholder:!text-muted-foreground focus-visible:!outline-none focus-visible:!ring-2 focus-visible:!ring-ring focus-visible:!ring-offset-2 disabled:!cursor-not-allowed disabled:!opacity-50 md:!text-sm ${errors.phone ? "!border-red-500" : ""
+                          }`}
                         buttonClass="!border-none !bg-transparent !absolute !left-2 !top-1/2 !-translate-y-1/2 z-10"
                         dropdownClass="!absolute !z-50 !bg-white !border !border-gray-200 !rounded-md !shadow-lg max-h-60 overflow-y-auto"
                         enableSearch={true}
@@ -998,7 +996,7 @@ export default function TenantFormPage() {
                                     <SelectTrigger
                                       className={
                                         fieldState.error &&
-                                        (fieldState.isTouched || isSubmitted)
+                                          (fieldState.isTouched || isSubmitted)
                                           ? "border-red-500"
                                           : ""
                                       }
@@ -1079,9 +1077,8 @@ export default function TenantFormPage() {
                     {familyInfo.map((member, index) => (
                       <div
                         key={index}
-                        className={`grid grid-cols-[1fr_1fr_auto] gap-4 items-center p-4 ${
-                          index !== familyInfo.length - 1 ? "border-b" : ""
-                        }`}
+                        className={`grid grid-cols-[1fr_1fr_auto] gap-4 items-center p-4 ${index !== familyInfo.length - 1 ? "border-b" : ""
+                          }`}
                       >
                         <Input
                           value={member.member || ""}
@@ -1123,67 +1120,66 @@ export default function TenantFormPage() {
               {/* Vehicle Information - Only for Individual tenants */}
               {(selectedTenantType === "residential" ||
                 selectedTenantType === "commercial") && (
-                <div className="space-y-2">
-                  <div className="flex items-center justify-between">
-                    <Label htmlFor="vehicle_info">Vehicle Information</Label>
-                    {!isReadOnly && (
-                      <Button
-                        type="button"
-                        variant="default"
-                        size="sm"
-                        onClick={addVehicle}
-                      >
-                        <Plus className="mr-2 h-4 w-4" /> Add Vehicle
-                      </Button>
-                    )}
-                  </div>
-                  <div className="border rounded-md">
-                    {/* Header row with labels */}
-                    <div className="grid grid-cols-[1fr_1fr_auto] gap-4 p-4 border-b bg-muted/50">
-                      <Label>Type of Vehicle</Label>
-                      <Label>Vehicle No.</Label>
-                      <div></div>
+                  <div className="space-y-2">
+                    <div className="flex items-center justify-between">
+                      <Label htmlFor="vehicle_info">Vehicle Information</Label>
+                      {!isReadOnly && (
+                        <Button
+                          type="button"
+                          variant="default"
+                          size="sm"
+                          onClick={addVehicle}
+                        >
+                          <Plus className="mr-2 h-4 w-4" /> Add Vehicle
+                        </Button>
+                      )}
                     </div>
-                    {/* Data rows */}
-                    {vehicleInfo.map((vehicle, index) => (
-                      <div
-                        key={index}
-                        className={`grid grid-cols-[1fr_1fr_auto] gap-4 items-center p-4 ${
-                          index !== vehicleInfo.length - 1 ? "border-b" : ""
-                        }`}
-                      >
-                        <Input
-                          value={(vehicle as any).type || ""}
-                          onChange={(e) =>
-                            updateVehicle(index, "type", e.target.value)
-                          }
-                          placeholder="Enter vehicle type"
-                          disabled={isReadOnly}
-                        />
-                        <Input
-                          value={(vehicle as any).number || ""}
-                          onChange={(e) =>
-                            updateVehicle(index, "number", e.target.value)
-                          }
-                          placeholder="Enter vehicle number"
-                          disabled={isReadOnly}
-                        />
-                        {!isReadOnly && (
-                          <Button
-                            type="button"
-                            variant="ghost"
-                            size="icon"
-                            className="text-destructive hover:text-destructive"
-                            onClick={() => removeVehicle(index)}
-                          >
-                            <Trash2 className="h-4 w-4" />
-                          </Button>
-                        )}
+                    <div className="border rounded-md">
+                      {/* Header row with labels */}
+                      <div className="grid grid-cols-[1fr_1fr_auto] gap-4 p-4 border-b bg-muted/50">
+                        <Label>Type of Vehicle</Label>
+                        <Label>Vehicle No.</Label>
+                        <div></div>
                       </div>
-                    ))}
+                      {/* Data rows */}
+                      {vehicleInfo.map((vehicle, index) => (
+                        <div
+                          key={index}
+                          className={`grid grid-cols-[1fr_1fr_auto] gap-4 items-center p-4 ${index !== vehicleInfo.length - 1 ? "border-b" : ""
+                            }`}
+                        >
+                          <Input
+                            value={(vehicle as any).type || ""}
+                            onChange={(e) =>
+                              updateVehicle(index, "type", e.target.value)
+                            }
+                            placeholder="Enter vehicle type"
+                            disabled={isReadOnly}
+                          />
+                          <Input
+                            value={(vehicle as any).number || ""}
+                            onChange={(e) =>
+                              updateVehicle(index, "number", e.target.value)
+                            }
+                            placeholder="Enter vehicle number"
+                            disabled={isReadOnly}
+                          />
+                          {!isReadOnly && (
+                            <Button
+                              type="button"
+                              variant="ghost"
+                              size="icon"
+                              className="text-destructive hover:text-destructive"
+                              onClick={() => removeVehicle(index)}
+                            >
+                              <Trash2 className="h-4 w-4" />
+                            </Button>
+                          )}
+                        </div>
+                      ))}
+                    </div>
                   </div>
-                </div>
-              )}
+                )}
 
               {/* Address Information - Always at the end */}
               <div className="space-y-2">

@@ -105,18 +105,18 @@ export const navigationItems = [
         resource: "buildings",
       },
       { title: "Spaces", url: "/spaces", icon: Home, resource: "spaces" },
-      {
-        title: "Space Groups (Templates)",
-        url: "/space-groups",
-        icon: Archive,
-        resource: "space_groups",
-      },
-      {
-        title: "Group Assignments",
-        url: "/space-assignments",
-        icon: Users,
-        resource: "group_assignments",
-      },
+      // {
+      //   title: "Space Groups (Templates)",
+      //   url: "/space-groups",
+      //   icon: Archive,
+      //   resource: "space_groups",
+      // },
+      // {
+      //   title: "Group Assignments",
+      //   url: "/space-assignments",
+      //   icon: Users,
+      //   resource: "group_assignments",
+      // },
       {
         title: "Maintenance (CAM)",
         url: "/space-maintenance",
@@ -136,12 +136,12 @@ export const navigationItems = [
     items: [
       { title: "Tenants", url: "/tenants", icon: Users, resource: "tenants" },
       { title: "Leases", url: "/leases", icon: FileText, resource: "leases" },
-      // {
-      //   title: "Lease Charges",
-      //   url: "/lease-charges",
-      //   icon: Receipt,
-      //   resource: "lease_charges",
-      // },
+      {
+        title: "Rent Charges",
+        url: "/rent-charges",
+        icon: Receipt,
+        resource: "lease_charges",
+      },
       // {
       //   title: "Lease Charge Codes",
       //   url: "/lease-charge-codes",

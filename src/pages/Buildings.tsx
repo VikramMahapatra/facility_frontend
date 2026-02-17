@@ -23,7 +23,7 @@ import { BuildingForm } from "@/components/BuildingForm";
 import { buildingApiService } from "@/services/spaces_sites/buildingsapi";
 import { Pagination } from "@/components/Pagination";
 import { siteApiService } from "@/services/spaces_sites/sitesapi";
-import { toast } from "sonner";
+import { toast } from "@/components/ui/app-toast";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import {
   AlertDialog,

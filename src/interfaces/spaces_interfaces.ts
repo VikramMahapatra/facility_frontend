@@ -24,6 +24,7 @@ export interface Space {
     owner_name: string;
     maintenance_template_id?: string;
     maintenance_amount?: number;
+    tax_rate?: number
 }
 
 export interface SpaceOverview {
@@ -348,3 +349,19 @@ export const amenitiesByKind: AmenitiesByKind = {
     ],
 };
 
+export interface MaintenanceTemplate {
+    id?: string;
+    org_id?: string;
+    name: string;
+    calculation_type: "flat" | "per_sqft" | "per_bed" | "custom";
+    amount: number;
+    category?: "residential" | "commercial";
+    kind?: SpaceKind;
+    site_id?: string;
+    site_name?: string;
+    is_active?: boolean;
+    created_at?: string;
+    updated_at?: string;
+    tax_code_id?: string;
+    tax_rate?: string;
+}

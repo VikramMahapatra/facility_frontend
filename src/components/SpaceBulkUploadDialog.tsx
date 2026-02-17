@@ -24,7 +24,7 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
-import { toast } from "sonner";
+import { toast } from "@/components/ui/app-toast";
 import * as XLSX from "xlsx";
 import { spaceKinds, SpaceKind } from "@/interfaces/spaces_interfaces";
 
@@ -394,15 +394,15 @@ export function SpaceBulkUploadDialog({
                           </TableCell>
                           <TableCell>
                             {row.floor !== undefined &&
-                            row.floor !== null &&
-                            row.floor !== ""
+                              row.floor !== null &&
+                              row.floor !== ""
                               ? row.floor
                               : "-"}
                           </TableCell>
                           <TableCell>
                             {row.area_sqft !== undefined &&
-                            row.area_sqft !== null &&
-                            row.area_sqft !== ""
+                              row.area_sqft !== null &&
+                              row.area_sqft !== ""
                               ? `${row.area_sqft} sq ft`
                               : "-"}
                           </TableCell>

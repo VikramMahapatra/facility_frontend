@@ -26,7 +26,7 @@ import {
   userFormSchema,
   userSchema,
 } from "@/schemas/user.schema";
-import { toast } from "sonner";
+import { toast } from "@/components/ui/app-toast";
 import {
   Building2,
   Truck,
@@ -117,11 +117,11 @@ export function UserForm({
     reset(
       user && mode !== "create"
         ? {
-            full_name: user.full_name || "",
-            email: user.email || "",
-            phone: user.phone || "",
-            status: (user.status as any) || "active",
-          }
+          full_name: user.full_name || "",
+          email: user.email || "",
+          phone: user.phone || "",
+          status: (user.status as any) || "active",
+        }
         : emptyFormData,
     );
     setFormLoading(false);

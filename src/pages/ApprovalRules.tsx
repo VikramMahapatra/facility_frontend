@@ -12,7 +12,7 @@ import {
 import { LogOut, } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { mockRoles } from "@/data/mockRbacData";
-import { toast } from "sonner";
+import { toast } from "@/components/ui/app-toast";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { SidebarProvider } from "@/components/ui/sidebar";
 import { PropertySidebar } from "@/components/PropertySidebar";

@@ -27,7 +27,7 @@ import {
 } from "@/interfaces/leasing_tenants_interface";
 import { tenantsApiService } from "@/services/leasing_tenants/tenantsapi";
 import { leasesApiService } from "@/services/leasing_tenants/leasesapi";
-import { toast } from "sonner";
+import { toast } from "@/components/ui/app-toast";
 import ContentContainer from "@/components/ContentContainer";
 import { useLoader } from "@/context/LoaderContext";
 import LoaderOverlay from "@/components/LoaderOverlay";

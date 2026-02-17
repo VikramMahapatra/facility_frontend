@@ -16,7 +16,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { toast } from "sonner";
+import { toast } from "@/components/ui/app-toast";
 import { leasesApiService } from "@/services/leasing_tenants/leasesapi";
 import { leaseChargeApiService } from "@/services/leasing_tenants/leasechargeapi";
 import { Controller, useForm } from "react-hook-form";
@@ -178,7 +178,7 @@ export function LeaseChargeForm({
   const loadAll = async () => {
     setFormLoading(true);
 
-  
+
     if (charge && mode !== "create") {
       reset({
         lease_id: (charge.lease_id as any) || "",
@@ -191,9 +191,9 @@ export function LeaseChargeForm({
         payer_type: charge.payer_type || "", // ✅ Add this
       });
     } else {
-      const {startDate, endDate} = getMonthBounds();
+      const { startDate, endDate } = getMonthBounds();
       reset({
-        lease_id: (charge?.lease_id as any) || "", 
+        lease_id: (charge?.lease_id as any) || "",
         charge_code_id: "",
         period_start: startDate,
         period_end: endDate,

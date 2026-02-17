@@ -7,7 +7,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "
 import { Controller, useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { SiteFormValues, siteSchema } from "@/schemas/site.schema";
-import { toast } from "sonner";
+import { toast } from "@/components/ui/app-toast";
 
 export interface Site {
   id: string;

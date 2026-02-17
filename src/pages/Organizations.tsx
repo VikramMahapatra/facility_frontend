@@ -26,7 +26,7 @@ import {
 import { PropertySidebar } from "@/components/PropertySidebar";
 
 import { OrganizationForm } from "@/components/OrganizationForm";
-import { toast } from "sonner";
+import { toast } from "@/components/ui/app-toast";
 import { organisationApiService } from "@/services/spaces_sites/organisationapi";
 import LoaderOverlay from "@/components/LoaderOverlay";
 import ContentContainer from "@/components/ContentContainer";

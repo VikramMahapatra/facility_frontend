@@ -31,7 +31,8 @@ export const maintenanceTemplateSchema = z.object({
       "farm_house",
     ] as const)
     .optional(),
-  site_id: z.string().optional(),
+  site_id: z.string().min(1, "Site is required"),
+  tax_code_id: z.string().optional(),
   is_active: z.boolean().default(true),
 });
 

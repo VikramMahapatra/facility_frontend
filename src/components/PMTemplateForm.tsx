@@ -20,7 +20,7 @@ import {
 import { Controller, useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { PMTemplateFormValues, pmTemplateSchema } from "@/schemas/pmTemplate.schema";
-import { toast } from "sonner";
+import { toast } from "@/components/ui/app-toast";
 import { preventiveMaintenanceApiService } from "@/services/maintenance_assets/preventive_maintenanceapi";
 import { assetApiService } from '@/services/maintenance_assets/assetsapi';
 import { withFallback } from "@/helpers/commonHelper";
@@ -147,10 +147,10 @@ export function PMTemplateForm({
     if (lookup.success) setFrequencyList(lookup.data || []);
   };
 
-  const loadStatusLookup = async () => {    
-      const lookup = await preventiveMaintenanceApiService.getPreventiveMaintenanceStatusLookup();
-      if (lookup.success) setStatusList(lookup.data || []);
-    }
+  const loadStatusLookup = async () => {
+    const lookup = await preventiveMaintenanceApiService.getPreventiveMaintenanceStatusLookup();
+    if (lookup.success) setStatusList(lookup.data || []);
+  }
 
   // Checklist helpers: add, update, remove multiple items
   const addChecklistItem = () => {
@@ -212,25 +212,25 @@ export function PMTemplateForm({
 
   const fallbackCategory = template?.category_id
     ? {
-        id: template.category_id,
-        name:
-          template.asset_category ||
-          `Category (${template.category_id.slice(0, 6)})`,
-      }
+      id: template.category_id,
+      name:
+        template.asset_category ||
+        `Category (${template.category_id.slice(0, 6)})`,
+    }
     : null;
 
   const fallbackFrequency = template?.frequency
     ? {
-        id: template.frequency,
-        name: template.frequency,
-      }
+      id: template.frequency,
+      name: template.frequency,
+    }
     : null;
 
   const fallbackStatus = template?.status
     ? {
-        id: template.status,
-        name: template.status,
-      }
+      id: template.status,
+      name: template.status,
+    }
     : null;
 
   const categories = withFallback(categoryList as any[], fallbackCategory as any);

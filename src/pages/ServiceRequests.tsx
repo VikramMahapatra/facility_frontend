@@ -20,7 +20,7 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
-import { toast } from "sonner";
+import { toast } from "@/components/ui/app-toast";
 import { Pagination } from "@/components/Pagination";
 import { serviceRequestApiService } from "@/services/maintenance_assets/servicerequestapi";
 import { useSkipFirstEffect } from "@/hooks/use-skipfirst-effect";
@@ -32,9 +32,9 @@ import LoaderOverlay from "@/components/LoaderOverlay";
 import ContentContainer from "@/components/ContentContainer";
 
 export type ServiceRequestPriority = "low" | "medium" | "high" | "urgent";
-export type ServiceRequestStatus   = "open" | "in_progress" | "on_hold" | "resolved" | "close";
-export type ServiceRequestChannel  = "portal" | "email" | "phone" | "walkin" | "api";
-export type ServiceRequesterKind   = "resident" | "merchant" | "guest" | "staff" | "other";
+export type ServiceRequestStatus = "open" | "in_progress" | "on_hold" | "resolved" | "close";
+export type ServiceRequestChannel = "portal" | "email" | "phone" | "walkin" | "api";
+export type ServiceRequesterKind = "resident" | "merchant" | "guest" | "staff" | "other";
 export type Category = "Maintenance" | "Housekeeping" | "Security" | "Utilities" | string;
 
 export interface ServiceRequest {
@@ -119,38 +119,38 @@ export default function ServiceRequest() {
       setPage(1);
     }
   };
-  
-  const loadServiceRequestOverView = async () => {
-   const params =new URLSearchParams();
-   if (searchTerm) params.append("search", searchTerm);
-   if (selectedCategory && selectedCategory !== "all") params.append("category", selectedCategory);
-   if (selectedStatus && selectedStatus !== "all") params.append("status", selectedStatus);
-   
-   const response = await withLoader(async () => {
-     return await serviceRequestApiService.getServiceRequestOverview(params);
-   });
-   
-   if (response?.success) setServiceRequestOverview(response.data || {});
-   };
-  
 
-    const loadServiceRequest = async () => {
+  const loadServiceRequestOverView = async () => {
+    const params = new URLSearchParams();
+    if (searchTerm) params.append("search", searchTerm);
+    if (selectedCategory && selectedCategory !== "all") params.append("category", selectedCategory);
+    if (selectedStatus && selectedStatus !== "all") params.append("status", selectedStatus);
+
+    const response = await withLoader(async () => {
+      return await serviceRequestApiService.getServiceRequestOverview(params);
+    });
+
+    if (response?.success) setServiceRequestOverview(response.data || {});
+  };
+
+
+  const loadServiceRequest = async () => {
     const skip = (page - 1) * pageSize;
     const limit = pageSize;
 
 
 
-   const params = new URLSearchParams();
-   if (searchTerm) params.append("search", searchTerm);
-   if (selectedCategory && selectedCategory !== "all") params.append("category", selectedCategory);
-   if (selectedStatus && selectedStatus !== "all") params.append("status", selectedStatus);
+    const params = new URLSearchParams();
+    if (searchTerm) params.append("search", searchTerm);
+    if (selectedCategory && selectedCategory !== "all") params.append("category", selectedCategory);
+    if (selectedStatus && selectedStatus !== "all") params.append("status", selectedStatus);
     params.append("skip", skip.toString());
-    params.append("limit",limit.toString());
-    
+    params.append("limit", limit.toString());
+
     const response = await withLoader(async () => {
       return await serviceRequestApiService.getServiceRequests(params);
     });
-    
+
     if (response?.success) {
       setServiceRequest(response.data?.requests || []);
       setTotalItems(response.data?.total || 0);
@@ -158,9 +158,9 @@ export default function ServiceRequest() {
   };
 
 
-   
 
-    
+
+
 
   // LOOKUPS (FILTER variants for the list page)
   const loadServiceRequestStatusLookup = async () => {
@@ -171,7 +171,7 @@ export default function ServiceRequest() {
   const loadServiceRequestCategoryLookup = async () => {
     const lookup = await serviceRequestApiService.getServiceRequestCategoryFilterLookup();
     if (lookup.success) setCategoryOptions(lookup.data || [])
-    console.log("categories:",lookup)
+    console.log("categories:", lookup)
   };
 
   // --- CRUD Handlers ---
@@ -268,7 +268,7 @@ export default function ServiceRequest() {
             <div className="flex items-center justify-between">
               <div>
                 <h2 className="text-2xl font-bold text-sidebar-primary">
-                All Service Requests
+                  All Service Requests
                 </h2>
                 <p className="text-muted-foreground">
                   Manage customer service requests
@@ -411,8 +411,8 @@ export default function ServiceRequest() {
                                       request.priority?.toLowerCase() === "high"
                                         ? "destructive"
                                         : request.priority?.toLowerCase() === "medium"
-                                        ? "default"
-                                        : "secondary"
+                                          ? "default"
+                                          : "secondary"
                                     }
                                   >
                                     {request.priority}
@@ -425,8 +425,8 @@ export default function ServiceRequest() {
                                       request.status?.toLowerCase().includes("resolved")
                                         ? "default"
                                         : request.status?.toLowerCase().includes("progress")
-                                        ? "secondary"
-                                        : "outline"
+                                          ? "secondary"
+                                          : "outline"
                                     }
                                   >
                                     {String(request.status).replace("_", " ")}

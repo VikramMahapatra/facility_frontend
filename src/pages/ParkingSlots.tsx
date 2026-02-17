@@ -43,8 +43,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { useSearchParams } from "react-router-dom";
-import { toast } from "sonner";
-import { Label } from "@/components/ui/label";
+import { toast } from "@/components/ui/app-toast";
 import { useLoader } from "@/context/LoaderContext";
 import ContentContainer from "@/components/ContentContainer";
 import LoaderOverlay from "@/components/LoaderOverlay";
@@ -349,7 +348,7 @@ export default function ParkingSlots() {
                 <TableRow>
                   <TableCell colSpan={6} className="text-center py-8">
                     <p className="text-muted-foreground">
-                      {!zoneId 
+                      {!zoneId
                         ? "Please select a zone or use filters to view parking slots"
                         : "No parking slots found"}
                     </p>

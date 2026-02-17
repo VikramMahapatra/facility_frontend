@@ -15,7 +15,7 @@ import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { PropertySidebar } from "@/components/PropertySidebar";
 import { Asset, AssetOverview } from "@/interfaces/assets_interface";
 import { assetApiService } from "@/services/maintenance_assets/assetsapi";
-import { toast } from "sonner";
+import { toast } from "@/components/ui/app-toast";
 import { Pagination } from "@/components/Pagination";
 import { AssetForm } from "@/components/AssetForm";
 import { useSkipFirstEffect } from "@/hooks/use-skipfirst-effect";

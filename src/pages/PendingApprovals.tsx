@@ -19,7 +19,7 @@ import {
 } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
-import { toast } from "sonner";
+import { toast } from "@/components/ui/app-toast";
 import { SidebarProvider } from "@/components/ui/sidebar";
 import { PropertySidebar } from "@/components/PropertySidebar";
 import {
@@ -376,7 +376,7 @@ export default function PendingApprovals() {
                         <TableCell className="text-right">
                           <div className="flex justify-end gap-2">
                             {(user.status === "pending" || !user.status) &&
-                            userCanApprove ? (
+                              userCanApprove ? (
                               <>
                                 <Button
                                   variant="default"

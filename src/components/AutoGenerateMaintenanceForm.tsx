@@ -18,7 +18,7 @@ import {
 } from "@/components/ui/select";
 import { Calendar } from "lucide-react";
 import { ownerMaintenancesApiService } from "@/services/spaces_sites/ownermaintenancesapi";
-import { toast } from "sonner";
+import { toast } from "@/components/ui/app-toast";
 import { useLoader } from "@/context/LoaderContext";
 
 interface AutoGenerateMaintenanceFormValues {
@@ -88,13 +88,9 @@ export const AutoGenerateMaintenanceForm = ({
         if (onSuccess) {
           onSuccess();
         }
-      } else {
-        toast.error(
-          response?.message || "Failed to generate maintenance charges",
-        );
       }
     } catch (error) {
-      toast.error("An error occurred while generating maintenance charges");
+      console.error(error)
     } finally {
       setIsSubmitting(false);
     }

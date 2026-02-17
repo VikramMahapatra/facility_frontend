@@ -51,7 +51,7 @@ import { Separator } from "@/components/ui/separator";
 import { PropertySidebar } from "@/components/PropertySidebar";
 import { VendorForm } from "@/components/VendorForm";
 import { Pagination } from "@/components/Pagination";
-import { toast } from "sonner";
+import { toast } from "@/components/ui/app-toast";
 import {
   AlertDialog,
   AlertDialogAction,

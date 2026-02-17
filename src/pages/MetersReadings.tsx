@@ -39,7 +39,7 @@ import { mockMeters, mockMeterReadings } from "@/data/mockEnergyData";
 import { BulkUploadDialog } from "@/components/BulkUploadDialog";
 import { MeterForm } from "@/components/MeterForm";
 import { MeterReadingForm } from "@/components/MeterReadingForm";
-import { toast } from "sonner";
+import { toast } from "@/components/ui/app-toast";
 import {
   Meter,
   MeterReading,

@@ -22,24 +22,12 @@ import {
   MaintenanceTemplateFormValues,
   maintenanceTemplateSchema,
 } from "@/schemas/maintenanceTemplate.schema";
-import { toast } from "sonner";
+import { toast } from "@/components/ui/app-toast";
 import { siteApiService } from "@/services/spaces_sites/sitesapi";
-import { SpaceKind, spaceKinds } from "@/interfaces/spaces_interfaces";
+import { MaintenanceTemplate, SpaceKind, spaceKinds } from "@/interfaces/spaces_interfaces";
+import { leaseChargeApiService } from "@/services/leasing_tenants/leasechargeapi";
 
-export interface MaintenanceTemplate {
-  id?: string;
-  org_id?: string;
-  name: string;
-  calculation_type: "flat" | "per_sqft" | "per_bed" | "custom";
-  amount: number;
-  category?: "residential" | "commercial";
-  kind?: SpaceKind;
-  site_id?: string;
-  site_name?: string;
-  is_active?: boolean;
-  created_at?: string;
-  updated_at?: string;
-}
+
 
 interface MaintenanceTemplateFormProps {
   template?: MaintenanceTemplate;
@@ -63,6 +51,7 @@ const emptyFormData: MaintenanceTemplateFormValues = {
   category: undefined,
   kind: undefined,
   site_id: undefined,
+  tax_code_id: undefined,
   is_active: true,
 };
 
@@ -75,7 +64,7 @@ export function MaintenanceTemplateForm({
 }: MaintenanceTemplateFormProps) {
   const [isSubmitted, setIsSubmitted] = useState(false);
   const [siteList, setSiteList] = useState<any[]>([]);
-
+  const [taxCodeList, setTaxCodeList] = useState<any[]>([]);
   const {
     register,
     handleSubmit,
@@ -91,6 +80,7 @@ export function MaintenanceTemplateForm({
 
   useEffect(() => {
     loadSiteLookup();
+    loadTaxCodeLookup();
   }, []);
 
   useEffect(() => {
@@ -102,6 +92,7 @@ export function MaintenanceTemplateForm({
         category: template.category,
         kind: template.kind as any,
         site_id: template.site_id,
+        tax_code_id: template.tax_code_id || "",
         is_active: template.is_active !== undefined ? template.is_active : true,
       });
     } else {
@@ -119,6 +110,11 @@ export function MaintenanceTemplateForm({
     } catch (error) {
       console.error("Error loading sites:", error);
     }
+  };
+
+  const loadTaxCodeLookup = async () => {
+    const lookup = await leaseChargeApiService.getTaxCodeLookup();
+    if (lookup.success) setTaxCodeList(lookup.data || []);
   };
 
   const onSubmitForm = async (data: MaintenanceTemplateFormValues) => {
@@ -286,7 +282,7 @@ export function MaintenanceTemplateForm({
             </div>
 
           </div>
-          <div className="grid grid-cols-2 gap-4">
+          <div className="grid grid-cols-3 gap-4">
             <div className="space-y-2">
               <Controller
                 name="calculation_type"
@@ -339,7 +335,37 @@ export function MaintenanceTemplateForm({
                 <p className="text-sm text-red-500">{errors.amount.message}</p>
               )}
             </div>
-
+            <div className="space-y-2">
+              <Controller
+                name="tax_code_id"
+                control={control}
+                render={({ field }) => (
+                  <div className="space-y-2">
+                    <Label htmlFor="tax_code_id">Tax</Label>
+                    <Select
+                      value={field.value}
+                      onValueChange={field.onChange}
+                      disabled={isReadOnly}
+                    >
+                      <SelectTrigger
+                        className={
+                          errors.calculation_type ? "border-red-500" : ""
+                        }
+                      >
+                        <SelectValue placeholder="Select tax code" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {taxCodeList.map((type) => (
+                          <SelectItem key={type.id} value={type.id}>
+                            {type.name}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  </div>
+                )}
+              />
+            </div>
           </div>
 
           <DialogFooter>
