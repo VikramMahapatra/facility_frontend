@@ -5,6 +5,31 @@ import { Input } from "@/components/ui/input";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Separator } from "@/components/ui/separator";
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogFooter,
+} from "@/components/ui/dialog";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
+import { Label } from "@/components/ui/label";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
 import { spacesApiService } from "@/services/spaces_sites/spacesapi";
 import { SpaceOwnershipSection } from "@/components/spacedetails/SpaceOwnershipSection";
 import { OwnershipHistoryDialog } from "@/components/spacedetails/OwnershipHistoryDialog";
@@ -33,6 +58,9 @@ import {
   History,
   Users,
   Pencil,
+  Car,
+  Plus,
+  Trash2,
 } from "lucide-react";
 import { SpaceMaintenanceForm } from "@/components/SpaceMaintenanceForm";
 import { SpaceForm } from "@/components/SpaceForm";
@@ -44,6 +72,9 @@ import OccupancyTab from "@/components/spacedetails/OccupancyTab";
 import SpaceTenantSection from "@/components/spacedetails/SpaceTenantSection";
 import { tenantsApiService } from "@/services/leasing_tenants/tenantsapi";
 import { occupancyApiService } from "@/services/spaces_sites/spaceoccupancyapi";
+import { parkingSlotApiService } from "@/services/parking_access/parkingslotsapi";
+import { ParkingSlot } from "@/interfaces/parking_access_interface";
+import { parkingZoneApiService } from "@/services/parking_access/parkingzonesapi";
 
 export default function SpaceDetailPage() {
   const { id } = useParams<{ id: string }>();
@@ -73,6 +104,14 @@ export default function SpaceDetailPage() {
   const [occupancyHistory, setOccupancyHistory] = useState<TimelineEvent[]>([]);
   const [isSpaceFormOpen, setIsSpaceFormOpen] = useState(false);
   const [accessoriesList, setAccessoriesList] = useState<any[]>([]);
+  const [assignedParkingSlots, setAssignedParkingSlots] = useState<ParkingSlot[]>([]);
+  const [isParkingSlotFormOpen, setIsParkingSlotFormOpen] = useState(false);
+  const [editingSlot, setEditingSlot] = useState<ParkingSlot | null>(null);
+  const [deleteSlotId, setDeleteSlotId] = useState<string | null>(null);
+  const [zoneList, setZoneList] = useState<any[]>([]);
+  const [slotList, setSlotList] = useState<any[]>([]);
+  const [selectedZoneId, setSelectedZoneId] = useState<string>("");
+  const [selectedSlotId, setSelectedSlotId] = useState<string>("");
 
   useEffect(() => {
     if (!id) return;
@@ -81,6 +120,7 @@ export default function SpaceDetailPage() {
     fetchTenants();
     fetchOccupancy();
     loadAccessoriesLookup();
+    loadAssignedParkingSlots();
   }, [id]);
 
   const loadSpace = async () => {
@@ -115,6 +155,122 @@ export default function SpaceDetailPage() {
   const loadAccessoriesLookup = async () => {
     const response = await spacesApiService.getAccessoriesLookup();
     if (response.success) setAccessoriesList(response.data || []);
+  };
+
+  const loadAssignedParkingSlots = async () => {
+    if (!id) return;
+    const params = new URLSearchParams();
+    params.append("space_id", id);
+    const response = await parkingSlotApiService.getParkingSlots(params);
+    if (response?.success) {
+      const slotsData = response.data?.slots || response.data || [];
+      setAssignedParkingSlots(Array.isArray(slotsData) ? slotsData : []);
+    }
+  };
+
+  const loadZonesBySite = async (siteId: string) => {
+    const params = new URLSearchParams();
+    params.append("site_id", siteId);
+    const response = await parkingZoneApiService.getParkingZoneLookup(params);
+    if (response?.success) {
+      setZoneList(response.data || []);
+    }
+  };
+
+  const loadSlotsByZone = async (zoneId: string) => {
+    const params = new URLSearchParams();
+    params.append("zone_id", zoneId);
+    // Using getParkingSlots as fallback since all-slot-lookup endpoint may not be available
+    const response = await parkingSlotApiService.getParkingSlots(params);
+    if (response?.success) {
+      const slotsData = response.data?.slots || response.data || [];
+      setSlotList(Array.isArray(slotsData) ? slotsData : []);
+    }
+  };
+
+  const handleOpenParkingSlotForm = (slot?: ParkingSlot) => {
+    if (space?.site_id) {
+      loadZonesBySite(space.site_id);
+      setIsParkingSlotFormOpen(true);
+      if (slot) {
+        // Editing mode
+        setEditingSlot(slot);
+        setSelectedZoneId(slot.zone_id);
+        setSelectedSlotId(slot.id);
+        loadSlotsByZone(slot.zone_id);
+      } else {
+        // Adding mode
+        setEditingSlot(null);
+        setSelectedZoneId("");
+        setSelectedSlotId("");
+        setSlotList([]);
+      }
+    }
+  };
+
+  const handleZoneChange = (zoneId: string) => {
+    setSelectedZoneId(zoneId);
+    setSelectedSlotId("");
+    if (zoneId) {
+      loadSlotsByZone(zoneId);
+    } else {
+      setSlotList([]);
+    }
+  };
+
+  const handleAssignParkingSlot = async () => {
+    if (!id || !selectedSlotId) {
+      toast.error("Please select a parking slot");
+      return;
+    }
+
+    const isEditMode = !!editingSlot;
+
+    const response = await withLoader(async () => {
+      return await parkingSlotApiService.updateSpaceParkingSlots({
+        space_id: id,
+        parking_slot_ids: [selectedSlotId],
+      });
+    });
+
+    if (response?.success) {
+      toast.success(
+        isEditMode
+          ? "Parking slot updated successfully"
+          : "Parking slot assigned successfully"
+      );
+      setIsParkingSlotFormOpen(false);
+      setEditingSlot(null);
+      setSelectedZoneId("");
+      setSelectedSlotId("");
+      loadAssignedParkingSlots();
+    } else {
+      toast.error(response?.message || "Failed to assign parking slot");
+    }
+  };
+
+  const handleRemoveParkingSlot = async () => {
+    if (!id || !deleteSlotId) return;
+
+    // Get all current slot IDs except the one being removed
+    const remainingSlotIds = assignedParkingSlots
+      .filter((slot) => slot.id !== deleteSlotId)
+      .map((slot) => slot.id);
+
+    const response = await withLoader(async () => {
+      return await parkingSlotApiService.updateSpaceParkingSlots({
+        space_id: id,
+        parking_slot_ids: remainingSlotIds,
+      });
+    });
+
+    if (response?.success) {
+      toast.success("Parking slot removed successfully");
+      setDeleteSlotId(null);
+      loadAssignedParkingSlots();
+    } else {
+      toast.error(response?.message || "Failed to remove parking slot");
+    }
   };
 
   const getAccessoryName = (accessoryId: string) => {
@@ -346,11 +502,214 @@ export default function SpaceDetailPage() {
                 </Card>
                 <SpaceTenantSection spaceId={id} tenants={tenants} onRefresh={fetchTenants} />
               </div>
+
+              <Card>
+                <CardHeader>
+                  <div className="flex items-center justify-between">
+                    <CardTitle>
+                      <h1 className="flex items-center gap-2">
+                        <Car className="h-5 w-5" /> Parking Assigned
+                      </h1>
+                    </CardTitle>
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={() => handleOpenParkingSlotForm()}
+                      className="flex items-center gap-2"
+                    >
+                      <Plus className="h-4 w-4" />
+                      Add Slot
+                    </Button>
+                  </div>
+                </CardHeader>
+                <CardContent>
+                  {assignedParkingSlots.length === 0 ? (
+                    <p className="text-muted-foreground text-sm">
+                      No parking slots assigned to this space.
+                    </p>
+                  ) : (
+                    <div className="space-y-3">
+                      {assignedParkingSlots.map((slot) => (
+                        <div
+                          key={slot.id}
+                          className="flex items-center justify-between p-3 border rounded-lg hover:bg-gray-50"
+                        >
+                          <div className="flex items-center gap-3">
+                            <div className="p-2 bg-blue-100 rounded-lg">
+                              <Car className="h-4 w-4 text-blue-600" />
+                            </div>
+                            <div>
+                              <p className="font-semibold text-sm">
+                                Slot {slot.slot_no}
+                              </p>
+                              <div className="flex items-center gap-2 mt-1">
+                                <Badge variant="outline" className="text-xs">
+                                  {slot.zone_name}
+                                </Badge>
+                                <Badge variant="secondary" className="text-xs">
+                                  {slot.slot_type}
+                                </Badge>
+                                {slot.site_name && (
+                                  <span className="text-xs text-muted-foreground">
+                                    {slot.site_name}
+                                  </span>
+                                )}
+                              </div>
+                            </div>
+                          </div>
+                          <div className="flex items-center gap-2">
+                            <Button
+                              variant="ghost"
+                              size="icon"
+                              onClick={() => handleOpenParkingSlotForm(slot)}
+                              className="h-8 w-8"
+                            >
+                              <Pencil className="h-4 w-4" />
+                            </Button>
+                            <Button
+                              variant="ghost"
+                              size="icon"
+                              onClick={() => setDeleteSlotId(slot.id)}
+                              className="h-8 w-8 text-destructive hover:text-destructive"
+                            >
+                              <Trash2 className="h-4 w-4" />
+                            </Button>
+                            <Button
+                              variant="ghost"
+                              size="sm"
+                              onClick={() => navigate(`/parking-slots?zone=${slot.zone_id}`)}
+                            >
+                              View Details
+                            </Button>
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  )}
+                </CardContent>
+              </Card>
+
               <OwnershipHistoryDialog
                 open={isHistoryOpen}
                 onClose={() => setIsHistoryOpen(false)}
                 spaceId={id!}
               />
+
+              {/* Assign Parking Slot Dialog */}
+              <Dialog open={isParkingSlotFormOpen} onOpenChange={(open) => {
+                setIsParkingSlotFormOpen(open);
+                if (!open) {
+                  setEditingSlot(null);
+                  setSelectedZoneId("");
+                  setSelectedSlotId("");
+                }
+              }}>
+                <DialogContent className="max-w-md">
+                  <DialogHeader>
+                    <DialogTitle>
+                      {editingSlot ? "Update Parking Slot" : "Assign Parking Slot"}
+                    </DialogTitle>
+                  </DialogHeader>
+                  <div className="space-y-4 py-4">
+                    <div className="space-y-2">
+                      <Label htmlFor="zone_id">Zone *</Label>
+                      <Select
+                        value={selectedZoneId}
+                        onValueChange={handleZoneChange}
+                      >
+                        <SelectTrigger>
+                          <SelectValue placeholder="Select Zone" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          {zoneList.length === 0 ? (
+                            <SelectItem value="none" disabled>
+                              No zones available
+                            </SelectItem>
+                          ) : (
+                            zoneList.map((zone) => (
+                              <SelectItem key={zone.id} value={zone.id}>
+                                {zone.name}
+                              </SelectItem>
+                            ))
+                          )}
+                        </SelectContent>
+                      </Select>
+                    </div>
+
+                    <div className="space-y-2">
+                      <Label htmlFor="slot_id">Parking Slot *</Label>
+                      <Select
+                        value={selectedSlotId}
+                        onValueChange={setSelectedSlotId}
+                        disabled={!selectedZoneId}
+                      >
+                        <SelectTrigger>
+                          <SelectValue
+                            placeholder={
+                              !selectedZoneId
+                                ? "Select zone first"
+                                : "Select Parking Slot"
+                            }
+                          />
+                        </SelectTrigger>
+                        <SelectContent>
+                          {slotList.length === 0 ? (
+                            <SelectItem value="none" disabled>
+                              {selectedZoneId
+                                ? "No slots available"
+                                : "Select zone first"}
+                            </SelectItem>
+                          ) : (
+                            slotList.map((slot) => (
+                              <SelectItem key={slot.id} value={slot.id}>
+                                Slot {slot.slot_no} ({slot.slot_type})
+                              </SelectItem>
+                            ))
+                          )}
+                        </SelectContent>
+                      </Select>
+                    </div>
+                  </div>
+                  <DialogFooter>
+                    <Button
+                      variant="outline"
+                      onClick={() => setIsParkingSlotFormOpen(false)}
+                    >
+                      Cancel
+                    </Button>
+                    <Button
+                      onClick={handleAssignParkingSlot}
+                      disabled={!selectedSlotId}
+                    >
+                      {editingSlot ? "Update Slot" : "Assign Slot"}
+                    </Button>
+                  </DialogFooter>
+                </DialogContent>
+              </Dialog>
+
+              {/* Delete Confirmation Dialog */}
+              <AlertDialog
+                open={!!deleteSlotId}
+                onOpenChange={() => setDeleteSlotId(null)}
+              >
+                <AlertDialogContent>
+                  <AlertDialogHeader>
+                    <AlertDialogTitle>Remove Parking Slot</AlertDialogTitle>
+                    <AlertDialogDescription>
+                      Are you sure you want to remove this parking slot assignment? This action cannot be undone.
+                    </AlertDialogDescription>
+                  </AlertDialogHeader>
+                  <AlertDialogFooter>
+                    <AlertDialogCancel>Cancel</AlertDialogCancel>
+                    <AlertDialogAction
+                      onClick={handleRemoveParkingSlot}
+                      className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+                    >
+                      Remove
+                    </AlertDialogAction>
+                  </AlertDialogFooter>
+                </AlertDialogContent>
+              </AlertDialog>
             </TabsContent>
             <TabsContent value="occupancy" className="space-y-6">
               <OccupancyTab
