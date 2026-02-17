@@ -18,13 +18,10 @@ import {
   DialogFooter,
 } from "@/components/ui/dialog";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { toast } from "sonner";
+import { toast } from "@/components/ui/app-toast";
 import { Controller, useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { tenantSchema, TenantFormValues } from "@/schemas/tenant.schema";
-import { siteApiService } from "@/services/spaces_sites/sitesapi";
-import { spacesApiService } from "@/services/spaces_sites/spacesapi";
-import { buildingApiService } from "@/services/spaces_sites/buildingsapi";
 import { tenantsApiService } from "@/services/leasing_tenants/tenantsapi";
 import { Tenant } from "@/interfaces/leasing_tenants_interface";
 import PhoneInput from "react-phone-input-2";
@@ -43,22 +40,13 @@ const emptyFormData = {
   name: "",
   email: "",
   phone: "",
-  tenant_type: "individual" as const,
   status: "inactive" as const,
-  location_info: [
-    { site_id: "", building_id: "", space_id: "", role: "owner" as any },
-  ],
-  contact_info: {
-    name: "",
-    email: "",
-    phone: "",
-    address: {
-      line1: "",
-      line2: "",
-      city: "",
-      state: "",
-      pincode: "",
-    },
+  address: {
+    line1: "",
+    line2: "",
+    city: "",
+    state: "",
+    pincode: "",
   },
   type: "",
   legal_name: "",
@@ -99,48 +87,39 @@ export function TenantForm({
     reset(
       tenant && mode !== "create"
         ? {
-            name: tenant.name || "",
-            email: tenant.email || "",
-            phone: tenant.phone || "",
-            kind: tenant.kind || "residential",
-            status: tenant.status || "inactive",
-            type: tenant.type || "",
-            legal_name: tenant.legal_name || "",
-            contact_info: tenant.contact_info
-              ? {
-                  name: tenant.contact_info.name || "",
-                  email: tenant.contact_info.email || "",
-                  phone: tenant.contact_info.phone || "",
-                  address: tenant.contact_info.address
-                    ? {
-                        line1: tenant.contact_info.address.line1 || "",
-                        line2: tenant.contact_info.address.line2 || "",
-                        city: tenant.contact_info.address.city || "",
-                        state: tenant.contact_info.address.state || "",
-                        pincode: tenant.contact_info.address.pincode || "",
-                      }
-                    : {},
-                }
-              : emptyFormData,
-            family_info:
-              (tenant as any).family_info &&
+          name: tenant.name || "",
+          email: tenant.email || "",
+          phone: tenant.phone || "",
+          status: tenant.status || "inactive",
+          type: tenant.type || "",
+          legal_name: tenant.legal_name || "",
+          address: tenant.address
+            ? {
+              line1: tenant.address.line1 || "",
+              line2: tenant.address.line2 || "",
+              city: tenant.address.city || "",
+              state: tenant.address.state || "",
+              pincode: tenant.address.pincode || "",
+            } : {},
+          family_info:
+            (tenant as any).family_info &&
               Array.isArray((tenant as any).family_info) &&
               (tenant as any).family_info.length > 0
-                ? (tenant as any).family_info
-                : (tenant as any).family_info &&
-                  typeof (tenant as any).family_info === "object"
+              ? (tenant as any).family_info
+              : (tenant as any).family_info &&
+                typeof (tenant as any).family_info === "object"
                 ? [(tenant as any).family_info] // Convert old format to array
                 : [{ member: "", relation: "" }], // Default one entry
-            vehicle_info:
-              (tenant as any).vehicle_info &&
+          vehicle_info:
+            (tenant as any).vehicle_info &&
               Array.isArray((tenant as any).vehicle_info) &&
               (tenant as any).vehicle_info.length > 0
-                ? (tenant as any).vehicle_info
-                : (tenant as any).vehicle_info &&
-                  typeof (tenant as any).vehicle_info === "object"
+              ? (tenant as any).vehicle_info
+              : (tenant as any).vehicle_info &&
+                typeof (tenant as any).vehicle_info === "object"
                 ? [(tenant as any).vehicle_info] // Convert old format to array
                 : [{ type: "", number: "" }], // Default one entry
-          }
+        }
         : emptyFormData
     );
 
@@ -156,7 +135,6 @@ export function TenantForm({
     }
   }, [tenant, mode, isOpen]);
 
-  const selectedTenantType = watch("kind");
   const watchedName = watch("name");
   const watchedEmail = watch("email");
   const watchedPhone = watch("phone");
@@ -244,9 +222,9 @@ export function TenantForm({
 
   const fallbackStatus = tenant?.status
     ? {
-        id: tenant.status,
-        name: tenant.status.charAt(0).toUpperCase() + tenant.status.slice(1),
-      }
+      id: tenant.status,
+      name: tenant.status.charAt(0).toUpperCase() + tenant.status.slice(1),
+    }
     : null;
 
   const statuses = withFallback(statusList, fallbackStatus);
@@ -272,7 +250,7 @@ export function TenantForm({
             ) : (
               <div className="space-y-4">
                 {/* Row 1: Name, Email, Phone */}
-                <div className="grid grid-cols-3 gap-4">
+                <div className="grid grid-cols-2 gap-4">
                   <div className="space-y-2">
                     <Label htmlFor="name">Name *</Label>
                     <Input
@@ -304,6 +282,10 @@ export function TenantForm({
                       </p>
                     )}
                   </div>
+                </div>
+
+                {/* Row 2: Tenant Type, Status */}
+                <div className="grid grid-cols-2 gap-4">
                   <Controller
                     name="phone"
                     control={control}
@@ -324,9 +306,8 @@ export function TenantForm({
                             required: true,
                           }}
                           containerClass="w-full relative"
-                          inputClass={`!w-full !h-10 !pl-12 !rounded-md !border !border-input !bg-background !px-3 !py-2 !text-base !ring-offset-background placeholder:!text-muted-foreground focus-visible:!outline-none focus-visible:!ring-2 focus-visible:!ring-ring focus-visible:!ring-offset-2 disabled:!cursor-not-allowed disabled:!opacity-50 md:!text-sm ${
-                            errors.phone ? "!border-red-500" : ""
-                          }`}
+                          inputClass={`!w-full !h-10 !pl-12 !rounded-md !border !border-input !bg-background !px-3 !py-2 !text-base !ring-offset-background placeholder:!text-muted-foreground focus-visible:!outline-none focus-visible:!ring-2 focus-visible:!ring-ring focus-visible:!ring-offset-2 disabled:!cursor-not-allowed disabled:!opacity-50 md:!text-sm ${errors.phone ? "!border-red-500" : ""
+                            }`}
                           buttonClass="!border-none !bg-transparent !absolute !left-2 !top-1/2 !-translate-y-1/2 z-10"
                           dropdownClass="!absolute !z-50 !bg-white !border !border-gray-200 !rounded-md !shadow-lg max-h-60 overflow-y-auto"
                           enableSearch={true}
@@ -336,36 +317,6 @@ export function TenantForm({
                             {errors.phone.message as any}
                           </p>
                         )}
-                      </div>
-                    )}
-                  />
-                </div>
-
-                {/* Row 2: Tenant Type, Status */}
-                <div className="grid grid-cols-2 gap-4">
-                  <Controller
-                    name="kind"
-                    control={control}
-                    render={({ field }) => (
-                      <div className="space-y-2">
-                        <Label htmlFor="tenant_type">Tenant Type</Label>
-                        <Select
-                          value={field.value}
-                          onValueChange={field.onChange}
-                          disabled={isReadOnly}
-                        >
-                          <SelectTrigger>
-                            <SelectValue placeholder="Select tenant type" />
-                          </SelectTrigger>
-                          <SelectContent>
-                            <SelectItem value="residential">
-                              Residential
-                            </SelectItem>
-                            <SelectItem value="commercial">
-                              Commercial
-                            </SelectItem>
-                          </SelectContent>
-                        </Select>
                       </div>
                     )}
                   />
@@ -396,251 +347,194 @@ export function TenantForm({
                   />
                 </div>
                 {/* Commercial tenant specific fields */}
-                {selectedTenantType === "commercial" && (
-                  <>
-                    <div className="grid grid-cols-2 gap-4">
-                      <div>
-                        <Label htmlFor="legal_name">Legal Name *</Label>
-                        <Input
-                          id="legal_name"
-                          {...register("legal_name")}
-                          placeholder="e.g., ABC Company Ltd"
-                          disabled={isReadOnly}
-                          className={errors.legal_name ? "border-red-500" : ""}
-                        />
-                        {errors.legal_name && (
-                          <p className="text-sm text-red-500">
-                            {errors.legal_name.message as any}
-                          </p>
-                        )}
-                      </div>
-                      <div>
-                        <Label htmlFor="type">Business Type</Label>
-                        <Controller
-                          name="type"
-                          control={control}
-                          render={({ field }) => (
-                            <Select
-                              value={field.value || "none"}
-                              onValueChange={(v) =>
-                                field.onChange(v === "none" ? "" : v)
-                              }
-                              disabled={isReadOnly}
-                            >
-                              <SelectTrigger>
-                                <SelectValue placeholder="Select business type (optional)" />
-                              </SelectTrigger>
-                              <SelectContent>
-                                <SelectItem value="none">
-                                  Select Type
-                                </SelectItem>
-                                <SelectItem value="merchant">
-                                  Merchant
-                                </SelectItem>
-                                <SelectItem value="brand">Brand</SelectItem>
-                                <SelectItem value="kiosk">Kiosk</SelectItem>
-                              </SelectContent>
-                            </Select>
-                          )}
-                        />
-                      </div>
-                    </div>
+                <>
 
-                    <div>
-                      <Label htmlFor="contact_info">
-                        Business Contact Information
-                      </Label>
-                      <div className="space-y-3 p-3 border rounded-md">
-                        <div className="grid grid-cols-2 gap-4">
-                          <div>
-                            <Label htmlFor="contact_name">Contact Name</Label>
-                            <Input
-                              id="contact_name"
-                              {...register("contact_info.name")}
-                              placeholder="e.g., Jane Doe"
-                              disabled={isReadOnly}
-                            />
-                          </div>
-                          <div>
-                            <Label htmlFor="contact_email">Contact Email</Label>
-                            <Input
-                              id="contact_email"
-                              type="email"
-                              {...register("contact_info.email")}
-                              placeholder="e.g., jane@company.com"
-                              disabled={isReadOnly}
-                            />
-                          </div>
+
+                  <div>
+                    <Label htmlFor="contact_info">
+                      Business Contact Information
+                    </Label>
+                    <div className="space-y-3 p-3 border rounded-md">
+                      <div className="grid grid-cols-2 gap-4">
+                        <div>
+                          <Label htmlFor="legal_name">Legal Name *</Label>
+                          <Input
+                            id="legal_name"
+                            {...register("legal_name")}
+                            placeholder="e.g., ABC Company Ltd"
+                            disabled={isReadOnly}
+                            className={errors.legal_name ? "border-red-500" : ""}
+                          />
+                          {errors.legal_name && (
+                            <p className="text-sm text-red-500">
+                              {errors.legal_name.message as any}
+                            </p>
+                          )}
                         </div>
                         <div>
-                          <Label htmlFor="contact_phone">Contact Phone</Label>
+                          <Label htmlFor="type">Business Type</Label>
                           <Controller
-                            name="contact_info.phone"
+                            name="type"
                             control={control}
                             render={({ field }) => (
-                              <PhoneInput
-                                country={"in"}
-                                value={field.value || ""}
-                                onChange={(value) => {
-                                  const digits = value.replace(/\D/g, "");
-                                  const finalValue = "+" + digits;
-                                  field.onChange(finalValue);
-                                }}
+                              <Select
+                                value={field.value || "none"}
+                                onValueChange={(v) =>
+                                  field.onChange(v === "none" ? "" : v)
+                                }
                                 disabled={isReadOnly}
-                                inputProps={{
-                                  name: "contact_info.phone",
-                                  required: false,
-                                }}
-                                containerClass="w-full relative"
-                                inputClass="!w-full !h-10 !pl-12 !rounded-md !border !border-input !bg-background !px-3 !py-2 !text-base !ring-offset-background placeholder:!text-muted-foreground focus-visible:!outline-none focus-visible:!ring-2 focus-visible:!ring-ring focus-visible:!ring-offset-2 disabled:!cursor-not-allowed disabled:!opacity-50 md:!text-sm"
-                                buttonClass="!border-none !bg-transparent !absolute !left-2 !top-1/2 !-translate-y-1/2 z-10"
-                                dropdownClass="!absolute !z-50 !bg-white !border !border-gray-200 !rounded-md !shadow-lg max-h-60 overflow-y-auto"
-                                enableSearch={true}
-                              />
+                              >
+                                <SelectTrigger>
+                                  <SelectValue placeholder="Select business type (optional)" />
+                                </SelectTrigger>
+                                <SelectContent>
+                                  <SelectItem value="none">
+                                    Select Type
+                                  </SelectItem>
+                                  <SelectItem value="merchant">
+                                    Merchant
+                                  </SelectItem>
+                                  <SelectItem value="brand">Brand</SelectItem>
+                                  <SelectItem value="kiosk">Kiosk</SelectItem>
+                                </SelectContent>
+                              </Select>
                             )}
                           />
                         </div>
                       </div>
                     </div>
-                  </>
-                )}
+                  </div>
+                </>
 
                 {/* Family Information - Only for Individual tenants */}
-                {selectedTenantType === "residential" && (
-                  <div className="space-y-2">
-                    <div className="flex items-center justify-between">
-                      <Label htmlFor="family_info">Family Information</Label>
-                      {!isReadOnly && (
-                        <Button
-                          type="button"
-                          variant="default"
-                          size="sm"
-                          onClick={addFamilyMember}
-                        >
-                          <Plus className="mr-2 h-4 w-4" /> Add Member
-                        </Button>
-                      )}
-                    </div>
-                    <div className="border rounded-md">
-                      {/* Header row with labels */}
-                      <div className="grid grid-cols-[1fr_1fr_auto] gap-4 p-4 border-b bg-muted/50">
-                        <Label>Member</Label>
-                        <Label>Relation</Label>
-                        <div></div>
-                      </div>
-                      {/* Data rows */}
-                      {familyInfo.map((member, index) => (
-                        <div
-                          key={index}
-                          className={`grid grid-cols-[1fr_1fr_auto] gap-4 items-center p-4 ${
-                            index !== familyInfo.length - 1 ? "border-b" : ""
-                          }`}
-                        >
-                          <Input
-                            value={member.member || ""}
-                            onChange={(e) =>
-                              updateFamilyMember(
-                                index,
-                                "member",
-                                e.target.value
-                              )
-                            }
-                            placeholder="Enter family member name"
-                            disabled={isReadOnly}
-                          />
-                          <Input
-                            value={member.relation || ""}
-                            onChange={(e) =>
-                              updateFamilyMember(
-                                index,
-                                "relation",
-                                e.target.value
-                              )
-                            }
-                            placeholder="Enter relation"
-                            disabled={isReadOnly}
-                          />
-                          {!isReadOnly && (
-                            <Button
-                              type="button"
-                              variant="ghost"
-                              size="icon"
-                              className="text-destructive hover:text-destructive"
-                              onClick={() => removeFamilyMember(index)}
-                            >
-                              <Trash2 className="h-4 w-4" />
-                            </Button>
-                          )}
-                        </div>
-                      ))}
-                    </div>
+                <div className="space-y-2">
+                  <div className="flex items-center justify-between">
+                    <Label htmlFor="family_info">Family Information</Label>
+                    {!isReadOnly && (
+                      <Button
+                        type="button"
+                        variant="default"
+                        size="sm"
+                        onClick={addFamilyMember}
+                      >
+                        <Plus className="mr-2 h-4 w-4" /> Add Member
+                      </Button>
+                    )}
                   </div>
-                )}
+                  <div className="border rounded-md">
+                    {/* Header row with labels */}
+                    <div className="grid grid-cols-[1fr_1fr_auto] gap-4 p-4 border-b bg-muted/50">
+                      <Label>Member</Label>
+                      <Label>Relation</Label>
+                      <div></div>
+                    </div>
+                    {/* Data rows */}
+                    {familyInfo.map((member, index) => (
+                      <div
+                        key={index}
+                        className={`grid grid-cols-[1fr_1fr_auto] gap-4 items-center p-4 ${index !== familyInfo.length - 1 ? "border-b" : ""
+                          }`}
+                      >
+                        <Input
+                          value={member.member || ""}
+                          onChange={(e) =>
+                            updateFamilyMember(
+                              index,
+                              "member",
+                              e.target.value
+                            )
+                          }
+                          placeholder="Enter family member name"
+                          disabled={isReadOnly}
+                        />
+                        <Input
+                          value={member.relation || ""}
+                          onChange={(e) =>
+                            updateFamilyMember(
+                              index,
+                              "relation",
+                              e.target.value
+                            )
+                          }
+                          placeholder="Enter relation"
+                          disabled={isReadOnly}
+                        />
+                        {!isReadOnly && (
+                          <Button
+                            type="button"
+                            variant="ghost"
+                            size="icon"
+                            className="text-destructive hover:text-destructive"
+                            onClick={() => removeFamilyMember(index)}
+                          >
+                            <Trash2 className="h-4 w-4" />
+                          </Button>
+                        )}
+                      </div>
+                    ))}
+                  </div>
+                </div>
 
                 {/* Vehicle Information - Only for Individual tenants */}
-                {(selectedTenantType === "residential" ||
-                  selectedTenantType === "commercial") && (
-                  <div className="space-y-2">
-                    <div className="flex items-center justify-between">
-                      <Label htmlFor="vehicle_info">Vehicle Information</Label>
-                      {!isReadOnly && (
-                        <Button
-                          type="button"
-                          variant="default"
-                          size="sm"
-                          onClick={addVehicle}
-                        >
-                          <Plus className="mr-2 h-4 w-4" /> Add Vehicle
-                        </Button>
-                      )}
-                    </div>
-                    <div className="border rounded-md">
-                      {/* Header row with labels */}
-                      <div className="grid grid-cols-[1fr_1fr_auto] gap-4 p-4 border-b bg-muted/50">
-                        <Label>Type of Vehicle</Label>
-                        <Label>Vehicle No.</Label>
-                        <div></div>
-                      </div>
-                      {/* Data rows */}
-                      {vehicleInfo.map((vehicle, index) => (
-                        <div
-                          key={index}
-                          className={`grid grid-cols-[1fr_1fr_auto] gap-4 items-center p-4 ${
-                            index !== vehicleInfo.length - 1 ? "border-b" : ""
-                          }`}
-                        >
-                          <Input
-                            value={(vehicle as any).type || ""}
-                            onChange={(e) =>
-                              updateVehicle(index, "type", e.target.value)
-                            }
-                            placeholder="Enter vehicle type"
-                            disabled={isReadOnly}
-                          />
-                          <Input
-                            value={(vehicle as any).number || ""}
-                            onChange={(e) =>
-                              updateVehicle(index, "number", e.target.value)
-                            }
-                            placeholder="Enter vehicle number"
-                            disabled={isReadOnly}
-                          />
-                          {!isReadOnly && (
-                            <Button
-                              type="button"
-                              variant="ghost"
-                              size="icon"
-                              className="text-destructive hover:text-destructive"
-                              onClick={() => removeVehicle(index)}
-                            >
-                              <Trash2 className="h-4 w-4" />
-                            </Button>
-                          )}
-                        </div>
-                      ))}
-                    </div>
+                <div className="space-y-2">
+                  <div className="flex items-center justify-between">
+                    <Label htmlFor="vehicle_info">Vehicle Information</Label>
+                    {!isReadOnly && (
+                      <Button
+                        type="button"
+                        variant="default"
+                        size="sm"
+                        onClick={addVehicle}
+                      >
+                        <Plus className="mr-2 h-4 w-4" /> Add Vehicle
+                      </Button>
+                    )}
                   </div>
-                )}
+                  <div className="border rounded-md">
+                    {/* Header row with labels */}
+                    <div className="grid grid-cols-[1fr_1fr_auto] gap-4 p-4 border-b bg-muted/50">
+                      <Label>Type of Vehicle</Label>
+                      <Label>Vehicle No.</Label>
+                      <div></div>
+                    </div>
+                    {/* Data rows */}
+                    {vehicleInfo.map((vehicle, index) => (
+                      <div
+                        key={index}
+                        className={`grid grid-cols-[1fr_1fr_auto] gap-4 items-center p-4 ${index !== vehicleInfo.length - 1 ? "border-b" : ""
+                          }`}
+                      >
+                        <Input
+                          value={(vehicle as any).type || ""}
+                          onChange={(e) =>
+                            updateVehicle(index, "type", e.target.value)
+                          }
+                          placeholder="Enter vehicle type"
+                          disabled={isReadOnly}
+                        />
+                        <Input
+                          value={(vehicle as any).number || ""}
+                          onChange={(e) =>
+                            updateVehicle(index, "number", e.target.value)
+                          }
+                          placeholder="Enter vehicle number"
+                          disabled={isReadOnly}
+                        />
+                        {!isReadOnly && (
+                          <Button
+                            type="button"
+                            variant="ghost"
+                            size="icon"
+                            className="text-destructive hover:text-destructive"
+                            onClick={() => removeVehicle(index)}
+                          >
+                            <Trash2 className="h-4 w-4" />
+                          </Button>
+                        )}
+                      </div>
+                    ))}
+                  </div>
+                </div>
 
                 {/* Address Information - Always at the end */}
                 <div className="space-y-2">
@@ -650,7 +544,7 @@ export function TenantForm({
                       <div>
                         <Label>Line 1</Label>
                         <Input
-                          {...register("contact_info.address.line1")}
+                          {...register("address.line1")}
                           disabled={isReadOnly}
                           placeholder="Enter lane"
                         />
@@ -658,7 +552,7 @@ export function TenantForm({
                       <div>
                         <Label>City</Label>
                         <Input
-                          {...register("contact_info.address.city")}
+                          {...register("address.city")}
                           disabled={isReadOnly}
                           placeholder="Enter city"
                         />
@@ -668,7 +562,7 @@ export function TenantForm({
                       <div>
                         <Label>State</Label>
                         <Input
-                          {...register("contact_info.address.state")}
+                          {...register("address.state")}
                           disabled={isReadOnly}
                           placeholder="Enter state"
                         />
@@ -676,7 +570,7 @@ export function TenantForm({
                       <div>
                         <Label>Pincode</Label>
                         <Controller
-                          name="contact_info.address.pincode"
+                          name="address.pincode"
                           control={control}
                           render={({ field }) => (
                             <Input
@@ -690,7 +584,7 @@ export function TenantForm({
                               }}
                               disabled={isReadOnly}
                               className={
-                                errors.contact_info?.address?.pincode
+                                errors.address?.pincode
                                   ? "border-red-500"
                                   : ""
                               }
@@ -698,10 +592,10 @@ export function TenantForm({
                             />
                           )}
                         />
-                        {errors.contact_info?.address?.pincode && (
+                        {errors.address?.pincode && (
                           <p className="text-sm text-red-500">
                             {
-                              errors.contact_info?.address?.pincode
+                              errors.address?.pincode
                                 ?.message as any
                             }
                           </p>
@@ -733,8 +627,8 @@ export function TenantForm({
                 {isSubmitting
                   ? "Saving..."
                   : mode === "create"
-                  ? "Create Tenant"
-                  : "Update Tenant"}
+                    ? "Create Tenant"
+                    : "Update Tenant"}
               </Button>
             )}
           </DialogFooter>

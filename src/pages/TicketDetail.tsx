@@ -5,7 +5,7 @@ import {
   SidebarInset,
   SidebarTrigger,
 } from "@/components/ui/sidebar";
-import { LogOut, } from "lucide-react";
+import { LogOut } from "lucide-react";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { PropertySidebar } from "@/components/PropertySidebar";
 import { Button } from "@/components/ui/button";
@@ -30,8 +30,11 @@ import {
   TicketIcon,
   Paperclip,
   Download,
+  Pencil,
+  Building2,
+  MapPin,
 } from "lucide-react";
-import { toast } from "sonner";
+import { toast } from "@/components/ui/app-toast";
 import { ticketsApiService } from "@/services/ticketing_service/ticketsapi";
 import { ticketWorkOrderApiService } from "@/services/ticketing_service/ticketworkorderapi";
 import { vendorsApiService } from "@/services/procurements/vendorsapi";
@@ -68,7 +71,7 @@ export default function TicketDetail() {
       if (response.success) {
         setTicket(response.data);
         setAttachments(
-          response.data?.attachments || response.data?.data?.attachments || []
+          response.data?.attachments || response.data?.data?.attachments || [],
         );
         if (ticketId) {
           loadEmployeesForTicket();
@@ -89,7 +92,7 @@ export default function TicketDetail() {
         setEmployeeList(
           Array.isArray(response.data)
             ? response.data
-            : response.data?.employees
+            : response.data?.employees,
         );
       }
     });
@@ -134,7 +137,7 @@ export default function TicketDetail() {
       setSelectedStatus(ticket?.status);
       setAssignedTo(ticket?.assigned_to);
       setAssignedToVendor(
-        ticket?.vendor_id || ticket?.assigned_to_vendor || ""
+        ticket?.vendor_id || ticket?.assigned_to_vendor || "",
       );
     }
   }, [ticket]);
@@ -175,7 +178,7 @@ export default function TicketDetail() {
     const response = await ticketsApiService.updateTicketStatus(
       ticketId,
       selectedStatus,
-      user.id
+      user.id,
     );
 
     if (response.success && response.data) {
@@ -209,14 +212,15 @@ export default function TicketDetail() {
       const ticketData =
         response.data.ticket || response.data.data || response.data;
 
-
       if (ticketData) {
         setTicket((prevTicket) => ({
           ...(prevTicket || {}),
           assigned_to: ticketData.assigned_to,
           assigned_to_name: ticketData.assigned_to_name,
           updated_at: ticketData.updated_at,
-          logs: [...(prevTicket?.logs || []), response.data.log].filter(Boolean),
+          logs: [...(prevTicket?.logs || []), response.data.log].filter(
+            Boolean,
+          ),
         }));
 
         toast.success("Ticket has been assigned successfully.");
@@ -239,11 +243,10 @@ export default function TicketDetail() {
 
     const response = await ticketsApiService.assignVendor(
       ticketId,
-      assignedToVendor
+      assignedToVendor,
     );
 
     if (response.success && response.data) {
-
       const ticketData =
         response.data.ticket || response.data.data || response.data;
 
@@ -253,7 +256,9 @@ export default function TicketDetail() {
           vendor_id: ticketData.vendor_id,
           vendor_name: ticketData.vendor_name,
           updated_at: ticketData.updated_at,
-          logs: [...(prevTicket?.logs || []), response.data.log].filter(Boolean),
+          logs: [...(prevTicket?.logs || []), response.data.log].filter(
+            Boolean,
+          ),
         }));
 
         toast.success("Vendor has been assigned successfully.");
@@ -285,19 +290,40 @@ export default function TicketDetail() {
     setIsWorkOrderFormOpen(true);
   };
 
+  const handleEditWorkOrder = (workOrder: any) => {
+    if (isTicketClosed) return;
+    // Ensure we have the full work order object with id field
+    setSelectedWorkOrder(workOrder);
+    setIsWorkOrderFormOpen(true);
+  };
+
   const handleSaveWorkOrder = async (workOrderData: any) => {
     await withLoader(async () => {
       if (selectedWorkOrder) {
+        // Try to find the work order ID - check multiple possible field names
+        const workOrderId =
+          selectedWorkOrder.id ||
+          selectedWorkOrder.work_order_id ||
+          selectedWorkOrder.wo_id;
+
+        if (!workOrderId) {
+          toast.error("Work order ID not found. Cannot update work order.");
+          console.error("Work order object:", selectedWorkOrder);
+          return;
+        }
+
         const response = await ticketWorkOrderApiService.updateTicketWorkOrder(
-          selectedWorkOrder.work_order_id,
-          workOrderData
+          workOrderId,
+          workOrderData,
         );
         if (response.success) {
           toast.success("Work order updated successfully");
           setIsWorkOrderFormOpen(false);
+          setSelectedWorkOrder(null);
           loadTicket();
         } else {
-          toast.error("Failed to update work order");
+          const errorMessage = response?.message || "Failed to update work order";
+          toast.error(errorMessage);
         }
       } else {
         const response = await ticketWorkOrderApiService.addTicketWorkOrder({
@@ -378,17 +404,13 @@ export default function TicketDetail() {
                   </div>
                   <div className="grid grid-cols-2 gap-4 pt-4 border-t">
                     <div>
-                      <p className="text-sm text-muted-foreground">
-                        Category
-                      </p>
+                      <p className="text-sm text-muted-foreground">Category</p>
                       <p className="font-medium">
                         {ticket?.category || ticket?.category_name}
                       </p>
                     </div>
                     <div>
-                      <p className="text-sm text-muted-foreground">
-                        Priority
-                      </p>
+                      <p className="text-sm text-muted-foreground">Priority</p>
                       <Badge
                         className={
                           ticket?.priority === "HIGH"
@@ -405,14 +427,10 @@ export default function TicketDetail() {
                       <p className="text-sm text-muted-foreground">
                         Request Type
                       </p>
-                      <p className="font-medium">
-                        {ticket?.request_type}
-                      </p>
+                      <p className="font-medium">{ticket?.request_type}</p>
                     </div>
                     <div>
-                      <p className="text-sm text-muted-foreground">
-                        Created
-                      </p>
+                      <p className="text-sm text-muted-foreground">Created</p>
                       <p className="font-medium">
                         {ticket?.created_at
                           ? new Date(ticket.created_at).toLocaleString()
@@ -421,6 +439,58 @@ export default function TicketDetail() {
                     </div>
                   </div>
 
+                  {/* Location Information */}
+                  {(ticket?.site_name || ticket?.building_name || ticket?.space_name) && (
+                    <div className="pt-4 border-t">
+                      <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                        {ticket.site_name && (
+                          <div>
+                            <span className="text-muted-foreground flex items-center gap-2 mb-2 text-sm">
+                              <Building2 className="h-4 w-4" />
+                              Site
+                            </span>
+                            <p className="font-semibold text-base">
+                              {ticket.site_name}
+                            </p>
+                          </div>
+                        )}
+                        {ticket.building_name && (
+                          <div>
+                            <span className="text-muted-foreground flex items-center gap-2 mb-2 text-sm">
+                              <Building2 className="h-4 w-4" />
+                              Building
+                            </span>
+                            <p className="font-semibold text-base">
+                              {ticket.building_name}
+                            </p>
+                          </div>
+                        )}
+                        {ticket.space_name && (
+                          <div>
+                            <span className="text-muted-foreground flex items-center gap-2 mb-2 text-sm">
+                              <MapPin className="h-4 w-4" />
+                              Space
+                            </span>
+                            <p className="font-semibold text-base">
+                              {ticket.space_id ? (
+                                <span
+                                  className="text-blue-600 hover:text-blue-800 cursor-pointer hover:underline"
+                                  onClick={() =>
+                                    navigate(`/spaces/${ticket.space_id}`)
+                                  }
+                                >
+                                  {ticket.space_name}
+                                </span>
+                              ) : (
+                                ticket.space_name
+                              )}
+                            </p>
+                          </div>
+                        )}
+                      </div>
+                    </div>
+                  )}
+
                   {/* Attachments Section */}
                   <div className="pt-4 border-t">
                     <div className="flex items-center gap-2 mb-3">
@@ -428,8 +498,7 @@ export default function TicketDetail() {
                       <p className="text-sm font-medium">Attachments</p>
                     </div>
                     <div className="border-2 border-dashed border-muted-foreground/30 rounded-lg p-4">
-                      {ticket?.attachments &&
-                        ticket.attachments.length > 0 ? (
+                      {ticket?.attachments && ticket.attachments.length > 0 ? (
                         <div className="grid grid-cols-3 gap-3">
                           {ticket.attachments.map(
                             (attachment: any, index: number) => (
@@ -439,7 +508,7 @@ export default function TicketDetail() {
                               >
                                 {attachment &&
                                   attachment.content_type?.startsWith(
-                                    "image/"
+                                    "image/",
                                   ) && (
                                     <img
                                       src={`data:${attachment.content_type};base64,${attachment.file_data_base64}`}
@@ -467,7 +536,7 @@ export default function TicketDetail() {
                                   )}
                                 {(!attachment ||
                                   !attachment.content_type?.startsWith(
-                                    "image/"
+                                    "image/",
                                   )) && (
                                     <div className="w-full h-32 flex items-center justify-center bg-muted">
                                       <Paperclip className="w-8 h-8 text-muted-foreground" />
@@ -487,7 +556,7 @@ export default function TicketDetail() {
                                 </div>
                                 {attachment &&
                                   attachment.content_type?.startsWith(
-                                    "image/"
+                                    "image/",
                                   ) && (
                                     <a
                                       href={`data:${attachment.content_type};base64,${attachment.file_data_base64}`}
@@ -498,7 +567,7 @@ export default function TicketDetail() {
                                     </a>
                                   )}
                               </div>
-                            )
+                            ),
                           )}
                         </div>
                       ) : (
@@ -536,13 +605,9 @@ export default function TicketDetail() {
                           </div>
                           <div className="flex-1">
                             <div className="flex items-center justify-between">
-                              <p className="font-medium">
-                                {comment.user_name}
-                              </p>
+                              <p className="font-medium">{comment.user_name}</p>
                               <p className="text-xs text-muted-foreground">
-                                {new Date(
-                                  comment.created_at
-                                ).toLocaleString()}
+                                {new Date(comment.created_at).toLocaleString()}
                               </p>
                             </div>
                             <p className="text-sm mt-1">
@@ -551,19 +616,16 @@ export default function TicketDetail() {
                             {comment.reactions &&
                               comment.reactions.length > 0 && (
                                 <div className="flex gap-2 mt-2">
-                                  {comment.reactions.map(
-                                    (reaction: any) => (
-                                      <span
-                                        key={
-                                          reaction.reaction_id ||
-                                          reaction.emoji
-                                        }
-                                        className="text-sm"
-                                      >
-                                        {reaction.emoji}
-                                      </span>
-                                    )
-                                  )}
+                                  {comment.reactions.map((reaction: any) => (
+                                    <span
+                                      key={
+                                        reaction.reaction_id || reaction.emoji
+                                      }
+                                      className="text-sm"
+                                    >
+                                      {reaction.emoji}
+                                    </span>
+                                  ))}
                                 </div>
                               )}
                           </div>
@@ -605,10 +667,7 @@ export default function TicketDetail() {
                   ) : (
                     <div className="space-y-4">
                       {workflows.map((workflow: any, index: number) => (
-                        <div
-                          key={workflow.workflow_id}
-                          className="flex gap-3"
-                        >
+                        <div key={workflow.workflow_id} className="flex gap-3">
                           <div className="flex flex-col items-center">
                             <div className="w-8 h-8 rounded-full bg-primary/10 flex items-center justify-center">
                               <TrendingUp className="w-4 h-4" />
@@ -620,15 +679,13 @@ export default function TicketDetail() {
                           <div className="flex-1 pb-4">
                             <div className="flex items-center gap-2">
                               <Badge
-                                className={getStatusColor(
-                                  workflow.new_status
-                                )}
+                                className={getStatusColor(workflow.new_status)}
                               >
                                 {workflow.new_status}
                               </Badge>
                               <p className="text-xs text-muted-foreground">
                                 {new Date(
-                                  workflow.action_time
+                                  workflow.action_time,
                                 ).toLocaleString()}
                               </p>
                             </div>
@@ -661,8 +718,8 @@ export default function TicketDetail() {
                             key={star}
                             onClick={() => setRating(star)}
                             className={`text-2xl ${star <= rating
-                              ? "text-yellow-500"
-                              : "text-gray-300"
+                                ? "text-yellow-500"
+                                : "text-gray-300"
                               }`}
                           >
                             ★
@@ -671,9 +728,7 @@ export default function TicketDetail() {
                       </div>
                     </div>
                     <div>
-                      <p className="text-sm font-medium mb-2">
-                        Feedback
-                      </p>
+                      <p className="text-sm font-medium mb-2">Feedback</p>
                       <Textarea
                         placeholder="Share your experience..."
                         value={feedback}
@@ -735,10 +790,7 @@ export default function TicketDetail() {
                       </SelectTrigger>
                       <SelectContent>
                         {employeeList.map((user: any) => (
-                          <SelectItem
-                            key={user.user_id}
-                            value={user.user_id}
-                          >
+                          <SelectItem key={user.user_id} value={user.user_id}>
                             {user.full_name}
                           </SelectItem>
                         ))}
@@ -757,9 +809,7 @@ export default function TicketDetail() {
                     <p className="text-sm font-medium">Assign Vendor</p>
                     <Select
                       value={assignedToVendor}
-                      onValueChange={(value) =>
-                        setAssignedToVendor(value)
-                      }
+                      onValueChange={(value) => setAssignedToVendor(value)}
                       disabled={isTicketClosed}
                     >
                       <SelectTrigger>
@@ -780,9 +830,7 @@ export default function TicketDetail() {
                       onClick={handleVendorAssignment}
                       className="w-full"
                       size="sm"
-                      disabled={
-                        isVendorAssignmentDisabled || isTicketClosed
-                      }
+                      disabled={isVendorAssignmentDisabled || isTicketClosed}
                     >
                       Assign Vendor
                     </Button>
@@ -809,23 +857,29 @@ export default function TicketDetail() {
                 </CardHeader>
                 <CardContent className="space-y-3">
                   {workOrders.map((wo) => (
-                    <div
-                      key={wo.wo_no}
-                      className="border rounded-lg p-3"
-                    >
+                    <div key={wo.wo_no} className="border rounded-lg p-3">
                       <div className="flex items-center justify-between mb-2">
-                        <p className="text-sm font-medium">
-                          #{wo.wo_no}
-                        </p>
-                        <Badge
-                          variant={
-                            wo.status === "DONE"
-                              ? "default"
-                              : "secondary"
-                          }
-                        >
-                          {wo.status}
-                        </Badge>
+                        <p className="text-sm font-medium">#{wo.wo_no}</p>
+                        <div className="flex items-center gap-2">
+                          <Badge
+                            variant={
+                              wo.status === "DONE" ? "default" : "secondary"
+                            }
+                          >
+                            {wo.status}
+                          </Badge>
+                          {!isTicketClosed && (
+                            <Button
+                              variant="ghost"
+                              size="icon"
+                              className="h-6 w-6"
+                              onClick={() => handleEditWorkOrder(wo)}
+                              title="Edit work order"
+                            >
+                              <Pencil className="h-3 w-3" />
+                            </Button>
+                          )}
+                        </div>
                       </div>
                       <p className="text-xs text-muted-foreground">
                         {wo.description}

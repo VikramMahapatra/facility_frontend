@@ -87,7 +87,29 @@ export function PropertySidebar() {
   }, [currentPath]);
   const isCollapsed = state === "collapsed";
 
-  const isActive = (path: string) => currentPath === path;
+  const UUID_REGEX =
+    /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
+
+  const isActive = (path: string) => {
+    const currentSegments = window.location.pathname.split("/").filter(Boolean);
+    const pathSegments = path.split("/").filter(Boolean);
+
+    // Compare segments one by one, ignoring UUIDs
+    for (let i = 0; i < pathSegments.length; i++) {
+      const curr = currentSegments[i];
+      const seg = pathSegments[i];
+
+      if (!curr || !seg) return false;
+
+      if (UUID_REGEX.test(curr)) continue; // skip UUIDs in current URL
+
+      if (curr !== seg) return false;
+    }
+
+    return true;
+  };
+
+
   const getNavClass = (isActiveRoute: boolean) =>
     isActiveRoute
       ? "bg-sidebar-accent text-sidebar-primary font-medium"

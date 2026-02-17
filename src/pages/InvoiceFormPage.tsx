@@ -28,7 +28,7 @@ import {
   Calendar,
   ArrowLeft,
 } from "lucide-react";
-import { toast } from "sonner";
+import { toast } from "@/components/ui/app-toast";
 import ContentContainer from "@/components/ContentContainer";
 import { useLoader } from "@/context/LoaderContext";
 import LoaderOverlay from "@/components/LoaderOverlay";
@@ -90,7 +90,7 @@ export default function InvoiceFormPage() {
   const watchedBillableItemId = watch("billable_item_id");
 
   useEffect(() => {
-   
+
     loadSiteLookup();
     loadInvoiceTypeLookup();
   }, []);
@@ -130,44 +130,44 @@ export default function InvoiceFormPage() {
 
     const formattedPayments = hasValidPayments
       ? invoicePayments.map((payment: any) => ({
-          id: payment.id,
-          method: payment.method || "upi",
-          ref_no: payment.ref_no || "",
-          paid_at: payment.paid_at || "",
-          amount:
-            typeof payment.amount === "number"
-              ? payment.amount
-              : parseFloat(payment.amount) || 0,
-        }))
+        id: payment.id,
+        method: payment.method || "upi",
+        ref_no: payment.ref_no || "",
+        paid_at: payment.paid_at || "",
+        amount:
+          typeof payment.amount === "number"
+            ? payment.amount
+            : parseFloat(payment.amount) || 0,
+      }))
       : [{ method: "upi" as any, ref_no: "", paid_at: "", amount: 0 }];
 
     // Reset form based on mode - if create mode or no invoice, use empty data
     reset(
       invoice && formMode !== "create"
         ? {
-            site_id: invoice.site_id || "",
-            date: invoice.date || new Date().toISOString().split("T")[0],
-            due_date: invoice.due_date || "",
-            status: invoice.status || "draft",
-            currency: invoice.currency || "INR",
-            billable_item_type: invoice.billable_item_type || "",
-            billable_item_id: invoice.billable_item_id || "",
-            totals: invoice.totals || { sub: 0, tax: 0, grand: 0 },
-            payments: formattedPayments,
-          }
+          site_id: invoice.site_id || "",
+          date: invoice.date || new Date().toISOString().split("T")[0],
+          due_date: invoice.due_date || "",
+          status: invoice.status || "draft",
+          currency: invoice.currency || "INR",
+          billable_item_type: invoice.billable_item_type || "",
+          billable_item_id: invoice.billable_item_id || "",
+          totals: invoice.totals || { sub: 0, tax: 0, grand: 0 },
+          payments: formattedPayments,
+        }
         : {
-            site_id: "",
-            date: new Date().toISOString().split("T")[0],
-            due_date: "",
-            status: "draft",
-            currency: "INR",
-            billable_item_type: "",
-            billable_item_id: "",
-            totals: { sub: 0, tax: 0, grand: 0 },
-            payments: [
-              { method: "upi" as any, ref_no: "", paid_at: "", amount: 0 },
-            ],
-          },
+          site_id: "",
+          date: new Date().toISOString().split("T")[0],
+          due_date: "",
+          status: "draft",
+          currency: "INR",
+          billable_item_type: "",
+          billable_item_id: "",
+          totals: { sub: 0, tax: 0, grand: 0 },
+          payments: [
+            { method: "upi" as any, ref_no: "", paid_at: "", amount: 0 },
+          ],
+        },
     );
 
     // Preload billable item lookup for existing invoice (edit/view mode)
@@ -177,7 +177,7 @@ export default function InvoiceFormPage() {
       invoice.site_id &&
       invoice.billable_item_type
     ) {
-      
+
       await loadBillableItemLookup(invoice.billable_item_type, invoice.site_id);
     }
   };
@@ -323,8 +323,7 @@ export default function InvoiceFormPage() {
     if (response?.success) {
       navigate("/invoices");
       toast.success(
-        `Invoice has been ${
-          formMode === "create" ? "created" : "updated"
+        `Invoice has been ${formMode === "create" ? "created" : "updated"
         } successfully.`,
       );
     } else if (response && !response.success) {
@@ -340,11 +339,11 @@ export default function InvoiceFormPage() {
 
   const normalizeBillableTypeForSubmit = (typeId?: string) => {
     if (!typeId) return "";
-    
+
     // Find the invoice type from the list
     const invoiceType = invoiceTypeList.find((item) => item.id === typeId);
     if (!invoiceType) return typeId;
-    
+
     // Map the name to backend-expected format
     const typeName = invoiceType.name.toLowerCase();
     if (typeName.includes("lease") || typeName.includes("lease charge")) {
@@ -354,7 +353,7 @@ export default function InvoiceFormPage() {
     } else if (typeName.includes("work order") || typeName.includes("work_order")) {
       return "work order";
     }
-    
+
     // Fallback: use the name as-is, converting underscores to spaces
     return typeName.replace(/_/g, " ");
   };
@@ -527,9 +526,9 @@ export default function InvoiceFormPage() {
 
   const fallBillableItems = invoice?.billable_item_id
     ? {
-        id: invoice.billable_item_id,
-        name: invoice.billable_item_name,
-      }
+      id: invoice.billable_item_id,
+      name: invoice.billable_item_name,
+    }
     : null;
 
   const billable_items = withFallback(billableItemList, fallBillableItems);
@@ -985,11 +984,10 @@ export default function InvoiceFormPage() {
                               Outstanding
                             </Label>
                             <p
-                              className={`text-lg font-semibold ${
-                                outstanding > 0
+                              className={`text-lg font-semibold ${outstanding > 0
                                   ? "text-orange-600"
                                   : "text-green-600"
-                              }`}
+                                }`}
                             >
                               {formatCurrency(outstanding)}
                             </p>
@@ -997,13 +995,12 @@ export default function InvoiceFormPage() {
                           <div className="flex items-end">
                             <div className="flex items-center gap-2">
                               <div
-                                className={`h-2 w-2 rounded-full ${
-                                  paymentStatus === "Paid"
+                                className={`h-2 w-2 rounded-full ${paymentStatus === "Paid"
                                     ? "bg-green-500"
                                     : paymentStatus === "Partially Paid"
                                       ? "bg-orange-500"
                                       : "bg-gray-500"
-                                }`}
+                                  }`}
                               />
                               <Label className="text-muted-foreground">
                                 Status:

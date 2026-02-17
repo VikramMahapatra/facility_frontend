@@ -89,13 +89,13 @@ const Dashboard = () => {
 
         <FloorOccupancyChart />
 
-        {/* Energy Overview */}
+        {/*
         <div className="grid grid-cols-1 lg:grid-cols-4 gap-6">
           <EnergyOverview />
           <div className="lg:col-span-3">
-            {/* Additional content area */}
           </div>
         </div>
+        */}
       </div>
     </div>
   );

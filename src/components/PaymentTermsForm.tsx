@@ -17,7 +17,7 @@ import {
   DialogTitle,
   DialogFooter,
 } from "@/components/ui/dialog";
-import { toast } from "sonner";
+import { toast } from "@/components/ui/app-toast";
 import { leasesApiService } from "@/services/leasing_tenants/leasesapi";
 
 interface PaymentTerm {

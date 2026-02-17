@@ -24,7 +24,6 @@ import {
 } from "@/schemas/parkingZone.schema";
 import { ParkingZone } from "@/interfaces/parking_access_interface";
 import { siteApiService } from "@/services/spaces_sites/sitesapi";
-import { AsyncAutocompleteRQ } from "./common/async-autocomplete-rq";
 
 interface ParkingZoneFormProps {
   zone?: ParkingZone | null;
@@ -37,7 +36,6 @@ interface ParkingZoneFormProps {
 const emptyFormData: ParkingZoneFormValues = {
   name: "",
   site_id: "",
-  capacity: 0,
 };
 
 export function ParkingZoneForm({
@@ -52,6 +50,7 @@ export function ParkingZoneForm({
     handleSubmit,
     control,
     reset,
+    setValue,
     formState: { errors, isSubmitting },
   } = useForm<ParkingZoneFormValues>({
     resolver: zodResolver(parkingZoneSchema),
@@ -72,15 +71,14 @@ export function ParkingZoneForm({
     reset(
       zone && mode !== "create"
         ? {
-            name: zone.name || "",
-            site_id: zone.site_id || "",
-            capacity: zone.capacity || 0,
-          }
+          name: zone.name || "",
+          site_id: zone.site_id || ""
+        }
         : emptyFormData
     );
 
     setFormLoading(false);
-    
+
   };
 
   useEffect(() => {
@@ -139,54 +137,40 @@ export function ParkingZoneForm({
                   )}
                 </div>
 
-                <div className="space-y-2">
-                  <Label htmlFor="site_id">Site *</Label>
-                    <AsyncAutocompleteRQ
-                    value={zone?.site_id || ""}
-                    onChange={(value) => {
-                      zone!.site_id = value;
-                    }}
-                    disabled={isReadOnly}
-                    placeholder="Select site"
-                    queryKey={["sites"]}
-                    queryFn={async (search) => {
-                      const res = await siteApiService.getSiteLookup(search);
-                      return res.data.map((s: any) => ({
-                        id: s.id,
-                        label: s.name,
-                      }));
-                    }}
-                    fallbackOption={
-                      zone?.site_id
-                        ? {
-                            id: zone.site_id,
-                            label: zone.site_name || "Selected Site",
-                            }
-                          : undefined
-                      }
-                      minSearchLength={1}
-                    />
-                  </div>
-              </div>
-
-              <div className="space-y-2">
-                <Label htmlFor="capacity">Capacity (spots) *</Label>
-                <Input
-                  id="capacity"
-                  type="number"
-                  min="1"
-                  {...register("capacity", {
-                    setValueAs: (v) => (v === "" ? 0 : Number(v)),
-                  })}
-                  placeholder="e.g., 150"
-                  disabled={isReadOnly}
-                  className={errors.capacity ? "border-red-500" : ""}
+                <Controller
+                  name="site_id"
+                  control={control}
+                  render={({ field }) => (
+                    <div className="space-y-2">
+                      <Label htmlFor="site_id">Site *</Label>
+                      <Select
+                        value={field.value || ""}
+                        onValueChange={field.onChange}
+                        disabled={isReadOnly}
+                      >
+                        <SelectTrigger className={errors.site_id ? 'border-red-500' : ''}>
+                          <SelectValue placeholder="Select Site" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          {siteList.length === 0 ? (
+                            <SelectItem value="none" disabled>No sites available</SelectItem>
+                          ) : (
+                            siteList.map(site => (
+                              <SelectItem key={site.id} value={site.id}>
+                                {site.name}
+                              </SelectItem>
+                            ))
+                          )}
+                        </SelectContent>
+                      </Select>
+                      {errors.site_id && (
+                        <p className="text-sm text-red-500">
+                          {errors.site_id.message}
+                        </p>
+                      )}
+                    </div>
+                  )}
                 />
-                {errors.capacity && (
-                  <p className="text-sm text-red-500">
-                    {errors.capacity.message}
-                  </p>
-                )}
               </div>
 
               <DialogFooter>
@@ -203,8 +187,8 @@ export function ParkingZoneForm({
                     {isSubmitting
                       ? "Saving..."
                       : mode === "create"
-                      ? "Create Zone"
-                      : "Update Zone"}
+                        ? "Create Zone"
+                        : "Update Zone"}
                   </Button>
                 )}
               </DialogFooter>

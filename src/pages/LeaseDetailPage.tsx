@@ -27,7 +27,7 @@ import { Lease } from "@/interfaces/leasing_tenants_interface";
 import { leasesApiService } from "@/services/leasing_tenants/leasesapi";
 import { leaseChargeApiService } from "@/services/leasing_tenants/leasechargeapi";
 import { LeaseChargeForm } from "@/components/LeaseChargeForm";
-import { toast } from "sonner";
+import { toast } from "@/components/ui/app-toast";
 import ContentContainer from "@/components/ContentContainer";
 import { useLoader } from "@/context/LoaderContext";
 import LoaderOverlay from "@/components/LoaderOverlay";

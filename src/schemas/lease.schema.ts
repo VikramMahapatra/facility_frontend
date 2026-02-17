@@ -9,8 +9,11 @@ export const leaseSchema = z
     partner_id: z.string().optional(),
     tenant_id: z.string().optional(),
     start_date: z.string().min(1, "Start Date is required"),
-    frequency: z.enum(["monthly", "annually"], {
-      required_error: "Frequency is required",
+    frequency: z.enum(["monthly", "quaterly", "annually"], {
+      required_error: "Rent billing frequency is required",
+    }),
+    derived_frequency: z.enum(["monthly", "annually"], {
+      required_error: "Lease tenure is required",
     }),
     lease_term_months: z.coerce
       .number({
@@ -38,7 +41,7 @@ export const leaseSchema = z
     status: z.enum(["draft", "active", "expired", "terminated"], {
       required_error: "Status is required",
     }),
-    auto_move_in_space_occupancy: z.boolean().optional(),
+    auto_move_in: z.boolean().optional(),
   })
   .superRefine((val, ctx) => {
     // Since kind is not used by API, require tenant_id (since that's what the form shows)

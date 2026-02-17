@@ -27,43 +27,6 @@ export default function TenantSpacesForm({
 
     return (
         <>
-            <div className="grid grid-cols-3 gap-4">
-                <Controller
-                    name="tenant_type"
-                    control={control}
-                    render={({ field, fieldState }) => (
-                        <div className="space-y-2">
-                            <Label htmlFor="tenant_type">Tenant Type *</Label>
-                            <Select
-                                value={field.value}
-                                onValueChange={field.onChange}
-                                disabled={isReadOnly}
-                            >
-                                <SelectTrigger
-                                    className={
-                                        fieldState.error ? "border-red-500" : ""
-                                    }
-                                >
-                                    <SelectValue placeholder="Select tenant type" />
-                                </SelectTrigger>
-                                <SelectContent>
-                                    <SelectItem value="residential">
-                                        Residential
-                                    </SelectItem>
-                                    <SelectItem value="commercial">
-                                        Commercial
-                                    </SelectItem>
-                                </SelectContent>
-                            </Select>
-                            {fieldState.error && (
-                                <p className="text-sm text-red-500">
-                                    {fieldState.error.message}
-                                </p>
-                            )}
-                        </div>
-                    )}
-                />
-            </div>
             <SpacesForm
                 form={form}
                 name="tenant_spaces"

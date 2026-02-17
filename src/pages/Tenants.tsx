@@ -53,7 +53,7 @@ import {
 } from "@/interfaces/leasing_tenants_interface";
 import { LeaseForm } from "@/components/LeasesForm";
 import { useSkipFirstEffect } from "@/hooks/use-skipfirst-effect";
-import { toast } from "sonner";
+import { toast } from "@/components/ui/app-toast";
 import { Pagination } from "@/components/Pagination";
 import { useNavigate } from "react-router-dom";
 import { useAuth } from "../context/AuthContext";
@@ -81,7 +81,7 @@ const Tenants = () => {
   const [typeList, setTypeList] = useState([]);
   const [siteList, setSiteList] = useState([]);
   const [formMode, setFormMode] = useState<"create" | "edit" | "view">(
-    "create",
+    "create"
   );
   const [isFormOpen, setIsFormOpen] = useState(false);
   const [page, setPage] = useState(1); // current page
@@ -205,7 +205,7 @@ const Tenants = () => {
             `Cannot Delete Tenant\n${authResponse?.message || "Unknown error"}`,
             {
               style: { whiteSpace: "pre-line" },
-            },
+            }
           );
         }
       }
@@ -219,9 +219,16 @@ const Tenants = () => {
       console.log("Created tenant data ", tenantData);
       if (response.success) updateTenantPage();
     } else if (formMode === "edit" && selectedTenant) {
+      const preservedTenantSpaces = (selectedTenant as any).tenant_spaces
+        ? (selectedTenant as any).tenant_spaces.filter(
+          (space: any) => space.id && space.id.length > 0
+        )
+        : undefined;
+
       const updatedTenant = {
         ...selectedTenant,
         ...tenantData,
+        tenant_spaces: preservedTenantSpaces,
         updated_at: new Date().toISOString(),
       };
       response = await tenantsApiService.updateTenant(updatedTenant);
@@ -230,7 +237,7 @@ const Tenants = () => {
         // FIX: Update with response.data instead of updatedTenant
         loadTenantOverview();
         setTenants((prev) =>
-          prev.map((t) => (t.id === response.data.id ? response.data : t)),
+          prev.map((t) => (t.id === response.data.id ? response.data : t))
         );
       }
     }
@@ -238,9 +245,8 @@ const Tenants = () => {
     if (response?.success) {
       setIsFormOpen(false);
       toast.success(
-        `Tenant ${tenantData.name} has been ${
-          formMode === "create" ? "created" : "updated"
-        } successfully.`,
+        `Tenant ${tenantData.name} has been ${formMode === "create" ? "created" : "updated"
+        } successfully.`
       );
     }
     return response;
@@ -456,7 +462,7 @@ const Tenants = () => {
                           {tenantSpaces.slice(0, 2).map((tenant_space) => {
                             const isSpaceStatus =
                               tenant_space.status == "approved" ||
-                              tenant_space.status == "leased"
+                                tenant_space.status == "leased"
                                 ? "active"
                                 : tenant_space.status == "pending"
                                   ? "inactive"
@@ -514,37 +520,37 @@ const Tenants = () => {
                             <Phone className="h-4 w-4 text-muted-foreground" />
                             <span>{tenant.phone}</span>
                           </div>
-                          {tenant.contact_info?.address &&
-                            (tenant.contact_info.address.line1 ||
-                              tenant.contact_info.address.city ||
-                              tenant.contact_info.address.state ||
-                              tenant.contact_info.address.pincode) && (
+                          {tenant.address &&
+                            (tenant.address.line1 ||
+                              tenant.address.city ||
+                              tenant.address.state ||
+                              tenant.address.pincode) && (
                               <div className="flex items-start gap-2 text-sm">
                                 <MapPin className="h-4 w-4 text-muted-foreground mt-0.5" />
                                 <div>
-                                  {tenant.contact_info.address.line1 && (
+                                  {tenant.address.line1 && (
                                     <div>
-                                      {tenant.contact_info.address.line1}
+                                      {tenant.address.line1}
                                     </div>
                                   )}
-                                  {tenant.contact_info.address.line2 && (
+                                  {tenant.address.line2 && (
                                     <div>
-                                      {tenant.contact_info.address.line2}
+                                      {tenant.address.line2}
                                     </div>
                                   )}
-                                  {(tenant.contact_info.address.city ||
-                                    tenant.contact_info.address.state ||
-                                    tenant.contact_info.address.pincode) && (
-                                    <div>
-                                      {[
-                                        tenant.contact_info.address.city,
-                                        tenant.contact_info.address.state,
-                                        tenant.contact_info.address.pincode,
-                                      ]
-                                        .filter(Boolean)
-                                        .join(", ")}
-                                    </div>
-                                  )}
+                                  {(tenant.address.city ||
+                                    tenant.address.state ||
+                                    tenant.address.pincode) && (
+                                      <div>
+                                        {[
+                                          tenant.address.city,
+                                          tenant.address.state,
+                                          tenant.address.pincode,
+                                        ]
+                                          .filter(Boolean)
+                                          .join(", ")}
+                                      </div>
+                                    )}
                                 </div>
                               </div>
                             )}
@@ -578,11 +584,11 @@ const Tenants = () => {
                                 </div>
                                 <div className="text-xs text-muted-foreground">
                                   {new Date(
-                                    lease.start_date,
+                                    lease.start_date
                                   ).toLocaleDateString()}{" "}
                                   -{" "}
                                   {new Date(
-                                    lease.end_date,
+                                    lease.end_date
                                   ).toLocaleDateString()}
                                 </div>
                               </div>
@@ -599,67 +605,68 @@ const Tenants = () => {
                             <div className="text-sm text-muted-foreground">
                               No active leases
                             </div>
-                            {canWrite(resource) && tenantSpaces.length > 0 && tenant.status === "active" && (
-                              <Button
-                                size="sm"
-                                variant="outline"
-                                onClick={async () => {
-                                  setSelectedTenantId(tenant.id!);
-                                  // Fetch tenant lease details
-                                  const response = await withLoader(
-                                    async () => {
-                                      return await leasesApiService.getTenantLeaseDetail(
-                                        tenant.id!,
-                                        tenantSpaces[0].space_id,
-                                      );
-                                    },
-                                  );
-                                  if (
-                                    response?.success &&
-                                    response.data?.tenant_data?.length > 0
-                                  ) {
-                                    const tenantData =
-                                      response.data.tenant_data[0];
-                                    setPrefilledLeaseData({
-                                      tenant_id: tenantData.tenant_id,
-                                      site_id: tenantData.site_id,
-                                      site_name: tenantData.site_name,
-                                      building_id: tenantData.building_id,
-                                      building_name: tenantData.building_name,
-                                      space_id: tenantData.space_id,
-                                      space_name: tenantData.space_name,
-                                    } as Lease);
-                                  } else {
-                                    // If no data, just set tenant_id
-                                    setPrefilledLeaseData({
-                                      tenant_id: tenant.id!,
-                                    } as Lease);
-                                  }
-                                  setIsLeaseFormOpen(true);
-                                }}
-                                className="flex items-center gap-1"
-                              >
-                                <Plus className="h-3 w-3" />
-                                Add Lease
-                              </Button>
-                            )}
+                            {canWrite(resource) &&
+                              tenantSpaces.length > 0 &&
+                              tenant.status === "active" &&
+                              tenantSpaces[0].status === "approved" && (
+                                <Button
+                                  size="sm"
+                                  variant="outline"
+                                  onClick={async () => {
+                                    setSelectedTenantId(tenant.id!);
+                                    // Fetch tenant lease details
+                                    const response = await withLoader(
+                                      async () => {
+                                        return await leasesApiService.getTenantLeaseDetail(
+                                          tenant.id!,
+                                          tenantSpaces[0].space_id
+                                        );
+                                      }
+                                    );
+                                    if (
+                                      response?.success &&
+                                      response.data?.tenant_data?.length > 0
+                                    ) {
+                                      const tenantData =
+                                        response.data.tenant_data[0];
+                                      setPrefilledLeaseData({
+                                        tenant_id: tenantData.tenant_id,
+                                        site_id: tenantData.site_id,
+                                        site_name: tenantData.site_name,
+                                        building_id: tenantData.building_id,
+                                        building_name: tenantData.building_name,
+                                        space_id: tenantData.space_id,
+                                        space_name: tenantData.space_name,
+                                      } as Lease);
+                                    } else {
+                                      // If no data, just set tenant_id
+                                      setPrefilledLeaseData({
+                                        tenant_id: tenant.id!,
+                                      } as Lease);
+                                    }
+                                    setIsLeaseFormOpen(true);
+                                  }}
+                                  className="flex items-center gap-1"
+                                >
+                                  <Plus className="h-3 w-3" />
+                                  Add Lease
+                                </Button>
+                              )}
                           </div>
                         )}
                       </div>
                     </div>
 
-                    {tenant.kind === "commercial" &&
-                      "contact_info" in tenant && (
-                        <div className="mt-4 p-3 bg-muted rounded-lg">
-                          <div className="text-sm font-medium mb-1">
-                            Business Contact
-                          </div>
-                          <div className="text-sm text-muted-foreground">
-                            {tenant.contact_info.name} •{" "}
-                            {tenant.contact_info.email}
-                          </div>
+                    {tenant.legal_name && (
+                      <div className="mt-4 p-3 bg-muted rounded-lg">
+                        <div className="text-sm font-medium mb-1">
+                          Business Contact
                         </div>
-                      )}
+                        <div className="text-sm text-muted-foreground">
+                          {tenant.legal_name} {tenant.legal_name && tenant.type && "•"} {tenant.type}
+                        </div>
+                      </div>
+                    )}
                   </CardContent>
                   <div className="flex items-center justify-end gap-2 px-6 pb-4 pt-2">
                     <Button

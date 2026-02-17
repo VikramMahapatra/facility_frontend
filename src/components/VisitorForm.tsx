@@ -20,7 +20,7 @@ import {
 import { Controller, useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { VisitorFormValues, visitorSchema } from "@/schemas/visitor.schema";
-import { toast } from "sonner";
+import { toast } from "@/components/ui/app-toast";
 import { Visitor } from "@/interfaces/parking_access_interface";
 import { siteApiService } from "@/services/spaces_sites/sitesapi";
 import { utcToLocal, localToUTC } from "@/helpers/dateHelpers";
@@ -86,20 +86,20 @@ export function VisitorForm({
     reset(
       visitor && mode !== "create"
         ? {
-            name: visitor.name || "",
-            phone: visitor.phone || "",
-            site_id: visitor.site_id || "",
-            space_id: visitor.space_id || "",
-            purpose: visitor.purpose || "",
-            status: visitor.status || "expected",
-            vehicle_no: visitor.vehicle_no || "",
-            entry_time: visitor.entry_time
-              ? utcToLocal(visitor.entry_time)
-              : new Date().toISOString().slice(0, 16),
-            exit_time: visitor.exit_time ? utcToLocal(visitor.exit_time) : "",
-            is_expected:
-              visitor.is_expected !== undefined ? visitor.is_expected : true,
-          }
+          name: visitor.name || "",
+          phone: visitor.phone || "",
+          site_id: visitor.site_id || "",
+          space_id: visitor.space_id || "",
+          purpose: visitor.purpose || "",
+          status: visitor.status || "expected",
+          vehicle_no: visitor.vehicle_no || "",
+          entry_time: visitor.entry_time
+            ? utcToLocal(visitor.entry_time)
+            : new Date().toISOString().slice(0, 16),
+          exit_time: visitor.exit_time ? utcToLocal(visitor.exit_time) : "",
+          is_expected:
+            visitor.is_expected !== undefined ? visitor.is_expected : true,
+        }
         : emptyFormData
     );
 
@@ -169,16 +169,16 @@ export function VisitorForm({
 
   const fallbackSite = visitor?.site_id
     ? {
-        id: visitor.site_id,
-        name: (visitor as any).site_name || `Site (${visitor.site_id.slice(0, 6)})`,
-      }
+      id: visitor.site_id,
+      name: (visitor as any).site_name || `Site (${visitor.site_id.slice(0, 6)})`,
+    }
     : null;
 
   const fallbackSpace = visitor?.space_id
     ? {
-        id: visitor.space_id,
-        name: (visitor as any).space_name || `Space (${visitor.space_id.slice(0, 6)})`,
-      }
+      id: visitor.space_id,
+      name: (visitor as any).space_name || `Space (${visitor.space_id.slice(0, 6)})`,
+    }
     : null;
 
   const spaces = withFallback(spaceList, fallbackSpace);
@@ -239,9 +239,8 @@ export function VisitorForm({
                           id: "phone",
                         }}
                         containerClass="w-full relative"
-                        inputClass={`!w-full !h-10 !pl-12 !rounded-md !border !border-input !bg-background !px-3 !py-2 !text-base !ring-offset-background placeholder:!text-muted-foreground focus-visible:!outline-none focus-visible:!ring-2 focus-visible:!ring-ring focus-visible:!ring-offset-2 disabled:!cursor-not-allowed disabled:!opacity-50 md:!text-sm ${
-                          errors.phone ? "!border-red-500" : ""
-                        }`}
+                        inputClass={`!w-full !h-10 !pl-12 !rounded-md !border !border-input !bg-background !px-3 !py-2 !text-base !ring-offset-background placeholder:!text-muted-foreground focus-visible:!outline-none focus-visible:!ring-2 focus-visible:!ring-ring focus-visible:!ring-offset-2 disabled:!cursor-not-allowed disabled:!opacity-50 md:!text-sm ${errors.phone ? "!border-red-500" : ""
+                          }`}
                         buttonClass="!border-none !bg-transparent !absolute !left-2 !top-1/2 !-translate-y-1/2 z-10"
                         dropdownClass="!absolute !z-50 !bg-white !border !border-gray-200 !rounded-md !shadow-lg max-h-60 overflow-y-auto"
                         enableSearch={true}
@@ -284,10 +283,10 @@ export function VisitorForm({
                       fallbackOption={
                         visitor?.site_id
                           ? {
-                              id: visitor.site_id,
-                              label:
-                                (visitor as any).site_name,
-                            }
+                            id: visitor.site_id,
+                            label:
+                              (visitor as any).site_name,
+                          }
                           : undefined
                       }
                       minSearchLength={1}
@@ -418,8 +417,8 @@ export function VisitorForm({
                     {isSubmitting
                       ? "Saving..."
                       : mode === "create"
-                      ? "Create Visitor"
-                      : "Update Visitor"}
+                        ? "Create Visitor"
+                        : "Update Visitor"}
                   </Button>
                 )}
               </DialogFooter>

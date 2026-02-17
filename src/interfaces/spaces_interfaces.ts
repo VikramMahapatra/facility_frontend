@@ -1,4 +1,39 @@
 
+export interface Space {
+    id: string;
+    org_id: string;
+    site_id: string;
+    site_name?: string;
+    name?: string;
+    kind: SpaceKind;
+    category?: "residential" | "commercial";
+    floor?: string;
+    building_block_id?: string;
+    building_block?: string;
+    area_sqft?: number;
+    beds?: number;
+    baths?: number;
+    attributes: Record<string, any>;
+    accessories?: Array<{
+        accessory_id: string;
+        quantity: number;
+    }>;
+    status: "available" | "occupied" | "out_of_service";
+    created_at: string;
+    updated_at: string;
+    owner_name: string;
+    maintenance_template_id?: string;
+    maintenance_amount?: number;
+    tax_rate?: number
+}
+
+export interface SpaceOverview {
+    totalSpaces: number;
+    availableSpaces: number;
+    occupiedSpaces: number;
+    outOfServices: number;
+}
+
 export interface OccupancyRecord {
     status: "vacant" | "occupied";
     occupant_type?: string;
@@ -314,3 +349,19 @@ export const amenitiesByKind: AmenitiesByKind = {
     ],
 };
 
+export interface MaintenanceTemplate {
+    id?: string;
+    org_id?: string;
+    name: string;
+    calculation_type: "flat" | "per_sqft" | "per_bed" | "custom";
+    amount: number;
+    category?: "residential" | "commercial";
+    kind?: SpaceKind;
+    site_id?: string;
+    site_name?: string;
+    is_active?: boolean;
+    created_at?: string;
+    updated_at?: string;
+    tax_code_id?: string;
+    tax_rate?: string;
+}

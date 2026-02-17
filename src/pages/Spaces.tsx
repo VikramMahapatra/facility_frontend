@@ -28,6 +28,7 @@ import {
   SidebarTrigger,
 } from "@/components/ui/sidebar";
 import { SpaceForm } from "@/components/SpaceForm";
+import { SpaceBulkUploadDialog } from "@/components/SpaceBulkUploadDialog";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -41,44 +42,25 @@ import {
 import { Pagination } from "@/components/Pagination";
 import { siteApiService } from "@/services/spaces_sites/sitesapi";
 import { spacesApiService } from "@/services/spaces_sites/spacesapi";
-import { getKindColor, getKindIcon, getStatusColor, SpaceKind, spaceKinds } from "@/interfaces/spaces_interfaces";
+import {
+  getKindColor,
+  getKindIcon,
+  getStatusColor,
+  Space,
+  SpaceKind,
+  spaceKinds,
+  SpaceOverview,
+} from "@/interfaces/spaces_interfaces";
 import { useSkipFirstEffect } from "@/hooks/use-skipfirst-effect";
 import { useAuth } from "../context/AuthContext";
 import { useLoader } from "@/context/LoaderContext";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import LoaderOverlay from "@/components/LoaderOverlay";
 import ContentContainer from "@/components/ContentContainer";
-import { toast } from "sonner";
+import { toast } from "@/components/ui/app-toast";
 import { PageHeader } from "@/components/PageHeader";
 import { useNavigate } from "react-router-dom";
 
-export interface Space {
-  id: string;
-  org_id: string;
-  site_id: string;
-  site_name?: string;
-  code: string;
-  name?: string;
-  kind: SpaceKind;
-  floor?: string;
-  building_block_id?: string;
-  building_block?: string;
-  area_sqft?: number;
-  beds?: number;
-  baths?: number;
-  attributes: Record<string, any>;
-  status: "available" | "occupied" | "out_of_service";
-  created_at: string;
-  updated_at: string;
-  owner_name: string;
-}
-
-interface SpaceOverview {
-  totalSpaces: number;
-  availableSpaces: number;
-  occupiedSpaces: number;
-  outOfServices: number;
-}
 
 export default function Spaces() {
   const navigate = useNavigate();
@@ -89,7 +71,7 @@ export default function Spaces() {
   const [spaces, setSpaces] = useState<Space[]>([]);
   const [selectedSpace, setSelectedSpace] = useState<Space | undefined>();
   const [formMode, setFormMode] = useState<"create" | "edit" | "view">(
-    "create"
+    "create",
   );
   const [isFormOpen, setIsFormOpen] = useState(false);
   const [deleteSpaceId, setDeleteSpaceId] = useState<string | null>(null);
@@ -200,6 +182,20 @@ export default function Spaces() {
       }
     }
   };
+  const handleBulkImport = async (data: any[]) => {
+    // TODO: Add API call here when ready
+    // const response = await spacesApiService.bulkUploadSpaces(data);
+    // if (response.success) {
+    //   updateSpacePage();
+    //   toast.success(`${data.length} spaces have been imported successfully.`);
+    // }
+    console.log("Bulk import data:", data);
+    toast.success(
+      `${data.length} spaces ready to import (API integration pending).`,
+    );
+    updateSpacePage();
+  };
+
   const handleSave = async (spaceData: Partial<Space>) => {
     let response;
     const attributes = spaceData.attributes ? { ...spaceData.attributes } : {};
@@ -218,6 +214,7 @@ export default function Spaces() {
           ? spaceData.building_block_id
           : undefined,
       attributes: Object.keys(attributes).length > 0 ? attributes : undefined,
+      accessories: spaceData.accessories || [],
     };
 
     if (formMode === "create") {
@@ -230,6 +227,7 @@ export default function Spaces() {
       const updatedSpace = {
         ...selectedSpace,
         ...spaceToSave,
+        accessories: spaceToSave.accessories || [],
       };
 
       response = await spacesApiService.updateSpace(updatedSpace);
@@ -238,7 +236,7 @@ export default function Spaces() {
         // Update the edited space in local state
         loadSpaceOverView();
         setSpaces((prev) =>
-          prev.map((s) => (s.id === updatedSpace.id ? response.data : s))
+          prev.map((s) => (s.id === updatedSpace.id ? response.data : s)),
         );
       }
     }
@@ -246,8 +244,8 @@ export default function Spaces() {
     if (response?.success) {
       setIsFormOpen(false);
       toast.success(
-        `Space ${spaceData.code} has been ${formMode === "create" ? "created" : "updated"
-        } successfully.`
+        `Space ${spaceData.name} has been ${formMode === "create" ? "created" : "updated"
+        } successfully.`,
       );
     }
     return response;
@@ -267,10 +265,13 @@ export default function Spaces() {
             </p>
           </div>
           {canWrite(resource) && (
-            <Button onClick={handleCreate} className="gap-2">
-              <Plus className="h-4 w-4" />
-              Add New Space
-            </Button>
+            <div className="flex items-center gap-2">
+              <SpaceBulkUploadDialog onImport={handleBulkImport} />
+              <Button onClick={handleCreate} className="gap-2">
+                <Plus className="h-4 w-4" />
+                Add New Space
+              </Button>
+            </div>
           )}
         </div>
 
@@ -316,10 +317,7 @@ export default function Spaces() {
             </SelectContent>
           </Select>
 
-          <Select
-            value={selectedStatus}
-            onValueChange={setSelectedStatus}
-          >
+          <Select value={selectedStatus} onValueChange={setSelectedStatus}>
             <SelectTrigger className="w-[180px]">
               <SelectValue placeholder="All Status" />
             </SelectTrigger>
@@ -327,9 +325,7 @@ export default function Spaces() {
               <SelectItem value="all">All Status</SelectItem>
               <SelectItem value="available">Available</SelectItem>
               <SelectItem value="occupied">Occupied</SelectItem>
-              <SelectItem value="out_of_service">
-                Out of Service
-              </SelectItem>
+              <SelectItem value="out_of_service">Out of Service</SelectItem>
             </SelectContent>
           </Select>
         </div>
@@ -343,9 +339,7 @@ export default function Spaces() {
                 <div className="text-2xl font-bold text-sidebar-primary">
                   {spaceOverview.totalSpaces}
                 </div>
-                <p className="text-sm text-muted-foreground">
-                  Total Spaces
-                </p>
+                <p className="text-sm text-muted-foreground">Total Spaces</p>
               </CardContent>
             </Card>
             <Card>
@@ -369,9 +363,7 @@ export default function Spaces() {
                 <div className="text-2xl font-bold text-red-600">
                   {spaceOverview.outOfServices}
                 </div>
-                <p className="text-sm text-muted-foreground">
-                  Out of Service
-                </p>
+                <p className="text-sm text-muted-foreground">Out of Service</p>
               </CardContent>
             </Card>
           </div>
@@ -390,11 +382,8 @@ export default function Spaces() {
                         <span className="text-xl">
                           {getKindIcon(space.kind)}
                         </span>
-                        {space.name || space.code}
+                        {space.name}
                       </CardTitle>
-                      <p className="text-sm text-muted-foreground">
-                        {space.code}
-                      </p>
                     </div>
                     <Badge className={getStatusColor(space.status)}>
                       {space.status.replace("_", " ")}
@@ -403,17 +392,37 @@ export default function Spaces() {
                 </CardHeader>
 
                 <CardContent className="space-y-4">
-                  {/* Kind and Location */}
+                  {/* Category, Kind and Location */}
                   <div className="flex items-center justify-between">
-                    <Badge className={getKindColor(space.kind)}>
-                      {space.kind.replace("_", " ")}
-                    </Badge>
+                    <div className="flex items-center gap-2">
+                      {space.category && (
+                        <Badge
+                          variant="secondary"
+                        >
+                          {space.category}
+                        </Badge>
+                      )}
+                      <Badge className={getKindColor(space.kind)}>
+                        {space.kind.replace("_", " ")}
+                      </Badge>
+                    </div>
                     {Number(space.area_sqft) > 0 && (
                       <div className="text-sm text-muted-foreground">
                         {space.area_sqft} sq ft
                       </div>
                     )}
                   </div>
+                  {/* Maintenance Amount */}
+                  {Number(space.maintenance_amount) > 0 && (
+                    <div className="flex items-center justify-between rounded-md bg-muted/40 px-3 py-2">
+                      <span className="text-xs text-muted-foreground">
+                        Maintenance
+                      </span>
+                      <span className="text-sm font-semibold">
+                        ₹ {Number(space.maintenance_amount).toLocaleString()}
+                      </span>
+                    </div>
+                  )}
 
                   {/* Location Details */}
                   <div className="space-y-2 text-sm">
@@ -429,31 +438,29 @@ export default function Spaces() {
                           Block: {space.building_block}
                         </span>
                       )}
-                      {Number(space.floor) !== 0 &&
-                        Number(space.floor) > 0 && (
-                          <span className="text-muted-foreground">
-                            Floor: {space.floor}
-                          </span>
-                        )}
+                      {Number(space.floor) !== 0 && Number(space.floor) > 0 && (
+                        <span className="text-muted-foreground">
+                          Floor: {space.floor}
+                        </span>
+                      )}
                     </div>
                   </div>
 
                   {/* Bed/Bath info for residential */}
-                  {(Number(space.beds) > 0 ||
-                    Number(space.baths) > 0) && (
-                      <div className="flex items-center gap-4 text-sm">
-                        {Number(space.beds) > 0 && (
-                          <span className="text-muted-foreground">
-                            🛏️ {space.beds} beds
-                          </span>
-                        )}
-                        {Number(space.baths) > 0 && (
-                          <span className="text-muted-foreground">
-                            🚿 {space.baths} baths
-                          </span>
-                        )}
-                      </div>
-                    )}
+                  {(Number(space.beds) > 0 || Number(space.baths) > 0) && (
+                    <div className="flex items-center gap-4 text-sm">
+                      {Number(space.beds) > 0 && (
+                        <span className="text-muted-foreground">
+                          🛏️ {space.beds} beds
+                        </span>
+                      )}
+                      {Number(space.baths) > 0 && (
+                        <span className="text-muted-foreground">
+                          🚿 {space.baths} baths
+                        </span>
+                      )}
+                    </div>
+                  )}
 
                   {/* Key Attributes */}
                   {space.attributes &&

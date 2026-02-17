@@ -27,7 +27,7 @@ import { useSkipFirstEffect } from "@/hooks/use-skipfirst-effect";
 import { useLoader } from "@/context/LoaderContext";
 import LoaderOverlay from "@/components/LoaderOverlay";
 import ContentContainer from "@/components/ContentContainer";
-import { toast } from "sonner";
+import { toast } from "@/components/ui/app-toast";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -119,12 +119,6 @@ export default function TenantApprovalPage() {
       setApprovedSpaceId(spaceId);
       setShowAddLeaseDialog(true);
       fetchTenants();
-    } else {
-      const errorMessage =
-        response?.data?.message ||
-        response?.message ||
-        "Failed to approve tenant";
-      toast.error(errorMessage);
     }
   };
 
@@ -222,9 +216,15 @@ export default function TenantApprovalPage() {
 
                 {tenants.map((tenant) => {
                   return (
-                    <TableRow key={tenant.id}>
+                    <TableRow key={tenant.tenant_id}>
                       <TableCell>
-                        <div className="font-medium">{tenant.tenant_name}</div>
+                        <div className="text-blue-600 hover:text-blue-800 cursor-pointer hover:underline"
+                          onClick={() =>
+                            navigate(`/tenants/${tenant.tenant_id}/view`)
+                          }
+                        >
+                          {tenant.tenant_name}
+                        </div>
                         <div className="text-sm text-muted-foreground">
                           {tenant.phone}
                         </div>
@@ -262,14 +262,6 @@ export default function TenantApprovalPage() {
                             </Button>
                           </>
                         )}
-
-                        <Button
-                          size="sm"
-                          variant="ghost"
-                          onClick={() => navigate(`/spaces/${tenant.space_id}`)}
-                        >
-                          <Eye className="h-4 w-4" />
-                        </Button>
                       </TableCell>
                     </TableRow>
                   );
@@ -374,8 +366,6 @@ export default function TenantApprovalPage() {
           } else if (response && !response.success) {
             if (response?.message) {
               toast.error(response.message);
-            } else {
-              toast.error("Failed to create lease.");
             }
           }
           return response;

@@ -51,7 +51,7 @@ import { Separator } from "@/components/ui/separator";
 import { PropertySidebar } from "@/components/PropertySidebar";
 import { VendorForm } from "@/components/VendorForm";
 import { Pagination } from "@/components/Pagination";
-import { toast } from "sonner";
+import { toast } from "@/components/ui/app-toast";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -262,7 +262,7 @@ export default function Vendors() {
               }`}
           />
         ))}
-        <span className="ml-1 text-sm text-muted-foreground">({rating})</span>
+        {rating > 0 && <span className="ml-1 text-sm text-muted-foreground">({rating})</span>}
       </div>
     );
   };

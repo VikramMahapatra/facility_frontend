@@ -65,7 +65,7 @@ import {
   Payment,
 } from "@/interfaces/invoices_interfaces";
 import { Pagination } from "@/components/Pagination";
-import { toast } from "sonner";
+import { toast } from "@/components/ui/app-toast";
 import { useSkipFirstEffect } from "@/hooks/use-skipfirst-effect";
 import { useAuth } from "../context/AuthContext";
 import ContentContainer from "@/components/ContentContainer";
@@ -239,8 +239,7 @@ export default function Invoices() {
 
     if (response?.success) {
       toast.success(
-        `Invoice has been ${
-          formMode === "create" ? "created" : "updated"
+        `Invoice has been ${formMode === "create" ? "created" : "updated"
         } successfully.`
       );
       updateInvoicesPage();

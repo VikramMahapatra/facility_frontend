@@ -72,10 +72,10 @@ export default function AccountForm({
                     <p className="text-center">Loading...</p>
                 ) : (
                     <div className="space-y-4">
-                        {/* Account Type (read-only for edit) */}
+                        {/* User Type (read-only for edit) */}
                         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                             <div>
-                                <label className="text-sm font-medium">Account Type</label>
+                                <label className="text-sm font-medium">Type</label>
                                 {mode === "create" ? (
                                     <Controller
                                         name="account_type"
@@ -87,7 +87,7 @@ export default function AccountForm({
                                                 onValueChange={field.onChange}
                                             >
                                                 <SelectTrigger className="w-full">
-                                                    <SelectValue placeholder="Select your account type" />
+                                                    <SelectValue placeholder="Select your user type" />
                                                 </SelectTrigger>
                                                 <SelectContent>
                                                     {accountTypes.map((type) => (
@@ -166,7 +166,7 @@ export default function AccountForm({
                         </div>
 
                         {/* Roles */}
-                        <RolesSelector control={control} errors={errors} roleList={roleList} />
+                        {/* <RolesSelector control={control} errors={errors} roleList={roleList} /> */}
 
                         {/* Tenant */}
                         {

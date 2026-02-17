@@ -22,11 +22,10 @@ import { ticketsApiService } from "@/services/ticketing_service/ticketsapi";
 import { vendorsApiService } from "@/services/procurements/vendorsapi";
 //import { userManagementApiService } from "@/services/access_control/usermanagementapi";
 import { slaPoliciesApiService } from "@/services/ticketing_service/slapoliciesapi";
-import { toast } from "sonner";
+import { toast } from "@/components/ui/app-toast";
 import { ticketSchema, TicketFormValues } from "@/schemas/ticket.schema";
 import { withFallback } from "@/helpers/commonHelper";
 import { AsyncAutocompleteRQ } from "@/components/common/async-autocomplete-rq";
-//import { toast as sonnerToast } from "sonner";
 
 interface TicketFormProps {
   onSubmit: (data: any) => Promise<any>;
@@ -68,27 +67,27 @@ export default function TicketForm({
     resolver: zodResolver(ticketSchema),
     defaultValues: initialData
       ? {
-          title: initialData.title || "",
-          description: initialData.description || "",
-          category_id: initialData.category_id || "",
-          priority: initialData.priority || "low",
-          request_type: initialData.request_type || "unit",
-          site_id: initialData.site_id || "",
-          building_id: initialData.building_id || "",
-          space_id: initialData.space_id || "",
-          tenant_id: initialData.tenant_id || "",
-          user_id: initialData.user_id || "",
-          preferred_date:
-            initialData.preferred_date ||
-            new Date().toISOString().split("T")[0],
-          preferred_time: initialData.preferred_time || "",
-          assigned_to: initialData.assigned_to || "",
-          vendor_id: initialData.vendor_id || "",
-        }
+        title: initialData.title || "",
+        description: initialData.description || "",
+        category_id: initialData.category_id || "",
+        priority: initialData.priority || "low",
+        request_type: initialData.request_type || "unit",
+        site_id: initialData.site_id || "",
+        building_id: initialData.building_id || "",
+        space_id: initialData.space_id || "",
+        tenant_id: initialData.tenant_id || "",
+        user_id: initialData.user_id || "",
+        preferred_date:
+          initialData.preferred_date ||
+          new Date().toISOString().split("T")[0],
+        preferred_time: initialData.preferred_time || "",
+        assigned_to: initialData.assigned_to || "",
+        vendor_id: initialData.vendor_id || "",
+      }
       : {
-          ...emptyFormData,
-          preferred_date: new Date().toISOString().split("T")[0],
-        },
+        ...emptyFormData,
+        preferred_date: new Date().toISOString().split("T")[0],
+      },
     mode: "onChange",
     reValidateMode: "onChange",
   });
@@ -96,13 +95,14 @@ export default function TicketForm({
   const [uploadedImages, setUploadedImages] = useState<File[]>([]);
   const [imagePreviews, setImagePreviews] = useState<string[]>([]);
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const [siteList, setSiteList] = useState<any[]>([]);
   const [spaceList, setSpaceList] = useState<any[]>([]);
   const [buildingList, setBuildingList] = useState<any[]>([]);
   const [tenantList, setTenantList] = useState<any[]>([]);
   const [categoryList, setCategoryList] = useState<any[]>([]);
   const [staffList, setStaffList] = useState<any[]>([]);
   const [vendorList, setVendorList] = useState<any[]>([]);
-  const[selectedTenantId, setSelectedTenantId] = useState<string>("");
+  const [selectedTenantId, setSelectedTenantId] = useState<string>("");
 
   const selectedSiteId = watch("site_id");
   const selectedBuildingId = watch("building_id");
@@ -117,6 +117,7 @@ export default function TicketForm({
   ];
 
   useEffect(() => {
+    loadSiteLookup();
     loadCategoryLookup(initialData?.site_id || "all");
     loadStaffLookup(initialData?.site_id);
     loadVendorLookup();
@@ -125,6 +126,25 @@ export default function TicketForm({
       loadSpaceLookup(initialData.site_id, initialData.building_id);
     }
   }, []);
+
+  const loadSiteLookup = async () => {
+    const response = await siteApiService.getSiteLookup();
+    if (response?.success) {
+      const sites = response.data || [];
+      setSiteList(sites);
+      
+      // If we have initialData with a site_id that's not in the list, add it as fallback
+      if (initialData?.site_id && !sites.find((s: any) => s.id === initialData.site_id)) {
+        setSiteList([
+          {
+            id: initialData.site_id,
+            name: initialData.site_name || `Site (${initialData.site_id.slice(0, 6)})`,
+          },
+          ...sites,
+        ]);
+      }
+    }
+  };
 
   // Load buildings when site changes
   useEffect(() => {
@@ -261,7 +281,7 @@ export default function TicketForm({
     ticketFormData.append("space_id", data.space_id);
     if (data.user_id && data.user_id !== "none") {
       ticketFormData.append("user_id", data.user_id);
-      if (selectedTenantId) {  
+      if (selectedTenantId) {
         ticketFormData.append("tenant_id", selectedTenantId);
       }
     }
@@ -289,66 +309,66 @@ export default function TicketForm({
 
   const fallbackBuilding = initialData?.building_id
     ? {
-        id: initialData.building_id,
-        name:
-          initialData.building_name ||
-          `Building (${initialData.building_id.slice(0, 6)})`,
-      }
+      id: initialData.building_id,
+      name:
+        initialData.building_name ||
+        `Building (${initialData.building_id.slice(0, 6)})`,
+    }
     : null;
 
   const fallbackSpace = initialData?.space_id
     ? {
-        id: initialData.space_id,
-        name:
-          initialData.space_name ||
-          initialData.space_code ||
-          `Space (${initialData.space_id.slice(0, 6)})`,
-      }
+      id: initialData.space_id,
+      name:
+        initialData.space_name ||
+        initialData.space_code ||
+        `Space (${initialData.space_id.slice(0, 6)})`,
+    }
     : null;
 
   const fallbackTenant = initialData?.tenant_id
     ? {
-        id: initialData.tenant_id,
-        name:
-          initialData.tenant_name ||
-          `Tenant (${initialData.tenant_id.slice(0, 6)})`,
-      }
+      id: initialData.tenant_id,
+      name:
+        initialData.tenant_name ||
+        `Tenant (${initialData.tenant_id.slice(0, 6)})`,
+    }
     : null;
 
   const fallbackCategory = initialData?.category_id
     ? {
-        id: initialData.category_id,
-        category_name:
-          initialData.category_name ||
-          initialData.category ||
-          `Category (${initialData.category_id.slice(0, 6)})`,
-        name:
-          initialData.category_name ||
-          initialData.category ||
-          `Category (${initialData.category_id.slice(0, 6)})`,
-      }
+      id: initialData.category_id,
+      category_name:
+        initialData.category_name ||
+        initialData.category ||
+        `Category (${initialData.category_id.slice(0, 6)})`,
+      name:
+        initialData.category_name ||
+        initialData.category ||
+        `Category (${initialData.category_id.slice(0, 6)})`,
+    }
     : null;
 
   const fallbackStaff = initialData?.assigned_to
     ? {
-        id: String(initialData.assigned_to),
-        name:
-          initialData.assigned_to_name ||
-          initialData.assigned_to_full_name ||
-          `Staff (${String(initialData.assigned_to).slice(0, 6)})`,
-        email: initialData.assigned_to_email,
-        full_name:
-          initialData.assigned_to_name || initialData.assigned_to_full_name,
-      }
+      id: String(initialData.assigned_to),
+      name:
+        initialData.assigned_to_name ||
+        initialData.assigned_to_full_name ||
+        `Staff (${String(initialData.assigned_to).slice(0, 6)})`,
+      email: initialData.assigned_to_email,
+      full_name:
+        initialData.assigned_to_name || initialData.assigned_to_full_name,
+    }
     : null;
 
   const fallbackVendor = initialData?.vendor_id
     ? {
-        id: initialData.vendor_id,
-        name:
-          initialData.vendor_name ||
-          `Vendor (${initialData.vendor_id.slice(0, 6)})`,
-      }
+      id: initialData.vendor_id,
+      name:
+        initialData.vendor_name ||
+        `Vendor (${initialData.vendor_id.slice(0, 6)})`,
+    }
     : null;
 
   const buildings = withFallback(buildingList, fallbackBuilding);
@@ -405,11 +425,11 @@ export default function TicketForm({
                 fallbackOption={
                   initialData?.site_id
                     ? {
-                        id: initialData.site_id,
-                        label:
-                          initialData.site_name ||
-                          `Site (${initialData.site_id.slice(0, 6)})`,
-                      }
+                      id: initialData.site_id,
+                      label:
+                        initialData.site_name ||
+                        `Site (${initialData.site_id.slice(0, 6)})`,
+                    }
                     : undefined
                 }
                 minSearchLength={1}
@@ -505,9 +525,9 @@ export default function TicketForm({
                 value={field.value || ""}
                 onValueChange={(value) => {
                   field.onChange(value);
-                  const tenant = tenants.find(t => t.tenant_id=== value);
+                  const tenant = tenants.find(t => t.tenant_id === value);
                   setSelectedTenantId(tenant?.tenant_id ?? null);
-        }}
+                }}
                 disabled={!selectedSpaceId}
               >
                 <SelectTrigger>
@@ -846,8 +866,8 @@ export default function TicketForm({
           {isSubmitting
             ? "Saving..."
             : initialData
-            ? "Update Ticket"
-            : "Create Ticket"}
+              ? "Update Ticket"
+              : "Create Ticket"}
         </Button>
       </div>
     </form>

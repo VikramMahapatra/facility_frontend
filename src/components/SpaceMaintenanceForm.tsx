@@ -19,25 +19,26 @@ import {
 } from "@/components/ui/select";
 import { siteApiService } from "@/services/spaces_sites/sitesapi";
 import { buildingApiService } from "@/services/spaces_sites/buildingsapi";
-import { toast } from "sonner";
-import { AsyncAutocompleteRQ } from "./common/async-autocomplete-rq";
+import { spacesApiService } from "@/services/spaces_sites/spacesapi";
+import { toast } from "@/components/ui/app-toast";
 import { withFallback } from "@/helpers/commonHelper";
 import { ownerMaintenancesApiService } from "@/services/spaces_sites/ownermaintenancesapi";
+import { Info } from "lucide-react";
+import { z } from "zod";
+import { zodResolver } from "@hookform/resolvers/zod";
 
-interface SpaceMaintenanceFormValues {
-  site_id: string;
-  building_block_id: string;
-  space_id: string;
-  owner_user_id: string;
-  owner_org_id: string;
-  ownership_type: string;
-  ownership_percentage: string;
-  amount: string;
-  start_date: string;
-  end_date: string;
-  due_date: string;
-  status: string;
-}
+export const spaceMaintenanceSchema = z.object({
+  site_id: z.string().min(1, "Site is required"),
+  building_block_id: z.string().min(1, "Building block is required"),
+  space_id: z.string().min(1, "Space is required"),
+  start_date: z.string().min(1, "Start date required"),
+  end_date: z.string().min(1, "End date required"),
+  due_date: z.string().min(1, "Due date required"),
+  status: z.string().default("pending"),
+});
+
+export type SpaceMaintenanceFormValues =
+  z.infer<typeof spaceMaintenanceSchema>;
 
 interface SpaceMaintenanceFormProps {
   isOpen: boolean;
@@ -52,16 +53,17 @@ const emptyFormData: SpaceMaintenanceFormValues = {
   site_id: "",
   building_block_id: "",
   space_id: "",
-  owner_user_id: "",
-  owner_org_id: "",
-  ownership_type: "",
-  ownership_percentage: "",
-  amount: "",
   start_date: "",
   end_date: "",
   due_date: "",
   status: "pending",
 };
+
+const emptyCalculatedAmount = {
+  "base_amount": 0,
+  "tax_amount": 0,
+  "total_amount": 0
+}
 
 export const SpaceMaintenanceForm = ({
   isOpen,
@@ -82,9 +84,9 @@ export const SpaceMaintenanceForm = ({
     getValues,
     formState: { errors, isSubmitting, isValid },
   } = useForm<SpaceMaintenanceFormValues>({
+    resolver: zodResolver(spaceMaintenanceSchema),
     defaultValues: emptyFormData,
     mode: "onChange",
-    reValidateMode: "onChange",
   });
   const [formLoading, setFormLoading] = useState(true);
   const [spaceList, setSpaceList] = useState<any[]>([]);
@@ -97,6 +99,8 @@ export const SpaceMaintenanceForm = ({
     id: string;
     label: string;
   } | null>(null);
+  const [calculatedAmount, setCalculatedAmount] = useState<any>(emptyCalculatedAmount);
+  const [isLoading, setIsLoading] = useState(false);
 
   const loadSites = async () => {
     const sites = await siteApiService.getSiteLookup();
@@ -112,13 +116,25 @@ export const SpaceMaintenanceForm = ({
     return list;
   };
 
-  const loadSpaces = async (siteId: string) => {
-    const lookup =
-      await ownerMaintenancesApiService.getSpaceOwnerLookup(siteId);
-    const list = lookup?.success ? lookup.data || [] : [];
-    setSpaceList(list);
-    return list;
+  const loadSpaces = async (siteId: string, buildingId?: string) => {
+    if (!siteId) {
+      setSpaceList([]);
+      return [];
+    }
+
+    try {
+      const lookup =
+        await ownerMaintenancesApiService.getSpaceOwnerLookup(siteId, buildingId);
+      const list = lookup?.success ? lookup.data || [] : [];
+      setSpaceList(list);
+      return list;
+    } catch (error) {
+      console.error("Failed to load spaces:", error);
+      setSpaceList([]);
+      return [];
+    }
   };
+
 
   const loadStatusLookup = async () => {
     const lookup =
@@ -134,22 +150,17 @@ export const SpaceMaintenanceForm = ({
     reset(
       record && (mode !== "create" || hasPrefill)
         ? {
-            ...emptyFormData,
-            ...record,
-            site_id: record?.site_id || "",
-            building_block_id: record?.building_block_id || "",
-            space_id: record?.space_id || defaultSpaceId || "",
-            start_date:
-              (record as any)?.period_start || record?.start_date || "",
-            end_date: (record as any)?.period_end || record?.end_date || "",
-            due_date: (record as any)?.due_date || record?.due_date || "",
-            amount:
-              (record as any)?.amount !== undefined &&
-              (record as any)?.amount !== null
-                ? String((record as any).amount)
-                : "",
-            status: (record as any)?.status || emptyFormData.status,
-          }
+          ...emptyFormData,
+          ...record,
+          site_id: record?.site_id || "",
+          building_block_id: record?.building_block_id || "",
+          space_id: record?.space_id || defaultSpaceId || "",
+          start_date:
+            (record as any)?.period_start || record?.start_date || "",
+          end_date: (record as any)?.period_end || record?.end_date || "",
+          due_date: (record as any)?.due_date || record?.due_date || "",
+          status: (record as any)?.status || emptyFormData.status,
+        }
         : emptyFormData,
     );
     setFormLoading(false);
@@ -168,12 +179,12 @@ export const SpaceMaintenanceForm = ({
           label: (record as any)?.site_name || "Selected Site",
         });
         const buildings = await loadBuildings(siteId);
-        await loadSpaces(siteId);
         const buildingId =
           record?.building_block_id ||
           buildings.find((b: any) => b.name === (record as any)?.building_name)
             ?.id ||
           "";
+        await loadSpaces(siteId, buildingId);
         if (buildingId) {
           setValue("building_block_id", buildingId);
         }
@@ -194,16 +205,61 @@ export const SpaceMaintenanceForm = ({
 
   const selectedSiteId = watch("site_id");
   const selectedBuildingId = watch("building_block_id");
+  const selectedSpaceId = watch("space_id");
+  const startDate = watch("start_date");
+  const endDate = watch("end_date");
+
+  const isReadyForCalculation =
+    !!selectedSpaceId && !!startDate && !!endDate;
 
   useEffect(() => {
     if (selectedSiteId) {
       loadBuildings(selectedSiteId);
-      loadSpaces(selectedSiteId);
+      loadSpaces(selectedSiteId, selectedBuildingId);
+      // Clear space selection when building changes
+      if (selectedBuildingId) {
+        // Don't clear if we're in edit mode or have a prefilled record
+        if (mode === "create" && !hasPrefill) {
+          setValue("space_id", "");
+        }
+      }
     } else {
       setBuildingList([]);
       setSpaceList([]);
     }
   }, [selectedSiteId, selectedBuildingId]);
+
+  useEffect(() => {
+
+    if (!isReadyForCalculation) {
+      setCalculatedAmount(emptyCalculatedAmount);
+      return;
+    }
+
+    const fetchAmount = async () => {
+
+      try {
+        setIsLoading(true);
+
+        const res =
+          await ownerMaintenancesApiService.getCalculatedMaintenances({
+            space_id: selectedSpaceId,
+            start_date: startDate,
+            end_date: endDate,
+          });
+
+        setCalculatedAmount(res.data ?? emptyCalculatedAmount);
+
+      } finally {
+        setIsLoading(false);
+      }
+    };
+
+    fetchAmount();
+
+  }, [selectedSpaceId, startDate, endDate]);
+
+
 
   const isReadOnly = mode === "view";
   const isEditMode = mode === "edit";
@@ -226,53 +282,39 @@ export const SpaceMaintenanceForm = ({
     });
     if (formResponse?.success) {
       reset(emptyFormData);
-      setIsSubmitted(false);
-    } else {
-      reset(undefined, { keepErrors: true, keepValues: true });
-      setIsSubmitted(false);
     }
+    setIsSubmitted(false);
   };
   const fallbackSpace = record?.space_id
     ? {
-        id: record.space_id,
-        name: (record as any).space_name || record.space_id || "Selected Space",
-      }
+      id: record.space_id,
+      name: (record as any).space_name || record.space_id || "Selected Space",
+    }
     : null;
 
   const spaces = withFallback(spaceList, fallbackSpace);
 
   const fallbackStatus = record?.status
     ? {
-        id: record.status,
-        name: record.status,
-        value: record.status,
-      }
+      id: record.status,
+      name: record.status,
+      value: record.status,
+    }
     : null;
 
   const statuses = withFallback(statusList, fallbackStatus);
 
   const fallbackBuilding = record?.building_block_id
     ? {
-        id: record.building_block_id,
-        name:
-          (record as any).building_block ||
-          `Building (${record.building_block_id.slice(0, 6)})`,
-      }
+      id: record.building_block_id,
+      name:
+        (record as any).building_block ||
+        `Building (${record.building_block_id.slice(0, 6)})`,
+    }
     : null;
 
   const buildings = withFallback(buildingList, fallbackBuilding);
 
-  const getSpaceLabel = (space: any) => {
-    if (space?.space_name) return space.space_name;
-    if (space?.name) {
-      const parts = String(space.name)
-        .split(" - ")
-        .map((p) => p.trim());
-      if (parts.length >= 2) return parts[1];
-      return space.name;
-    }
-    return space?.code || "";
-  };
 
   return (
     <Dialog open={isOpen} onOpenChange={handleClose}>
@@ -290,15 +332,15 @@ export const SpaceMaintenanceForm = ({
             isSubmitting
               ? undefined
               : handleSubmit(onSubmitForm, (formErrors) => {
-                  const firstError = Object.values(formErrors)[0];
-                  if (firstError?.message) {
-                    toast.error(firstError.message as string);
-                  } else {
-                    toast.error(
-                      "Please fill in all required fields correctly.",
-                    );
-                  }
-                })
+                const firstError = Object.values(formErrors)[0];
+                if (firstError?.message) {
+                  toast.error(firstError.message as string);
+                } else {
+                  toast.error(
+                    "Please fill in all required fields correctly.",
+                  );
+                }
+              })
           }
           className="space-y-4"
         >
@@ -306,31 +348,36 @@ export const SpaceMaintenanceForm = ({
             <p className="text-center">Loading...</p>
           ) : (
             <div className="space-y-4">
-              <div className="grid grid-cols-2 gap-4">
-                <div className="space-y-2">
-                  <Label>Site *</Label>
-                  <AsyncAutocompleteRQ
-                    value={watch("site_id") || ""}
-                    onChange={(value) => {
-                      setValue("site_id", value || "");
-                      setValue("building_block_id", "");
-                      setValue("space_id", "");
-                    }}
-                    placeholder="Select site"
-                    disabled={isReadOnly || isEditMode || hasPrefill}
-                    queryKey={["sites"]}
-                    queryFn={async (search) => {
-                      const res = await siteApiService.getSiteLookup(search);
-                      return res.data.map((s: any) => ({
-                        id: s.id,
-                        label: s.name,
-                      }));
-                    }}
-                    fallbackOption={siteFallback || undefined}
-                    minSearchLength={1}
-                  />
-                </div>
-
+              <div className="grid grid-cols-3 gap-4">
+                <Controller
+                  name="site_id"
+                  control={control}
+                  render={({ field }) => (
+                    <div className="space-y-2">
+                      <Label>Site *</Label>
+                      <Select
+                        value={field.value || ""}
+                        onValueChange={(value) => {
+                          field.onChange(value);
+                          setValue("building_block_id", "");
+                          setValue("space_id", "");
+                        }}
+                        disabled={isReadOnly || isEditMode || hasPrefill}
+                      >
+                        <SelectTrigger>
+                          <SelectValue placeholder="Select site" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          {siteList.map((site) => (
+                            <SelectItem key={site.id} value={site.id}>
+                              {site.name}
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                    </div>
+                  )}
+                />
                 <div className="space-y-2">
                   <Label>Building</Label>
                   <Controller
@@ -364,7 +411,6 @@ export const SpaceMaintenanceForm = ({
                     )}
                   />
                 </div>
-
                 <Controller
                   name="space_id"
                   control={control}
@@ -374,7 +420,7 @@ export const SpaceMaintenanceForm = ({
                       <Select
                         value={
                           field.value &&
-                          spaces.some((space: any) => space.id === field.value)
+                            spaces.some((space: any) => space.id === field.value)
                             ? field.value
                             : undefined
                         }
@@ -394,7 +440,7 @@ export const SpaceMaintenanceForm = ({
                         <SelectContent>
                           {spaces.map((space: any) => (
                             <SelectItem key={space.id} value={space.id}>
-                              {getSpaceLabel(space)}
+                              {space.name}
                             </SelectItem>
                           ))}
                         </SelectContent>
@@ -407,7 +453,8 @@ export const SpaceMaintenanceForm = ({
                     </div>
                   )}
                 />
-
+              </div>
+              <div className="grid grid-cols-4 gap-4">
                 <div className="space-y-2">
                   <Label>Start Date *</Label>
                   <Input
@@ -446,16 +493,6 @@ export const SpaceMaintenanceForm = ({
                 </div>
 
                 <div className="space-y-2">
-                  <Label>Amount *</Label>
-                  <Input
-                    type="number"
-                    {...register("amount")}
-                    placeholder="Enter amount"
-                    disabled={isReadOnly}
-                  />
-                </div>
-
-                <div className="space-y-2">
                   <Label>Status</Label>
                   <Controller
                     name="status"
@@ -481,6 +518,57 @@ export const SpaceMaintenanceForm = ({
                   />
                 </div>
               </div>
+              <div className="grid grid-cols-2 gap-4">
+                <div className="space-y-2">
+                  <Label>Maintenance Amount</Label>
+
+                  <div className="rounded-md border p-3 text-sm bg-muted space-y-1">
+
+                    {isLoading ? (
+                      <span className="text-muted-foreground">
+                        Calculating...
+                      </span>
+                    ) : (
+                      <>
+                        <div className="flex justify-between">
+                          <span>Base Amount</span>
+                          <span className="font-medium">
+                            ₹ {calculatedAmount?.base_amount ?? "0.00"}
+                          </span>
+                        </div>
+
+                        <div className="flex justify-between text-muted-foreground">
+                          <span>Tax</span>
+                          <span>
+                            ₹ {calculatedAmount?.tax_amount ?? "0.00"}
+                          </span>
+                        </div>
+
+                        <div className="border-t pt-1 flex justify-between font-semibold">
+                          <span>Total</span>
+                          <span>
+                            ₹ {calculatedAmount?.total_amount ?? "0.00"}
+                          </span>
+                        </div>
+
+                        <div className="text-xs text-muted-foreground">
+                          Auto calculated
+                        </div>
+                      </>
+                    )}
+
+                  </div>
+                </div>
+
+
+                {/* Helper text like error message */}
+                <div className="space-y-4">
+                  <label>&nbsp;</label>
+                  <p className="text-xs text-muted-foreground">
+                    Amount will be calculated after selecting space and dates
+                  </p>
+                </div>
+              </div>
             </div>
           )}
 
@@ -499,6 +587,6 @@ export const SpaceMaintenanceForm = ({
           </DialogFooter>
         </form>
       </DialogContent>
-    </Dialog>
+    </Dialog >
   );
 };

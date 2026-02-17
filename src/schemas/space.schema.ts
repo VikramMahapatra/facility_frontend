@@ -2,7 +2,6 @@ import * as z from "zod";
 import { spaceKinds } from "@/interfaces/spaces_interfaces";
 
 export const spaceSchema = z.object({
-    code: z.string().min(1, "Code is required"),
     name: z.string().optional(),
     site_id: z.string().min(1, "Site is required"),
     kind: z.enum([
@@ -15,7 +14,7 @@ export const spaceSchema = z.object({
         'hall',
         'common_area',
         'parking',
-         'villa',
+        'villa',
         'row_house',
         'bungalow',
         'duplex',
@@ -25,6 +24,7 @@ export const spaceSchema = z.object({
     ] as const, {
         required_error: "Kind is required",
     }),
+    category: z.enum(['residential', 'commercial']).optional(),
     floor: z.coerce.number({
         invalid_type_error: "Expected number"
     }).int("Floor must be a whole number").optional(),
@@ -47,6 +47,11 @@ export const spaceSchema = z.object({
         furnished: z.enum(['unfurnished', 'semi', 'fully']).optional(),
         star_rating: z.string().optional(),
     }).optional(),
+    accessories: z.array(z.object({
+        accessory_id: z.string(),
+        quantity: z.coerce.number().min(1, "Quantity must be at least 1").int("Quantity must be a whole number"),
+    })).optional(),
+    maintenance_template_id: z.string().min(1, "Maintenance template is required"),
 });
 
 export type SpaceFormValues = z.infer<typeof spaceSchema>;

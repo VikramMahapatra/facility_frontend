@@ -21,7 +21,7 @@ import {
 } from "lucide-react";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { userManagementApiService } from "@/services/access_control/usermanagementapi";
-import { toast } from "sonner";
+import { toast } from "@/components/ui/app-toast";
 import ContentContainer from "@/components/ContentContainer";
 import { useLoader } from "@/context/LoaderContext";
 import LoaderOverlay from "@/components/LoaderOverlay";
@@ -29,7 +29,6 @@ import AccountCard from "@/components/userdetails/AccountCard";
 import { User, UserAccount } from "@/interfaces/user_interface";
 import AccountEditModal from "@/components/userdetails/UserAccountEditModal";
 import { useAuth } from "@/context/AuthContext";
-
 
 export default function UserManagementDetailPage() {
   const { id } = useParams<{ id: string }>();
@@ -41,7 +40,9 @@ export default function UserManagementDetailPage() {
   const [isSwitchingAccount, setIsSwitchingAccount] = useState(false);
   const [isAccountListExpanded, setIsAccountListExpanded] = useState(false);
   const [isAccountModalOpen, setIsAccountModalOpen] = useState(false);
-  const [editingAccount, setEditingAccount] = useState<UserAccount | null>(null);
+  const [editingAccount, setEditingAccount] = useState<UserAccount | null>(
+    null,
+  );
   const [accountMode, setAccountMode] = useState<"create" | "edit">("create");
 
   const resolvedUserId = id ?? authUser.id;
@@ -171,7 +172,7 @@ export default function UserManagementDetailPage() {
         }
       }
     } catch (error) {
-      toast.error("Failed to switch account");
+      toast.error("Failed to switch user");
     } finally {
       setIsSwitchingAccount(false);
     }
@@ -183,7 +184,6 @@ export default function UserManagementDetailPage() {
       setAccountMode("create");
     }
     setIsAccountModalOpen(open);
-
   };
 
   const openEditAccount = (account: UserAccount) => {
@@ -205,36 +205,37 @@ export default function UserManagementDetailPage() {
       setIsAccountModalOpen(false);
       setEditingAccount(null);
       toast.success(
-        `${accountData.account_type} account has been ${accountMode === "create" ? "created" : "updated"
-        } successfully.`
+        `${accountData.account_type} user has been ${accountMode === "create" ? "created" : "updated"
+        } successfully.`,
       );
     }
     return response;
   };
 
   const onMarkASDefault = async (accountData) => {
-    const response = await userManagementApiService.markAsDefault(accountData.id);
+    const response = await userManagementApiService.markAsDefault(
+      accountData.id,
+    );
     if (response.success) {
-      setUser(prev => {
+      setUser((prev) => {
         if (!prev) return prev;
 
         return {
           ...prev,
-          accounts: prev.accounts.map(acc => ({
+          accounts: prev.accounts.map((acc) => ({
             ...acc,
             is_default: acc.id === accountData.id, // 🔥 only one default
           })),
         };
       });
       toast.success(
-        `${accountData.account_type} account has been mark as default successfully.`
+        `${accountData.account_type} user has been mark as default successfully.`,
       );
     }
     return response;
   };
 
-  const showSwitchAccount =
-    user?.accounts && user.accounts.length > 1;
+  const showSwitchAccount = user?.accounts && user.accounts.length > 1;
 
   return (
     <ContentContainer>
@@ -260,8 +261,10 @@ export default function UserManagementDetailPage() {
                 <div className="rounded-xl bg-muted/30 ">
                   <div className="flex items-start gap-6">
                     {/* Square Avatar */}
-                    <div className="h-28 w-28 rounded-full bg-gradient-to-br from-primary to-primary/80 
-                            flex items-center justify-center shadow-lg ring-4 ring-primary/10">
+                    <div
+                      className="h-28 w-28 rounded-full bg-gradient-to-br from-primary to-primary/80 
+                            flex items-center justify-center shadow-lg ring-4 ring-primary/10"
+                    >
                       <span className="text-3xl font-bold text-primary-foreground">
                         {getInitials(user.full_name)}
                       </span>
@@ -290,11 +293,9 @@ export default function UserManagementDetailPage() {
                       {/* Badges */}
                       <div className="flex items-center gap-2">
                         <Badge variant="outline">
-                          {user?.accounts.length} Account(s)
+                          {user?.accounts.length} User(s)
                         </Badge>
-
                       </div>
-
 
                       {/* Switch Account */}
                       {/* {showSwitchAccount && (
@@ -376,22 +377,45 @@ export default function UserManagementDetailPage() {
               <div className="flex items-center justify-between">
                 <h2 className="text-xl font-semibold flex items-center gap-2">
                   <Shield className="h-5 w-5" />
-                  Accounts
+                  User Types
                 </h2>
 
                 <Button onClick={() => setOpenAddAccount(true)}>
-                  + Add Account
+                  + Add User Type
                 </Button>
               </div>
 
-              {user?.accounts.map(account => (
-                <AccountCard
-                  key={account.id}
-                  account={account}
-                  onEdit={() => openEditAccount(account)}
-                  onMarkASDefault={() => onMarkASDefault(account)}
-                />
-              ))}
+              {user?.accounts && user.accounts.length > 0 ? (
+                user.accounts.map((account) => (
+                  <AccountCard
+                    key={account.id}
+                    account={account}
+                    onEdit={() => openEditAccount(account)}
+                    onMarkASDefault={() => onMarkASDefault(account)}
+                  />
+                ))
+              ) : (
+                <Card className="p-6 text-center border-dashed border-2 border-gray-200">
+                  <CardContent className="space-y-4">
+                    <div className="text-center py-12">
+                      <Shield className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
+                      <h3 className="text-lg font-semibold text-sidebar-primary mb-2">
+                        No users assigned
+                      </h3>
+                      <p className="text-muted-foreground mb-4">
+                        This user does not have any users yet. Users are
+                        required to access different roles and spaces.
+                      </p>
+                      <Button
+                        onClick={() => setOpenAddAccount(true)}
+                        variant="outline"
+                      >
+                        + Add User
+                      </Button>
+                    </div>
+                  </CardContent>
+                </Card>
+              )}
             </div>
           )}
           <AccountEditModal
@@ -400,26 +424,24 @@ export default function UserManagementDetailPage() {
             account={editingAccount}
             mode={accountMode}
             onSubmit={async (data) => {
-
               if (accountMode === "create") {
                 const newAccount = {
                   ...data,
-                  user_id: user!.id
+                  user_id: user!.id,
                 };
                 await handleAccountSave(newAccount, accountMode);
               } else {
                 const updatedAccount = {
                   ...data,
                   user_id: user!.id,
-                  user_org_id: editingAccount!.id
+                  user_org_id: editingAccount!.id,
                 };
 
-                console.log("editing account:", editingAccount);
+                console.log("editing User:", editingAccount);
                 await handleAccountSave(updatedAccount, accountMode);
               }
             }}
           />
-
         </div>
       )}
     </ContentContainer>

@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -16,7 +16,8 @@ import {
   DialogTitle,
   DialogFooter,
 } from "@/components/ui/dialog";
-import { toast } from "sonner";
+import { Upload, X, FileText } from "lucide-react";
+import { toast } from "@/components/ui/app-toast";
 import { Controller, useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { Checkbox } from "@/components/ui/checkbox";
@@ -36,6 +37,7 @@ const emptyFormData: Partial<LeaseFormValues> = {
   partner_id: "",
   tenant_id: "",
   start_date: "",
+  derived_frequency: "monthly",
   frequency: "monthly",
   lease_term_months: undefined,
   rent_amount: "" as any,
@@ -43,7 +45,7 @@ const emptyFormData: Partial<LeaseFormValues> = {
   cam_rate: "" as any,
   utilities: { electricity: undefined, water: undefined },
   status: "draft",
-  auto_move_in_space_occupancy: false,
+  auto_move_in: false,
 };
 
 interface LeaseFormProps {
@@ -84,13 +86,14 @@ export function LeaseForm({
       tenant_id: "",
       start_date: "",
       frequency: "monthly",
+      derived_frequency: "monthly",
       lease_term_months: undefined,
       rent_amount: "" as any,
       deposit_amount: "" as any,
       cam_rate: "" as any,
       utilities: { electricity: undefined, water: undefined },
       status: "draft",
-      auto_move_in_space_occupancy: false,
+      auto_move_in: false,
     },
     mode: "onChange",
     reValidateMode: "onChange",
@@ -100,9 +103,18 @@ export function LeaseForm({
   const [buildingList, setBuildingList] = useState<any[]>([]);
   const [spaceList, setSpaceList] = useState<any[]>([]);
   const [leasePartnerList, setLeasePartnerList] = useState<any[]>([]);
+  const [uploadedImages, setUploadedImages] = useState<File[]>([]);
+  const [imagePreviews, setImagePreviews] = useState<string[]>([]);
+  const fileInputRef = useRef<HTMLInputElement>(null);
   const isReadOnly = mode === "view";
   const loadAll = async () => {
     setFormLoading(true);
+
+    // Reset file uploads when form opens
+    setUploadedImages([]);
+    setImagePreviews([]);
+    // Clean up previous preview URLs
+    imagePreviews.forEach((url) => URL.revokeObjectURL(url));
 
     // Get site_id and building_id from lease prop, regardless of mode
     const leaseSiteId = lease?.site_id;
@@ -113,24 +125,25 @@ export function LeaseForm({
     reset(
       lease
         ? {
-            kind: (lease.kind as any) || "commercial",
-            site_id: lease.site_id || "",
-            building_id: leaseBuildingId || "",
-            space_id: lease.space_id || "",
-            partner_id: lease.partner_id ? String(lease.partner_id) : "",
-            tenant_id: lease.tenant_id ? String(lease.tenant_id) : "",
-            start_date: lease.start_date || "",
-            frequency: (lease.frequency as "monthly" | "annually") || "monthly",
-            lease_term_months: (lease as any).lease_term_months || undefined,
-            rent_amount: lease.rent_amount as any,
-            deposit_amount: lease.deposit_amount as any,
-            cam_rate: lease.cam_rate as any,
-            utilities: {
-              electricity: lease.utilities?.electricity as any,
-              water: lease.utilities?.water as any,
-            },
-            status: (lease.status as any) || "draft",
-          }
+          kind: (lease.kind as any) || "commercial",
+          site_id: lease.site_id || "",
+          building_id: leaseBuildingId || "",
+          space_id: lease.space_id || "",
+          partner_id: lease.partner_id ? String(lease.partner_id) : "",
+          tenant_id: lease.tenant_id ? String(lease.tenant_id) : "",
+          start_date: lease.start_date || "",
+          frequency: (lease.frequency as "monthly" | "quaterly" | "annually") || "monthly",
+          derived_frequency: (lease.derived_frequency as "monthly" | "annually") || "monthly",
+          lease_term_months: (lease as any).lease_term_months || undefined,
+          rent_amount: lease.rent_amount as any,
+          deposit_amount: lease.deposit_amount as any,
+          cam_rate: lease.cam_rate as any,
+          utilities: {
+            electricity: lease.utilities?.electricity as any,
+            water: lease.utilities?.water as any,
+          },
+          status: (lease.status as any) || "draft",
+        }
         : emptyFormData,
     );
 
@@ -168,7 +181,7 @@ export function LeaseForm({
   const selectedSpaceId = watch("space_id");
   const selectedKind = watch("kind");
   const selectedTenantId = watch("tenant_id");
-  const selectedFrequency = watch("frequency");
+  const selectedFrequency = watch("derived_frequency");
 
   useEffect(() => {
     if (selectedTenantId && selectedKind !== "residential") {
@@ -218,30 +231,30 @@ export function LeaseForm({
   // Create fallback options for site, building, and space from lease prop
   const fallbackSite = lease?.site_id
     ? {
-        id: lease.site_id,
-        name: (lease as any).site_name,
-      }
+      id: lease.site_id,
+      name: (lease as any).site_name,
+    }
     : null;
 
   const fallbackBuilding =
     lease?.building_id || (lease as any)?.building_block_id
       ? {
-          id: (lease as any).building_id || (lease as any).building_block_id,
-          name: (lease as any).building_name,
-        }
+        id: (lease as any).building_id || (lease as any).building_block_id,
+        name: (lease as any).building_name,
+      }
       : null;
 
   const fallbackSpace = lease?.space_id
     ? {
-        id: lease.space_id,
-        name: (lease as any).space_name,
-      }
+      id: lease.space_id,
+      name: (lease as any).space_name,
+    }
     : null;
   const fallbackTenant = lease?.tenant_id
     ? {
-        id: lease.tenant_id,
-        name: (lease as any).tenant_name,
-      }
+      id: lease.tenant_id,
+      name: (lease as any).tenant_name,
+    }
     : null;
 
   const tenants = withFallback(leasePartnerList, fallbackTenant);
@@ -282,8 +295,48 @@ export function LeaseForm({
     try {
       const { kind, ...updated } = data;
       console.log("Submitting lease data:", updated);
-      const formResponse = await onSave(updated);
+
+      // Create FormData if there are uploaded files, otherwise use JSON
+      let submitData: any;
+
+      if (uploadedImages.length > 0) {
+        const formData = new FormData();
+        Object.keys(updated).forEach((key) => {
+          const value = (updated as any)[key];
+          if (value !== undefined && value !== null && value !== "") {
+            if (typeof value === "object" && !Array.isArray(value)) {
+              // Handle nested objects like utilities
+              Object.keys(value).forEach((nestedKey) => {
+                const nestedValue = (value as any)[nestedKey];
+                if (nestedValue !== undefined && nestedValue !== null && nestedValue !== "") {
+                  formData.append(`${key}.${nestedKey}`, String(nestedValue));
+                }
+              });
+            } else {
+              formData.append(key, String(value));
+            }
+          }
+        });
+
+        // Append files
+        uploadedImages.forEach((file) => {
+          formData.append("files", file);
+        });
+
+        submitData = formData;
+      } else {
+        submitData = updated;
+      }
+
+      const formResponse = await onSave(submitData);
       console.log("Lease save response:", formResponse);
+
+      if (formResponse?.success) {
+        // Clean up preview URLs
+        imagePreviews.forEach((url) => URL.revokeObjectURL(url));
+        setUploadedImages([]);
+        setImagePreviews([]);
+      }
     } catch (error) {
       console.error("Error submitting lease form:", error);
       toast.error("Failed to submit lease form. Please try again.");
@@ -291,6 +344,10 @@ export function LeaseForm({
   };
 
   const handleClose = () => {
+    // Clean up preview URLs
+    imagePreviews.forEach((url) => URL.revokeObjectURL(url));
+    setUploadedImages([]);
+    setImagePreviews([]);
     reset(emptyFormData);
     setBuildingList([]);
     setSpaceList([]);
@@ -316,16 +373,16 @@ export function LeaseForm({
             isSubmitting
               ? undefined
               : handleSubmit(onSubmitForm, (errors) => {
-                  console.log("Form validation errors:", errors);
-                  const firstError = Object.values(errors)[0];
-                  if (firstError?.message) {
-                    toast.error(firstError.message as string);
-                  } else {
-                    toast.error(
-                      "Please fill in all required fields correctly.",
-                    );
-                  }
-                })
+                console.log("Form validation errors:", errors);
+                const firstError = Object.values(errors)[0];
+                if (firstError?.message) {
+                  toast.error(firstError.message as string);
+                } else {
+                  toast.error(
+                    "Please fill in all required fields correctly.",
+                  );
+                }
+              })
           }
           className="space-y-4"
         >
@@ -334,7 +391,7 @@ export function LeaseForm({
           ) : (
             <div className="space-y-4">
               {/* Row 1: Site, Building */}
-              <div className="grid grid-cols-2 gap-4">
+              <div className="grid grid-cols-3 gap-4">
                 <Controller
                   name="site_id"
                   control={control}
@@ -372,7 +429,6 @@ export function LeaseForm({
                     </div>
                   )}
                 />
-
                 <Controller
                   name="building_id"
                   control={control}
@@ -410,10 +466,6 @@ export function LeaseForm({
                     </div>
                   )}
                 />
-              </div>
-
-              {/* Row 2: Space, Tenant */}
-              <div className="grid grid-cols-2 gap-4">
                 <Controller
                   name="space_id"
                   control={control}
@@ -454,6 +506,15 @@ export function LeaseForm({
                     </div>
                   )}
                 />
+              </div>
+
+              {/* Row 2: Space, Tenant */}
+              <div
+                className={`grid gap-4 ${selectedFrequency === "monthly"
+                  ? "grid-cols-4"
+                  : "grid-cols-3"
+                  }`}
+              >
 
                 <div className="space-y-2">
                   <Label>Tenant *</Label>
@@ -487,19 +548,10 @@ export function LeaseForm({
                     </p>
                   )}
                 </div>
-              </div>
-
-              <div
-                className={`grid gap-4 ${
-                  selectedFrequency === "monthly"
-                    ? "grid-cols-4"
-                    : "grid-cols-3"
-                }`}
-              >
-                <div>
-                  <Label>Frequency *</Label>
+                <div className="space-y-2">
+                  <Label>Tenure Frequency*</Label>
                   <Controller
-                    name="frequency"
+                    name="derived_frequency"
                     control={control}
                     render={({ field }) => (
                       <Select
@@ -510,7 +562,7 @@ export function LeaseForm({
                         <SelectTrigger
                           className={errors.frequency ? "border-red-500" : ""}
                         >
-                          <SelectValue placeholder="Select frequency" />
+                          <SelectValue placeholder="Select tenure frequency" />
                         </SelectTrigger>
                         <SelectContent>
                           <SelectItem value="monthly">Monthly</SelectItem>
@@ -519,13 +571,13 @@ export function LeaseForm({
                       </Select>
                     )}
                   />
-                  {errors.frequency && (
+                  {errors.derived_frequency && (
                     <p className="text-sm text-red-500">
-                      {errors.frequency.message as any}
+                      {errors.derived_frequency.message as any}
                     </p>
                   )}
                 </div>
-                <div>
+                <div className="space-y-2">
                   <Label>Start Date *</Label>
                   <Input
                     type="date"
@@ -540,7 +592,7 @@ export function LeaseForm({
                   )}
                 </div>
                 {selectedFrequency === "monthly" && (
-                  <div>
+                  <div className="space-y-2">
                     <Label>Lease Term (Months) *</Label>
                     <Input
                       type="number"
@@ -560,26 +612,11 @@ export function LeaseForm({
                     )}
                   </div>
                 )}
-                <div>
-                  <Label>Rent Amount *</Label>
-                  <Input
-                    type="number"
-                    step="any"
-                    placeholder="Enter rent amount"
-                    disabled={isReadOnly}
-                    {...register("rent_amount")}
-                    className={errors.rent_amount ? "border-red-500" : ""}
-                  />
-                  {errors.rent_amount && (
-                    <p className="text-sm text-red-500">
-                      {errors.rent_amount.message as any}
-                    </p>
-                  )}
-                </div>
+
               </div>
 
               <div className="grid grid-cols-3 gap-4">
-                <div>
+                <div className="space-y-2">
                   <Label>Deposit Amount</Label>
                   <Input
                     type="number"
@@ -595,22 +632,56 @@ export function LeaseForm({
                     </p>
                   )}
                 </div>
-                <div>
-                  <Label>CAM Rate (per sq ft)</Label>
+                <div className="space-y-2">
+                  <Label>Rent Amount *</Label>
                   <Input
                     type="number"
                     step="any"
-                    placeholder="Enter CAM rate"
+                    placeholder="Enter rent amount"
                     disabled={isReadOnly}
-                    {...register("cam_rate")}
-                    className={errors.cam_rate ? "border-red-500" : ""}
+                    {...register("rent_amount")}
+                    className={errors.rent_amount ? "border-red-500" : ""}
                   />
-                  {errors.cam_rate && (
+                  {errors.rent_amount && (
                     <p className="text-sm text-red-500">
-                      {errors.cam_rate.message as any}
+                      {errors.rent_amount.message as any}
                     </p>
                   )}
                 </div>
+                <div className="space-y-2">
+                  <Label>Rent Frequency*</Label>
+                  <Controller
+                    name="frequency"
+                    control={control}
+                    render={({ field }) => (
+                      <Select
+                        value={field.value}
+                        onValueChange={field.onChange}
+                        disabled={isReadOnly}
+                      >
+                        <SelectTrigger
+                          className={errors.frequency ? "border-red-500" : ""}
+                        >
+                          <SelectValue placeholder="Select rent frequency" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="monthly">Monthly</SelectItem>
+                          <SelectItem value="quaterly">Quaterly</SelectItem>
+                          <SelectItem value="annually">Annually</SelectItem>
+                        </SelectContent>
+                      </Select>
+                    )}
+                  />
+                  {errors.frequency && (
+                    <p className="text-sm text-red-500">
+                      {errors.frequency.message as any}
+                    </p>
+                  )}
+                </div>
+              </div>
+
+              <div className="grid grid-cols-3 gap-4">
+
                 <div>
                   <Label>Status</Label>
                   <Controller
@@ -635,59 +706,57 @@ export function LeaseForm({
                     )}
                   />
                 </div>
-              </div>
+                {/* Utilities */}
+                <div
+                  className="grid grid-cols-2 gap-2"
+                >
+                  <div>
+                    <Label>Electricity</Label>
+                    <Controller
+                      name="utilities.electricity"
+                      control={control}
+                      render={({ field }) => (
+                        <Select
+                          value={field.value || ""}
+                          onValueChange={field.onChange}
+                          disabled={isReadOnly}
+                        >
+                          <SelectTrigger>
+                            <SelectValue placeholder="Select" />
+                          </SelectTrigger>
+                          <SelectContent>
+                            <SelectItem value="submeter">Submeter</SelectItem>
+                            <SelectItem value="fixed">Fixed</SelectItem>
+                            <SelectItem value="na">N/A</SelectItem>
+                          </SelectContent>
+                        </Select>
+                      )}
+                    />
+                  </div>
+                  <div>
+                    <Label>Water</Label>
+                    <Controller
+                      name="utilities.water"
+                      control={control}
+                      render={({ field }) => (
+                        <Select
+                          value={field.value || ""}
+                          onValueChange={field.onChange}
+                          disabled={isReadOnly}
+                        >
+                          <SelectTrigger>
+                            <SelectValue placeholder="Select" />
+                          </SelectTrigger>
+                          <SelectContent>
+                            <SelectItem value="submeter">Submeter</SelectItem>
+                            <SelectItem value="fixed">Fixed</SelectItem>
+                            <SelectItem value="na">N/A</SelectItem>
+                          </SelectContent>
+                        </Select>
+                      )}
+                    />
+                  </div>
 
-              {/* Utilities */}
-              <div
-                className={`grid gap-4 ${
-                  mode === "create" ? "grid-cols-3" : "grid-cols-2"
-                }`}
-              >
-                <div>
-                  <Label>Electricity</Label>
-                  <Controller
-                    name="utilities.electricity"
-                    control={control}
-                    render={({ field }) => (
-                      <Select
-                        value={field.value || ""}
-                        onValueChange={field.onChange}
-                        disabled={isReadOnly}
-                      >
-                        <SelectTrigger>
-                          <SelectValue placeholder="Select" />
-                        </SelectTrigger>
-                        <SelectContent>
-                          <SelectItem value="submeter">Submeter</SelectItem>
-                          <SelectItem value="fixed">Fixed</SelectItem>
-                          <SelectItem value="na">N/A</SelectItem>
-                        </SelectContent>
-                      </Select>
-                    )}
-                  />
-                </div>
-                <div>
-                  <Label>Water</Label>
-                  <Controller
-                    name="utilities.water"
-                    control={control}
-                    render={({ field }) => (
-                      <Select
-                        value={field.value || ""}
-                        onValueChange={field.onChange}
-                        disabled={isReadOnly}
-                      >
-                        <SelectTrigger>
-                          <SelectValue placeholder="Select" />
-                        </SelectTrigger>
-                        <SelectContent>
-                          <SelectItem value="submeter">Submeter</SelectItem>
-                          <SelectItem value="fixed">Fixed</SelectItem>
-                          <SelectItem value="na">N/A</SelectItem>
-                        </SelectContent>
-                      </Select>
-                    )}
-                  />
                 </div>
                 {/* Auto Move In Space Occupancy Checkbox - Only show when creating */}
                 {mode === "create" && (
@@ -697,11 +766,11 @@ export function LeaseForm({
 
                     <div className="flex items-center gap-2 h-10">
                       <Controller
-                        name="auto_move_in_space_occupancy"
+                        name="auto_move_in"
                         control={control}
                         render={({ field }) => (
                           <Checkbox
-                            id="auto_move_in_space_occupancy"
+                            id="auto_move_in"
                             checked={field.value || false}
                             onCheckedChange={field.onChange}
                             disabled={isReadOnly}
@@ -709,7 +778,7 @@ export function LeaseForm({
                         )}
                       />
                       <Label
-                        htmlFor="auto_move_in_space_occupancy"
+                        htmlFor="auto_move_in"
                         className="text-sm font-normal cursor-pointer leading-none"
                       >
                         Auto move tenant to space
@@ -717,6 +786,150 @@ export function LeaseForm({
                     </div>
                   </div>
                 )}
+
+              </div>
+
+
+              {/* Document Upload */}
+              <div className="space-y-2">
+                <Label>Attach Documents</Label>
+                <div className="space-y-2">
+                  <Button
+                    type="button"
+                    variant="outline"
+                    onClick={() => fileInputRef.current?.click()}
+                    className="w-full"
+                    disabled={isReadOnly}
+                  >
+                    <Upload className="h-4 w-4 mr-2" />
+                    Upload Documents
+                  </Button>
+                  <div className="text-xs text-muted-foreground space-y-1">
+                    <p>• Only JPG, PNG, JPEG, and PDF files must be uploaded</p>
+                    <p>• Uploaded files must be less than 2MB</p>
+                  </div>
+                  <input
+                    ref={fileInputRef}
+                    type="file"
+                    accept="image/png,image/jpeg,image/jpg,application/pdf"
+                    multiple
+                    className="hidden"
+                    onChange={(e) => {
+                      const files = Array.from(e.target.files || []);
+                      const MAX_FILE_SIZE = 2 * 1024 * 1024; // 2MB in bytes
+                      const ALLOWED_TYPES = [
+                        "image/png",
+                        "image/jpeg",
+                        "image/jpg",
+                        "application/pdf",
+                      ];
+
+                      const validFiles: File[] = [];
+                      const validPreviews: string[] = [];
+
+                      files.forEach((file) => {
+                        // Validation 1: File size (2MB)
+                        if (file.size > MAX_FILE_SIZE) {
+                          toast.error(
+                            `${file.name} exceeds 2MB limit. Please choose a smaller file.`,
+                          );
+                          return;
+                        }
+
+                        // Validation 2: File type (png, jpeg, jpg, pdf)
+                        const fileType = file.type.toLowerCase();
+                        if (!ALLOWED_TYPES.includes(fileType)) {
+                          toast.error(
+                            `${file.name} is not a valid file type. Only PNG, JPEG, JPG, and PDF are allowed.`,
+                          );
+                          return;
+                        }
+
+                        // If file passes both validations, add it
+                        validFiles.push(file);
+                        // For PDFs, we don't create a preview URL, we'll use empty string
+                        if (fileType === "application/pdf") {
+                          validPreviews.push("");
+                        } else {
+                          validPreviews.push(URL.createObjectURL(file));
+                        }
+                      });
+
+                      if (validFiles.length > 0) {
+                        setUploadedImages((prev) => [...prev, ...validFiles]);
+                        setImagePreviews((prev) => [...prev, ...validPreviews]);
+                      }
+
+                      // Reset file input to allow selecting the same file again
+                      if (e.target) {
+                        (e.target as HTMLInputElement).value = "";
+                      }
+                    }}
+                  />
+                  {uploadedImages.length > 0 && (
+                    <div className="space-y-2">
+                      <div className="grid grid-cols-3 gap-2 mt-2">
+                        {uploadedImages.map((file, index) => {
+                          const isPdf = file.type.toLowerCase() === "application/pdf";
+                          return (
+                            <div key={index} className="relative group">
+                              {isPdf ? (
+                                <div className="w-full h-24 flex items-center justify-center bg-muted rounded border">
+                                  <FileText className="h-8 w-8 text-muted-foreground" />
+                                </div>
+                              ) : (
+                                <img
+                                  src={imagePreviews[index]}
+                                  alt={`Upload ${index + 1}`}
+                                  className="w-full h-24 object-cover rounded border"
+                                />
+                              )}
+                              {!isReadOnly && (
+                                <Button
+                                  type="button"
+                                  variant="destructive"
+                                  size="sm"
+                                  className="absolute top-1 right-1 h-6 w-6 p-0 opacity-0 group-hover:opacity-100 transition-opacity"
+                                  onClick={() => {
+                                    setUploadedImages((prev) =>
+                                      prev.filter((_, i) => i !== index),
+                                    );
+                                    setImagePreviews((prev) => {
+                                      if (prev[index]) {
+                                        URL.revokeObjectURL(prev[index]);
+                                      }
+                                      return prev.filter((_, i) => i !== index);
+                                    });
+                                  }}
+                                >
+                                  <X className="h-3 w-3" />
+                                </Button>
+                              )}
+                              <p className="text-xs text-muted-foreground mt-1 truncate">
+                                {file.name}
+                              </p>
+                              <p className="text-xs text-muted-foreground">
+                                {(file.size / 1024).toFixed(2)} KB
+                              </p>
+                            </div>
+                          );
+                        })}
+                      </div>
+                      <div className="text-xs text-muted-foreground bg-muted p-2 rounded">
+                        <p>
+                          Total: {uploadedImages.length} file(s),{" "}
+                          {(
+                            uploadedImages.reduce(
+                              (sum, file) => sum + file.size,
+                              0,
+                            ) / 1024
+                          ).toFixed(2)}{" "}
+                          KB
+                        </p>
+                      </div>
+                    </div>
+                  )}
+                </div>
               </div>
 
               <DialogFooter>

@@ -2,8 +2,8 @@ import { Toaster } from "@/components/ui/toaster";
 import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
-import { BrowserRouter, Routes, Route } from "react-router-dom";
-import { AuthProvider } from "@/context/AuthContext";
+import { Routes, Route, Navigate } from "react-router-dom";
+import { useAuth } from "@/context/AuthContext";
 import { SettingsProvider } from "@/context/SettingsContext";
 import Home from "./pages/Home";
 import Login from "./pages/Login";
@@ -69,7 +69,6 @@ import Tickets from "./pages/Tickets";
 import ApprovalRules from "./pages/ApprovalRules";
 import SLAPolicies from "./pages/SLAPolicies";
 import TicketWorkOrders from "./pages/TicketWorkOrders";
-import { GoogleOAuthProvider } from "@react-oauth/google";
 import ProtectedLayout from "./components/ProtectedLayout";
 import ProtectedRoute from "./components/ProtectedRoute";
 import RegistrationStatus from "./pages/RegistrationStatus";
@@ -78,108 +77,145 @@ import "./App.css";
 import SpaceDetailPage from "./pages/SpaceDetailPage";
 import SpaceOwnershipApproval from "./pages/SpaceOwnershipApproval";
 import SpaceMaintenance from "./pages/SpaceMaintenance";
+import MaintenanceTemplates from "./pages/MaintenanceTemplates";
 import TenantApprovalPage from "./pages/TenantApprovals";
+import SpaceMoveOutApprovals from "./pages/SpaceMoveOutApproval";
+import SuperAdminDashboard from "./pages/SuperAdmin/SuperAdminDashboard";
+import OrgApprovalPage from "./pages/SuperAdmin/OrgApprovalPage";
+import SuperAdminLayout from "./layouts/SuperAdminLayout";
+import { ModalProvider } from "./context/ModalContext";
+import ParkingSlots from "./pages/ParkingSlots";
 
 const queryClient = new QueryClient();
 
 const App = () => {
+  const { user } = useAuth();
   return (
-    <GoogleOAuthProvider clientId={import.meta.env.VITE_GOOGLE_CLIENT_ID}>
-      <BrowserRouter>
-        <AuthProvider>
-          <SettingsProvider>
-            <QueryClientProvider client={queryClient}>
-              <TooltipProvider>
-                <Toaster />
-                <Sonner />
-                <Routes>
-                  <Route path="/" element={<Home />} />
-                  <Route path="/features" element={<Features />} />
-                  <Route path="/pricing" element={<Pricing />} />
-                  <Route path="/login" element={<Login />} />
-                  <Route path="/signup" element={<SignUp />} />
-                  <Route path="/registration-status" element={<RegistrationStatus />} />
 
-                  {/* All protected pages go inside */}
-                  <Route element={<ProtectedRoute></ProtectedRoute>}>
-                    {/* Layout mounted ONCE */}
-                    <Route element={<MainLayout />}>
-                      <Route path="/dashboard" element={<Dashboard />} />
-                      <Route path="/analytics" element={<Analytics />} />
-                      <Route path="/ai-predictions" element={<AiPredictions />} />
-                      <Route path="/organizations" element={<Organizations />} />
-                      <Route path="/sites" element={<Sites />} />
-                      <Route path="/buildings" element={<Buildings />} />
-                      <Route path="/spaces" element={<Spaces />} />
-                      <Route path="/spaces/:id" element={<SpaceDetailPage />} />
-                      <Route path="/spaces/:kind" element={<SpacesByKind />} />
-                      <Route path="/space-groups" element={<SpaceGroups />} />
-                      <Route path="/space-assignments" element={<SpaceAssignments />} />
-                      <Route path="/space-maintenance" element={<SpaceMaintenance />} />
-                      <Route path="/leases" element={<Leases />} />
-                      <Route path="/leases/:id" element={<LeaseDetailPage />} />
-                      <Route path="/tenants" element={<Tenants />} />
-                      <Route path="/tenants/create" element={<TenantFormPage />} />
-                      <Route path="/tenants/:id/edit" element={<TenantFormPage />} />
-                      <Route path="/tenants/:id/view" element={<TenantDetailPage />} />
-                      <Route path="/lease-charges" element={<LeaseCharges />} />
-                      <Route path="/lease-charge-codes" element={<LeaseChargeCode />} />
-                      <Route path="/invoices" element={<Invoices />} />
-                      <Route path="/invoices/create" element={<InvoiceFormPage />} />
-                      <Route path="/invoices/:id/edit" element={<InvoiceFormPage />} />
-                      <Route path="/invoices/:id/view" element={<InvoiceDetailPage />} />
-                      <Route path="/revenue-reports" element={<RevenueReports />} />
-                      <Route path="/tax-management" element={<TaxManagement />} />
-                      <Route path="/assets" element={<Assets />} />
-                      <Route path="/asset-categories" element={<AssetCategories />} />
-                      <Route path="/work-orders" element={<WorkOrders />} />
-                      <Route path="/service-requests" element={<ServiceRequests />} />
-                      <Route path="/service-requests/:id" element={<ServiceRequestDetail />} />
-                      <Route path="/preventive-maintenance" element={<PreventiveMaintenance />} />
-                      <Route path="/vendors" element={<Vendors />} />
-                      <Route path="/contracts" element={<Contracts />} />
-                      <Route path="/meters" element={<MetersReadings />} />
-                      <Route path="/consumption" element={<ConsumptionReports />} />
-                      <Route path="/bookings" element={<Bookings />} />
-                      <Route path="/rates" element={<RatePlans />} />
-                      <Route path="/guests" element={<Guests />} />
-                      {/* <Route path="/folios" element={<Folios />} /> */}
-                      <Route path="/housekeeping" element={<Housekeeping />} />
-                      <Route path="/chatbot" element={<ChatBot />} />
-                      <Route path="/parking-zones" element={<ParkingZones />} />
-                      <Route path="/parking-passes" element={<ParkingPasses />} />
-                      <Route path="/access-logs" element={<AccessLogs />} />
-                      <Route path="/visitors" element={<Visitors />} />
-                      <Route path="/notifications" element={<Notifications />} />
-                      <Route path="/settings" element={<Settings />} />
-                      <Route path="/documentation" element={<Documentation />} />
-                      <Route path="/roles" element={<RolesManagement />} />
-                      <Route path="/role-policies" element={<RolePolicies />} />
-                      <Route path="/users-management" element={<UsersManagement />} />
-                      <Route path="/users-management/:id/view" element={<UserManagementDetailPage />} />
-                      <Route path="/pending-approvals" element={<PendingApprovals />} />
-                      <Route path="/ticket-dashboard" element={<TicketDashboard />} />
-                      <Route path="/tickets" element={<Tickets />} />
-                      <Route path="/tickets/:ticketId" element={<TicketDetail />} />
-                      <Route path="/ticket-categories" element={<TicketCategories />} />
-                      <Route path="/sla-policies" element={<SLAPolicies />} />
-                      <Route path="/ticket-work-orders" element={<TicketWorkOrders />} />
-                      <Route path="/ticket-workload" element={<TicketWorkload />} />
-                      <Route path="/approval-rules" element={<ApprovalRules />} />
-                      <Route path="/space-ownership-approvals" element={<SpaceOwnershipApproval />} />
-                      <Route path="/tenant-space-approvals" element={<TenantApprovalPage />} />
-                      <Route path="/profile" element={<UserManagementDetailPage />} />
-                    </Route>
-                  </Route>
-                  {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
-                  <Route path="*" element={<NotFound />} />
-                </Routes>
-              </TooltipProvider>
-            </QueryClientProvider>
-          </SettingsProvider>
-        </AuthProvider>
-      </BrowserRouter>
-    </GoogleOAuthProvider>
+    <QueryClientProvider client={queryClient}>
+      <ModalProvider>
+        <TooltipProvider>
+          <Toaster />
+          <Sonner
+            richColors
+          />
+          <Routes>
+            <Route path="/" element={<Home />} />
+            <Route path="/features" element={<Features />} />
+            <Route path="/pricing" element={<Pricing />} />
+            <Route path="/login" element={<Login />} />
+            <Route path="/signup" element={<SignUp />} />
+            <Route path="/registration-status" element={<RegistrationStatus />} />
+
+            {/* All protected pages go inside */}
+            <Route element={<ProtectedRoute></ProtectedRoute>}>
+              {/* Super Admin routes */}
+              {user?.default_account_type === "super_admin" && (
+                <Route element={<SuperAdminLayout />}>
+                  <Route
+                    path="/super-admin/dashboard"
+                    element={<SuperAdminDashboard />}
+                  />
+                  <Route
+                    path="/super-admin/org-approvals"
+                    element={<OrgApprovalPage />}
+                  />
+                  <Route
+                    path="/super-admin/organizations"
+                    element={<Organizations />}
+                  />
+                  <Route
+                    path="/super-admin/*"
+                    element={<Navigate to="/super-admin/dashboard" />}
+                  />
+                </Route>
+              )}
+              {/* Layout mounted ONCE */}
+              {/* Org/Tenant routes */}
+              {user?.default_account_type !== "super_admin" && (
+                <Route
+                  element={
+                    <SettingsProvider>
+                      <MainLayout />
+                    </SettingsProvider>
+                  }
+                >
+                  <Route path="/dashboard" element={<Dashboard />} />
+                  <Route path="/analytics" element={<Analytics />} />
+                  <Route path="/ai-predictions" element={<AiPredictions />} />
+                  <Route path="/organizations" element={<Organizations />} />
+                  <Route path="/sites" element={<Sites />} />
+                  <Route path="/buildings" element={<Buildings />} />
+                  <Route path="/spaces" element={<Spaces />} />
+                  <Route path="/spaces/:id" element={<SpaceDetailPage />} />
+                  <Route path="/spaces/:kind" element={<SpacesByKind />} />
+                  <Route path="/space-groups" element={<SpaceGroups />} />
+                  <Route path="/space-assignments" element={<SpaceAssignments />} />
+                  <Route path="/space-maintenance" element={<SpaceMaintenance />} />
+                  <Route path="/maintenance-templates" element={<MaintenanceTemplates />} />
+                  <Route path="/leases" element={<Leases />} />
+                  <Route path="/leases/:id" element={<LeaseDetailPage />} />
+                  <Route path="/tenants" element={<Tenants />} />
+                  <Route path="/tenants/create" element={<TenantFormPage />} />
+                  <Route path="/tenants/:id/edit" element={<TenantFormPage />} />
+                  <Route path="/tenants/:id/view" element={<TenantDetailPage />} />
+                  <Route path="/rent-charges" element={<LeaseCharges />} />
+                  {/* <Route path="/lease-charge-codes" element={<LeaseChargeCode />} /> */}
+                  <Route path="/invoices" element={<Invoices />} />
+                  <Route path="/invoices/create" element={<InvoiceFormPage />} />
+                  <Route path="/invoices/:id/view" element={<InvoiceDetailPage />} />
+                  <Route path="/revenue-reports" element={<RevenueReports />} />
+                  <Route path="/tax-management" element={<TaxManagement />} />
+                  <Route path="/assets" element={<Assets />} />
+                  <Route path="/asset-categories" element={<AssetCategories />} />
+                  <Route path="/work-orders" element={<WorkOrders />} />
+                  <Route path="/service-requests" element={<ServiceRequests />} />
+                  <Route path="/service-requests/:id" element={<ServiceRequestDetail />} />
+                  <Route path="/preventive-maintenance" element={<PreventiveMaintenance />} />
+                  <Route path="/vendors" element={<Vendors />} />
+                  <Route path="/contracts" element={<Contracts />} />
+                  <Route path="/meters" element={<MetersReadings />} />
+                  <Route path="/consumption" element={<ConsumptionReports />} />
+                  <Route path="/bookings" element={<Bookings />} />
+                  <Route path="/rates" element={<RatePlans />} />
+                  <Route path="/guests" element={<Guests />} />
+                  {/* <Route path="/folios" element={<Folios />} /> */}
+                  <Route path="/housekeeping" element={<Housekeeping />} />
+                  <Route path="/chatbot" element={<ChatBot />} />
+                  <Route path="/parking-zones" element={<ParkingZones />} />
+                  <Route path="/parking-passes" element={<ParkingPasses />} />
+                  <Route path="/access-logs" element={<AccessLogs />} />
+                  <Route path="/visitors" element={<Visitors />} />
+                  <Route path="/notifications" element={<Notifications />} />
+                  <Route path="/settings" element={<Settings />} />
+                  <Route path="/documentation" element={<Documentation />} />
+                  <Route path="/roles" element={<RolesManagement />} />
+                  <Route path="/role-policies" element={<RolePolicies />} />
+                  <Route path="/users-management" element={<UsersManagement />} />
+                  <Route path="/users-management/:id/view" element={<UserManagementDetailPage />} />
+                  <Route path="/pending-approvals" element={<PendingApprovals />} />
+                  <Route path="/ticket-dashboard" element={<TicketDashboard />} />
+                  <Route path="/tickets" element={<Tickets />} />
+                  <Route path="/tickets/:ticketId" element={<TicketDetail />} />
+                  <Route path="/ticket-categories" element={<TicketCategories />} />
+                  <Route path="/sla-policies" element={<SLAPolicies />} />
+                  <Route path="/ticket-work-orders" element={<TicketWorkOrders />} />
+                  <Route path="/ticket-workload" element={<TicketWorkload />} />
+                  <Route path="/approval-rules" element={<ApprovalRules />} />
+                  <Route path="/space-ownership-approvals" element={<SpaceOwnershipApproval />} />
+                  <Route path="/tenant-space-approvals" element={<TenantApprovalPage />} />
+                  <Route path="/space-move-out-approvals" element={<SpaceMoveOutApprovals />} />
+                  <Route path="/profile" element={<UserManagementDetailPage />} />
+                  <Route path="/parking-slots" element={<ParkingSlots />} />
+                </Route>
+              )}
+            </Route>
+            {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
+            <Route path="*" element={<NotFound />} />
+          </Routes>
+        </TooltipProvider>
+      </ModalProvider>
+    </QueryClientProvider>
   );
 };
 

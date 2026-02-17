@@ -17,7 +17,7 @@ import { SidebarProvider, SidebarInset, SidebarTrigger } from "@/components/ui/s
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from "@/components/ui/alert-dialog";
 import { SpaceAssignmentForm } from "@/components/SpaceAssignmentForm";
 import { Space } from "@/pages/Spaces";
-import { toast } from "sonner";
+import { toast } from "@/components/ui/app-toast";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { spaceAssignmentApiService } from "@/services/spaces_sites/spaceassignmentsapi";
 import { siteApiService } from "@/services/spaces_sites/sitesapi";

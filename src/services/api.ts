@@ -1,6 +1,32 @@
-import { toast } from "sonner";
+import { showAppToast, showErrorToast } from "@/components/ui/app-toast";
+import { openGlobalModal } from "@/context/ModalContext";
+import { ERROR_TITLES } from "@/data/errorTitles";
+import { toast } from "@/components/ui/app-toast";
+
+
 const AUTH_API_BASE_URL = import.meta.env.VITE_AUTH_API_BASE_URL;
 const FACILITY_API_BASE_URL = import.meta.env.VITE_FACILITY_API_BASE_URL;
+
+
+function normalizeError(result: any) {
+    const statusCode = result?.status_code?.toString();
+    let message = "Something went wrong";
+
+
+    if (result.status_code != "210" && result.status_code != "400" && result.status_code != "500"
+        && result?.status.toString().toLowerCase() != "failure"
+    )
+        message = result.message
+
+
+    return {
+        title:
+            ERROR_TITLES[statusCode] || "Action Failed",
+
+        message: message,
+    };
+}
+
 
 class ApiService {
     private token: string | null = null;
@@ -36,6 +62,26 @@ class ApiService {
         return headers;
     }
 
+    private handleErrorByStatusCode(result: any) {
+        const statusCode = result?.status_code?.toString();
+
+        // 🚨 ALERT LEVEL (High priority errors)
+        const MODAL_CODES = ["999", "777"]; // example
+
+        // default fallback
+        const error = normalizeError(result);
+
+        if (MODAL_CODES.includes(statusCode)) {
+            openGlobalModal(error.message);
+            return;
+        }
+        showErrorToast(
+            error.title,
+            error.message,
+        );
+    }
+
+
     public async request(
         endpoint: string,
         options: RequestInit = {},
@@ -48,7 +94,6 @@ class ApiService {
                 ...options.headers,
             },
         };
-        const errorMessage = "Something went wrong";
 
         try {
             console.log('API request config: ', config, url);
@@ -62,15 +107,6 @@ class ApiService {
             console.log('API response data: ', result);
 
             if (result?.status?.toString().toLowerCase() === "failed" || result?.status.toString().toLowerCase() === "failure") {
-                let message = errorMessage;
-
-                if (result.status_code != "210" && result.status_code != "400" && result.status_code != "500" && result.status_code != "11"
-                    || (result.status_code != "11" && result?.status.toString().toLowerCase() === "failure")
-                )
-                    message = result.message
-
-                toast.error(message);
-
                 // ✅ Handle token expiration or invalid authentication
                 if (result.status_code === "210" && !isRetry) {
                     console.warn("Access token expired, attempting refresh...");
@@ -90,12 +126,13 @@ class ApiService {
                     this.logoutUser();
                     return;
                 }
+                this.handleErrorByStatusCode(result);
                 return { success: false };
             }
             return { success: true, data: result.data };
         } catch (error) {
             console.log('API request failed:', error);
-            toast.error(errorMessage);
+            showErrorToast("Technical Error!", "Something went wrong");
             return { success: false };
         }
     }
@@ -170,15 +207,15 @@ class ApiService {
             }
 
             if (!response.ok) {
-                toast.error(errorMessage);
                 return { success: false, message: `HTTP error! status: ${response.status}` };
             }
 
             return { success: true, data: result.data };
         } catch (error) {
             console.error('API request failed:', error);
-            toast.error(errorMessage);
-            return { success: false, message: errorMessage };
+            showErrorToast("Technical Error!", "Something went wrong");
+
+            return { success: false, message: "Something went wrong" };
         }
     }
 

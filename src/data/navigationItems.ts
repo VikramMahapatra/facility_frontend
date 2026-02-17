@@ -30,7 +30,34 @@ import {
   FolderTree,
   Ticket,
   CheckCircle2,
+  Move,
+  LayoutDashboard,
 } from "lucide-react";
+
+export const superAdminNavigationItems = [
+  {
+    title: "Administration",
+    items: [
+      {
+        title: "Dashboard",
+        url: "/super-admin/dashboard",
+        icon: LayoutDashboard,
+        resource: "super_admin_dashboard",
+      },
+      {
+        title: "Organization Approvals",
+        url: "/super-admin/org-approvals",
+        icon: Move,
+        resource: "super_admin_org_approvals",
+      },
+      {
+        title: "Organizations",
+        url: "/super-admin/organizations",
+        icon: Building2,
+        resource: "organizations",
+      }
+    ],
+  }];
 
 export const navigationItems = [
   {
@@ -78,25 +105,30 @@ export const navigationItems = [
         resource: "buildings",
       },
       { title: "Spaces", url: "/spaces", icon: Home, resource: "spaces" },
-      {
-        title: "Space Groups (Templates)",
-        url: "/space-groups",
-        icon: Archive,
-        resource: "space_groups",
-      },
-      {
-        title: "Group Assignments",
-        url: "/space-assignments",
-        icon: Users,
-        resource: "group_assignments",
-      },
+      // {
+      //   title: "Space Groups (Templates)",
+      //   url: "/space-groups",
+      //   icon: Archive,
+      //   resource: "space_groups",
+      // },
+      // {
+      //   title: "Group Assignments",
+      //   url: "/space-assignments",
+      //   icon: Users,
+      //   resource: "group_assignments",
+      // },
       {
         title: "Maintenance (CAM)",
         url: "/space-maintenance",
         icon: Wrench,
         resource: "spaces",
       },
-
+      {
+        title: "Maintenance Templates",
+        url: "/maintenance-templates",
+        icon: FileText,
+        resource: "maintenance_templates",
+      },
     ],
   },
   {
@@ -105,16 +137,51 @@ export const navigationItems = [
       { title: "Tenants", url: "/tenants", icon: Users, resource: "tenants" },
       { title: "Leases", url: "/leases", icon: FileText, resource: "leases" },
       {
-        title: "Lease Charges",
-        url: "/lease-charges",
+        title: "Rent Charges",
+        url: "/rent-charges",
         icon: Receipt,
         resource: "lease_charges",
       },
+      // {
+      //   title: "Lease Charge Codes",
+      //   url: "/lease-charge-codes",
+      //   icon: Key,
+      //   resource: "leases_charge_codes",
+      // },
+    ],
+  },
+  {
+    title: "Parking & Access",
+    items: [
       {
-        title: "Lease Charge Codes",
-        url: "/lease-charge-codes",
+        title: "Parking Zones",
+        url: "/parking-zones",
+        icon: Car,
+        resource: "parking_zones",
+      },
+      {
+        title: "Parking Slots",
+        url: "/parking-slots",
+        icon: MapPin,
+        resource: "parking_slots",
+      },
+      {
+        title: "Parking Passes",
+        url: "/parking-passes",
+        icon: Ticket,
+        resource: "parking_passes",
+      },
+      {
+        title: "Access Logs",
+        url: "/access-logs",
         icon: Key,
-        resource: "leases_charge_codes",
+        resource: "access_logs",
+      },
+      {
+        title: "Visitor Management",
+        url: "/visitors",
+        icon: UserCheck,
+        resource: "visitors",
       },
     ],
   },
@@ -231,52 +298,24 @@ export const navigationItems = [
   //     },
   //   ],
   // },
-  {
-    title: "Parking & Access",
-    items: [
-      {
-        title: "Parking Zones",
-        url: "/parking-zones",
-        icon: Car,
-        resource: "parking_zones",
-      },
-      {
-        title: "Parking Passes",
-        url: "/parking-passes",
-        icon: Ticket,
-        resource: "parking_passes",
-      },
-      {
-        title: "Access Logs",
-        url: "/access-logs",
-        icon: Key,
-        resource: "access_logs",
-      },
-      {
-        title: "Visitor Management",
-        url: "/visitors",
-        icon: UserCheck,
-        resource: "visitors",
-      },
-    ],
-  },
-  {
-    title: "Energy consumption",
-    items: [
-      {
-        title: "Meters & Readings",
-        url: "/meters",
-        icon: Zap,
-        resource: "meter_readings",
-      },
-      {
-        title: "Consumption Reports",
-        url: "/consumption",
-        icon: BarChart3,
-        resource: "consumption_reports",
-      },
-    ],
-  },
+
+  // {
+  //   title: "Energy consumption",
+  //   items: [
+  //     {
+  //       title: "Meters & Readings",
+  //       url: "/meters",
+  //       icon: Zap,
+  //       resource: "meter_readings",
+  //     },
+  //     {
+  //       title: "Consumption Reports",
+  //       url: "/consumption",
+  //       icon: BarChart3,
+  //       resource: "consumption_reports",
+  //     },
+  //   ],
+  // },
   {
     title: "Financials",
     items: [
@@ -331,7 +370,13 @@ export const navigationItems = [
         url: "/tenant-space-approvals",
         icon: CheckCircle2,
         resource: "tenant_space_approvals",
-      }
+      },
+      {
+        title: "Space Move/Out",
+        url: "/space-move-out-approvals",
+        icon: Move,
+        resource: "tenant_space_approvals",
+      },
     ],
   },
   {
@@ -389,8 +434,6 @@ export const navigationItems = [
   },
 ];
 
-
-
 export const pageHeaderOverrides = [
   {
     match: (path: string) => path === "/profile",
@@ -403,5 +446,37 @@ export const pageHeaderOverrides = [
         },
       },
     },
-  }
+  },
+  {
+    match: (path: string) => path === "/super-admin/dashboard",
+    meta: {
+      title: "Super Admin Dashboard",
+      breadcrumb: {
+        parent: {
+          label: "Super Admin",
+        },
+        current: {
+          label: "Dashboard",
+          url: "/super-admin/dashboard",
+          icon: Shield,
+        },
+      },
+    },
+  },
+  {
+    match: (path: string) => path === "/super-admin/org-approvals",
+    meta: {
+      title: "Organization Approvals",
+      breadcrumb: {
+        parent: {
+          label: "Super Admin",
+        },
+        current: {
+          label: "Approvals",
+          url: "/super-admin/org-approvals",
+          icon: Building2,
+        },
+      },
+    },
+  },
 ];

@@ -30,7 +30,7 @@ import { Badge } from "@/components/ui/badge";
 import { LogOut } from "lucide-react";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { userManagementApiService } from "@/services/access_control/usermanagementapi";
-import { toast } from "sonner";
+import { toast } from "@/components/ui/app-toast";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -73,6 +73,7 @@ import ContentContainer from "@/components/ContentContainer";
 import { useLoader } from "@/context/LoaderContext";
 import { useAuth } from "@/context/AuthContext";
 import { PageHeader } from "@/components/PageHeader";
+import { getUserAccountTypeBadge } from "@/components/common/AccountTypes";
 
 export default function UsersManagement() {
   const navigate = useNavigate();
@@ -203,23 +204,6 @@ export default function UsersManagement() {
       .slice(0, 2);
   };
 
-  const getTypeBadge = (status: string) => {
-    status = status.toLowerCase();
-    const variants = {
-      tenant: "default",
-      flatowner: "default",
-      vendor: "default",
-      staff: "secondary",
-      organization: "destructive",
-    } as const;
-
-    return (
-      <Badge variant={variants[status as keyof typeof variants] || "outline"}>
-        {status}
-      </Badge>
-    );
-  };
-
   return (
     <div className="relative  flex-1">
       <div className="space-y-6">
@@ -294,7 +278,7 @@ export default function UsersManagement() {
                       <TableCell>
                         <div className="flex flex-wrap gap-1">
                           {user.account_types?.map((account_type) => (
-                            getTypeBadge(account_type)
+                            getUserAccountTypeBadge(account_type)
                           ))}
                         </div>
                       </TableCell>

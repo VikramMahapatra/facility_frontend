@@ -5,6 +5,10 @@ class OrganisationApiService {
     return await apiService.request("/orgs/get_org");
   }
 
+  async getAllOrg() {
+    return await apiService.request("/orgs/all");
+  }
+
   async update(orgData: any) {
     return await apiService.request("/orgs/", {
       method: "PUT",

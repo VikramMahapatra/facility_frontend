@@ -28,7 +28,7 @@ import {
 import { Badge } from "@/components/ui/badge";
 import { Plus, Pencil, Trash2, Search, Car } from "lucide-react";
 import { ParkingZoneForm } from "@/components/ParkingZoneForm";
-import { toast } from "sonner";
+import { toast } from "@/components/ui/app-toast";
 import { parkingZoneApiService } from "@/services/parking_access/parkingzonesapi";
 import { siteApiService } from "@/services/spaces_sites/sitesapi";
 import {
@@ -56,7 +56,7 @@ import { useLoader } from "@/context/LoaderContext";
 import { useAuth } from "../context/AuthContext";
 import { ParkingZone } from "@/interfaces/parking_access_interface";
 import { PageHeader } from "@/components/PageHeader";
-import { AsyncAutocompleteRQ } from "@/components/common/async-autocomplete-rq";
+import { useNavigate } from "react-router-dom";
 
 export default function ParkingZones() {
   const [isFormOpen, setIsFormOpen] = useState(false);
@@ -81,6 +81,7 @@ export default function ParkingZones() {
   const { user, handleLogout } = useAuth();
   const { withLoader } = useLoader();
   const resource = "parking_zones";
+  const navigate = useNavigate();
 
   useEffect(() => {
     loadSiteLookup();
@@ -237,18 +238,18 @@ export default function ParkingZones() {
           <Card>
             <CardContent className="pt-6">
               <p className="text-sm font-bold text-muted-foreground mb-3">
-                Total Capacity
+                Total Slots
               </p>
               <div className="text-3xl font-bold text-sidebar-primary mb-1">
                 {totalCapacity}
               </div>
-              <p className="text-sm text-blue-600">Total parking spots</p>
+              <p className="text-sm text-blue-600">Total parking slots</p>
             </CardContent>
           </Card>
           <Card>
             <CardContent className="pt-6">
               <p className="text-sm font-bold text-muted-foreground mb-3">
-                Avg Capacity
+                Avg Slots
               </p>
               <div className="text-3xl font-bold text-sidebar-primary mb-1">
                 {avgCapacity}
@@ -269,30 +270,22 @@ export default function ParkingZones() {
             />
           </div>
           <div className="w-[180px]">
-          <AsyncAutocompleteRQ
-            value={selectedSite === "all" ? "" : selectedSite}
-            onChange={(value) => {
-              setSelectedSite(value || "all");
-            }}
-            placeholder="All Sites"
-            queryKey={["sites"]}
-            queryFn={async (search) => {
-              const res = await siteApiService.getSiteLookup(search);
-              return res.data.map((s: any) => ({
-                id: s.id,
-                label: s.name,
-              }));
-            }}
-            fallbackOption={
-              selectedSite === "all"
-                ? {
-                    id: "all",
-                    label: "All Sites",
-                  }
-                : undefined
-            }
-              minSearchLength={0}
-            />
+            <Select
+              value={selectedSite}
+              onValueChange={setSelectedSite}
+            >
+              <SelectTrigger>
+                <SelectValue placeholder="All Sites" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">All Sites</SelectItem>
+                {siteList.map((site) => (
+                  <SelectItem key={site.id} value={site.id}>
+                    {site.name}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
           </div>
         </div>
         <div className="relative rounded-md border">
@@ -303,7 +296,7 @@ export default function ParkingZones() {
                 <TableRow>
                   <TableHead>Zone Name</TableHead>
                   <TableHead>Site</TableHead>
-                  <TableHead>Capacity</TableHead>
+                  <TableHead>Slots</TableHead>
                   <TableHead className="text-right">
                     Actions
                   </TableHead>
@@ -328,11 +321,18 @@ export default function ParkingZones() {
                       <TableCell>{zone.site_name || "-"}</TableCell>
                       <TableCell>
                         <Badge variant="outline">
-                          {zone.capacity} spots
+                          {zone.slots} slots
                         </Badge>
                       </TableCell>
                       <TableCell className="text-right">
                         <div className="flex justify-end gap-2">
+                          <Button
+                            variant="ghost"
+                            size="icon"
+                            onClick={() => navigate(`/parking-slots?zone=${zone.id}`)}
+                          >
+                            <Car className="h-4 w-4" />
+                          </Button>
                           {canWrite(resource) && (
                             <Button
                               variant="ghost"

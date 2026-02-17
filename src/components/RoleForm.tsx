@@ -1,5 +1,5 @@
 import { zodResolver } from "@hookform/resolvers/zod";
-import { useForm } from "react-hook-form";
+import { Controller, useForm } from "react-hook-form";
 import * as z from "zod";
 import { useEffect } from "react";
 import { Button } from "@/components/ui/button";
@@ -19,11 +19,16 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Role } from "@/interfaces/role_management";
+import { AccountType, accountTypes, userAccountTypes } from "./common/AccountTypes";
 
 const roleFormSchema = z.object({
   name: z.string().min(2, "Role name must be at least 2 characters").max(64),
   description: z.string().optional(),
+  account_types: z.array(
+    z.enum(userAccountTypes)
+  ).optional(),
 });
 
 type RoleFormValues = z.infer<typeof roleFormSchema>;
@@ -42,6 +47,7 @@ export function RoleForm({ role, isOpen, onClose, onSave, mode }: RoleFormProps)
     defaultValues: {
       name: role?.name || "",
       description: role?.description || "",
+      account_types: role?.account_types || [],
     },
   });
 
@@ -52,6 +58,7 @@ export function RoleForm({ role, isOpen, onClose, onSave, mode }: RoleFormProps)
     form.reset({
       name: role?.name || "",
       description: role?.description || "",
+      account_types: role?.account_types || [],
     });
   }, [role, form]);
 
@@ -63,6 +70,7 @@ export function RoleForm({ role, isOpen, onClose, onSave, mode }: RoleFormProps)
     });
   };
 
+  const selectableAccountTypes = accountTypes
 
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
@@ -102,10 +110,60 @@ export function RoleForm({ role, isOpen, onClose, onSave, mode }: RoleFormProps)
                 </FormItem>
               )}
             />
+            {/* Account Types - Checkbox Group */}
+            <FormField
+              control={form.control}
+              name="account_types"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>Account Types</FormLabel>
+                  <FormControl>
+                    <div>
+                      <div className="grid grid-cols-1 gap-x-6 gap-y-3 border rounded-md p-4 max-h-[180px] overflow-y-auto">
+                        {selectableAccountTypes.map((type) => (
+                          <label
+                            key={type.value}
+                            className="flex items-center space-x-2 cursor-pointer"
+                          >
+                            <input
+                              type="checkbox"
+                              value={type.value}
+                              checked={(field.value as string[])?.includes(type.value) || false}
+                              onChange={(e) => {
+                                if (e.target.checked) {
+                                  field.onChange([...(field.value || []), type.value]);
+                                } else {
+                                  field.onChange(
+                                    (field.value || []).filter((v) => v !== type.value)
+                                  );
+                                }
+                              }}
+                            />
+                            {type.icon}
+                            <div className="flex flex-col">
+                              <span className="font-medium">{type.label}</span>
+                              <span className="text-xs text-muted-foreground">
+                                {type.description}
+                              </span>
+                            </div>
+                          </label>
+                        ))}
+                      </div>
+                    </div>
+                  </FormControl>
+
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
+
+
+
+
             <div className="flex justify-end gap-3">
-              <Button 
-                type="button" 
-                variant="outline" 
+              <Button
+                type="button"
+                variant="outline"
                 onClick={() => {
                   form.reset();
                   onClose();

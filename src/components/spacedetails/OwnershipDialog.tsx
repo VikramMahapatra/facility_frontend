@@ -3,10 +3,10 @@
 
 import { spacesApiService } from "@/services/spaces_sites/spacesapi";
 import { useState } from "react";
-import { toast } from "../ui/sonner";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "../ui/dialog";
 import { AsyncAutocompleteRQ } from "../common/async-autocomplete-rq";
 import { Button } from "../ui/button";//
+import { toast } from "../ui/app-toast";
 
 // ===============================
 export function OwnershipDialog({
@@ -42,7 +42,7 @@ export function OwnershipDialog({
             }
 
             if (res.success) {
-                toast.success(`${type == "owner" ? "Ownership" : "Tenant assignment"} request submitted`);
+                toast.success(`${type == "owner" ? "Ownership" : "Tenant"} assigned successfully`);
                 onSuccess();
             }
 

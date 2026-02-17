@@ -34,7 +34,7 @@ import {
 import TicketForm from "@/components/TicketForm";
 import { LogOut } from "lucide-react";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
-import { toast } from "sonner";
+import { toast } from "@/components/ui/app-toast";
 import { useNavigate } from "react-router-dom";
 import {
   Select,
@@ -54,7 +54,6 @@ import { Pagination } from "@/components/Pagination";
 import { useSkipFirstEffect } from "@/hooks/use-skipfirst-effect";
 import { useAuth } from "../context/AuthContext";
 import { PageHeader } from "@/components/PageHeader";
-import { AsyncAutocompleteRQ } from "@/components/common/async-autocomplete-rq";
 
 export default function Tickets() {
   const navigate = useNavigate();
@@ -71,6 +70,7 @@ export default function Tickets() {
   const [searchTerm, setSearchTerm] = useState("");
   const [priorityList, setPriorityList] = useState<any[]>([]);
   const [statusList, setStatusList] = useState<any[]>([]);
+  const [siteList, setSiteList] = useState<any[]>([]);
   const [page, setPage] = useState(1);
   const [pageSize] = useState(10);
   const { user, handleLogout } = useAuth();
@@ -83,7 +83,15 @@ export default function Tickets() {
   useEffect(() => {
     loadPriorityLookup();
     loadStatusLookup();
+    loadSiteLookup();
   }, []);
+
+  const loadSiteLookup = async () => {
+    const response = await siteApiService.getSiteLookup();
+    if (response?.success) {
+      setSiteList(response.data || []);
+    }
+  };
 
   useEffect(() => {
     if (page === 1) {
@@ -229,26 +237,22 @@ export default function Tickets() {
               className="pl-10"
             />
           </div>
-          <div className="w-[150px]">
-            <AsyncAutocompleteRQ
-              value={selectedSite === "all" ? "" : selectedSite}
-              onChange={(value) => {
-                setSelectedSite(value || "all");
-              }}
-              placeholder="All Sites"
-              queryKey={["sites"]}
-              queryFn={async (search) => {
-                const res = await siteApiService.getSiteLookup(search);
-                const sites = res.data.map((s: any) => ({
-                  id: s.id,
-                  label: s.name,
-                }));
-                // Always include "All Sites" option at the beginning
-                return [{ id: "all", label: "All Sites" }, ...sites];
-              }}
-              minSearchLength={0}
-            />
-          </div>
+          <Select
+            value={selectedSite}
+            onValueChange={setSelectedSite}
+          >
+            <SelectTrigger className="w-[150px]">
+              <SelectValue placeholder="All Sites" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="all">All Sites</SelectItem>
+              {siteList.map((site) => (
+                <SelectItem key={site.id} value={site.id}>
+                  {site.name}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
           <Select value={statusFilter} onValueChange={setStatusFilter}>
             <SelectTrigger className="w-[150px]">
               <SelectValue placeholder="Status" />
