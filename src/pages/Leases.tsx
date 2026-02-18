@@ -14,7 +14,6 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { LeaseForm } from "@/components/LeasesForm";
-import { PaymentTermsForm } from "@/components/PaymentTermsForm";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -50,8 +49,6 @@ export default function Leases() {
   const [isFormOpen, setIsFormOpen] = useState(false);
   const [deleteLeaseId, setDeleteLeaseId] = useState<string | null>(null);
   const [siteList, setSiteList] = useState<any[]>([]);
-  const [createdLeaseId, setCreatedLeaseId] = useState<string | null>(null);
-  const [isPaymentTermsFormOpen, setIsPaymentTermsFormOpen] = useState(false);
   const { canWrite, canDelete } = useAuth();
   const { withLoader } = useLoader();
 
@@ -157,7 +154,7 @@ export default function Leases() {
           `Cannot Delete Lease\n${authResponse?.message || "Unknown error"}`,
           {
             style: { whiteSpace: "pre-line" },
-          },
+          } as any,
         );
       }
     }
@@ -180,10 +177,6 @@ export default function Leases() {
         if (leaseId) {
           // Close lease form
           setIsFormOpen(false);
-
-          // Store leaseId and directly open payment terms form
-          setCreatedLeaseId(String(leaseId));
-          setIsPaymentTermsFormOpen(true);
         }
       }
     } else if (formMode === "edit" && selectedLease) {
@@ -208,7 +201,8 @@ export default function Leases() {
         setIsFormOpen(false);
       }
       toast.success(
-        `Lease has been ${formMode === "create" ? "created" : "updated"
+        `Lease has been ${
+          formMode === "create" ? "created" : "updated"
         } successfully.`,
       );
     }
@@ -327,8 +321,8 @@ export default function Leases() {
                   {leaseOverview.avgLeaseTermMonths < 12
                     ? `${leaseOverview.avgLeaseTermMonths.toFixed(0)} months`
                     : `${(leaseOverview.avgLeaseTermMonths / 12).toFixed(
-                      1,
-                    )} years`}
+                        1,
+                      )} years`}
                 </div>
                 <p className="text-sm text-muted-foreground">Avg Lease Term</p>
               </CardContent>
@@ -409,7 +403,7 @@ export default function Leases() {
                       </div>
                       <div>
                         {!lease.deposit_amount ||
-                          Number(lease.deposit_amount) === 0
+                        Number(lease.deposit_amount) === 0
                           ? "-"
                           : formatCurrency(lease.deposit_amount as any)}
                       </div>
@@ -535,24 +529,6 @@ export default function Leases() {
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
-
-      {/* Payment Terms Form */}
-      {createdLeaseId && (
-        <PaymentTermsForm
-          term={undefined}
-          mode="create"
-          leaseId={createdLeaseId}
-          isOpen={isPaymentTermsFormOpen}
-          onClose={() => {
-            setIsPaymentTermsFormOpen(false);
-            setCreatedLeaseId(null);
-          }}
-          onSave={() => {
-            // Refresh data if needed
-            updateLeasePage();
-          }}
-        />
-      )}
     </div>
   );
 }

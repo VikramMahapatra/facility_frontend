@@ -42,6 +42,18 @@ export const leaseSchema = z
       required_error: "Status is required",
     }),
     auto_move_in: z.boolean().optional(),
+    description: z.string().optional(),
+    payment_method: z.enum(["upi", "card", "bank", "cash", "cheque", "other"]).optional(),
+    payment_ref_no: z.string().optional(),
+    payment_date: z.string().optional(),
+    payment_amount: z.coerce.number().optional(),
+    number_of_installments: z.coerce.number().min(1, "Number of installments must be at least 1").optional(),
+    payments: z.array(z.object({
+      method: z.enum(["upi", "card", "bank", "cash", "cheque", "other"]).optional(),
+      ref_no: z.string().optional(),
+      date: z.string().optional(),
+      amount: z.coerce.number().optional(),
+    })).optional(),
   })
   .superRefine((val, ctx) => {
     // Since kind is not used by API, require tenant_id (since that's what the form shows)
