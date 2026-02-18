@@ -68,7 +68,6 @@ import ContentContainer from "@/components/ContentContainer";
 import { ticketWorkOrderApiService } from "@/services/ticketing_service/ticketworkorderapi";
 import { siteApiService } from "@/services/spaces_sites/sitesapi";
 import { PageHeader } from "@/components/PageHeader";
-import { AsyncAutocompleteRQ } from "@/components/common/async-autocomplete-rq";
 
 interface TicketWorkOrder {
   id: string;
@@ -127,10 +126,20 @@ export default function TicketWorkOrders() {
   const { user, handleLogout } = useAuth();
   const [totalItems, setTotalItems] = useState(0);
   const [statusList, setStatusList] = useState<any[]>([]);
+  const [siteList, setSiteList] = useState<any[]>([]);
 
   useEffect(() => {
     loadFilterStatusLookup();
+    loadSiteLookup();
   }, []);
+
+  const loadSiteLookup = async () => {
+    const response = await siteApiService.getSiteLookup();
+    if (response?.success) {
+      const sites = response.data || [];
+      setSiteList(sites);
+    }
+  };
 
   useSkipFirstEffect(() => {
     loadTicketWorkOrders();
@@ -330,24 +339,19 @@ export default function TicketWorkOrders() {
             />
           </div>
           <div className="w-[180px]">
-            <AsyncAutocompleteRQ
-              value={selectedSite}
-              onChange={(value) => {
-                setSelectedSite(value);
-              }}
-              placeholder="All Sites"
-              queryKey={["sites"]}
-              queryFn={async (search) => {
-                const res = await siteApiService.getSiteLookup(search);
-                const sites = res.data.map((s: any) => ({
-                  id: s.id,
-                  label: s.name,
-                }));
-                // Always include "All Sites" option at the beginning
-                return [{ id: "all", label: "All Sites" }, ...sites];
-              }}
-              minSearchLength={0}
-            />
+            <Select value={selectedSite} onValueChange={setSelectedSite}>
+              <SelectTrigger>
+                <SelectValue placeholder="All Sites" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">All Sites</SelectItem>
+                {siteList.map((site: any) => (
+                  <SelectItem key={site.id} value={site.id}>
+                    {site.name}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
           </div>
           <Select value={selectedStatus} onValueChange={setSelectedStatus}>
             <SelectTrigger className="w-[180px]">
