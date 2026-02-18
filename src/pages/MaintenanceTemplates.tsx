@@ -316,11 +316,6 @@ export default function MaintenanceTemplates() {
                             <span className="font-semibold text-sidebar-primary">
                               ₹{Number(template.amount).toLocaleString()}
                             </span>
-                            {template.tax_rate && (
-                              <span className="text-xs text-muted-foreground">
-                                + {template.tax_rate}% Tax
-                              </span>
-                            )}
                           </div>
                         )}
                       </div>

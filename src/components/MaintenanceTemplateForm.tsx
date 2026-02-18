@@ -24,8 +24,10 @@ import {
 } from "@/schemas/maintenanceTemplate.schema";
 import { toast } from "@/components/ui/app-toast";
 import { siteApiService } from "@/services/spaces_sites/sitesapi";
-import { MaintenanceTemplate, SpaceKind, spaceKinds } from "@/interfaces/spaces_interfaces";
+import { CALCULATION_TYPE_LABELS, getKindsByCategory, kindToCategory, MaintenanceTemplate, spaceCategories, SpaceKind, spaceKinds } from "@/interfaces/spaces_interfaces";
 import { leaseChargeApiService } from "@/services/leasing_tenants/leasechargeapi";
+import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogTitle } from "@radix-ui/react-alert-dialog";
+import { AlertDialogFooter, AlertDialogHeader } from "./ui/alert-dialog";
 
 
 
@@ -40,8 +42,6 @@ interface MaintenanceTemplateFormProps {
 const calculationTypes = [
   { value: "flat", label: "Flat" },
   { value: "per_sqft", label: "Per Sq Ft" },
-  { value: "per_bed", label: "Per Bed" },
-  { value: "custom", label: "Custom" },
 ];
 
 const emptyFormData: MaintenanceTemplateFormValues = {
@@ -51,7 +51,6 @@ const emptyFormData: MaintenanceTemplateFormValues = {
   category: undefined,
   kind: undefined,
   site_id: undefined,
-  tax_code_id: undefined,
   is_active: true,
 };
 
@@ -65,11 +64,16 @@ export function MaintenanceTemplateForm({
   const [isSubmitted, setIsSubmitted] = useState(false);
   const [siteList, setSiteList] = useState<any[]>([]);
   const [taxCodeList, setTaxCodeList] = useState<any[]>([]);
+  const [showOverrideConfirm, setShowOverrideConfirm] = useState(false);
+  const [pendingSubmitData, setPendingSubmitData] =
+    useState<MaintenanceTemplateFormValues | null>(null);
   const {
     register,
     handleSubmit,
     control,
     reset,
+    watch,
+    setValue,
     formState: { errors, isSubmitting },
   } = useForm<MaintenanceTemplateFormValues>({
     resolver: zodResolver(maintenanceTemplateSchema),
@@ -92,7 +96,6 @@ export function MaintenanceTemplateForm({
         category: template.category,
         kind: template.kind as any,
         site_id: template.site_id,
-        tax_code_id: template.tax_code_id || "",
         is_active: template.is_active !== undefined ? template.is_active : true,
       });
     } else {
@@ -100,6 +103,13 @@ export function MaintenanceTemplateForm({
     }
     setIsSubmitted(false);
   }, [template, mode, reset, isOpen]);
+
+  const calculationTypeValue = watch("calculation_type");
+  const selectedCategory = watch("category");
+  const selectedKind = watch("kind");
+
+  const calculationTypeLabel =
+    CALCULATION_TYPE_LABELS[calculationTypeValue] || "";
 
   const loadSiteLookup = async () => {
     try {
@@ -118,14 +128,36 @@ export function MaintenanceTemplateForm({
   };
 
   const onSubmitForm = async (data: MaintenanceTemplateFormValues) => {
+    // Save data temporarily
+    if (mode === "create") {
+      setPendingSubmitData(data);
+      setShowOverrideConfirm(true);
+      return;
+    }
+    // Normal save flow for edit
+    await proceedSave(false, data);
+  };
+
+  const proceedSave = async (
+    overrideExisting: boolean,
+    submitData?: MaintenanceTemplateFormValues
+  ) => {
+
+    const finalData = submitData || pendingSubmitData;
+    if (!finalData) return;
+
     setIsSubmitted(true);
+
     const formResponse = await onSave({
       ...template,
-      ...data,
+      ...finalData,
+      override_existing: overrideExisting,
       updated_at: new Date().toISOString(),
     } as Partial<MaintenanceTemplate>);
+
     if (formResponse.success) {
       reset(emptyFormData);
+
       toast.success(
         mode === "create"
           ? "Maintenance template created successfully"
@@ -135,124 +167,66 @@ export function MaintenanceTemplateForm({
       setIsSubmitted(false);
       reset(undefined, { keepErrors: true, keepValues: true });
     }
+
+    setShowOverrideConfirm(false);
+    setPendingSubmitData(null);
   };
+
+  // Filter kinds based on selected category
+  const filteredKinds = getKindsByCategory(selectedCategory);
+
+  // Reset kind when category changes if current kind doesn't belong to new category
+  useEffect(() => {
+    if (selectedCategory && selectedKind) {
+      const currentKindCategory = kindToCategory[selectedKind as SpaceKind];
+      if (currentKindCategory !== selectedCategory) {
+        // Reset to first available kind in the selected category
+        const firstKind = filteredKinds[0];
+        if (firstKind) {
+          setValue("kind", firstKind);
+        }
+      }
+    }
+  }, [selectedCategory, selectedKind, filteredKinds, setValue]);
 
   const isReadOnly = mode === "view";
 
   return (
-    <Dialog open={isOpen} onOpenChange={onClose}>
-      <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
-        <DialogHeader>
-          <DialogTitle>
-            {mode === "create" && "Create Maintenance Template"}
-            {mode === "edit" && "Edit Maintenance Template"}
-            {mode === "view" && "Maintenance Template Details"}
-          </DialogTitle>
-        </DialogHeader>
+    <>
+      <Dialog open={isOpen} onOpenChange={onClose}>
+        <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
+          <DialogHeader>
+            <DialogTitle>
+              {mode === "create" && "Create Maintenance Template"}
+              {mode === "edit" && "Edit Maintenance Template"}
+              {mode === "view" && "Maintenance Template Details"}
+            </DialogTitle>
+          </DialogHeader>
 
-        <form
-          onSubmit={isSubmitting ? undefined : handleSubmit(onSubmitForm)}
-          className="space-y-4"
-        >
-          <div className="grid grid-cols-2 gap-4">
-            <div className="space-y-2">
-              <Label htmlFor="name">Name *</Label>
-              <Input
-                id="name"
-                {...register("name")}
-                disabled={isReadOnly}
-                className={errors.name ? "border-red-500" : ""}
-                placeholder="Enter template name"
-              />
-              {errors.name && (
-                <p className="text-sm text-red-500">{errors.name.message}</p>
-              )}
-            </div>
-            <Controller
-              name="site_id"
-              control={control}
-              render={({ field }) => (
-                <div className="space-y-2">
-                  <Label htmlFor="site_id">Site</Label>
-                  <Select
-                    value={field.value || "none"}
-                    onValueChange={(value) =>
-                      field.onChange(value === "none" ? undefined : value)
-                    }
-                    disabled={isReadOnly}
-                  >
-                    <SelectTrigger
-                      className={errors.site_id ? "border-red-500" : ""}
-                    >
-                      <SelectValue placeholder="Select site" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="none">All Sites</SelectItem>
-                      {siteList.map((site) => (
-                        <SelectItem key={site.id} value={site.id}>
-                          {site.name}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                  {errors.site_id && (
-                    <p className="text-sm text-red-500">
-                      {errors.site_id.message}
-                    </p>
-                  )}
-                </div>
-              )}
-            />
-          </div>
-
-
-
-          <div className="grid grid-cols-2 gap-4">
-            <Controller
-              name="kind"
-              control={control}
-              render={({ field }) => (
-                <div className="space-y-2">
-                  <Label htmlFor="kind">Kind</Label>
-                  <Select
-                    value={field.value || "none"}
-                    onValueChange={(value) =>
-                      field.onChange(value === "none" ? undefined : value)
-                    }
-                    disabled={isReadOnly}
-                  >
-                    <SelectTrigger
-                      className={errors.kind ? "border-red-500" : ""}
-                    >
-                      <SelectValue placeholder="Select kind" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="none">All Kinds</SelectItem>
-                      {spaceKinds.map((k) => (
-                        <SelectItem key={k} value={k}>
-                          {k
-                            .replace("_", " ")
-                            .replace(/\b\w/g, (l) => l.toUpperCase())}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                  {errors.kind && (
-                    <p className="text-sm text-red-500">
-                      {errors.kind.message}
-                    </p>
-                  )}
-                </div>
-              )}
-            />
-
-            <div className="space-y-2">
+          <form
+            onSubmit={isSubmitting ? undefined : handleSubmit(onSubmitForm)}
+            className="space-y-4"
+          >
+            <div className="grid grid-cols-2 gap-4">
+              <div className="space-y-2">
+                <Label htmlFor="name">Name *</Label>
+                <Input
+                  id="name"
+                  {...register("name")}
+                  disabled={isReadOnly}
+                  className={errors.name ? "border-red-500" : ""}
+                  placeholder="Enter template name"
+                />
+                {errors.name && (
+                  <p className="text-sm text-red-500">{errors.name.message}</p>
+                )}
+              </div>
               <Controller
-                name="category"
+                name="site_id"
                 control={control}
                 render={({ field }) => (
                   <div className="space-y-2">
-                    <Label htmlFor="category">Category</Label>
+                    <Label htmlFor="site_id">Site</Label>
                     <Select
                       value={field.value || "none"}
                       onValueChange={(value) =>
@@ -261,134 +235,240 @@ export function MaintenanceTemplateForm({
                       disabled={isReadOnly}
                     >
                       <SelectTrigger
-                        className={errors.category ? "border-red-500" : ""}
+                        className={errors.site_id ? "border-red-500" : ""}
                       >
-                        <SelectValue placeholder="Select category" />
+                        <SelectValue placeholder="Select site" />
                       </SelectTrigger>
                       <SelectContent>
-                        <SelectItem value="none">All Categories</SelectItem>
-                        <SelectItem value="residential">Residential</SelectItem>
-                        <SelectItem value="commercial">Commercial</SelectItem>
+                        <SelectItem value="none">All Sites</SelectItem>
+                        {siteList.map((site) => (
+                          <SelectItem key={site.id} value={site.id}>
+                            {site.name}
+                          </SelectItem>
+                        ))}
                       </SelectContent>
                     </Select>
-                    {errors.category && (
+                    {errors.site_id && (
                       <p className="text-sm text-red-500">
-                        {errors.category.message}
+                        {errors.site_id.message}
                       </p>
                     )}
                   </div>
                 )}
               />
             </div>
-
-          </div>
-          <div className="grid grid-cols-3 gap-4">
-            <div className="space-y-2">
+            <div className="grid grid-cols-2 gap-4">
+              <div className="space-y-2">
+                <Controller
+                  name="category"
+                  control={control}
+                  render={({ field }) => (
+                    <div className="space-y-2">
+                      <Label htmlFor="category">Space Category</Label>
+                      <Select
+                        value={field.value || "none"}
+                        onValueChange={(value) =>
+                          field.onChange(value === "none" ? undefined : value)
+                        }
+                        disabled={isReadOnly}
+                      >
+                        <SelectTrigger
+                          className={errors.category ? "border-red-500" : ""}
+                        >
+                          <SelectValue placeholder="Select category" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="none">All Categories</SelectItem>
+                          {spaceCategories.map((k) => (
+                            <SelectItem key={k} value={k}>
+                              {k
+                                .replace("_", " ")
+                                .replace(/\b\w/g, (l) => l.toUpperCase())}
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                      {errors.category && (
+                        <p className="text-sm text-red-500">
+                          {errors.category.message}
+                        </p>
+                      )}
+                    </div>
+                  )}
+                />
+              </div>
               <Controller
-                name="calculation_type"
+                name="kind"
                 control={control}
                 render={({ field }) => (
                   <div className="space-y-2">
-                    <Label htmlFor="calculation_type">Calculation Type *</Label>
+                    <Label htmlFor="kind">Space Type</Label>
                     <Select
-                      value={field.value}
-                      onValueChange={field.onChange}
-                      disabled={isReadOnly}
+                      value={field.value || "none"}
+                      onValueChange={(value) =>
+                        field.onChange(value === "none" ? undefined : value)
+                      }
+                      disabled={isReadOnly || !selectedCategory}
                     >
                       <SelectTrigger
-                        className={
-                          errors.calculation_type ? "border-red-500" : ""
-                        }
+                        className={errors.kind ? "border-red-500" : ""}
                       >
-                        <SelectValue placeholder="Select calculation type" />
+                        <SelectValue
+                          placeholder={
+                            selectedCategory
+                              ? "Select space type"
+                              : "Select category first"
+                          }
+                        />
                       </SelectTrigger>
                       <SelectContent>
-                        {calculationTypes.map((type) => (
-                          <SelectItem key={type.value} value={type.value}>
-                            {type.label}
+                        <SelectItem value="none">All space types</SelectItem>
+                        {filteredKinds.length === 0 ? (
+                          <SelectItem value="" disabled>
+                            {selectedCategory
+                              ? `No ${selectedCategory} types available`
+                              : "Select category first"}
                           </SelectItem>
-                        ))}
+                        ) : (
+                          filteredKinds.map((kind) => (
+                            <SelectItem key={kind} value={kind}>
+                              {kind
+                                .replace("_", " ")
+                                .replace(/\b\w/g, (l) => l.toUpperCase())}
+                            </SelectItem>
+                          ))
+                        )}
                       </SelectContent>
                     </Select>
-                    {errors.calculation_type && (
+                    {errors.kind && (
                       <p className="text-sm text-red-500">
-                        {errors.calculation_type.message}
+                        {errors.kind.message}
                       </p>
                     )}
                   </div>
                 )}
               />
-            </div>
-            <div className="space-y-2">
-              <Label htmlFor="amount">Monthly Amount *</Label>
-              <Input
-                id="amount"
-                type="number"
-                step="0.01"
-                min="0"
-                {...register("amount")}
-                disabled={isReadOnly}
-                className={errors.amount ? "border-red-500" : ""}
-                placeholder="0.00"
-              />
-              {errors.amount && (
-                <p className="text-sm text-red-500">{errors.amount.message}</p>
-              )}
-            </div>
-            <div className="space-y-2">
-              <Controller
-                name="tax_code_id"
-                control={control}
-                render={({ field }) => (
-                  <div className="space-y-2">
-                    <Label htmlFor="tax_code_id">Tax</Label>
-                    <Select
-                      value={field.value}
-                      onValueChange={field.onChange}
-                      disabled={isReadOnly}
-                    >
-                      <SelectTrigger
-                        className={
-                          errors.calculation_type ? "border-red-500" : ""
-                        }
-                      >
-                        <SelectValue placeholder="Select tax code" />
-                      </SelectTrigger>
-                      <SelectContent>
-                        {taxCodeList.map((type) => (
-                          <SelectItem key={type.id} value={type.id}>
-                            {type.name}
-                          </SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
-                  </div>
-                )}
-              />
-            </div>
-          </div>
 
-          <DialogFooter>
-            <Button
-              type="button"
-              variant="outline"
-              onClick={onClose}
-              disabled={isSubmitting}
-            >
-              {mode === "view" ? "Close" : "Cancel"}
-            </Button>
-            {mode !== "view" && (
-              <Button type="submit" disabled={isSubmitting || isSubmitted}>
-                {isSubmitting
-                  ? "Saving..."
-                  : mode === "create"
-                    ? "Create Template"
-                    : "Update Template"}
+
+
+            </div>
+            <div className="grid grid-cols-2 gap-4">
+              <div className="space-y-2">
+                <Controller
+                  name="calculation_type"
+                  control={control}
+                  render={({ field }) => (
+                    <div className="space-y-2">
+                      <Label htmlFor="calculation_type">Calculation Type *</Label>
+                      <Select
+                        value={field.value}
+                        onValueChange={field.onChange}
+                        disabled={isReadOnly}
+                      >
+                        <SelectTrigger
+                          className={
+                            errors.calculation_type ? "border-red-500" : ""
+                          }
+                        >
+                          <SelectValue placeholder="Select calculation type" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          {calculationTypes.map((type) => (
+                            <SelectItem key={type.value} value={type.value}>
+                              {type.label}
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                      {errors.calculation_type && (
+                        <p className="text-sm text-red-500">
+                          {errors.calculation_type.message}
+                        </p>
+                      )}
+                    </div>
+                  )}
+                />
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="amount">
+                  {`Monthly Amount (${calculationTypeLabel})*`}
+                </Label>
+                <Input
+                  id="amount"
+                  type="number"
+                  step="0.01"
+                  min="0"
+                  {...register("amount")}
+                  disabled={isReadOnly}
+                  className={errors.amount ? "border-red-500" : ""}
+                  placeholder="0.00"
+                />
+                {errors.amount && (
+                  <p className="text-sm text-red-500">{errors.amount.message}</p>
+                )}
+              </div>
+            </div>
+
+            <DialogFooter>
+              <Button
+                type="button"
+                variant="outline"
+                onClick={onClose}
+                disabled={isSubmitting}
+              >
+                {mode === "view" ? "Close" : "Cancel"}
               </Button>
-            )}
-          </DialogFooter>
-        </form>
-      </DialogContent>
-    </Dialog>
+              {mode !== "view" && (
+                <Button type="submit" disabled={isSubmitting || isSubmitted}>
+                  {isSubmitting
+                    ? "Saving..."
+                    : mode === "create"
+                      ? "Create Template"
+                      : "Update Template"}
+                </Button>
+              )}
+            </DialogFooter>
+          </form>
+        </DialogContent>
+      </Dialog>
+      <AlertDialog
+        open={showOverrideConfirm}
+        onOpenChange={setShowOverrideConfirm}
+      >
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>
+              Override Existing Template Assignments?
+            </AlertDialogTitle>
+            <AlertDialogDescription>
+              Do you want to override existing template assignments for matching
+              spaces?
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+
+          <AlertDialogFooter>
+            <AlertDialogCancel
+              onClick={() => setShowOverrideConfirm(false)}
+            >
+              Cancel
+            </AlertDialogCancel>
+
+            <AlertDialogAction
+              onClick={() => proceedSave(false)}
+            >
+              Save Without Override
+            </AlertDialogAction>
+
+            <AlertDialogAction
+              onClick={() => proceedSave(true)}
+              className="bg-red-600 hover:bg-red-700"
+            >
+              Override Existing
+            </AlertDialogAction>
+
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+    </>
   );
 }

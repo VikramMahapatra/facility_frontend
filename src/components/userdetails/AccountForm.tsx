@@ -51,6 +51,20 @@ export default function AccountForm({
         loadAll();
     }, [form]);
 
+    useEffect(() => {
+        if (!accountType || roleList.length === 0) return;
+        if (mode !== "create") return;
+
+        const defaultRoles = roleList
+            .filter((role) =>
+                role.account_types?.includes(accountType)
+            )
+            .map((r) => r.id);
+
+        form.setValue("role_ids", defaultRoles);
+
+    }, [accountType, roleList, mode]);
+
     const loadSites = async () => {
         const lookup = await siteApiService.getSiteLookup();;
         if (lookup.success) setSiteList(lookup.data || []);
@@ -166,7 +180,7 @@ export default function AccountForm({
                         </div>
 
                         {/* Roles */}
-                        {/* <RolesSelector control={control} errors={errors} roleList={roleList} /> */}
+                        <RolesSelector control={control} errors={errors} roleList={roleList} />
 
                         {/* Tenant */}
                         {

@@ -119,8 +119,19 @@ export const getSpaceOwnershipStatusColor = (status: string) => {
     }
 };
 
+export const spaceCategories = [
+    'residential',
+    'commercial'
+] as const;
+
+
+export const CALCULATION_TYPE_LABELS: Record<string, string> = {
+    flat: "Flat Amount",
+    percentage: "Percentage",
+    per_sqft: "Per Sqft",
+};
+
 export const spaceKinds = [
-    'room',
     'apartment',
     'shop',
     'office',
@@ -134,12 +145,35 @@ export const spaceKinds = [
     'bungalow',
     'duplex',
     'penthouse',
-    'studio_apartment',
     'farm_house',
 
 ] as const;
 
 export type SpaceKind = typeof spaceKinds[number];
+
+export const kindToCategory: Record<SpaceKind, "residential" | "commercial"> = {
+    apartment: "residential",
+    villa: "residential",
+    row_house: "residential",
+    bungalow: "residential",
+    duplex: "residential",
+    penthouse: "residential",
+    farm_house: "residential",
+    shop: "commercial",
+    office: "commercial",
+    warehouse: "commercial",
+    meeting_room: "commercial",
+    hall: "commercial",
+    common_area: "commercial",
+    parking: "commercial",
+};
+
+export const getKindsByCategory = (
+    category?: "residential" | "commercial",
+): readonly SpaceKind[] => {
+    if (!category) return spaceKinds;
+    return spaceKinds.filter((kind) => kindToCategory[kind] === category);
+};
 
 export type SpaceAmenities =
     | 'parking'
@@ -202,14 +236,6 @@ export const amenitiesByKind: AmenitiesByKind = {
         'laundry_room',
         'security',
         'cctv',
-    ],
-    room: [
-        'wifi',
-        'security',
-        'power_backup',
-        'elevator',
-        'cctv',
-        'intercom',
     ],
     shop: [
         'parking',
@@ -323,16 +349,6 @@ export const amenitiesByKind: AmenitiesByKind = {
         'club_access',
         'pool',
         'rooftop_access',
-    ],
-    studio_apartment: [
-        'parking',
-        'security',
-        'power_backup',
-        'wifi',
-        'elevator',
-        'cctv',
-        'intercom',
-        'air_conditioning',
     ],
     farm_house: [
         'parking',

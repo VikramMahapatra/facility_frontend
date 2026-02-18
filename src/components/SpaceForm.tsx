@@ -25,7 +25,7 @@ import { siteApiService } from "@/services/spaces_sites/sitesapi";
 import { buildingApiService } from "@/services/spaces_sites/buildingsapi";
 import { spacesApiService } from "@/services/spaces_sites/spacesapi";
 import { maintenanceTemplateApiService } from "@/services/spaces_sites/maintenanceTemplateApi";
-import { Space, SpaceKind, spaceKinds } from "@/interfaces/spaces_interfaces";
+import { getKindsByCategory, kindToCategory, Space, SpaceKind, spaceKinds } from "@/interfaces/spaces_interfaces";
 import {
   Popover,
   PopoverContent,
@@ -45,36 +45,12 @@ interface SpaceFormProps {
 }
 
 // Mapping of space kinds to categories
-const kindToCategory: Record<SpaceKind, "residential" | "commercial"> = {
-  room: "residential",
-  apartment: "residential",
-  villa: "residential",
-  row_house: "residential",
-  bungalow: "residential",
-  duplex: "residential",
-  penthouse: "residential",
-  studio_apartment: "residential",
-  farm_house: "residential",
-  shop: "commercial",
-  office: "commercial",
-  warehouse: "commercial",
-  meeting_room: "commercial",
-  hall: "commercial",
-  common_area: "commercial",
-  parking: "commercial",
-};
 
-const getKindsByCategory = (
-  category?: "residential" | "commercial",
-): readonly SpaceKind[] => {
-  if (!category) return spaceKinds;
-  return spaceKinds.filter((kind) => kindToCategory[kind] === category);
-};
 
 const emptyFormData: SpaceFormValues = {
   name: "",
   kind: "room",
-  category: undefined,
+  category: "residential",
   site_id: "",
   floor: undefined,
   building_block_id: "",
@@ -130,7 +106,7 @@ export function SpaceForm({
         ? {
           name: space.name || "",
           kind: space.kind || "room",
-          category: space.category,
+          category: space.category || "residential",
           site_id: space.site_id || "",
           floor:
             space.floor !== undefined && space.floor !== null
@@ -410,11 +386,11 @@ export function SpaceForm({
                   )}
                 />
                 <div className="space-y-2">
-                  <Label htmlFor="name">Unit *</Label>
+                  <Label htmlFor="name">Unit/Name *</Label>
                   <Input
                     id="name"
                     {...register("name")}
-                    placeholder="Space name"
+                    placeholder="Space unit/name"
                     disabled={isReadOnly}
                     className={errors.name ? "border-red-500" : ""}
                   />
@@ -433,7 +409,7 @@ export function SpaceForm({
                   control={control}
                   render={({ field }) => (
                     <div className="space-y-2">
-                      <Label htmlFor="category">Category</Label>
+                      <Label htmlFor="category">Category *</Label>
                       <Select
                         value={field.value || ""}
                         onValueChange={(value) =>

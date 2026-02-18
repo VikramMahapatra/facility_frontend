@@ -3,6 +3,7 @@ import { z } from "zod";
 const baseAccountSchema = {
     account_type: z.enum(["tenant", "staff", "organization", "owner", "vendor"]),
     status: z.enum(["active", "inactive"]),
+    role_ids: z.array(z.string()).min(1, "At least one role is required"),
 };
 
 const spaceSchema = z.object({
