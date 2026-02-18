@@ -20,7 +20,6 @@ import {
 } from "@/schemas/ticketCategory.schema";
 import { toast } from "@/components/ui/app-toast";
 import { withFallback } from "@/helpers/commonHelper";
-import { AsyncAutocompleteRQ } from "@/components/common/async-autocomplete-rq";
 
 interface TicketCategoryFormProps {
   category?: any;
@@ -233,30 +232,26 @@ export default function TicketCategoryForm({
             render={({ field }) => (
               <div className="space-y-2">
                 <Label htmlFor="site_id">Site *</Label>
-                <AsyncAutocompleteRQ
+                <Select
                   value={field.value || ""}
-                  onChange={(value) => {
-                    field.onChange(value);
-                  }}
-                  placeholder="Select site"
-                  queryKey={["sites"]}
-                  queryFn={async (search) => {
-                    const res = await siteApiService.getSiteLookup(search);
-                    return res.data.map((s: any) => ({
-                      id: s.id,
-                      label: s.name,
-                    }));
-                  }}
-                  fallbackOption={
-                    category?.site_id
-                      ? {
-                        id: category.site_id,
-                        label: category.site_name || "Selected Site",
-                      }
-                      : undefined
-                  }
-                  minSearchLength={1}
-                />
+                  onValueChange={field.onChange}
+                  disabled={isReadOnly}
+                >
+                  <SelectTrigger className={errors.site_id ? "border-red-500" : ""}>
+                    <SelectValue placeholder="Select site" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {siteList.length === 0 ? (
+                      <SelectItem value="none" disabled>No sites available</SelectItem>
+                    ) : (
+                      siteList.map((site: any) => (
+                        <SelectItem key={site.id} value={site.id}>
+                          {site.name}
+                        </SelectItem>
+                      ))
+                    )}
+                  </SelectContent>
+                </Select>
                 {errors.site_id && (
                   <p className="text-sm text-red-500">
                     {errors.site_id.message}
