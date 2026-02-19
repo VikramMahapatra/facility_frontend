@@ -30,8 +30,7 @@ import { buildingApiService } from "@/services/spaces_sites/buildingsapi";
 import { spacesApiService } from "@/services/spaces_sites/spacesapi";
 import { withFallback } from "@/helpers/commonHelper";
 import { LeaseCharge } from "@/interfaces/leasing_tenants_interface";
-
-
+import { useSettings } from "@/context/SettingsContext";
 
 interface LeaseChargeFormProps {
   charge?: Partial<LeaseCharge>;
@@ -57,10 +56,10 @@ const emptyFormData: Partial<LeaseCharge> = {
 };
 
 const emptyCalculatedAmount = {
-  "base_amount": 0,
-  "tax_amount": 0,
-  "total_amount": 0
-}
+  base_amount: 0,
+  tax_amount: 0,
+  total_amount: 0,
+};
 
 export function LeaseChargeForm({
   charge,
@@ -69,8 +68,7 @@ export function LeaseChargeForm({
   onSave,
   mode,
   disableLeaseField = false,
-  defaultLeaseId
-
+  defaultLeaseId,
 }: LeaseChargeFormProps) {
   const getMonthBounds = () => {
     const now = new Date();
@@ -79,7 +77,7 @@ export function LeaseChargeForm({
     const formatDate = (date: Date) =>
       `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(
         2,
-        "0"
+        "0",
       )}-${String(date.getDate()).padStart(2, "0")}`;
     return { startDate: formatDate(start), endDate: formatDate(end) };
   };
@@ -113,6 +111,7 @@ export function LeaseChargeForm({
   const [spaceList, setSpaceList] = useState<any[]>([]);
   const [siteList, setSiteList] = useState<any[]>([]);
   const [buildingList, setBuildingList] = useState<any[]>([]);
+  const { systemCurrency } = useSettings();
   //const [isRentAmountLocked, setIsRentAmountLocked] = useState(false);
 
   const periodStart = watch("period_start");
@@ -130,7 +129,9 @@ export function LeaseChargeForm({
   const isEdit = mode === "edit";
   const hasPrefill = mode === "create" && !!charge;
   const isLeaseLocked = isReadOnly || isEdit || disableLeaseField;
-  const [calculatedAmount, setCalculatedAmount] = useState<any>(emptyCalculatedAmount);
+  const [calculatedAmount, setCalculatedAmount] = useState<any>(
+    emptyCalculatedAmount,
+  );
   const [isLoading, setIsLoading] = useState(false);
   const [siteFallback, setSiteFallback] = useState<{
     id: string;
@@ -153,16 +154,13 @@ export function LeaseChargeForm({
     }
   }, [charge, isOpen, mode, reset]);
 
-
   useEffect(() => {
-
     if (!isReadyForCalculation) {
       setCalculatedAmount(emptyCalculatedAmount);
       return;
     }
 
     const fetchAmount = async () => {
-
       try {
         setIsLoading(true);
 
@@ -174,14 +172,12 @@ export function LeaseChargeForm({
         });
 
         setCalculatedAmount(res.data ?? emptyCalculatedAmount);
-
       } finally {
         setIsLoading(false);
       }
     };
 
     fetchAmount();
-
   }, [selectedLeaseId, periodStart, periodEnd]);
 
   const loadAll = async () => {
@@ -287,7 +283,6 @@ export function LeaseChargeForm({
     return list;
   };
 
-
   const loadTaxCodeLookup = async () => {
     const lookup = await leaseChargeApiService.getTaxCodeLookup();
     if (lookup.success) setTaxCodeList(lookup.data || []);
@@ -299,20 +294,23 @@ export function LeaseChargeForm({
 
   const fallbackLease = charge?.lease_id
     ? {
-      id: charge.lease_id,
-      name: (charge as any).lease_name || charge.lease_id || "Selected Space With Lease",
-    }
+        id: charge.lease_id,
+        name:
+          (charge as any).lease_name ||
+          charge.lease_id ||
+          "Selected Space With Lease",
+      }
     : null;
 
   const leases = withFallback(leaseList, fallbackLease);
 
   const fallbackBuilding = charge?.building_block_id
     ? {
-      id: charge.building_block_id,
-      name:
-        (charge as any).building_block ||
-        `Building (${charge.building_block_id})`,
-    }
+        id: charge.building_block_id,
+        name:
+          (charge as any).building_block ||
+          `Building (${charge.building_block_id})`,
+      }
     : null;
 
   const buildings = withFallback(buildingList, fallbackBuilding);
@@ -322,6 +320,11 @@ export function LeaseChargeForm({
     setBuildingList([]);
     setSiteFallback(null);
     onClose();
+  };
+
+  const formatCurrency = (val?: number) => {
+    if (val == null) return "-";
+    return `${systemCurrency.format(val)}`;
   };
 
   return (
@@ -407,8 +410,6 @@ export function LeaseChargeForm({
                     )}
                   />
                 </div>
-
-
               </div>
             </div>
             <div className="grid gri-cols-1">
@@ -523,41 +524,32 @@ export function LeaseChargeForm({
             {/* Amounts */}
             <div className="grid grid-cols-2 gap-6 items-center mt-4">
               <div className="rounded-lg border bg-muted/40 p-4">
-
                 {isLoading ? (
                   <span className="text-sm text-muted-foreground">
                     Calculating...
                   </span>
                 ) : (
                   <div className="flex items-center justify-between">
-
                     <div className="space-y-1">
-                      <p className="text-sm font-medium">
-                        Rent Amount
-                      </p>
+                      <p className="text-sm font-medium">Rent Amount</p>
                       <p className="text-xs text-muted-foreground">
                         Auto calculated
                       </p>
                     </div>
 
                     <p className="text-xl font-semibold tabular-nums">
-                      ₹ {calculatedAmount?.base_amount ?? "0.00"}
+                      {formatCurrency(calculatedAmount?.base_amount ?? 0)}
                     </p>
-
                   </div>
                 )}
-
               </div>
 
               {/* Info Section */}
               <div className="text-sm text-muted-foreground leading-relaxed">
-                Amount will be calculated automatically after selecting
-                space and dates.
+                Amount will be calculated automatically after selecting space
+                and dates.
               </div>
-
             </div>
-
-
 
             <DialogFooter>
               <Button

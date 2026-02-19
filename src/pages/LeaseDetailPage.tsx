@@ -33,6 +33,7 @@ import { useLoader } from "@/context/LoaderContext";
 import LoaderOverlay from "@/components/LoaderOverlay";
 import { Pagination } from "@/components/Pagination";
 import { PaymentTermsForm } from "@/components/PaymentTermsForm";
+import { useSettings } from "@/context/SettingsContext";
 
 export default function LeaseDetailPage() {
   const { id } = useParams<{ id: string }>();
@@ -58,6 +59,7 @@ export default function LeaseDetailPage() {
   const [termFormMode, setTermFormMode] = useState<"create" | "edit" | "view">(
     "create",
   );
+  const { systemCurrency } = useSettings();
 
   useEffect(() => {
     if (!id) return;
@@ -91,7 +93,7 @@ export default function LeaseDetailPage() {
     };
 
     loadLeaseDetail();
-    loadLeasePaymentTerms()
+    loadLeasePaymentTerms();
   }, [id]);
 
   const loadLeasePaymentTerms = async () => {
@@ -165,13 +167,10 @@ export default function LeaseDetailPage() {
     }
   };
 
-  const formatCurrency = (amount: number) =>
-    new Intl.NumberFormat("en-IN", {
-      style: "currency",
-      currency: "INR",
-      minimumFractionDigits: 0,
-      maximumFractionDigits: 0,
-    }).format(amount || 0);
+  const formatCurrency = (val?: number) => {
+    if (val == null) return "-";
+    return systemCurrency.format(val);
+  };
 
   const formatDate = (date?: string) => {
     if (!date) return "-";
@@ -531,7 +530,7 @@ export default function LeaseDetailPage() {
                       {paymentTerms
                         .slice(
                           (termPage - 1) * termPageSize,
-                          termPage * termPageSize
+                          termPage * termPageSize,
                         )
                         .map((term, index) => (
                           <Card
@@ -562,30 +561,32 @@ export default function LeaseDetailPage() {
                                 <div className="flex items-center gap-3">
                                   {/* Amount */}
                                   <div className="text-right">
-                                    <p className="text-xs text-muted-foreground mb-1">Amount</p>
+                                    <p className="text-xs text-muted-foreground mb-1">
+                                      Amount
+                                    </p>
                                     <p className="text-xl font-bold">
                                       {formatCurrency(Number(term.amount))}
                                     </p>
                                   </div>
 
                                   {/* ✏️ Edit button */}
-                                  {lease?.status === "active" && term.status !== "paid" && (
-                                    <Button
-                                      size="icon"
-                                      variant="ghost"
-                                      onClick={() => {
-                                        setSelectedTerm(term);
-                                        setTermFormMode("edit");
-                                        setIsPaymentTermsFormOpen(true);
-                                      }}
-                                      title="Edit payment term"
-                                    >
-                                      <Pencil className="h-4 w-4" />
-                                    </Button>
-                                  )}
+                                  {lease?.status === "active" &&
+                                    term.status !== "paid" && (
+                                      <Button
+                                        size="icon"
+                                        variant="ghost"
+                                        onClick={() => {
+                                          setSelectedTerm(term);
+                                          setTermFormMode("edit");
+                                          setIsPaymentTermsFormOpen(true);
+                                        }}
+                                        title="Edit payment term"
+                                      >
+                                        <Pencil className="h-4 w-4" />
+                                      </Button>
+                                    )}
                                 </div>
                               </div>
-
 
                               {/* Details */}
                               <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
@@ -662,7 +663,6 @@ export default function LeaseDetailPage() {
                 </CardContent>
               </Card>
             </TabsContent>
-
           </Tabs>
         </div>
       )}
@@ -686,9 +686,9 @@ export default function LeaseDetailPage() {
         charge={
           chargeFormMode === "create" && id && lease
             ? ({
-              lease_id: id,
-              lease_name: lease.lease_number,
-            } as any)
+                lease_id: id,
+                lease_name: lease.lease_number,
+              } as any)
             : selectedCharge
         }
         isOpen={isChargeFormOpen}

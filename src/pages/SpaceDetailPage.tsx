@@ -75,6 +75,7 @@ import { occupancyApiService } from "@/services/spaces_sites/spaceoccupancyapi";
 import { parkingSlotApiService } from "@/services/parking_access/parkingslotsapi";
 import { ParkingSlot } from "@/interfaces/parking_access_interface";
 import { parkingZoneApiService } from "@/services/parking_access/parkingzonesapi";
+import { useSettings } from "@/context/SettingsContext";
 
 export default function SpaceDetailPage() {
   const { id } = useParams<{ id: string }>();
@@ -111,9 +112,14 @@ export default function SpaceDetailPage() {
   const [slotList, setSlotList] = useState<any[]>([]);
   const [selectedZoneId, setSelectedZoneId] = useState<string>("");
   const [selectedSlotId, setSelectedSlotId] = useState<string>("");
-  const [assignedParkingSlots, setAssignedParkingSlots] =
-    useState<ParkingSlot[]>(space?.parking_slots ?? []);
-
+  const [assignedParkingSlots, setAssignedParkingSlots] = useState<
+    ParkingSlot[]
+  >(space?.parking_slots ?? []);
+  const { systemCurrency } = useSettings();
+  const formatCurrency = (val?: number) => {
+    if (val == null) return "-";
+    return systemCurrency.format(val);
+  };
   useEffect(() => {
     if (!id) return;
     loadSpace();
@@ -157,7 +163,6 @@ export default function SpaceDetailPage() {
     const response = await spacesApiService.getAccessoriesLookup();
     if (response.success) setAccessoriesList(response.data || []);
   };
-
 
   const loadZonesBySite = async (siteId: string) => {
     const params = new URLSearchParams();
@@ -228,7 +233,7 @@ export default function SpaceDetailPage() {
       toast.success(
         isEditMode
           ? "Parking slot updated successfully"
-          : "Parking slot assigned successfully"
+          : "Parking slot assigned successfully",
       );
       setIsParkingSlotFormOpen(false);
       setEditingSlot(null);
@@ -244,7 +249,7 @@ export default function SpaceDetailPage() {
 
     // Get all current slot IDs except the one being removed
     const remainingSlots = assignedParkingSlots.filter(
-      (slot) => slot.id !== deleteSlotId
+      (slot) => slot.id !== deleteSlotId,
     );
 
     const remainingSlotIds = remainingSlots.map((slot) => slot.id);
@@ -385,11 +390,7 @@ export default function SpaceDetailPage() {
 
                   <div className="flex items-center gap-2 mt-1">
                     {space.category && (
-                      <Badge
-                        variant="secondary"
-                      >
-                        {space.category}
-                      </Badge>
+                      <Badge variant="secondary">{space.category}</Badge>
                     )}
                     <Badge className={getStatusColor(space?.status)}>
                       {space?.status.replace("_", " ")}
@@ -416,17 +417,22 @@ export default function SpaceDetailPage() {
                       <h1 className="flex items-center gap-2">
                         <Home className="h-5 w-5" /> Space Information
                       </h1>
-
                     </div>
                   </CardTitle>
                 </CardHeader>
                 <CardContent className="grid grid-cols-4 gap-4 text-sm">
                   <Info label="Site" value={space.site_name} />
                   <Info label="Building" value={space.building_block} />
-                  <Info label="Type" value={space.kind
-                    .replace("_", " ")
-                    .replace(/\b\w/g, (l) => l.toUpperCase())} />
-                  <Info label="Sub Type" value={space.sub_kind?.toUpperCase()} />
+                  <Info
+                    label="Type"
+                    value={space.kind
+                      .replace("_", " ")
+                      .replace(/\b\w/g, (l) => l.toUpperCase())}
+                  />
+                  <Info
+                    label="Sub Type"
+                    value={space.sub_kind?.toUpperCase()}
+                  />
                   <Info label="Floor" value={space.floor} />
                   <Info label="Area (sqft)" value={space.area_sqft} />
                   <Info label="Beds" value={space.beds} />
@@ -438,8 +444,8 @@ export default function SpaceDetailPage() {
                     label="Maintenance"
                     value={
                       space.maintenance_amount
-                        ? `₹ ${Number(space.maintenance_amount).toLocaleString()}  
-                          ${space.tax_rate ? `+ ${Number(space.tax_rate).toLocaleString()} % tax` : ''}`
+                        ? `${formatCurrency(space.maintenance_amount)}  
+                          ${space.tax_rate ? `+ ${Number(space.tax_rate).toLocaleString()} % tax` : ""}`
                         : "-"
                     }
                   />
@@ -453,7 +459,8 @@ export default function SpaceDetailPage() {
                             variant="secondary"
                             className="text-xs"
                           >
-                            {getAccessoryName(acc.accessory_id)} (Qty: {acc.quantity})
+                            {getAccessoryName(acc.accessory_id)} (Qty:{" "}
+                            {acc.quantity})
                           </Badge>
                         ))}
                       </div>
@@ -487,13 +494,17 @@ export default function SpaceDetailPage() {
                       spaceId={id!}
                       owners={owners}
                       onRefresh={loadOwners}
-                    // actionSlot={
+                      // actionSlot={
 
-                    // }
+                      // }
                     />
                   </CardContent>
                 </Card>
-                <SpaceTenantSection spaceId={id} tenants={tenants} onRefresh={fetchTenants} />
+                <SpaceTenantSection
+                  spaceId={id}
+                  tenants={tenants}
+                  onRefresh={fetchTenants}
+                />
               </div>
 
               <Card>
@@ -540,7 +551,10 @@ export default function SpaceDetailPage() {
                                   <Badge variant="outline" className="text-xs">
                                     {slot.zone_name}
                                   </Badge>
-                                  <Badge variant="secondary" className="text-xs">
+                                  <Badge
+                                    variant="secondary"
+                                    className="text-xs"
+                                  >
                                     {slot.slot_type}
                                   </Badge>
                                 </div>
@@ -560,7 +574,6 @@ export default function SpaceDetailPage() {
                         ))}
                       </div>
                     </div>
-
                   )}
                 </CardContent>
               </Card>
@@ -672,7 +685,8 @@ export default function SpaceDetailPage() {
                   <AlertDialogHeader>
                     <AlertDialogTitle>Remove Parking Slot</AlertDialogTitle>
                     <AlertDialogDescription>
-                      Are you sure you want to remove this parking slot assignment? This action cannot be undone.
+                      Are you sure you want to remove this parking slot
+                      assignment? This action cannot be undone.
                     </AlertDialogDescription>
                   </AlertDialogHeader>
                   <AlertDialogFooter>

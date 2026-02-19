@@ -73,6 +73,7 @@ import { PageHeader } from "@/components/PageHeader";
 import { useLoader } from "@/context/LoaderContext";
 import LoaderOverlay from "@/components/LoaderOverlay";
 import { InvoiceForm } from "@/components/InvoiceForm";
+import { useSettings } from "@/context/SettingsContext";
 
 export default function Invoices() {
   const [searchTerm, setSearchTerm] = useState("");
@@ -102,9 +103,9 @@ export default function Invoices() {
   const [isFormOpen, setIsFormOpen] = useState(false);
   const [selectedInvoice, setSelectedInvoice] = useState<Invoice | undefined>();
   const [formMode, setFormMode] = useState<"create" | "edit" | "view">(
-    "create"
+    "create",
   );
-
+  const { systemCurrency } = useSettings();
   useEffect(() => {
     loadInvoicesOverView();
     loadInvoices();
@@ -239,8 +240,9 @@ export default function Invoices() {
 
     if (response?.success) {
       toast.success(
-        `Invoice has been ${formMode === "create" ? "created" : "updated"
-        } successfully.`
+        `Invoice has been ${
+          formMode === "create" ? "created" : "updated"
+        } successfully.`,
       );
       updateInvoicesPage();
       loadInvoicesOverView();
@@ -278,11 +280,14 @@ export default function Invoices() {
         updateInvoicesPage();
         loadInvoicesOverView();
       } else {
-        toast.error(`Cannot Delete Invoice\n${authResponse?.message}`, {
-          style: { whiteSpace: "pre-line" },
-        });
+        toast.error(`Cannot Delete Invoice\n${authResponse?.message}`);
       }
     }
+  };
+
+  const formatCurrency = (val?: number) => {
+    if (val == null) return "-";
+    return systemCurrency.format(val);
   };
 
   return (
@@ -338,7 +343,7 @@ export default function Invoices() {
               </CardHeader>
               <CardContent>
                 <div className="text-2xl font-bold">
-                  ₹{invoiceOverview.totalAmount.toLocaleString()}
+                  {formatCurrency(invoiceOverview.totalAmount)}
                 </div>
                 <p className="text-xs text-muted-foreground">Invoiced amount</p>
               </CardContent>
@@ -351,7 +356,7 @@ export default function Invoices() {
               </CardHeader>
               <CardContent>
                 <div className="text-2xl font-bold text-green-600">
-                  ₹{invoiceOverview.paidAmount.toLocaleString()}
+                  {formatCurrency(invoiceOverview.paidAmount)}
                 </div>
                 <p className="text-xs text-muted-foreground">Paid invoices</p>
               </CardContent>
@@ -366,7 +371,7 @@ export default function Invoices() {
               </CardHeader>
               <CardContent>
                 <div className="text-2xl font-bold text-orange-600">
-                  ₹{invoiceOverview.outstandingAmount.toLocaleString()}
+                  {formatCurrency(invoiceOverview.outstandingAmount)}
                 </div>
                 <p className="text-xs text-muted-foreground">Pending payment</p>
               </CardContent>
@@ -448,7 +453,7 @@ export default function Invoices() {
                               {new Date(invoice.due_date).toLocaleDateString()}
                             </TableCell>
                             <TableCell>
-                              ₹{invoice?.totals?.grand ?? 0}
+                              {formatCurrency(invoice?.totals?.grand ?? 0)}
                             </TableCell>
                             <TableCell>
                               {getStatusBadge(invoice.status)}
@@ -553,7 +558,7 @@ export default function Invoices() {
                               {payment.ref_no}
                             </TableCell>
                             <TableCell>
-                              ₹{payment.amount.toLocaleString()}
+                              {formatCurrency(payment.amount)}
                             </TableCell>
                             <TableCell>
                               {new Date(payment.paid_at).toLocaleDateString()}

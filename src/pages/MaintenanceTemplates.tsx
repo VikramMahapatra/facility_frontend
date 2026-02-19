@@ -1,13 +1,5 @@
 import { useState, useEffect } from "react";
-import {
-  Wrench,
-  Eye,
-  Edit,
-  Trash2,
-  Plus,
-  Search,
-  MapPin,
-} from "lucide-react";
+import { Wrench, Eye, Edit, Trash2, Plus, Search, MapPin } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -38,7 +30,11 @@ import { useLoader } from "@/context/LoaderContext";
 import LoaderOverlay from "@/components/LoaderOverlay";
 import ContentContainer from "@/components/ContentContainer";
 import { toast } from "@/components/ui/app-toast";
-import { getKindColor, MaintenanceTemplate } from "@/interfaces/spaces_interfaces";
+import {
+  getKindColor,
+  MaintenanceTemplate,
+} from "@/interfaces/spaces_interfaces";
+import { useSettings } from "@/context/SettingsContext";
 
 export default function MaintenanceTemplates() {
   const [searchTerm, setSearchTerm] = useState("");
@@ -46,10 +42,11 @@ export default function MaintenanceTemplates() {
     useState<string>("all");
   const [selectedCategory, setSelectedCategory] = useState<string>("all");
   const [templates, setTemplates] = useState<MaintenanceTemplate[]>([]);
-  const [selectedTemplate, setSelectedTemplate] =
-    useState<MaintenanceTemplate | undefined>(undefined);
+  const [selectedTemplate, setSelectedTemplate] = useState<
+    MaintenanceTemplate | undefined
+  >(undefined);
   const [formMode, setFormMode] = useState<"create" | "edit" | "view">(
-    "create"
+    "create",
   );
   const [showForm, setShowForm] = useState(false);
   const [deleteId, setDeleteId] = useState<string | null>(null);
@@ -59,6 +56,7 @@ export default function MaintenanceTemplates() {
   const { canRead, canWrite, canDelete } = useAuth();
   const resource = "maintenance_templates";
   const { withLoader } = useLoader();
+  const { systemCurrency } = useSettings();
 
   useSkipFirstEffect(() => {
     loadTemplates();
@@ -86,13 +84,21 @@ export default function MaintenanceTemplates() {
     params.append("limit", limit.toString());
 
     const response = await withLoader(async () => {
-      return await maintenanceTemplateApiService.getMaintenanceTemplates(params);
+      return await maintenanceTemplateApiService.getMaintenanceTemplates(
+        params,
+      );
     });
 
     if (response?.success) {
-      const templatesData = response.data?.templates || response.data?.data || response.data || [];
+      const templatesData =
+        response.data?.templates || response.data?.data || response.data || [];
       setTemplates(Array.isArray(templatesData) ? templatesData : []);
-      setTotalItems(response.data?.total || response.data?.count || templatesData.length || 0);
+      setTotalItems(
+        response.data?.total ||
+          response.data?.count ||
+          templatesData.length ||
+          0,
+      );
     }
   };
 
@@ -103,9 +109,7 @@ export default function MaintenanceTemplates() {
       per_bed: "bg-purple-100 text-purple-800",
       custom: "bg-orange-100 text-orange-800",
     };
-    return (
-      colors[type as keyof typeof colors] || "bg-gray-100 text-gray-800"
-    );
+    return colors[type as keyof typeof colors] || "bg-gray-100 text-gray-800";
   };
 
   const getCategoryColor = (category?: string) => {
@@ -145,7 +149,7 @@ export default function MaintenanceTemplates() {
     if (formMode === "create") {
       response =
         await maintenanceTemplateApiService.addMaintenanceTemplate(
-          templateData
+          templateData,
         );
       if (response.success) loadTemplates();
     } else if (formMode === "edit" && selectedTemplate) {
@@ -156,13 +160,11 @@ export default function MaintenanceTemplates() {
       };
       response =
         await maintenanceTemplateApiService.updateMaintenanceTemplate(
-          updatedTemplate
+          updatedTemplate,
         );
       if (response.success) {
         setTemplates((prev) =>
-          prev.map((t) =>
-            t.id === updatedTemplate.id ? response.data : t
-          )
+          prev.map((t) => (t.id === updatedTemplate.id ? response.data : t)),
         );
       }
     }
@@ -180,9 +182,7 @@ export default function MaintenanceTemplates() {
   const confirmDelete = async () => {
     if (deleteId) {
       const response =
-        await maintenanceTemplateApiService.deleteMaintenanceTemplate(
-          deleteId
-        );
+        await maintenanceTemplateApiService.deleteMaintenanceTemplate(deleteId);
 
       if (response.success) {
         const authResponse = response.data;
@@ -193,6 +193,10 @@ export default function MaintenanceTemplates() {
         }
       }
     }
+  };
+  const formatCurrency = (val?: number) => {
+    if (val == null) return "-";
+    return systemCurrency.format(val);
   };
 
   return (
@@ -242,10 +246,7 @@ export default function MaintenanceTemplates() {
               <SelectItem value="custom">Custom</SelectItem>
             </SelectContent>
           </Select>
-          <Select
-            value={selectedCategory}
-            onValueChange={setSelectedCategory}
-          >
+          <Select value={selectedCategory} onValueChange={setSelectedCategory}>
             <SelectTrigger className="w-[180px]">
               <SelectValue placeholder="All Categories" />
             </SelectTrigger>
@@ -274,7 +275,6 @@ export default function MaintenanceTemplates() {
                           {template.name}
                         </CardTitle>
                         <div className="flex items-center gap-2">
-
                           {template.category && (
                             <Badge
                               className={getCategoryColor(template.category)}
@@ -308,22 +308,20 @@ export default function MaintenanceTemplates() {
                       <div className="flex items-center justify-between">
                         {template.calculation_type && (
                           <span className="text-muted-foreground">
-                            Calculation Type: {formatCalculationType(template.calculation_type)}
+                            Calculation Type:{" "}
+                            {formatCalculationType(template.calculation_type)}
                           </span>
                         )}
                         {Number(template.amount) > 0 && (
                           <div className="flex items-center gap-2">
                             <span className="font-semibold text-sidebar-primary">
-                              ₹{Number(template.amount).toLocaleString()}
+                              {formatCurrency(Number(template.amount))}
                             </span>
                           </div>
                         )}
                       </div>
-
-
                     </div>
                     {/* Site, Kind, Amount in one row */}
-
 
                     {/* Actions */}
                     <div className="flex items-center justify-end gap-2 pt-2">
@@ -400,7 +398,9 @@ export default function MaintenanceTemplates() {
           </AlertDialogHeader>
           <AlertDialogFooter>
             <AlertDialogCancel>Cancel</AlertDialogCancel>
-            <AlertDialogAction onClick={confirmDelete}>Delete</AlertDialogAction>
+            <AlertDialogAction onClick={confirmDelete}>
+              Delete
+            </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>

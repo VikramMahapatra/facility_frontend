@@ -24,7 +24,16 @@ import {
 } from "@/schemas/maintenanceTemplate.schema";
 import { toast } from "@/components/ui/app-toast";
 import { siteApiService } from "@/services/spaces_sites/sitesapi";
-import { CALCULATION_TYPE_LABELS, getKindsByCategory, kindToCategory, MaintenanceTemplate, spaceCategories, SpaceKind, spaceKinds, spaceSubKinds } from "@/interfaces/spaces_interfaces";
+import {
+  CALCULATION_TYPE_LABELS,
+  getKindsByCategory,
+  kindToCategory,
+  MaintenanceTemplate,
+  spaceCategories,
+  SpaceKind,
+  spaceKinds,
+  spaceSubKinds,
+} from "@/interfaces/spaces_interfaces";
 import { leaseChargeApiService } from "@/services/leasing_tenants/leasechargeapi";
 import {
   AlertDialog,
@@ -37,8 +46,7 @@ import {
   AlertDialogTitle,
   AlertDialogPortal,
 } from "@/components/ui/alert-dialog";
-
-
+import { useSettings } from "@/context/SettingsContext";
 
 interface MaintenanceTemplateFormProps {
   template?: MaintenanceTemplate;
@@ -73,6 +81,7 @@ export function MaintenanceTemplateForm({
 }: MaintenanceTemplateFormProps) {
   const [isSubmitted, setIsSubmitted] = useState(false);
   const [siteList, setSiteList] = useState<any[]>([]);
+  const { systemCurrency } = useSettings();
   const [taxCodeList, setTaxCodeList] = useState<any[]>([]);
   const [showOverrideConfirm, setShowOverrideConfirm] = useState(false);
   const [pendingSubmitData, setPendingSubmitData] =
@@ -151,9 +160,8 @@ export function MaintenanceTemplateForm({
 
   const proceedSave = async (
     overrideExisting: boolean,
-    submitData?: MaintenanceTemplateFormValues
+    submitData?: MaintenanceTemplateFormValues,
   ) => {
-
     const finalData = submitData || pendingSubmitData;
     if (!finalData) return;
 
@@ -201,6 +209,11 @@ export function MaintenanceTemplateForm({
   }, [selectedCategory, selectedKind, filteredKinds, setValue]);
 
   const isReadOnly = mode === "view";
+
+  const formatCurrency = (val?: number) => {
+    if (val == null) return "-";
+    return systemCurrency.name;
+  };
 
   return (
     <>
@@ -268,7 +281,9 @@ export function MaintenanceTemplateForm({
                 )}
               />
             </div>
-            <div className={`grid ${selectedKind == "apartment" ? "grid-cols-3" : "grid-cols-2"} gap-4`}>
+            <div
+              className={`grid ${selectedKind == "apartment" ? "grid-cols-3" : "grid-cols-2"} gap-4`}
+            >
               <div className="space-y-2">
                 <Controller
                   name="category"
@@ -385,12 +400,10 @@ export function MaintenanceTemplateForm({
                           ))}
                         </SelectContent>
                       </Select>
-
                     </div>
                   )}
                 />
               )}
-
             </div>
             <div className="grid grid-cols-2 gap-4">
               <div className="space-y-2">
@@ -399,7 +412,9 @@ export function MaintenanceTemplateForm({
                   control={control}
                   render={({ field }) => (
                     <div className="space-y-2">
-                      <Label htmlFor="calculation_type">Calculation Type *</Label>
+                      <Label htmlFor="calculation_type">
+                        Calculation Type *
+                      </Label>
                       <Select
                         value={field.value}
                         onValueChange={field.onChange}
@@ -431,7 +446,7 @@ export function MaintenanceTemplateForm({
               </div>
               <div className="space-y-2">
                 <Label htmlFor="amount">
-                  {`Monthly Amount (${calculationTypeLabel})*`}
+                  {`Monthly Amount (${calculationTypeLabel}) (${formatCurrency(0)})`}
                 </Label>
                 <Input
                   id="amount"
@@ -444,7 +459,9 @@ export function MaintenanceTemplateForm({
                   placeholder="0.00"
                 />
                 {errors.amount && (
-                  <p className="text-sm text-red-500">{errors.amount.message}</p>
+                  <p className="text-sm text-red-500">
+                    {errors.amount.message}
+                  </p>
                 )}
               </div>
             </div>
@@ -482,21 +499,17 @@ export function MaintenanceTemplateForm({
                 Override Existing Template Assignments?
               </AlertDialogTitle>
               <AlertDialogDescription>
-                Do you want to override existing template assignments for matching
-                spaces?
+                Do you want to override existing template assignments for
+                matching spaces?
               </AlertDialogDescription>
             </AlertDialogHeader>
 
             <AlertDialogFooter>
-              <AlertDialogCancel
-                onClick={() => setShowOverrideConfirm(false)}
-              >
+              <AlertDialogCancel onClick={() => setShowOverrideConfirm(false)}>
                 Cancel
               </AlertDialogCancel>
 
-              <AlertDialogAction
-                onClick={() => proceedSave(false)}
-              >
+              <AlertDialogAction onClick={() => proceedSave(false)}>
                 Save Without Override
               </AlertDialogAction>
 
@@ -506,7 +519,6 @@ export function MaintenanceTemplateForm({
               >
                 Override Existing
               </AlertDialogAction>
-
             </AlertDialogFooter>
           </AlertDialogContent>
         </AlertDialogPortal>

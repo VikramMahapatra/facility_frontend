@@ -56,7 +56,8 @@ import LoaderOverlay from "@/components/LoaderOverlay";
 import ContentContainer from "@/components/ContentContainer";
 import { useAuth } from "@/context/AuthContext";
 import { PageHeader } from "@/components/PageHeader";
-import{AsyncAutocompleteRQ} from "@/components/common/async-autocomplete-rq";
+import { AsyncAutocompleteRQ } from "@/components/common/async-autocomplete-rq";
+import { useSettings } from "@/context/SettingsContext";
 
 interface RevenueReportsOverview {
   TotalRevenue: number;
@@ -78,6 +79,7 @@ export default function RevenueReports() {
   const [outstandingReceivablesData, setOutstandingReceivablesData] = useState<
     any[]
   >([]);
+  const { systemCurrency } = useSettings();
   const [revenueReportsOverview, setRevenueReportsOverview] =
     useState<RevenueReportsOverview>({
       TotalRevenue: 0.0,
@@ -143,7 +145,7 @@ export default function RevenueReports() {
           "penalties",
         ];
         const allChargeCodes = Object.keys(firstItem).filter(
-          (key) => !metadataFields.includes(key.toLowerCase())
+          (key) => !metadataFields.includes(key.toLowerCase()),
         );
 
         // Store charge codes for dynamic rendering
@@ -211,7 +213,7 @@ export default function RevenueReports() {
     }
     const outstandingReceivablesData = await withLoader(async () => {
       return await revenueReportsApiService.getRevenueReportsByOutstandingReceivables(
-        params
+        params,
       );
     });
     if (outstandingReceivablesData?.success)
@@ -253,6 +255,11 @@ export default function RevenueReports() {
     loadRevenueReportsOverview();
   }, [selectedPeriod, selectedSite]);
 
+  const formatCurrency = (val?: number) => {
+    if (val == null) return "-";
+    return systemCurrency.format(val);
+  };
+
   return (
     <div className="flex-1 space-y-6">
       {/* Header Actions */}
@@ -285,36 +292,32 @@ export default function RevenueReports() {
               </SelectTrigger>
               <SelectContent>
                 <SelectItem value="Last_Month">Last Month</SelectItem>
-                <SelectItem value="Last_3_Months">
-                  Last 3 Months
-                </SelectItem>
-                <SelectItem value="Last_6_Months">
-                  Last 6 Months
-                </SelectItem>
+                <SelectItem value="Last_3_Months">Last 3 Months</SelectItem>
+                <SelectItem value="Last_6_Months">Last 6 Months</SelectItem>
                 <SelectItem value="Last_Year">Last Year</SelectItem>
               </SelectContent>
             </Select>
             <div className="w-[180px]">
-            <AsyncAutocompleteRQ
-              value={selectedSite}
-              onChange={(value) => {
-                setSelectedSite(value);
-              }}
-              placeholder="All Sites"
-              queryKey={["sites"]}
-              queryFn={async (search) => {
-                const res = await siteApiService.getSiteLookup(search);
-                const sites = res.data.map((s: any) => ({
-                  id: s.id,
-                  label: s.name,
-                }));
-                return [{ id: "all", label: "All Sites" }, ...sites];
-              }}
-              fallbackOption={
-                selectedSite === "all"
-                  ? { id: "all", label: "All Sites" }
-                  : undefined
-              }
+              <AsyncAutocompleteRQ
+                value={selectedSite}
+                onChange={(value) => {
+                  setSelectedSite(value);
+                }}
+                placeholder="All Sites"
+                queryKey={["sites"]}
+                queryFn={async (search) => {
+                  const res = await siteApiService.getSiteLookup(search);
+                  const sites = res.data.map((s: any) => ({
+                    id: s.id,
+                    label: s.name,
+                  }));
+                  return [{ id: "all", label: "All Sites" }, ...sites];
+                }}
+                fallbackOption={
+                  selectedSite === "all"
+                    ? { id: "all", label: "All Sites" }
+                    : undefined
+                }
                 minSearchLength={0}
               />
             </div>
@@ -331,7 +334,7 @@ export default function RevenueReports() {
               </CardHeader>
               <CardContent>
                 <div className="text-2xl font-bold">
-                  ₹{revenueReportsOverview.TotalRevenue}
+                  {formatCurrency(revenueReportsOverview.TotalRevenue)}
                 </div>
                 {/* <p className="text-xs text-muted-foreground flex items-center">
                         <TrendingUp className="w-3 h-3 mr-1 text-green-500" />
@@ -348,7 +351,7 @@ export default function RevenueReports() {
               </CardHeader>
               <CardContent>
                 <div className="text-2xl font-bold">
-                  ₹{revenueReportsOverview.RENTRevenue}
+                  {formatCurrency(revenueReportsOverview.RENTRevenue)}
                 </div>
                 {/* <p className="text-xs text-muted-foreground flex items-center">
                         <TrendingUp className="w-3 h-3 mr-1 text-green-500" />
@@ -365,7 +368,7 @@ export default function RevenueReports() {
               </CardHeader>
               <CardContent>
                 <div className="text-2xl font-bold">
-                  ₹{revenueReportsOverview.CAMRevenue}
+                  {formatCurrency(revenueReportsOverview.CAMRevenue)}
                 </div>
                 {/* <p className="text-xs text-muted-foreground flex items-center">
                         <TrendingDown className="w-3 h-3 mr-1 text-red-500" />
@@ -397,9 +400,7 @@ export default function RevenueReports() {
             <Card>
               <CardHeader>
                 <CardTitle>Revenue Trend</CardTitle>
-                <CardDescription>
-                  Monthly revenue breakdown
-                </CardDescription>
+                <CardDescription>Monthly revenue breakdown</CardDescription>
               </CardHeader>
               <CardContent>
                 <ResponsiveContainer width="100%" height={300}>
@@ -462,18 +463,14 @@ export default function RevenueReports() {
             <Card>
               <CardHeader>
                 <CardTitle>Revenue by Source</CardTitle>
-                <CardDescription>
-                  Current period breakdown
-                </CardDescription>
+                <CardDescription>Current period breakdown</CardDescription>
               </CardHeader>
               <CardContent>
                 <ResponsiveContainer width="100%" height={300}>
                   <PieChart>
                     <Pie
                       data={
-                        sourceData && sourceData.length > 0
-                          ? sourceData
-                          : []
+                        sourceData && sourceData.length > 0 ? sourceData : []
                       }
                       cx="50%"
                       cy="50%"
@@ -514,7 +511,7 @@ export default function RevenueReports() {
                         const data = sourceData;
                         const total = data.reduce(
                           (sum: number, d: any) => sum + d.value,
-                          0
+                          0,
                         );
                         const colors = [
                           "#0088FE",
@@ -529,7 +526,7 @@ export default function RevenueReports() {
                         const groupedByPercent = data.reduce(
                           (acc: any, entry: any, index: number) => {
                             const percent = Math.round(
-                              (entry.value / total) * 100
+                              (entry.value / total) * 100,
                             );
                             if (!acc[percent]) {
                               acc[percent] = [];
@@ -540,7 +537,7 @@ export default function RevenueReports() {
                             });
                             return acc;
                           },
-                          {}
+                          {},
                         );
 
                         // Sort by percentage descending
@@ -556,29 +553,27 @@ export default function RevenueReports() {
                             key={group.percent}
                             className="flex items-center gap-2 flex-wrap"
                           >
-                            {group.entries.map(
-                              (entry: any, idx: number) => (
+                            {group.entries.map((entry: any, idx: number) => (
+                              <div
+                                key={`${entry.name}-${idx}`}
+                                className="flex items-center gap-1.5"
+                              >
                                 <div
-                                  key={`${entry.name}-${idx}`}
-                                  className="flex items-center gap-1.5"
-                                >
-                                  <div
-                                    className="w-3 h-3 rounded-full"
-                                    style={{
-                                      backgroundColor: entry.color,
-                                    }}
-                                  />
-                                  <span className="text-sm text-muted-foreground">
-                                    {entry.name}
+                                  className="w-3 h-3 rounded-full"
+                                  style={{
+                                    backgroundColor: entry.color,
+                                  }}
+                                />
+                                <span className="text-sm text-muted-foreground">
+                                  {entry.name}
+                                </span>
+                                {idx === group.entries.length - 1 && (
+                                  <span className="text-sm font-medium">
+                                    {group.percent}%
                                   </span>
-                                  {idx === group.entries.length - 1 && (
-                                    <span className="text-sm font-medium">
-                                      {group.percent}%
-                                    </span>
-                                  )}
-                                </div>
-                              )
-                            )}
+                                )}
+                              </div>
+                            ))}
                           </div>
                         ));
                       })()}
@@ -602,7 +597,7 @@ export default function RevenueReports() {
                 <BarChart
                   data={
                     outstandingReceivablesData &&
-                      outstandingReceivablesData.length > 0
+                    outstandingReceivablesData.length > 0
                       ? outstandingReceivablesData
                       : []
                   }
