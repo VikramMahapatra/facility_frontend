@@ -58,12 +58,12 @@ const emptyFormData: Partial<LeaseFormValues> = {
   status: "draft",
   auto_move_in: false,
   description: "",
-  payment_method: "UPI" as any,
+  payment_method: "cash" as any,
   payment_ref_no: "",
   payment_date: "",
   payment_amount: undefined,
   number_of_installments: undefined,
-  payments: [],
+  payment_terms: [],
 };
 
 interface LeaseFormProps {
@@ -118,7 +118,7 @@ export function LeaseForm({
       payment_date: "",
       payment_amount: undefined,
       number_of_installments: undefined,
-      payments: [],
+      payment_terms: [],
     },
     mode: "onChange",
     reValidateMode: "onChange",
@@ -172,13 +172,9 @@ export function LeaseForm({
           },
           status: (lease.status as any) || "draft",
           description: (lease as any).description || "",
-          payment_method: (lease as any).payment_method || undefined,
-          payment_ref_no: (lease as any).payment_ref_no || "",
-          payment_date: (lease as any).payment_date || "",
-          payment_amount: (lease as any).payment_amount || undefined,
           number_of_installments:
             (lease as any).number_of_installments || undefined,
-          payments: (lease as any).payments || [],
+          payment_terms: (lease as any).payment_terms || [],
         }
         : emptyFormData,
     );
@@ -268,7 +264,7 @@ export function LeaseForm({
 
   const { fields, append, remove, update } = useFieldArray({
     control,
-    name: "payments",
+    name: "payment_terms",
   });
 
   useEffect(() => {
@@ -302,10 +298,6 @@ export function LeaseForm({
         setValue("number_of_installments", calculatedInstallments, {
           shouldValidate: false,
         });
-      } else {
-        setValue("number_of_installments", calculatedInstallments, {
-          shouldValidate: false,
-        });
       }
     }
   }, [
@@ -318,7 +310,7 @@ export function LeaseForm({
 
   useEffect(() => {
     if (numberOfInstallments && numberOfInstallments > 0) {
-      const currentPayments = watch("payments") || [];
+      const currentPayments = watch("payment_terms") || [];
       let paymentAmountPerInstallment: number | undefined = undefined;
 
       if (
@@ -358,9 +350,9 @@ export function LeaseForm({
       if (currentPayments.length < numberOfInstallments) {
         for (let i = currentPayments.length; i < numberOfInstallments; i++) {
           append({
-            method: "cheque",
-            ref_no: "",
-            date: calculatePaymentDate(i),
+            payment_method: "cash",
+            reference_no: "",
+            due_date: calculatePaymentDate(i),
             amount: paymentAmountPerInstallment,
           });
         }
@@ -383,9 +375,9 @@ export function LeaseForm({
           const finalDate = recalculatedDate || payment.date || "";
 
           update(index, {
-            method: payment.method || "cheque",
-            ref_no: payment.ref_no || "",
-            date: finalDate,
+            payment_method: payment.payment_method || "cash",
+            reference_no: payment.reference_no || "",
+            due_date: finalDate,
             amount: updatedAmount,
           });
         });
@@ -407,7 +399,7 @@ export function LeaseForm({
   // Ensure payment dates are set when startDate becomes available
   useEffect(() => {
     if (startDate && numberOfInstallments && numberOfInstallments > 0) {
-      const currentPayments = watch("payments") || [];
+      const currentPayments = watch("payment_terms") || [];
       if (currentPayments.length === numberOfInstallments) {
         const calculatePaymentDate = (index: number): string => {
           if (!startDate) return "";
@@ -439,8 +431,8 @@ export function LeaseForm({
               updates.date = calculatedDate;
             }
           }
-          if (!payment.method) {
-            updates.method = "upi";
+          if (!payment.payment_method) {
+            updates.payment_method = "cash";
           }
           if (Object.keys(updates).length > 0) {
             update(index, {
@@ -471,7 +463,7 @@ export function LeaseForm({
       Number(rentAmount) > 0 &&
       Number(leaseTermInMonths) > 0
     ) {
-      const currentPayments = watch("payments") || [];
+      const currentPayments = watch("payment_terms") || [];
       if (currentPayments.length === numberOfInstallments) {
         const total = Number(rentAmount) * Number(leaseTermInMonths);
         const paymentAmountPerInstallment =
@@ -479,9 +471,9 @@ export function LeaseForm({
 
         currentPayments.forEach((payment: any, index: number) => {
           update(index, {
-            method: payment.method || " cheque",
-            ref_no: payment.ref_no || "",
-            date: payment.date || "",
+            payment_method: payment.payment_method || " cash",
+            reference_no: payment.reference_no || "",
+            due_date: payment.date || "",
             amount: paymentAmountPerInstallment,
           });
         });
@@ -632,6 +624,8 @@ export function LeaseForm({
 
         submitData = formData;
       } else {
+
+
         submitData = updated;
       }
 
@@ -646,7 +640,6 @@ export function LeaseForm({
       }
     } catch (error) {
       console.error("Error submitting lease form:", error);
-      toast.error("Failed to submit lease form. Please try again.");
     }
   };
 
@@ -1356,13 +1349,17 @@ export function LeaseForm({
                         <div className="flex items-center justify-center pt-2">
                           <span className="text-xs text-muted-foreground font-medium">
                             {index + 1}
+                            <input
+                              {...register(`payment_terms.${index}.id` as const)}
+                              type="hidden"
+                            />
                           </span>
                         </div>
                         <div className="space-y-2">
                           <div className="relative">
                             <Calendar className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground pointer-events-none" />
                             <Controller
-                              name={`payments.${index}.date`}
+                              name={`payment_terms.${index}.due_date`}
                               control={control}
                               render={({ field }) => (
                                 <Input
@@ -1371,7 +1368,7 @@ export function LeaseForm({
                                   onChange={(e) =>
                                     field.onChange(e.target.value)
                                   }
-                                  className={`pl-10 ${errors.payments?.[index]?.date ? "border-red-500" : ""}`}
+                                  className={`pl-10 ${errors.payment_terms?.[index]?.due_date ? "border-red-500" : ""}`}
                                   disabled={isReadOnly}
                                 />
                               )}
@@ -1380,7 +1377,7 @@ export function LeaseForm({
                         </div>
                         <div className="space-y-2">
                           <Controller
-                            name={`payments.${index}.method`}
+                            name={`payment_terms.${index}.payment_method`}
                             control={control}
                             render={({ field }) => (
                               <Select
@@ -1411,9 +1408,7 @@ export function LeaseForm({
                                 <SelectContent>
                                   <SelectItem value="cash">Cash</SelectItem>
                                   <SelectItem value="card">Card</SelectItem>
-                                  <SelectItem value="bank">
-                                    Bank Transfer
-                                  </SelectItem>
+                                  <SelectItem value="bank">Bank Transfer</SelectItem>
                                   <SelectItem value="cheque">Cheque</SelectItem>
                                   <SelectItem value="upi">UPI</SelectItem>
                                   <SelectItem value="other">Other</SelectItem>
@@ -1424,14 +1419,14 @@ export function LeaseForm({
                         </div>
                         <div className="space-y-2">
                           <Input
-                            {...register(`payments.${index}.ref_no`)}
+                            {...register(`payment_terms.${index}.reference_no`)}
                             placeholder="Enter reference"
                             disabled={
                               isReadOnly ||
-                              watch(`payments.${index}.method`) === "cash"
+                              watch(`payment_terms.${index}.payment_method`) === "cash"
                             }
                             className={
-                              errors.payments?.[index]?.ref_no
+                              errors.payment_terms?.[index]?.reference_no
                                 ? "border-red-500"
                                 : ""
                             }
@@ -1441,7 +1436,7 @@ export function LeaseForm({
                           <div className="flex items-center pt-2">
                             <span className="text-sm font-medium">
                               {(() => {
-                                const amount = watch(`payments.${index}.amount`);
+                                const amount = watch(`payment_terms.${index}.amount`);
                                 if (
                                   amount === undefined ||
                                   amount === null ||
@@ -1457,7 +1452,7 @@ export function LeaseForm({
                             </span>
                             <input
                               type="hidden"
-                              {...register(`payments.${index}.amount`, {
+                              {...register(`payment_terms.${index}.amount`, {
                                 valueAsNumber: true,
                               })}
                             />

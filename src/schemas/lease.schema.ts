@@ -2,7 +2,7 @@ import * as z from "zod";
 
 export const leaseSchema = z
   .object({
-    kind: z.enum(["commercial", "residential"]).optional(), // Optional since API doesn't use it
+    kind: z.enum(["commercial", "residential"]).optional(),
     site_id: z.string().min(1, "Site is required"),
     building_id: z.string().optional(),
     space_id: z.string().min(1, "Space is required"),
@@ -16,9 +16,7 @@ export const leaseSchema = z
       required_error: "Lease tenure is required",
     }),
     lease_term_duration: z.coerce
-      .number({
-        invalid_type_error: "Lease Term must be a number",
-      })
+      .number({ invalid_type_error: "Lease Term must be a number" })
       .min(1, "Term Duration is required"),
     rent_amount: z.coerce
       .number({
@@ -26,11 +24,7 @@ export const leaseSchema = z
         invalid_type_error: "Rent Amount must be a number",
       })
       .min(0.01, "Rent Amount is required"),
-    deposit_amount: z.coerce
-      .number({
-        invalid_type_error: "Deposit Amount must be a number",
-      })
-      .optional(),
+    deposit_amount: z.coerce.number().optional(),
     cam_rate: z.coerce.number().optional(),
     utilities: z
       .object({
@@ -48,15 +42,20 @@ export const leaseSchema = z
     payment_date: z.string().optional(),
     payment_amount: z.coerce.number().optional(),
     number_of_installments: z.coerce.number().min(1, "Number of installments must be at least 1").optional(),
-    payments: z.array(z.object({
-      method: z.enum(["upi", "card", "bank", "cash", "cheque", "other"]).optional(),
-      ref_no: z.string().optional(),
-      date: z.string().optional(),
-      amount: z.coerce.number().optional(),
-    })).optional(),
+    payment_terms: z
+      .array(
+        z.object({
+          id: z.string().uuid().optional(),
+          payment_method: z.enum(["upi", "card", "bank", "cash", "cheque", "other"]).optional(),
+          reference_no: z.string().optional(),
+          due_date: z.string().optional(),
+          amount: z.coerce.number().optional(),
+        })
+      )
+      .optional(),
   })
   .superRefine((val, ctx) => {
-    // Since kind is not used by API, require tenant_id (since that's what the form shows)
+    // Tenant is required
     if (!val.tenant_id || String(val.tenant_id).trim() === "") {
       ctx.addIssue({
         code: z.ZodIssueCode.custom,
@@ -64,6 +63,17 @@ export const leaseSchema = z
         message: "Tenant is required",
       });
     }
+
+    // Validate payment_terms: if method is cheque, ref_no must be present
+    val.payment_terms?.forEach((term, index) => {
+      if (term.payment_method === "cheque" && (!term.reference_no || term.reference_no.trim() === "")) {
+        ctx.addIssue({
+          code: z.ZodIssueCode.custom,
+          path: ["payment_terms", index, "ref_no"],
+          message: "Reference No is required for cheque payments",
+        });
+      }
+    });
   });
 
 export type LeaseFormValues = z.infer<typeof leaseSchema>;

@@ -19,16 +19,7 @@ import {
 } from "@/components/ui/dialog";
 import { toast } from "@/components/ui/app-toast";
 import { leasesApiService } from "@/services/leasing_tenants/leasesapi";
-
-interface PaymentTerm {
-  id?: string;
-  description?: string;
-  payment_method?: string;
-  reference_no?: string;
-  amount: number;
-  due_date: string;
-  status: "pending" | "paid" | "overdue";
-}
+import { PaymentTerm } from "@/interfaces/leasing_tenants_interface";
 
 interface PaymentTermsFormProps {
   leaseId: string;

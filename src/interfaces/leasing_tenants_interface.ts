@@ -29,7 +29,21 @@ export interface Lease {
   auto_move_in_space_occupancy?: boolean;
   lease_term_duration?: number;
   lease_frequency?: string;
+  number_of_installments?: number;
+  payment_terms?: PaymentTerm[];
 }
+
+
+export interface PaymentTerm {
+  id?: string;
+  description?: string;
+  payment_method?: string;
+  reference_no?: string;
+  amount: number;
+  due_date: string;
+  status: "pending" | "paid" | "overdue";
+}
+
 
 export interface LeaseOverview {
   activeLeases: number;
