@@ -1,21 +1,33 @@
 // components/AssetForm.tsx
-import { useEffect, useState } from 'react';
-import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
-import { Label } from '@/components/ui/label';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { Dialog, DialogContent, DialogFooter, DialogHeader, DialogTitle } from '@/components/ui/dialog';
+import { useEffect, useState } from "react";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
+import {
+  Dialog,
+  DialogContent,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
 import { Controller, useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
-import { AssetFormValues, assetSchema } from '@/schemas/asset.schema';
+import { AssetFormValues, assetSchema } from "@/schemas/asset.schema";
 import { toast } from "@/components/ui/app-toast";
-import { assetApiService } from '@/services/maintenance_assets/assetsapi';
-import { siteApiService } from '@/services/spaces_sites/sitesapi';
-import { Asset } from '@/interfaces/assets_interface';
-import { withFallback } from '@/helpers/commonHelper';
+import { assetApiService } from "@/services/maintenance_assets/assetsapi";
+import { siteApiService } from "@/services/spaces_sites/sitesapi";
+import { Asset } from "@/interfaces/assets_interface";
+import { withFallback } from "@/helpers/commonHelper";
+import { useSettings } from "@/context/SettingsContext";
 
-
-type Mode = 'create' | 'edit' | 'view';
+type Mode = "create" | "edit" | "view";
 
 interface Props {
   isOpen: boolean;
@@ -26,17 +38,17 @@ interface Props {
 }
 
 const emptyFormData: AssetFormValues = {
-  site_id: '',
-  tag: '',
-  name: '',
-  category_id: '',
-  serial_no: '',
-  model: '',
-  manufacturer: '',
-  purchase_date: '',
-  warranty_expiry: '',
+  site_id: "",
+  tag: "",
+  name: "",
+  category_id: "",
+  serial_no: "",
+  model: "",
+  manufacturer: "",
+  purchase_date: "",
+  warranty_expiry: "",
   cost: undefined,
-  status: 'active',
+  status: "active",
 };
 
 export function AssetForm({ isOpen, mode, asset, onClose, onSave }: Props) {
@@ -59,38 +71,37 @@ export function AssetForm({ isOpen, mode, asset, onClose, onSave }: Props) {
   const [sites, setSites] = useState<{ id: string; name: string }[]>([]);
   const [categories, setCategories] = useState([]);
   const [statuses, setStatuses] = useState([]);
-
-  const readOnly = mode === 'view';
+  const { systemCurrency } = useSettings();
+  const formatCurrency = (val?: number) => {
+    if (val == null) return "-";
+    return `${systemCurrency.name}`;
+  };
+  const readOnly = mode === "view";
 
   const loadAll = async () => {
     setFormLoading(true);
 
-
-
     reset(
       asset && mode !== "create"
         ? {
-          tag: asset.tag || "",
-          name: asset.name || "",
-          site_id: asset.site_id || "",
-          category_id: asset.category_id || "",
-          serial_no: asset.serial_no || "",
-          model: asset.model || "",
-          manufacturer: asset.manufacturer || "",
-          purchase_date: asset.purchase_date || "",
-          warranty_expiry: asset.warranty_expiry || "",
-          cost: asset.cost,
-          status: asset.status || "active",
-        }
-        : emptyFormData
+            tag: asset.tag || "",
+            name: asset.name || "",
+            site_id: asset.site_id || "",
+            category_id: asset.category_id || "",
+            serial_no: asset.serial_no || "",
+            model: asset.model || "",
+            manufacturer: asset.manufacturer || "",
+            purchase_date: asset.purchase_date || "",
+            warranty_expiry: asset.warranty_expiry || "",
+            cost: asset.cost,
+            status: asset.status || "active",
+          }
+        : emptyFormData,
     );
 
     setFormLoading(false);
     await Promise.all([loadSites(), loadCategories(), loadStatuses()]);
   };
-
-
-
 
   useEffect(() => {
     if (isOpen) {
@@ -101,17 +112,17 @@ export function AssetForm({ isOpen, mode, asset, onClose, onSave }: Props) {
   const loadSites = async () => {
     const response = await siteApiService.getSiteLookup();
     if (response.success) setSites(response.data || []);
-  }
+  };
 
   const loadCategories = async () => {
     const response = await assetApiService.getCategories();
     if (response.success) setCategories(response.data || []);
-  }
+  };
 
   const loadStatuses = async () => {
     const response = await assetApiService.getStatuses();
     if (response.success) setStatuses(response.data || []);
-  }
+  };
 
   const onSubmitForm = async (data: AssetFormValues) => {
     const assetData: any = {
@@ -134,22 +145,21 @@ export function AssetForm({ isOpen, mode, asset, onClose, onSave }: Props) {
     onClose();
   };
 
-
   const fallbackCategories = asset?.category_id
     ? {
-      id: asset.category_id,
-      name: asset.category_name,
-      value: asset.category_id,
-    }
+        id: asset.category_id,
+        name: asset.category_name,
+        value: asset.category_id,
+      }
     : null;
   const categoriesWithFallback = withFallback(categories, fallbackCategories);
 
   const fallbackStatuses = asset?.status
     ? {
-      id: asset.status,
-      name: asset.status,
-      value: asset.status,
-    }
+        id: asset.status,
+        name: asset.status,
+        value: asset.status,
+      }
     : null;
 
   const statusesWithFallback = withFallback(statuses, fallbackStatuses);
@@ -159,11 +169,18 @@ export function AssetForm({ isOpen, mode, asset, onClose, onSave }: Props) {
       <DialogContent className="max-w-2xl">
         <DialogHeader>
           <DialogTitle>
-            {mode === 'create' ? 'Add Asset' : mode === 'edit' ? 'Edit Asset' : 'Asset Details'}
+            {mode === "create"
+              ? "Add Asset"
+              : mode === "edit"
+                ? "Edit Asset"
+                : "Asset Details"}
           </DialogTitle>
         </DialogHeader>
 
-        <form onSubmit={isSubmitting ? undefined : handleSubmit(onSubmitForm)} className="space-y-4">
+        <form
+          onSubmit={isSubmitting ? undefined : handleSubmit(onSubmitForm)}
+          className="space-y-4"
+        >
           {formLoading ? (
             <p className="text-center">Loading...</p>
           ) : (
@@ -176,7 +193,7 @@ export function AssetForm({ isOpen, mode, asset, onClose, onSave }: Props) {
                     {...register("tag")}
                     disabled={readOnly}
                     placeholder="e.g., CH-01, PUMP-12"
-                    className={errors.tag ? 'border-red-500' : ''}
+                    className={errors.tag ? "border-red-500" : ""}
                   />
                   {errors.tag && (
                     <p className="text-sm text-red-500">{errors.tag.message}</p>
@@ -189,10 +206,12 @@ export function AssetForm({ isOpen, mode, asset, onClose, onSave }: Props) {
                     {...register("name")}
                     disabled={readOnly}
                     placeholder="Chiller 1"
-                    className={errors.name ? 'border-red-500' : ''}
+                    className={errors.name ? "border-red-500" : ""}
                   />
                   {errors.name && (
-                    <p className="text-sm text-red-500">{errors.name.message}</p>
+                    <p className="text-sm text-red-500">
+                      {errors.name.message}
+                    </p>
                   )}
                 </div>
               </div>
@@ -209,12 +228,16 @@ export function AssetForm({ isOpen, mode, asset, onClose, onSave }: Props) {
                         onValueChange={field.onChange}
                         disabled={readOnly}
                       >
-                        <SelectTrigger className={errors.site_id ? "border-red-500" : ""}>
+                        <SelectTrigger
+                          className={errors.site_id ? "border-red-500" : ""}
+                        >
                           <SelectValue placeholder="Select site" />
                         </SelectTrigger>
                         <SelectContent>
                           {sites.length === 0 ? (
-                            <SelectItem value="none" disabled>No sites available</SelectItem>
+                            <SelectItem value="none" disabled>
+                              No sites available
+                            </SelectItem>
                           ) : (
                             sites.map((site: any) => (
                               <SelectItem key={site.id} value={site.id}>
@@ -225,7 +248,9 @@ export function AssetForm({ isOpen, mode, asset, onClose, onSave }: Props) {
                         </SelectContent>
                       </Select>
                       {errors.site_id && (
-                        <p className="text-sm text-red-500">{errors.site_id.message}</p>
+                        <p className="text-sm text-red-500">
+                          {errors.site_id.message}
+                        </p>
                       )}
                     </div>
                   )}
@@ -237,21 +262,27 @@ export function AssetForm({ isOpen, mode, asset, onClose, onSave }: Props) {
                     <div className="space-y-2">
                       <Label htmlFor="category_id">Category *</Label>
                       <Select
-                        value={field.value || ''}
+                        value={field.value || ""}
                         onValueChange={field.onChange}
                         disabled={readOnly}
                       >
-                        <SelectTrigger className={errors.category_id ? 'border-red-500' : ''}>
+                        <SelectTrigger
+                          className={errors.category_id ? "border-red-500" : ""}
+                        >
                           <SelectValue placeholder="Select category" />
                         </SelectTrigger>
                         <SelectContent>
                           {categoriesWithFallback.map((s) => (
-                            <SelectItem key={s.id} value={s.id}>{s.name}</SelectItem>
+                            <SelectItem key={s.id} value={s.id}>
+                              {s.name}
+                            </SelectItem>
                           ))}
                         </SelectContent>
                       </Select>
                       {errors.category_id && (
-                        <p className="text-sm text-red-500">{errors.category_id.message}</p>
+                        <p className="text-sm text-red-500">
+                          {errors.category_id.message}
+                        </p>
                       )}
                     </div>
                   )}
@@ -322,19 +353,23 @@ export function AssetForm({ isOpen, mode, asset, onClose, onSave }: Props) {
                   )}
                 </div>
                 <div className="space-y-2">
-                  <Label htmlFor="cost">Cost *</Label>
+                  <Label htmlFor="cost">Cost ({formatCurrency(0)}) *</Label>
                   <Input
                     id="cost"
                     type="number"
-                    {...register("cost", { setValueAs: (v) => v === '' ? undefined : Number(v) })}
+                    {...register("cost", {
+                      setValueAs: (v) => (v === "" ? undefined : Number(v)),
+                    })}
                     disabled={readOnly}
-                    className={errors.cost ? 'border-red-500' : ''}
+                    className={errors.cost ? "border-red-500" : ""}
                     min="0.01"
                     step="0.01"
                     placeholder="e.g., 5000.00"
                   />
                   {errors.cost && (
-                    <p className="text-sm text-red-500">{errors.cost.message}</p>
+                    <p className="text-sm text-red-500">
+                      {errors.cost.message}
+                    </p>
                   )}
                 </div>
               </div>
@@ -347,7 +382,7 @@ export function AssetForm({ isOpen, mode, asset, onClose, onSave }: Props) {
                     <div className="space-y-2">
                       <Label htmlFor="status">Status</Label>
                       <Select
-                        value={field.value || ''}
+                        value={field.value || ""}
                         onValueChange={field.onChange}
                         disabled={readOnly}
                       >
@@ -356,7 +391,9 @@ export function AssetForm({ isOpen, mode, asset, onClose, onSave }: Props) {
                         </SelectTrigger>
                         <SelectContent>
                           {statusesWithFallback.map((s) => (
-                            <SelectItem key={s.id} value={s.id}>{s.name}</SelectItem>
+                            <SelectItem key={s.id} value={s.id}>
+                              {s.name}
+                            </SelectItem>
                           ))}
                         </SelectContent>
                       </Select>
@@ -366,12 +403,21 @@ export function AssetForm({ isOpen, mode, asset, onClose, onSave }: Props) {
               </div>
 
               <DialogFooter>
-                <Button type="button" variant="outline" onClick={onClose} disabled={isSubmitting}>
-                  {mode === 'view' ? 'Close' : 'Cancel'}
+                <Button
+                  type="button"
+                  variant="outline"
+                  onClick={onClose}
+                  disabled={isSubmitting}
+                >
+                  {mode === "view" ? "Close" : "Cancel"}
                 </Button>
-                {mode !== 'view' && (
+                {mode !== "view" && (
                   <Button type="submit" disabled={isSubmitting}>
-                    {isSubmitting ? "Saving..." : mode === 'create' ? 'Create Asset' : 'Update Asset'}
+                    {isSubmitting
+                      ? "Saving..."
+                      : mode === "create"
+                        ? "Create Asset"
+                        : "Update Asset"}
                   </Button>
                 )}
               </DialogFooter>

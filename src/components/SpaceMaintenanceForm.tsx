@@ -26,6 +26,7 @@ import { ownerMaintenancesApiService } from "@/services/spaces_sites/ownermainte
 import { Info } from "lucide-react";
 import { z } from "zod";
 import { zodResolver } from "@hookform/resolvers/zod";
+import { useSettings } from "@/context/SettingsContext";
 
 export const spaceMaintenanceSchema = z.object({
   site_id: z.string().min(1, "Site is required"),
@@ -37,8 +38,7 @@ export const spaceMaintenanceSchema = z.object({
   status: z.string().default("pending"),
 });
 
-export type SpaceMaintenanceFormValues =
-  z.infer<typeof spaceMaintenanceSchema>;
+export type SpaceMaintenanceFormValues = z.infer<typeof spaceMaintenanceSchema>;
 
 interface SpaceMaintenanceFormProps {
   isOpen: boolean;
@@ -60,10 +60,10 @@ const emptyFormData: SpaceMaintenanceFormValues = {
 };
 
 const emptyCalculatedAmount = {
-  "base_amount": 0,
-  "tax_amount": 0,
-  "total_amount": 0
-}
+  base_amount: 0,
+  tax_amount: 0,
+  total_amount: 0,
+};
 
 export const SpaceMaintenanceForm = ({
   isOpen,
@@ -95,11 +95,14 @@ export const SpaceMaintenanceForm = ({
   const [statusList, setStatusList] = useState<{ id: string; name: string }[]>(
     [],
   );
+  const { systemCurrency } = useSettings();
   const [siteFallback, setSiteFallback] = useState<{
     id: string;
     label: string;
   } | null>(null);
-  const [calculatedAmount, setCalculatedAmount] = useState<any>(emptyCalculatedAmount);
+  const [calculatedAmount, setCalculatedAmount] = useState<any>(
+    emptyCalculatedAmount,
+  );
   const [isLoading, setIsLoading] = useState(false);
 
   const loadSites = async () => {
@@ -123,8 +126,10 @@ export const SpaceMaintenanceForm = ({
     }
 
     try {
-      const lookup =
-        await ownerMaintenancesApiService.getSpaceOwnerLookup(siteId, buildingId);
+      const lookup = await ownerMaintenancesApiService.getSpaceOwnerLookup(
+        siteId,
+        buildingId,
+      );
       const list = lookup?.success ? lookup.data || [] : [];
       setSpaceList(list);
       return list;
@@ -134,7 +139,6 @@ export const SpaceMaintenanceForm = ({
       return [];
     }
   };
-
 
   const loadStatusLookup = async () => {
     const lookup =
@@ -150,17 +154,17 @@ export const SpaceMaintenanceForm = ({
     reset(
       record && (mode !== "create" || hasPrefill)
         ? {
-          ...emptyFormData,
-          ...record,
-          site_id: record?.site_id || "",
-          building_block_id: record?.building_block_id || "",
-          space_id: record?.space_id || defaultSpaceId || "",
-          start_date:
-            (record as any)?.period_start || record?.start_date || "",
-          end_date: (record as any)?.period_end || record?.end_date || "",
-          due_date: (record as any)?.due_date || record?.due_date || "",
-          status: (record as any)?.status || emptyFormData.status,
-        }
+            ...emptyFormData,
+            ...record,
+            site_id: record?.site_id || "",
+            building_block_id: record?.building_block_id || "",
+            space_id: record?.space_id || defaultSpaceId || "",
+            start_date:
+              (record as any)?.period_start || record?.start_date || "",
+            end_date: (record as any)?.period_end || record?.end_date || "",
+            due_date: (record as any)?.due_date || record?.due_date || "",
+            status: (record as any)?.status || emptyFormData.status,
+          }
         : emptyFormData,
     );
     setFormLoading(false);
@@ -209,8 +213,7 @@ export const SpaceMaintenanceForm = ({
   const startDate = watch("start_date");
   const endDate = watch("end_date");
 
-  const isReadyForCalculation =
-    !!selectedSpaceId && !!startDate && !!endDate;
+  const isReadyForCalculation = !!selectedSpaceId && !!startDate && !!endDate;
 
   useEffect(() => {
     if (selectedSiteId) {
@@ -230,36 +233,36 @@ export const SpaceMaintenanceForm = ({
   }, [selectedSiteId, selectedBuildingId]);
 
   useEffect(() => {
-
     if (!isReadyForCalculation) {
       setCalculatedAmount(emptyCalculatedAmount);
       return;
     }
 
     const fetchAmount = async () => {
-
       try {
         setIsLoading(true);
 
-        const res =
-          await ownerMaintenancesApiService.getCalculatedMaintenances({
+        const res = await ownerMaintenancesApiService.getCalculatedMaintenances(
+          {
             space_id: selectedSpaceId,
             start_date: startDate,
             end_date: endDate,
-          });
+          },
+        );
 
         setCalculatedAmount(res.data ?? emptyCalculatedAmount);
-
       } finally {
         setIsLoading(false);
       }
     };
 
     fetchAmount();
-
   }, [selectedSpaceId, startDate, endDate]);
 
-
+  const formatCurrency = (val?: number) => {
+    if (val == null) return "-";
+    return systemCurrency.format(val);
+  };
 
   const isReadOnly = mode === "view";
   const isEditMode = mode === "edit";
@@ -287,34 +290,33 @@ export const SpaceMaintenanceForm = ({
   };
   const fallbackSpace = record?.space_id
     ? {
-      id: record.space_id,
-      name: (record as any).space_name || record.space_id || "Selected Space",
-    }
+        id: record.space_id,
+        name: (record as any).space_name || record.space_id || "Selected Space",
+      }
     : null;
 
   const spaces = withFallback(spaceList, fallbackSpace);
 
   const fallbackStatus = record?.status
     ? {
-      id: record.status,
-      name: record.status,
-      value: record.status,
-    }
+        id: record.status,
+        name: record.status,
+        value: record.status,
+      }
     : null;
 
   const statuses = withFallback(statusList, fallbackStatus);
 
   const fallbackBuilding = record?.building_block_id
     ? {
-      id: record.building_block_id,
-      name:
-        (record as any).building_block ||
-        `Building (${record.building_block_id.slice(0, 6)})`,
-    }
+        id: record.building_block_id,
+        name:
+          (record as any).building_block ||
+          `Building (${record.building_block_id.slice(0, 6)})`,
+      }
     : null;
 
   const buildings = withFallback(buildingList, fallbackBuilding);
-
 
   return (
     <Dialog open={isOpen} onOpenChange={handleClose}>
@@ -332,15 +334,15 @@ export const SpaceMaintenanceForm = ({
             isSubmitting
               ? undefined
               : handleSubmit(onSubmitForm, (formErrors) => {
-                const firstError = Object.values(formErrors)[0];
-                if (firstError?.message) {
-                  toast.error(firstError.message as string);
-                } else {
-                  toast.error(
-                    "Please fill in all required fields correctly.",
-                  );
-                }
-              })
+                  const firstError = Object.values(formErrors)[0];
+                  if (firstError?.message) {
+                    toast.error(firstError.message as string);
+                  } else {
+                    toast.error(
+                      "Please fill in all required fields correctly.",
+                    );
+                  }
+                })
           }
           className="space-y-4"
         >
@@ -420,7 +422,7 @@ export const SpaceMaintenanceForm = ({
                       <Select
                         value={
                           field.value &&
-                            spaces.some((space: any) => space.id === field.value)
+                          spaces.some((space: any) => space.id === field.value)
                             ? field.value
                             : undefined
                         }
@@ -494,14 +496,12 @@ export const SpaceMaintenanceForm = ({
               </div>
               <div className="grid grid-cols-2 gap-6 items-center mt-4">
                 <div className="rounded-lg border bg-muted/40 p-4">
-
                   {isLoading ? (
                     <span className="text-sm text-muted-foreground">
                       Calculating...
                     </span>
                   ) : (
                     <div className="flex items-center justify-between">
-
                       <div className="space-y-1">
                         <p className="text-sm font-medium">
                           Maintenance Amount
@@ -512,20 +512,17 @@ export const SpaceMaintenanceForm = ({
                       </div>
 
                       <p className="text-xl font-semibold tabular-nums">
-                        ₹ {calculatedAmount?.base_amount ?? "0.00"}
+                        {formatCurrency(calculatedAmount?.base_amount)}
                       </p>
-
                     </div>
                   )}
-
                 </div>
 
                 {/* Info Section */}
                 <div className="text-sm text-muted-foreground leading-relaxed">
-                  Amount will be calculated automatically after selecting
-                  space and dates.
+                  Amount will be calculated automatically after selecting space
+                  and dates.
                 </div>
-
               </div>
             </div>
           )}
@@ -545,6 +542,6 @@ export const SpaceMaintenanceForm = ({
           </DialogFooter>
         </form>
       </DialogContent>
-    </Dialog >
+    </Dialog>
   );
 };

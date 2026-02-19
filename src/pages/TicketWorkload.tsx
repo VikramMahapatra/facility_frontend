@@ -98,7 +98,7 @@ export default function TicketWorkload() {
     if (!selectedSiteId) return;
     const response = await withLoader(async () => {
       return await workloadManagementApiService.getTeamWorkloadManagement(
-        selectedSiteId
+        selectedSiteId,
       );
     });
     if (response?.success) {
@@ -120,7 +120,7 @@ export default function TicketWorkload() {
       }
       return acc;
     },
-    {}
+    {},
   );
 
   const getTechnicianName = (technicianId: string) => {
@@ -135,7 +135,7 @@ export default function TicketWorkload() {
     assignedTicketsStartIndex + assignedTicketsPageSize;
   const paginatedAssignedTickets = assignedTickets.slice(
     assignedTicketsStartIndex,
-    assignedTicketsEndIndex
+    assignedTicketsEndIndex,
   );
 
   // Pagination for unassigned tickets
@@ -145,20 +145,19 @@ export default function TicketWorkload() {
     unassignedTicketsStartIndex + unassignedTicketsPageSize;
   const paginatedUnassignedTickets = unassignedTickets.slice(
     unassignedTicketsStartIndex,
-    unassignedTicketsEndIndex
+    unassignedTicketsEndIndex,
   );
 
   const loadEmployeesForTicket = async () => {
     if (!selectedSiteId) return;
     setLoadingEmployees(true);
-    const response = await workloadManagementApiService.AssignTo(
-      selectedSiteId
-    );
+    const response =
+      await workloadManagementApiService.AssignTo(selectedSiteId);
     if (response.success) {
       setEmployeeList(
         Array.isArray(response.data)
           ? response.data
-          : response.data?.employees || response.data?.data || []
+          : response.data?.employees || response.data?.data || [],
       );
     }
     setLoadingEmployees(false);
@@ -167,7 +166,7 @@ export default function TicketWorkload() {
   const handleReassign = async (
     ticketId: string | number,
     ticketNo: string,
-    assignedTo?: string
+    assignedTo?: string,
   ) => {
     const ticketIdStr = ticketId.toString();
     setSelectedTicket({
@@ -191,13 +190,13 @@ export default function TicketWorkload() {
     const response = await withLoader(async () => {
       return await ticketsApiService.assignTicket(
         selectedTicket.id,
-        newAssignee
+        newAssignee,
       );
     });
 
     if (response?.success) {
       toast.success(
-        `Ticket #${selectedTicket?.ticket_no} has been reassigned successfully`
+        `Ticket #${selectedTicket?.ticket_no} has been reassigned successfully`,
       );
       setIsReassignOpen(false);
       setNewAssignee("");
@@ -286,7 +285,9 @@ export default function TicketWorkload() {
               </SelectTrigger>
               <SelectContent>
                 {siteList.length === 0 ? (
-                  <SelectItem value="none" disabled>No sites available</SelectItem>
+                  <SelectItem value="none" disabled>
+                    No sites available
+                  </SelectItem>
                 ) : (
                   siteList.map((site: any) => (
                     <SelectItem key={site.id} value={site.id}>
@@ -410,7 +411,7 @@ export default function TicketWorkload() {
                                   handleReassign(
                                     ticket.id || ticket.ticket_id,
                                     ticket.ticket_no,
-                                    ticket.assigned_to
+                                    ticket.assigned_to,
                                   )
                                 }
                               >
@@ -423,7 +424,7 @@ export default function TicketWorkload() {
                               variant="ghost"
                               onClick={() =>
                                 navigate(
-                                  `/tickets/${ticket.id || ticket.ticket_id}`
+                                  `/tickets/${ticket.id || ticket.ticket_id}`,
                                 )
                               }
                             >
@@ -499,17 +500,17 @@ export default function TicketWorkload() {
                             onClick={() =>
                               handleReassign(
                                 ticket.id || ticket.ticket_id,
-                                ticket.ticket_no
+                                ticket.ticket_no,
                               )
                             }
                             disabled={
                               isAssigning ||
                               selectedTicket?.id ===
-                              (ticket.id || ticket.ticket_id)
+                                (ticket.id || ticket.ticket_id)
                             }
                           >
                             {isAssigning &&
-                              selectedTicket?.id ===
+                            selectedTicket?.id ===
                               (ticket.id || ticket.ticket_id)
                               ? "Assigning..."
                               : "Assign"}
@@ -563,7 +564,7 @@ export default function TicketWorkload() {
                 <SelectContent>
                   {employeeList
                     .filter(
-                      (user: any) => user.id !== selectedTicket?.assigned_to
+                      (user: any) => user.id !== selectedTicket?.assigned_to,
                     )
                     .map((user: any) => (
                       <SelectItem key={user.id} value={String(user.id)}>

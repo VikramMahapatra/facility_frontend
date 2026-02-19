@@ -43,7 +43,6 @@ import { Visitor } from "@/interfaces/parking_access_interface";
 import { Card, CardContent, CardHeader } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { PageHeader } from "@/components/PageHeader";
-import { AsyncAutocompleteRQ } from "@/components/common/async-autocomplete-rq";
 
 export default function Visitors() {
   const [isFormOpen, setIsFormOpen] = useState(false);
@@ -275,30 +274,19 @@ export default function Visitors() {
             />
           </div>
           <div className="w-[180px]">
-            <AsyncAutocompleteRQ
-              value={selectedSite === "all" ? "" : selectedSite}
-              onChange={(value) => {
-                setSelectedSite(value || "all");
-              }}
-              placeholder="All Sites"
-              queryKey={["sites"]}
-              queryFn={async (search) => {
-                const res = await siteApiService.getSiteLookup(search);
-                return res.data.map((s: any) => ({
-                  id: s.id,
-                  label: s.name,
-                }));
-              }}
-              fallbackOption={
-                selectedSite === "all"
-                  ? {
-                    id: "all",
-                    label: "All Sites",
-                  }
-                  : undefined
-              }
-              minSearchLength={0}
-            />
+            <Select value={selectedSite} onValueChange={setSelectedSite}>
+              <SelectTrigger>
+                <SelectValue placeholder="All Sites" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">All Sites</SelectItem>
+                {siteList.map((site: any) => (
+                  <SelectItem key={site.id} value={site.id}>
+                    {site.name}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
           </div>
           <Select
             value={selectedStatus}

@@ -39,6 +39,7 @@ import { buildingApiService } from "@/services/spaces_sites/buildingsapi";
 import { Lease } from "@/interfaces/leasing_tenants_interface";
 import { leasesApiService } from "@/services/leasing_tenants/leasesapi";
 import { withFallback } from "@/helpers/commonHelper";
+import { useSettings } from "@/context/SettingsContext";
 
 const emptyFormData: Partial<LeaseFormValues> = {
   kind: "residential",
@@ -58,7 +59,7 @@ const emptyFormData: Partial<LeaseFormValues> = {
   status: "draft",
   auto_move_in: false,
   description: "",
-  payment_method: "cash" as any,
+  payment_method: "cheque" as any,
   payment_ref_no: "",
   payment_date: "",
   payment_amount: undefined,
@@ -132,6 +133,7 @@ export function LeaseForm({
   const [imagePreviews, setImagePreviews] = useState<string[]>([]);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const isReadOnly = mode === "view";
+  const { systemCurrency } = useSettings();
   const loadAll = async () => {
     setFormLoading(true);
 
@@ -350,7 +352,7 @@ export function LeaseForm({
       if (currentPayments.length < numberOfInstallments) {
         for (let i = currentPayments.length; i < numberOfInstallments; i++) {
           append({
-            payment_method: "cash",
+            payment_method: "cheque",
             reference_no: "",
             due_date: calculatePaymentDate(i),
             amount: paymentAmountPerInstallment,
@@ -372,10 +374,10 @@ export function LeaseForm({
               : undefined;
 
           const recalculatedDate = calculatePaymentDate(index);
-          const finalDate = recalculatedDate || payment.date || "";
+          const finalDate = payment.due_date || recalculatedDate || "";
 
           update(index, {
-            payment_method: payment.payment_method || "cash",
+            payment_method: payment.payment_method || "cheque",
             reference_no: payment.reference_no || "",
             due_date: finalDate,
             amount: updatedAmount,
@@ -395,6 +397,11 @@ export function LeaseForm({
     update,
     watch,
   ]);
+
+  const formatCurrency = (val?: number) => {
+    if (val == null) return "-";
+    return `${systemCurrency.name}`;
+  };
 
   // Ensure payment dates are set when startDate becomes available
   useEffect(() => {
@@ -425,14 +432,14 @@ export function LeaseForm({
         // Update dates and set default payment method for all payments
         currentPayments.forEach((payment: any, index: number) => {
           const updates: any = {};
-          if (!payment.date || payment.date === "") {
+          if (!payment.due_date || payment.due_date === "") {
             const calculatedDate = calculatePaymentDate(index);
             if (calculatedDate) {
-              updates.date = calculatedDate;
+              updates.due_date = calculatedDate;
             }
           }
           if (!payment.payment_method) {
-            updates.payment_method = "cash";
+            updates.payment_method = "cheque";
           }
           if (Object.keys(updates).length > 0) {
             update(index, {
@@ -471,9 +478,9 @@ export function LeaseForm({
 
         currentPayments.forEach((payment: any, index: number) => {
           update(index, {
-            payment_method: payment.payment_method || " cash",
+            payment_method: payment.payment_method || "cheque",
             reference_no: payment.reference_no || "",
-            due_date: payment.date || "",
+            due_date: payment.due_date || "",
             amount: paymentAmountPerInstallment,
           });
         });
@@ -944,14 +951,15 @@ export function LeaseForm({
                     )}
                   </div>
                   <div className="space-y-2">
-                    <Label>Rent Amount *</Label>
+                    <Label>Rent Amount ({formatCurrency(0)}) *</Label>
                     <Input
                       type="number"
-                      step="any"
-                      placeholder="Enter rent amount"
-                      disabled={isReadOnly}
+                      step="0.01"
+                      min="0"
                       {...register("rent_amount")}
+                      disabled={isReadOnly}
                       className={errors.rent_amount ? "border-red-500" : ""}
+                      placeholder="0.00"
                     />
                     {errors.rent_amount && (
                       <p className="text-sm text-red-500">
@@ -1313,7 +1321,10 @@ export function LeaseForm({
                   <div className="space-y-4">
                     <div className="flex items-center gap-4 border-b pb-2">
                       <div className="flex items-center gap-2">
-                        <Label htmlFor="number_of_installments" className="text-sm font-semibold whitespace-nowrap">
+                        <Label
+                          htmlFor="number_of_installments"
+                          className="text-sm font-semibold whitespace-nowrap"
+                        >
                           No. of Installments:
                         </Label>
                         <Input
@@ -1444,10 +1455,13 @@ export function LeaseForm({
                                 ) {
                                   return "₹0.00";
                                 }
-                                return `₹${Number(amount).toLocaleString("en-IN", {
-                                  minimumFractionDigits: 2,
-                                  maximumFractionDigits: 2,
-                                })}`;
+                                return `₹${Number(amount).toLocaleString(
+                                  "en-IN",
+                                  {
+                                    minimumFractionDigits: 2,
+                                    maximumFractionDigits: 2,
+                                  },
+                                )}`;
                               })()}
                             </span>
                             <input
