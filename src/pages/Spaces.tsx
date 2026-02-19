@@ -60,7 +60,7 @@ import ContentContainer from "@/components/ContentContainer";
 import { toast } from "@/components/ui/app-toast";
 import { PageHeader } from "@/components/PageHeader";
 import { useNavigate } from "react-router-dom";
-
+import { useSettings } from "@/context/SettingsContext";
 
 export default function Spaces() {
   const navigate = useNavigate();
@@ -90,6 +90,7 @@ export default function Spaces() {
   const { withLoader } = useLoader();
   const { user, handleLogout } = useAuth();
   const resource = "spaces";
+  const { systemCurrency } = useSettings();
 
   useSkipFirstEffect(() => {
     loadSpaces();
@@ -244,11 +245,17 @@ export default function Spaces() {
     if (response?.success) {
       setIsFormOpen(false);
       toast.success(
-        `Space ${spaceData.name} has been ${formMode === "create" ? "created" : "updated"
+        `Space ${spaceData.name} has been ${
+          formMode === "create" ? "created" : "updated"
         } successfully.`,
       );
     }
     return response;
+  };
+
+  const formatCurrency = (val?: number) => {
+    if (val == null) return "-";
+    return systemCurrency.format(val);
   };
 
   return (
@@ -396,11 +403,7 @@ export default function Spaces() {
                   <div className="flex items-center justify-between">
                     <div className="flex items-center gap-2">
                       {space.category && (
-                        <Badge
-                          variant="secondary"
-                        >
-                          {space.category}
-                        </Badge>
+                        <Badge variant="secondary">{space.category}</Badge>
                       )}
                       <Badge className={getKindColor(space.kind)}>
                         {space.kind.replace("_", " ")}
@@ -419,7 +422,7 @@ export default function Spaces() {
                         Maintenance
                       </span>
                       <span className="text-sm font-semibold">
-                        ₹ {Number(space.maintenance_amount).toLocaleString()}
+                        {formatCurrency(space.maintenance_amount)}
                       </span>
                     </div>
                   )}
@@ -447,7 +450,9 @@ export default function Spaces() {
                   </div>
 
                   {/* Bed/Bath info for residential */}
-                  {(Number(space.beds) > 0 || Number(space.baths) > 0 || Number(space.balconies) > 0) && (
+                  {(Number(space.beds) > 0 ||
+                    Number(space.baths) > 0 ||
+                    Number(space.balconies) > 0) && (
                     <div className="flex items-center gap-4 text-sm">
                       {Number(space.beds) > 0 && (
                         <span className="text-muted-foreground">

@@ -68,6 +68,7 @@ import ContentContainer from "@/components/ContentContainer";
 import { ticketWorkOrderApiService } from "@/services/ticketing_service/ticketworkorderapi";
 import { siteApiService } from "@/services/spaces_sites/sitesapi";
 import { PageHeader } from "@/components/PageHeader";
+import { useSettings } from "@/context/SettingsContext";
 
 interface TicketWorkOrder {
   id: string;
@@ -101,11 +102,12 @@ export default function TicketWorkOrders() {
   const [selectedStatus, setSelectedStatus] = useState<string>("all");
   const [workOrders, setWorkOrders] = useState<TicketWorkOrder[]>([]);
   const [formMode, setFormMode] = useState<"create" | "edit" | "view">(
-    "create"
+    "create",
   );
+  const { systemCurrency } = useSettings();
   const [isFormOpen, setIsFormOpen] = useState(false);
   const [deleteWorkOrderId, setDeleteWorkOrderId] = useState<string | null>(
-    null
+    null,
   );
   const [selectedWorkOrder, setSelectedWorkOrder] = useState<
     TicketWorkOrder | undefined
@@ -227,9 +229,10 @@ export default function TicketWorkOrders() {
 
   const confirmDelete = async () => {
     if (deleteWorkOrderId) {
-      const response = await ticketWorkOrderApiService.deleteTicketWorkOrder(
-        deleteWorkOrderId
-      );
+      const response =
+        await ticketWorkOrderApiService.deleteTicketWorkOrder(
+          deleteWorkOrderId,
+        );
 
       if (response.success) {
         updateWorkOrderPage();
@@ -243,9 +246,8 @@ export default function TicketWorkOrders() {
     let response;
 
     if (formMode === "create") {
-      response = await ticketWorkOrderApiService.addTicketWorkOrder(
-        workOrderData
-      );
+      response =
+        await ticketWorkOrderApiService.addTicketWorkOrder(workOrderData);
 
       if (response.success) updateWorkOrderPage();
     } else if (formMode === "edit" && selectedWorkOrder) {
@@ -256,13 +258,15 @@ export default function TicketWorkOrders() {
 
       response = await ticketWorkOrderApiService.updateTicketWorkOrder(
         updatedWorkOrder.id,
-        workOrderData
+        workOrderData,
       );
 
       if (response.success) {
         loadTicketWorkOrderOverview();
         setWorkOrders((prev) =>
-          prev.map((wo) => (wo.id === updatedWorkOrder.id ? response.data : wo))
+          prev.map((wo) =>
+            wo.id === updatedWorkOrder.id ? response.data : wo,
+          ),
         );
       }
     }
@@ -271,7 +275,7 @@ export default function TicketWorkOrders() {
       setIsFormOpen(false);
       toast.success(
         `Ticket work order has been ${formMode === "create" ? "created" : "updated"}
-        successfully.`
+        successfully.`,
       );
     }
   };
@@ -304,6 +308,11 @@ export default function TicketWorkOrders() {
       default:
         return status;
     }
+  };
+
+  const formatCurrency = (val?: number) => {
+    if (val == null) return "-";
+    return systemCurrency.format(val);
   };
 
   return (
@@ -456,7 +465,9 @@ export default function TicketWorkOrders() {
                       <TableRow key={workOrder.id}>
                         <TableCell className="font-medium">
                           <button
-                            onClick={() => navigate(`/tickets/${workOrder.ticket_id}`)}
+                            onClick={() =>
+                              navigate(`/tickets/${workOrder.ticket_id}`)
+                            }
                             className="text-primary hover:underline cursor-pointer"
                           >
                             {workOrder.ticket_no || workOrder.ticket_id}
@@ -482,20 +493,20 @@ export default function TicketWorkOrders() {
                         <TableCell>
                           <span
                             className={`inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-semibold ${getStatusColor(
-                              workOrder.status
+                              workOrder.status,
                             )}`}
                           >
                             {getStatusLabel(workOrder.status)}
                           </span>
                         </TableCell>
                         <TableCell className="font-medium">
-                          ₹{Number(workOrder.total_amount || 0).toFixed(2)}
+                          {formatCurrency(workOrder.total_amount)}
                         </TableCell>
                         <TableCell>
                           <div className="flex items-center">
                             <Calendar className="w-4 h-4 mr-2" />
                             {new Date(
-                              workOrder.created_at
+                              workOrder.created_at,
                             ).toLocaleDateString()}
                           </div>
                         </TableCell>

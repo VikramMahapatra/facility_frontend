@@ -199,7 +199,7 @@ export default function Settings() {
 
   const handleSave = async () => {
     if (!settingId) {
-      toast.error("Settings ID not found. Please reload the page.", {});
+      toast.error("Settings ID not found. Please reload the page.");
       return;
     }
 
@@ -216,13 +216,13 @@ export default function Settings() {
       },
       security: {
         password_expiry_days: parseInt(
-          settings.security?.passwordExpiry || "0"
+          settings.security?.passwordExpiry || "0",
         ),
         session_timeout_minutes: parseInt(
-          settings.security?.sessionTimeout || "0"
+          settings.security?.sessionTimeout || "0",
         ),
         api_rate_limit_per_hour: parseInt(
-          settings.security?.apiRateLimit || "0"
+          settings.security?.apiRateLimit || "0",
         ),
         two_factor_auth_enabled: settings.security?.twoFactorAuth ?? false,
         audit_logging_enabled: settings.security?.auditLogging ?? false,
@@ -388,7 +388,7 @@ export default function Settings() {
                                 updateSetting(
                                   "general",
                                   "systemName",
-                                  e.target.value
+                                  e.target.value,
                                 )
                               }
                             />
@@ -508,7 +508,7 @@ export default function Settings() {
                                 updateSetting(
                                   "general",
                                   "maintenanceMode",
-                                  checked
+                                  checked,
                                 )
                               }
                             />
@@ -540,7 +540,7 @@ export default function Settings() {
                                 updateSetting(
                                   "security",
                                   "passwordExpiry",
-                                  e.target.value
+                                  e.target.value,
                                 )
                               }
                             />
@@ -558,7 +558,7 @@ export default function Settings() {
                                 updateSetting(
                                   "security",
                                   "sessionTimeout",
-                                  e.target.value
+                                  e.target.value,
                                 )
                               }
                             />
@@ -576,7 +576,7 @@ export default function Settings() {
                                 updateSetting(
                                   "security",
                                   "apiRateLimit",
-                                  e.target.value
+                                  e.target.value,
                                 )
                               }
                             />
@@ -601,7 +601,7 @@ export default function Settings() {
                                 updateSetting(
                                   "security",
                                   "twoFactorAuth",
-                                  checked
+                                  checked,
                                 )
                               }
                             />
@@ -620,7 +620,7 @@ export default function Settings() {
                                 updateSetting(
                                   "security",
                                   "auditLogging",
-                                  checked
+                                  checked,
                                 )
                               }
                             />
@@ -641,7 +641,7 @@ export default function Settings() {
                                 updateSetting(
                                   "security",
                                   "dataEncryption",
-                                  checked
+                                  checked,
                                 )
                               }
                             />
@@ -681,7 +681,7 @@ export default function Settings() {
                             <div className="flex items-center gap-4">
                               {getStatusBadge(
                                 integration.status,
-                                integration.health
+                                integration.health,
                               )}
                               <Button
                                 variant="outline"

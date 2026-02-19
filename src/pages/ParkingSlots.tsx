@@ -24,6 +24,7 @@ import { siteApiService } from "@/services/spaces_sites/sitesapi";
 import { parkingSlotApiService } from "@/services/parking_access/parkingslotsapi";
 import { parkingZoneApiService } from "@/services/parking_access/parkingzonesapi";
 import { ParkingSlotForm } from "@/components/ParkingSlotForm";
+import { ParkingSlotBulkUploadDialog } from "@/components/ParkingSlotBulkUploadDialog";
 import { ParkingSlot } from "@/interfaces/parking_access_interface";
 import {
   AlertDialog,
@@ -211,6 +212,20 @@ export default function ParkingSlots() {
     }
   };
 
+  const handleBulkImport = async (data: any[]) => {
+    // TODO: Add API call here when ready
+    // const response = await parkingSlotApiService.bulkUploadParkingSlots(data);
+    // if (response.success) {
+    //   loadSlots();
+    //   toast.success(`${data.length} parking slots have been imported successfully.`);
+    // }
+    console.log("Bulk import data:", data);
+    toast.success(
+      `${data.length} parking slots ready to import (API integration pending).`,
+    );
+    loadSlots();
+  };
+
   const totalSlots = overview.totalSlots || 0;
   const availableSlots = overview.availableSlots || 0;
   const assignedSlots = overview.assignedSlots || 0;
@@ -223,10 +238,13 @@ export default function ParkingSlots() {
           <p className="text-muted-foreground">Manage physical parking slots</p>
         </div>
 
-        <Button onClick={handleCreate}>
-          <Plus className="h-4 w-4 mr-2" />
-          Add Slot
-        </Button>
+        <div className="flex items-center gap-2">
+          <ParkingSlotBulkUploadDialog onImport={handleBulkImport} />
+          <Button onClick={handleCreate}>
+            <Plus className="h-4 w-4 mr-2" />
+            Add Slot
+          </Button>
+        </div>
       </div>
 
       {/* Overview Cards */}

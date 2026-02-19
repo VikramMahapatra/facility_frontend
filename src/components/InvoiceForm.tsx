@@ -27,6 +27,7 @@ import { invoiceSchema, InvoiceFormValues } from "@/schemas/invoice.schema";
 import { toast } from "@/components/ui/app-toast";
 import { useLoader } from "@/context/LoaderContext";
 import { withFallback } from "@/helpers/commonHelper";
+import { useSettings } from "@/context/SettingsContext";
 
 interface InvoiceFormProps {
   invoice?: Invoice;
@@ -69,7 +70,11 @@ export function InvoiceForm({
   const [billableItemList, setBillableItemList] = useState<any[]>([]);
   const [totalsAutoFilled, setTotalsAutoFilled] = useState(false);
   const [totalsLoaded, setTotalsLoaded] = useState(false);
-
+  const { systemCurrency } = useSettings();
+  const formatCurrency = (val?: number) => {
+    if (val == null) return "-";
+    return `${systemCurrency.name}`;
+  };
   const {
     register,
     control,
@@ -128,7 +133,7 @@ export function InvoiceForm({
         loadBillableItemLookup(
           watchedBillableType,
           watchedSiteId,
-          watchedSpaceId
+          watchedSpaceId,
         );
       } else if (!watchedBillableType || !watchedSiteId) {
         setBillableItemList([]);
@@ -200,7 +205,7 @@ export function InvoiceForm({
             items.map((item: any) => ({
               id: item.id,
               name: item.name,
-            }))
+            })),
           );
         } else {
           setInvoiceTypeList([]);
@@ -217,7 +222,7 @@ export function InvoiceForm({
   const loadBillableItemLookup = async (
     type?: string,
     siteId?: string,
-    spaceId?: string
+    spaceId?: string,
   ) => {
     if (!type || !siteId) {
       setBillableItemList([]);
@@ -245,7 +250,7 @@ export function InvoiceForm({
           items.map((item: any) => ({
             id: item.id,
             name: item.name || item.code || item.label || item.id,
-          }))
+          })),
         );
       } else {
         setBillableItemList([]);
@@ -257,7 +262,7 @@ export function InvoiceForm({
 
   const loadInvoiceTotals = async (
     billableType: string,
-    billableItemId: string
+    billableItemId: string,
   ) => {
     if (!billableType || !billableItemId) {
       setTotalsAutoFilled(false);
@@ -291,19 +296,19 @@ export function InvoiceForm({
     reset(
       invoice && mode !== "create"
         ? {
-          site_id: invoice.site_id || "",
-          building_id: (invoice as any).building_id || "",
-          space_id: (invoice as any).space_id || "",
-          date: invoice.date || new Date().toISOString().split("T")[0],
-          due_date: invoice.due_date || "",
-          status: invoice.status || "draft",
-          currency: invoice.currency || "INR",
-          billable_item_type: invoice.billable_item_type || "",
-          billable_item_id: invoice.billable_item_id || "",
-          totals: invoice.totals || { sub: 0, tax: 0, grand: 0 },
-          payments: [],
-        }
-        : emptyFormData
+            site_id: invoice.site_id || "",
+            building_id: (invoice as any).building_id || "",
+            space_id: (invoice as any).space_id || "",
+            date: invoice.date || new Date().toISOString().split("T")[0],
+            due_date: invoice.due_date || "",
+            status: invoice.status || "draft",
+            currency: invoice.currency || "INR",
+            billable_item_type: invoice.billable_item_type || "",
+            billable_item_id: invoice.billable_item_id || "",
+            totals: invoice.totals || { sub: 0, tax: 0, grand: 0 },
+            payments: [],
+          }
+        : emptyFormData,
     );
 
     // Preload building and space lookups for existing invoice (edit/view mode)
@@ -326,7 +331,7 @@ export function InvoiceForm({
       await loadBillableItemLookup(
         invoice.billable_item_type,
         invoice.site_id,
-        spaceId
+        spaceId,
       );
     }
   };
@@ -363,7 +368,7 @@ export function InvoiceForm({
       id: invoice?.id,
       invoice_no: invoice?.invoice_no,
       billable_item_type: normalizeBillableTypeForSubmit(
-        data.billable_item_type
+        data.billable_item_type,
       ),
       billable_item_id: data.billable_item_id,
       totals: {
@@ -411,9 +416,9 @@ export function InvoiceForm({
 
   const fallBillableItems = invoice?.billable_item_id
     ? {
-      id: invoice.billable_item_id,
-      name: invoice.billable_item_name,
-    }
+        id: invoice.billable_item_id,
+        name: invoice.billable_item_name,
+      }
     : null;
 
   const billable_items = withFallback(billableItemList, fallBillableItems);
@@ -586,7 +591,7 @@ export function InvoiceForm({
                     <Label htmlFor="billable_item_id">
                       {(() => {
                         const selectedType = invoiceTypeList.find(
-                          (type) => type.id === watchedBillableType
+                          (type) => type.id === watchedBillableType,
                         );
                         return selectedType
                           ? `${selectedType.name} *`
@@ -673,7 +678,7 @@ export function InvoiceForm({
                 {/* Row 4: Totals */}
                 <div className="grid grid-cols-3 gap-4">
                   <div className="space-y-2">
-                    <Label htmlFor="sub">Subtotal</Label>
+                    <Label htmlFor="sub">Subtotal ({formatCurrency(0)})</Label>
                     <Input
                       id="sub"
                       type="number"
@@ -693,7 +698,9 @@ export function InvoiceForm({
                     />
                   </div>
                   <div className="space-y-2">
-                    <Label htmlFor="grand">Grand Total</Label>
+                    <Label htmlFor="grand">
+                      Grand Total ({formatCurrency(0)})
+                    </Label>
                     <Input
                       id="grand"
                       type="number"

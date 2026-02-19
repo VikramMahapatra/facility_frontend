@@ -61,6 +61,7 @@ import { Pagination } from "@/components/Pagination";
 import { PageHeader } from "@/components/PageHeader";
 import { AutoGenerateRentForm } from "@/components/automation/AutoGenerateRentForm";
 import { LeaseCharge } from "@/interfaces/leasing_tenants_interface";
+import { useSettings } from "@/context/SettingsContext";
 
 type ChargeCode =
   | "RENT"
@@ -71,8 +72,6 @@ type ChargeCode =
   | "PENALTY"
   | "MAINTENANCE"
   | string;
-
-
 
 const monthsFull = [
   "January",
@@ -123,10 +122,10 @@ export default function LeaseCharges() {
   // form state
   const [isFormOpen, setIsFormOpen] = useState(false);
   const [formMode, setFormMode] = useState<"create" | "edit" | "view">(
-    "create"
+    "create",
   );
   const [selectedCharge, setSelectedCharge] = useState<any | undefined>();
-
+  const { systemCurrency } = useSettings();
   const [leaseChargeOverview, setLeaseChargeOverview] =
     useState<LeaseChargeOverview>({
       total_charges: 0,
@@ -213,7 +212,7 @@ export default function LeaseCharges() {
       acc[c.charge_code] = (acc[c.charge_code] || 0) + amount;
       return acc;
     },
-    {} as Record<string, number>
+    {} as Record<string, number>,
   );
 
   // helpers
@@ -241,13 +240,10 @@ export default function LeaseCharges() {
         return "bg-gray-100 text-gray-800 dark:bg-gray-900 dark:text-gray-200";
     }
   };
-  const formatCurrency = (amount: number) =>
-    new Intl.NumberFormat("en-IN", {
-      style: "currency",
-      currency: "INR",
-      minimumFractionDigits: 0,
-      maximumFractionDigits: 0,
-    }).format(amount || 0);
+  const formatCurrency = (val?: number) => {
+    if (val == null) return "-";
+    return systemCurrency.format(val);
+  };
   const getChargeCodeName = (code?: string) => {
     const normalized = normalizeChargeCode(code);
     switch (normalized) {
@@ -300,16 +296,15 @@ export default function LeaseCharges() {
         ...data,
         updated_at: new Date().toISOString(),
       };
-      response = await leaseChargeApiService.updateLeaseCharge(
-        updatedLeaseCharge
-      );
+      response =
+        await leaseChargeApiService.updateLeaseCharge(updatedLeaseCharge);
 
       if (response.success) {
         // Update the edited lease charge in local state
         setLeaseCharges((prev) =>
           prev.map((lc) =>
-            lc.id === updatedLeaseCharge.id ? response.data : lc
-          )
+            lc.id === updatedLeaseCharge.id ? response.data : lc,
+          ),
         );
       }
     }
@@ -317,8 +312,9 @@ export default function LeaseCharges() {
     if (response.success) {
       setIsFormOpen(false);
       toast.success(
-        `Lease Charge has been ${formMode === "create" ? "created" : "updated"
-        } successfully.`
+        `Lease Charge has been ${
+          formMode === "create" ? "created" : "updated"
+        } successfully.`,
       );
     }
     return response;
@@ -355,43 +351,33 @@ export default function LeaseCharges() {
             <div className="text-2xl font-bold">
               {formatCurrency(leaseChargeOverview.total_charges)}
             </div>
-            <p className="text-xs text-muted-foreground">
-              Across entire org
-            </p>
+            <p className="text-xs text-muted-foreground">Across entire org</p>
           </CardContent>
         </Card>
 
         <Card>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">
-              Tax Amount
-            </CardTitle>
+            <CardTitle className="text-sm font-medium">Tax Amount</CardTitle>
             <TrendingUp className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold">
               {formatCurrency(leaseChargeOverview.tax_amount)}
             </div>
-            <p className="text-xs text-muted-foreground">
-              Total tax collected
-            </p>
+            <p className="text-xs text-muted-foreground">Total tax collected</p>
           </CardContent>
         </Card>
 
         <Card>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">
-              This Month
-            </CardTitle>
+            <CardTitle className="text-sm font-medium">This Month</CardTitle>
             <Calendar className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold">
               {leaseChargeOverview.this_month}
             </div>
-            <p className="text-xs text-muted-foreground">
-              Charges generated
-            </p>
+            <p className="text-xs text-muted-foreground">Charges generated</p>
           </CardContent>
         </Card>
 
@@ -406,9 +392,7 @@ export default function LeaseCharges() {
             <div className="text-2xl font-bold">
               {formatCurrency(leaseChargeOverview.avg_charge)}
             </div>
-            <p className="text-xs text-muted-foreground">
-              Average per charge
-            </p>
+            <p className="text-xs text-muted-foreground">Average per charge</p>
           </CardContent>
         </Card>
       </div>
@@ -527,7 +511,6 @@ export default function LeaseCharges() {
                 Add Charge
               </Button>
             </>
-
           )}
         </div>
       </div>
@@ -540,12 +523,10 @@ export default function LeaseCharges() {
             <Card>
               <CardContent className="flex flex-col items-center justify-center py-16">
                 <Receipt className="h-12 w-12 text-muted-foreground mb-4" />
-                <h3 className="text-lg font-semibold mb-2">
-                  No charges found
-                </h3>
+                <h3 className="text-lg font-semibold mb-2">No charges found</h3>
                 <p className="text-muted-foreground text-center mb-4">
-                  No charges match your current filters. Try adjusting
-                  your search criteria.
+                  No charges match your current filters. Try adjusting your
+                  search criteria.
                 </p>
                 {canWrite(resource) && (
                   <Button onClick={handleCreate}>
@@ -572,9 +553,7 @@ export default function LeaseCharges() {
                       <div>
                         <CardTitle className="text-lg flex items-center gap-2 mb-1">
                           <Badge
-                            className={getChargeCodeColor(
-                              charge.charge_code
-                            )}
+                            className={getChargeCodeColor(charge.charge_code)}
                           >
                             {normalizeChargeCode(charge.charge_code)}
                           </Badge>
@@ -583,13 +562,8 @@ export default function LeaseCharges() {
                         <CardDescription className="space-y-1">
                           <div>
                             Period -{" "}
-                            {new Date(
-                              charge.period_start
-                            ).toLocaleDateString()}{" "}
-                            -{" "}
-                            {new Date(
-                              charge.period_end
-                            ).toLocaleDateString()}
+                            {new Date(charge.period_start).toLocaleDateString()}{" "}
+                            - {new Date(charge.period_end).toLocaleDateString()}
                           </div>
                           <div className="flex items-center gap-1">
                             <MapPin className="h-4 w-4 text-muted-foreground" />
@@ -675,7 +649,7 @@ export default function LeaseCharges() {
                           {Math.ceil(
                             (new Date(charge.period_end).getTime() -
                               new Date(charge.period_start).getTime()) /
-                            (1000 * 60 * 60 * 24)
+                              (1000 * 60 * 60 * 24),
                           )}{" "}
                           days
                         </div>
@@ -684,21 +658,18 @@ export default function LeaseCharges() {
 
                     {charge.metadata && (
                       <div className="mt-4 p-3 bg-muted rounded-lg">
-                        <div className="text-sm font-medium mb-2">
-                          Details
-                        </div>
+                        <div className="text-sm font-medium mb-2">Details</div>
                         {charge.metadata?.description && (
                           <div className="text-sm text-muted-foreground mb-1">
                             {charge.metadata.description}
                           </div>
                         )}
-                        {charge.metadata?.units &&
-                          charge.metadata?.rate && (
-                            <div className="text-sm text-muted-foreground">
-                              {charge.metadata.units} units × ₹
-                              {charge.metadata.rate} per unit
-                            </div>
-                          )}
+                        {charge.metadata?.units && charge.metadata?.rate && (
+                          <div className="text-sm text-muted-foreground">
+                            {charge.metadata.units} units × ₹
+                            {charge.metadata.rate} per unit
+                          </div>
+                        )}
                       </div>
                     )}
 

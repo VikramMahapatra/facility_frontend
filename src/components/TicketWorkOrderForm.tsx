@@ -29,6 +29,7 @@ import {
 } from "@/schemas/ticketworkorder.schema";
 import { leaseChargeApiService } from "@/services/leasing_tenants/leasechargeapi";
 import { withFallback } from "@/helpers/commonHelper";
+import { useSettings } from "@/context/SettingsContext";
 
 interface TicketWorkOrderFormProps {
   workOrder?: any;
@@ -79,7 +80,7 @@ export function TicketWorkOrderForm({
   const [ticketsList, setTicketsList] = useState<any[]>([]);
   const [statusList, setStatusList] = useState<any[]>([]);
   const [taxCodeList, setTaxCodeList] = useState<any[]>([]);
-
+  const { systemCurrency } = useSettings();
   const [selectedTicketDetails, setSelectedTicketDetails] = useState<any>(null);
   const [isLoadingTicketDetails, setIsLoadingTicketDetails] = useState(false);
 
@@ -96,22 +97,22 @@ export function TicketWorkOrderForm({
     reset(
       workOrder && mode !== "create"
         ? {
-          ticket_id: workOrder.ticket_id || "",
-          description: workOrder.description || "",
-          assigned_to: workOrder.assigned_to || "",
-          vendor_name: workOrder.vendor_name || "",
-          status: workOrder.status || "PENDING",
-          labour_cost: workOrder.labour_cost || undefined,
-          material_cost: workOrder.material_cost || undefined,
-          other_expenses: workOrder.other_expenses || undefined,
-          estimated_time: workOrder.estimated_time || undefined,
-          special_instructions: workOrder.special_instructions || "",
-          tax_code_id: workOrder.tax_code_id || "",
-        }
+            ticket_id: workOrder.ticket_id || "",
+            description: workOrder.description || "",
+            assigned_to: workOrder.assigned_to || "",
+            vendor_name: workOrder.vendor_name || "",
+            status: workOrder.status || "PENDING",
+            labour_cost: workOrder.labour_cost || undefined,
+            material_cost: workOrder.material_cost || undefined,
+            other_expenses: workOrder.other_expenses || undefined,
+            estimated_time: workOrder.estimated_time || undefined,
+            special_instructions: workOrder.special_instructions || "",
+            tax_code_id: workOrder.tax_code_id || "",
+          }
         : {
-          ...emptyFormData,
-          ticket_id: initialTicketId || "",
-        },
+            ...emptyFormData,
+            ticket_id: initialTicketId || "",
+          },
     );
 
     setFormLoading(false);
@@ -191,8 +192,8 @@ export function TicketWorkOrderForm({
       assigned_to: data.assigned_to || null,
       tax_code_id:
         data.tax_code_id &&
-          data.tax_code_id !== "NO_TAX" &&
-          data.tax_code_id !== ""
+        data.tax_code_id !== "NO_TAX" &&
+        data.tax_code_id !== ""
           ? data.tax_code_id
           : undefined,
     };
@@ -205,35 +206,35 @@ export function TicketWorkOrderForm({
   // Create fallback options for fields that might not be in lookup lists
   const fallbackTicket = workOrder?.ticket_id
     ? {
-      id: workOrder.ticket_id,
-      name:
-        workOrder.ticket_name ||
-        workOrder.ticket_no ||
-        `Ticket (${workOrder.ticket_id.slice(0, 6)})`,
-    }
+        id: workOrder.ticket_id,
+        name:
+          workOrder.ticket_name ||
+          workOrder.ticket_no ||
+          `Ticket (${workOrder.ticket_id.slice(0, 6)})`,
+      }
     : null;
 
   const fallbackVendor = workOrder?.vendor_name
     ? {
-      id: workOrder.vendor_id || "",
-      name: workOrder.vendor_name,
-    }
+        id: workOrder.vendor_id || "",
+        name: workOrder.vendor_name,
+      }
     : null;
 
   const fallbackStatus = workOrder?.status
     ? {
-      id: workOrder.status,
-      name: workOrder.status,
-    }
+        id: workOrder.status,
+        name: workOrder.status,
+      }
     : null;
 
   const fallbackTaxCode = workOrder?.tax_code_id
     ? {
-      id: workOrder.tax_code_id,
-      name:
-        workOrder.tax_code_name ||
-        `Tax Code (${workOrder.tax_code_id.slice(0, 6)})`,
-    }
+        id: workOrder.tax_code_id,
+        name:
+          workOrder.tax_code_name ||
+          `Tax Code (${workOrder.tax_code_id.slice(0, 6)})`,
+      }
     : null;
 
   // Apply fallback to lists
@@ -245,6 +246,11 @@ export function TicketWorkOrderForm({
   const handleClose = () => {
     reset(emptyFormData);
     onClose();
+  };
+
+  const formatCurrency = (val?: number) => {
+    if (val == null) return "-";
+    return `${systemCurrency.name}`;
   };
 
   return (
@@ -406,7 +412,9 @@ export function TicketWorkOrderForm({
               {/* Row 4: Labour | Material | Other Expenses */}
               <div className="grid grid-cols-3 gap-4">
                 <div className="space-y-2">
-                  <Label htmlFor="labour_cost">Labour Cost</Label>
+                  <Label htmlFor="labour_cost">
+                    Labour Cost ({formatCurrency(0)})
+                  </Label>
                   <Input
                     id="labour_cost"
                     type="number"
@@ -421,7 +429,9 @@ export function TicketWorkOrderForm({
                 </div>
 
                 <div className="space-y-2">
-                  <Label htmlFor="material_cost">Material Cost</Label>
+                  <Label htmlFor="material_cost">
+                    Material Cost ({formatCurrency(0)})
+                  </Label>
                   <Input
                     id="material_cost"
                     type="number"
@@ -436,7 +446,9 @@ export function TicketWorkOrderForm({
                 </div>
 
                 <div className="space-y-2">
-                  <Label htmlFor="other_expenses">Other Expenses</Label>
+                  <Label htmlFor="other_expenses">
+                    Other Expenses ({formatCurrency(0)})
+                  </Label>
                   <Input
                     id="other_expenses"
                     type="number"
