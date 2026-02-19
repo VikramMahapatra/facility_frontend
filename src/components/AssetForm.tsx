@@ -13,7 +13,6 @@ import { assetApiService } from '@/services/maintenance_assets/assetsapi';
 import { siteApiService } from '@/services/spaces_sites/sitesapi';
 import { Asset } from '@/interfaces/assets_interface';
 import { withFallback } from '@/helpers/commonHelper';
-import { AsyncAutocompleteRQ } from './common/async-autocomplete-rq';
 
 
 type Mode = 'create' | 'edit' | 'view';
@@ -205,31 +204,26 @@ export function AssetForm({ isOpen, mode, asset, onClose, onSave }: Props) {
                   render={({ field }) => (
                     <div className="space-y-2">
                       <Label htmlFor="site_id">Site *</Label>
-                      <AsyncAutocompleteRQ
+                      <Select
                         value={field.value || ""}
-                        onChange={(value) => {
-                          field.onChange(value);
-                        }}
+                        onValueChange={field.onChange}
                         disabled={readOnly}
-                        placeholder="Select site"
-                        queryKey={["sites"]}
-                        queryFn={async (search) => {
-                          const response = await siteApiService.getSiteLookup(search);
-                          return response.data.map((s: any) => ({
-                            id: s.id,
-                            label: s.name,
-                          }));
-                        }}
-                        fallbackOption={
-                          asset?.site_id
-                            ? {
-                              id: asset.site_id,
-                              label: asset.name || `Site (${asset.site_id.slice(0, 6)})`,
-                            }
-                            : undefined
-                        }
-                        minSearchLength={1}
-                      />
+                      >
+                        <SelectTrigger className={errors.site_id ? "border-red-500" : ""}>
+                          <SelectValue placeholder="Select site" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          {sites.length === 0 ? (
+                            <SelectItem value="none" disabled>No sites available</SelectItem>
+                          ) : (
+                            sites.map((site: any) => (
+                              <SelectItem key={site.id} value={site.id}>
+                                {site.name}
+                              </SelectItem>
+                            ))
+                          )}
+                        </SelectContent>
+                      </Select>
                       {errors.site_id && (
                         <p className="text-sm text-red-500">{errors.site_id.message}</p>
                       )}

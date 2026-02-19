@@ -44,12 +44,12 @@ import LoaderOverlay from "@/components/LoaderOverlay";
 import ContentContainer from "@/components/ContentContainer";
 import { useAuth } from "@/context/AuthContext";
 import { PageHeader } from "@/components/PageHeader";
-import { AsyncAutocompleteRQ } from "@/components/common/async-autocomplete-rq";
 
 export default function TicketWorkload() {
   const navigate = useNavigate();
   const [selectedSiteId, setSelectedSiteId] = useState("");
   const [workloadData, setWorkloadData] = useState<any>(null);
+  const [siteList, setSiteList] = useState<any[]>([]);
   const { withLoader } = useLoader();
   const [isReassignOpen, setIsReassignOpen] = useState(false);
   const [selectedTicket, setSelectedTicket] = useState<{
@@ -77,14 +77,22 @@ export default function TicketWorkload() {
   }, [selectedSiteId]);
 
   useEffect(() => {
-    if (!selectedSiteId) {
-      siteApiService.getSiteLookup().then((response) => {
-        if (response?.success && response.data && response.data.length > 0) {
-          setSelectedSiteId(response.data[0].id);
-        }
-      });
-    }
+    loadSiteLookup();
   }, []);
+
+  useEffect(() => {
+    if (!selectedSiteId && siteList.length > 0) {
+      setSelectedSiteId(siteList[0].id);
+    }
+  }, [siteList]);
+
+  const loadSiteLookup = async () => {
+    const response = await siteApiService.getSiteLookup();
+    if (response?.success) {
+      const sites = response.data || [];
+      setSiteList(sites);
+    }
+  };
 
   const loadWorkloadData = async () => {
     if (!selectedSiteId) return;
@@ -272,22 +280,22 @@ export default function TicketWorkload() {
             </p>
           </div>
           <div className="w-[200px]">
-            <AsyncAutocompleteRQ
-              value={selectedSiteId}
-              onChange={(value) => {
-                setSelectedSiteId(value);
-              }}
-              placeholder="Select Site"
-              queryKey={["sites"]}
-              queryFn={async (search) => {
-                const res = await siteApiService.getSiteLookup(search);
-                return res.data.map((s: any) => ({
-                  id: s.id,
-                  label: s.name,
-                }));
-              }}
-              minSearchLength={1}
-            />
+            <Select value={selectedSiteId} onValueChange={setSelectedSiteId}>
+              <SelectTrigger>
+                <SelectValue placeholder="Select Site" />
+              </SelectTrigger>
+              <SelectContent>
+                {siteList.length === 0 ? (
+                  <SelectItem value="none" disabled>No sites available</SelectItem>
+                ) : (
+                  siteList.map((site: any) => (
+                    <SelectItem key={site.id} value={site.id}>
+                      {site.name}
+                    </SelectItem>
+                  ))
+                )}
+              </SelectContent>
+            </Select>
           </div>
         </div>
 

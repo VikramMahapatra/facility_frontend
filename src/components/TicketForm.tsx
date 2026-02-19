@@ -25,7 +25,6 @@ import { slaPoliciesApiService } from "@/services/ticketing_service/slapoliciesa
 import { toast } from "@/components/ui/app-toast";
 import { ticketSchema, TicketFormValues } from "@/schemas/ticket.schema";
 import { withFallback } from "@/helpers/commonHelper";
-import { AsyncAutocompleteRQ } from "@/components/common/async-autocomplete-rq";
 
 interface TicketFormProps {
   onSubmit: (data: any) => Promise<any>;
@@ -405,35 +404,31 @@ export default function TicketForm({
           render={({ field }) => (
             <div className="space-y-2">
               <Label htmlFor="site_id">Site *</Label>
-              <AsyncAutocompleteRQ
+              <Select
                 value={field.value || ""}
-                onChange={(value) => {
+                onValueChange={(value) => {
                   field.onChange(value);
                   // Reset building and space when site changes
                   setValue("building_id", "");
                   setValue("space_id", "");
                 }}
-                placeholder="Select site"
-                queryKey={["sites"]}
-                queryFn={async (search) => {
-                  const res = await siteApiService.getSiteLookup(search);
-                  return res.data.map((s: any) => ({
-                    id: s.id,
-                    label: s.name,
-                  }));
-                }}
-                fallbackOption={
-                  initialData?.site_id
-                    ? {
-                      id: initialData.site_id,
-                      label:
-                        initialData.site_name ||
-                        `Site (${initialData.site_id.slice(0, 6)})`,
-                    }
-                    : undefined
-                }
-                minSearchLength={1}
-              />
+                disabled={false}
+              >
+                <SelectTrigger className={errors.site_id ? "border-red-500" : ""}>
+                  <SelectValue placeholder="Select site" />
+                </SelectTrigger>
+                <SelectContent>
+                  {siteList.length === 0 ? (
+                    <SelectItem value="none" disabled>No sites available</SelectItem>
+                  ) : (
+                    siteList.map((site: any) => (
+                      <SelectItem key={site.id} value={site.id}>
+                        {site.name}
+                      </SelectItem>
+                    ))
+                  )}
+                </SelectContent>
+              </Select>
               {errors.site_id && (
                 <p className="text-sm text-red-500">{errors.site_id.message}</p>
               )}
