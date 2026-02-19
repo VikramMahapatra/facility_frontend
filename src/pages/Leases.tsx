@@ -34,9 +34,11 @@ import { useLoader } from "@/context/LoaderContext";
 import LoaderOverlay from "@/components/LoaderOverlay";
 import ContentContainer from "@/components/ContentContainer";
 import { useSkipFirstEffect } from "@/hooks/use-skipfirst-effect";
+import { useSettings } from "@/context/SettingsContext";
 
 export default function Leases() {
   const navigate = useNavigate();
+  const { systemCurrency } = useSettings();
   const [searchTerm, setSearchTerm] = useState("");
   const [selectedStatus, setSelectedStatus] = useState<string>("all");
   const [selectedSite, setSelectedSite] = useState<string>("all");
@@ -201,8 +203,7 @@ export default function Leases() {
         setIsFormOpen(false);
       }
       toast.success(
-        `Lease has been ${
-          formMode === "create" ? "created" : "updated"
+        `Lease has been ${formMode === "create" ? "created" : "updated"
         } successfully.`,
       );
     }
@@ -221,11 +222,7 @@ export default function Leases() {
 
   const formatCurrency = (val?: number) => {
     if (val == null) return "-";
-    return new Intl.NumberFormat("en-IN", {
-      style: "currency",
-      currency: "INR",
-      maximumFractionDigits: 0,
-    }).format(val);
+    return systemCurrency.format(val);
   };
 
   return (
@@ -321,8 +318,8 @@ export default function Leases() {
                   {leaseOverview.avgLeaseTermMonths < 12
                     ? `${leaseOverview.avgLeaseTermMonths.toFixed(0)} months`
                     : `${(leaseOverview.avgLeaseTermMonths / 12).toFixed(
-                        1,
-                      )} years`}
+                      1,
+                    )} years`}
                 </div>
                 <p className="text-sm text-muted-foreground">Avg Lease Term</p>
               </CardContent>
@@ -403,7 +400,7 @@ export default function Leases() {
                       </div>
                       <div>
                         {!lease.deposit_amount ||
-                        Number(lease.deposit_amount) === 0
+                          Number(lease.deposit_amount) === 0
                           ? "-"
                           : formatCurrency(lease.deposit_amount as any)}
                       </div>
