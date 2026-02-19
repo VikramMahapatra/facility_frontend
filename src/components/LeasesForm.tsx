@@ -48,9 +48,9 @@ const emptyFormData: Partial<LeaseFormValues> = {
   partner_id: "",
   tenant_id: "",
   start_date: "",
-  derived_frequency: "monthly",
+  lease_frequency: "monthly",
   frequency: "monthly",
-  lease_term_months: undefined,
+  lease_term_duration: undefined,
   rent_amount: "" as any,
   deposit_amount: "" as any,
   cam_rate: "" as any,
@@ -104,8 +104,8 @@ export function LeaseForm({
       tenant_id: "",
       start_date: "",
       frequency: "monthly",
-      derived_frequency: "monthly",
-      lease_term_months: undefined,
+      lease_frequency: "monthly",
+      lease_term_duration: undefined,
       rent_amount: "" as any,
       deposit_amount: "" as any,
       cam_rate: "" as any,
@@ -150,36 +150,36 @@ export function LeaseForm({
     reset(
       lease
         ? {
-            kind: (lease.kind as any) || "commercial",
-            site_id: lease.site_id || "",
-            building_id: leaseBuildingId || "",
-            space_id: lease.space_id || "",
-            partner_id: lease.partner_id ? String(lease.partner_id) : "",
-            tenant_id: lease.tenant_id ? String(lease.tenant_id) : "",
-            start_date: lease.start_date || "",
-            frequency:
-              (lease.frequency as "monthly" | "quaterly" | "annually") ||
-              "monthly",
-            derived_frequency:
-              (lease.derived_frequency as "monthly" | "annually") || "monthly",
-            lease_term_months: (lease as any).lease_term_months || undefined,
-            rent_amount: lease.rent_amount as any,
-            deposit_amount: lease.deposit_amount as any,
-            cam_rate: lease.cam_rate as any,
-            utilities: {
-              electricity: lease.utilities?.electricity as any,
-              water: lease.utilities?.water as any,
-            },
-            status: (lease.status as any) || "draft",
-            description: (lease as any).description || "",
-            payment_method: (lease as any).payment_method || undefined,
-            payment_ref_no: (lease as any).payment_ref_no || "",
-            payment_date: (lease as any).payment_date || "",
-            payment_amount: (lease as any).payment_amount || undefined,
-            number_of_installments:
-              (lease as any).number_of_installments || undefined,
-            payments: (lease as any).payments || [],
-          }
+          kind: (lease.kind as any) || "commercial",
+          site_id: lease.site_id || "",
+          building_id: leaseBuildingId || "",
+          space_id: lease.space_id || "",
+          partner_id: lease.partner_id ? String(lease.partner_id) : "",
+          tenant_id: lease.tenant_id ? String(lease.tenant_id) : "",
+          start_date: lease.start_date || "",
+          frequency:
+            (lease.frequency as "monthly" | "quaterly" | "annually") ||
+            "monthly",
+          lease_frequency:
+            (lease.lease_frequency as "monthly" | "annually") || "monthly",
+          lease_term_duration: (lease as any).lease_term_duration || undefined,
+          rent_amount: lease.rent_amount as any,
+          deposit_amount: lease.deposit_amount as any,
+          cam_rate: lease.cam_rate as any,
+          utilities: {
+            electricity: lease.utilities?.electricity as any,
+            water: lease.utilities?.water as any,
+          },
+          status: (lease.status as any) || "draft",
+          description: (lease as any).description || "",
+          payment_method: (lease as any).payment_method || undefined,
+          payment_ref_no: (lease as any).payment_ref_no || "",
+          payment_date: (lease as any).payment_date || "",
+          payment_amount: (lease as any).payment_amount || undefined,
+          number_of_installments:
+            (lease as any).number_of_installments || undefined,
+          payments: (lease as any).payments || [],
+        }
         : emptyFormData,
     );
 
@@ -217,7 +217,7 @@ export function LeaseForm({
   const selectedSpaceId = watch("space_id");
   const selectedKind = watch("kind");
   const selectedTenantId = watch("tenant_id");
-  const selectedFrequency = watch("derived_frequency");
+  const selectedFrequency = watch("lease_frequency");
 
   useEffect(() => {
     if (selectedTenantId && selectedKind !== "residential") {
@@ -247,9 +247,9 @@ export function LeaseForm({
   }, [selectedSiteId, selectedSpaceId]);
 
   const rentAmount = watch("rent_amount");
-  const leaseTermMonths = watch("lease_term_months");
+  const leaseTermMonths = watch("lease_term_duration");
   const frequency = watch("frequency");
-  const derivedFrequency = watch("derived_frequency");
+  const derivedFrequency = watch("lease_frequency");
   const startDate = watch("start_date");
   const numberOfInstallments = watch("number_of_installments");
 
@@ -534,30 +534,30 @@ export function LeaseForm({
 
   const fallbackSite = lease?.site_id
     ? {
-        id: lease.site_id,
-        name: (lease as any).site_name,
-      }
+      id: lease.site_id,
+      name: (lease as any).site_name,
+    }
     : null;
 
   const fallbackBuilding =
     lease?.building_id || (lease as any)?.building_block_id
       ? {
-          id: (lease as any).building_id || (lease as any).building_block_id,
-          name: (lease as any).building_name,
-        }
+        id: (lease as any).building_id || (lease as any).building_block_id,
+        name: (lease as any).building_name,
+      }
       : null;
 
   const fallbackSpace = lease?.space_id
     ? {
-        id: lease.space_id,
-        name: (lease as any).space_name,
-      }
+      id: lease.space_id,
+      name: (lease as any).space_name,
+    }
     : null;
   const fallbackTenant = lease?.tenant_id
     ? {
-        id: lease.tenant_id,
-        name: (lease as any).tenant_name,
-      }
+      id: lease.tenant_id,
+      name: (lease as any).tenant_name,
+    }
     : null;
 
   const tenants = withFallback(leasePartnerList, fallbackTenant);
@@ -680,16 +680,16 @@ export function LeaseForm({
             isSubmitting
               ? undefined
               : handleSubmit(onSubmitForm, (errors) => {
-                  console.log("Form validation errors:", errors);
-                  const firstError = Object.values(errors)[0];
-                  if (firstError?.message) {
-                    toast.error(firstError.message as string);
-                  } else {
-                    toast.error(
-                      "Please fill in all required fields correctly.",
-                    );
-                  }
-                })
+                console.log("Form validation errors:", errors);
+                const firstError = Object.values(errors)[0];
+                if (firstError?.message) {
+                  toast.error(firstError.message as string);
+                } else {
+                  toast.error(
+                    "Please fill in all required fields correctly.",
+                  );
+                }
+              })
           }
           className="space-y-4"
         >
@@ -864,7 +864,7 @@ export function LeaseForm({
                   <div className="space-y-2">
                     <Label>Lease Frequency*</Label>
                     <Controller
-                      name="derived_frequency"
+                      name="lease_frequency"
                       control={control}
                       render={({ field }) => (
                         <Select
@@ -884,9 +884,9 @@ export function LeaseForm({
                         </Select>
                       )}
                     />
-                    {errors.derived_frequency && (
+                    {errors.lease_frequency && (
                       <p className="text-sm text-red-500">
-                        {errors.derived_frequency.message as any}
+                        {errors.lease_frequency.message as any}
                       </p>
                     )}
                   </div>
@@ -920,14 +920,14 @@ export function LeaseForm({
                           : "Enter number of months"
                       }
                       disabled={isReadOnly}
-                      {...register("lease_term_months")}
+                      {...register("lease_term_duration")}
                       className={
-                        errors.lease_term_months ? "border-red-500" : ""
+                        errors.lease_term_duration ? "border-red-500" : ""
                       }
                     />
-                    {errors.lease_term_months && (
+                    {errors.lease_term_duration && (
                       <p className="text-sm text-red-500">
-                        {errors.lease_term_months.message as any}
+                        {errors.lease_term_duration.message as any}
                       </p>
                     )}
                   </div>
@@ -1306,8 +1306,8 @@ export function LeaseForm({
                           ₹
                           {leaseTermInMonths
                             ? (
-                                Number(rentAmount) * Number(leaseTermInMonths)
-                              ).toLocaleString()
+                              Number(rentAmount) * Number(leaseTermInMonths)
+                            ).toLocaleString()
                             : "-"}
                         </span>
                       </div>

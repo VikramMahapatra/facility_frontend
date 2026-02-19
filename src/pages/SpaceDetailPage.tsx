@@ -104,7 +104,6 @@ export default function SpaceDetailPage() {
   const [occupancyHistory, setOccupancyHistory] = useState<TimelineEvent[]>([]);
   const [isSpaceFormOpen, setIsSpaceFormOpen] = useState(false);
   const [accessoriesList, setAccessoriesList] = useState<any[]>([]);
-  const [assignedParkingSlots, setAssignedParkingSlots] = useState<ParkingSlot[]>([]);
   const [isParkingSlotFormOpen, setIsParkingSlotFormOpen] = useState(false);
   const [editingSlot, setEditingSlot] = useState<ParkingSlot | null>(null);
   const [deleteSlotId, setDeleteSlotId] = useState<string | null>(null);
@@ -112,6 +111,8 @@ export default function SpaceDetailPage() {
   const [slotList, setSlotList] = useState<any[]>([]);
   const [selectedZoneId, setSelectedZoneId] = useState<string>("");
   const [selectedSlotId, setSelectedSlotId] = useState<string>("");
+  const [assignedParkingSlots, setAssignedParkingSlots] =
+    useState<ParkingSlot[]>(space?.parking_slots ?? []);
 
   useEffect(() => {
     if (!id) return;
@@ -120,7 +121,6 @@ export default function SpaceDetailPage() {
     fetchTenants();
     fetchOccupancy();
     loadAccessoriesLookup();
-    loadAssignedParkingSlots();
   }, [id]);
 
   const loadSpace = async () => {
@@ -129,6 +129,7 @@ export default function SpaceDetailPage() {
     });
     if (response.success) {
       setSpace(response.data);
+      setAssignedParkingSlots(response.data?.parking_slots || []);
     }
   };
 
@@ -157,16 +158,6 @@ export default function SpaceDetailPage() {
     if (response.success) setAccessoriesList(response.data || []);
   };
 
-  const loadAssignedParkingSlots = async () => {
-    if (!id) return;
-    const params = new URLSearchParams();
-    params.append("space_id", id);
-    const response = await parkingSlotApiService.getParkingSlots(params);
-    if (response?.success) {
-      const slotsData = response.data?.slots || response.data || [];
-      setAssignedParkingSlots(Array.isArray(slotsData) ? slotsData : []);
-    }
-  };
 
   const loadZonesBySite = async (siteId: string) => {
     const params = new URLSearchParams();
@@ -188,35 +179,35 @@ export default function SpaceDetailPage() {
     }
   };
 
-  const handleOpenParkingSlotForm = (slot?: ParkingSlot) => {
-    if (space?.site_id) {
-      loadZonesBySite(space.site_id);
-      setIsParkingSlotFormOpen(true);
-      if (slot) {
-        // Editing mode
-        setEditingSlot(slot);
-        setSelectedZoneId(slot.zone_id);
-        setSelectedSlotId(slot.id);
-        loadSlotsByZone(slot.zone_id);
-      } else {
-        // Adding mode
-        setEditingSlot(null);
-        setSelectedZoneId("");
-        setSelectedSlotId("");
-        setSlotList([]);
-      }
-    }
-  };
+  // const handleOpenParkingSlotForm = (slot?: ParkingSlot) => {
+  //   if (space?.site_id) {
+  //     loadZonesBySite(space.site_id);
+  //     setIsParkingSlotFormOpen(true);
+  //     if (slot) {
+  //       // Editing mode
+  //       setEditingSlot(slot);
+  //       setSelectedZoneId(slot.zone_id);
+  //       setSelectedSlotId(slot.id);
+  //       loadSlotsByZone(slot.zone_id);
+  //     } else {
+  //       // Adding mode
+  //       setEditingSlot(null);
+  //       setSelectedZoneId("");
+  //       setSelectedSlotId("");
+  //       setSlotList([]);
+  //     }
+  //   }
+  // };
 
-  const handleZoneChange = (zoneId: string) => {
-    setSelectedZoneId(zoneId);
-    setSelectedSlotId("");
-    if (zoneId) {
-      loadSlotsByZone(zoneId);
-    } else {
-      setSlotList([]);
-    }
-  };
+  // const handleZoneChange = (zoneId: string) => {
+  //   setSelectedZoneId(zoneId);
+  //   setSelectedSlotId("");
+  //   if (zoneId) {
+  //     loadSlotsByZone(zoneId);
+  //   } else {
+  //     setSlotList([]);
+  //   }
+  // };
 
   const handleAssignParkingSlot = async () => {
     if (!id || !selectedSlotId) {
@@ -243,7 +234,6 @@ export default function SpaceDetailPage() {
       setEditingSlot(null);
       setSelectedZoneId("");
       setSelectedSlotId("");
-      loadAssignedParkingSlots();
     } else {
       toast.error(response?.message || "Failed to assign parking slot");
     }
@@ -253,9 +243,11 @@ export default function SpaceDetailPage() {
     if (!id || !deleteSlotId) return;
 
     // Get all current slot IDs except the one being removed
-    const remainingSlotIds = assignedParkingSlots
-      .filter((slot) => slot.id !== deleteSlotId)
-      .map((slot) => slot.id);
+    const remainingSlots = assignedParkingSlots.filter(
+      (slot) => slot.id !== deleteSlotId
+    );
+
+    const remainingSlotIds = remainingSlots.map((slot) => slot.id);
 
     const response = await withLoader(async () => {
       return await parkingSlotApiService.updateSpaceParkingSlots({
@@ -267,7 +259,7 @@ export default function SpaceDetailPage() {
     if (response?.success) {
       toast.success("Parking slot removed successfully");
       setDeleteSlotId(null);
-      loadAssignedParkingSlots();
+      setAssignedParkingSlots(remainingSlots);
     } else {
       toast.error(response?.message || "Failed to remove parking slot");
     }
@@ -399,10 +391,6 @@ export default function SpaceDetailPage() {
                         {space.category}
                       </Badge>
                     )}
-                    <Badge className={getKindColor(space?.kind)}>
-                      {space?.kind.replace("_", " ")}
-                    </Badge>
-
                     <Badge className={getStatusColor(space?.status)}>
                       {space?.status.replace("_", " ")}
                     </Badge>
@@ -432,13 +420,20 @@ export default function SpaceDetailPage() {
                     </div>
                   </CardTitle>
                 </CardHeader>
-                <CardContent className="grid grid-cols-3 gap-4 text-sm">
+                <CardContent className="grid grid-cols-4 gap-4 text-sm">
                   <Info label="Site" value={space.site_name} />
                   <Info label="Building" value={space.building_block} />
+                  <Info label="Type" value={space.kind
+                    .replace("_", " ")
+                    .replace(/\b\w/g, (l) => l.toUpperCase())} />
+                  <Info label="Sub Type" value={space.sub_kind?.toUpperCase()} />
                   <Info label="Floor" value={space.floor} />
                   <Info label="Area (sqft)" value={space.area_sqft} />
                   <Info label="Beds" value={space.beds} />
                   <Info label="Baths" value={space.baths} />
+                  <Info label="Balconies" value={space.balconies} />
+                  <Info label="View" value={space.attributes?.view} />
+                  <Info label="Furnished" value={space.attributes?.furnished} />
                   <Info
                     label="Maintenance"
                     value={
@@ -448,8 +443,6 @@ export default function SpaceDetailPage() {
                         : "-"
                     }
                   />
-                  <Info label="View" value={space.attributes?.view} />
-                  <Info label="Furnished" value={space.attributes?.furnished} />
                   {space.accessories && space.accessories.length > 0 && (
                     <div className="col-span-2">
                       <p className="text-muted-foreground mb-2">Accessories</p>
@@ -511,7 +504,7 @@ export default function SpaceDetailPage() {
                         <Car className="h-5 w-5" /> Parking Assigned
                       </h1>
                     </CardTitle>
-                    <Button
+                    {/* <Button
                       variant="outline"
                       size="sm"
                       onClick={() => handleOpenParkingSlotForm()}
@@ -519,7 +512,7 @@ export default function SpaceDetailPage() {
                     >
                       <Plus className="h-4 w-4" />
                       Add Slot
-                    </Button>
+                    </Button> */}
                   </div>
                 </CardHeader>
                 <CardContent>
@@ -528,63 +521,46 @@ export default function SpaceDetailPage() {
                       No parking slots assigned to this space.
                     </p>
                   ) : (
-                    <div className="space-y-3">
-                      {assignedParkingSlots.map((slot) => (
-                        <div
-                          key={slot.id}
-                          className="flex items-center justify-between p-3 border rounded-lg hover:bg-gray-50"
-                        >
-                          <div className="flex items-center gap-3">
-                            <div className="p-2 bg-blue-100 rounded-lg">
-                              <Car className="h-4 w-4 text-blue-600" />
-                            </div>
-                            <div>
-                              <p className="font-semibold text-sm">
-                                Slot {slot.slot_no}
-                              </p>
-                              <div className="flex items-center gap-2 mt-1">
-                                <Badge variant="outline" className="text-xs">
-                                  {slot.zone_name}
-                                </Badge>
-                                <Badge variant="secondary" className="text-xs">
-                                  {slot.slot_type}
-                                </Badge>
-                                {slot.site_name && (
-                                  <span className="text-xs text-muted-foreground">
-                                    {slot.site_name}
-                                  </span>
-                                )}
+                    <div className="grid grid-cols-2">
+                      <div className="space-y-2">
+                        {assignedParkingSlots.map((slot) => (
+                          <div
+                            key={slot.id}
+                            className="flex items-center justify-between p-3 border rounded-lg hover:bg-gray-50"
+                          >
+                            <div className="flex items-center gap-3">
+                              <div className="p-2 bg-blue-100 rounded-lg">
+                                <Car className="h-4 w-4 text-blue-600" />
+                              </div>
+                              <div>
+                                <p className="font-semibold text-sm">
+                                  Slot {slot.slot_no}
+                                </p>
+                                <div className="flex items-center gap-2 mt-1">
+                                  <Badge variant="outline" className="text-xs">
+                                    {slot.zone_name}
+                                  </Badge>
+                                  <Badge variant="secondary" className="text-xs">
+                                    {slot.slot_type}
+                                  </Badge>
+                                </div>
                               </div>
                             </div>
+                            <div className="flex items-center gap-2">
+                              <Button
+                                variant="ghost"
+                                size="icon"
+                                onClick={() => setDeleteSlotId(slot.id)}
+                                className="h-8 w-8 text-destructive hover:text-destructive"
+                              >
+                                <Trash2 className="h-4 w-4" />
+                              </Button>
+                            </div>
                           </div>
-                          <div className="flex items-center gap-2">
-                            <Button
-                              variant="ghost"
-                              size="icon"
-                              onClick={() => handleOpenParkingSlotForm(slot)}
-                              className="h-8 w-8"
-                            >
-                              <Pencil className="h-4 w-4" />
-                            </Button>
-                            <Button
-                              variant="ghost"
-                              size="icon"
-                              onClick={() => setDeleteSlotId(slot.id)}
-                              className="h-8 w-8 text-destructive hover:text-destructive"
-                            >
-                              <Trash2 className="h-4 w-4" />
-                            </Button>
-                            <Button
-                              variant="ghost"
-                              size="sm"
-                              onClick={() => navigate(`/parking-slots?zone=${slot.zone_id}`)}
-                            >
-                              View Details
-                            </Button>
-                          </div>
-                        </div>
-                      ))}
+                        ))}
+                      </div>
                     </div>
+
                   )}
                 </CardContent>
               </Card>
@@ -596,7 +572,7 @@ export default function SpaceDetailPage() {
               />
 
               {/* Assign Parking Slot Dialog */}
-              <Dialog open={isParkingSlotFormOpen} onOpenChange={(open) => {
+              {/* <Dialog open={isParkingSlotFormOpen} onOpenChange={(open) => {
                 setIsParkingSlotFormOpen(open);
                 if (!open) {
                   setEditingSlot(null);
@@ -685,7 +661,7 @@ export default function SpaceDetailPage() {
                     </Button>
                   </DialogFooter>
                 </DialogContent>
-              </Dialog>
+              </Dialog> */}
 
               {/* Delete Confirmation Dialog */}
               <AlertDialog

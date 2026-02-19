@@ -8,7 +8,7 @@ import {
   CardHeader,
   CardTitle,
 } from "@/components/ui/card";
-import { LogOut } from "lucide-react";
+import { LogOut, Sparkles } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import {
   Select,
@@ -59,6 +59,8 @@ import LoaderOverlay from "@/components/LoaderOverlay";
 import ContentContainer from "@/components/ContentContainer";
 import { Pagination } from "@/components/Pagination";
 import { PageHeader } from "@/components/PageHeader";
+import { AutoGenerateRentForm } from "@/components/automation/AutoGenerateRentForm";
+import { LeaseCharge } from "@/interfaces/leasing_tenants_interface";
 
 type ChargeCode =
   | "RENT"
@@ -70,30 +72,7 @@ type ChargeCode =
   | "MAINTENANCE"
   | string;
 
-interface LeaseCharge {
-  id: string;
-  lease_id: string;
-  charge_code_id: string;
-  charge_code: ChargeCode;
-  period_start: string; // ISO date
-  period_end: string; // ISO date
-  amount: number;
-  tax_pct: number;
-  invoice_status?: string;
-  lease_start?: string;
-  lease_end?: string;
-  rent_amount?: number;
-  period_days?: number;
-  tax_amount?: number;
-  total_amount?: number;
-  metadata?: any;
-  created_at?: string;
-  tenant_name: string;
-  site_name: string;
-  space_name: string;
-  tax_code_id?: string;
-  payer_type?: string;
-}
+
 
 const monthsFull = [
   "January",
@@ -161,6 +140,7 @@ export default function LeaseCharges() {
   const [totalItems, setTotalItems] = useState(0);
   const { canRead, canWrite, canDelete } = useAuth();
   const { withLoader } = useLoader();
+  const [isAutoGenerateFormOpen, setIsAutoGenerateFormOpen] = useState(false);
   const resource = "lease_charges"; // must match resource name from backend policies
 
   useSkipFirstEffect(() => {
@@ -297,33 +277,13 @@ export default function LeaseCharges() {
     setIsFormOpen(true);
   };
   const handleEdit = (charge: LeaseCharge) => {
-    setSelectedCharge({
-      id: charge.id,
-      lease_id: charge.lease_id,
-      charge_code_id: charge.charge_code_id,
-      period_start: charge.period_start?.slice(0, 10),
-      period_end: charge.period_end?.slice(0, 10),
-      amount: charge.amount,
-      tax_pct: charge.tax_pct,
-      tax_code_id: charge.tax_code_id, // ✅ Add this
-      payer_type: charge.payer_type, // ✅ Add this
-    });
+    setSelectedCharge(charge);
 
     setFormMode("edit");
     setIsFormOpen(true);
   };
   const handleView = (charge: LeaseCharge) => {
-    setSelectedCharge({
-      id: charge.id,
-      lease_id: charge.lease_id,
-      charge_code: charge.charge_code,
-      period_start: charge.period_start?.slice(0, 10),
-      period_end: charge.period_end?.slice(0, 10),
-      amount: charge.amount,
-      tax_pct: charge.tax_pct,
-      tax_code_id: charge.tax_code_id, // ✅ Add this
-      payer_type: charge.payer_type, // ✅ Add this
-    });
+    setSelectedCharge(charge);
     setFormMode("view");
     setIsFormOpen(true);
   };
@@ -552,11 +512,22 @@ export default function LeaseCharges() {
             <Filter className="mr-2 h-4 w-4" />
             More Filters
           </Button> */}
+
           {canWrite(resource) && (
-            <Button size="sm" onClick={handleCreate}>
-              <Plus className="mr-2 h-4 w-4" />
-              Add Charge
-            </Button>
+            <>
+              <Button
+                variant="outline"
+                onClick={() => setIsAutoGenerateFormOpen(true)}
+              >
+                <Sparkles className="h-4 w-4 mr-2" />
+                Auto Generate
+              </Button>
+              <Button size="sm" onClick={handleCreate}>
+                <Plus className="mr-2 h-4 w-4" />
+                Add Charge
+              </Button>
+            </>
+
           )}
         </div>
       </div>
@@ -785,6 +756,13 @@ export default function LeaseCharges() {
         onClose={() => setIsFormOpen(false)}
         onSave={handleSave}
         mode={formMode}
+      />
+      <AutoGenerateRentForm
+        isOpen={isAutoGenerateFormOpen}
+        onClose={() => setIsAutoGenerateFormOpen(false)}
+        onSuccess={() => {
+          loadLeaseCharges();
+        }}
       />
     </div>
   );

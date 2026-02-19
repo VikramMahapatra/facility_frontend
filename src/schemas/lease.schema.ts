@@ -12,14 +12,14 @@ export const leaseSchema = z
     frequency: z.enum(["monthly", "quaterly", "annually"], {
       required_error: "Rent billing frequency is required",
     }),
-    derived_frequency: z.enum(["monthly", "annually"], {
+    lease_frequency: z.enum(["monthly", "annually"], {
       required_error: "Lease tenure is required",
     }),
-    lease_term_months: z.coerce
+    lease_term_duration: z.coerce
       .number({
         invalid_type_error: "Lease Term must be a number",
       })
-      .optional(),
+      .min(1, "Term Duration is required"),
     rent_amount: z.coerce
       .number({
         required_error: "Rent Amount is required",
@@ -62,17 +62,6 @@ export const leaseSchema = z
         code: z.ZodIssueCode.custom,
         path: ["tenant_id"],
         message: "Tenant is required",
-      });
-    }
-    // Require lease_term_months when frequency is monthly
-    if (
-      val.frequency === "monthly" &&
-      (!val.lease_term_months || val.lease_term_months < 1)
-    ) {
-      ctx.addIssue({
-        code: z.ZodIssueCode.custom,
-        path: ["lease_term_months"],
-        message: "Lease Term is required when frequency is monthly",
       });
     }
   });

@@ -454,7 +454,7 @@ export const SpaceMaintenanceForm = ({
                   )}
                 />
               </div>
-              <div className="grid grid-cols-4 gap-4">
+              <div className="grid grid-cols-3 gap-4">
                 <div className="space-y-2">
                   <Label>Start Date *</Label>
                   <Input
@@ -491,83 +491,41 @@ export const SpaceMaintenanceForm = ({
                     disabled={isReadOnly}
                   />
                 </div>
-
-                <div className="space-y-2">
-                  <Label>Status</Label>
-                  <Controller
-                    name="status"
-                    control={control}
-                    render={({ field }) => (
-                      <Select
-                        value={field.value || ""}
-                        onValueChange={field.onChange}
-                        disabled={isReadOnly}
-                      >
-                        <SelectTrigger>
-                          <SelectValue placeholder="Select status" />
-                        </SelectTrigger>
-                        <SelectContent>
-                          {statuses.map((status) => (
-                            <SelectItem key={status.id} value={status.id}>
-                              {status.name}
-                            </SelectItem>
-                          ))}
-                        </SelectContent>
-                      </Select>
-                    )}
-                  />
-                </div>
               </div>
-              <div className="grid grid-cols-2 gap-4">
-                <div className="space-y-2">
-                  <Label>Maintenance Amount</Label>
+              <div className="grid grid-cols-2 gap-6 items-center mt-4">
+                <div className="rounded-lg border bg-muted/40 p-4">
 
-                  <div className="rounded-md border p-3 text-sm bg-muted space-y-1">
+                  {isLoading ? (
+                    <span className="text-sm text-muted-foreground">
+                      Calculating...
+                    </span>
+                  ) : (
+                    <div className="flex items-center justify-between">
 
-                    {isLoading ? (
-                      <span className="text-muted-foreground">
-                        Calculating...
-                      </span>
-                    ) : (
-                      <>
-                        <div className="flex justify-between">
-                          <span>Base Amount</span>
-                          <span className="font-medium">
-                            ₹ {calculatedAmount?.base_amount ?? "0.00"}
-                          </span>
-                        </div>
-
-                        <div className="flex justify-between text-muted-foreground">
-                          <span>Tax</span>
-                          <span>
-                            ₹ {calculatedAmount?.tax_amount ?? "0.00"}
-                          </span>
-                        </div>
-
-                        <div className="border-t pt-1 flex justify-between font-semibold">
-                          <span>Total</span>
-                          <span>
-                            ₹ {calculatedAmount?.total_amount ?? "0.00"}
-                          </span>
-                        </div>
-
-                        <div className="text-xs text-muted-foreground">
+                      <div className="space-y-1">
+                        <p className="text-sm font-medium">
+                          Maintenance Amount
+                        </p>
+                        <p className="text-xs text-muted-foreground">
                           Auto calculated
-                        </div>
-                      </>
-                    )}
+                        </p>
+                      </div>
 
-                  </div>
+                      <p className="text-xl font-semibold tabular-nums">
+                        ₹ {calculatedAmount?.base_amount ?? "0.00"}
+                      </p>
+
+                    </div>
+                  )}
+
                 </div>
 
-
-                {/* Helper text like error message */}
-                <div className="space-y-4">
-                  <label>&nbsp;</label>
-                  <p className="text-xs text-muted-foreground">
-                    Amount will be calculated after selecting space and dates
-                  </p>
+                {/* Info Section */}
+                <div className="text-sm text-muted-foreground leading-relaxed">
+                  Amount will be calculated automatically after selecting
+                  space and dates.
                 </div>
+
               </div>
             </div>
           )}

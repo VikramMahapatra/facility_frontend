@@ -32,7 +32,7 @@ import {
 import { siteApiService } from "@/services/spaces_sites/sitesapi";
 import { toast } from "@/components/ui/app-toast";
 import { SpaceMaintenanceForm } from "@/components/SpaceMaintenanceForm";
-import { AutoGenerateMaintenanceForm } from "@/components/AutoGenerateMaintenanceForm";
+import { AutoGenerateMaintenanceForm } from "@/components/automation/AutoGenerateMaintenanceForm";
 import { ownerMaintenancesApiService } from "@/services/spaces_sites/ownermaintenancesapi";
 import ContentContainer from "@/components/ContentContainer";
 import LoaderOverlay from "@/components/LoaderOverlay";

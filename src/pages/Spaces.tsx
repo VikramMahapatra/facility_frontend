@@ -447,7 +447,7 @@ export default function Spaces() {
                   </div>
 
                   {/* Bed/Bath info for residential */}
-                  {(Number(space.beds) > 0 || Number(space.baths) > 0) && (
+                  {(Number(space.beds) > 0 || Number(space.baths) > 0 || Number(space.balconies) > 0) && (
                     <div className="flex items-center gap-4 text-sm">
                       {Number(space.beds) > 0 && (
                         <span className="text-muted-foreground">
@@ -457,6 +457,11 @@ export default function Spaces() {
                       {Number(space.baths) > 0 && (
                         <span className="text-muted-foreground">
                           🚿 {space.baths} baths
+                        </span>
+                      )}
+                      {Number(space.balconies) > 0 && (
+                        <span className="text-muted-foreground">
+                          🪟 {space.balconies} balconies
                         </span>
                       )}
                     </div>

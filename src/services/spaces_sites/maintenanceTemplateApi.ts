@@ -27,8 +27,8 @@ class MaintenanceTemplateApiService {
     });
   }
 
-  async getMaintenanceTemplateLookup() {
-    return await apiService.request("/maintenance-templates/lookup");
+  async getMaintenanceTemplateLookup(params: URLSearchParams) {
+    return await apiService.request(`/maintenance-templates/lookup?${params.toString()}`);
   }
 }
 

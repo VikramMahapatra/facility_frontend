@@ -105,20 +105,20 @@ export const navigationItems = [
         resource: "buildings",
       },
       { title: "Spaces", url: "/spaces", icon: Home, resource: "spaces" },
+      // {
+      //   title: "Space Groups (Templates)",
+      //   url: "/space-groups",
+      //   icon: Archive,
+      //   resource: "space_groups",
+      // },
+      // {
+      //   title: "Group Assignments",
+      //   url: "/space-assignments",
+      //   icon: Users,
+      //   resource: "group_assignments",
+      // },
       {
-        title: "Space Groups (Templates)",
-        url: "/space-groups",
-        icon: Archive,
-        resource: "space_groups",
-      },
-      {
-        title: "Group Assignments",
-        url: "/space-assignments",
-        icon: Users,
-        resource: "group_assignments",
-      },
-      {
-        title: "Maintenance (CAM)",
+        title: "Maintenance Charges",
         url: "/space-maintenance",
         icon: Wrench,
         resource: "spaces",

@@ -50,6 +50,16 @@ class LeaseChargeApiService {
             }
         );
     }
+
+    async autoGenerateRent(date: string) {
+        const params = new URLSearchParams();
+        params.append("date", date);
+        return await apiService.request(
+            `/lease-charges/auto-generate?${params.toString()}`,
+            { method: "POST" },
+        );
+    }
+
 }
 
 export const leaseChargeApiService = new LeaseChargeApiService();
