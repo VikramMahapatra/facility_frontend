@@ -19,14 +19,13 @@ import {
 import { siteApiService } from "@/services/spaces_sites/sitesapi";
 import { buildingApiService } from "@/services/spaces_sites/buildingsapi";
 import { spacesApiService } from "@/services/spaces_sites/spacesapi";
-import { Invoice } from "@/interfaces/invoices_interfaces";
+import { Invoice, PaymentInput } from "@/interfaces/invoices_interfaces";
 import { invoiceApiService } from "@/services/financials/invoicesapi";
 import { useForm, Controller } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { invoiceSchema, InvoiceFormValues } from "@/schemas/invoice.schema";
 import { toast } from "@/components/ui/app-toast";
 import { useLoader } from "@/context/LoaderContext";
-import { withFallback } from "@/helpers/commonHelper";
 import { useSettings } from "@/context/SettingsContext";
 
 interface InvoiceFormProps {
@@ -47,7 +46,7 @@ const emptyFormData: InvoiceFormValues = {
   currency: "INR",
   billable_item_type: "",
   billable_item_id: "",
-  totals: { sub: 0, tax: 0, grand: 0 },
+  totals: { sub: 0, tax: 5, grand: 0 },
   payments: [],
 };
 
@@ -83,10 +82,11 @@ export function InvoiceForm({
     watch,
     setValue,
     getValues,
+    trigger,
     formState: { errors, isSubmitting: formIsSubmitting },
   } = useForm<InvoiceFormValues>({
     resolver: zodResolver(invoiceSchema),
-    mode: "onChange",
+    mode: "onSubmit",
     defaultValues: emptyFormData,
   });
 
@@ -100,99 +100,101 @@ export function InvoiceForm({
     if (isOpen) {
       loadSiteLookup();
       loadInvoiceTypeLookup();
-      if (invoice && mode !== "create") {
-        loadAll();
-      } else {
-        reset(emptyFormData);
-      }
     }
-  }, [isOpen, invoice, mode]);
+  }, [isOpen]);
 
-  // Load buildings when site changes
   useEffect(() => {
     if (watchedSiteId) {
-      loadBuildingLookup(watchedSiteId);
+      loadBuildingLookup();
     } else {
       setBuildingList([]);
       setSpaceList([]);
     }
   }, [watchedSiteId]);
 
-  // Load spaces when site or building changes
   useEffect(() => {
-    if (watchedSiteId) {
-      loadSpaceLookup(watchedSiteId, watchedBuildingId);
+    if (watchedBuildingId && watchedSiteId) {
+      loadSpaceLookup();
     } else {
       setSpaceList([]);
     }
-  }, [watchedSiteId, watchedBuildingId]);
+  }, [watchedBuildingId, watchedSiteId]);
 
   useEffect(() => {
-    if (mode === "create") {
-      if (watchedBillableType && watchedSiteId && siteList.length > 0) {
-        loadBillableItemLookup(
-          watchedBillableType,
-          watchedSiteId,
-          watchedSpaceId,
-        );
-      } else if (!watchedBillableType || !watchedSiteId) {
-        setBillableItemList([]);
-        setValue("billable_item_id", "");
-      }
+    if (watchedBillableType && watchedSiteId) {
+      loadBillableItemLookup();
+    } else {
+      setBillableItemList([]);
     }
-  }, [
-    watchedBillableType,
-    watchedSiteId,
-    watchedSpaceId,
-    setValue,
-    mode,
-    siteList.length,
-  ]);
+  }, [watchedBillableType, watchedSiteId]);
 
   useEffect(() => {
-    // Auto-load totals only once when billable item is first selected
+    if (isOpen) {
+      loadAll();
+    }
+  }, [invoice?.id, isOpen, mode]);
+
+  useEffect(() => {
     if (
-      mode === "create" &&
-      watchedBillableType &&
       watchedBillableItemId &&
+      watchedBillableType &&
+      !totalsAutoFilled &&
       !totalsLoaded
     ) {
-      loadInvoiceTotals(watchedBillableType, watchedBillableItemId);
-      setTotalsLoaded(true);
-    } else if (
-      mode === "create" &&
-      (!watchedBillableItemId || !watchedBillableType)
-    ) {
-      // Reset totals loaded flag if billable item is cleared
-      setTotalsLoaded(false);
-      if (!watchedBillableItemId || !watchedBillableType) {
-        setValue("totals.sub", 0);
-        setValue("totals.tax", 0);
-        setValue("totals.grand", 0);
-      }
-      setTotalsAutoFilled(false);
+      loadBillableItemTotals();
     }
-  }, [
-    watchedBillableType,
-    watchedBillableItemId,
-    mode,
-    setValue,
-    totalsLoaded,
-  ]);
+  }, [watchedBillableItemId, watchedBillableType]);
+
+  // Calculate grand total when subtotal or tax changes
+  const watchedSubtotal = watch("totals.sub");
+  const watchedTax = watch("totals.tax");
+
+  useEffect(() => {
+    const subtotal = Number(watchedSubtotal) || 0;
+    const taxPercent = Number(watchedTax) || 5;
+    const grandTotal = subtotal + (subtotal * taxPercent) / 100;
+    setValue("totals.grand", grandTotal, { shouldValidate: false });
+  }, [watchedSubtotal, watchedTax, setValue]);
 
   const loadSiteLookup = async () => {
-    const lookup = await siteApiService.getSiteLookup();
-    if (lookup.success) setSiteList(lookup.data || []);
+    try {
+      const lookup = await siteApiService.getSiteLookup();
+      if (lookup.success) {
+        setSiteList(lookup.data || []);
+      }
+    } catch (error) {
+      console.error("Failed to load sites:", error);
+      setSiteList([]);
+    }
   };
 
-  const loadBuildingLookup = async (siteId: string) => {
-    const lookup = await buildingApiService.getBuildingLookup(siteId);
-    if (lookup.success) setBuildingList(lookup.data || []);
+  const loadBuildingLookup = async () => {
+    if (!watchedSiteId) return;
+    try {
+      const lookup = await buildingApiService.getBuildingLookup(watchedSiteId);
+      if (lookup.success) {
+        setBuildingList(lookup.data || []);
+      }
+    } catch (error) {
+      console.error("Failed to load buildings:", error);
+      setBuildingList([]);
+    }
   };
 
-  const loadSpaceLookup = async (siteId: string, buildingId?: string) => {
-    const lookup = await spacesApiService.getSpaceLookup(siteId, buildingId);
-    if (lookup.success) setSpaceList(lookup.data || []);
+  const loadSpaceLookup = async () => {
+    if (!watchedSiteId || !watchedBuildingId) return;
+    try {
+      const lookup = await spacesApiService.getSpaceLookup(
+        watchedSiteId,
+        watchedBuildingId,
+      );
+      if (lookup.success) {
+        setSpaceList(lookup.data || []);
+      }
+    } catch (error) {
+      console.error("Failed to load spaces:", error);
+      setSpaceList([]);
+    }
   };
 
   const loadInvoiceTypeLookup = async () => {
@@ -219,24 +221,15 @@ export function InvoiceForm({
     }
   };
 
-  const loadBillableItemLookup = async (
-    type?: string,
-    siteId?: string,
-    spaceId?: string,
-  ) => {
-    if (!type || !siteId) {
+  const loadBillableItemLookup = async () => {
+    if (!watchedBillableType || !watchedSiteId) {
       setBillableItemList([]);
-      setValue("billable_item_id", "");
       return;
     }
-
     try {
       const params = new URLSearchParams();
-      params.append("site_id", siteId);
-      params.append("billable_item_type", type);
-      if (spaceId) {
-        params.append("space_id", spaceId);
-      }
+      params.append("site_id", watchedSiteId);
+      params.append("billable_item_type", watchedBillableType);
 
       const response = await invoiceApiService.getInvoiceEntityLookup(params);
       if (response?.success) {
@@ -255,43 +248,40 @@ export function InvoiceForm({
       } else {
         setBillableItemList([]);
       }
-    } catch {
+    } catch (error) {
+      console.error("Failed to load billable items:", error);
       setBillableItemList([]);
     }
   };
 
-  const loadInvoiceTotals = async (
-    billableType: string,
-    billableItemId: string,
-  ) => {
-    if (!billableType || !billableItemId) {
-      setTotalsAutoFilled(false);
-      return;
-    }
+  const loadBillableItemTotals = async () => {
+    if (!watchedBillableItemId || !watchedBillableType) return;
 
     try {
       const params = new URLSearchParams();
-      params.append("billable_item_type", billableType);
-      params.append("billable_item_id", billableItemId);
+      params.append("billable_item_type", watchedBillableType);
+      params.append("billable_item_id", watchedBillableItemId);
 
       const response = await invoiceApiService.getInvoiceTotals(params);
       if (response?.success && response.data) {
         const totals = response.data;
-        setValue("totals.sub", Number(totals.subtotal || 0));
-        setValue("totals.tax", Number(totals.tax || 0));
-        setValue("totals.grand", Number(totals.grand_total || 0));
+        // Only fetch subtotal from API
+        const subtotal = Number(totals.subtotal || 0);
+        setValue("totals.sub", subtotal);
+        // Tax is always default 5%
+        setValue("totals.tax", 5);
+        // Grand total will be calculated by useEffect
         setTotalsAutoFilled(true);
-      } else {
-        setTotalsAutoFilled(false);
+        setTotalsLoaded(true);
       }
-    } catch {
-      setTotalsAutoFilled(false);
+    } catch (error) {
+      console.error("Failed to load totals:", error);
     }
   };
 
   const loadAll = async () => {
     setTotalsAutoFilled(false);
-    setTotalsLoaded(false); // Reset totals loaded flag when form loads
+    setTotalsLoaded(false);
 
     reset(
       invoice && mode !== "create"
@@ -305,135 +295,94 @@ export function InvoiceForm({
             currency: invoice.currency || "INR",
             billable_item_type: invoice.billable_item_type || "",
             billable_item_id: invoice.billable_item_id || "",
-            totals: invoice.totals || { sub: 0, tax: 0, grand: 0 },
+            totals: invoice.totals || { sub: 0, tax: 5, grand: 0 },
             payments: [],
           }
         : emptyFormData,
     );
 
-    // Preload building and space lookups for existing invoice (edit/view mode)
-    if (invoice && mode !== "create" && invoice.site_id) {
-      await loadBuildingLookup(invoice.site_id);
-      const buildingId = (invoice as any).building_id;
+    if (invoice && mode !== "create") {
       if (invoice.site_id) {
-        await loadSpaceLookup(invoice.site_id, buildingId);
+        await loadBuildingLookup();
+      }
+      if ((invoice as any).building_id && invoice.site_id) {
+        await loadSpaceLookup();
+      }
+      if (invoice.billable_item_type) {
+        await loadBillableItemLookup();
+      }
+      if (invoice.billable_item_id && invoice.billable_item_type) {
+        setTotalsLoaded(true);
+        if (invoice.totals) {
+          setTotalsAutoFilled(true);
+        }
       }
     }
 
-    // Preload billable item lookup for existing invoice (edit/view mode)
-    if (
-      invoice &&
-      mode !== "create" &&
-      invoice.site_id &&
-      invoice.billable_item_type
-    ) {
-      const spaceId = (invoice as any).space_id;
-      await loadBillableItemLookup(
-        invoice.billable_item_type,
-        invoice.site_id,
-        spaceId,
-      );
-    }
-  };
-
-  const normalizeBillableTypeForSubmit = (typeId?: string) => {
-    if (!typeId) return "";
-
-    const invoiceType = invoiceTypeList.find((item) => item.id === typeId);
-    if (!invoiceType) return typeId;
-
-    const typeName = invoiceType.name.toLowerCase();
-    if (typeName.includes("lease") || typeName.includes("lease charge")) {
-      return "lease charge";
-    } else if (
-      typeName.includes("owner maintenance") ||
-      typeName.includes("owner_maintenance")
-    ) {
-      return "owner maintenance";
-    } else if (
-      typeName.includes("work order") ||
-      typeName.includes("work_order")
-    ) {
-      return "work order";
-    }
-
-    return typeName.replace(/_/g, " ");
-  };
-
-  const onSubmitForm = async (data: InvoiceFormValues) => {
-    setIsSubmitting(true);
-    const payload: Partial<Invoice> = {
-      ...invoice,
-      ...data,
-      id: invoice?.id,
-      invoice_no: invoice?.invoice_no,
-      billable_item_type: normalizeBillableTypeForSubmit(
-        data.billable_item_type,
-      ),
-      billable_item_id: data.billable_item_id,
-      totals: {
-        sub: data.totals?.sub ?? 0,
-        tax: data.totals?.tax ?? 0,
-        grand: data.totals?.grand ?? 0,
-      },
-      payments: invoice?.payments || [], // Preserve existing payments, don't modify from form
-      updated_at: new Date().toISOString(),
-    };
-    const response = await onSave(payload);
-    setIsSubmitting(false);
-    if (response?.success) {
-      handleClose();
-    }
-  };
-
-  const handleClose = () => {
-    reset(emptyFormData);
-    setBuildingList([]);
-    setSpaceList([]);
-    setBillableItemList([]);
-    onClose();
+    setFormLoading(false);
   };
 
   const isReadOnly = mode === "view";
+  const billable_items = billableItemList;
+
+  const onSubmitForm = async (data: InvoiceFormValues) => {
+    setIsSubmitting(true);
+    try {
+      const invoiceData: Partial<Invoice> = {
+        site_id: data.site_id,
+        building_id: data.building_id,
+        space_id: data.space_id,
+        date: data.date,
+        due_date: data.due_date,
+        status: data.status || "draft",
+        currency: data.currency || "INR",
+        billable_item_type: data.billable_item_type,
+        billable_item_id: data.billable_item_id,
+        totals: {
+          sub: data.totals?.sub ?? 0,
+          tax: data.totals?.tax ?? 5,
+          grand: data.totals?.grand ?? 0,
+        },
+        payments:
+          data.payments
+            ?.filter((p) => p.paid_at) // Only include payments with paid_at
+            .map(
+              (p): PaymentInput => ({
+                method: p.method,
+                ref_no: p.ref_no,
+                amount: p.amount || 0,
+                paid_at: p.paid_at!,
+              }),
+            ) || [],
+      };
+      await onSave(invoiceData);
+      onClose();
+      reset(emptyFormData);
+    } catch (error) {
+      console.error("Error saving invoice:", error);
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
 
   const isFieldDisabled = (fieldName: string) => {
-    if (mode === "view") return true;
-    if (mode === "edit") {
-      return fieldName !== "due_date" && fieldName !== "status";
-    }
-
-    if (mode === "create" && totalsAutoFilled) {
-      if (
-        fieldName === "totals.sub" ||
-        fieldName === "totals.tax" ||
-        fieldName === "totals.grand"
-      ) {
-        return true;
-      }
-    }
+    if (isReadOnly) return true;
     return false;
   };
 
-  const fallBillableItems = invoice?.billable_item_id
-    ? {
-        id: invoice.billable_item_id,
-        name: invoice.billable_item_name,
-      }
-    : null;
-
-  const billable_items = withFallback(billableItemList, fallBillableItems);
-
   return (
-    <Dialog open={isOpen} onOpenChange={(open) => !open && handleClose()}>
-      <DialogContent className="max-w-[900px] max-h-[90vh] flex flex-col">
+    <Dialog open={isOpen} onOpenChange={onClose}>
+      <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
         <DialogHeader>
           <DialogTitle>
-            {mode === "create" && "Create New Invoice"}
-            {mode === "edit" && "Edit Invoice"}
-            {mode === "view" && "Invoice Details"}
+            {mode === "create"
+              ? "Create Invoice"
+              : mode === "edit"
+                ? "Edit Invoice"
+                : "View Invoice"}
           </DialogTitle>
         </DialogHeader>
-        <div className="overflow-y-auto flex-1 pr-2 -mr-2">
+        <div className="space-y-4">
           {formLoading ? (
             <p className="text-center">Loading...</p>
           ) : (
@@ -442,6 +391,61 @@ export function InvoiceForm({
               className="space-y-4"
               id="invoice-form"
             >
+              {/* Invoice Type Selection - At the top */}
+              <div className="space-y-3 pb-3 border-b">
+                <Label className="text-base font-semibold">
+                  Invoice Type *
+                </Label>
+                <Controller
+                  name="billable_item_type"
+                  control={control}
+                  render={({ field }) => {
+                    const hasSelection = !!field.value;
+
+                    return (
+                      <div className="flex flex-wrap gap-3">
+                        {invoiceTypeList.map((item) => {
+                          const isSelected = field.value === item.id;
+
+                          return (
+                            <Button
+                              key={item.id}
+                              type="button"
+                              variant={isSelected ? "default" : "outline"}
+                              className={
+                                isSelected
+                                  ? "bg-primary text-primary-foreground shadow-md"
+                                  : hasSelection
+                                    ? "hidden"
+                                    : "hover:bg-muted hover:border-primary/50"
+                              }
+                              style={isSelected ? { width: "100%" } : {}}
+                              onClick={() => {
+                                if (isSelected) {
+                                  field.onChange("");
+                                  setValue("billable_item_id", "");
+                                } else {
+                                  field.onChange(item.id);
+                                  setValue("billable_item_id", "");
+                                }
+                              }}
+                              disabled={isReadOnly}
+                            >
+                              {item.name}
+                            </Button>
+                          );
+                        })}
+                      </div>
+                    );
+                  }}
+                />
+                {errors.billable_item_type && (
+                  <p className="text-sm text-red-500">
+                    {errors.billable_item_type.message}
+                  </p>
+                )}
+              </div>
+
               <div className="space-y-4">
                 {/* Row 1: Site, Building, Space */}
                 <div className="grid grid-cols-3 gap-4">
@@ -516,7 +520,7 @@ export function InvoiceForm({
                     />
                   </div>
                   <div className="space-y-2">
-                    <Label htmlFor="space_id">Space</Label>
+                    <Label htmlFor="space_id">Space *</Label>
                     <Controller
                       name="space_id"
                       control={control}
@@ -526,7 +530,9 @@ export function InvoiceForm({
                           onValueChange={field.onChange}
                           disabled={isReadOnly || !watchedSiteId}
                         >
-                          <SelectTrigger>
+                          <SelectTrigger
+                            className={errors.space_id ? "border-red-500" : ""}
+                          >
                             <SelectValue
                               placeholder={
                                 !watchedSiteId
@@ -548,45 +554,8 @@ export function InvoiceForm({
                   </div>
                 </div>
 
-                {/* Row 2: Invoice Type, Billable Item */}
-                <div className="grid grid-cols-2 gap-4">
-                  <div className="space-y-2">
-                    <Label htmlFor="billable_item_type">Invoice Type *</Label>
-                    <Controller
-                      name="billable_item_type"
-                      control={control}
-                      render={({ field }) => (
-                        <Select
-                          value={field.value || ""}
-                          onValueChange={(value) => {
-                            field.onChange(value);
-                            setValue("billable_item_id", "");
-                          }}
-                          disabled={isReadOnly}
-                        >
-                          <SelectTrigger
-                            className={
-                              errors.billable_item_type ? "border-red-500" : ""
-                            }
-                          >
-                            <SelectValue placeholder="Select type" />
-                          </SelectTrigger>
-                          <SelectContent>
-                            {invoiceTypeList.map((item) => (
-                              <SelectItem key={item.id} value={item.id}>
-                                {item.name}
-                              </SelectItem>
-                            ))}
-                          </SelectContent>
-                        </Select>
-                      )}
-                    />
-                    {errors.billable_item_type && (
-                      <p className="text-sm text-red-500">
-                        {errors.billable_item_type.message}
-                      </p>
-                    )}
-                  </div>
+                {/* Row 2: Billable Item */}
+                <div className="grid grid-cols-1 gap-4">
                   <div className="space-y-2">
                     <Label htmlFor="billable_item_id">
                       {(() => {
@@ -605,7 +574,7 @@ export function InvoiceForm({
                         <Select
                           value={field.value || ""}
                           onValueChange={field.onChange}
-                          disabled={isReadOnly}
+                          disabled={isReadOnly || !watchedBillableType}
                         >
                           <SelectTrigger
                             className={
@@ -685,16 +654,19 @@ export function InvoiceForm({
                       {...register("totals.sub", {
                         setValueAs: (v) => (v === "" ? 0 : Number(v)),
                       })}
+                      disabled={isFieldDisabled("totals.sub")}
                     />
                   </div>
                   <div className="space-y-2">
-                    <Label htmlFor="tax">Tax</Label>
+                    <Label htmlFor="tax">Tax (%)</Label>
                     <Input
                       id="tax"
                       type="number"
                       {...register("totals.tax", {
-                        setValueAs: (v) => (v === "" ? 0 : Number(v)),
+                        setValueAs: (v) => (v === "" ? 5 : Number(v)),
                       })}
+                      disabled={isFieldDisabled("totals.tax")}
+                      defaultValue={5}
                     />
                   </div>
                   <div className="space-y-2">
@@ -707,6 +679,9 @@ export function InvoiceForm({
                       {...register("totals.grand", {
                         setValueAs: (v) => (v === "" ? 0 : Number(v)),
                       })}
+                      disabled={true}
+                      readOnly
+                      className="bg-muted cursor-not-allowed"
                     />
                   </div>
                 </div>
@@ -718,18 +693,20 @@ export function InvoiceForm({
           <Button
             type="button"
             variant="outline"
-            onClick={handleClose}
-            disabled={isSubmitting || formIsSubmitting}
+            onClick={() => {
+              onClose();
+              reset(emptyFormData);
+            }}
           >
             Cancel
           </Button>
-          {mode !== "view" && (
+          {!isReadOnly && (
             <Button
               type="submit"
               form="invoice-form"
               disabled={isSubmitting || formIsSubmitting}
             >
-              {isSubmitting || formIsSubmitting ? "Saving..." : "Save Invoice"}
+              {isSubmitting || formIsSubmitting ? "Saving..." : "Save"}
             </Button>
           )}
         </DialogFooter>

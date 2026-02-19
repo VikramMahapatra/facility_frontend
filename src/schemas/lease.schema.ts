@@ -64,14 +64,83 @@ export const leaseSchema = z
       });
     }
 
-    // Validate payment_terms: if method is cheque, ref_no must be present
+    // Calculate lease end date
+    let leaseEndDate: Date | null = null;
+    if (val.start_date && val.lease_term_duration && val.lease_frequency) {
+      const startDate = new Date(val.start_date);
+      const termDuration = Number(val.lease_term_duration);
+      
+      if (val.lease_frequency === "annually") {
+        // If lease frequency is annually, term is in years
+        leaseEndDate = new Date(startDate);
+        leaseEndDate.setFullYear(leaseEndDate.getFullYear() + termDuration);
+      } else {
+        // If lease frequency is monthly, term is in months
+        leaseEndDate = new Date(startDate);
+        leaseEndDate.setMonth(leaseEndDate.getMonth() + termDuration);
+      }
+    }
+
+    // Validate payment_terms
     val.payment_terms?.forEach((term, index) => {
+      // Validate cheque payment requires reference number
       if (term.payment_method === "cheque" && (!term.reference_no || term.reference_no.trim() === "")) {
         ctx.addIssue({
           code: z.ZodIssueCode.custom,
-          path: ["payment_terms", index, "ref_no"],
+          path: ["payment_terms", index, "reference_no"],
           message: "Reference No is required for cheque payments",
         });
+      }
+
+      // Validate payment date is between start_date and end_date
+      if (term.due_date && val.start_date && leaseEndDate) {
+        const dueDate = new Date(term.due_date);
+        const startDate = new Date(val.start_date);
+        
+        if (dueDate < startDate) {
+          ctx.addIssue({
+            code: z.ZodIssueCode.custom,
+            path: ["payment_terms", index, "due_date"],
+            message: "Payment date must be on or after lease start date",
+          });
+        }
+        
+        if (dueDate > leaseEndDate) {
+          ctx.addIssue({
+            code: z.ZodIssueCode.custom,
+            path: ["payment_terms", index, "due_date"],
+            message: "Payment date must be on or before lease end date",
+          });
+        }
+      }
+
+      // Validate sequential dates (each date should be >= previous and <= next)
+      if (term.due_date && val.payment_terms && val.payment_terms.length > 1) {
+        const currentDate = new Date(term.due_date);
+        
+        // Check against previous payment term
+        if (index > 0 && val.payment_terms[index - 1]?.due_date) {
+          const prevDate = new Date(val.payment_terms[index - 1].due_date);
+          if (currentDate < prevDate) {
+            ctx.addIssue({
+              code: z.ZodIssueCode.custom,
+              path: ["payment_terms", index, "due_date"],
+              message: "Payment date must be on or after the previous payment date",
+            });
+          }
+        }
+        
+        // Check against next payment term
+        if (index < val.payment_terms.length - 1 && val.payment_terms[index + 1]?.due_date) {
+          const nextDate = new Date(val.payment_terms[index + 1].due_date);
+          if (currentDate > nextDate) {
+            ctx.addIssue({
+              code: z.ZodIssueCode.custom,
+              path: ["payment_terms", index, "due_date"],
+              message: "Payment date must be on or before the next payment date",
+            });
+          }
+        }
       }
     });
   });

@@ -5,6 +5,14 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from "@/components/ui/table";
+import {
   Building2,
   History,
   ArrowLeft,
@@ -21,6 +29,9 @@ import {
   Plus,
   CalendarClock,
   Pencil,
+  CreditCard,
+  Wallet,
+  Smartphone,
 } from "lucide-react";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { Lease } from "@/interfaces/leasing_tenants_interface";
@@ -175,6 +186,24 @@ export default function LeaseDetailPage() {
   const formatDate = (date?: string) => {
     if (!date) return "-";
     return new Date(date).toLocaleDateString();
+  };
+
+  const getPaymentMethodIcon = (method?: string) => {
+    switch (method?.toLowerCase()) {
+      case "cash":
+        return <Wallet className="h-4 w-4" />;
+      case "card":
+        return <CreditCard className="h-4 w-4" />;
+      case "bank":
+      case "bank_transfer":
+        return <Building2 className="h-4 w-4" />;
+      case "cheque":
+        return <FileText className="h-4 w-4" />;
+      case "upi":
+        return <Smartphone className="h-4 w-4" />;
+      default:
+        return null;
+    }
   };
 
   const normalizeChargeCode = (code?: string) =>
@@ -493,7 +522,6 @@ export default function LeaseDetailPage() {
             </TabsContent>
 
             {/* PAYMENT TERMS */}
-            {/* PAYMENT TERMS */}
             <TabsContent value="terms" className="space-y-6">
               <Card>
                 <CardContent className="p-6">
@@ -526,126 +554,115 @@ export default function LeaseDetailPage() {
                       </p>
                     </div>
                   ) : (
-                    <div className="space-y-4">
-                      {paymentTerms
-                        .slice(
-                          (termPage - 1) * termPageSize,
-                          termPage * termPageSize,
-                        )
-                        .map((term, index) => (
-                          <Card
-                            key={term.id || index}
-                            className="hover:shadow-md transition-shadow"
-                          >
-                            <CardContent className="p-5">
-                              {/* Header */}
-                              <div className="flex items-start justify-between mb-4">
-                                <div className="flex items-center gap-3">
-                                  <Badge className="text-base font-semibold px-3 py-1">
+                    <div className="border rounded-lg overflow-hidden shadow-sm">
+                      <Table>
+                        <TableHeader>
+                          <TableRow className="bg-muted/50">
+                            <TableHead className="w-20 font-semibold">
+                              Term
+                            </TableHead>
+                            <TableHead className="w-32 font-semibold">
+                              Payment Method
+                            </TableHead>
+                            <TableHead className="w-32 font-semibold">
+                              Reference No
+                            </TableHead>
+                            {paymentTerms.some((t) => t.paid_at) && (
+                              <TableHead className="w-28 font-semibold">
+                                Paid On
+                              </TableHead>
+                            )}
+                            <TableHead className="w-28 font-semibold">
+                              Due Date
+                            </TableHead>
+                            <TableHead className="text-right w-28 font-semibold">
+                              Amount
+                            </TableHead>
+                            <TableHead className="w-24 font-semibold">
+                              Status
+                            </TableHead>
+                          </TableRow>
+                        </TableHeader>
+                        <TableBody>
+                          {paymentTerms
+                            .slice(
+                              (termPage - 1) * termPageSize,
+                              termPage * termPageSize,
+                            )
+                            .map((term, index) => (
+                              <TableRow
+                                key={term.id || index}
+                                className="hover:bg-muted/30 transition-colors border-b"
+                              >
+                                <TableCell className="py-2.5">
+                                  <Badge
+                                    variant="outline"
+                                    className="font-semibold text-xs px-2 py-0.5"
+                                  >
                                     {term.description || `Term #${index + 1}`}
                                   </Badge>
-
+                                </TableCell>
+                                <TableCell className="py-2.5">
+                                  <div className="flex items-center gap-1.5">
+                                    {getPaymentMethodIcon(term.payment_method)}
+                                    <span className="text-sm capitalize">
+                                      {term.payment_method || (
+                                        <span className="text-muted-foreground">
+                                          -
+                                        </span>
+                                      )}
+                                    </span>
+                                  </div>
+                                </TableCell>
+                                <TableCell className="py-2.5">
+                                  <span className="text-sm font-mono">
+                                    {term.reference_no || (
+                                      <span className="text-muted-foreground">
+                                        -
+                                      </span>
+                                    )}
+                                  </span>
+                                </TableCell>
+                                {paymentTerms.some((t) => t.paid_at) && (
+                                  <TableCell className="py-2.5">
+                                    <span className="text-sm">
+                                      {term.paid_at ? (
+                                        formatDate(term.paid_at)
+                                      ) : (
+                                        <span className="text-muted-foreground">
+                                          -
+                                        </span>
+                                      )}
+                                    </span>
+                                  </TableCell>
+                                )}
+                                <TableCell className="py-2.5">
+                                  <span className="text-sm">
+                                    {formatDate(term.due_date)}
+                                  </span>
+                                </TableCell>
+                                <TableCell className="text-right font-semibold py-2.5">
+                                  <span className="text-sm">
+                                    {formatCurrency(Number(term.amount))}
+                                  </span>
+                                </TableCell>
+                                <TableCell className="py-2.5">
                                   <Badge
                                     className={
                                       term.status === "paid"
-                                        ? "bg-green-100 text-green-700"
+                                        ? "bg-green-100 text-green-700 hover:bg-green-200"
                                         : term.status === "overdue"
-                                          ? "bg-red-100 text-red-700"
-                                          : "bg-yellow-100 text-yellow-700"
+                                          ? "bg-red-100 text-red-700 hover:bg-red-200"
+                                          : "bg-yellow-100 text-yellow-700 hover:bg-yellow-200"
                                     }
                                   >
                                     {term.status}
                                   </Badge>
-                                </div>
-
-                                <div className="flex items-center gap-3">
-                                  {/* Amount */}
-                                  <div className="text-right">
-                                    <p className="text-xs text-muted-foreground mb-1">
-                                      Amount
-                                    </p>
-                                    <p className="text-xl font-bold">
-                                      {formatCurrency(Number(term.amount))}
-                                    </p>
-                                  </div>
-
-                                  {/* ✏️ Edit button */}
-                                  {lease?.status === "active" &&
-                                    term.status !== "paid" && (
-                                      <Button
-                                        size="icon"
-                                        variant="ghost"
-                                        onClick={() => {
-                                          setSelectedTerm(term);
-                                          setTermFormMode("edit");
-                                          setIsPaymentTermsFormOpen(true);
-                                        }}
-                                        title="Edit payment term"
-                                      >
-                                        <Pencil className="h-4 w-4" />
-                                      </Button>
-                                    )}
-                                </div>
-                              </div>
-
-                              {/* Details */}
-                              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-                                <div>
-                                  <span className="text-xs text-muted-foreground block mb-1">
-                                    Due Date
-                                  </span>
-                                  <p className="font-medium text-sm">
-                                    {formatDate(term.due_date)}
-                                  </p>
-                                </div>
-
-                                {term.payment_method && (
-                                  <div>
-                                    <span className="text-xs text-muted-foreground block mb-1">
-                                      Payment Method
-                                    </span>
-                                    <p className="font-medium text-sm capitalize">
-                                      {term.payment_method}
-                                    </p>
-                                  </div>
-                                )}
-
-                                {term.reference_no && (
-                                  <div>
-                                    <span className="text-xs text-muted-foreground block mb-1">
-                                      Reference No
-                                    </span>
-                                    <p className="font-medium text-sm">
-                                      {term.reference_no}
-                                    </p>
-                                  </div>
-                                )}
-
-                                {term.paid_at && (
-                                  <div>
-                                    <span className="text-xs text-muted-foreground block mb-1">
-                                      Paid On
-                                    </span>
-                                    <p className="font-medium text-sm">
-                                      {formatDate(term.paid_at)}
-                                    </p>
-                                  </div>
-                                )}
-
-                                {term.created_at && (
-                                  <div>
-                                    <span className="text-xs text-muted-foreground block mb-1">
-                                      Created Date
-                                    </span>
-                                    <p className="font-medium text-sm">
-                                      {formatDate(term.created_at)}
-                                    </p>
-                                  </div>
-                                )}
-                              </div>
-                            </CardContent>
-                          </Card>
-                        ))}
+                                </TableCell>
+                              </TableRow>
+                            ))}
+                        </TableBody>
+                      </Table>
                     </div>
                   )}
 
@@ -666,22 +683,7 @@ export default function LeaseDetailPage() {
           </Tabs>
         </div>
       )}
-      {/* Payment Terms Form */}
-      {id && (
-        <PaymentTermsForm
-          term={selectedTerm}
-          mode={termFormMode}
-          leaseId={id}
-          isOpen={isPaymentTermsFormOpen}
-          onClose={() => {
-            setIsPaymentTermsFormOpen(false);
-          }}
-          onSave={() => {
-            // Refresh data if needed
-            loadLeasePaymentTerms();
-          }}
-        />
-      )}
+
       <LeaseChargeForm
         charge={
           chargeFormMode === "create" && id && lease
