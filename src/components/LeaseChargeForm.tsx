@@ -29,23 +29,9 @@ import { siteApiService } from "@/services/spaces_sites/sitesapi";
 import { buildingApiService } from "@/services/spaces_sites/buildingsapi";
 import { spacesApiService } from "@/services/spaces_sites/spacesapi";
 import { withFallback } from "@/helpers/commonHelper";
+import { LeaseCharge } from "@/interfaces/leasing_tenants_interface";
 
-export interface LeaseCharge {
-  id: string;
-  site_id: "",
-  building_block_id: "",
-  space_id: "",
-  lease_id: string;
-  charge_code_id: string;
-  period_start: string; // yyyy-mm-dd
-  period_end: string; // yyyy-mm-dd
-  amount: number;
-  tax_pct?: number;
-  tax_code_id?: string; // ✅ Add this
-  payer_type?: string; // ✅ Add this
-  created_at?: string;
-  updated_at?: string;
-}
+
 
 interface LeaseChargeFormProps {
   charge?: Partial<LeaseCharge>;
@@ -202,6 +188,7 @@ export function LeaseChargeForm({
     setFormLoading(true);
 
     if (charge && mode !== "create") {
+      console.log("edit mode charge data", charge);
       reset({
         site_id: charge?.site_id || "",
         building_block_id: charge?.building_block_id || "",
@@ -313,7 +300,7 @@ export function LeaseChargeForm({
   const fallbackLease = charge?.lease_id
     ? {
       id: charge.lease_id,
-      name: (charge as any).lease_name || charge.lease_id || "Selected Lease",
+      name: (charge as any).lease_name || charge.lease_id || "Selected Space With Lease",
     }
     : null;
 
@@ -357,7 +344,7 @@ export function LeaseChargeForm({
           >
             {/* Lease */}
             <div className="space-y-4">
-              <div className="grid grid-cols-3 gap-4">
+              <div className="grid grid-cols-2 gap-4">
                 <Controller
                   name="site_id"
                   control={control}
@@ -420,43 +407,45 @@ export function LeaseChargeForm({
                     )}
                   />
                 </div>
-                <div>
-                  <Label htmlFor="lease">Lease *</Label>
-                  <Controller
-                    name="lease_id"
-                    control={control}
-                    render={({ field }) => (
-                      <Select
-                        value={field.value}
-                        onValueChange={field.onChange}
-                        disabled={isLeaseLocked}
-                      >
-                        <SelectTrigger
-                          disabled={isLeaseLocked}
-                          className={errors.lease_id ? "border-red-500" : ""}
-                        >
-                          <SelectValue placeholder="Select lease" />
-                        </SelectTrigger>
-                        <SelectContent>
-                          {leases.map((lease: any) => (
-                            <SelectItem key={lease.id} value={lease.id}>
-                              {lease.name}
-                            </SelectItem>
-                          ))}
-                        </SelectContent>
-                      </Select>
-                    )}
-                  />
-                  {errors.lease_id && (
-                    <p className="text-sm text-red-500">
-                      {errors.lease_id.message as any}
-                    </p>
-                  )}
-                </div>
+
 
               </div>
             </div>
-
+            <div className="grid gri-cols-1">
+              <div>
+                <Label htmlFor="lease">Space *</Label>
+                <Controller
+                  name="lease_id"
+                  control={control}
+                  render={({ field }) => (
+                    <Select
+                      value={field.value}
+                      onValueChange={field.onChange}
+                      disabled={isLeaseLocked}
+                    >
+                      <SelectTrigger
+                        disabled={isLeaseLocked}
+                        className={errors.lease_id ? "border-red-500" : ""}
+                      >
+                        <SelectValue placeholder="Select lease" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {leases.map((lease: any) => (
+                          <SelectItem key={lease.id} value={lease.id}>
+                            {lease.name}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  )}
+                />
+                {errors.lease_id && (
+                  <p className="text-sm text-red-500">
+                    {errors.lease_id.message as any}
+                  </p>
+                )}
+              </div>
+            </div>
             {/* Charge Code */}
             {/* <div>
               <Label htmlFor="charge_code_id">Charge Code *</Label>
@@ -493,7 +482,7 @@ export function LeaseChargeForm({
             </div> */}
             {/* Payer Type - NEW FIELD */}
             {/* Dates */}
-            <div className="grid grid-cols-3 gap-4">
+            <div className="grid grid-cols-2 gap-4">
               <div>
                 <Label>Period Start *</Label>
                 <Input
@@ -530,82 +519,45 @@ export function LeaseChargeForm({
                   </p>
                 )}
               </div>
-              <div>
-                <Label htmlFor="tax_code">Tax Code</Label>
-                <Controller
-                  name="tax_code_id"
-                  control={control}
-                  render={({ field }) => (
-                    <Select
-                      value={field.value || ""}
-                      onValueChange={field.onChange}
-                      disabled={isReadOnly}
-                    >
-                      <SelectTrigger className={errors.tax_code_id ? "border-red-500" : ""}>
-                        <SelectValue placeholder="Select tax code" />
-                      </SelectTrigger>
-                      <SelectContent>
-                        {/* If you need a "No Tax" option, use a special value like "no-tax" */}
-                        <SelectItem value="no-tax">No Tax</SelectItem>
-                        {taxCodeList.map((tax: any) => (
-                          <SelectItem key={tax.id} value={tax.id}>
-                            {tax.name}
-                          </SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
-                  )}
-                />
-                {errors.tax_code_id && (
-                  <p className="text-sm text-red-500">{errors.tax_code_id.message as any}</p>
-                )}
-              </div>
             </div>
             {/* Amounts */}
-            <div className="grid grid-cols-2 gap-4">
-              <div className="rounded-md border p-3 text-sm bg-muted space-y-1">
+            <div className="grid grid-cols-2 gap-6 items-center mt-4">
+              <div className="rounded-lg border bg-muted/40 p-4">
+
                 {isLoading ? (
-                  <span className="text-muted-foreground">
+                  <span className="text-sm text-muted-foreground">
                     Calculating...
                   </span>
                 ) : (
-                  <>
-                    <div className="flex justify-between">
-                      <span>Base Amount</span>
-                      <span className="font-medium">
-                        ₹ {calculatedAmount?.base_amount ?? "0.00"}
-                      </span>
+                  <div className="flex items-center justify-between">
+
+                    <div className="space-y-1">
+                      <p className="text-sm font-medium">
+                        Rent Amount
+                      </p>
+                      <p className="text-xs text-muted-foreground">
+                        Auto calculated
+                      </p>
                     </div>
 
-                    <div className="flex justify-between text-muted-foreground">
-                      <span>Tax</span>
-                      <span>
-                        ₹ {calculatedAmount?.tax_amount ?? "0.00"}
-                      </span>
-                    </div>
+                    <p className="text-xl font-semibold tabular-nums">
+                      ₹ {calculatedAmount?.base_amount ?? "0.00"}
+                    </p>
 
-                    <div className="border-t pt-1 flex justify-between font-semibold">
-                      <span>Total</span>
-                      <span>
-                        ₹ {calculatedAmount?.total_amount ?? "0.00"}
-                      </span>
-                    </div>
-
-                    <div className="text-xs text-muted-foreground">
-                      Auto calculated
-                    </div>
-                  </>
+                  </div>
                 )}
 
               </div>
-              {/* Helper text like error message */}
-              <div className="space-y-4">
-                <label>&nbsp;</label>
-                <p className="text-xs text-muted-foreground">
-                  Amount will be calculated after selecting space and dates
-                </p>
+
+              {/* Info Section */}
+              <div className="text-sm text-muted-foreground leading-relaxed">
+                Amount will be calculated automatically after selecting
+                space and dates.
               </div>
+
             </div>
+
+
 
             <DialogFooter>
               <Button

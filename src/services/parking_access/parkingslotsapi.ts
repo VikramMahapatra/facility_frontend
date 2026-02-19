@@ -39,6 +39,17 @@ class ParkingSlotApiService {
     );
   }
 
+  async getAvailableSlotLookup(params?: URLSearchParams) {
+    let url = "/parking-slots/available-slot-lookup";
+    if (params && params.toString()) {
+      url += `?${params.toString()}`;
+    }
+    return await apiService.request(url, {
+      method: "GET",
+    });
+  }
+
+
   async getAllSlotLookup(params?: URLSearchParams) {
     let url = "/parking-slots/all-slot-lookup";
     if (params && params.toString()) {

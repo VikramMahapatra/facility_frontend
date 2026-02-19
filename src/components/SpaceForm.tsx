@@ -25,7 +25,7 @@ import { siteApiService } from "@/services/spaces_sites/sitesapi";
 import { buildingApiService } from "@/services/spaces_sites/buildingsapi";
 import { spacesApiService } from "@/services/spaces_sites/spacesapi";
 import { maintenanceTemplateApiService } from "@/services/spaces_sites/maintenanceTemplateApi";
-import { getKindsByCategory, kindToCategory, Space, SpaceKind, spaceKinds } from "@/interfaces/spaces_interfaces";
+import { getKindsByCategory, kindToCategory, Space, SpaceKind, spaceKinds, SpaceSubKind, spaceSubKinds, SUB_KIND_TO_BEDS } from "@/interfaces/spaces_interfaces";
 import {
   Popover,
   PopoverContent,
@@ -35,6 +35,7 @@ import { Checkbox } from "@/components/ui/checkbox";
 import { Badge } from "@/components/ui/badge";
 import { ChevronsUpDown, X, Plus } from "lucide-react";
 import { withFallback } from "@/helpers/commonHelper";
+import { parkingSlotApiService } from "@/services/parking_access/parkingslotsapi";
 
 interface SpaceFormProps {
   space?: Space;
@@ -49,14 +50,16 @@ interface SpaceFormProps {
 
 const emptyFormData: SpaceFormValues = {
   name: "",
-  kind: "room",
+  kind: "apartment" as SpaceKind,
+  sub_kind: "studio" as SpaceSubKind,
   category: "residential",
   site_id: "",
   floor: undefined,
   building_block_id: "",
   area_sqft: undefined,
-  beds: undefined,
+  beds: 0,
   baths: undefined,
+  balconies: undefined,
   status: "available",
   attributes: {
     view: "",
@@ -64,7 +67,8 @@ const emptyFormData: SpaceFormValues = {
     star_rating: "",
   },
   accessories: [],
-  maintenance_template_id: undefined,
+  parking_slot_ids: [],
+  maintenance_template_id: "",
 };
 
 export function SpaceForm({
@@ -81,6 +85,7 @@ export function SpaceForm({
     reset,
     watch,
     setValue,
+    getValues,
     formState: { errors, isSubmitting, isValid },
   } = useForm<SpaceFormValues>({
     resolver: zodResolver(spaceSchema),
@@ -93,11 +98,16 @@ export function SpaceForm({
   const [buildingList, setBuildingList] = useState<any[]>([]);
   const [accessoriesList, setAccessoriesList] = useState<any[]>([]);
   const [maintenanceTemplateList, setMaintenanceTemplateList] = useState<any[]>([]);
+  const [parkingSlotList, setParkingSlotList] = useState<any[]>([]);
+
   const [accessoriesPopoverOpen, setAccessoriesPopoverOpen] = useState(false);
+  const [slotPopoverOpen, setSlotPopoverOpen] = useState(false);
   const selectedSiteId = watch("site_id");
   const selectedCategory = watch("category");
   const selectedKind = watch("kind");
+  const selectedSubKind = watch("sub_kind");
   const selectedAccessories = watch("accessories") || [];
+  const selectedParkingSlots = watch("parking_slot_ids") || [];
 
   const loadAll = async () => {
     setFormLoading(true);
@@ -105,7 +115,8 @@ export function SpaceForm({
       space && mode !== "create"
         ? {
           name: space.name || "",
-          kind: space.kind || "room",
+          kind: space.kind as any || "apartment",
+          sub_kind: space.sub_kind as any || "studio",
           category: space.category || "residential",
           site_id: space.site_id || "",
           floor:
@@ -116,6 +127,7 @@ export function SpaceForm({
           area_sqft: space.area_sqft,
           beds: space.beds,
           baths: space.baths,
+          balconies: space.balconies,
           status: space.status || "available",
           attributes: {
             view: space.attributes?.view || "",
@@ -128,18 +140,19 @@ export function SpaceForm({
             star_rating: space.attributes?.star_rating || "",
           },
           accessories: space.accessories || [],
-          maintenance_template_id: space.maintenance_template_id,
+          parking_slot_ids: space.parking_slot_ids || [],
+          maintenance_template_id: space.maintenance_template_id || "",
         }
         : emptyFormData,
     );
-
-    setFormLoading(false);
 
     Promise.all([loadSiteLookup(), loadAccessoriesLookup(), loadMaintenanceTemplateLookup()]);
 
     if (space?.site_id) {
       loadBuildingLookup(space.site_id);
     }
+
+    setFormLoading(false);
   };
 
   useEffect(() => {
@@ -157,10 +170,27 @@ export function SpaceForm({
   useEffect(() => {
     if (selectedSiteId) {
       loadBuildingLookup();
+      loadParkingSlotLookup();
     } else {
       setBuildingList([]);
     }
   }, [selectedSiteId]);
+
+  useEffect(() => {
+
+    if (!selectedSubKind) return;
+
+    const beds = SUB_KIND_TO_BEDS[selectedSubKind];
+
+    if (beds !== undefined) {
+      setValue("beds", beds, {
+        shouldValidate: true,
+        shouldDirty: true,
+      });
+    }
+
+  }, [selectedSubKind]);
+
 
   const loadBuildingLookup = async (siteId?: string) => {
     const id = siteId || selectedSiteId;
@@ -181,8 +211,28 @@ export function SpaceForm({
   };
 
   const loadMaintenanceTemplateLookup = async () => {
-    const response = await maintenanceTemplateApiService.getMaintenanceTemplateLookup();
+    const id = selectedSiteId;
+    if (!id) return;
+
+    const params = new URLSearchParams();
+    params.append("site_id", selectedSiteId);
+    if (selectedKind) params.append("kind", selectedKind);
+    if (selectedCategory) params.append("category", selectedCategory);
+    if (selectedSubKind) params.append("sub_kind", selectedSubKind);
+
+    const response = await maintenanceTemplateApiService.getMaintenanceTemplateLookup(params);
     if (response.success) setMaintenanceTemplateList(response.data || []);
+  };
+
+  const loadParkingSlotLookup = async () => {
+    const id = selectedSiteId;
+    if (!id) return;
+
+    const params = new URLSearchParams();
+    params.append("site_id", selectedSiteId);
+    if (space) params.append("space_id", space.id);
+    const response = await parkingSlotApiService.getAvailableSlotLookup(params);
+    if (response.success) setParkingSlotList(response.data || []);
   };
 
   const handleAccessoryToggle = (accessoryId: string) => {
@@ -266,11 +316,52 @@ export function SpaceForm({
     }
   }, [selectedCategory, selectedKind, filteredKinds, setValue]);
 
+  useEffect(() => {
+    loadMaintenanceTemplateLookup();
+  }, [selectedCategory, selectedKind, selectedSubKind]);
+
+  useEffect(() => {
+    if (
+      maintenanceTemplateList.length > 0 &&
+      !watch("maintenance_template_id")
+    ) {
+      const onlyTemplate = maintenanceTemplateList[0];
+
+      setValue(
+        "maintenance_template_id",
+        onlyTemplate.id || onlyTemplate.value,
+        { shouldValidate: true }
+      );
+    }
+  }, [maintenanceTemplateList]);
+
   const handleClose = () => {
     reset(emptyFormData);
     setBuildingList([]);
     onClose();
   };
+
+  const handleParkingSlotToggle = (parkingSlotId: string) => {
+    const currentSlots = getValues("parking_slot_ids") || [];
+    const isSelected = currentSlots.includes(parkingSlotId);
+
+    if (isSelected) {
+      setValue("parking_slot_ids", currentSlots.filter((id: string) => id !== parkingSlotId));
+    } else {
+      setValue("parking_slot_ids", [...currentSlots, parkingSlotId]);
+    }
+  };
+
+  const handleParkingSlotRemove = (parkingSlotId: string) => {
+    const currentCategories = getValues("parking_slot_ids") || [];
+    setValue("parking_slot_ids", currentCategories.filter((id: string) => id !== parkingSlotId));
+  };
+
+  const getParkingSlotName = (parkingSlotId: string) => {
+    const slot = parkingSlotList.find(c => (c.id ?? c.value ?? c).toString() === parkingSlotId);
+    return slot?.name ?? slot?.label ?? slot ?? parkingSlotId;
+  };
+
 
   const fallbackBuilding = space?.building_block_id
     ? {
@@ -285,7 +376,7 @@ export function SpaceForm({
 
   return (
     <Dialog open={isOpen} onOpenChange={handleClose}>
-      <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
+      <DialogContent className="max-w-6xl max-h-[90vh] overflow-y-auto">
         <DialogHeader>
           <DialogTitle>
             {mode === "create" && "Create New Space"}
@@ -403,7 +494,12 @@ export function SpaceForm({
               </div>
 
               {/* Row 2: Category, Type, Status */}
-              <div className="grid grid-cols-3 gap-4">
+              <div
+                className={`grid ${selectedKind === "apartment"
+                  ? "grid-cols-4 gap-4"
+                  : "grid-cols-3 gap-4"
+                  }`}
+              >
                 <Controller
                   name="category"
                   control={control}
@@ -485,6 +581,37 @@ export function SpaceForm({
                     </div>
                   )}
                 />
+                {selectedKind === "apartment" && (
+                  <Controller
+                    name="sub_kind"
+                    control={control}
+                    render={({ field }) => (
+                      <div className="space-y-2">
+                        <Label htmlFor="sub_kind">Sub Type</Label>
+
+                        <Select
+                          value={field.value || ""}
+                          onValueChange={field.onChange}
+                          disabled={isReadOnly}
+                        >
+                          <SelectTrigger>
+                            <SelectValue placeholder="Select sub type" />
+                          </SelectTrigger>
+
+                          <SelectContent>
+                            {spaceSubKinds.map((sub) => (
+                              <SelectItem key={sub} value={sub}>
+                                {sub.toUpperCase()}
+                              </SelectItem>
+                            ))}
+                          </SelectContent>
+                        </Select>
+
+                      </div>
+                    )}
+                  />
+                )}
+
                 <Controller
                   name="status"
                   control={control}
@@ -597,7 +724,25 @@ export function SpaceForm({
               </div>
 
               {/* Row 4: View, Furnished, Star Rating */}
-              <div className="grid grid-cols-3 gap-4">
+              <div className="grid grid-cols-4 gap-4">
+                <div className="space-y-2">
+                  <Label htmlFor="balconies">Balconies</Label>
+                  <Input
+                    id="balconies"
+                    type="number"
+                    {...register("balconies", {
+                      setValueAs: (v) => (v === "" ? undefined : Number(v)),
+                    })}
+                    disabled={isReadOnly}
+                    className={errors.balconies ? "border-red-500" : ""}
+                    min="0"
+                  />
+                  {errors.balconies && (
+                    <p className="text-sm text-red-500">
+                      {errors.balconies.message}
+                    </p>
+                  )}
+                </div>
                 <div className="space-y-2">
                   <Label htmlFor="view">View</Label>
                   <Input
@@ -662,7 +807,7 @@ export function SpaceForm({
               </div>
 
               {/* Accessories and Maintenance Template Section */}
-              <div className="grid grid-cols-2 gap-4">
+              <div className="grid grid-cols-3 gap-4">
                 {/* Accessories Section */}
                 <div className="space-y-2">
                   <Label>Accessories</Label>
@@ -807,7 +952,89 @@ export function SpaceForm({
                     )}
                   />
                 </div>
+                <Controller
+                  name="parking_slot_ids"
+                  control={control}
+                  render={({ field }) => (
+                    <div className="space-y-2">
+                      <Label>Parking Slots</Label>
+                      <Popover open={slotPopoverOpen} onOpenChange={setSlotPopoverOpen}>
+                        <PopoverTrigger asChild>
+                          <Button
+                            variant="outline"
+                            role="combobox"
+                            aria-expanded={slotPopoverOpen}
+                            className="w-full justify-between"
+                            disabled={isReadOnly}
+                          >
+                            {selectedParkingSlots.length > 0 ? (
+                              <div className="flex flex-wrap gap-1">
+                                {selectedParkingSlots.slice(0, 2).map((parkingSlotId: string) => (
+                                  <Badge key={parkingSlotId} variant="secondary" className="text-xs">
+                                    {getParkingSlotName(parkingSlotId)}
+                                  </Badge>
+                                ))}
+                                {selectedParkingSlots.length > 2 && (
+                                  <Badge variant="secondary" className="text-xs">
+                                    +{selectedParkingSlots.length - 2} more
+                                  </Badge>
+                                )}
+                              </div>
+                            ) : (
+                              "Select slots..."
+                            )}
+                            <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
+                          </Button>
+                        </PopoverTrigger>
+                        <PopoverContent className="w-full p-0" align="start">
+                          <div className="max-h-96 overflow-y-auto">
+                            <div className="p-1">
+                              {parkingSlotList.map((c: any) => {
+                                const slotId = (c.id ?? c.value ?? c).toString();
+                                const slotNo = c.name ?? c.label ?? c;
+                                const isSelected = selectedParkingSlots.includes(slotId);
 
+                                return (
+                                  <div
+                                    key={slotId}
+                                    className="flex items-center space-x-2 px-2 py-1.5 hover:bg-accent hover:text-accent-foreground rounded-sm cursor-pointer"
+                                    onClick={() => handleParkingSlotToggle(slotId)}
+                                  >
+                                    <Checkbox
+                                      checked={isSelected}
+                                      onChange={() => handleParkingSlotToggle(slotId)}
+                                    />
+                                    <span className="text-sm">{slotNo}</span>
+                                  </div>
+                                );
+                              })}
+                            </div>
+                          </div>
+                        </PopoverContent>
+                      </Popover>
+
+                      {/* Selected Categories Display */}
+                      {selectedParkingSlots.length > 0 && (
+                        <div className="mt-2 flex flex-wrap gap-1">
+                          {selectedParkingSlots.map((slotId: string) => (
+                            <Badge key={slotId} variant="secondary" className="text-xs">
+                              {getParkingSlotName(slotId)}
+                              {!isReadOnly && (
+                                <button
+                                  type="button"
+                                  onClick={() => handleParkingSlotRemove(slotId)}
+                                  className="ml-1 hover:bg-destructive hover:text-destructive-foreground rounded-full p-0.5"
+                                >
+                                  <X className="h-3 w-3" />
+                                </button>
+                              )}
+                            </Badge>
+                          ))}
+                        </div>
+                      )}
+                    </div>
+                  )}
+                />
                 {/* Maintenance Template */}
                 <div className="space-y-2">
                   <Controller
@@ -819,7 +1046,7 @@ export function SpaceForm({
                           Maintenance Template
                         </Label>
                         <Select
-                          value={field.value || "none"}
+                          value={field.value || ""}
                           onValueChange={(value) =>
                             field.onChange(value === "none" ? undefined : value)
                           }
@@ -835,15 +1062,17 @@ export function SpaceForm({
                             <SelectValue placeholder="Select maintenance template" />
                           </SelectTrigger>
                           <SelectContent>
-                            <SelectItem value="none">No Template</SelectItem>
-                            {maintenanceTemplateList.map((template: any) => (
-                              <SelectItem
-                                key={template.id || template.value}
-                                value={template.id || template.value}
-                              >
-                                {template.name || template.label}
+                            {maintenanceTemplateList.length === 0 ? (
+                              <SelectItem value="none" disabled>
+                                No templates available
                               </SelectItem>
-                            ))}
+                            ) : (
+                              maintenanceTemplateList.map((template) => (
+                                <SelectItem key={template.id} value={template.id}>
+                                  {template.name}
+                                </SelectItem>
+                              ))
+                            )}
                           </SelectContent>
                         </Select>
                         {errors.maintenance_template_id && (

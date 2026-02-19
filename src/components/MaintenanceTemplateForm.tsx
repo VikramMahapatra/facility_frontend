@@ -24,10 +24,19 @@ import {
 } from "@/schemas/maintenanceTemplate.schema";
 import { toast } from "@/components/ui/app-toast";
 import { siteApiService } from "@/services/spaces_sites/sitesapi";
-import { CALCULATION_TYPE_LABELS, getKindsByCategory, kindToCategory, MaintenanceTemplate, spaceCategories, SpaceKind, spaceKinds } from "@/interfaces/spaces_interfaces";
+import { CALCULATION_TYPE_LABELS, getKindsByCategory, kindToCategory, MaintenanceTemplate, spaceCategories, SpaceKind, spaceKinds, spaceSubKinds } from "@/interfaces/spaces_interfaces";
 import { leaseChargeApiService } from "@/services/leasing_tenants/leasechargeapi";
-import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogTitle } from "@radix-ui/react-alert-dialog";
-import { AlertDialogFooter, AlertDialogHeader } from "./ui/alert-dialog";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+  AlertDialogPortal,
+} from "@/components/ui/alert-dialog";
 
 
 
@@ -50,6 +59,7 @@ const emptyFormData: MaintenanceTemplateFormValues = {
   amount: 0,
   category: undefined,
   kind: undefined,
+  sub_kind: undefined,
   site_id: undefined,
   is_active: true,
 };
@@ -128,6 +138,7 @@ export function MaintenanceTemplateForm({
   };
 
   const onSubmitForm = async (data: MaintenanceTemplateFormValues) => {
+    console.log("SUBMIT FIRED", data);
     // Save data temporarily
     if (mode === "create") {
       setPendingSubmitData(data);
@@ -194,7 +205,7 @@ export function MaintenanceTemplateForm({
   return (
     <>
       <Dialog open={isOpen} onOpenChange={onClose}>
-        <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
+        <DialogContent className="max-w-3xl max-h-[90vh] overflow-y-auto">
           <DialogHeader>
             <DialogTitle>
               {mode === "create" && "Create Maintenance Template"}
@@ -257,7 +268,7 @@ export function MaintenanceTemplateForm({
                 )}
               />
             </div>
-            <div className="grid grid-cols-2 gap-4">
+            <div className={`grid ${selectedKind == "apartment" ? "grid-cols-3" : "grid-cols-2"} gap-4`}>
               <div className="space-y-2">
                 <Controller
                   name="category"
@@ -348,8 +359,37 @@ export function MaintenanceTemplateForm({
                   </div>
                 )}
               />
+              {selectedKind === "apartment" && (
+                <Controller
+                  name="sub_kind"
+                  control={control}
+                  render={({ field }) => (
+                    <div className="space-y-2">
+                      <Label htmlFor="sub_kind">Sub Type</Label>
 
+                      <Select
+                        value={field.value || ""}
+                        onValueChange={field.onChange}
+                        disabled={isReadOnly}
+                      >
+                        <SelectTrigger>
+                          <SelectValue placeholder="Select sub type" />
+                        </SelectTrigger>
 
+                        <SelectContent>
+                          <SelectItem value="none">All sub types</SelectItem>
+                          {spaceSubKinds.map((sub) => (
+                            <SelectItem key={sub} value={sub}>
+                              {sub.toUpperCase()}
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+
+                    </div>
+                  )}
+                />
+              )}
 
             </div>
             <div className="grid grid-cols-2 gap-4">
@@ -435,39 +475,41 @@ export function MaintenanceTemplateForm({
         open={showOverrideConfirm}
         onOpenChange={setShowOverrideConfirm}
       >
-        <AlertDialogContent>
-          <AlertDialogHeader>
-            <AlertDialogTitle>
-              Override Existing Template Assignments?
-            </AlertDialogTitle>
-            <AlertDialogDescription>
-              Do you want to override existing template assignments for matching
-              spaces?
-            </AlertDialogDescription>
-          </AlertDialogHeader>
+        <AlertDialogPortal>
+          <AlertDialogContent className="z-[1000]">
+            <AlertDialogHeader>
+              <AlertDialogTitle>
+                Override Existing Template Assignments?
+              </AlertDialogTitle>
+              <AlertDialogDescription>
+                Do you want to override existing template assignments for matching
+                spaces?
+              </AlertDialogDescription>
+            </AlertDialogHeader>
 
-          <AlertDialogFooter>
-            <AlertDialogCancel
-              onClick={() => setShowOverrideConfirm(false)}
-            >
-              Cancel
-            </AlertDialogCancel>
+            <AlertDialogFooter>
+              <AlertDialogCancel
+                onClick={() => setShowOverrideConfirm(false)}
+              >
+                Cancel
+              </AlertDialogCancel>
 
-            <AlertDialogAction
-              onClick={() => proceedSave(false)}
-            >
-              Save Without Override
-            </AlertDialogAction>
+              <AlertDialogAction
+                onClick={() => proceedSave(false)}
+              >
+                Save Without Override
+              </AlertDialogAction>
 
-            <AlertDialogAction
-              onClick={() => proceedSave(true)}
-              className="bg-red-600 hover:bg-red-700"
-            >
-              Override Existing
-            </AlertDialogAction>
+              <AlertDialogAction
+                onClick={() => proceedSave(true)}
+                className="bg-red-600 hover:bg-red-700"
+              >
+                Override Existing
+              </AlertDialogAction>
 
-          </AlertDialogFooter>
-        </AlertDialogContent>
+            </AlertDialogFooter>
+          </AlertDialogContent>
+        </AlertDialogPortal>
       </AlertDialog>
     </>
   );

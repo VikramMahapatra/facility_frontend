@@ -1,3 +1,4 @@
+import { ParkingSlot } from "./parking_access_interface";
 
 export interface Space {
     id: string;
@@ -6,6 +7,7 @@ export interface Space {
     site_name?: string;
     name?: string;
     kind: SpaceKind;
+    sub_kind?: SpaceSubKind;
     category?: "residential" | "commercial";
     floor?: string;
     building_block_id?: string;
@@ -13,11 +15,14 @@ export interface Space {
     area_sqft?: number;
     beds?: number;
     baths?: number;
+    balconies?: number;
     attributes: Record<string, any>;
     accessories?: Array<{
         accessory_id: string;
         quantity: number;
     }>;
+    parking_slots?: ParkingSlot[];
+    parking_slot_ids?: string[];
     status: "available" | "occupied" | "out_of_service";
     created_at: string;
     updated_at: string;
@@ -126,8 +131,7 @@ export const spaceCategories = [
 
 
 export const CALCULATION_TYPE_LABELS: Record<string, string> = {
-    flat: "Flat Amount",
-    percentage: "Percentage",
+    flat: "Flat",
     per_sqft: "Per Sqft",
 };
 
@@ -150,6 +154,26 @@ export const spaceKinds = [
 ] as const;
 
 export type SpaceKind = typeof spaceKinds[number];
+
+export const spaceSubKinds = [
+    "studio",
+    "1bhk",
+    "2bhk",
+    "3bhk",
+    "4bhk",
+    "5bhk",
+] as const;
+
+export type SpaceSubKind = typeof spaceSubKinds[number];
+
+export const SUB_KIND_TO_BEDS: Record<SpaceSubKind, number> = {
+    studio: 0,   // or 1 depending your logic
+    "1bhk": 1,
+    "2bhk": 2,
+    "3bhk": 3,
+    "4bhk": 4,
+    "5bhk": 5,
+};
 
 export const kindToCategory: Record<SpaceKind, "residential" | "commercial"> = {
     apartment: "residential",
