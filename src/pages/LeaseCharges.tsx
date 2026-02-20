@@ -8,7 +8,7 @@ import {
   CardHeader,
   CardTitle,
 } from "@/components/ui/card";
-import { LogOut, Sparkles } from "lucide-react";
+import { Clock, LogOut, Sparkles } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import {
   Select,
@@ -104,7 +104,6 @@ const monthsShort = [
 
 interface LeaseChargeOverview {
   total_charges: number;
-  tax_amount: number;
   this_month: number;
   avg_charge: number;
 }
@@ -129,7 +128,6 @@ export default function LeaseCharges() {
   const [leaseChargeOverview, setLeaseChargeOverview] =
     useState<LeaseChargeOverview>({
       total_charges: 0,
-      tax_amount: 0,
       this_month: 0,
       avg_charge: 0,
     });
@@ -312,8 +310,7 @@ export default function LeaseCharges() {
     if (response.success) {
       setIsFormOpen(false);
       toast.success(
-        `Lease Charge has been ${
-          formMode === "create" ? "created" : "updated"
+        `Lease Charge has been ${formMode === "create" ? "created" : "updated"
         } successfully.`,
       );
     }
@@ -339,7 +336,7 @@ export default function LeaseCharges() {
   return (
     <div className="flex-1 space-y-6">
       {/* Dashboard cards (org-wide from backend) */}
-      <div className="grid gap-4 md:grid-cols-4">
+      <div className="grid gap-4 md:grid-cols-3">
         <Card>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
             <CardTitle className="text-sm font-medium">
@@ -354,20 +351,6 @@ export default function LeaseCharges() {
             <p className="text-xs text-muted-foreground">Across entire org</p>
           </CardContent>
         </Card>
-
-        <Card>
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Tax Amount</CardTitle>
-            <TrendingUp className="h-4 w-4 text-muted-foreground" />
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold">
-              {formatCurrency(leaseChargeOverview.tax_amount)}
-            </div>
-            <p className="text-xs text-muted-foreground">Total tax collected</p>
-          </CardContent>
-        </Card>
-
         <Card>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
             <CardTitle className="text-sm font-medium">This Month</CardTitle>
@@ -539,9 +522,7 @@ export default function LeaseCharges() {
           ) : (
             leaseCharges.map((charge) => {
               const amount = Number(charge.amount) || 0;
-              const taxPct = Number(charge.tax_pct) || 0;
-              const taxAmount = (amount * taxPct) / 100;
-              const totalAmount = Number(charge.total_amount) || 0;
+
 
               return (
                 <Card
@@ -552,66 +533,67 @@ export default function LeaseCharges() {
                     <div className="flex items-start justify-between gap-2">
                       <div>
                         <CardTitle className="text-lg flex items-center gap-2 mb-1">
-                          <Badge
-                            className={getChargeCodeColor(charge.charge_code)}
-                          >
+                          <Badge className={getChargeCodeColor(charge.charge_code)}>
                             {normalizeChargeCode(charge.charge_code)}
                           </Badge>
                           {charge.tenant_name}
                         </CardTitle>
-                        <CardDescription className="space-y-1">
-                          <div>
-                            Period -{" "}
-                            {new Date(charge.period_start).toLocaleDateString()}{" "}
-                            - {new Date(charge.period_end).toLocaleDateString()}
+
+                        {/* Single row for period, space/site, generated on */}
+                        <CardDescription className="flex flex-wrap items-center gap-4 text-sm text-muted-foreground">
+                          {/* Space/Site */}
+                          <div className="flex items-center gap-1 bg-gray-100 px-2 py-1 rounded-md">
+                            <MapPin className="h-4 w-4 text-gray-500" />
+                            <span className="font-medium mr-1">Space:</span>
+                            <span>
+                              {charge.space_name}
+                              {charge.building_block ? ` • ${charge.building_block} • ` : " • "}
+                              {charge.site_name}
+                            </span>
                           </div>
-                          <div className="flex items-center gap-1">
-                            <MapPin className="h-4 w-4 text-muted-foreground" />
-                            {charge.space_name} • {charge.site_name}
+                          {/* Period */}
+                          <div className="flex items-center gap-1 bg-gray-100 px-2 py-1 rounded-md">
+                            <Calendar className="h-4 w-4 text-gray-500" />
+                            <span className="font-medium mr-1">Period:</span>
+                            <span>
+                              {new Date(charge.period_start).toLocaleDateString()} -{" "}
+                              {new Date(charge.period_end).toLocaleDateString()}
+                            </span>
                           </div>
-                        </CardDescription>
-                      </div>
-                      <div className="flex items-center gap-2">
-                        {charge.invoice_status?.toLowerCase() === "paid" && (
-                          <Badge className="bg-green-100 text-green-700">
-                            Paid
-                          </Badge>
-                        )}
-                        <div className="text-right">
-                          <div className="text-lg font-bold">
-                            {formatCurrency(totalAmount)}
-                          </div>
-                          {charge.tax_pct > 0 && (
-                            <div className="text-xs text-muted-foreground">
-                              +{charge.tax_pct}% tax
+
+
+
+                          {/* Generated on */}
+                          {charge.created_at && (
+                            <div className="flex items-center gap-1 bg-gray-100 px-2 py-1 rounded-md">
+                              <Clock className="h-4 w-4 text-gray-500" />
+                              <span className="font-medium mr-1">Generated on:</span>
+                              <span>{new Date(charge.created_at).toLocaleDateString()}</span>
                             </div>
                           )}
+                        </CardDescription>
+
+                      </div>
+
+                      {/* Right actions & amount */}
+                      <div className="flex items-center gap-2">
+                        {charge.invoice_status?.toLowerCase() === "paid" && (
+                          <Badge className="bg-green-100 text-green-700">Paid</Badge>
+                        )}
+                        <div className="text-right">
+                          <div className="text-lg font-bold">{formatCurrency(amount)}</div>
                         </div>
                         <div className="flex gap-1">
-                          <Button
-                            variant="ghost"
-                            size="sm"
-                            onClick={() => {
-                              handleView(charge);
-                            }}
-                          >
+                          <Button variant="ghost" size="sm" onClick={() => handleView(charge)}>
                             <Eye className="h-4 w-4" />
                           </Button>
                           {canWrite(resource) && (
-                            <Button
-                              variant="ghost"
-                              size="sm"
-                              onClick={() => handleEdit(charge)}
-                            >
+                            <Button variant="ghost" size="sm" onClick={() => handleEdit(charge)}>
                               <Edit className="h-4 w-4" />
                             </Button>
                           )}
                           {canDelete(resource) && (
-                            <Button
-                              variant="ghost"
-                              size="sm"
-                              onClick={() => setDeleteId(charge.id)}
-                            >
+                            <Button variant="ghost" size="sm" onClick={() => setDeleteId(charge.id)}>
                               <Trash2 className="h-4 w-4" />
                             </Button>
                           )}
@@ -619,67 +601,6 @@ export default function LeaseCharges() {
                       </div>
                     </div>
                   </CardHeader>
-                  <CardContent>
-                    <div className="grid gap-4 md:grid-cols-3">
-                      <div>
-                        <div className="text-sm font-medium text-muted-foreground">
-                          Base Amount
-                        </div>
-                        <div className="text-lg font-semibold">
-                          {formatCurrency(charge.amount)}
-                        </div>
-                      </div>
-
-                      {charge.tax_pct > 0 && (
-                        <div>
-                          <div className="text-sm font-medium text-muted-foreground">
-                            Tax ({charge.tax_pct}%)
-                          </div>
-                          <div className="text-lg font-semibold">
-                            {formatCurrency(taxAmount)}
-                          </div>
-                        </div>
-                      )}
-
-                      <div>
-                        <div className="text-sm font-medium text-muted-foreground">
-                          Period
-                        </div>
-                        <div className="text-sm">
-                          {Math.ceil(
-                            (new Date(charge.period_end).getTime() -
-                              new Date(charge.period_start).getTime()) /
-                              (1000 * 60 * 60 * 24),
-                          )}{" "}
-                          days
-                        </div>
-                      </div>
-                    </div>
-
-                    {charge.metadata && (
-                      <div className="mt-4 p-3 bg-muted rounded-lg">
-                        <div className="text-sm font-medium mb-2">Details</div>
-                        {charge.metadata?.description && (
-                          <div className="text-sm text-muted-foreground mb-1">
-                            {charge.metadata.description}
-                          </div>
-                        )}
-                        {charge.metadata?.units && charge.metadata?.rate && (
-                          <div className="text-sm text-muted-foreground">
-                            {charge.metadata.units} units × ₹
-                            {charge.metadata.rate} per unit
-                          </div>
-                        )}
-                      </div>
-                    )}
-
-                    {charge.created_at && (
-                      <div className="mt-4 text-xs text-muted-foreground">
-                        Generated on{" "}
-                        {new Date(charge.created_at).toLocaleDateString()}
-                      </div>
-                    )}
-                  </CardContent>
                 </Card>
               );
             })

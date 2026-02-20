@@ -200,7 +200,7 @@ export function LeaseChargeForm({
       reset({
         site_id: "",
         building_block_id: "",
-        lease_id: (charge?.lease_id as any) || "",
+        lease_id: "",
         charge_code_id: "",
         period_start: startDate,
         period_end: endDate,
@@ -294,23 +294,23 @@ export function LeaseChargeForm({
 
   const fallbackLease = charge?.lease_id
     ? {
-        id: charge.lease_id,
-        name:
-          (charge as any).lease_name ||
-          charge.lease_id ||
-          "Selected Space With Lease",
-      }
+      id: charge.lease_id,
+      name:
+        (charge as any).lease_name ||
+        charge.lease_id ||
+        "Selected Space With Lease",
+    }
     : null;
 
   const leases = withFallback(leaseList, fallbackLease);
 
   const fallbackBuilding = charge?.building_block_id
     ? {
-        id: charge.building_block_id,
-        name:
-          (charge as any).building_block ||
-          `Building (${charge.building_block_id})`,
-      }
+      id: charge.building_block_id,
+      name:
+        (charge as any).building_block ||
+        `Building (${charge.building_block_id})`,
+    }
     : null;
 
   const buildings = withFallback(buildingList, fallbackBuilding);
@@ -326,6 +326,8 @@ export function LeaseChargeForm({
     if (val == null) return "-";
     return `${systemCurrency.format(val)}`;
   };
+
+  const selectedLease = leases.find(lease => lease.id === selectedLeaseId);
 
   return (
     <Dialog open={isOpen} onOpenChange={handleClose}>
@@ -347,7 +349,7 @@ export function LeaseChargeForm({
           >
             {/* Lease */}
             <div className="space-y-4">
-              <div className="grid grid-cols-2 gap-4">
+              <div className="grid grid-cols-3 gap-4">
                 <Controller
                   name="site_id"
                   control={control}
@@ -410,43 +412,62 @@ export function LeaseChargeForm({
                     )}
                   />
                 </div>
-              </div>
-            </div>
-            <div className="grid gri-cols-1">
-              <div>
-                <Label htmlFor="lease">Space *</Label>
-                <Controller
-                  name="lease_id"
-                  control={control}
-                  render={({ field }) => (
-                    <Select
-                      value={field.value}
-                      onValueChange={field.onChange}
-                      disabled={isLeaseLocked}
-                    >
-                      <SelectTrigger
+                <div className="space-y-2">
+                  <Label htmlFor="lease">Space *</Label>
+                  <Controller
+                    name="lease_id"
+                    control={control}
+                    render={({ field }) => (
+                      <Select
+                        value={field.value}
+                        onValueChange={field.onChange}
                         disabled={isLeaseLocked}
-                        className={errors.lease_id ? "border-red-500" : ""}
                       >
-                        <SelectValue placeholder="Select lease" />
-                      </SelectTrigger>
-                      <SelectContent>
-                        {leases.map((lease: any) => (
-                          <SelectItem key={lease.id} value={lease.id}>
-                            {lease.name}
-                          </SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
+                        <SelectTrigger
+                          disabled={isLeaseLocked}
+                          className={errors.lease_id ? "border-red-500" : ""}
+                        >
+                          <SelectValue placeholder="Select space" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          {leases.map((lease: any) => (
+                            <SelectItem key={lease.id} value={lease.id}>
+                              {lease.name}
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                    )}
+                  />
+                  {errors.lease_id && (
+                    <p className="text-sm text-red-500">{errors.lease_id.message as any}</p>
                   )}
-                />
-                {errors.lease_id && (
-                  <p className="text-sm text-red-500">
-                    {errors.lease_id.message as any}
+                </div>
+              </div>
+
+            </div>
+            <div className="grid grid-cols-1 gap-4">
+              {/* Left Column: Space Lookup */}
+              {/* Right Column: Read-only Tenant & Lease No */}
+              <div className="flex gap-4">
+                {/* Tenant Name */}
+                <div className="flex-1">
+                  <Label>Tenant Name</Label>
+                  <p className="w-full rounded-md p-2 bg-gray-100 text-gray-700">
+                    {selectedLease?.tenant_name || "-"}
                   </p>
-                )}
+                </div>
+
+                {/* Lease No */}
+                <div className="flex-1">
+                  <Label>Lease No</Label>
+                  <p className="w-full rounded-md p-2 bg-gray-100 text-gray-700">
+                    {selectedLease?.lease_no || "-"}
+                  </p>
+                </div>
               </div>
             </div>
+
             {/* Charge Code */}
             {/* <div>
               <Label htmlFor="charge_code_id">Charge Code *</Label>
@@ -573,6 +594,6 @@ export function LeaseChargeForm({
           </form>
         )}
       </DialogContent>
-    </Dialog>
+    </Dialog >
   );
 }

@@ -39,14 +39,62 @@ export interface SpaceOverview {
     outOfServices: number;
 }
 
+export interface HandoverInfo {
+    handover_date: string;
+    handover_by: string;
+    handover_to?: string | null;
+    condition_notes?: string | null;
+    keys_returned: boolean;
+    access_cards_returned: boolean;
+    parking_pass_returned: boolean;
+}
+
 export interface OccupancyRecord {
+    // Core status
     status: "vacant" | "occupied";
+
+    // Current occupant details (if occupied)
     occupant_type?: string;
     occupant_name?: string;
     move_in_date?: string;
+    move_out_date?: string;
+    time_slot?: string;
+    heavy_items?: boolean;
+    elevator_required?: boolean;
+    parking_required?: boolean;
     reference_no?: string;
-};
 
+    // Optional handover info
+    handover?: HandoverInfo;
+}
+
+export interface UpcomingMoveIn {
+    occupant_type: string;
+    occupant_name: string;
+    move_in_date: string;
+    move_out_date?: string;
+    time_slot?: string;
+    heavy_items?: boolean;
+    elevator_required?: boolean;
+    parking_required?: boolean;
+    status: string; // "pending" | "active"
+    reference_no?: string;
+}
+
+export interface PendingMoveOut {
+    occupant_type: string;
+    occupant_name: string;
+    move_out_date?: string;
+    status: string; // "pending"
+    reference_no?: string;
+}
+
+export interface OccupancyResponse {
+    current: OccupancyRecord;
+    upcoming: UpcomingMoveIn[];
+    pending_move_outs: PendingMoveOut[];
+    history: any[]; // Keep as any for now, can be typed if you have a timeline interface
+}
 
 export interface HistoryRecord {
     id: string;

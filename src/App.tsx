@@ -79,12 +79,12 @@ import SpaceOwnershipApproval from "./pages/SpaceOwnershipApproval";
 import SpaceMaintenance from "./pages/SpaceMaintenance";
 import MaintenanceTemplates from "./pages/MaintenanceTemplates";
 import TenantApprovalPage from "./pages/TenantApprovals";
-import SpaceMoveOutApprovals from "./pages/SpaceMoveOutApproval";
 import SuperAdminDashboard from "./pages/SuperAdmin/SuperAdminDashboard";
 import OrgApprovalPage from "./pages/SuperAdmin/OrgApprovalPage";
 import SuperAdminLayout from "./layouts/SuperAdminLayout";
 import { ModalProvider } from "./context/ModalContext";
 import ParkingSlots from "./pages/ParkingSlots";
+import SpaceOccupancyApproval from "./pages/SpaceOccupancyApproval";
 import Bills from "./pages/Bills";
 
 const queryClient = new QueryClient();
@@ -268,8 +268,8 @@ const App = () => {
                     element={<TenantApprovalPage />}
                   />
                   <Route
-                    path="/space-move-out-approvals"
-                    element={<SpaceMoveOutApprovals />}
+                    path="/space-occupancy-approvals"
+                    element={<SpaceOccupancyApproval />}
                   />
                   <Route
                     path="/profile"
