@@ -33,6 +33,7 @@ import {
   Move,
   LayoutDashboard,
 } from "lucide-react";
+import { title } from "process";
 
 export const superAdminNavigationItems = [
   {
@@ -55,9 +56,10 @@ export const superAdminNavigationItems = [
         url: "/super-admin/organizations",
         icon: Building2,
         resource: "organizations",
-      }
+      },
     ],
-  }];
+  },
+];
 
 export const navigationItems = [
   {
@@ -325,6 +327,14 @@ export const navigationItems = [
         icon: BarChart3,
         resource: "invoices",
       },
+
+      {
+        title: "Bills & Expenses",
+        url: "/bills",
+        icon: Receipt,
+        resource: "bills",
+      },
+
       {
         title: "Revenue Reports",
         url: "/revenue-reports",
