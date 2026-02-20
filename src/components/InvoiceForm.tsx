@@ -135,7 +135,11 @@ export function InvoiceForm({
 
   // Auto-select first invoice type when types are loaded
   useEffect(() => {
-    if (invoiceTypeList.length > 0 && !watchedBillableType && mode === "create") {
+    if (
+      invoiceTypeList.length > 0 &&
+      !watchedBillableType &&
+      mode === "create"
+    ) {
       setValue("billable_item_type", invoiceTypeList[0].id);
     }
   }, [invoiceTypeList, mode, watchedBillableType, setValue]);
@@ -204,10 +208,10 @@ export function InvoiceForm({
       if (response?.success && response.data) {
         const totals = response.data;
         const subtotal = Number(totals.subtotal || 0);
-        
+
         // Update the item amount
         setValue(`items.${index}.amount`, subtotal, { shouldValidate: false });
-        
+
         // Recalculate totals
         const allItems = getValues("items");
         const newSubtotal = allItems.reduce((sum, item) => {
@@ -220,7 +224,7 @@ export function InvoiceForm({
           return sum + itemTax;
         }, 0);
         const grandTotal = newSubtotal + totalTax;
-        
+
         setValue("totals.sub", newSubtotal, { shouldValidate: false });
         setValue("totals.tax", totalTax, { shouldValidate: false });
         setValue("totals.grand", grandTotal, { shouldValidate: false });
@@ -246,7 +250,6 @@ export function InvoiceForm({
       loadBillableItemTotals();
     }
   }, [watchedBillableItemId, watchedBillableType]);
-
 
   const loadSiteLookup = async () => {
     try {
@@ -771,7 +774,9 @@ export function InvoiceForm({
                         <TableHead>Description</TableHead>
                         <TableHead className="w-24">Tax %</TableHead>
                         <TableHead className="w-32">Amount</TableHead>
-                        {!isReadOnly && <TableHead className="w-16"></TableHead>}
+                        {!isReadOnly && (
+                          <TableHead className="w-16"></TableHead>
+                        )}
                       </TableRow>
                     </TableHeader>
                     <TableBody>
@@ -787,14 +792,24 @@ export function InvoiceForm({
                                   onValueChange={async (value) => {
                                     itemField.onChange(value);
                                     // Find the period ID from the selected value
-                                    const selectedPeriod = billableItemList.find(
-                                      (item) => item.name === value || item.id === value
-                                    );
+                                    const selectedPeriod =
+                                      billableItemList.find(
+                                        (item) =>
+                                          item.name === value ||
+                                          item.id === value,
+                                      );
                                     if (selectedPeriod) {
-                                      await loadPeriodTotals(selectedPeriod.id, index);
+                                      await loadPeriodTotals(
+                                        selectedPeriod.id,
+                                        index,
+                                      );
                                     }
                                   }}
-                                  disabled={isReadOnly || !watchedSiteId || !watchedBillableType}
+                                  disabled={
+                                    isReadOnly ||
+                                    !watchedSiteId ||
+                                    !watchedBillableType
+                                  }
                                 >
                                   <SelectTrigger
                                     className={
@@ -803,7 +818,7 @@ export function InvoiceForm({
                                         : ""
                                     }
                                   >
-                                    <SelectValue 
+                                    <SelectValue
                                       placeholder={
                                         !watchedSiteId
                                           ? "Select site first"
@@ -817,7 +832,10 @@ export function InvoiceForm({
                                   </SelectTrigger>
                                   <SelectContent>
                                     {billableItemList.map((item: any) => (
-                                      <SelectItem key={item.id} value={item.name || item.id}>
+                                      <SelectItem
+                                        key={item.id}
+                                        value={item.name || item.id}
+                                      >
                                         {item.name}
                                       </SelectItem>
                                     ))}
@@ -902,9 +920,7 @@ export function InvoiceForm({
                   </Table>
                 </div>
                 {errors.items && (
-                  <p className="text-sm text-red-500">
-                    {errors.items.message}
-                  </p>
+                  <p className="text-sm text-red-500">{errors.items.message}</p>
                 )}
               </div>
 
