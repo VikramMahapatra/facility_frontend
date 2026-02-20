@@ -11,6 +11,8 @@ import { occupancyApiService } from "@/services/spaces_sites/spaceoccupancyapi";
 import { Textarea } from "../ui/textarea";
 import { useState } from "react";
 import { Checkbox } from "../ui/checkbox";
+import { Label } from "../ui/label";
+import { Input } from "../ui/input";
 
 type Props = {
     open: boolean;
@@ -27,18 +29,13 @@ export default function MoveOutModal({
     onSuccess,
 }: Props) {
 
-    const [form, setForm] = useState({
-        keys_returned: false,
-        accessories_returned: false,
-        damage_checked: false,
-        remarks: ""
-    });
+    const [moveOutAt, setMoveoutAt] = useState<string>("");
 
     const confirmMoveOut = async () => {
 
-        const payload = {
-            space_id: spaceId,
-            ...form
+        const payload: any = {
+            move_out_date: moveOutAt,
+            space_id: spaceId
         };
 
         const res = await occupancyApiService.moveOut(payload);
@@ -67,38 +64,14 @@ export default function MoveOutModal({
 
                 <div className="space-y-3">
 
-                    <label className="flex gap-2">
-                        <input
-                            type="checkbox"
-                            checked={form.keys_returned}
-                            onChange={e => setForm({ ...form, keys_returned: e.target.checked })}
+                    <div>
+                        <Label>Move-out Date</Label>
+                        <Input
+                            type="datetime-local"
+                            value={moveOutAt}
+                            onChange={e => setMoveoutAt(e.target.value)}
                         />
-                        Keys Returned
-                    </label>
-
-                    <label className="flex gap-2">
-                        <input
-                            type="checkbox"
-                            checked={form.accessories_returned}
-                            onChange={e => setForm({ ...form, accessories_returned: e.target.checked })}
-                        />
-                        Accessories Returned
-                    </label>
-
-                    <label className="flex gap-2">
-                        <input
-                            type="checkbox"
-                            checked={form.damage_checked}
-                            onChange={e => setForm({ ...form, damage_checked: e.target.checked })}
-                        />
-                        Damage Checked
-                    </label>
-
-                    <Textarea
-                        placeholder="Remarks"
-                        value={form.remarks}
-                        onChange={e => setForm({ ...form, remarks: e.target.value })}
-                    />
+                    </div>
                 </div>
                 <div className="flex justify-end gap-2 pt-4">
                     <Button variant="outline" onClick={onClose}>Cancel</Button>
