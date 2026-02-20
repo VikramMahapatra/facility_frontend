@@ -22,14 +22,13 @@ import { Button } from "../ui/button";
 import { formatDate } from "@/helpers/dateHelpers";
 import MoveInModal from "./MoveInModal";
 import MoveOutModal from "./MoveOutModal";
-import { TimelineEvent, OccupancyRecord } from "@/interfaces/spaces_interfaces";
+import { OccupancyResponse } from "@/interfaces/spaces_interfaces";
 
 interface Props {
     spaceId: string;
     owners: any[];
     tenants: any[];
-    occupancy: OccupancyRecord;
-    history: TimelineEvent[];
+    occupancy: OccupancyResponse;
     onSucess: () => void;
 }
 
@@ -94,66 +93,162 @@ const EVENT_META: Record<string, any> = {
     }
 };
 
+export default function OccupancyTab({
+    spaceId,
+    owners,
+    tenants,
+    occupancy,
+    onSucess
+}: Props) {
 
-export default function OccupancyTab({ spaceId, owners, tenants, occupancy, history, onSucess }: Props) {
     const [isMoveInOpen, setIsMoveInOpen] = useState(false);
     const [isMoveOutOpen, setIsMoveOutOpen] = useState(false);
+
+    const current = occupancy?.current || { status: "vacant" };
+
     const canViewMoveInButton = owners.length > 0 || tenants.length > 0;
+
+    const isOccupied = current.status === "occupied";
+    const isVacant = current.status === "vacant";
 
     return (
         <div className="space-y-6">
-            {/* Current Occupancy */}
+
+            {/* ========================= */}
+            {/* CURRENT OCCUPANCY */}
+            {/* ========================= */}
+
             <Card>
                 <CardHeader>
                     <CardTitle className="flex items-center gap-2">
                         <Users className="h-5 w-5" /> Current Occupancy
                     </CardTitle>
                 </CardHeader>
+
                 <CardContent className="space-y-4">
+
+                    {/* Status + Actions */}
                     <div className="flex items-center justify-between">
-                        <Badge variant={occupancy.status === "occupied" ? "default" : "secondary"}>
-                            {occupancy.status.toUpperCase()}
+
+                        <Badge variant={isOccupied ? "default" : "secondary"}>
+                            {current.status?.toUpperCase() || "VACANT"}
                         </Badge>
 
                         <div className="flex gap-2">
-                            {occupancy.status === "vacant" && canViewMoveInButton && (
+
+                            {/* MOVE-IN */}
+                            {isVacant && canViewMoveInButton && (
                                 <Button onClick={() => setIsMoveInOpen(true)}>
                                     <LogIn className="h-4 w-4 mr-1" /> Move-In
                                 </Button>
-
                             )}
-                            {occupancy.status === "occupied" && (
-                                <Button variant="destructive" onClick={() => setIsMoveOutOpen(true)}>
+
+                            {/* MOVE-OUT */}
+                            {isOccupied && (
+                                <Button
+                                    variant="destructive"
+                                    onClick={() => setIsMoveOutOpen(true)}
+                                >
                                     <LogOut className="h-4 w-4 mr-1" /> Move-Out
                                 </Button>
                             )}
+
                         </div>
                     </div>
 
-                    {occupancy.status === "occupied" && (
+
+                    {/* OCCUPANT DETAILS */}
+                    {isOccupied && (
                         <div className="grid grid-cols-2 gap-4 text-sm">
+
                             <div>
                                 <p className="text-muted-foreground">Occupant</p>
-                                <p className="font-medium">{occupancy.occupant_name}</p>
+                                <p className="font-medium">{current.occupant_name}</p>
                             </div>
+
                             <div>
                                 <p className="text-muted-foreground">Type</p>
-                                <p className="font-medium">{occupancy.occupant_type}</p>
+                                <p className="font-medium capitalize">{current.occupant_type}</p>
                             </div>
+
                             <div>
                                 <p className="text-muted-foreground">Move-In</p>
-                                <p>{formatDate(occupancy.move_in_date)}</p>
+                                <p>{formatDate(current.move_in_date)}</p>
                             </div>
-                            <div>
-                                <p className="text-muted-foreground">Reference</p>
-                                <p>{occupancy.reference_no}</p>
-                            </div>
+
+                            {current.move_out_date && (
+                                <div>
+                                    <p className="text-muted-foreground">Move-Out</p>
+                                    <p>{formatDate(current.move_out_date)}</p>
+                                </div>
+                            )}
+
+                            {current.time_slot && (
+                                <div>
+                                    <p className="text-muted-foreground">Time Slot</p>
+                                    <p>{current.time_slot}</p>
+                                </div>
+                            )}
+
+                            {current.reference_no && (
+                                <div>
+                                    <p className="text-muted-foreground">Reference</p>
+                                    <p>{current.reference_no}</p>
+                                </div>
+                            )}
+
                         </div>
                     )}
+
+                    {/* HANDOVER DETAILS */}
+                    {current.handover && (
+                        <div className="border-t pt-3 text-sm space-y-1">
+                            <p className="font-semibold">Handover Details</p>
+                            <p>Handover By: {current.handover.handover_by}</p>
+                            <p>Handover To: {current.handover.handover_to || "N/A"}</p>
+                            {current.handover.condition_notes && (
+                                <p>Notes: {current.handover.condition_notes}</p>
+                            )}
+                        </div>
+                    )}
+
                 </CardContent>
             </Card>
 
-            {/* History */}
+            {/* ========================= */}
+            {/* UPCOMING MOVE-INS */}
+            {/* ========================= */}
+
+            {occupancy?.upcoming?.length > 0 && (
+                <Card>
+                    <CardHeader>
+                        <CardTitle>Upcoming Move-Ins</CardTitle>
+                    </CardHeader>
+
+                    <CardContent className="space-y-2">
+
+                        {occupancy.upcoming.map((u, index) => (
+                            <div key={index} className="flex justify-between text-sm">
+
+                                <span>
+                                    {u.occupant_name} ({u.occupant_type})
+                                </span>
+
+                                <span>
+                                    {formatDate(u.move_in_date)}
+                                </span>
+
+                            </div>
+                        ))}
+
+                    </CardContent>
+                </Card>
+            )}
+
+            {/* ========================= */}
+            {/* HISTORY */}
+            {/* ========================= */}
+
             <Card>
                 <CardHeader>
                     <CardTitle className="flex items-center gap-2">
@@ -161,12 +256,12 @@ export default function OccupancyTab({ spaceId, owners, tenants, occupancy, hist
                     </CardTitle>
                 </CardHeader>
                 <CardContent className="space-y-3">
-                    {history.length === 0 ? (
+                    {occupancy?.history.length === 0 ? (
                         <p className="text-sm text-muted-foreground">No history</p>
                     ) : (
                         <div className="relative pl-6">
                             <div className="space-y-6">
-                                {history.map((e, i) => {
+                                {occupancy?.history.map((e, i) => {
                                     const meta = EVENT_META[e.event] || {};
                                     const Icon = meta.icon || Clock;
 
@@ -218,24 +313,29 @@ export default function OccupancyTab({ spaceId, owners, tenants, occupancy, hist
                     )}
                 </CardContent>
             </Card>
+
+            {/* ========================= */}
+            {/* MODALS */}
+            {/* ========================= */}
+
             <MoveInModal
                 open={isMoveInOpen}
                 owners={owners}
                 tenants={tenants}
                 onClose={() => setIsMoveInOpen(false)}
                 spaceId={spaceId}
-                onSuccess={() => {
-                    onSucess();   // refresh current occupancy
-                }}
+                onSuccess={onSucess}
             />
+
             <MoveOutModal
                 open={isMoveOutOpen}
                 onClose={() => setIsMoveOutOpen(false)}
                 spaceId={spaceId}
-                onSuccess={() => {
-                    onSucess();   // refresh current occupancy
-                }}
+                onSuccess={onSucess}
             />
+
         </div>
     );
 }
+
+

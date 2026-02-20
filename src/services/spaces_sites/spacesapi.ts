@@ -142,119 +142,15 @@ class SpacesApiService {
   }
 
   // Mock API methods for space move-out approvals
-  async getMoveOutRequests(params?: URLSearchParams) {
-    // Mock implementation - returns mock data for now
-    return new Promise((resolve) => {
-      setTimeout(() => {
-        const statusParam = params?.get("status") || "pending";
-        const searchParam = params?.get("search") || "";
-        const skip = parseInt(params?.get("skip") || "0");
-        const limit = parseInt(params?.get("limit") || "6");
+  async getOccupancyRequests(params?: URLSearchParams) {
+    const url = params
+      ? `/spaces/occupancy-requests?${params.toString()}`
+      : "/spaces/occupancy-requests";
+    return await apiService.request(url);
 
-        // Mock data
-        const allMockData = [
-          {
-            id: "1",
-            space_id: "space-1",
-            space_name: "Office Suite 101",
-            site_name: "Downtown Plaza",
-            building_name: "Building A",
-            tenant_name: "John Doe",
-            tenant_id: "tenant-1",
-            requested_at: new Date().toISOString(),
-            move_out_date: new Date(
-              Date.now() + 30 * 24 * 60 * 60 * 1000
-            ).toISOString(),
-            reason: "Lease expiration",
-            status: "pending",
-          },
-          {
-            id: "2",
-            space_id: "space-2",
-            space_name: "Conference Room A",
-            site_name: "Business Center",
-            building_name: "Building B",
-            tenant_name: "Jane Smith",
-            tenant_id: "tenant-2",
-            requested_at: new Date(
-              Date.now() - 2 * 24 * 60 * 60 * 1000
-            ).toISOString(),
-            move_out_date: new Date(
-              Date.now() + 15 * 24 * 60 * 60 * 1000
-            ).toISOString(),
-            reason: "Relocating to larger space",
-            status: "pending",
-          },
-          {
-            id: "3",
-            space_id: "space-3",
-            space_name: "Workshop 205",
-            site_name: "Industrial Park",
-            building_name: "Building C",
-            tenant_name: "Bob Johnson",
-            tenant_id: "tenant-3",
-            requested_at: new Date(
-              Date.now() - 5 * 24 * 60 * 60 * 1000
-            ).toISOString(),
-            move_out_date: new Date(
-              Date.now() + 7 * 24 * 60 * 60 * 1000
-            ).toISOString(),
-            reason: "Business closure",
-            status: "approved",
-          },
-          {
-            id: "4",
-            space_id: "space-4",
-            space_name: "Storage Unit 10",
-            site_name: "Warehouse Complex",
-            building_name: "Building D",
-            tenant_name: "Alice Williams",
-            tenant_id: "tenant-4",
-            requested_at: new Date(
-              Date.now() - 10 * 24 * 60 * 60 * 1000
-            ).toISOString(),
-            move_out_date: new Date(
-              Date.now() - 3 * 24 * 60 * 60 * 1000
-            ).toISOString(),
-            reason: "No longer needed",
-            status: "rejected",
-          },
-        ];
-
-        // Filter by status
-        let filtered = allMockData;
-        if (statusParam && statusParam !== "all") {
-          filtered = allMockData.filter((item) => item.status === statusParam);
-        }
-
-        // Filter by search
-        if (searchParam) {
-          const searchLower = searchParam.toLowerCase();
-          filtered = filtered.filter(
-            (item) =>
-              item.space_name.toLowerCase().includes(searchLower) ||
-              item.tenant_name.toLowerCase().includes(searchLower) ||
-              item.site_name.toLowerCase().includes(searchLower)
-          );
-        }
-
-        // Paginate
-        const total = filtered.length;
-        const paginated = filtered.slice(skip, skip + limit);
-
-        const mockData = {
-          success: true,
-          data: {
-            requests: paginated,
-            total: total,
-          },
-        };
-        resolve(mockData);
-      }, 300);
-    });
   }
 
-  async approveMoveOutRequest(requestId: string) {
+  async approveOccupancyRequest(requestId: string) {
     // Mock implementation
     return new Promise((resolve) => {
       setTimeout(() => {
@@ -266,7 +162,7 @@ class SpacesApiService {
     });
   }
 
-  async rejectMoveOutRequest(requestId: string) {
+  async rejectOccupancyRequest(requestId: string) {
     // Mock implementation
     return new Promise((resolve) => {
       setTimeout(() => {

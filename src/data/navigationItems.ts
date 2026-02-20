@@ -372,10 +372,10 @@ export const navigationItems = [
         resource: "tenant_space_approvals",
       },
       {
-        title: "Space Move/Out",
-        url: "/space-move-out-approvals",
+        title: "Space Move In/Out",
+        url: "/space-occupancy-approvals",
         icon: Move,
-        resource: "tenant_space_approvals",
+        resource: "space_occupancy_approvals",
       },
     ],
   },

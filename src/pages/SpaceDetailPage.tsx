@@ -38,8 +38,7 @@ import {
   getKindColor,
   getKindIcon,
   getStatusColor,
-  HistoryRecord,
-  OccupancyRecord,
+  OccupancyResponse,
   Space,
   TimelineEvent,
 } from "@/interfaces/spaces_interfaces";
@@ -99,10 +98,7 @@ export default function SpaceDetailPage() {
     pending: [],
     active: [],
   });
-  const [occupancy, setOccupancy] = useState<OccupancyRecord>({
-    status: "vacant",
-  });
-  const [occupancyHistory, setOccupancyHistory] = useState<TimelineEvent[]>([]);
+  const [occupancy, setOccupancy] = useState<OccupancyResponse>(null);
   const [isSpaceFormOpen, setIsSpaceFormOpen] = useState(false);
   const [accessoriesList, setAccessoriesList] = useState<any[]>([]);
   const [isParkingSlotFormOpen, setIsParkingSlotFormOpen] = useState(false);
@@ -154,8 +150,7 @@ export default function SpaceDetailPage() {
   const fetchOccupancy = async () => {
     const res = await occupancyApiService.getSpaceOccupancy(id);
     if (res?.success) {
-      setOccupancy(res.data.current || { status: "vacant" });
-      setOccupancyHistory(res.data.history || []);
+      setOccupancy(res.data);
     }
   };
 
@@ -494,9 +489,9 @@ export default function SpaceDetailPage() {
                       spaceId={id!}
                       owners={owners}
                       onRefresh={loadOwners}
-                      // actionSlot={
+                    // actionSlot={
 
-                      // }
+                    // }
                     />
                   </CardContent>
                 </Card>
@@ -707,7 +702,6 @@ export default function SpaceDetailPage() {
                 owners={owners}
                 tenants={tenants.active}
                 occupancy={occupancy}
-                history={occupancyHistory}
                 onSucess={onMoveInOutSuccess}
               />
             </TabsContent>
