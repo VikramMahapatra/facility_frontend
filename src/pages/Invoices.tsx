@@ -370,8 +370,9 @@ export default function Invoices() {
                     <TableHeader>
                       <TableRow>
                         <TableHead>Invoice No.</TableHead>
-                        <TableHead>Billable Type</TableHead>
-                        <TableHead>Site Name</TableHead>
+                        <TableHead>Type</TableHead>
+                        <TableHead>Location</TableHead>
+                        <TableHead>Customer Name</TableHead>
                         <TableHead>Date</TableHead>
                         <TableHead>Due Date</TableHead>
                         <TableHead>Amount</TableHead>
@@ -395,8 +396,9 @@ export default function Invoices() {
                             <TableCell className="font-medium">
                               {invoice.invoice_no}
                             </TableCell>
-                            <TableCell>{invoice.billable_item_name}</TableCell>
-                            <TableCell>{invoice.site_name || "-"}</TableCell>
+                            <TableCell>{invoice.code}</TableCell>
+                            <TableCell>{invoice.user_name}</TableCell>
+                            <TableCell>{invoice.space_name + "," + invoice.site_name || "-"}</TableCell>
                             <TableCell>
                               {new Date(invoice.date).toLocaleDateString()}
                             </TableCell>

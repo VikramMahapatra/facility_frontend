@@ -8,11 +8,10 @@ export interface Invoice {
   space_id?: string;
   space_name?: string;
   customer_kind: "resident" | "merchant" | "guest" | "staff" | "other"; // ✅ Match service request types
-  customer_id?: string;
-  customer_name?: string;
-  billable_item_name?: string;
-  billable_item_type?: string;
-  billable_item_id?: string;
+  user_id?: string;
+  user_name?: string;
+  code?: string;
+  item_no?: string;
   invoice_no: string;
   date: string;
   due_date: string;
