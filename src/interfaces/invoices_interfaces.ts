@@ -78,3 +78,42 @@ export interface InvoiceOverview {
   paidAmount: number;
   outstandingAmount: number;
 }
+
+export interface Bill {
+  id?: string;
+  org_id?: string;
+  site_id: string;
+  site_name?: string;
+  building_id?: string;
+  building_name?: string;
+  space_id?: string;
+  space_name?: string;
+  vendor_id?: string;
+  vendor_name?: string;
+  billable_item_name?: string;
+  billable_item_type?: string;
+  billable_item_id?: string;
+  bill_no: string;
+  date: string;
+  due_date: string;
+  status: "draft" | "issued" | "paid" | "partial" | "void" | "overdue";
+  currency: string;
+  totals: {
+    sub: number;
+    tax: number;
+    grand: number;
+  };
+  is_paid?: boolean;
+  meta?: any;
+  lines?: InvoiceLine[];
+  created_at?: string;
+  updated_at?: string;
+  payments?: PaymentInput[];
+}
+
+export interface BillOverview {
+  totalBills: number;
+  totalAmount: number;
+  paidAmount: number;
+  outstandingAmount: number;
+}

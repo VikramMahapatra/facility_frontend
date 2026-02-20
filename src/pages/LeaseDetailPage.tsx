@@ -98,7 +98,6 @@ export default function LeaseDetailPage() {
           setChargeTotalItems(0);
         }
       } else {
-        toast.error("Failed to load lease details");
         navigate(-1);
       }
     };

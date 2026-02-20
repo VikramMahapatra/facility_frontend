@@ -123,7 +123,11 @@ export default function InvoiceFormPage() {
   useEffect(() => {
     loadSiteLookup();
     loadInvoiceTypeLookup();
-  }, []);
+    // Load preview invoice number for create mode
+    if (formMode === "create") {
+      loadInvoicePreviewNumber();
+    }
+  }, [formMode]);
 
   // Don't auto-select - user must choose
 
@@ -145,12 +149,12 @@ export default function InvoiceFormPage() {
   }, [watchedBuildingId, watchedSiteId]);
 
   useEffect(() => {
-    if (watchedBillableType && watchedSiteId) {
+    if (watchedBillableType && watchedSpaceId) {
       loadBillableItemLookup();
     } else {
       setBillableItemList([]);
     }
-  }, [watchedBillableType, watchedSiteId]);
+  }, [watchedBillableType, watchedSpaceId]);
 
   // Load tenant details when space is selected
   useEffect(() => {
@@ -283,30 +287,79 @@ export default function InvoiceFormPage() {
     }
   };
 
+  const loadInvoicePreviewNumber = async () => {
+    try {
+      const response = await withLoader(async () => {
+        return await invoiceApiService.getInvoicePreviewNumber();
+      });
+      if (response?.success && response.data) {
+        const invoiceNo = response.data.invoice_no || response.data.invoiceNo || response.data.invoice_number || response.data;
+        if (invoiceNo) {
+          setValue("invoice_no", typeof invoiceNo === "string" ? invoiceNo : String(invoiceNo));
+        }
+      }
+    } catch (error) {
+      console.error("Failed to load preview invoice number:", error);
+    }
+  };
+
   const loadBillableItemLookup = async () => {
-    if (!watchedBillableType || !watchedSiteId) {
+    if (!watchedBillableType || !watchedSpaceId) {
       setBillableItemList([]);
       return;
     }
     try {
-      const params = new URLSearchParams();
-      params.append("site_id", watchedSiteId);
-      params.append("billable_item_type", watchedBillableType);
+      // Use the new endpoint: /api/invoices/customer-pending-charges
+      // code parameter should be the invoice type (billable_item_type)
+      const response = await invoiceApiService.getCustomerPendingCharges(
+        watchedSpaceId,
+        watchedBillableType
+      );
+      
+      if (response?.success && response.data) {
+        // Response structure: { data: [{ customer_id, customer_name, charges: [{ type, id, period }] }] }
+        const dataArray = Array.isArray(response.data) ? response.data : [];
+        
+        // Extract customer details from the first customer (if available)
+        if (dataArray.length > 0) {
+          const firstCustomer = dataArray[0];
+          if (firstCustomer.customer_id) {
+            setValue("tenant_id", firstCustomer.customer_id);
+          }
+          if (firstCustomer.customer_name) {
+            setValue("tenant_name", firstCustomer.customer_name);
+          }
+          // Note: customer_email and customer_phone might not be in this response
+          // They may need to be fetched separately or from another endpoint
+        }
+        
+        // Extract all charges from all customers and filter by type
+        const allCharges: any[] = [];
+        dataArray.forEach((customer: any) => {
+          if (customer.charges && Array.isArray(customer.charges)) {
+            customer.charges.forEach((charge: any) => {
+              // Filter charges that match the selected invoice type
+              const chargeType = charge.type?.toLowerCase() || "";
+              const selectedType = watchedBillableType?.toLowerCase() || "";
+              
+              // Match types (handle variations like "rent", "workorder", "owner_maintenance", "parking_pass")
+              if (
+                chargeType === selectedType ||
+                chargeType.includes(selectedType) ||
+                selectedType.includes(chargeType)
+              ) {
+                allCharges.push({
+                  id: charge.id,
+                  name: charge.period || charge.name || charge.id,
+                  period: charge.period,
+                  type: charge.type,
+                });
+              }
+            });
+          }
+        });
 
-      const response = await invoiceApiService.getInvoiceEntityLookup(params);
-      if (response?.success) {
-        const items =
-          response.data?.items ||
-          response.data?.entities ||
-          response.data ||
-          [];
-
-        setBillableItemList(
-          items.map((item: any) => ({
-            id: item.id,
-            name: item.name || item.code || item.label || item.id,
-          })),
-        );
+        setBillableItemList(allCharges);
       } else {
         setBillableItemList([]);
       }
@@ -923,44 +976,37 @@ export default function InvoiceFormPage() {
             <Separator />
 
             {/* Customer Details Section */}
-            <div className="space-y-4">
-              <h3 className="text-lg font-semibold">Customer Details</h3>
-              <div className="grid grid-cols-3 gap-4">
-                <div className="space-y-2">
-                  <Label htmlFor="tenant_name">Customer Name</Label>
-                  <Input
-                    id="tenant_name"
-                    {...register("tenant_name")}
-                    disabled={isReadOnly}
-                    placeholder="Auto-filled from space"
-                  />
-                </div>
-                <div className="space-y-2">
-                  <Label htmlFor="tenant_email">Email</Label>
-                  <Input
-                    id="tenant_email"
-                    type="email"
-                    {...register("tenant_email")}
-                    disabled={isReadOnly}
-                    placeholder="Auto-filled from space"
-                  />
-                  {errors.tenant_email && (
-                    <p className="text-sm text-red-500">
-                      {errors.tenant_email.message}
-                    </p>
-                  )}
-                </div>
-                <div className="space-y-2">
-                  <Label htmlFor="tenant_phone">Phone</Label>
-                  <Input
-                    id="tenant_phone"
-                    {...register("tenant_phone")}
-                    disabled={isReadOnly}
-                    placeholder="Auto-filled from space"
-                  />
+            {watchedSpaceId && (
+              <div className="space-y-4">
+                <h3 className="text-lg font-semibold">Customer Details</h3>
+                <div className="grid grid-cols-3 gap-4">
+                  <div className="space-y-2">
+                    <Label className="text-muted-foreground">Customer Name</Label>
+                    <div className="p-3 border rounded-md bg-muted/50">
+                      <p className="font-medium">
+                        {watch("tenant_name") || "-"}
+                      </p>
+                    </div>
+                  </div>
+                  <div className="space-y-2">
+                    <Label className="text-muted-foreground">Email</Label>
+                    <div className="p-3 border rounded-md bg-muted/50">
+                      <p className="font-medium">
+                        {watch("tenant_email") || "-"}
+                      </p>
+                    </div>
+                  </div>
+                  <div className="space-y-2">
+                    <Label className="text-muted-foreground">Phone</Label>
+                    <div className="p-3 border rounded-md bg-muted/50">
+                      <p className="font-medium">
+                        {watch("tenant_phone") || "-"}
+                      </p>
+                    </div>
+                  </div>
                 </div>
               </div>
-            </div>
+            )}
 
             <Separator />
 
@@ -1012,7 +1058,7 @@ export default function InvoiceFormPage() {
                                     await loadPeriodTotals(selectedPeriod.id, index);
                                   }
                                 }}
-                                disabled={isReadOnly || !watchedSiteId || !watchedBillableType}
+                                disabled={isReadOnly || !watchedSpaceId || !watchedBillableType}
                               >
                                 <SelectTrigger
                                   className={
@@ -1023,8 +1069,8 @@ export default function InvoiceFormPage() {
                                 >
                                   <SelectValue 
                                     placeholder={
-                                      !watchedSiteId
-                                        ? "Select site first"
+                                      !watchedSpaceId
+                                        ? "Select space first"
                                         : !watchedBillableType
                                           ? "Select invoice type first"
                                           : billableItemList.length === 0
