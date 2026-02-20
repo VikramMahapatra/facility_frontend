@@ -16,12 +16,23 @@ import {
   DialogTitle,
   DialogFooter,
 } from "@/components/ui/dialog";
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from "@/components/ui/table";
+import { Separator } from "@/components/ui/separator";
+import { Plus, X } from "lucide-react";
 import { siteApiService } from "@/services/spaces_sites/sitesapi";
 import { buildingApiService } from "@/services/spaces_sites/buildingsapi";
 import { spacesApiService } from "@/services/spaces_sites/spacesapi";
+import { tenantsApiService } from "@/services/leasing_tenants/tenantsapi";
 import { Invoice, PaymentInput } from "@/interfaces/invoices_interfaces";
 import { invoiceApiService } from "@/services/financials/invoicesapi";
-import { useForm, Controller } from "react-hook-form";
+import { useForm, Controller, useFieldArray } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { invoiceSchema, InvoiceFormValues } from "@/schemas/invoice.schema";
 import { toast } from "@/components/ui/app-toast";
@@ -37,15 +48,28 @@ interface InvoiceFormProps {
 }
 
 const emptyFormData: InvoiceFormValues = {
+  invoice_no: "",
   site_id: "",
   building_id: "",
   space_id: "",
+  tenant_id: "",
+  tenant_name: "",
+  tenant_email: "",
+  tenant_phone: "",
   date: new Date().toISOString().split("T")[0],
   due_date: "",
   status: "draft",
   currency: "INR",
   billable_item_type: "",
   billable_item_id: "",
+  items: [
+    {
+      item: "",
+      description: "",
+      amount: 0,
+      tax: 5,
+    },
+  ],
   totals: { sub: 0, tax: 5, grand: 0 },
   payments: [],
 };
@@ -95,6 +119,12 @@ export function InvoiceForm({
   const watchedSpaceId = watch("space_id");
   const watchedBillableType = watch("billable_item_type");
   const watchedBillableItemId = watch("billable_item_id");
+  const watchedItems = watch("items");
+
+  const { fields, append, remove } = useFieldArray({
+    control,
+    name: "items",
+  });
 
   useEffect(() => {
     if (isOpen) {
@@ -102,6 +132,13 @@ export function InvoiceForm({
       loadInvoiceTypeLookup();
     }
   }, [isOpen]);
+
+  // Auto-select first invoice type when types are loaded
+  useEffect(() => {
+    if (invoiceTypeList.length > 0 && !watchedBillableType && mode === "create") {
+      setValue("billable_item_type", invoiceTypeList[0].id);
+    }
+  }, [invoiceTypeList, mode, watchedBillableType, setValue]);
 
   useEffect(() => {
     if (watchedSiteId) {
@@ -128,6 +165,71 @@ export function InvoiceForm({
     }
   }, [watchedBillableType, watchedSiteId]);
 
+  // Load tenant details when space is selected
+  useEffect(() => {
+    if (watchedSpaceId && mode === "create") {
+      loadTenantDetails();
+    }
+  }, [watchedSpaceId, mode]);
+
+  // Calculate totals when items change
+  useEffect(() => {
+    if (watchedItems && watchedItems.length > 0) {
+      const subtotal = watchedItems.reduce((sum, item) => {
+        return sum + (item.amount || 0);
+      }, 0);
+      const totalTax = watchedItems.reduce((sum, item) => {
+        const itemAmount = item.amount || 0;
+        const itemTaxPercent = item.tax || 5;
+        const itemTax = (itemAmount * itemTaxPercent) / 100;
+        return sum + itemTax;
+      }, 0);
+      const grandTotal = subtotal + totalTax;
+      setValue("totals.sub", subtotal, { shouldValidate: false });
+      setValue("totals.tax", totalTax, { shouldValidate: false });
+      setValue("totals.grand", grandTotal, { shouldValidate: false });
+    }
+  }, [watchedItems, setValue]);
+
+  // Load totals when period is selected for an item
+  const loadPeriodTotals = async (periodId: string, index: number) => {
+    if (!watchedBillableType || !watchedSiteId || !periodId) return;
+
+    try {
+      const params = new URLSearchParams();
+      params.append("billable_item_type", watchedBillableType);
+      params.append("billable_item_id", periodId);
+
+      const response = await invoiceApiService.getInvoiceTotals(params);
+      if (response?.success && response.data) {
+        const totals = response.data;
+        const subtotal = Number(totals.subtotal || 0);
+        
+        // Update the item amount
+        setValue(`items.${index}.amount`, subtotal, { shouldValidate: false });
+        
+        // Recalculate totals
+        const allItems = getValues("items");
+        const newSubtotal = allItems.reduce((sum, item) => {
+          return sum + (item.amount || 0);
+        }, 0);
+        const totalTax = allItems.reduce((sum, item) => {
+          const itemAmount = item.amount || 0;
+          const itemTaxPercent = item.tax || 5;
+          const itemTax = (itemAmount * itemTaxPercent) / 100;
+          return sum + itemTax;
+        }, 0);
+        const grandTotal = newSubtotal + totalTax;
+        
+        setValue("totals.sub", newSubtotal, { shouldValidate: false });
+        setValue("totals.tax", totalTax, { shouldValidate: false });
+        setValue("totals.grand", grandTotal, { shouldValidate: false });
+      }
+    } catch (error) {
+      console.error("Failed to load period totals:", error);
+    }
+  };
+
   useEffect(() => {
     if (isOpen) {
       loadAll();
@@ -145,16 +247,6 @@ export function InvoiceForm({
     }
   }, [watchedBillableItemId, watchedBillableType]);
 
-  // Calculate grand total when subtotal or tax changes
-  const watchedSubtotal = watch("totals.sub");
-  const watchedTax = watch("totals.tax");
-
-  useEffect(() => {
-    const subtotal = Number(watchedSubtotal) || 0;
-    const taxPercent = Number(watchedTax) || 5;
-    const grandTotal = subtotal + (subtotal * taxPercent) / 100;
-    setValue("totals.grand", grandTotal, { shouldValidate: false });
-  }, [watchedSubtotal, watchedTax, setValue]);
 
   const loadSiteLookup = async () => {
     try {
@@ -254,6 +346,22 @@ export function InvoiceForm({
     }
   };
 
+  const loadTenantDetails = async () => {
+    if (!watchedSpaceId) return;
+    try {
+      const response = await tenantsApiService.getSpaceTenants(watchedSpaceId);
+      if (response?.success && response.data && response.data.length > 0) {
+        const tenant = response.data[0]; // Get first tenant
+        setValue("tenant_id", tenant.id || tenant.tenant_id || "");
+        setValue("tenant_name", tenant.name || tenant.tenant_name || "");
+        setValue("tenant_email", tenant.email || "");
+        setValue("tenant_phone", tenant.phone || "");
+      }
+    } catch (error) {
+      console.error("Failed to load tenant details:", error);
+    }
+  };
+
   const loadBillableItemTotals = async () => {
     if (!watchedBillableItemId || !watchedBillableType) return;
 
@@ -268,8 +376,7 @@ export function InvoiceForm({
         // Only fetch subtotal from API
         const subtotal = Number(totals.subtotal || 0);
         setValue("totals.sub", subtotal);
-        // Tax is always default 5%
-        setValue("totals.tax", 5);
+        // Tax percentage remains editable (don't overwrite if already set)
         // Grand total will be calculated by useEffect
         setTotalsAutoFilled(true);
         setTotalsLoaded(true);
@@ -286,15 +393,29 @@ export function InvoiceForm({
     reset(
       invoice && mode !== "create"
         ? {
+            invoice_no: invoice.invoice_no || "",
             site_id: invoice.site_id || "",
             building_id: (invoice as any).building_id || "",
             space_id: (invoice as any).space_id || "",
+            tenant_id: invoice.customer_id || "",
+            tenant_name: invoice.customer_name || "",
+            tenant_email: "",
+            tenant_phone: "",
             date: invoice.date || new Date().toISOString().split("T")[0],
             due_date: invoice.due_date || "",
             status: invoice.status || "draft",
             currency: invoice.currency || "INR",
             billable_item_type: invoice.billable_item_type || "",
             billable_item_id: invoice.billable_item_id || "",
+            items:
+              invoice.lines && invoice.lines.length > 0
+                ? invoice.lines.map((line) => ({
+                    item: line.description || "",
+                    description: line.description || "",
+                    amount: line.price || 0,
+                    tax: line.taxPct || 5,
+                  }))
+                : emptyFormData.items,
             totals: invoice.totals || { sub: 0, tax: 5, grand: 0 },
             payments: [],
           }
@@ -329,18 +450,30 @@ export function InvoiceForm({
     setIsSubmitting(true);
     try {
       const invoiceData: Partial<Invoice> = {
+        invoice_no: data.invoice_no,
         site_id: data.site_id,
         building_id: data.building_id,
         space_id: data.space_id,
+        customer_id: data.tenant_id,
+        customer_name: data.tenant_name,
         date: data.date,
         due_date: data.due_date,
         status: data.status || "draft",
         currency: data.currency || "INR",
         billable_item_type: data.billable_item_type,
         billable_item_id: data.billable_item_id,
+        lines: data.items.map((item) => ({
+          id: "",
+          invoiceId: "",
+          code: "",
+          description: item.description || item.item || "",
+          qty: 1,
+          price: item.amount || 0,
+          taxPct: item.tax || 5,
+        })),
         totals: {
           sub: data.totals?.sub ?? 0,
-          tax: data.totals?.tax ?? 5,
+          tax: data.totals?.tax ?? 5, // Tax percentage (default 5%)
           grand: data.totals?.grand ?? 0,
         },
         payments:
@@ -365,6 +498,15 @@ export function InvoiceForm({
     }
   };
 
+  const addItem = () => {
+    append({
+      item: "",
+      description: "",
+      amount: 0,
+      tax: 5,
+    });
+  };
+
   const isFieldDisabled = (fieldName: string) => {
     if (isReadOnly) return true;
     return false;
@@ -372,82 +514,74 @@ export function InvoiceForm({
 
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
-      <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
+      <DialogContent className="max-w-6xl max-h-[90vh] overflow-y-auto">
         <DialogHeader>
           <DialogTitle>
             {mode === "create"
-              ? "Create Invoice"
+              ? "Create New Invoice"
               : mode === "edit"
                 ? "Edit Invoice"
                 : "View Invoice"}
           </DialogTitle>
         </DialogHeader>
-        <div className="space-y-4">
+        <div className="space-y-6">
           {formLoading ? (
             <p className="text-center">Loading...</p>
           ) : (
             <form
               onSubmit={handleSubmit(onSubmitForm)}
-              className="space-y-4"
+              className="space-y-6"
               id="invoice-form"
             >
-              {/* Invoice Type Selection - At the top */}
-              <div className="space-y-3 pb-3 border-b">
-                <Label className="text-base font-semibold">
-                  Invoice Type *
-                </Label>
-                <Controller
-                  name="billable_item_type"
-                  control={control}
-                  render={({ field }) => {
-                    const hasSelection = !!field.value;
-
-                    return (
-                      <div className="flex flex-wrap gap-3">
-                        {invoiceTypeList.map((item) => {
-                          const isSelected = field.value === item.id;
-
-                          return (
-                            <Button
-                              key={item.id}
-                              type="button"
-                              variant={isSelected ? "default" : "outline"}
-                              className={
-                                isSelected
-                                  ? "bg-primary text-primary-foreground shadow-md"
-                                  : hasSelection
-                                    ? "hidden"
-                                    : "hover:bg-muted hover:border-primary/50"
-                              }
-                              style={isSelected ? { width: "100%" } : {}}
-                              onClick={() => {
-                                if (isSelected) {
-                                  field.onChange("");
-                                  setValue("billable_item_id", "");
-                                } else {
-                                  field.onChange(item.id);
-                                  setValue("billable_item_id", "");
-                                }
-                              }}
-                              disabled={isReadOnly}
-                            >
-                              {item.name}
-                            </Button>
-                          );
-                        })}
-                      </div>
-                    );
-                  }}
-                />
-                {errors.billable_item_type && (
-                  <p className="text-sm text-red-500">
-                    {errors.billable_item_type.message}
-                  </p>
-                )}
+              {/* Header Section */}
+              <div className="grid grid-cols-3 gap-4">
+                <div className="space-y-2">
+                  <Label htmlFor="invoice_no">Invoice No</Label>
+                  <Input
+                    id="invoice_no"
+                    {...register("invoice_no")}
+                    disabled={isReadOnly}
+                    placeholder="Auto-generated"
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="date">Invoice Date *</Label>
+                  <Input
+                    id="date"
+                    type="date"
+                    {...register("date")}
+                    disabled={isReadOnly}
+                    className={errors.date ? "border-red-500" : ""}
+                  />
+                  {errors.date && (
+                    <p className="text-sm text-red-500">
+                      {errors.date.message}
+                    </p>
+                  )}
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="due_date">Due Date *</Label>
+                  <Input
+                    id="due_date"
+                    type="date"
+                    {...register("due_date")}
+                    disabled={isReadOnly}
+                    className={errors.due_date ? "border-red-500" : ""}
+                    min={watch("date") || undefined}
+                  />
+                  {errors.due_date && (
+                    <p className="text-sm text-red-500">
+                      {errors.due_date.message}
+                    </p>
+                  )}
+                </div>
               </div>
 
+              <Separator />
+
+              {/* Property Details Section */}
               <div className="space-y-4">
-                {/* Row 1: Site, Building, Space */}
+                <h3 className="text-lg font-semibold">Property Details</h3>
                 <div className="grid grid-cols-3 gap-4">
                   <div className="space-y-2">
                     <Label htmlFor="site_id">Site *</Label>
@@ -461,6 +595,10 @@ export function InvoiceForm({
                             field.onChange(value);
                             setValue("building_id", "");
                             setValue("space_id", "");
+                            setValue("tenant_id", "");
+                            setValue("tenant_name", "");
+                            setValue("tenant_email", "");
+                            setValue("tenant_phone", "");
                           }}
                           disabled={isReadOnly}
                         >
@@ -496,6 +634,10 @@ export function InvoiceForm({
                           onValueChange={(value) => {
                             field.onChange(value);
                             setValue("space_id", "");
+                            setValue("tenant_id", "");
+                            setValue("tenant_name", "");
+                            setValue("tenant_email", "");
+                            setValue("tenant_phone", "");
                           }}
                           disabled={isReadOnly || !watchedSiteId}
                         >
@@ -551,139 +693,242 @@ export function InvoiceForm({
                         </Select>
                       )}
                     />
-                  </div>
-                </div>
-
-                {/* Row 2: Billable Item */}
-                <div className="grid grid-cols-1 gap-4">
-                  <div className="space-y-2">
-                    <Label htmlFor="billable_item_id">
-                      {(() => {
-                        const selectedType = invoiceTypeList.find(
-                          (type) => type.id === watchedBillableType,
-                        );
-                        return selectedType
-                          ? `${selectedType.name} *`
-                          : "Billable Item *";
-                      })()}
-                    </Label>
-                    <Controller
-                      name="billable_item_id"
-                      control={control}
-                      render={({ field }) => (
-                        <Select
-                          value={field.value || ""}
-                          onValueChange={field.onChange}
-                          disabled={isReadOnly || !watchedBillableType}
-                        >
-                          <SelectTrigger
-                            className={
-                              errors.billable_item_id ? "border-red-500" : ""
-                            }
-                          >
-                            <SelectValue placeholder="Select item" />
-                          </SelectTrigger>
-                          <SelectContent>
-                            {billable_items.map((item: any) => (
-                              <SelectItem key={item.id} value={item.id}>
-                                {item.name}
-                              </SelectItem>
-                            ))}
-                          </SelectContent>
-                        </Select>
-                      )}
-                    />
-                    {errors.billable_item_id && (
+                    {errors.space_id && (
                       <p className="text-sm text-red-500">
-                        {errors.billable_item_id.message}
+                        {errors.space_id.message}
                       </p>
                     )}
                   </div>
                 </div>
+              </div>
 
-                {/* Row 3: Invoice Date, Due Date, Currency */}
+              <Separator />
+
+              {/* Customer Details Section */}
+              <div className="space-y-4">
+                <h3 className="text-lg font-semibold">Customer Details</h3>
                 <div className="grid grid-cols-3 gap-4">
                   <div className="space-y-2">
-                    <Label htmlFor="date">Invoice Date *</Label>
+                    <Label htmlFor="tenant_name">Customer Name</Label>
                     <Input
-                      id="date"
-                      type="date"
-                      {...register("date")}
+                      id="tenant_name"
+                      {...register("tenant_name")}
                       disabled={isReadOnly}
-                      className={errors.date ? "border-red-500" : ""}
+                      placeholder="Auto-filled from space"
                     />
-                    {errors.date && (
+                  </div>
+                  <div className="space-y-2">
+                    <Label htmlFor="tenant_email">Email</Label>
+                    <Input
+                      id="tenant_email"
+                      type="email"
+                      {...register("tenant_email")}
+                      disabled={isReadOnly}
+                      placeholder="Auto-filled from space"
+                    />
+                    {errors.tenant_email && (
                       <p className="text-sm text-red-500">
-                        {errors.date.message}
+                        {errors.tenant_email.message}
                       </p>
                     )}
                   </div>
                   <div className="space-y-2">
-                    <Label htmlFor="due_date">Due Date *</Label>
+                    <Label htmlFor="tenant_phone">Phone</Label>
                     <Input
-                      id="due_date"
-                      type="date"
-                      {...register("due_date")}
+                      id="tenant_phone"
+                      {...register("tenant_phone")}
                       disabled={isReadOnly}
-                      className={errors.due_date ? "border-red-500" : ""}
-                      min={watch("date") || undefined}
-                    />
-                    {errors.due_date && (
-                      <p className="text-sm text-red-500">
-                        {errors.due_date.message}
-                      </p>
-                    )}
-                  </div>
-                  <div className="space-y-2">
-                    <Label htmlFor="currency">Currency</Label>
-                    <Input
-                      id="currency"
-                      {...register("currency")}
-                      disabled={isReadOnly}
+                      placeholder="Auto-filled from space"
                     />
                   </div>
                 </div>
+              </div>
 
-                {/* Row 4: Totals */}
-                <div className="grid grid-cols-3 gap-4">
-                  <div className="space-y-2">
-                    <Label htmlFor="sub">Subtotal ({formatCurrency(0)})</Label>
-                    <Input
-                      id="sub"
-                      type="number"
-                      {...register("totals.sub", {
-                        setValueAs: (v) => (v === "" ? 0 : Number(v)),
-                      })}
-                      disabled={isFieldDisabled("totals.sub")}
-                    />
-                  </div>
-                  <div className="space-y-2">
-                    <Label htmlFor="tax">Tax (%)</Label>
-                    <Input
-                      id="tax"
-                      type="number"
-                      {...register("totals.tax", {
-                        setValueAs: (v) => (v === "" ? 5 : Number(v)),
-                      })}
-                      disabled={isFieldDisabled("totals.tax")}
-                      defaultValue={5}
-                    />
-                  </div>
-                  <div className="space-y-2">
-                    <Label htmlFor="grand">
-                      Grand Total ({formatCurrency(0)})
-                    </Label>
-                    <Input
-                      id="grand"
-                      type="number"
-                      {...register("totals.grand", {
-                        setValueAs: (v) => (v === "" ? 0 : Number(v)),
-                      })}
-                      disabled={true}
-                      readOnly
-                      className="bg-muted cursor-not-allowed"
-                    />
-                  </div>
+              <Separator />
+
+              {/* Invoice Items Section */}
+              <div className="space-y-4">
+                <div className="flex items-center justify-between">
+                  <h3 className="text-lg font-semibold">Invoice Items</h3>
+                  {!isReadOnly && (
+                    <Button
+                      type="button"
+                      variant="outline"
+                      size="sm"
+                      onClick={addItem}
+                      className="gap-2"
+                    >
+                      <Plus className="h-4 w-4" />
+                      Add Item
+                    </Button>
+                  )}
+                </div>
+                <div className="border rounded-md">
+                  <Table>
+                    <TableHeader>
+                      <TableRow>
+                        <TableHead>Period</TableHead>
+                        <TableHead>Description</TableHead>
+                        <TableHead className="w-24">Tax %</TableHead>
+                        <TableHead className="w-32">Amount</TableHead>
+                        {!isReadOnly && <TableHead className="w-16"></TableHead>}
+                      </TableRow>
+                    </TableHeader>
+                    <TableBody>
+                      {fields.map((field, index) => (
+                        <TableRow key={field.id}>
+                          <TableCell>
+                            <Controller
+                              name={`items.${index}.item`}
+                              control={control}
+                              render={({ field: itemField }) => (
+                                <Select
+                                  value={itemField.value || ""}
+                                  onValueChange={async (value) => {
+                                    itemField.onChange(value);
+                                    // Find the period ID from the selected value
+                                    const selectedPeriod = billableItemList.find(
+                                      (item) => item.name === value || item.id === value
+                                    );
+                                    if (selectedPeriod) {
+                                      await loadPeriodTotals(selectedPeriod.id, index);
+                                    }
+                                  }}
+                                  disabled={isReadOnly || !watchedSiteId || !watchedBillableType}
+                                >
+                                  <SelectTrigger
+                                    className={
+                                      errors.items?.[index]?.item
+                                        ? "border-red-500"
+                                        : ""
+                                    }
+                                  >
+                                    <SelectValue 
+                                      placeholder={
+                                        !watchedSiteId
+                                          ? "Select site first"
+                                          : !watchedBillableType
+                                            ? "Select invoice type first"
+                                            : billableItemList.length === 0
+                                              ? "No periods available"
+                                              : "Select period"
+                                      }
+                                    />
+                                  </SelectTrigger>
+                                  <SelectContent>
+                                    {billableItemList.map((item: any) => (
+                                      <SelectItem key={item.id} value={item.name || item.id}>
+                                        {item.name}
+                                      </SelectItem>
+                                    ))}
+                                  </SelectContent>
+                                </Select>
+                              )}
+                            />
+                            {errors.items?.[index]?.item && (
+                              <p className="text-xs text-red-500 mt-1">
+                                {errors.items[index]?.item?.message}
+                              </p>
+                            )}
+                          </TableCell>
+                          <TableCell>
+                            <Input
+                              {...register(`items.${index}.description`)}
+                              disabled={isReadOnly}
+                              placeholder="Enter description"
+                            />
+                          </TableCell>
+                          <TableCell>
+                            <Input
+                              type="number"
+                              step="0.01"
+                              {...register(`items.${index}.tax`, {
+                                setValueAs: (v) => (v === "" ? 5 : Number(v)),
+                              })}
+                              disabled={isReadOnly}
+                              placeholder="5"
+                              defaultValue={5}
+                              className={
+                                errors.items?.[index]?.tax
+                                  ? "border-red-500"
+                                  : ""
+                              }
+                            />
+                            {errors.items?.[index]?.tax && (
+                              <p className="text-xs text-red-500 mt-1">
+                                {errors.items[index]?.tax?.message}
+                              </p>
+                            )}
+                          </TableCell>
+                          <TableCell>
+                            <Input
+                              type="number"
+                              step="0.01"
+                              {...register(`items.${index}.amount`, {
+                                setValueAs: (v) => (v === "" ? 0 : Number(v)),
+                              })}
+                              disabled={isReadOnly}
+                              placeholder="0.00"
+                              className={
+                                errors.items?.[index]?.amount
+                                  ? "border-red-500"
+                                  : ""
+                              }
+                            />
+                            {errors.items?.[index]?.amount && (
+                              <p className="text-xs text-red-500 mt-1">
+                                {errors.items[index]?.amount?.message}
+                              </p>
+                            )}
+                          </TableCell>
+                          {!isReadOnly && (
+                            <TableCell>
+                              {fields.length > 1 && (
+                                <Button
+                                  type="button"
+                                  variant="ghost"
+                                  size="sm"
+                                  onClick={() => remove(index)}
+                                  className="text-destructive hover:text-destructive"
+                                >
+                                  <X className="h-4 w-4" />
+                                </Button>
+                              )}
+                            </TableCell>
+                          )}
+                        </TableRow>
+                      ))}
+                    </TableBody>
+                  </Table>
+                </div>
+                {errors.items && (
+                  <p className="text-sm text-red-500">
+                    {errors.items.message}
+                  </p>
+                )}
+              </div>
+
+              <Separator />
+
+              {/* Totals Section */}
+              <div className="space-y-2">
+                <div className="flex justify-between items-center">
+                  <span className="text-sm">Subtotal:</span>
+                  <span className="text-sm">
+                    {systemCurrency.format(watch("totals.sub") || 0)}
+                  </span>
+                </div>
+                <div className="flex justify-between items-center">
+                  <span className="text-sm">Tax:</span>
+                  <span className="text-sm">
+                    {systemCurrency.format(watch("totals.tax") || 0)}
+                  </span>
+                </div>
+                <div className="flex justify-between items-center pt-2 border-t">
+                  <span className="text-lg font-bold">Grand Total:</span>
+                  <span className="text-lg font-bold">
+                    {systemCurrency.format(watch("totals.grand") || 0)}
+                  </span>
                 </div>
               </div>
             </form>
@@ -706,7 +951,7 @@ export function InvoiceForm({
               form="invoice-form"
               disabled={isSubmitting || formIsSubmitting}
             >
-              {isSubmitting || formIsSubmitting ? "Saving..." : "Save"}
+              {isSubmitting || formIsSubmitting ? "Saving..." : "Save Invoice"}
             </Button>
           )}
         </DialogFooter>
