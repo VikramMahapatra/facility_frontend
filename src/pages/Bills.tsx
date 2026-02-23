@@ -48,20 +48,14 @@ import {
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
 import { billsApiService } from "@/services/financials/billsapi";
-import {
-  Bill,
-  BillOverview,
-  Payment,
-} from "@/interfaces/invoices_interfaces";
+import { Bill, BillOverview } from "@/interfaces/invoices_interfaces";
 import { Pagination } from "@/components/Pagination";
 import { toast } from "@/components/ui/app-toast";
 import { useSkipFirstEffect } from "@/hooks/use-skipfirst-effect";
 import { useAuth } from "../context/AuthContext";
 import ContentContainer from "@/components/ContentContainer";
-import { PageHeader } from "@/components/PageHeader";
 import { useLoader } from "@/context/LoaderContext";
 import LoaderOverlay from "@/components/LoaderOverlay";
-import { BillForm } from "@/components/BillForm";
 import { useSettings } from "@/context/SettingsContext";
 
 export default function Bills() {
@@ -69,9 +63,7 @@ export default function Bills() {
   const [statusFilter, setStatusFilter] = useState("all");
   const navigate = useNavigate();
   const [bills, setBills] = useState<Bill[]>([]);
-  const [payments, setPayments] = useState<Payment[]>([]);
   const [deleteBillId, setDeleteBillId] = useState<string | null>(null);
-  const [markingPaidId, setMarkingPaidId] = useState<string | null>(null);
   const { canWrite, canDelete } = useAuth();
   const resource = "bills";
   const [billOverview, setBillOverview] = useState<BillOverview>({
@@ -83,22 +75,12 @@ export default function Bills() {
   const [page, setPage] = useState(1);
   const [pageSize] = useState(5);
   const [totalItems, setTotalItems] = useState(0);
-
-  const [paymentPage, setPaymentPage] = useState(1);
-  const [paymentPageSize] = useState(5);
-  const [totalPaymentItems, setTotalPaymentItems] = useState(0);
   const { withLoader } = useLoader();
-  const [isFormOpen, setIsFormOpen] = useState(false);
-  const [selectedBill, setSelectedBill] = useState<Bill | undefined>();
-  const [formMode, setFormMode] = useState<"create" | "edit" | "view">(
-    "create",
-  );
   const { systemCurrency } = useSettings();
 
   useEffect(() => {
     loadBillsOverView();
     loadBills();
-    loadPayments();
   }, []);
 
   useSkipFirstEffect(() => {
@@ -106,16 +88,7 @@ export default function Bills() {
   }, [page]);
 
   useSkipFirstEffect(() => {
-    loadPayments();
-  }, [paymentPage]);
-
-  useSkipFirstEffect(() => {
     updateBillsPage();
-    if (paymentPage === 1) {
-      loadPayments();
-    } else {
-      setPaymentPage(1);
-    }
   }, [searchTerm, statusFilter]);
 
   const updateBillsPage = () => {
@@ -146,43 +119,19 @@ export default function Bills() {
     });
 
     if (response?.success) {
-      const bills =
-        response.data?.data?.bills || response.data?.bills || [];
+      const bills = response.data?.data?.bills || response.data?.bills || [];
       const total = response.data?.total || response.data?.total || 0;
       setBills(bills);
       setTotalItems(total);
     }
   };
 
-  const loadPayments = async () => {
-    const skip = (paymentPage - 1) * paymentPageSize;
-    const limit = paymentPageSize;
-
-    const params = new URLSearchParams();
-    if (searchTerm) params.append("search", searchTerm);
-    if (statusFilter && statusFilter !== "all")
-      params.append("status", statusFilter);
-    params.append("skip", skip.toString());
-    params.append("limit", limit.toString());
-
-    const response = await billsApiService.getPayments(params);
-
-    if (response?.success) {
-      const payments =
-        response.data?.data?.payments || response.data?.payments || [];
-      const total = response.data?.total || response.data?.total || 0;
-      setPayments(payments);
-      setTotalPaymentItems(total);
-    }
-  };
-
   const getStatusBadge = (status: string) => {
     const variants = {
-      paid: "default",
-      issued: "secondary",
-      partial: "outline",
       draft: "outline",
-      void: "destructive",
+      approved: "secondary",
+      paid: "default",
+      partial: "outline",
     } as const;
 
     return (
@@ -193,9 +142,7 @@ export default function Bills() {
   };
 
   const handleCreate = () => {
-    setSelectedBill(undefined);
-    setFormMode("create");
-    setIsFormOpen(true);
+    navigate("/bills/create");
   };
 
   const handleView = (bill: Bill) => {
@@ -203,48 +150,7 @@ export default function Bills() {
   };
 
   const handleEdit = (bill: Bill) => {
-    setSelectedBill(bill);
-    setFormMode("edit");
-    setIsFormOpen(true);
-  };
-
-  const handleSave = async (billData: Partial<Bill>) => {
-    let response;
-    if (formMode === "create") {
-      response = await withLoader(async () => {
-        return await billsApiService.addBill(billData);
-      });
-    } else if (formMode === "edit" && selectedBill) {
-      const updatedBill = {
-        ...selectedBill,
-        ...billData,
-        id: selectedBill.id,
-        bill_no: selectedBill.bill_no,
-        updated_at: new Date().toISOString(),
-      };
-      response = await withLoader(async () => {
-        return await billsApiService.updateBill(updatedBill);
-      });
-    }
-
-    if (response?.success) {
-      toast.success(
-        `Bill has been ${
-          formMode === "create" ? "created" : "updated"
-        } successfully.`,
-      );
-      updateBillsPage();
-      loadBillsOverView();
-      setIsFormOpen(false);
-      setSelectedBill(undefined);
-    } else if (response && !response.success) {
-      if (response?.message) {
-        toast.error(response.message);
-      } else {
-        toast.error("Failed to save bill.");
-      }
-    }
-    return response;
+    navigate(`/bills/${bill.id}/edit`);
   };
 
   const handleDownload = async (billId: string) => {
@@ -263,8 +169,6 @@ export default function Bills() {
       const authResponse = response.data;
       if (authResponse?.success) {
         setBills((prev) => prev.filter((bill) => bill.id !== deleteBillId));
-        setPayments((prev) => prev.filter((bill) => bill.id !== deleteBillId));
-
         toast.success("The bill has been deleted successfully.");
         setDeleteBillId(null);
         updateBillsPage();
@@ -288,10 +192,10 @@ export default function Bills() {
         <div className="flex items-center justify-between">
           <div>
             <h2 className="text-2xl font-bold text-sidebar-primary">
-              Bills & Payments
+              Bills
             </h2>
             <p className="text-muted-foreground">
-              Manage vendor bills and payments
+              Manage vendor bills
             </p>
           </div>
           <div className="flex gap-2">
@@ -386,10 +290,9 @@ export default function Bills() {
               <SelectContent>
                 <SelectItem value="all">All Status</SelectItem>
                 <SelectItem value="draft">Draft</SelectItem>
-                <SelectItem value="issued">Issued</SelectItem>
+                <SelectItem value="approved">Approved</SelectItem>
                 <SelectItem value="paid">Paid</SelectItem>
                 <SelectItem value="partial">Partial</SelectItem>
-                <SelectItem value="void">Void</SelectItem>
               </SelectContent>
             </Select>
           </div>
@@ -400,20 +303,16 @@ export default function Bills() {
               <Card>
                 <CardHeader>
                   <CardTitle>Bills</CardTitle>
-                  <CardDescription>
-                    {totalItems} bill(s) found
-                  </CardDescription>
+                  <CardDescription>{totalItems} bill(s) found</CardDescription>
                 </CardHeader>
                 <CardContent>
                   <Table>
                     <TableHeader>
                       <TableRow>
                         <TableHead>Bill No.</TableHead>
-                        <TableHead>Billable Type</TableHead>
                         <TableHead>Vendor Name</TableHead>
                         <TableHead>Site Name</TableHead>
                         <TableHead>Date</TableHead>
-                        <TableHead>Due Date</TableHead>
                         <TableHead>Amount</TableHead>
                         <TableHead>Status</TableHead>
                         <TableHead>Actions</TableHead>
@@ -423,7 +322,7 @@ export default function Bills() {
                       {bills.length === 0 ? (
                         <TableRow>
                           <TableCell
-                            colSpan={9}
+                            colSpan={7}
                             className="text-center py-8 text-muted-foreground"
                           >
                             No bills found
@@ -435,21 +334,15 @@ export default function Bills() {
                             <TableCell className="font-medium">
                               {bill.bill_no}
                             </TableCell>
-                            <TableCell>{bill.billable_item_name}</TableCell>
                             <TableCell>{bill.vendor_name || "-"}</TableCell>
                             <TableCell>{bill.site_name || "-"}</TableCell>
                             <TableCell>
                               {new Date(bill.date).toLocaleDateString()}
                             </TableCell>
                             <TableCell>
-                              {new Date(bill.due_date).toLocaleDateString()}
-                            </TableCell>
-                            <TableCell>
                               {formatCurrency(bill?.totals?.grand ?? 0)}
                             </TableCell>
-                            <TableCell>
-                              {getStatusBadge(bill.status)}
-                            </TableCell>
+                            <TableCell>{getStatusBadge(bill.status)}</TableCell>
                             <TableCell>
                               <div className="flex gap-1">
                                 <Button
@@ -504,70 +397,6 @@ export default function Bills() {
                 </CardContent>
               </Card>
 
-              {/* Recent Payments */}
-              <Card>
-                <CardHeader>
-                  <CardTitle>Payments</CardTitle>
-                  <CardDescription>
-                    {totalPaymentItems} payment(s) found
-                  </CardDescription>
-                </CardHeader>
-                <CardContent>
-                  <Table>
-                    <TableHeader>
-                      <TableRow>
-                        <TableHead>Bill No.</TableHead>
-                        <TableHead>Vendor</TableHead>
-                        <TableHead>Method</TableHead>
-                        <TableHead>Reference</TableHead>
-                        <TableHead>Amount</TableHead>
-                        <TableHead>Date</TableHead>
-                      </TableRow>
-                    </TableHeader>
-                    <TableBody>
-                      {payments.length === 0 ? (
-                        <TableRow>
-                          <TableCell
-                            colSpan={6}
-                            className="text-center py-8 text-muted-foreground"
-                          >
-                            No payments found
-                          </TableCell>
-                        </TableRow>
-                      ) : (
-                        payments.map((payment) => (
-                          <TableRow key={payment.id}>
-                            <TableCell className="font-medium">
-                              {payment.invoice_no}
-                            </TableCell>
-                            <TableCell>{payment.customer_name}</TableCell>
-                            <TableCell>
-                              <Badge variant="outline">
-                                {payment.method.toUpperCase()}
-                              </Badge>
-                            </TableCell>
-                            <TableCell className="font-mono text-sm">
-                              {payment.ref_no}
-                            </TableCell>
-                            <TableCell>
-                              {formatCurrency(payment.amount)}
-                            </TableCell>
-                            <TableCell>
-                              {new Date(payment.paid_at).toLocaleDateString()}
-                            </TableCell>
-                          </TableRow>
-                        ))
-                      )}
-                    </TableBody>
-                  </Table>
-                  <Pagination
-                    page={paymentPage}
-                    pageSize={paymentPageSize}
-                    totalItems={totalPaymentItems}
-                    onPageChange={(newPage) => setPaymentPage(newPage)}
-                  />
-                </CardContent>
-              </Card>
             </div>
           </div>
         </div>
@@ -580,8 +409,8 @@ export default function Bills() {
             <AlertDialogHeader>
               <AlertDialogTitle>Delete Bill</AlertDialogTitle>
               <AlertDialogDescription>
-                Are you sure you want to delete this bill? This action cannot
-                be undone.
+                Are you sure you want to delete this bill? This action cannot be
+                undone.
               </AlertDialogDescription>
             </AlertDialogHeader>
             <AlertDialogFooter>
@@ -595,17 +424,6 @@ export default function Bills() {
             </AlertDialogFooter>
           </AlertDialogContent>
         </AlertDialog>
-
-        <BillForm
-          bill={selectedBill}
-          isOpen={isFormOpen}
-          onClose={() => {
-            setIsFormOpen(false);
-            setSelectedBill(undefined);
-          }}
-          onSave={handleSave}
-          mode={formMode}
-        />
       </div>
     </ContentContainer>
   );
