@@ -21,6 +21,11 @@ import {
     FileX
 } from "lucide-react";
 import { OccupancyResponse } from "@/interfaces/spaces_interfaces";
+import React from "react";
+import { Progress } from "../ui/progress";
+import { occupancyApiService } from "@/services/spaces_sites/spaceoccupancyapi";
+import { useNavigate } from "react-router-dom";
+import { toast } from "../ui/app-toast";
 
 interface Props {
     spaceId: string;
@@ -45,92 +50,240 @@ const EVENT_META: Record<string, any> = {
 };
 
 export default function OccupancyTab({ spaceId, owners, tenants, occupancy, onSucess }: Props) {
+    const navigate = useNavigate();
     const [isMoveInOpen, setIsMoveInOpen] = useState(false);
     const [isMoveOutOpen, setIsMoveOutOpen] = useState(false);
 
     const current = occupancy?.current || { status: "vacant" };
-    const isOccupied = current.status === "occupied";
     const isVacant = current.status === "vacant";
+    const isOccupied = current.status === "occupied";
+    const isMoveOutScheduled = current.status === "move_out_scheduled";
+    const isHandoverAwaited = current.status === "handover_awaited";
+    const isRecentlyVacated = current.status === "recently_vacated";
+
+    const openInspection = (occupancyId: string) => {
+        navigate(`/inspection/${occupancyId}`)
+    }
+
+    const completeHandover = async (occupancyId: string) => {
+        const response = await occupancyApiService.completeHandover(occupancyId)
+        if (response?.succes) {
+            toast.success("Handover completed")
+            onSucess()
+        }
+    }
+
+    const updateHandover = async (occupancyId: string, type: "keys" | "accessories") => {
+        const params = { item: type }
+        const response = await occupancyApiService.updateHandover(occupancyId, params)
+        if (response?.succes) {
+            toast.success("Handover completed")
+            onSucess()
+        }
+    }
+
+    const handoverProgress = React.useMemo(() => {
+        if (!current?.handover) return 0
+
+        let steps = 0
+        let completed = 0
+
+        // Keys returned
+        steps++
+        if (current.handover.keys_returned) completed++
+
+        // Damage inspection
+        steps++
+        if (current.handover.inspection_completed) completed++
+
+        // Accessories returned
+        steps++
+        if (current.handover.accessories_returned) completed++
+
+        // Final completion
+        steps++
+        if (current.handover.status === "completed") completed++
+
+        return Math.round((completed / steps) * 100)
+    }, [current])
+
+    const workflow = {
+        inspectionDone: current?.handover?.inspection_completed,
+        keysReturned: current?.handover?.keys_returned,
+        accessoriesReturned: current?.handover?.accessories_returned,
+        completed: current?.handover?.status === "completed"
+    }
+
+    const nextStep =
+        !workflow.inspectionDone
+            ? "inspection"
+            : !workflow.keysReturned
+                ? "keys"
+                : !workflow.accessoriesReturned
+                    ? "accessories"
+                    : !workflow.completed
+                        ? "complete"
+                        : null
 
     return (
         <div className="space-y-6">
 
             {/* ================= Current Occupancy ================= */}
             <Card>
-                <CardHeader>
-                    <CardTitle className="flex items-center gap-2">
-                        <Users className="h-5 w-5" /> Current Occupancy
-                    </CardTitle>
-                </CardHeader>
-                <CardContent className="space-y-4">
-
-                    {/* Status + Actions */}
+                <CardHeader className="pb-2">
                     <div className="flex items-center justify-between">
-                        <Badge variant={isOccupied ? "default" : "secondary"}>
+                        <CardTitle className="flex items-center gap-2">
+                            <Users className="h-5 w-5" />
+                            Current Occupancy
+                        </CardTitle>
+
+                        <Badge
+                            variant={
+                                isOccupied
+                                    ? "default"
+                                    : isHandoverAwaited
+                                        ? "secondary"
+                                        : isMoveOutScheduled
+                                            ? "outline"
+                                            : "secondary"
+                            }
+                            className="text-xs px-3 py-1"
+                        >
                             {current.status?.toUpperCase() || "VACANT"}
                         </Badge>
+                    </div>
+                </CardHeader>
 
-                        <div className="flex gap-2">
-                            {/* MOVE-IN */}
-                            {isVacant && current.can_request_move_in && (owners.length > 0 || tenants.length > 0) && (
-                                <Button onClick={() => setIsMoveInOpen(true)}>
-                                    <LogIn className="h-4 w-4 mr-1" /> Move-In
-                                </Button>
-                            )}
+                <CardContent className="space-y-6">
 
-                            {/* MOVE-OUT */}
-                            {isOccupied && current.can_request_move_out && (
-                                <Button
-                                    variant="destructive"
-                                    onClick={() => setIsMoveOutOpen(true)}
-                                >
-                                    <LogOut className="h-4 w-4 mr-1" /> Move-Out
-                                </Button>
-                            )}
-                        </div>
+                    {/* ACTIONS */}
+                    <div className="flex flex-wrap gap-2">
+                        {isVacant && current.can_request_move_in && (owners.length > 0 || tenants.length > 0) && (
+                            <Button onClick={() => setIsMoveInOpen(true)}>
+                                <LogIn className="h-4 w-4 mr-2" />
+                                Move-In
+                            </Button>
+                        )}
+
+                        {isOccupied && current.can_request_move_out && (
+                            <Button variant="destructive" onClick={() => setIsMoveOutOpen(true)}>
+                                <LogOut className="h-4 w-4 mr-2" />
+                                Move-Out
+                            </Button>
+                        )}
+
+                        {isHandoverAwaited && (
+                            <>
+                                {nextStep === "inspection" && (
+                                    <Button onClick={() => openInspection(current.handover?.occupancy_id)}>
+                                        Start Inspection
+                                    </Button>
+                                )}
+
+                                {nextStep === "keys" && (
+                                    <Button onClick={() => updateHandover(current.handover?.occupancy_id, "keys")}>
+                                        Mark Keys Returned
+                                    </Button>
+                                )}
+
+                                {nextStep === "accessories" && (
+                                    <Button onClick={() => updateHandover(current.handover?.occupancy_id, "accessories")}>
+                                        Confirm Accessories
+                                    </Button>
+                                )}
+
+                                {nextStep === "complete" && (
+                                    <Button onClick={() => completeHandover(current.handover?.occupancy_id)}>
+                                        Complete Handover
+                                    </Button>
+                                )}
+                            </>
+                        )}
                     </div>
 
-                    {/* Occupant Details */}
-                    {isOccupied && (
-                        <div className="grid grid-cols-3 gap-4 text-sm">
-                            <div>
-                                <p className="text-muted-foreground">Occupant</p>
-                                <p className="font-medium">{current.occupant_name}</p>
-                            </div>
-                            <div>
-                                <p className="text-muted-foreground">Type</p>
-                                <p className="font-medium capitalize">{current.occupant_type}</p>
-                            </div>
-                            <div>
-                                <p className="text-muted-foreground">Move-In</p>
-                                <p>{formatDate(current.move_in_date)}</p>
-                            </div>
+                    {/* OCCUPANT SUMMARY */}
+                    {(isOccupied || isHandoverAwaited) && (
+                        <div className="grid md:grid-cols-4 sm:grid-cols-2 gap-4 border rounded-lg p-4">
+                            <Info label="Occupant" value={current.occupant_name} />
+                            <Info label="Type" value={current.occupant_type} />
+                            <Info label="Move-In" value={formatDate(current.move_in_date)} />
                             {current.move_out_date && (
-                                <div>
-                                    <p className="text-muted-foreground">Move-Out</p>
-                                    <p>{formatDate(current.move_out_date)}</p>
-                                </div>
+                                <Info label="Move-Out" value={formatDate(current.move_out_date)} />
                             )}
                             {current.time_slot && (
-                                <div>
-                                    <p className="text-muted-foreground">Time Slot</p>
-                                    <p>{current.time_slot}</p>
-                                </div>
+                                <Info label="Time Slot" value={current.time_slot} />
                             )}
                         </div>
                     )}
 
+                    {/* HANDOVER SECTION */}
                     {/* Handover Details */}
                     {current.handover && (
-                        <div className="border-t pt-3 text-sm space-y-1">
-                            <p className="font-semibold">Handover Details</p>
-                            <p>Status: <Badge variant={current.handover.status === "completed" ? "default" : "secondary"}>{current.handover.status}</Badge></p>
-                            <p>Handover By: {current.handover.handover_by}</p>
-                            <p>Handover To: {current.handover.handover_to || "N/A"}</p>
-                            {current.handover.condition_notes && <p>Notes: {current.handover.condition_notes}</p>}
+                        <div className="border-t pt-3 text-sm space-y-3">
+                            <div className="bg-muted/40 rounded-lg p-4 space-y-4">
+                                <p className="font-semibold">Handover Details</p>
+
+                                <p>
+                                    Status:
+                                    <Badge
+                                        variant={
+                                            current.handover.status === "completed"
+                                                ? "default"
+                                                : "secondary"
+                                        }
+                                    >
+                                        {current.handover.status}
+                                    </Badge>
+                                </p>
+
+                                {/* ADD PROGRESS HERE */}
+                                <div className="space-y-2">
+                                    <div className="flex items-center justify-between text-sm">
+                                        <p className="font-medium">Handover Progress</p>
+                                        <span className="text-muted-foreground">
+                                            {handoverProgress}%
+                                        </span>
+                                    </div>
+                                    <Progress value={handoverProgress} />
+                                </div>
+
+                                {/* ADD CHECKLIST HERE */}
+
+                                <div className="grid grid-cols-2 md:grid-cols-4 gap-3 text-xs">
+                                    <WorkflowStep
+                                        title="Inspection"
+                                        done={workflow.inspectionDone}
+                                        active={nextStep === "inspection"}
+                                    />
+
+                                    <WorkflowStep
+                                        title="Keys Returned"
+                                        done={workflow.keysReturned}
+                                        active={nextStep === "keys"}
+                                    />
+
+                                    <WorkflowStep
+                                        title="Accessories"
+                                        done={workflow.accessoriesReturned}
+                                        active={nextStep === "accessories"}
+                                    />
+
+                                    <WorkflowStep
+                                        title="Completed"
+                                        done={workflow.completed}
+                                        active={nextStep === "complete"}
+                                    />
+                                </div>
+
+                                <p>Handover By: {current.handover.handover_by}</p>
+                                <p>Handover To: {current.handover.handover_to || "N/A"}</p>
+
+                                {current.handover.condition_notes && (
+                                    <p>Notes: {current.handover.condition_notes}</p>
+                                )}
+                            </div>
                         </div>
                     )}
-
                 </CardContent>
             </Card>
 
@@ -164,7 +317,7 @@ export default function OccupancyTab({ spaceId, owners, tenants, occupancy, onSu
                     ) : (
                         <div className="relative pl-6">
                             <div className="space-y-6">
-                                {occupancy.history.map((e, i) => {
+                                {occupancy?.history.map((e, i) => {
                                     const meta = EVENT_META[e.event] || {};
                                     const Icon = meta.icon || Clock;
                                     return (
@@ -213,4 +366,41 @@ export default function OccupancyTab({ spaceId, owners, tenants, occupancy, onSu
             />
         </div>
     );
+}
+
+function Info({ label, value }) {
+    return (
+        <div>
+            <p className="text-muted-foreground text-xs">{label}</p>
+            <p className="font-medium">{value || "-"}</p>
+        </div>
+    )
+}
+
+function StatusItem({ label, done }) {
+    return (
+        <div className="flex items-center gap-2">
+            <div
+                className={`h-2 w-2 rounded-full ${done ? "bg-green-500" : "bg-gray-300"
+                    }`}
+            />
+            <span>{label}</span>
+        </div>
+    )
+}
+
+function WorkflowStep({ title, done, active }) {
+    return (
+        <div className="flex items-center gap-2">
+            <div
+                className={`h-3 w-3 rounded-full ${done
+                    ? "bg-green-500"
+                    : active
+                        ? "bg-blue-500 animate-pulse"
+                        : "bg-gray-300"
+                    }`}
+            />
+            <span className={done ? "text-green-600" : ""}>{title}</span>
+        </div>
+    )
 }

@@ -73,7 +73,6 @@ import { tenantsApiService } from "@/services/leasing_tenants/tenantsapi";
 import { occupancyApiService } from "@/services/spaces_sites/spaceoccupancyapi";
 import { parkingSlotApiService } from "@/services/parking_access/parkingslotsapi";
 import { ParkingSlot } from "@/interfaces/parking_access_interface";
-import { parkingZoneApiService } from "@/services/parking_access/parkingzonesapi";
 import { useSettings } from "@/context/SettingsContext";
 
 export default function SpaceDetailPage() {
@@ -159,85 +158,6 @@ export default function SpaceDetailPage() {
     if (response.success) setAccessoriesList(response.data || []);
   };
 
-  const loadZonesBySite = async (siteId: string) => {
-    const params = new URLSearchParams();
-    params.append("site_id", siteId);
-    const response = await parkingZoneApiService.getParkingZoneLookup(params);
-    if (response?.success) {
-      setZoneList(response.data || []);
-    }
-  };
-
-  const loadSlotsByZone = async (zoneId: string) => {
-    const params = new URLSearchParams();
-    params.append("zone_id", zoneId);
-    // Using getParkingSlots as fallback since all-slot-lookup endpoint may not be available
-    const response = await parkingSlotApiService.getParkingSlots(params);
-    if (response?.success) {
-      const slotsData = response.data?.slots || response.data || [];
-      setSlotList(Array.isArray(slotsData) ? slotsData : []);
-    }
-  };
-
-  // const handleOpenParkingSlotForm = (slot?: ParkingSlot) => {
-  //   if (space?.site_id) {
-  //     loadZonesBySite(space.site_id);
-  //     setIsParkingSlotFormOpen(true);
-  //     if (slot) {
-  //       // Editing mode
-  //       setEditingSlot(slot);
-  //       setSelectedZoneId(slot.zone_id);
-  //       setSelectedSlotId(slot.id);
-  //       loadSlotsByZone(slot.zone_id);
-  //     } else {
-  //       // Adding mode
-  //       setEditingSlot(null);
-  //       setSelectedZoneId("");
-  //       setSelectedSlotId("");
-  //       setSlotList([]);
-  //     }
-  //   }
-  // };
-
-  // const handleZoneChange = (zoneId: string) => {
-  //   setSelectedZoneId(zoneId);
-  //   setSelectedSlotId("");
-  //   if (zoneId) {
-  //     loadSlotsByZone(zoneId);
-  //   } else {
-  //     setSlotList([]);
-  //   }
-  // };
-
-  const handleAssignParkingSlot = async () => {
-    if (!id || !selectedSlotId) {
-      toast.error("Please select a parking slot");
-      return;
-    }
-
-    const isEditMode = !!editingSlot;
-
-    const response = await withLoader(async () => {
-      return await parkingSlotApiService.updateSpaceParkingSlots({
-        space_id: id,
-        parking_slot_ids: [selectedSlotId],
-      });
-    });
-
-    if (response?.success) {
-      toast.success(
-        isEditMode
-          ? "Parking slot updated successfully"
-          : "Parking slot assigned successfully",
-      );
-      setIsParkingSlotFormOpen(false);
-      setEditingSlot(null);
-      setSelectedZoneId("");
-      setSelectedSlotId("");
-    } else {
-      toast.error(response?.message || "Failed to assign parking slot");
-    }
-  };
 
   const handleRemoveParkingSlot = async () => {
     if (!id || !deleteSlotId) return;

@@ -45,6 +45,8 @@ const emptyFormData: TicketWorkOrderFormValues = {
   description: "",
   assigned_to: "",
   vendor_name: "",
+  bill_to_id: undefined,
+  bill_to_type: undefined,
   status: "pending",
   labour_cost: undefined,
   material_cost: undefined,
@@ -80,6 +82,7 @@ export function TicketWorkOrderForm({
   const [ticketsList, setTicketsList] = useState<any[]>([]);
   const [statusList, setStatusList] = useState<any[]>([]);
   const [taxCodeList, setTaxCodeList] = useState<any[]>([]);
+  const [billToList, setBillToList] = useState<any[]>([]);
   const { systemCurrency } = useSettings();
   const [selectedTicketDetails, setSelectedTicketDetails] = useState<any>(null);
   const [isLoadingTicketDetails, setIsLoadingTicketDetails] = useState(false);
@@ -97,22 +100,24 @@ export function TicketWorkOrderForm({
     reset(
       workOrder && mode !== "create"
         ? {
-            ticket_id: workOrder.ticket_id || "",
-            description: workOrder.description || "",
-            assigned_to: workOrder.assigned_to || "",
-            vendor_name: workOrder.vendor_name || "",
-            status: workOrder.status || "PENDING",
-            labour_cost: workOrder.labour_cost || undefined,
-            material_cost: workOrder.material_cost || undefined,
-            other_expenses: workOrder.other_expenses || undefined,
-            estimated_time: workOrder.estimated_time || undefined,
-            special_instructions: workOrder.special_instructions || "",
-            tax_code_id: workOrder.tax_code_id || "",
-          }
+          ticket_id: workOrder.ticket_id || "",
+          description: workOrder.description || "",
+          assigned_to: workOrder.assigned_to || "",
+          bill_to_id: workOrder.bill_to_id || "",
+          bill_to_type: workOrder.bill_to_type || "",
+          vendor_name: workOrder.vendor_name || "",
+          status: workOrder.status || "PENDING",
+          labour_cost: workOrder.labour_cost || undefined,
+          material_cost: workOrder.material_cost || undefined,
+          other_expenses: workOrder.other_expenses || undefined,
+          estimated_time: workOrder.estimated_time || undefined,
+          special_instructions: workOrder.special_instructions || "",
+          tax_code_id: workOrder.tax_code_id || "",
+        }
         : {
-            ...emptyFormData,
-            ticket_id: initialTicketId || "",
-          },
+          ...emptyFormData,
+          ticket_id: initialTicketId || "",
+        },
     );
 
     setFormLoading(false);
@@ -155,6 +160,7 @@ export function TicketWorkOrderForm({
           );
         if (response.success) {
           setSelectedTicketDetails(response.data);
+          setBillToList(response.data?.bill_to_options || []);
         }
         setIsLoadingTicketDetails(false);
       } else {
@@ -192,8 +198,8 @@ export function TicketWorkOrderForm({
       assigned_to: data.assigned_to || null,
       tax_code_id:
         data.tax_code_id &&
-        data.tax_code_id !== "NO_TAX" &&
-        data.tax_code_id !== ""
+          data.tax_code_id !== "NO_TAX" &&
+          data.tax_code_id !== ""
           ? data.tax_code_id
           : undefined,
     };
@@ -206,35 +212,35 @@ export function TicketWorkOrderForm({
   // Create fallback options for fields that might not be in lookup lists
   const fallbackTicket = workOrder?.ticket_id
     ? {
-        id: workOrder.ticket_id,
-        name:
-          workOrder.ticket_name ||
-          workOrder.ticket_no ||
-          `Ticket (${workOrder.ticket_id.slice(0, 6)})`,
-      }
+      id: workOrder.ticket_id,
+      name:
+        workOrder.ticket_name ||
+        workOrder.ticket_no ||
+        `Ticket (${workOrder.ticket_id.slice(0, 6)})`,
+    }
     : null;
 
   const fallbackVendor = workOrder?.vendor_name
     ? {
-        id: workOrder.vendor_id || "",
-        name: workOrder.vendor_name,
-      }
+      id: workOrder.vendor_id || "",
+      name: workOrder.vendor_name,
+    }
     : null;
 
   const fallbackStatus = workOrder?.status
     ? {
-        id: workOrder.status,
-        name: workOrder.status,
-      }
+      id: workOrder.status,
+      name: workOrder.status,
+    }
     : null;
 
   const fallbackTaxCode = workOrder?.tax_code_id
     ? {
-        id: workOrder.tax_code_id,
-        name:
-          workOrder.tax_code_name ||
-          `Tax Code (${workOrder.tax_code_id.slice(0, 6)})`,
-      }
+      id: workOrder.tax_code_id,
+      name:
+        workOrder.tax_code_name ||
+        `Tax Code (${workOrder.tax_code_id.slice(0, 6)})`,
+    }
     : null;
 
   // Apply fallback to lists
@@ -255,7 +261,7 @@ export function TicketWorkOrderForm({
 
   return (
     <Dialog open={isOpen} onOpenChange={handleClose}>
-      <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
+      <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
         <DialogHeader>
           <DialogTitle>
             {mode === "create" && "Create Ticket Work Order"}
@@ -273,7 +279,7 @@ export function TicketWorkOrderForm({
           ) : (
             <div className="space-y-4">
               {/* Row 1: Ticket ID | Status */}
-              <div className="grid grid-cols-2 gap-4">
+              <div className="grid grid-cols-3 gap-4">
                 <Controller
                   name="ticket_id"
                   control={control}
@@ -306,6 +312,38 @@ export function TicketWorkOrderForm({
                         </p>
                       )}
                     </div>
+                  )}
+                />
+                <input type="hidden" {...register("bill_to_type")} />
+                <Controller
+                  name="bill_to_id"
+                  control={control}
+                  render={({ field }) => (
+                    <div className="space-y-2">
+                      <Label htmlFor="status">Bill To *</Label>
+                      <Select
+                        value={field.value || ""}
+                        onValueChange={(value) => {
+                          const selected = billToList.find((o) => o.id === value);
+
+                          field.onChange(value); // bill_to_id
+                          setValue("bill_to_type", selected?.type); // set type
+                        }}
+                      >
+                        <SelectTrigger>
+                          <SelectValue placeholder="Select who to bill" />
+                        </SelectTrigger>
+
+                        <SelectContent>
+                          {billToList.map((option) => (
+                            <SelectItem key={option.id} value={option.id}>
+                              {option.type.toUpperCase()} - {option.name}
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                    </div>
+
                   )}
                 />
                 <Controller
@@ -341,7 +379,6 @@ export function TicketWorkOrderForm({
                   )}
                 />
               </div>
-
               {/* Row 2: Preview (when ticket selected) or Description (when no ticket) */}
               {selectedTicketId ? (
                 isLoadingTicketDetails ? (
@@ -352,20 +389,43 @@ export function TicketWorkOrderForm({
                     </div>
                   </div>
                 ) : selectedTicketDetails ? (
-                  <div className="bg-muted p-4 rounded-lg space-y-2">
-                    <h4 className="font-medium text-sm">Assignment Preview:</h4>
-                    <div className="text-sm text-muted-foreground space-y-1">
-                      <div>
-                        <strong>Staff:</strong>{" "}
-                        {selectedTicketDetails?.assigned_to_name ||
-                          selectedTicketDetails?.assigned_to?.name ||
-                          "N/A"}
+                  <div className="bg-muted/50 border rounded-lg p-4 space-y-3">
+                    <div className="flex items-center justify-between">
+                      <h4 className="text-sm font-semibold">Assignment Preview</h4>
+                      <span className="text-xs text-muted-foreground">
+                        Auto-filled from ticket
+                      </span>
+                    </div>
+
+                    <div className="grid grid-cols-2 gap-4">
+                      {/* Staff */}
+                      <div className="flex items-center gap-3 p-3 bg-background rounded-md border">
+                        <div className="h-8 w-8 rounded-full bg-primary/10 flex items-center justify-center text-sm font-medium">
+                          S
+                        </div>
+                        <div>
+                          <p className="text-xs text-muted-foreground">Staff</p>
+                          <p className="text-sm font-medium">
+                            {selectedTicketDetails?.assigned_to_name ||
+                              selectedTicketDetails?.assigned_to?.name ||
+                              "Not Assigned"}
+                          </p>
+                        </div>
                       </div>
-                      <div>
-                        <strong>Vendor:</strong>{" "}
-                        {selectedTicketDetails?.vendor_name ||
-                          selectedTicketDetails?.assigned_vendor_name ||
-                          "N/A"}
+
+                      {/* Vendor */}
+                      <div className="flex items-center gap-3 p-3 bg-background rounded-md border">
+                        <div className="h-8 w-8 rounded-full bg-primary/10 flex items-center justify-center text-sm font-medium">
+                          V
+                        </div>
+                        <div>
+                          <p className="text-xs text-muted-foreground">Vendor</p>
+                          <p className="text-sm font-medium">
+                            {selectedTicketDetails?.vendor_name ||
+                              selectedTicketDetails?.assigned_vendor_name ||
+                              "Not Assigned"}
+                          </p>
+                        </div>
                       </div>
                     </div>
                   </div>
@@ -410,7 +470,7 @@ export function TicketWorkOrderForm({
               )}
 
               {/* Row 4: Labour | Material | Other Expenses */}
-              <div className="grid grid-cols-3 gap-4">
+              <div className="grid grid-cols-4 gap-4">
                 <div className="space-y-2">
                   <Label htmlFor="labour_cost">
                     Labour Cost ({formatCurrency(0)})
@@ -461,9 +521,6 @@ export function TicketWorkOrderForm({
                     disabled={isReadOnly}
                   />
                 </div>
-              </div>
-              {/* Row 5: Estimated Time | Tax Code */}
-              <div className="grid grid-cols-2 gap-4">
                 <div className="space-y-2">
                   <Label htmlFor="estimated_time">
                     Estimated Time (minutes) *
@@ -485,33 +542,6 @@ export function TicketWorkOrderForm({
                       {errors.estimated_time.message}
                     </p>
                   )}
-                </div>
-
-                <div className="space-y-2">
-                  <Label htmlFor="tax_code_id">Tax Code</Label>
-                  <Controller
-                    name="tax_code_id"
-                    control={control}
-                    render={({ field }) => (
-                      <Select
-                        value={field.value || ""}
-                        onValueChange={field.onChange}
-                        disabled={isReadOnly}
-                      >
-                        <SelectTrigger>
-                          <SelectValue placeholder="Select tax code" />
-                        </SelectTrigger>
-                        <SelectContent>
-                          <SelectItem value="NO_TAX">No Tax</SelectItem>
-                          {taxCodes.map((tax) => (
-                            <SelectItem key={tax.id} value={tax.id}>
-                              {tax.name}
-                            </SelectItem>
-                          ))}
-                        </SelectContent>
-                      </Select>
-                    )}
-                  />
                 </div>
               </div>
 

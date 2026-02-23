@@ -40,18 +40,21 @@ export interface SpaceOverview {
 }
 
 export interface HandoverInfo {
+    occupancy_id: string;
     handover_date: string;
     handover_by: string;
     handover_to?: string | null;
     condition_notes?: string | null;
     keys_returned: boolean;
-    access_cards_returned: boolean;
-    parking_pass_returned: boolean;
+    accessories_returned: boolean;
+    inspection_completed: boolean;
+    status: string;
 }
 
 export interface OccupancyRecord {
+
     // Core status
-    status: "vacant" | "occupied";
+    status: "vacant" | "occupied" | "move_out_scheduled" | "handover_awaited" | "recently_vacated";
 
     // Current occupant details (if occupied)
     occupant_type?: string;
@@ -63,7 +66,8 @@ export interface OccupancyRecord {
     elevator_required?: boolean;
     parking_required?: boolean;
     reference_no?: string;
-
+    can_request_move_in?: boolean;
+    can_request_move_out?: boolean;
     // Optional handover info
     handover?: HandoverInfo;
 }

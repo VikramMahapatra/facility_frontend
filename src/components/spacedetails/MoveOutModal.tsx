@@ -59,7 +59,8 @@ export default function MoveOutModal({
                 </DialogHeader>
 
                 <p className="text-sm text-muted-foreground">
-                    This will mark the space as vacant and end the current occupancy.
+                    This will initiate the move out process. Kindly do the handover to mark the space as vacant
+                    & end the current occupancy.
                 </p>
 
                 <div className="space-y-3">
