@@ -1,45 +1,41 @@
 import * as z from "zod";
 
-const paymentSchema = z
-  .object({
-    method: z.enum(["upi", "card", "bank", "cash", "cheque", "gateway"], {
-      required_error: "Payment method is required",
-    }),
+const paymentSchema = z.object({
+  method: z.enum(["upi", "card", "bank", "cash", "cheque", "gateway"], {
+    required_error: "Payment method is required",
+  }),
+  paid_at: z.string().min(1, "Payment date is required"),
+  amount: z.coerce
+    .number()
+    .positive("Payment amount must be greater than zero"),
+});
 
-    ref_no: z.string().optional(),
-
-    paid_at: z.string().min(1, "Payment date is required"),
-
-    amount: z.coerce
-      .number()
-      .positive("Payment amount must be greater than zero"),
-  })
-  .refine(
-    (data) => {
-      // Reference number required for non-cash payments
-      if (data.method === "cash") return true;
-      return !!data.ref_no && data.ref_no.trim().length > 0;
-    },
-    {
-      message: "Reference number is required for this payment method",
-      path: ["ref_no"],
-    }
-  );
+const billLineSchema = z.object({
+  item: z.string().min(1, "Period is required"),
+  description: z.string().optional(),
+  amount: z.coerce.number().min(0, "Amount cannot be negative"),
+  tax: z.coerce.number().min(0, "Tax percentage cannot be negative").default(5),
+});
 
 export const billSchema = z
   .object({
+    bill_no: z.string().optional(),
     site_id: z.string().min(1, "Site is required"),
     building_id: z.string().optional(),
     space_id: z.string().optional(),
     vendor_id: z.string().min(1, "Vendor is required"),
+    vendor_name: z.string().optional(),
+    vendor_email: z.string().optional(),
+    vendor_phone: z.string().optional(),
     date: z.string().min(1, "Bill Date is required"),
-    due_date: z.string().min(1, "Due date is required"),
     status: z
-      .enum(["draft", "issued", "paid", "partial", "void", "overdue"])
+      .enum(["draft", "approved", "paid", "partial"])
       .optional(),
     currency: z.string().optional(),
-    billable_item_type: z.string().min(1, "Billable item type is required"),
-    billable_item_id: z.string().min(1, "Billable item is required"),
+    billable_item_type: z.string().optional(),
+    billable_item_id: z.string().optional(),
+    code: z.string().optional(), // For work order type
+    items: z.array(billLineSchema).min(1, "At least one item is required"),
     totals: z
       .object({
         sub: z.coerce.number().min(0, "Subtotal cannot be negative").optional(),
@@ -51,18 +47,7 @@ export const billSchema = z
       })
       .optional(),
     payments: z.array(paymentSchema).optional(),
+    notes: z.string().optional(),
   })
-  .refine(
-    (data) => {
-      if (!data.due_date || !data.date) return true;
-      const purchaseDate = new Date(data.date);
-      const dueDate = new Date(data.due_date);
-      return dueDate >= purchaseDate;
-    },
-    {
-      message: "Due date must be on or after the bill date",
-      path: ["due_date"],
-    }
-  );
 
 export type BillFormValues = z.infer<typeof billSchema>;

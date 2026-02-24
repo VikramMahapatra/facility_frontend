@@ -86,6 +86,7 @@ import { ModalProvider } from "./context/ModalContext";
 import ParkingSlots from "./pages/ParkingSlots";
 import SpaceOccupancyApproval from "./pages/SpaceOccupancyApproval";
 import Bills from "./pages/Bills";
+import BillFormPage from "./pages/BillFormPage";
 
 const queryClient = new QueryClient();
 
@@ -191,6 +192,9 @@ const App = () => {
                     element={<InvoiceDetailPage />}
                   />
                   <Route path="/bills" element={<Bills />} />
+                  <Route path="/bills/create" element={<BillFormPage />} />
+                  <Route path="/bills/:id/edit" element={<BillFormPage />} />
+                  <Route path="/bills/:id/view" element={<BillFormPage />} />
                   <Route path="/revenue-reports" element={<RevenueReports />} />
                   <Route path="/tax-management" element={<TaxManagement />} />
                   <Route path="/assets" element={<Assets />} />

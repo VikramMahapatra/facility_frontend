@@ -95,8 +95,7 @@ export interface Bill {
   billable_item_id?: string;
   bill_no: string;
   date: string;
-  due_date: string;
-  status: "draft" | "issued" | "paid" | "partial" | "void" | "overdue";
+  status: "draft" | "approved" | "paid" | "partial";
   currency: string;
   totals: {
     sub: number;
