@@ -20,23 +20,62 @@ class OccupancyApiService {
         return await apiService.request(`/spaces/${id}/occupancy`);
     }
 
+    async getSpaceOccupancyUpcomingMoveIns(id: any) {
+        return await apiService.request(`/spaces/${id}/occupancy/upcoming-movein`);
+    }
+
+    async getSpaceOccupancyHistory(id: any) {
+        return await apiService.request(`/spaces/${id}/occupancy/history`);
+    }
+
+    async getSpaceOccupancyTimeline(id: any) {
+        return await apiService.request(`/spaces/${id}/occupancy/timeline`, {
+            method: 'POST',
+        });
+    }
+
     async updateHandover(occupancyId: string, params: any) {
-        return await apiService.request(`/spaces/handover/${occupancyId}/update-checklist`, {
+        return await apiService.request(`/spaces/handover/${occupancyId}/update-handover`, {
             method: 'POST',
             body: JSON.stringify(params),
         });
     }
 
-    async completeHandover(occupancyId: string) {
-        return await apiService.request(`/spaces/handover/${occupancyId}/complete`, {
+    async requestInspection(params: any) {
+        return await apiService.request(`/spaces/inspection/request`, {
             method: 'POST',
+            body: JSON.stringify(params)
         });
     }
 
-
-    async fetchInspection(inspectionId: any) {
-        return await apiService.request(`/api/inspection/${inspectionId}`);
+    async completeInspection(inspectionId: string, params: any) {
+        return await apiService.request(`/spaces/inspection/${inspectionId}/complete`, {
+            method: 'POST',
+            body: JSON.stringify(params),
+        });
     }
+
+    async createMaintenance(params: any) {
+        return await apiService.request(`/spaces/maintenance/create`, {
+            method: 'POST',
+            body: JSON.stringify(params)
+        });
+    }
+
+    async completeMaintenance(maintenanceId: string, params: any) {
+        return await apiService.request(`/spaces/maintenance/${maintenanceId}/complete`, {
+            method: 'POST',
+            body: JSON.stringify(params),
+        });
+    }
+
+    async completeSettlement(settlementId: string, params: any) {
+        return await apiService.request(`/spaces/settlement/${settlementId}/complete`, {
+            method: 'POST',
+            body: JSON.stringify(params),
+        });
+    }
+
 }
 
 export const occupancyApiService = new OccupancyApiService();//

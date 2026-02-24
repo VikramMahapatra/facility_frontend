@@ -59,7 +59,6 @@ export default function HandoverDialog({ open, onClose, handover, onSubmit }) {
             remarks
         });
 
-        onClose();
     };
 
     return (

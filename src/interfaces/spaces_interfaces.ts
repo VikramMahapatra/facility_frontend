@@ -59,11 +59,11 @@ export interface HandoverInfo {
 }
 
 export interface OccupancyRecord {
-
     // Core status
     status: "vacant" | "occupied" | "move_out_scheduled" | "handover_awaited" | "recently_vacated";
-
     // Current occupant details (if occupied)
+    id?: string;
+    move_out_id?: string;
     occupant_type?: string;
     occupant_name?: string;
     move_in_date?: string;
@@ -77,6 +77,9 @@ export interface OccupancyRecord {
     can_request_move_out?: boolean;
     // Optional handover info
     handover?: HandoverInfo;
+    inspection?: any;
+    maintenance?: any;
+    settlement?: any;
 }
 
 export interface UpcomingMoveIn {
@@ -102,17 +105,29 @@ export interface PendingMoveOut {
 
 export interface OccupancyResponse {
     current: OccupancyRecord;
-    upcoming: UpcomingMoveIn[];
-    pending_move_outs: PendingMoveOut[];
-    history: any[]; // Keep as any for now, can be typed if you have a timeline interface
 }
 
-export interface HistoryRecord {
-    id: string;
-    occupant_type: string;
-    occupant_name: string;
-    move_in_date: string;
-    move_out_date?: string;
+export interface OccupancyHistory {
+    occupancy_id: string;
+
+    occupant_name?: string | null;
+    occupant_type?: string | null;
+
+    move_in_date?: string | null;
+    move_out_date?: string | null;
+
+    status: string;
+
+    handover_status?: string | null;
+    inspection_status?: string | null;
+
+    maintenance_required?: boolean | null;
+    maintenance_completed?: boolean | null;
+
+    settlement_status?: string | null;
+    final_amount?: number | null;
+
+    created_at: string;
 }
 
 export type TimelineEvent = {

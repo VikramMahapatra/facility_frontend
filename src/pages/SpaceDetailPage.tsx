@@ -38,6 +38,7 @@ import {
   getKindColor,
   getKindIcon,
   getStatusColor,
+  OccupancyHistory,
   OccupancyResponse,
   Space,
   TimelineEvent,
@@ -74,23 +75,16 @@ import { occupancyApiService } from "@/services/spaces_sites/spaceoccupancyapi";
 import { parkingSlotApiService } from "@/services/parking_access/parkingslotsapi";
 import { ParkingSlot } from "@/interfaces/parking_access_interface";
 import { useSettings } from "@/context/SettingsContext";
+import MaintenanceCharge from "@/components/spacedetails/MaintenanceChargeTab";
+import { UpcomingMoveIns } from "@/components/spacedetails/UpcomingMoveIns";
+import { OccupancyHistoryTab } from "@/components/spacedetails/OccupancyHistoryTab";
+import OccupancyTimeline from "@/components/spacedetails/OccupancyTimelineTab";
 
 export default function SpaceDetailPage() {
   const { id } = useParams<{ id: string }>();
   const [space, setSpace] = useState<Space>(null);
-  const [maintenanceItems, setMaintenanceItems] = useState<any[]>([]);
-  const [maintenanceLoading, setMaintenanceLoading] = useState(false);
-  const [maintenanceSearch, setMaintenanceSearch] = useState("");
-  const [maintenancePage, setMaintenancePage] = useState(1);
-  const [maintenancePageSize] = useState(5);
-  const [maintenanceTotal, setMaintenanceTotal] = useState(0);
-  const [maintenanceRecord, setMaintenanceRecord] = useState<any | null>(null);
   const { withLoader } = useLoader();
   const navigate = useNavigate();
-  const [isMaintenanceOpen, setIsMaintenanceOpen] = useState(false);
-  const [maintenanceMode, setMaintenanceMode] = useState<
-    "create" | "edit" | "view"
-  >("create");
   const [isHistoryOpen, setIsHistoryOpen] = useState(false);
   const [owners, setOwners] = useState([]);
   const [tenants, setTenants] = useState({
@@ -98,15 +92,16 @@ export default function SpaceDetailPage() {
     active: [],
   });
   const [occupancy, setOccupancy] = useState<OccupancyResponse>(null);
+  const [occupancyUpcomingMoveIns, setOccupancyUpcomingMoveIns] = useState<any[]>(null);
+  const [occupancyHistory, setOccupancyHistory] = useState<any[]>(null);
+  const [occupancyTimeline, setOccupancyTimeline] = useState<TimelineEvent[]>(null);
+  const [occupancyLoading, setOccupancyLoading] = useState<boolean>(true);
+  const [occupancyMoveInsLoading, setOccupancyMoveInsLoading] = useState<boolean>(true);
+  const [occupancyHistoryLoading, setOccupancyHistoryLoading] = useState<boolean>(true);
+  const [occupancyTimelineLoading, setOccupancyTimelineLoading] = useState<boolean>(true);
   const [isSpaceFormOpen, setIsSpaceFormOpen] = useState(false);
   const [accessoriesList, setAccessoriesList] = useState<any[]>([]);
-  const [isParkingSlotFormOpen, setIsParkingSlotFormOpen] = useState(false);
-  const [editingSlot, setEditingSlot] = useState<ParkingSlot | null>(null);
   const [deleteSlotId, setDeleteSlotId] = useState<string | null>(null);
-  const [zoneList, setZoneList] = useState<any[]>([]);
-  const [slotList, setSlotList] = useState<any[]>([]);
-  const [selectedZoneId, setSelectedZoneId] = useState<string>("");
-  const [selectedSlotId, setSelectedSlotId] = useState<string>("");
   const [assignedParkingSlots, setAssignedParkingSlots] = useState<
     ParkingSlot[]
   >(space?.parking_slots ?? []);
@@ -122,6 +117,9 @@ export default function SpaceDetailPage() {
     fetchTenants();
     fetchOccupancy();
     loadAccessoriesLookup();
+    fetchOccupancyUpcomingMoveIns();
+    fetchOccupancyHistory();
+    fetchOccupancyTimeline();
   }, [id]);
 
   const loadSpace = async () => {
@@ -146,10 +144,40 @@ export default function SpaceDetailPage() {
     }
   };
 
+  const fetchOccupancyUpcomingMoveIns = async () => {
+    setOccupancyMoveInsLoading(true);
+    const res = await occupancyApiService.getSpaceOccupancyUpcomingMoveIns(id);
+    if (res?.success) {
+      setOccupancyUpcomingMoveIns(res.data);
+      setOccupancyMoveInsLoading(false);
+    }
+  };
+
+  const fetchOccupancyHistory = async () => {
+    setOccupancyHistoryLoading(true);
+    const res = await occupancyApiService.getSpaceOccupancyHistory(id);
+    if (res?.success) {
+      setOccupancyHistory(res.data);
+      setOccupancyHistoryLoading(false);
+    }
+  };
+
+  const fetchOccupancyTimeline = async () => {
+    setOccupancyHistoryLoading(true);
+    const res = await occupancyApiService.getSpaceOccupancyTimeline(id);
+    if (res?.success) {
+      setOccupancyTimeline(res.data);
+      setOccupancyTimelineLoading(false);
+    }
+  };
+
+
   const fetchOccupancy = async () => {
+    setOccupancyLoading(true);
     const res = await occupancyApiService.getSpaceOccupancy(id);
     if (res?.success) {
       setOccupancy(res.data);
+      setOccupancyLoading(false);
     }
   };
 
@@ -199,65 +227,11 @@ export default function SpaceDetailPage() {
     fetchOccupancy();
   };
 
-  const loadMaintenances = async (spaceId: string) => {
-    setMaintenanceLoading(true);
-    const params = new URLSearchParams();
-    if (maintenanceSearch) params.append("search", maintenanceSearch);
-    params.append("space_id", spaceId);
-    params.append(
-      "skip",
-      ((maintenancePage - 1) * maintenancePageSize).toString(),
-    );
-    params.append("limit", maintenancePageSize.toString());
-    const response =
-      await ownerMaintenancesApiService.getOwnerMaintenancesBySpace(params);
-    if (response?.success) {
-      setMaintenanceItems(response.data?.maintenances || []);
-      setMaintenanceTotal(response.data?.total_records || 0);
-    }
-    setMaintenanceLoading(false);
+  const onMoveOutSuccess = async () => {
+    fetchOccupancy();
   };
 
-  useEffect(() => {
-    if (space?.id) {
-      loadMaintenances(space.id);
-    }
-  }, [space?.id, maintenancePage]);
 
-  useEffect(() => {
-    if (maintenancePage === 1) {
-      if (space?.id) loadMaintenances(space.id);
-    } else {
-      setMaintenancePage(1);
-    }
-  }, [maintenanceSearch]);
-
-  const getStatusBadge = (status?: string) => {
-    if (!status) return <Badge variant="outline">-</Badge>;
-    switch (status.toLowerCase()) {
-      case "pending":
-        return <Badge className="bg-yellow-100 text-yellow-700">Pending</Badge>;
-      case "invoiced":
-        return <Badge className="bg-blue-100 text-blue-700">Invoiced</Badge>;
-      case "paid":
-        return <Badge className="bg-green-100 text-green-700">Paid</Badge>;
-      case "waived":
-        return <Badge className="bg-purple-100 text-purple-700">Waived</Badge>;
-      default:
-        return <Badge variant="outline">{status}</Badge>;
-    }
-  };
-
-  const formatDate = (value?: string) => {
-    if (!value) return "-";
-    const date = new Date(value);
-    if (Number.isNaN(date.getTime())) return "-";
-    return date.toLocaleDateString("en-US", {
-      year: "numeric",
-      month: "short",
-      day: "numeric",
-    });
-  };
 
   return (
     <ContentContainer>
@@ -318,9 +292,12 @@ export default function SpaceDetailPage() {
           <Separator />
 
           <Tabs defaultValue="info">
-            <TabsList className="grid w-full grid-cols-3">
+            <TabsList className="grid w-full grid-cols-6">
               <TabsTrigger value="info">Space Information</TabsTrigger>
               <TabsTrigger value="occupancy">Occupany Information</TabsTrigger>
+              <TabsTrigger value="upcoming_moveins">Upcoming Move Ins </TabsTrigger>
+              <TabsTrigger value="occupancy_history">Occupany History </TabsTrigger>
+              <TabsTrigger value="occupancy_timeline">Occupany Timeline </TabsTrigger>
               <TabsTrigger value="maintenance">Maintenance Charges</TabsTrigger>
             </TabsList>
 
@@ -430,15 +407,6 @@ export default function SpaceDetailPage() {
                         <Car className="h-5 w-5" /> Parking Assigned
                       </h1>
                     </CardTitle>
-                    {/* <Button
-                      variant="outline"
-                      size="sm"
-                      onClick={() => handleOpenParkingSlotForm()}
-                      className="flex items-center gap-2"
-                    >
-                      <Plus className="h-4 w-4" />
-                      Add Slot
-                    </Button> */}
                   </div>
                 </CardHeader>
                 <CardContent>
@@ -499,98 +467,6 @@ export default function SpaceDetailPage() {
                 spaceId={id!}
               />
 
-              {/* Assign Parking Slot Dialog */}
-              {/* <Dialog open={isParkingSlotFormOpen} onOpenChange={(open) => {
-                setIsParkingSlotFormOpen(open);
-                if (!open) {
-                  setEditingSlot(null);
-                  setSelectedZoneId("");
-                  setSelectedSlotId("");
-                }
-              }}>
-                <DialogContent className="max-w-md">
-                  <DialogHeader>
-                    <DialogTitle>
-                      {editingSlot ? "Update Parking Slot" : "Assign Parking Slot"}
-                    </DialogTitle>
-                  </DialogHeader>
-                  <div className="space-y-4 py-4">
-                    <div className="space-y-2">
-                      <Label htmlFor="zone_id">Zone *</Label>
-                      <Select
-                        value={selectedZoneId}
-                        onValueChange={handleZoneChange}
-                      >
-                        <SelectTrigger>
-                          <SelectValue placeholder="Select Zone" />
-                        </SelectTrigger>
-                        <SelectContent>
-                          {zoneList.length === 0 ? (
-                            <SelectItem value="none" disabled>
-                              No zones available
-                            </SelectItem>
-                          ) : (
-                            zoneList.map((zone) => (
-                              <SelectItem key={zone.id} value={zone.id}>
-                                {zone.name}
-                              </SelectItem>
-                            ))
-                          )}
-                        </SelectContent>
-                      </Select>
-                    </div>
-
-                    <div className="space-y-2">
-                      <Label htmlFor="slot_id">Parking Slot *</Label>
-                      <Select
-                        value={selectedSlotId}
-                        onValueChange={setSelectedSlotId}
-                        disabled={!selectedZoneId}
-                      >
-                        <SelectTrigger>
-                          <SelectValue
-                            placeholder={
-                              !selectedZoneId
-                                ? "Select zone first"
-                                : "Select Parking Slot"
-                            }
-                          />
-                        </SelectTrigger>
-                        <SelectContent>
-                          {slotList.length === 0 ? (
-                            <SelectItem value="none" disabled>
-                              {selectedZoneId
-                                ? "No slots available"
-                                : "Select zone first"}
-                            </SelectItem>
-                          ) : (
-                            slotList.map((slot) => (
-                              <SelectItem key={slot.id} value={slot.id}>
-                                Slot {slot.slot_no} ({slot.slot_type})
-                              </SelectItem>
-                            ))
-                          )}
-                        </SelectContent>
-                      </Select>
-                    </div>
-                  </div>
-                  <DialogFooter>
-                    <Button
-                      variant="outline"
-                      onClick={() => setIsParkingSlotFormOpen(false)}
-                    >
-                      Cancel
-                    </Button>
-                    <Button
-                      onClick={handleAssignParkingSlot}
-                      disabled={!selectedSlotId}
-                    >
-                      {editingSlot ? "Update Slot" : "Assign Slot"}
-                    </Button>
-                  </DialogFooter>
-                </DialogContent>
-              </Dialog> */}
-
               {/* Delete Confirmation Dialog */}
               <AlertDialog
                 open={!!deleteSlotId}
@@ -617,158 +493,70 @@ export default function SpaceDetailPage() {
               </AlertDialog>
             </TabsContent>
             <TabsContent value="occupancy" className="space-y-6">
-              <OccupancyTab
-                spaceId={id}
-                current={occupancy?.current}
-                owners={owners}
-                tenants={tenants.active}
-                onSucess={onMoveInOutSuccess}
-              />
+              {occupancyLoading ? (
+                <div className="animate-pulse space-y-3">
+                  <div className="h-6 bg-gray-200 rounded w-40"></div>
+                  <div className="h-20 bg-gray-200 rounded"></div>
+                  <div className="h-20 bg-gray-200 rounded"></div>
+                </div>
+              ) : (
+                <OccupancyTab
+                  spaceId={id}
+                  current={occupancy?.current}
+                  owners={owners}
+                  tenants={tenants.active}
+                  onSucess={onMoveInOutSuccess}
+                  onMoveOutFlowSuccess={onMoveOutSuccess}
+                />
+              )}
+            </TabsContent>
+            <TabsContent value="upcoming_moveins" className="space-y-4">
+              {occupancyMoveInsLoading ? (
+                <div className="animate-pulse space-y-3">
+                  <div className="h-6 bg-gray-200 rounded w-40"></div>
+                  <div className="h-20 bg-gray-200 rounded"></div>
+                  <div className="h-20 bg-gray-200 rounded"></div>
+                </div>
+              ) : (
+                <UpcomingMoveIns
+                  upcoming={occupancyUpcomingMoveIns}
+                />
+              )}
+            </TabsContent>
+            <TabsContent value="occupancy_history" className="space-y-4">
+              {occupancyHistoryLoading ? (
+                <div className="animate-pulse space-y-3">
+                  <div className="h-6 bg-gray-200 rounded w-40"></div>
+                  <div className="h-20 bg-gray-200 rounded"></div>
+                  <div className="h-20 bg-gray-200 rounded"></div>
+                </div>
+              ) : (
+                <OccupancyHistoryTab
+                  history={occupancyHistory}
+                />
+              )}
+            </TabsContent>
+            <TabsContent value="occupancy_timeline" className="space-y-4">
+              {occupancyTimelineLoading ? (
+                <div className="animate-pulse space-y-3">
+                  <div className="h-6 bg-gray-200 rounded w-40"></div>
+                  <div className="h-20 bg-gray-200 rounded"></div>
+                  <div className="h-20 bg-gray-200 rounded"></div>
+                </div>
+              ) : (
+                <OccupancyTimeline
+                  history={occupancyTimeline}
+                />
+              )}
             </TabsContent>
             <TabsContent value="maintenance" className="space-y-4">
-              <Card>
-                <CardHeader>
-                  <CardTitle className="flex items-center justify-between">
-                    <span>Maintenance Charges</span>
-                    {owners.length > 0 && (
-                      <Button
-                        onClick={() => {
-                          setMaintenanceRecord({
-                            site_name: space.site_name,
-                            space_name: space.name,
-                            building_name: space.building_block,
-                          });
-                          setMaintenanceMode("create");
-                          setIsMaintenanceOpen(true);
-                        }}
-                        className="gap-2"
-                      >
-                        <Wrench className="h-4 w-4" />
-                        Create Maintenance
-                      </Button>
-                    )}
-                  </CardTitle>
-                </CardHeader>
-                <CardContent>
-                  <div className="flex flex-wrap items-center gap-2 mb-4">
-                    <Search className="h-4 w-4 text-muted-foreground" />
-                    <Input
-                      placeholder="Search maintenance..."
-                      value={maintenanceSearch}
-                      onChange={(e) => setMaintenanceSearch(e.target.value)}
-                      className="max-w-sm"
-                    />
-                  </div>
-                  <div className="relative">
-                    {maintenanceLoading && (
-                      <div className="absolute inset-0 bg-background/50 backdrop-blur-sm z-20 flex items-center justify-center">
-                        <div className="animate-spin w-10 h-10 border-4 border-primary border-t-transparent rounded-full"></div>
-                      </div>
-                    )}
-                    {maintenanceItems.length === 0 ? (
-                      <p className="text-center text-sm text-muted-foreground">
-                        No maintenance charges found.
-                      </p>
-                    ) : (
-                      <div className="space-y-4">
-                        {maintenanceItems.map((item) => (
-                          <Card key={item.id} className="p-4">
-                            <div className="flex items-center justify-between">
-                              <div className="font-medium">
-                                #{item.maintenance_no || "-"}
-                              </div>
-                              {getStatusBadge(item.status)}
-                            </div>
-                            <div className="text-xs text-muted-foreground mt-1">
-                              Owner: {item.owner_name || "-"}
-                            </div>
-                            <div className="grid grid-cols-4 gap-4 mt-3 text-sm">
-                              <div className="space-y-1">
-                                <div className="text-muted-foreground flex items-center gap-2">
-                                  <Calendar className="h-4 w-4" />
-                                  Period
-                                </div>
-                                <div>
-                                  {formatDate(item.period_start)} -{" "}
-                                  {formatDate(item.period_end)}
-                                </div>
-                              </div>
-                              <div className="space-y-1">
-                                <div className="text-muted-foreground flex items-center gap-2">
-                                  <IndianRupee className="h-4 w-4" />
-                                  Amount
-                                </div>
-                                <div className="flex items-center gap-2">
-                                  <div className="font-medium">
-                                    ₹ {item.amount ?? "-"}
-                                  </div>
-                                </div>
-                              </div>
-                              <div className="space-y-1">
-                                <div className="text-muted-foreground flex items-center gap-2">
-                                  <Clock className="h-4 w-4" />
-                                  Created
-                                </div>
-                                <div>{formatDate(item.created_at)}</div>
-                              </div>
-                              <div className="space-y-1">
-                                <div className="text-muted-foreground flex items-center gap-2">
-                                  <Receipt className="h-4 w-4" />
-                                  Invoice
-                                </div>
-                                <div>{item.invoice_id || "-"}</div>
-                              </div>
-                            </div>
-                          </Card>
-                        ))}
-                      </div>
-                    )}
-                  </div>
-                </CardContent>
-              </Card>
-              <Pagination
-                page={maintenancePage}
-                pageSize={maintenancePageSize}
-                totalItems={maintenanceTotal}
-                onPageChange={setMaintenancePage}
+              <MaintenanceCharge
+                space={space}
+                owners={owners}
               />
             </TabsContent>
           </Tabs>
-          <SpaceMaintenanceForm
-            isOpen={isMaintenanceOpen}
-            onClose={() => setIsMaintenanceOpen(false)}
-            onSave={async (payload) => {
-              if (!payload.space_id || !payload.start_date) {
-                toast.error("Space and start date are required");
-                return { success: false };
-              }
 
-              const payloadToSave = {
-                ...payload,
-                period_start: payload.start_date,
-                period_end: payload.end_date,
-              };
-              delete payloadToSave.start_date;
-              delete payloadToSave.end_date;
-              const response =
-                await ownerMaintenancesApiService.createOwnerMaintenance(
-                  payloadToSave,
-                );
-
-              if (response?.success) {
-                setIsMaintenanceOpen(false);
-                toast.success(
-                  `Space maintenance has been created successfully.`,
-                );
-                return { success: true };
-              } else {
-                return { success: false };
-              }
-            }}
-            mode={maintenanceMode}
-            record={maintenanceRecord as any}
-            defaultSpaceId={space.id}
-          />
 
           {/* Space Form */}
           <SpaceForm

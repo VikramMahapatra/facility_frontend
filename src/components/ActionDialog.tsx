@@ -1,11 +1,12 @@
-import React from "react";
+import React, { useState } from "react";
 
 type Props = {
     open: boolean;
     title: string;
     onClose: () => void;
-    onSubmit?: () => void;
+    onSubmit?: () => Promise<void> | void;
     submitText?: string;
+    submittingText?: string;
     children: React.ReactNode;
 };
 
@@ -15,9 +16,23 @@ export default function ActionDialog({
     onClose,
     onSubmit,
     submitText = "Submit",
+    submittingText = "Submitting...",
     children
 }: Props) {
+    const [loading, setLoading] = useState(false);
+
     if (!open) return null;
+
+    const handleSubmit = async () => {
+        if (!onSubmit) return;
+
+        try {
+            setLoading(true);
+            await onSubmit();
+        } finally {
+            setLoading(false);
+        }
+    };
 
     return (
         <div className="fixed inset-0 bg-black/40 flex items-center justify-center z-50">
@@ -30,16 +45,21 @@ export default function ActionDialog({
                     <button
                         className="px-4 py-2 border rounded"
                         onClick={onClose}
+                        disabled={loading}
                     >
                         Cancel
                     </button>
 
                     {onSubmit && (
                         <button
-                            className="px-4 py-2 bg-blue-600 text-white rounded"
-                            onClick={onSubmit}
+                            className={`px-4 py-2 rounded text-white ${loading
+                                    ? "bg-blue-400 cursor-not-allowed"
+                                    : "bg-blue-600"
+                                }`}
+                            onClick={handleSubmit}
+                            disabled={loading}
                         >
-                            {submitText}
+                            {loading ? submittingText : submitText}
                         </button>
                     )}
                 </div>
