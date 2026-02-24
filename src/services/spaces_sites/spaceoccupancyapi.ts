@@ -10,7 +10,7 @@ class OccupancyApiService {
     }
 
     async moveOut(spaceData: any) {
-        return await apiService.request(`/spaces/move_out_request`, {
+        return await apiService.request(`/spaces/move-out-request`, {
             method: 'POST',
             body: JSON.stringify(spaceData)
         });

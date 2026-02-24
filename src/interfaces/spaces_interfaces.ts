@@ -41,14 +41,21 @@ export interface SpaceOverview {
 
 export interface HandoverInfo {
     occupancy_id: string;
-    handover_date: string;
+    handover_date: string;                // ISO string
     handover_by: string;
-    handover_to?: string | null;
-    condition_notes?: string | null;
+    handover_to?: string | null;          // user (optional)
+    handover_to_person?: string | null;   // actual person receiving
+    handover_to_contact?: string | null;  // phone number
+    condition_notes?: string | null;      // remarks
     keys_returned: boolean;
+    number_of_keys?: number;
     accessories_returned: boolean;
+    access_card_returned: boolean;
+    number_of_access_cards?: number;
+    parking_card_returned: boolean;
+    number_of_parking_cards?: number;
     inspection_completed: boolean;
-    status: string;
+    status: string;                        // handover status
 }
 
 export interface OccupancyRecord {

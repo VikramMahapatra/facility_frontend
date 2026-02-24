@@ -619,9 +619,9 @@ export default function SpaceDetailPage() {
             <TabsContent value="occupancy" className="space-y-6">
               <OccupancyTab
                 spaceId={id}
+                current={occupancy?.current}
                 owners={owners}
                 tenants={tenants.active}
-                occupancy={occupancy}
                 onSucess={onMoveInOutSuccess}
               />
             </TabsContent>
