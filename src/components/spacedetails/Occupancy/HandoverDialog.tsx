@@ -42,10 +42,10 @@ export default function HandoverDialog({ open, onClose, handover, onSubmit }) {
         }
     }, [handover]);
 
-    const handleSubmit = () => {
+    const handleSubmit = async () => {
         const handover_datetime = `${handoverDate}T${handoverTime}:00`;
 
-        onSubmit({
+        return await onSubmit({
             handover_date: handover_datetime,
             handover_to_person: handoverToPerson,
             handover_to_contact: handoverToContact,

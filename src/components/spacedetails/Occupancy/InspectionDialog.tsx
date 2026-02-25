@@ -56,7 +56,7 @@ export default function InspectionDialog({
         }
     }, [inspection, open]);
 
-    const handleSubmit = () => {
+    const handleSubmit = async () => {
         let data: any = {
             handover_id: handoverId,
         };
@@ -83,7 +83,7 @@ export default function InspectionDialog({
             };
         }
 
-        onSubmit(data);
+        return await onSubmit(data);
     };
 
     return (

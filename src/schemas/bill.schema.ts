@@ -11,10 +11,10 @@ const paymentSchema = z.object({
 });
 
 const billLineSchema = z.object({
-  item: z.string().min(1, "Period is required"),
+  item_id: z.string().min(1, "Work Order No is required"),
   description: z.string().optional(),
   amount: z.coerce.number().min(0, "Amount cannot be negative"),
-  tax: z.coerce.number().min(0, "Tax percentage cannot be negative").default(5),
+  tax_pct: z.coerce.number().min(0, "Tax percentage cannot be negative").default(5),
 });
 
 export const billSchema = z
@@ -35,7 +35,7 @@ export const billSchema = z
     billable_item_type: z.string().optional(),
     billable_item_id: z.string().optional(),
     code: z.string().optional(), // For work order type
-    items: z.array(billLineSchema).min(1, "At least one item is required"),
+    lines: z.array(billLineSchema).min(1, "At least one item is required"),
     totals: z
       .object({
         sub: z.coerce.number().min(0, "Subtotal cannot be negative").optional(),
