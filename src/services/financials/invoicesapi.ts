@@ -73,11 +73,14 @@ class InvoiceApiService {
     return await apiService.request("/invoices/preview-number");
   }
 
-  async getCustomerPendingCharges(spaceId: string, code?: string) {
+  async getCustomerPendingCharges(spaceId: string, code?: string, invoice_id?: string) {
     const params = new URLSearchParams();
     params.append("space_id", spaceId);
     if (code) {
       params.append("code", code);
+    }
+    if (invoice_id) {
+      params.append("invoice_id", invoice_id);
     }
     return await apiService.request(`/invoices/customer-pending-charges?${params.toString()}`);
   }

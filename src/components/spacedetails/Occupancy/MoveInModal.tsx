@@ -39,6 +39,7 @@ export default function MoveInModal({
     const [selectedLeaseId, setSelectedLeaseId] = useState<string>("");
     const [selectedTenantId, setSelectedTenantId] = useState<string | null>(null);
     const [moveInAt, setMoveInAt] = useState<string>("");
+    const [loading, setLoading] = useState(false);
 
     /* ---------------- Fetch Data ---------------- */
 
@@ -63,7 +64,7 @@ export default function MoveInModal({
             toast.error("Please select a lease");
             return;
         }
-
+        setLoading(true);
         const payload: any = {
             occupant_type: occupantType,
             occupant_user_id: selectedUserId,
@@ -82,6 +83,7 @@ export default function MoveInModal({
             onSuccess();
             onClose();
         }
+        setLoading(false);
     };
 
     /* ---------------- UI ---------------- */
@@ -171,8 +173,8 @@ export default function MoveInModal({
                         <Button variant="outline" onClick={onClose}>
                             Cancel
                         </Button>
-                        <Button onClick={handleSubmit}>
-                            Confirm Move In
+                        <Button onClick={handleSubmit} disabled={loading}>
+                            {loading ? "Confirming..." : "Confirm Move In"}
                         </Button>
                     </div>
                 </div>

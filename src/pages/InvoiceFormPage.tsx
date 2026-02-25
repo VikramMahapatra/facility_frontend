@@ -64,21 +64,21 @@ const emptyFormData: InvoiceFormValues = {
   user_id: "",
   customer_id: "",
   customer_name: "",
-  tenant_email: "",
-  tenant_phone: "",
+  customer_email: "",
+  customer_phone: "",
   date: new Date().toISOString().split("T")[0],
   due_date: "",
   status: "draft",
   currency: "INR",
-  code: "",
-  billable_item_type: "",
+  code: "rent",
+  billable_item_type: "rent",
   billable_item_id: "",
-  items: [
+  lines: [
     {
-      item: "",
+      item_id: "",
       description: "",
       amount: 0,
-      tax: 5,
+      tax_pct: 5,
     },
   ],
   totals: { sub: 0, tax: 5, grand: 0 },
@@ -133,25 +133,7 @@ export default function InvoiceFormPage() {
     defaultValues: emptyFormData,
   });
 
-  const watchedSiteId = watch("site_id");
-  const watchedBuildingId = watch("building_id");
-  const watchedSpaceId = watch("space_id");
-  const watchedBillableType = watch("code");
-  const watchedItems = watch("items");
 
-  // Sync code to billable_item_type whenever code changes
-  useEffect(() => {
-    if (watchedBillableType) {
-      setValue("billable_item_type", watchedBillableType);
-    } else {
-      setValue("billable_item_type", "");
-    }
-  }, [watchedBillableType, setValue]);
-
-  const { fields, append, remove } = useFieldArray({
-    control,
-    name: "items",
-  });
 
   useEffect(() => {
     loadSiteLookup();
@@ -177,8 +159,40 @@ export default function InvoiceFormPage() {
   // Don't auto-select - user must choose
 
   useEffect(() => {
+    if (!id || formMode === "create") {
+      loadAll(undefined);
+      return;
+    }
+    loadInvoice();
+
+  }, [id, formMode]);
+
+
+
+  const watchedSiteId = watch("site_id");
+  const watchedBuildingId = watch("building_id");
+  const watchedSpaceId = watch("space_id");
+  const watchedBillableType = watch("code");
+  const watchedItems = watch("lines");
+
+  // Sync code to billable_item_type whenever code changes
+  useEffect(() => {
+    if (watchedBillableType) {
+      setValue("code", watchedBillableType);
+    } else {
+      setValue("code", "rent");
+    }
+  }, [watchedBillableType, setValue]);
+
+  const { fields, append, remove } = useFieldArray({
+    control,
+    name: "lines",
+  });
+
+  useEffect(() => {
     if (watchedSiteId) {
       loadBuildingLookup();
+      loadSpaceLookup();
     } else {
       setBuildingList([]);
       setSpaceList([]);
@@ -188,8 +202,6 @@ export default function InvoiceFormPage() {
   useEffect(() => {
     if (watchedBuildingId && watchedSiteId) {
       loadSpaceLookup();
-    } else {
-      setSpaceList([]);
     }
   }, [watchedBuildingId, watchedSiteId]);
 
@@ -209,7 +221,7 @@ export default function InvoiceFormPage() {
       }, 0);
       const totalTax = watchedItems.reduce((sum, item) => {
         const itemAmount = item.amount || 0;
-        const itemTaxPercent = item.tax || 5;
+        const itemTaxPercent = item.tax_pct || 5;
         const itemTax = (itemAmount * itemTaxPercent) / 100;
         return sum + itemTax;
       }, 0);
@@ -220,21 +232,6 @@ export default function InvoiceFormPage() {
     }
   }, [watchedItems, setValue]);
 
-  useEffect(() => {
-    if (!id || formMode === "create") {
-      loadAll();
-      return;
-    }
-    loadInvoice();
-  }, [id, formMode]);
-
-  useEffect(() => {
-    if (invoice && formMode !== "create") {
-      loadAll();
-    }
-  }, [invoice?.id]);
-
-  // Removed useEffect for loadBillableItemTotals - no longer needed
 
   const loadInvoice = async () => {
     const response = await withLoader(async () => {
@@ -243,11 +240,13 @@ export default function InvoiceFormPage() {
 
     if (response?.success && response.data) {
       setInvoice(response.data);
+      loadAll(response.data);
     } else {
       toast.error("Failed to load invoice details");
       navigate("/invoices");
     }
   };
+
 
   const loadSiteLookup = async () => {
     try {
@@ -261,10 +260,12 @@ export default function InvoiceFormPage() {
     }
   };
 
-  const loadBuildingLookup = async () => {
-    if (!watchedSiteId) return;
+  const loadBuildingLookup = async (siteId?: string) => {
+    const id = siteId || watchedSiteId;
+    if (!id) return;
+
     try {
-      const lookup = await buildingApiService.getBuildingLookup(watchedSiteId);
+      const lookup = await buildingApiService.getBuildingLookup(id);
       if (lookup.success) {
         setBuildingList(lookup.data || []);
       }
@@ -274,13 +275,17 @@ export default function InvoiceFormPage() {
     }
   };
 
-  const loadSpaceLookup = async () => {
-    if (!watchedSiteId || !watchedBuildingId) return;
+  const loadSpaceLookup = async (
+    siteId?: string,
+    buildingId?: string
+  ) => {
+    const sId = siteId || watchedSiteId;
+    const bId = buildingId || watchedBuildingId;
+
+    if (!sId) return;
+
     try {
-      const lookup = await spacesApiService.getSpaceLookup(
-        watchedSiteId,
-        watchedBuildingId,
-      );
+      const lookup = await spacesApiService.getSpaceLookup(sId, bId);
       if (lookup.success) {
         setSpaceList(lookup.data || []);
       }
@@ -350,6 +355,7 @@ export default function InvoiceFormPage() {
       const response = await invoiceApiService.getCustomerPendingCharges(
         watchedSpaceId,
         watchedBillableType,
+        id
       );
 
       if (response?.success && response.data) {
@@ -364,6 +370,12 @@ export default function InvoiceFormPage() {
           }
           if (firstCustomer.customer_name) {
             setValue("customer_name", firstCustomer.customer_name);
+          }
+          if (firstCustomer.customer_email) {
+            setValue("customer_email", firstCustomer.customer_email);
+          }
+          if (firstCustomer.customer_phone) {
+            setValue("customer_phone", firstCustomer.customer_phone);
           }
         }
 
@@ -427,16 +439,16 @@ export default function InvoiceFormPage() {
         const subtotal = Number(totals.subtotal || 0);
 
         // Update the item amount
-        setValue(`items.${index}.amount`, subtotal, { shouldValidate: false });
+        setValue(`lines.${index}.amount`, subtotal, { shouldValidate: false });
 
         // Recalculate totals
-        const allItems = getValues("items");
+        const allItems = getValues("lines");
         const newSubtotal = allItems.reduce((sum, item) => {
           return sum + (item.amount || 0);
         }, 0);
         const totalTax = allItems.reduce((sum, item) => {
           const itemAmount = item.amount || 0;
-          const itemTaxPercent = item.tax || 5;
+          const itemTaxPercent = item.tax_pct || 5;
           const itemTax = (itemAmount * itemTaxPercent) / 100;
           return sum + itemTax;
         }, 0);
@@ -451,51 +463,50 @@ export default function InvoiceFormPage() {
     }
   };
 
-  const loadAll = async () => {
+  const loadAll = async (invoice: Invoice) => {
     setTotalsAutoFilled(false);
     setTotalsLoaded(false);
 
     reset(
       invoice && formMode !== "create"
         ? {
-            invoice_no: invoice.invoice_no || "",
-            site_id: invoice.site_id || "",
-            building_id: (invoice as any).building_id || "",
-            space_id: (invoice as any).space_id || "",
-            user_id: (invoice as any).customer_id || "",
-            customer_id: (invoice as any).customer_id || "",
-            customer_name: (invoice as any).customer_name || "",
-            tenant_email: "",
-            tenant_phone: "",
-            date: invoice.date || new Date().toISOString().split("T")[0],
-            due_date: invoice.due_date || "",
-            status: invoice.status || "draft",
-            currency: invoice.currency || "INR",
-            code: "",
-            billable_item_type: "",
-            billable_item_id: "",
-            items:
-              invoice.lines && invoice.lines.length > 0
-                ? invoice.lines.map((line) => ({
-                    item: line.description || "",
-                    description: line.description || "",
-                    amount: line.price || 0,
-                    tax: line.taxPct || 5,
-                  }))
-                : emptyFormData.items,
-            totals: invoice.totals || { sub: 0, tax: 5, grand: 0 },
-            payments: [],
-          }
+          invoice_no: invoice.invoice_no || "",
+          site_id: invoice.site_id || "",
+          building_id: (invoice as any).building_id || "",
+          space_id: (invoice as any).space_id || "",
+          user_id: (invoice as any).customer_id || "",
+          customer_id: (invoice as any).customer_id || "",
+          customer_name: (invoice as any).customer_name || "",
+          customer_email: "",
+          customer_phone: "",
+          date: invoice.date || new Date().toISOString().split("T")[0],
+          due_date: invoice.due_date || "",
+          status: invoice.status || "draft",
+          currency: invoice.currency || "INR",
+          code: invoice.code || "rent",
+          billable_item_type: invoice.code || "rent",
+          billable_item_id: "",
+          lines:
+            invoice.lines && invoice.lines.length > 0
+              ? invoice.lines.map((line) => ({
+                item_id: line.item_id || "",
+                description: line.description || "",
+                amount: line.amount || 0,
+                tax: line.tax_pct || 5,
+              }))
+              : emptyFormData.lines,
+          totals: invoice.totals || { sub: 0, tax: 5, grand: 0 },
+          payments: [],
+        }
         : emptyFormData,
     );
 
     if (invoice && formMode !== "create") {
       if (invoice.site_id) {
-        await loadBuildingLookup();
+        await loadBuildingLookup(invoice.site_id);
+        await loadSpaceLookup(invoice.site_id, (invoice as any).building_id);
       }
-      if ((invoice as any).building_id && invoice.site_id) {
-        await loadSpaceLookup();
-      }
+
       if ((invoice as any).space_id) {
         await loadBillableItemLookup();
       }
@@ -515,22 +526,19 @@ export default function InvoiceFormPage() {
         site_id: data.site_id,
         building_id: data.building_id,
         space_id: data.space_id,
-        customer_id: data.customer_id,
-        customer_name: data.customer_name,
+        user_id: data.customer_id,
         date: data.date,
         due_date: data.due_date,
         status: saveAsDraft ? "draft" : (data.status || "issued"),
         currency: data.currency || "INR",
         billable_item_type: data.code || "", // Pass code to billable_item_type
         billable_item_id: "", // No longer needed - using period IDs directly
-        lines: data.items.map((item) => ({
-          id: "",
-          invoiceId: "",
-          code: "",
-          description: item.description || item.item || "",
-          qty: 1,
-          price: item.amount || 0,
-          taxPct: item.tax || 5,
+        lines: data.lines?.map((item) => ({
+          item_id: item.item_id,
+          code: data.code,
+          description: item.description || "",
+          amount: item.amount || 0,
+          tax_pct: item.tax_pct || 5,
         })),
         totals: {
           sub: data.totals?.sub ?? 0,
@@ -548,7 +556,9 @@ export default function InvoiceFormPage() {
                 paid_at: p.paid_at!,
               }),
             ) || [],
-        notes: data.notes || "",
+        meta: {
+          notes: data.notes || ""
+        },
       };
 
       let response;
@@ -571,8 +581,7 @@ export default function InvoiceFormPage() {
 
       if (response?.success) {
         toast.success(
-          `Invoice has been ${
-            formMode === "create" ? "created" : "updated"
+          `Invoice has been ${formMode === "create" ? "created" : "updated"
           } successfully${saveAsDraft ? " as draft" : ""}.`,
         );
         if (!saveAsDraft) {
@@ -617,10 +626,10 @@ export default function InvoiceFormPage() {
 
   const addItem = () => {
     append({
-      item: "",
+      item_id: "",
       description: "",
       amount: 0,
-      tax: 5,
+      tax_pct: 5,
     });
   };
 
@@ -732,11 +741,10 @@ export default function InvoiceFormPage() {
                         return (
                           <Card
                             key={type.id}
-                            className={`cursor-pointer transition-all duration-200 ${
-                              isSelected
-                                ? "border-primary bg-primary/10 ring-1 ring-primary"
-                                : "border-border bg-muted/50 hover:bg-muted hover:border-primary/50"
-                            }`}
+                            className={`cursor-pointer transition-all duration-200 ${isSelected
+                              ? "border-primary bg-primary/10 ring-1 ring-primary"
+                              : "border-border bg-muted/50 hover:bg-muted hover:border-primary/50"
+                              }`}
                             onClick={() => {
                               if (!isReadOnly) {
                                 if (isSelected) {
@@ -752,19 +760,17 @@ export default function InvoiceFormPage() {
                           >
                             <CardContent className="p-3 flex items-center gap-3">
                               <div
-                                className={`p-2 rounded-md transition-colors flex-shrink-0 ${
-                                  isSelected
-                                    ? "bg-primary text-primary-foreground"
-                                    : "bg-background"
-                                }`}
+                                className={`p-2 rounded-md transition-colors flex-shrink-0 ${isSelected
+                                  ? "bg-primary text-primary-foreground"
+                                  : "bg-background"
+                                  }`}
                               >
                                 {getIcon()}
                               </div>
                               <div className="flex-1 min-w-0">
                                 <p
-                                  className={`text-sm font-medium transition-colors ${
-                                    isSelected ? "text-primary" : ""
-                                  }`}
+                                  className={`text-sm font-medium transition-colors ${isSelected ? "text-primary" : ""
+                                    }`}
                                 >
                                   {type.name}
                                 </p>
@@ -796,7 +802,7 @@ export default function InvoiceFormPage() {
                 <Input
                   id="invoice_no"
                   {...register("invoice_no")}
-                  disabled={isReadOnly}
+                  disabled={true}
                   placeholder="Auto-generated"
                 />
               </div>
@@ -851,8 +857,8 @@ export default function InvoiceFormPage() {
                           setValue("space_id", "");
                           setValue("customer_id", "");
                           setValue("customer_name", "");
-                          setValue("tenant_email", "");
-                          setValue("tenant_phone", "");
+                          setValue("customer_email", "");
+                          setValue("customer_phone", "");
                         }}
                         disabled={isReadOnly}
                       >
@@ -890,8 +896,8 @@ export default function InvoiceFormPage() {
                           setValue("space_id", "");
                           setValue("customer_id", "");
                           setValue("customer_name", "");
-                          setValue("tenant_email", "");
-                          setValue("tenant_phone", "");
+                          setValue("customer_email", "");
+                          setValue("customer_phone", "");
                         }}
                         disabled={isReadOnly || !watchedSiteId}
                       >
@@ -970,6 +976,7 @@ export default function InvoiceFormPage() {
                     <div className="p-3 border rounded-md bg-muted/50">
                       <p className="font-medium">
                         {watch("customer_name") || "-"}
+                        <input type="hidden" {...register("customer_id")} />
                       </p>
                     </div>
                   </div>
@@ -977,7 +984,7 @@ export default function InvoiceFormPage() {
                     <Label className="text-muted-foreground">Email</Label>
                     <div className="p-3 border rounded-md bg-muted/50">
                       <p className="font-medium">
-                        {watch("tenant_email") || "-"}
+                        {watch("customer_email") || "-"}
                       </p>
                     </div>
                   </div>
@@ -985,7 +992,7 @@ export default function InvoiceFormPage() {
                     <Label className="text-muted-foreground">Phone</Label>
                     <div className="p-3 border rounded-md bg-muted/50">
                       <p className="font-medium">
-                        {watch("tenant_phone") || "-"}
+                        {watch("customer_phone") || "-"}
                       </p>
                     </div>
                   </div>
@@ -1030,7 +1037,7 @@ export default function InvoiceFormPage() {
                       <TableRow key={field.id}>
                         <TableCell>
                           <Controller
-                            name={`items.${index}.item`}
+                            name={`lines.${index}.item_id`}
                             control={control}
                             render={({ field: itemField }) => (
                               <Select
@@ -1061,11 +1068,10 @@ export default function InvoiceFormPage() {
                                 }
                               >
                                 <SelectTrigger
-                                  className={`w-64 ${
-                                    errors.items?.[index]?.item
-                                      ? "border-red-500"
-                                      : ""
-                                  }`}
+                                  className={`w-64 ${errors.lines?.[index]?.item_id
+                                    ? "border-red-500"
+                                    : ""
+                                    }`}
                                 >
                                   <SelectValue
                                     placeholder={
@@ -1085,14 +1091,14 @@ export default function InvoiceFormPage() {
                                     const isSelectedInOtherRow = fields.some(
                                       (field, otherIndex) =>
                                         otherIndex !== index &&
-                                        watch(`items.${otherIndex}.item`) ===
-                                          (item.name || item.id),
+                                        watch(`lines.${otherIndex}.item_id`) ===
+                                        (item.name || item.id),
                                     );
 
                                     return (
                                       <SelectItem
                                         key={item.id}
-                                        value={item.name || item.id}
+                                        value={item.id}
                                         disabled={isSelectedInOtherRow}
                                       >
                                         {item.name}
@@ -1105,15 +1111,15 @@ export default function InvoiceFormPage() {
                               </Select>
                             )}
                           />
-                          {errors.items?.[index]?.item && (
+                          {errors.lines?.[index]?.item_id && (
                             <p className="text-xs text-red-500 mt-1">
-                              {errors.items[index]?.item?.message}
+                              {errors.lines[index]?.item_id?.message}
                             </p>
                           )}
                         </TableCell>
                         <TableCell>
                           <Input
-                            {...register(`items.${index}.description`)}
+                            {...register(`lines.${index}.description`)}
                             disabled={isReadOnly}
                             placeholder="Enter description"
                             className="w-full min-w-[300px]"
@@ -1123,19 +1129,19 @@ export default function InvoiceFormPage() {
                           <Input
                             type="number"
                             step="0.01"
-                            {...register(`items.${index}.tax`, {
+                            {...register(`lines.${index}.tax_pct`, {
                               setValueAs: (v) => (v === "" ? 5 : Number(v)),
                             })}
                             disabled={isReadOnly}
                             placeholder="5"
                             defaultValue={5}
                             className={
-                              errors.items?.[index]?.tax ? "border-red-500" : ""
+                              errors.lines?.[index]?.tax_pct ? "border-red-500" : ""
                             }
                           />
-                          {errors.items?.[index]?.tax && (
+                          {errors.lines?.[index]?.tax_pct && (
                             <p className="text-xs text-red-500 mt-1">
-                              {errors.items[index]?.tax?.message}
+                              {errors.lines[index]?.tax_pct?.message}
                             </p>
                           )}
                         </TableCell>
@@ -1143,20 +1149,20 @@ export default function InvoiceFormPage() {
                           <Input
                             type="number"
                             step="0.01"
-                            {...register(`items.${index}.amount`, {
+                            {...register(`lines.${index}.amount`, {
                               setValueAs: (v) => (v === "" ? 0 : Number(v)),
                             })}
                             disabled={isReadOnly}
                             placeholder="0.00"
                             className={
-                              errors.items?.[index]?.amount
+                              errors.lines?.[index]?.amount
                                 ? "border-red-500"
                                 : ""
                             }
                           />
-                          {errors.items?.[index]?.amount && (
+                          {errors.lines?.[index]?.amount && (
                             <p className="text-xs text-red-500 mt-1">
-                              {errors.items[index]?.amount?.message}
+                              {errors.lines[index]?.amount?.message}
                             </p>
                           )}
                         </TableCell>
@@ -1180,8 +1186,8 @@ export default function InvoiceFormPage() {
                   </TableBody>
                 </Table>
               </div>
-              {errors.items && (
-                <p className="text-sm text-red-500">{errors.items.message}</p>
+              {errors.lines && (
+                <p className="text-sm text-red-500">{errors.lines.message}</p>
               )}
             </div>
 
@@ -1318,7 +1324,6 @@ export default function InvoiceFormPage() {
               <AlertDialogAction
                 onClick={handleSaveAsDraft}
                 disabled={isSubmitting || formIsSubmitting}
-                className="bg-muted text-muted-foreground hover:bg-muted/80"
               >
                 {isSubmitting || formIsSubmitting
                   ? "Saving..."

@@ -11,7 +11,6 @@ export interface Invoice {
   user_id?: string;
   user_name?: string;
   code?: string;
-  item_no?: string;
   invoice_no: string;
   date: string;
   due_date: string;
@@ -32,12 +31,14 @@ export interface Invoice {
 
 export interface InvoiceLine {
   id: string;
-  invoiceId: string;
+  invoice_id: string;
+  item_id: string;
   code: string;
   description: string;
-  qty: number;
-  price: number;
-  taxPct: number;
+  item_no?: string;
+  item_label?: string;
+  amount: number;
+  tax_pct: number;
 }
 
 export interface PaymentInput {

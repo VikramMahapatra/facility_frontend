@@ -371,8 +371,8 @@ export default function Invoices() {
                       <TableRow>
                         <TableHead>Invoice No.</TableHead>
                         <TableHead>Type</TableHead>
-                        <TableHead>Location</TableHead>
                         <TableHead>Customer Name</TableHead>
+                        <TableHead>Location</TableHead>
                         <TableHead>Date</TableHead>
                         <TableHead>Due Date</TableHead>
                         <TableHead>Amount</TableHead>

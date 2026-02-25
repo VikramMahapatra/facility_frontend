@@ -27,10 +27,10 @@ const paymentSchema = z
   );
 
 const invoiceLineSchema = z.object({
-  item: z.string().min(1, "Period is required"),
+  item_id: z.string().min(1, "Period is required"),
   description: z.string().optional(),
   amount: z.coerce.number().min(0, "Amount cannot be negative"),
-  tax: z.coerce.number().min(0, "Tax percentage cannot be negative").default(5),
+  tax_pct: z.coerce.number().min(0, "Tax percentage cannot be negative").default(5),
 });
 
 export const invoiceSchema = z
@@ -44,12 +44,11 @@ export const invoiceSchema = z
       .array(invoiceLineSchema)
       .min(1, "At least one line item is required"),
     code: z.string().min(1, "Invoice type is required"),
-    tenant_email: z
+    customer_email: z
       .string()
-      .email("Invalid email")
       .optional()
       .or(z.literal("")),
-    tenant_phone: z.string().optional(),
+    customer_phone: z.string().optional(),
     customer_kind: z
       .enum(["resident", "merchant", "guest", "staff", "other"])
       .optional(),
@@ -63,7 +62,7 @@ export const invoiceSchema = z
     billable_item_type: z.string().optional(),
     billable_item_id: z.string().optional(),
     customer_name: z.string().optional(),
-    items: z.array(invoiceLineSchema).min(1, "At least one item is required"),
+    //items: z.array(invoiceLineSchema).min(1, "At least one item is required"),
     totals: z
       .object({
         sub: z.coerce.number().min(0, "Subtotal cannot be negative").optional(),
