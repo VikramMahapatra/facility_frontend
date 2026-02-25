@@ -133,8 +133,6 @@ export default function InvoiceFormPage() {
     defaultValues: emptyFormData,
   });
 
-
-
   useEffect(() => {
     loadSiteLookup();
     loadInvoiceTypeLookup();
@@ -164,10 +162,7 @@ export default function InvoiceFormPage() {
       return;
     }
     loadInvoice();
-
   }, [id, formMode]);
-
-
 
   const watchedSiteId = watch("site_id");
   const watchedBuildingId = watch("building_id");
@@ -232,7 +227,6 @@ export default function InvoiceFormPage() {
     }
   }, [watchedItems, setValue]);
 
-
   const loadInvoice = async () => {
     const response = await withLoader(async () => {
       return await invoiceApiService.getInvoiceById(id!);
@@ -246,7 +240,6 @@ export default function InvoiceFormPage() {
       navigate("/invoices");
     }
   };
-
 
   const loadSiteLookup = async () => {
     try {
@@ -275,10 +268,7 @@ export default function InvoiceFormPage() {
     }
   };
 
-  const loadSpaceLookup = async (
-    siteId?: string,
-    buildingId?: string
-  ) => {
+  const loadSpaceLookup = async (siteId?: string, buildingId?: string) => {
     const sId = siteId || watchedSiteId;
     const bId = buildingId || watchedBuildingId;
 
@@ -291,7 +281,8 @@ export default function InvoiceFormPage() {
       }
     } catch (error) {
       console.error("Failed to load spaces:", error);
-      setSpaceList([]);
+      // Do not clear spaceList here so that, in edit mode,
+      // the fallback space option from the invoice remains visible.
     }
   };
 
@@ -355,7 +346,7 @@ export default function InvoiceFormPage() {
       const response = await invoiceApiService.getCustomerPendingCharges(
         watchedSpaceId,
         watchedBillableType,
-        id
+        id,
       );
 
       if (response?.success && response.data) {
@@ -470,36 +461,53 @@ export default function InvoiceFormPage() {
     reset(
       invoice && formMode !== "create"
         ? {
-          invoice_no: invoice.invoice_no || "",
-          site_id: invoice.site_id || "",
-          building_id: (invoice as any).building_id || "",
-          space_id: (invoice as any).space_id || "",
-          user_id: (invoice as any).customer_id || "",
-          customer_id: (invoice as any).customer_id || "",
-          customer_name: (invoice as any).customer_name || "",
-          customer_email: "",
-          customer_phone: "",
-          date: invoice.date || new Date().toISOString().split("T")[0],
-          due_date: invoice.due_date || "",
-          status: invoice.status || "draft",
-          currency: invoice.currency || "INR",
-          code: invoice.code || "rent",
-          billable_item_type: invoice.code || "rent",
-          billable_item_id: "",
-          lines:
-            invoice.lines && invoice.lines.length > 0
-              ? invoice.lines.map((line) => ({
-                item_id: line.item_id || "",
-                description: line.description || "",
-                amount: line.amount || 0,
-                tax: line.tax_pct || 5,
-              }))
-              : emptyFormData.lines,
-          totals: invoice.totals || { sub: 0, tax: 5, grand: 0 },
-          payments: [],
-        }
+            invoice_no: invoice.invoice_no || "",
+            site_id: invoice.site_id || "",
+            building_id: (invoice as any).building_id || "",
+            space_id: (invoice as any).space_id || "",
+            user_id: (invoice as any).customer_id || "",
+            customer_id: (invoice as any).customer_id || "",
+            customer_name: (invoice as any).customer_name || "",
+            customer_email: "",
+            customer_phone: "",
+            date: invoice.date || new Date().toISOString().split("T")[0],
+            due_date: invoice.due_date || "",
+            status: invoice.status || "draft",
+            currency: invoice.currency || "INR",
+            code: invoice.code || "rent",
+            billable_item_type: invoice.code || "rent",
+            billable_item_id: "",
+            lines:
+              invoice.lines && invoice.lines.length > 0
+                ? invoice.lines.map((line) => ({
+                    item_id: line.item_id || "",
+                    description: line.description || "",
+                    amount: line.amount || 0,
+                    tax: line.tax_pct || 5,
+                  }))
+                : emptyFormData.lines,
+            totals: invoice.totals || { sub: 0, tax: 5, grand: 0 },
+            payments: [],
+          }
         : emptyFormData,
     );
+
+    if (invoice && (invoice as any).space_id) {
+      setSpaceList((prev) => {
+        if (prev && prev.length > 0) {
+          return prev;
+        }
+        return [
+          {
+            id: (invoice as any).space_id,
+            name:
+              (invoice as any).space_name ||
+              (invoice as any).space_code ||
+              (invoice as any).space_id,
+          },
+        ];
+      });
+    }
 
     if (invoice && formMode !== "create") {
       if (invoice.site_id) {
@@ -518,7 +526,10 @@ export default function InvoiceFormPage() {
   const isReadOnly = formMode === "view";
   const billable_items = billableItemList;
 
-  const onSubmitForm = async (data: InvoiceFormValues, saveAsDraft: boolean = false) => {
+  const onSubmitForm = async (
+    data: InvoiceFormValues,
+    saveAsDraft: boolean = false,
+  ) => {
     setIsSubmitting(true);
     try {
       const invoiceData: any = {
@@ -529,7 +540,7 @@ export default function InvoiceFormPage() {
         user_id: data.customer_id,
         date: data.date,
         due_date: data.due_date,
-        status: saveAsDraft ? "draft" : (data.status || "issued"),
+        status: saveAsDraft ? "draft" : data.status || "issued",
         currency: data.currency || "INR",
         billable_item_type: data.code || "", // Pass code to billable_item_type
         billable_item_id: "", // No longer needed - using period IDs directly
@@ -557,7 +568,7 @@ export default function InvoiceFormPage() {
               }),
             ) || [],
         meta: {
-          notes: data.notes || ""
+          notes: data.notes || "",
         },
       };
 
@@ -581,7 +592,8 @@ export default function InvoiceFormPage() {
 
       if (response?.success) {
         toast.success(
-          `Invoice has been ${formMode === "create" ? "created" : "updated"
+          `Invoice has been ${
+            formMode === "create" ? "created" : "updated"
           } successfully${saveAsDraft ? " as draft" : ""}.`,
         );
         if (!saveAsDraft) {
@@ -593,8 +605,6 @@ export default function InvoiceFormPage() {
       } else if (response && !response.success) {
         if (response?.message) {
           toast.error(response.message);
-        } else {
-          toast.error("Failed to save invoice.");
         }
       }
     } catch (error) {
@@ -741,10 +751,11 @@ export default function InvoiceFormPage() {
                         return (
                           <Card
                             key={type.id}
-                            className={`cursor-pointer transition-all duration-200 ${isSelected
-                              ? "border-primary bg-primary/10 ring-1 ring-primary"
-                              : "border-border bg-muted/50 hover:bg-muted hover:border-primary/50"
-                              }`}
+                            className={`cursor-pointer transition-all duration-200 ${
+                              isSelected
+                                ? "border-primary bg-primary/10 ring-1 ring-primary"
+                                : "border-border bg-muted/50 hover:bg-muted hover:border-primary/50"
+                            }`}
                             onClick={() => {
                               if (!isReadOnly) {
                                 if (isSelected) {
@@ -760,17 +771,19 @@ export default function InvoiceFormPage() {
                           >
                             <CardContent className="p-3 flex items-center gap-3">
                               <div
-                                className={`p-2 rounded-md transition-colors flex-shrink-0 ${isSelected
-                                  ? "bg-primary text-primary-foreground"
-                                  : "bg-background"
-                                  }`}
+                                className={`p-2 rounded-md transition-colors flex-shrink-0 ${
+                                  isSelected
+                                    ? "bg-primary text-primary-foreground"
+                                    : "bg-background"
+                                }`}
                               >
                                 {getIcon()}
                               </div>
                               <div className="flex-1 min-w-0">
                                 <p
-                                  className={`text-sm font-medium transition-colors ${isSelected ? "text-primary" : ""
-                                    }`}
+                                  className={`text-sm font-medium transition-colors ${
+                                    isSelected ? "text-primary" : ""
+                                  }`}
                                 >
                                   {type.name}
                                 </p>
@@ -1023,7 +1036,12 @@ export default function InvoiceFormPage() {
                 <Table>
                   <TableHeader>
                     <TableRow>
-                      <TableHead className="w-64">Period</TableHead>
+                      <TableHead className="w-64">
+                        {watchedBillableType &&
+                        watchedBillableType.toLowerCase().includes("work")
+                          ? "Work Order No"
+                          : "Period"}
+                      </TableHead>
                       <TableHead className="min-w-[300px]">
                         Description
                       </TableHead>
@@ -1068,10 +1086,11 @@ export default function InvoiceFormPage() {
                                 }
                               >
                                 <SelectTrigger
-                                  className={`w-64 ${errors.lines?.[index]?.item_id
-                                    ? "border-red-500"
-                                    : ""
-                                    }`}
+                                  className={`w-64 ${
+                                    errors.lines?.[index]?.item_id
+                                      ? "border-red-500"
+                                      : ""
+                                  }`}
                                 >
                                   <SelectValue
                                     placeholder={
@@ -1092,7 +1111,7 @@ export default function InvoiceFormPage() {
                                       (field, otherIndex) =>
                                         otherIndex !== index &&
                                         watch(`lines.${otherIndex}.item_id`) ===
-                                        (item.name || item.id),
+                                          (item.name || item.id),
                                     );
 
                                     return (
@@ -1136,7 +1155,9 @@ export default function InvoiceFormPage() {
                             placeholder="5"
                             defaultValue={5}
                             className={
-                              errors.lines?.[index]?.tax_pct ? "border-red-500" : ""
+                              errors.lines?.[index]?.tax_pct
+                                ? "border-red-500"
+                                : ""
                             }
                           />
                           {errors.lines?.[index]?.tax_pct && (
