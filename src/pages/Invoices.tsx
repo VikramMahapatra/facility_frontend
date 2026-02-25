@@ -398,7 +398,10 @@ export default function Invoices() {
                             </TableCell>
                             <TableCell>{invoice.code}</TableCell>
                             <TableCell>{invoice.user_name}</TableCell>
-                            <TableCell>{invoice.space_name + "," + invoice.site_name || "-"}</TableCell>
+                            <TableCell>
+                              {invoice.space_name + "," + invoice.site_name ||
+                                "-"}
+                            </TableCell>
                             <TableCell>
                               {new Date(invoice.date).toLocaleDateString()}
                             </TableCell>
@@ -556,7 +559,6 @@ export default function Invoices() {
             </AlertDialogFooter>
           </AlertDialogContent>
         </AlertDialog>
-
       </div>
     </ContentContainer>
   );

@@ -48,7 +48,7 @@ export default function InvoiceDetailPage() {
   const [isPaymentFormOpen, setIsPaymentFormOpen] = useState(false);
   const [selectedPayment, setSelectedPayment] = useState<any | undefined>();
   const [paymentFormMode, setPaymentFormMode] = useState<"create" | "edit">(
-    "create"
+    "create",
   );
 
   useEffect(() => {
@@ -135,7 +135,7 @@ export default function InvoiceDetailPage() {
 
   const formatCurrency = (
     amount: number | undefined,
-    currency: string = "INR"
+    currency: string = "INR",
   ) => {
     const numAmount = amount || 0;
     const symbol =
@@ -233,7 +233,6 @@ export default function InvoiceDetailPage() {
             </div>
           </div>
 
-
           <Tabs defaultValue="overview">
             <TabsList className="grid w-full grid-cols-2">
               <TabsTrigger value="overview">Overview</TabsTrigger>
@@ -246,10 +245,10 @@ export default function InvoiceDetailPage() {
               <Card>
                 <CardContent className="p-5 space-y-3">
                   <div className="flex justify-between text-sm">
-                    <span className="text-muted-foreground">Payment Progress</span>
-                    <span className="font-medium">
-                      {Math.round(progress)}%
+                    <span className="text-muted-foreground">
+                      Payment Progress
                     </span>
+                    <span className="font-medium">{Math.round(progress)}%</span>
                   </div>
 
                   <div className="w-full bg-muted rounded-full h-2">
@@ -261,10 +260,15 @@ export default function InvoiceDetailPage() {
 
                   <div className="flex justify-between text-sm">
                     <span className="text-green-600 font-medium">
-                      Paid: {formatCurrency(paymentSummary.paid, invoice.currency)}
+                      Paid:{" "}
+                      {formatCurrency(paymentSummary.paid, invoice.currency)}
                     </span>
                     <span className="text-orange-600 font-medium">
-                      Outstanding: {formatCurrency(paymentSummary.outstanding, invoice.currency)}
+                      Outstanding:{" "}
+                      {formatCurrency(
+                        paymentSummary.outstanding,
+                        invoice.currency,
+                      )}
                     </span>
                   </div>
                 </CardContent>
@@ -278,11 +282,15 @@ export default function InvoiceDetailPage() {
 
                   <div>
                     <p className="text-xs text-muted-foreground">Space</p>
-                    <p className="font-medium">{invoice.space_name + ", " + invoice.site_name || "-"}</p>
+                    <p className="font-medium">
+                      {invoice.space_name + ", " + invoice.site_name || "-"}
+                    </p>
                   </div>
 
                   <div>
-                    <p className="text-xs text-muted-foreground">Invoice Date</p>
+                    <p className="text-xs text-muted-foreground">
+                      Invoice Date
+                    </p>
                     <p className="font-medium">
                       {new Date(invoice.date).toLocaleDateString()}
                     </p>
@@ -333,13 +341,9 @@ export default function InvoiceDetailPage() {
                                 {line.description || "-"}
                               </td>
 
-                              <td className="p-4">
-                                {line.item_label || "-"}
-                              </td>
+                              <td className="p-4">{line.item_label || "-"}</td>
 
-                              <td className="p-4">
-                                {line.tax_pct || 0}%
-                              </td>
+                              <td className="p-4">{line.tax_pct || 0}%</td>
 
                               <td className="p-4 text-right font-semibold">
                                 {formatCurrency(line.amount, invoice.currency)}
@@ -387,9 +391,14 @@ export default function InvoiceDetailPage() {
                     </Card>
 
                     <Card className="p-4 bg-orange-50">
-                      <p className="text-sm text-muted-foreground">Outstanding</p>
+                      <p className="text-sm text-muted-foreground">
+                        Outstanding
+                      </p>
                       <p className="text-xl font-semibold text-orange-600">
-                        {formatCurrency(paymentSummary.outstanding, invoice.currency)}
+                        {formatCurrency(
+                          paymentSummary.outstanding,
+                          invoice.currency,
+                        )}
                       </p>
                     </Card>
                   </div>
@@ -449,12 +458,12 @@ export default function InvoiceDetailPage() {
                                 <strong>Date:</strong>{" "}
                                 {payment.paid_at
                                   ? new Date(
-                                    payment.paid_at
-                                  ).toLocaleDateString("en-IN", {
-                                    year: "numeric",
-                                    month: "long",
-                                    day: "numeric",
-                                  })
+                                      payment.paid_at,
+                                    ).toLocaleDateString("en-IN", {
+                                      year: "numeric",
+                                      month: "long",
+                                      day: "numeric",
+                                    })
                                   : "-"}
                               </p>
                               {payment.billable_item_name && (
@@ -469,7 +478,7 @@ export default function InvoiceDetailPage() {
                               <p className="text-2xl font-bold">
                                 {formatCurrency(
                                   payment.amount,
-                                  invoice.currency
+                                  invoice.currency,
                                 )}
                               </p>
                             </div>
@@ -597,13 +606,13 @@ export default function InvoiceDetailPage() {
                     const paymentHistoryResponse = await withLoader(
                       async () => {
                         return await invoiceApiService.getPaymentHistory(id);
-                      }
+                      },
                     );
                     if (paymentHistoryResponse?.success) {
                       const paymentData =
                         paymentHistoryResponse.data?.payments || [];
                       setPayments(
-                        Array.isArray(paymentData) ? paymentData : []
+                        Array.isArray(paymentData) ? paymentData : [],
                       );
                     } else {
                       // If payment history API fails, fallback to reloading from invoice
