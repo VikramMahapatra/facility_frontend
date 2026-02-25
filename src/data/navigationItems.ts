@@ -336,6 +336,13 @@ export const navigationItems = [
       },
 
       {
+        title: "Payments",
+        url: "/payments",
+        icon: CreditCard,
+        resource: "payments",
+      },
+
+      {
         title: "Revenue Reports",
         url: "/revenue-reports",
         icon: TrendingUp,

@@ -30,12 +30,7 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
-import {
-  Plus,
-  X,
-  ArrowLeft,
-  Paperclip,
-} from "lucide-react";
+import { Plus, X, ArrowLeft, Paperclip } from "lucide-react";
 import { siteApiService } from "@/services/spaces_sites/sitesapi";
 import { buildingApiService } from "@/services/spaces_sites/buildingsapi";
 import { spacesApiService } from "@/services/spaces_sites/spacesapi";
@@ -180,17 +175,17 @@ export default function BillFormPage() {
   useEffect(() => {
     if (watchedVendorId) {
       const selectedVendor = vendorList.find(
-        (vendor) => vendor.id === watchedVendorId
+        (vendor) => vendor.id === watchedVendorId,
       );
       if (selectedVendor) {
         setValue("vendor_name", selectedVendor.name || "");
         setValue(
           "vendor_email",
-          selectedVendor.contact?.email || selectedVendor.email || ""
+          selectedVendor.contact?.email || selectedVendor.email || "",
         );
         setValue(
           "vendor_phone",
-          selectedVendor.contact?.phone || selectedVendor.phone || ""
+          selectedVendor.contact?.phone || selectedVendor.phone || "",
         );
       }
     } else {
@@ -418,7 +413,9 @@ export default function BillFormPage() {
             vendor_email: (bill as any).vendor_email || "",
             vendor_phone: (bill as any).vendor_phone || "",
             date: bill.date || new Date().toISOString().split("T")[0],
-            status: (bill.status as "draft" | "approved" | "paid" | "partial") || "draft",
+            status:
+              (bill.status as "draft" | "approved" | "paid" | "partial") ||
+              "draft",
             currency: bill.currency || "INR",
             code: "workorder",
             billable_item_type: "workorder",
@@ -615,9 +612,7 @@ export default function BillFormPage() {
                 }}
                 disabled={isSubmitting || formIsSubmitting}
               >
-                {isSubmitting || formIsSubmitting
-                  ? "Saving..."
-                  : "Save Bill"}
+                {isSubmitting || formIsSubmitting ? "Saving..." : "Save Bill"}
               </Button>
             )}
           </div>
@@ -797,9 +792,7 @@ export default function BillFormPage() {
                           disabled={isReadOnly}
                         >
                           <SelectTrigger
-                            className={
-                              errors.vendor_id ? "border-red-500" : ""
-                            }
+                            className={errors.vendor_id ? "border-red-500" : ""}
                           >
                             <SelectValue placeholder="Select vendor" />
                           </SelectTrigger>
