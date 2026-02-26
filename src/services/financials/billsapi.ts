@@ -70,7 +70,7 @@ class BillsApiService {
   }
 
   async saveBillPayment(paymentData: any) {
-    return await apiService.request("/bills/save-bill-payment", {
+    return await apiService.request("/bills/save-payment", {
       method: "POST",
       body: JSON.stringify(paymentData),
     });
