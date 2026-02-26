@@ -258,8 +258,15 @@ export default function InvoiceFormPage() {
     });
 
     if (response?.success && response.data) {
-      setInvoice(response.data);
-      loadAll(response.data);
+      const loadedInvoice = response.data;
+      // Prevent editing issued invoices — redirect to view mode
+      if (formMode === "edit" && loadedInvoice.status === "issued") {
+        toast.error("Issued invoices cannot be edited.");
+        navigate(`/invoices/${id}/view`);
+        return;
+      }
+      setInvoice(loadedInvoice);
+      loadAll(loadedInvoice);
     } else {
       toast.error("Failed to load invoice details");
       navigate("/invoices");
