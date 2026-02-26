@@ -83,6 +83,24 @@ class LeasesApiService {
       `/leases/get-payment-terms?${params.toString()}`,
     );
   }
+
+  async getTerminationRequests(params: URLSearchParams) {
+    return await apiService.request(
+      `/leases/termination-requests?${params.toString()}`,
+    );
+  }
+
+  async approveTerminationRequest(id: string) {
+    return await apiService.request(`/leases/termination-requests/${id}/approve`, {
+      method: "POST",
+    });
+  }
+
+  async rejectTerminationRequest(id: string) {
+    return await apiService.request(`/leases/termination-requests/${id}/reject`, {
+      method: "POST",
+    });
+  }
 }
 
 export const leasesApiService = new LeasesApiService();

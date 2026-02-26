@@ -394,6 +394,12 @@ export const navigationItems = [
         icon: Move,
         resource: "space_occupancy_approvals",
       },
+      {
+        title: "Lease Terminations",
+        url: "/lease-termination-approvals",
+        icon: FileText,
+        resource: "lease_termination_approvals",
+      },
     ],
   },
   {

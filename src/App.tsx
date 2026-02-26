@@ -88,6 +88,7 @@ import SpaceOccupancyApproval from "./pages/SpaceOccupancyApproval";
 import Bills from "./pages/Bills";
 import BillFormPage from "./pages/BillFormPage";
 import Payments from "./pages/Payments";
+import LeaseTerminationApprovals from "./pages/LeaseTerminationApprovals";
 
 const queryClient = new QueryClient();
 
@@ -276,6 +277,10 @@ const App = () => {
                   <Route
                     path="/space-occupancy-approvals"
                     element={<SpaceOccupancyApproval />}
+                  />
+                  <Route
+                    path="/lease-termination-approvals"
+                    element={<LeaseTerminationApprovals />}
                   />
                   <Route
                     path="/profile"
