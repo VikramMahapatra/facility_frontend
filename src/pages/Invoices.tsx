@@ -391,7 +391,8 @@ export default function Invoices() {
                                   <Eye className="h-4 w-4" />
                                 </Button>
                                 {canWrite(resource) &&
-                                  invoice.status !== "paid" && (
+                                  invoice.status !== "paid" &&
+                                  invoice.status !== "issued" && (
                                     <Button
                                       variant="ghost"
                                       size="sm"
