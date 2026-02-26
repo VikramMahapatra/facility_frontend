@@ -75,6 +75,22 @@ class UserManagementApiService {
     });
   }
 
+  async searchTenantOwnerUsers(search: string) {
+    let url = `/users/search-tenant-owner-user`;
+    if (search) {
+      url += `?search=${encodeURIComponent(search)}`;
+    }
+    return await apiService.request(url);
+  }
+
+  async searchStaffUsers(search: string) {
+    let url = `/users/search-staff-user`;
+    if (search) {
+      url += `?search=${encodeURIComponent(search)}`;
+    }
+    return await apiService.request(url);
+  }
+
 }
 
 export const userManagementApiService = new UserManagementApiService();

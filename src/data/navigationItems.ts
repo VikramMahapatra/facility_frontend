@@ -322,7 +322,7 @@ export const navigationItems = [
     title: "Financials",
     items: [
       {
-        title: "Invoices & Payments",
+        title: "Invoices",
         url: "/invoices",
         icon: BarChart3,
         resource: "invoices",

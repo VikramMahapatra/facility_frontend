@@ -150,6 +150,7 @@ export default function BillFormPage() {
   useEffect(() => {
     if (watchedSiteId) {
       loadBuildingLookup();
+      loadSpaceLookup();
     } else {
       setBuildingList([]);
       setSpaceList([]);
@@ -232,6 +233,12 @@ export default function BillFormPage() {
     }
   }, [bill?.id]);
 
+  useEffect(() => {
+    if (bill && spaceList.length > 0) {
+      setValue("space_id", bill?.space_id);
+    }
+  }, [spaceList]);
+
   const loadBill = async () => {
     const response = await withLoader(async () => {
       return await billsApiService.getBillById(id!);
@@ -271,7 +278,7 @@ export default function BillFormPage() {
   };
 
   const loadSpaceLookup = async () => {
-    if (!watchedSiteId || !watchedBuildingId) return;
+    if (!watchedSiteId) return;
     try {
       const lookup = await spacesApiService.getSpaceLookup(
         watchedSiteId,
