@@ -46,7 +46,7 @@ export default function MoveOutModal({
         const res = await occupancyApiService.moveOut(payload);
 
         if (res.success) {
-            toast.success("Space vacated successfully");
+            toast.success("Moved out successfully");
             onSuccess();
             onClose();
         }
@@ -82,8 +82,8 @@ export default function MoveOutModal({
                 </div>
                 <div className="flex justify-end gap-2 pt-4">
                     <Button variant="outline" onClick={onClose}>Cancel</Button>
-                    <Button variant="destructive" onClick={confirmMoveOut}>
-                        Confirm Move-Out
+                    <Button variant="destructive" onClick={confirmMoveOut} disabled={loading}>
+                        {loading ? "Confirming..." : "Confirm Move-Out"}
                     </Button>
                 </div>
 

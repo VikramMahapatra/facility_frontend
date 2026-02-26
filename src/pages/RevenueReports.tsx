@@ -61,8 +61,8 @@ import { useSettings } from "@/context/SettingsContext";
 
 interface RevenueReportsOverview {
   TotalRevenue: number;
-  RENTRevenue: number;
-  CAMRevenue: number;
+  RentRevenue: number;
+  MaintenanceRevenue: number;
   CollectionRate: number;
 }
 
@@ -83,8 +83,8 @@ export default function RevenueReports() {
   const [revenueReportsOverview, setRevenueReportsOverview] =
     useState<RevenueReportsOverview>({
       TotalRevenue: 0.0,
-      RENTRevenue: 0.0,
-      CAMRevenue: 0.0,
+      RentRevenue: 0.0,
+      MaintenanceRevenue: 0.0,
       CollectionRate: 0.0,
     });
 
@@ -351,7 +351,7 @@ export default function RevenueReports() {
               </CardHeader>
               <CardContent>
                 <div className="text-2xl font-bold">
-                  {formatCurrency(revenueReportsOverview.RENTRevenue)}
+                  {formatCurrency(revenueReportsOverview.RentRevenue)}
                 </div>
                 {/* <p className="text-xs text-muted-foreground flex items-center">
                         <TrendingUp className="w-3 h-3 mr-1 text-green-500" />
@@ -368,7 +368,7 @@ export default function RevenueReports() {
               </CardHeader>
               <CardContent>
                 <div className="text-2xl font-bold">
-                  {formatCurrency(revenueReportsOverview.CAMRevenue)}
+                  {formatCurrency(revenueReportsOverview.MaintenanceRevenue)}
                 </div>
                 {/* <p className="text-xs text-muted-foreground flex items-center">
                         <TrendingDown className="w-3 h-3 mr-1 text-red-500" />
@@ -434,10 +434,10 @@ export default function RevenueReports() {
                         const codeLower = code.toLowerCase();
                         const nameMap: Record<string, string> = {
                           rent: "Rent",
-                          cam: "CAM",
+                          maintenance: "Maintenance",
                           utilities: "Utilities",
                           elec: "Electricity",
-                          parking: "Parking",
+                          parking_pass: "Parking Pass",
                           penalties: "Penalties",
                         };
                         return nameMap[codeLower] || code.toUpperCase();
@@ -597,7 +597,7 @@ export default function RevenueReports() {
                 <BarChart
                   data={
                     outstandingReceivablesData &&
-                    outstandingReceivablesData.length > 0
+                      outstandingReceivablesData.length > 0
                       ? outstandingReceivablesData
                       : []
                   }

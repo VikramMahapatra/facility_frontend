@@ -30,7 +30,7 @@ export default function SettlementDialog({
             damage_charges: Number(damageCharges),
             pending_dues: Number(pendingDues)
         };
-        onSubmit(data);
+        return await onSubmit(data);
     }
 
     if (!open) return null

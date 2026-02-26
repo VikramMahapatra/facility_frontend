@@ -42,7 +42,7 @@ export default function MaintenanceDialog({
         }
     }, [maintenance, open]);
 
-    const handleSubmit = () => {
+    const handleSubmit = async () => {
         let data: any = {
             inspection_id: inspectionId,
         };
@@ -63,7 +63,7 @@ export default function MaintenanceDialog({
             };
         }
 
-        onSubmit(data);
+        return await onSubmit(data);
     };
 
     return (

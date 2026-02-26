@@ -78,6 +78,7 @@ export default function OccupancyTab({
             setHandoverOpen(false);
             onMoveOutFlowSuccess();
         }
+        return response;
     }
 
 
@@ -123,6 +124,7 @@ export default function OccupancyTab({
             setInspectionOpen(false);
             onMoveOutFlowSuccess();
         }
+        return response;
     }
 
     const openMaintenance = () => {
@@ -155,6 +157,7 @@ export default function OccupancyTab({
             setMaintenanceOpen(false);
             onMoveOutFlowSuccess();
         }
+        return response;
     }
 
     const openSettlement = () => {
@@ -174,6 +177,7 @@ export default function OccupancyTab({
             setSettlementOpen(false);
             onSucess();
         }
+        return response;
     }
 
     const getStepStatus = (step) => {

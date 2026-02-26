@@ -53,8 +53,8 @@ export default function ActionDialog({
                     {onSubmit && (
                         <button
                             className={`px-4 py-2 rounded text-white ${loading
-                                    ? "bg-blue-400 cursor-not-allowed"
-                                    : "bg-blue-600"
+                                ? "bg-blue-400 cursor-not-allowed"
+                                : "bg-blue-600"
                                 }`}
                             onClick={handleSubmit}
                             disabled={loading}

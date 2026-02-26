@@ -1,6 +1,7 @@
 import ActionDialog from "@/components/ActionDialog";
 import { AsyncAutocompleteRQ } from "@/components/common/async-autocomplete-rq";
 import { formatDate } from "@/helpers/dateHelpers";
+import { userManagementApiService } from "@/services/access_control/usermanagementapi";
 import { spacesApiService } from "@/services/spaces_sites/spacesapi";
 import { useState, useEffect } from "react";
 
@@ -56,7 +57,7 @@ export default function InspectionDialog({
         }
     }, [inspection, open]);
 
-    const handleSubmit = () => {
+    const handleSubmit = async () => {
         let data: any = {
             handover_id: handoverId,
         };
@@ -83,7 +84,7 @@ export default function InspectionDialog({
             };
         }
 
-        onSubmit(data);
+        return await onSubmit(data);
     };
 
     return (
@@ -110,7 +111,7 @@ export default function InspectionDialog({
                         placeholder="Search user"
                         queryKey={["users"]}
                         queryFn={async (search) => {
-                            const res = await spacesApiService.searchUsers(search);
+                            const res = await userManagementApiService.searchStaffUsers(search);
                             return res.data.map((u: any) => ({ id: u.id, label: u.name }));
                         }}
                     />
