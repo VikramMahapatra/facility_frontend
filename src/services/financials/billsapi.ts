@@ -76,9 +76,9 @@ class BillsApiService {
     });
   }
 
-  async getBillPaymentHistory(billId: string) {
-    return await apiService.request(`/bills/payment-history/${billId}`);
-  }
+  // async getBillPaymentHistory(billId: string) {
+  //   return await apiService.request(`/bills/payment-history/${billId}`);
+  // }
 
 }
 
