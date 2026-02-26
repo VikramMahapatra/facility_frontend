@@ -504,34 +504,18 @@ export default function BillDetailPage() {
           onSave={async (paymentData: any) => {
             if (id) {
               try {
-                const paymentHistoryResponse = await withLoader(
-                  async () => {
-                    return await billsApiService.getBillPaymentHistory(id);
-                  },
-                );
-                if (paymentHistoryResponse?.success) {
-                  const paymentData =
-                    paymentHistoryResponse.data?.payments || [];
-                  setPayments(
-                    Array.isArray(paymentData) ? paymentData : [],
-                  );
-                } else {
-                  // Fallback: reload entire bill
-                  const reloadResponse = await withLoader(async () => {
-                    return await billsApiService.getBillById(id);
-                  });
-                  if (reloadResponse?.success) {
-                    const data = reloadResponse.data?.data ?? reloadResponse.data;
-                    setBill(data);
-                    setPayments(data?.payments || []);
-                  }
+                // Reload bill detail to get updated payments
+                const reloadResponse = await withLoader(async () => {
+                  return await billsApiService.getBillById(id);
+                });
+                if (reloadResponse?.success) {
+                  const data = reloadResponse.data?.data ?? reloadResponse.data;
+                  setBill(data);
+                  setPayments(data?.payments || []);
                 }
-                return paymentHistoryResponse;
+                return reloadResponse;
               } catch (error) {
-                console.error("Error loading payment history:", error);
-                if (bill?.payments) {
-                  setPayments(bill.payments);
-                }
+                console.error("Error reloading bill:", error);
                 return { success: false };
               }
             }

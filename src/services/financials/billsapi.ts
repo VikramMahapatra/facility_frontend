@@ -70,15 +70,15 @@ class BillsApiService {
   }
 
   async saveBillPayment(paymentData: any) {
-    return await apiService.request("/bills/save-bill-payment", {
+    return await apiService.request("/bills/save-payment", {
       method: "POST",
       body: JSON.stringify(paymentData),
     });
   }
 
-  async getBillPaymentHistory(billId: string) {
-    return await apiService.request(`/bills/payment-history/${billId}`);
-  }
+  // async getBillPaymentHistory(billId: string) {
+  //   return await apiService.request(`/bills/payment-history/${billId}`);
+  // }
 
 }
 
