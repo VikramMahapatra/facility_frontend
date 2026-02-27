@@ -870,7 +870,7 @@ export default function TenantDetailPage() {
           setSelectedSpaceId(null);
           setPrefilledLeaseData(null);
         }}
-        onSave={async (leaseData: Partial<Lease>) => {
+        onSave={async (leaseData: FormData) => {
           const response = await withLoader(async () => {
             return await leasesApiService.addLease(leaseData);
           });

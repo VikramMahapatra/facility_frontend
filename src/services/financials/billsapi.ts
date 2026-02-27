@@ -32,15 +32,15 @@ class BillsApiService {
   }
 
   async addBill(formData: FormData) {
-    return await apiService.request("/bills/create", {
+    return await apiService.requestWithForm("/bills/create", {
       method: "POST",
       body: JSON.stringify(formData),
     });
   }
 
   async updateBill(formData: FormData) {
-    return await apiService.request("/bills/", {
-      method: "PUT",
+    return await apiService.requestWithForm("/bills/update", {
+      method: "POST",
       body: formData,
     });
   }

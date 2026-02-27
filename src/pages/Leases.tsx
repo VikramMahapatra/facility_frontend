@@ -182,7 +182,6 @@ export default function Leases() {
         }
       }
     } else if (formMode === "edit" && selectedLease) {
-
       response = await leasesApiService.updateLease(leaseData);
 
       if (response.success) {

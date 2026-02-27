@@ -55,6 +55,7 @@ import ContentContainer from "@/components/ContentContainer";
 import { useLoader } from "@/context/LoaderContext";
 import LoaderOverlay from "@/components/LoaderOverlay";
 import { useSettings } from "@/context/SettingsContext";
+import { FileWithPreview, mapAttachmentsToFiles, revokeAttachmentPreviews } from "@/helpers/attachmentHelper";
 
 const emptyFormData: InvoiceFormValues = {
   invoice_no: "",
@@ -105,6 +106,9 @@ export default function InvoiceFormPage() {
   const [totalsAutoFilled, setTotalsAutoFilled] = useState(false);
   const [totalsLoaded, setTotalsLoaded] = useState(false);
   const [attachments, setAttachments] = useState<File[]>([]);
+  const [removedAttachmentIds, setRemovedAttachmentIds] =
+    useState<string[]>([]);
+  const [imagePreviews, setImagePreviews] = useState<string[]>([]);
   const [showSaveDialog, setShowSaveDialog] = useState(false);
   const { systemCurrency } = useSettings();
 
@@ -157,6 +161,10 @@ export default function InvoiceFormPage() {
   // Don't auto-select - user must choose
 
   useEffect(() => {
+    revokeAttachmentPreviews(attachments);
+    setAttachments([]);
+    setRemovedAttachmentIds([]);
+
     if (!id || formMode === "create") {
       loadAll(undefined);
       return;
@@ -548,9 +556,12 @@ export default function InvoiceFormPage() {
         await loadSpaceLookup(invoice.site_id, (invoice as any).building_id);
       }
 
-      // if ((invoice as any).space_id) {
-      //   await loadBillableItemLookup();
-      // }
+      if (invoice?.attachments?.length) {
+        const mapped = mapAttachmentsToFiles(invoice.attachments);
+
+        setAttachments(mapped);
+        setImagePreviews(mapped.map((m) => m.preview));
+      }
     }
 
     setFormLoading(false);
@@ -606,15 +617,18 @@ export default function InvoiceFormPage() {
       };
 
       const formData = new FormData();
-
-      // ✅ append attachments
       attachments.forEach((file) => {
         formData.append("attachments", file);
       });
+      formData.append("removed_attachment_ids", JSON.stringify(removedAttachmentIds ?? []));
 
       let response;
       if (formMode === "create") {
         formData.append("invoice", JSON.stringify(invoiceData));
+
+        for (let pair of formData.entries()) {
+          console.log(pair[0], pair[1]);
+        }
         response = await withLoader(async () => {
           return await invoiceApiService.addInvoice(formData);
         });
@@ -625,10 +639,9 @@ export default function InvoiceFormPage() {
           id: invoice.id || id,
           invoice_no: invoice.invoice_no,
           updated_at: new Date().toISOString(),
+          attachments: [],
         };
-
         formData.append("invoice", JSON.stringify(updatedInvoice));
-
         response = await withLoader(async () => {
           return await invoiceApiService.updateInvoice(formData);
         });
@@ -639,12 +652,7 @@ export default function InvoiceFormPage() {
           `Invoice has been ${formMode === "create" ? "created" : "updated"
           } successfully${saveAsDraft ? " as draft" : ""}.`,
         );
-        if (!saveAsDraft) {
-          navigate("/invoices");
-        } else {
-          // If saving as draft, stay on the page
-          setShowSaveDialog(false);
-        }
+        navigate("/invoices");
       } else if (response && !response.success) {
         if (response?.message) {
           toast.error(response.message);
@@ -1321,9 +1329,18 @@ export default function InvoiceFormPage() {
                                 variant="ghost"
                                 size="sm"
                                 onClick={() => {
-                                  setAttachments(
-                                    attachments.filter((_, i) => i !== index),
-                                  );
+                                  setAttachments((prev) => {
+                                    const removed = prev[index] as FileWithPreview;
+
+                                    if (removed.attachmentId) {
+                                      setRemovedAttachmentIds((ids) => [
+                                        ...ids,
+                                        removed.attachmentId!,
+                                      ]);
+                                    }
+
+                                    return prev.filter((_, i) => i !== index)
+                                  });
                                 }}
                                 className="h-6 w-6 p-0 text-destructive hover:text-destructive"
                               >

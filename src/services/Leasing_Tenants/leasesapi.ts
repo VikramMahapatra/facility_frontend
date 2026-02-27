@@ -12,15 +12,15 @@ class LeasesApiService {
   }
 
   async addLease(leaseData: FormData) {
-    return await apiService.requestWithForm("/leases/", {
+    return await apiService.requestWithForm("/leases/create", {
       method: "POST",
       body: leaseData,
     });
   }
 
   async updateLease(leaseData: FormData) {
-    return await apiService.request("/leases/", {
-      method: "PUT",
+    return await apiService.requestWithForm("/leases/update", {
+      method: "POST",
       body: leaseData,
     });
   }

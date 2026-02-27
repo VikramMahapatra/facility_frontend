@@ -41,6 +41,7 @@ import { Lease } from "@/interfaces/leasing_tenants_interface";
 import { leasesApiService } from "@/services/leasing_tenants/leasesapi";
 import { withFallback } from "@/helpers/commonHelper";
 import { useSettings } from "@/context/SettingsContext";
+import { FileWithPreview, mapAttachmentsToFiles, revokeAttachmentPreviews } from "@/helpers/attachmentHelper";
 
 const emptyFormData: Partial<LeaseFormValues> = {
   kind: "residential",
@@ -131,6 +132,8 @@ export function LeaseForm({
   const [spaceList, setSpaceList] = useState<any[]>([]);
   const [leasePartnerList, setLeasePartnerList] = useState<any[]>([]);
   const [uploadedImages, setUploadedImages] = useState<File[]>([]);
+  const [removedAttachmentIds, setRemovedAttachmentIds] =
+    useState<string[]>([]);
   const [imagePreviews, setImagePreviews] = useState<string[]>([]);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const isReadOnly = mode === "view";
@@ -139,7 +142,9 @@ export function LeaseForm({
     setFormLoading(true);
 
     // Reset file uploads when form opens
+    revokeAttachmentPreviews(uploadedImages);
     setUploadedImages([]);
+    setRemovedAttachmentIds([]);
     setImagePreviews([]);
     // Clean up previous preview URLs
     imagePreviews.forEach((url) => URL.revokeObjectURL(url));
@@ -182,6 +187,13 @@ export function LeaseForm({
         }
         : emptyFormData,
     );
+
+    if (lease?.attachments?.length) {
+      const mapped = mapAttachmentsToFiles(lease.attachments);
+
+      setUploadedImages(mapped);
+      setImagePreviews(mapped.map((m) => m.preview));
+    }
 
     setFormLoading(false);
 
@@ -601,6 +613,7 @@ export function LeaseForm({
       uploadedImages.forEach((file) => {
         formData.append("attachments", file);
       });
+      formData.append("removed_attachment_ids", JSON.stringify(removedAttachmentIds ?? []));
 
       if (mode == "create") {
         formData.append("payload", JSON.stringify(updated));
@@ -609,14 +622,12 @@ export function LeaseForm({
         const updated_lease = {
           ...lease,
           ...updated,
+          attachments: [],
         };
 
         formData.append("payload", JSON.stringify(updated_lease));
       }
-
       const formResponse = await onSave(formData);
-      console.log("Lease save response:", formResponse);
-
       if (formResponse?.success) {
         // Clean up preview URLs
         imagePreviews.forEach((url) => URL.revokeObjectURL(url));
@@ -1198,7 +1209,7 @@ export function LeaseForm({
                                   </div>
                                 ) : (
                                   <img
-                                    src={imagePreviews[index]}
+                                    src={(file as FileWithPreview).preview}
                                     alt={`Upload ${index + 1}`}
                                     className="w-full h-24 object-cover rounded border"
                                   />
@@ -1210,9 +1221,23 @@ export function LeaseForm({
                                     size="sm"
                                     className="absolute top-1 right-1 h-6 w-6 p-0 opacity-0 group-hover:opacity-100 transition-opacity"
                                     onClick={() => {
-                                      setUploadedImages((prev) =>
-                                        prev.filter((_, i) => i !== index),
-                                      );
+                                      setUploadedImages((prev) => {
+                                        const removed = prev[index] as FileWithPreview;
+
+                                        if (removed.preview) {
+                                          URL.revokeObjectURL(removed.preview);
+                                        }
+
+                                        if (removed.attachmentId) {
+                                          setRemovedAttachmentIds((ids) => [
+                                            ...ids,
+                                            removed.attachmentId!,
+                                          ]);
+                                        }
+
+                                        return prev.filter((_, i) => i !== index);
+                                      });
+
                                       setImagePreviews((prev) => {
                                         if (prev[index]) {
                                           URL.revokeObjectURL(prev[index]);

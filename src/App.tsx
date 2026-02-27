@@ -23,7 +23,6 @@ import SpaceAssignments from "./pages/SpaceAssignments";
 import Leases from "./pages/Leases";
 import LeaseDetailPage from "./pages/LeaseDetailPage";
 import Tenants from "./pages/Tenants";
-import TenantFormPage from "./pages/TenantFormPage";
 import TenantDetailPage from "./pages/TenantDetailPage";
 import LeaseCharges from "./pages/LeaseCharges";
 import LeaseChargeCode from "./pages/LeaseChargeCode";
@@ -170,11 +169,6 @@ const App = () => {
                   <Route path="/leases" element={<Leases />} />
                   <Route path="/leases/:id" element={<LeaseDetailPage />} />
                   <Route path="/tenants" element={<Tenants />} />
-                  <Route path="/tenants/create" element={<TenantFormPage />} />
-                  <Route
-                    path="/tenants/:id/edit"
-                    element={<TenantFormPage />}
-                  />
                   <Route
                     path="/tenants/:id/view"
                     element={<TenantDetailPage />}

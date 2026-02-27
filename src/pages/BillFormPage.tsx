@@ -46,6 +46,7 @@ import { useLoader } from "@/context/LoaderContext";
 import LoaderOverlay from "@/components/LoaderOverlay";
 import { useSettings } from "@/context/SettingsContext";
 import { Description } from "@radix-ui/react-toast";
+import { mapAttachmentsToFiles, revokeAttachmentPreviews } from "@/helpers/attachmentHelper";
 
 const emptyFormData: BillFormValues = {
   bill_no: "",
@@ -92,6 +93,8 @@ export default function BillFormPage() {
   const [totalsAutoFilled, setTotalsAutoFilled] = useState(false);
   const [totalsLoaded, setTotalsLoaded] = useState(false);
   const [attachments, setAttachments] = useState<File[]>([]);
+  const [removedAttachmentIds, setRemovedAttachmentIds] =
+    useState<string[]>([]);
   const [showSaveDialog, setShowSaveDialog] = useState(false);
   const { systemCurrency } = useSettings();
 
@@ -220,6 +223,9 @@ export default function BillFormPage() {
   }, [watchedItems, setValue]);
 
   useEffect(() => {
+    revokeAttachmentPreviews(attachments);
+    setAttachments([]);
+    setRemovedAttachmentIds([]);
     if (!id || formMode === "create") {
       loadAll();
       return;
@@ -245,7 +251,19 @@ export default function BillFormPage() {
     });
 
     if (response?.success && response.data) {
+      const loadedBill = response.data;
+      if (formMode === "edit" && (loadedBill.status != "draft")) {
+        toast.error("Only bill saved as draft can be edited.");
+        navigate(`/bills/${id}/view`);
+        return;
+      }
       setBill(response.data);
+
+      if (bill?.attachments?.length) {
+        const mapped = mapAttachmentsToFiles(bill.attachments);
+
+        setAttachments(mapped);
+      }
     } else {
       toast.error("Failed to load bill details");
       navigate("/bills");
@@ -414,49 +432,6 @@ export default function BillFormPage() {
     setValue("totals.grand", grandTotal, { shouldValidate: false });
   };
 
-  // Load totals when period is selected for an item
-  const loadPeriodTotals = async (
-    periodId: string,
-    vendorId: string,
-    index: number,
-  ) => {
-    if (!periodId || !vendorId || !watchedBillableType) return;
-
-    try {
-      const params = new URLSearchParams();
-      params.append("billable_item_id", periodId);
-      params.append("billable_item_type", watchedBillableType);
-
-      const response = await billsApiService.getBillTotals(params);
-      if (response?.success && response.data) {
-        const totals = response.data;
-        const subtotal = Number(totals.subtotal || 0);
-
-        // Update the item amount
-        setValue(`lines.${index}.amount`, subtotal, { shouldValidate: false });
-
-        // Recalculate totals
-        const allItems = getValues("lines");
-        const newSubtotal = allItems.reduce((sum, item) => {
-          return sum + (item.amount || 0);
-        }, 0);
-        const totalTax = allItems.reduce((sum, item) => {
-          const itemAmount = item.amount || 0;
-          const itemTaxPercent = item.tax_pct || 5;
-          const itemTax = (itemAmount * itemTaxPercent) / 100;
-          return sum + itemTax;
-        }, 0);
-        const grandTotal = newSubtotal + totalTax;
-
-        setValue("totals.sub", newSubtotal, { shouldValidate: false });
-        setValue("totals.tax", totalTax, { shouldValidate: false });
-        setValue("totals.grand", grandTotal, { shouldValidate: false });
-      }
-    } catch (error) {
-      console.error("Failed to load period totals:", error);
-    }
-  };
-
   const loadAll = async () => {
     setTotalsAutoFilled(false);
     setTotalsLoaded(false);
@@ -552,11 +527,10 @@ export default function BillFormPage() {
       };
 
       const formData = new FormData();
-
-      // ✅ append attachments
       attachments.forEach((file) => {
         formData.append("attachments", file);
       });
+      formData.append("removed_attachment_ids", JSON.stringify(removedAttachmentIds ?? []));
 
       let response;
       if (formMode === "create") {
@@ -571,6 +545,7 @@ export default function BillFormPage() {
           id: bill.id || id,
           bill_no: bill.bill_no,
           updated_at: new Date().toISOString(),
+          attachments: [],
         };
         formData.append("bill", JSON.stringify(updatedBill));
         response = await withLoader(async () => {
@@ -583,12 +558,7 @@ export default function BillFormPage() {
           `Bill has been ${formMode === "create" ? "created" : "updated"
           } successfully${saveAsDraft ? " as draft" : ""}.`,
         );
-        if (!saveAsDraft) {
-          navigate("/bills");
-        } else {
-          // If saving as draft, stay on the page
-          setShowSaveDialog(false);
-        }
+        navigate("/bills");
       } else if (response && !response.success) {
         if (response?.message) {
           toast.error(response.message);

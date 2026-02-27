@@ -1,3 +1,5 @@
+import { BackendAttachment } from "@/helpers/attachmentHelper";
+
 export interface Lease {
   id: string;
   org_id: string;
@@ -31,6 +33,7 @@ export interface Lease {
   lease_frequency?: string;
   number_of_installments?: number;
   payment_terms?: PaymentTerm[];
+  attachments?: BackendAttachment[];
 }
 
 

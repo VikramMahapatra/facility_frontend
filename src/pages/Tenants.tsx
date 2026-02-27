@@ -224,8 +224,8 @@ const Tenants = () => {
     } else if (formMode === "edit" && selectedTenant) {
       const preservedTenantSpaces = (selectedTenant as any).tenant_spaces
         ? (selectedTenant as any).tenant_spaces.filter(
-            (space: any) => space.id && space.id.length > 0,
-          )
+          (space: any) => space.id && space.id.length > 0,
+        )
         : undefined;
 
       const updatedTenant = {
@@ -248,8 +248,7 @@ const Tenants = () => {
     if (response?.success) {
       setIsFormOpen(false);
       toast.success(
-        `Tenant ${tenantData.name} has been ${
-          formMode === "create" ? "created" : "updated"
+        `Tenant ${tenantData.name} has been ${formMode === "create" ? "created" : "updated"
         } successfully.`,
       );
     }
@@ -466,7 +465,7 @@ const Tenants = () => {
                           {tenantSpaces.slice(0, 2).map((tenant_space) => {
                             const isSpaceStatus =
                               tenant_space.status == "approved" ||
-                              tenant_space.status == "leased"
+                                tenant_space.status == "leased"
                                 ? "active"
                                 : tenant_space.status == "pending"
                                   ? "inactive"
@@ -541,16 +540,16 @@ const Tenants = () => {
                                   {(tenant.address.city ||
                                     tenant.address.state ||
                                     tenant.address.pincode) && (
-                                    <div>
-                                      {[
-                                        tenant.address.city,
-                                        tenant.address.state,
-                                        tenant.address.pincode,
-                                      ]
-                                        .filter(Boolean)
-                                        .join(", ")}
-                                    </div>
-                                  )}
+                                      <div>
+                                        {[
+                                          tenant.address.city,
+                                          tenant.address.state,
+                                          tenant.address.pincode,
+                                        ]
+                                          .filter(Boolean)
+                                          .join(", ")}
+                                      </div>
+                                    )}
                                 </div>
                               </div>
                             )}
@@ -749,7 +748,7 @@ const Tenants = () => {
           setSelectedTenantId(null);
           setPrefilledLeaseData(null);
         }}
-        onSave={async (leaseData: Partial<Lease>) => {
+        onSave={async (leaseData: FormData) => {
           const response = await withLoader(async () => {
             return await leasesApiService.addLease(leaseData);
           });
@@ -760,12 +759,6 @@ const Tenants = () => {
             // Reload tenants data to show the new lease
             await loadTenants();
             await loadTenantOverview();
-          } else if (response && !response.success) {
-            if (response?.message) {
-              toast.error(response.message);
-            } else {
-              toast.error("Failed to create lease.");
-            }
           }
           return response;
         }}
