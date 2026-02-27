@@ -301,23 +301,23 @@ export const navigationItems = [
   //   ],
   // },
 
-  // {
-  //   title: "Energy consumption",
-  //   items: [
-  //     {
-  //       title: "Meters & Readings",
-  //       url: "/meters",
-  //       icon: Zap,
-  //       resource: "meter_readings",
-  //     },
-  //     {
-  //       title: "Consumption Reports",
-  //       url: "/consumption",
-  //       icon: BarChart3,
-  //       resource: "consumption_reports",
-  //     },
-  //   ],
-  // },
+  {
+    title: "Energy consumption",
+    items: [
+      {
+        title: "Meters & Readings",
+        url: "/meters",
+        icon: Zap,
+        resource: "meter_readings",
+      },
+      {
+        title: "Consumption Reports",
+        url: "/consumption",
+        icon: BarChart3,
+        resource: "consumption_reports",
+      },
+    ],
+  },
   {
     title: "Financials",
     items: [
