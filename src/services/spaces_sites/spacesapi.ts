@@ -29,6 +29,13 @@ class SpacesApiService {
     });
   }
 
+  async bulkUploadSpaces(payload: any) {
+    return await apiService.request("/spaces/bulk-upload", {
+      method: "POST",
+      body: JSON.stringify(payload),
+    });
+  }
+
   async getSpaceLookup(site_id?: any, building_id?: any) {
     let url = "/spaces/lookup";
     if (site_id) {
