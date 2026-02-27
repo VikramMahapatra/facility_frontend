@@ -8,11 +8,11 @@ import { Button } from "@/components/ui/button";
 import { AlertTriangle } from "lucide-react";
 import { toast } from "@/components/ui/app-toast";
 import { occupancyApiService } from "@/services/spaces_sites/spaceoccupancyapi";
-import { Textarea } from "../ui/textarea";
+import { Textarea } from "../../ui/textarea";
 import { useState } from "react";
-import { Checkbox } from "../ui/checkbox";
-import { Label } from "../ui/label";
-import { Input } from "../ui/input";
+import { Checkbox } from "../../ui/checkbox";
+import { Label } from "../../ui/label";
+import { Input } from "../../ui/input";
 
 type Props = {
     open: boolean;
@@ -28,11 +28,16 @@ export default function MoveOutModal({
     spaceId,
     onSuccess,
 }: Props) {
-
+    const [loading, setLoading] = useState(false);
     const [moveOutAt, setMoveoutAt] = useState<string>("");
 
     const confirmMoveOut = async () => {
+        if (!moveOutAt) {
+            toast.error("Please select a date");
+            return;
+        }
 
+        setLoading(true);
         const payload: any = {
             move_out_date: moveOutAt,
             space_id: spaceId
@@ -41,10 +46,11 @@ export default function MoveOutModal({
         const res = await occupancyApiService.moveOut(payload);
 
         if (res.success) {
-            toast.success("Space vacated successfully");
+            toast.success("Moved out successfully");
             onSuccess();
             onClose();
         }
+        setLoading(false);
     };
 
     return (
@@ -76,8 +82,8 @@ export default function MoveOutModal({
                 </div>
                 <div className="flex justify-end gap-2 pt-4">
                     <Button variant="outline" onClick={onClose}>Cancel</Button>
-                    <Button variant="destructive" onClick={confirmMoveOut}>
-                        Confirm Move-Out
+                    <Button variant="destructive" onClick={confirmMoveOut} disabled={loading}>
+                        {loading ? "Confirming..." : "Confirm Move-Out"}
                     </Button>
                 </div>
 

@@ -9,14 +9,22 @@ class BillsApiService {
     return await apiService.request(`/bills/payments?${params.toString()}`);
   }
 
+
+  async getVendorLookup(spaceId: string) {
+    const params = new URLSearchParams();
+    params.append("space_id", spaceId);
+    return await apiService.request(`/bills/workorder-vendor-lookup?${params.toString()}`);
+  }
+
+
   async getBillEntityLookup(params) {
     return await apiService.request(
-      `/bills/entity-lookup?${params.toString()}`,
+      `/bills/pending-workorder-lookup?${params.toString()}`,
     );
   }
 
   async getBillTotals(params) {
-    return await apiService.request(`/bills/bill-totals?${params.toString()}`);
+    return await apiService.request(`/invoices/invoice-totals?${params.toString()}`);
   }
 
   async getBillOverview() {
@@ -24,7 +32,7 @@ class BillsApiService {
   }
 
   async addBill(billData: any) {
-    return await apiService.request("/bills/", {
+    return await apiService.request("/bills/create", {
       method: "POST",
       body: JSON.stringify(billData),
     });
@@ -56,6 +64,22 @@ class BillsApiService {
   async getBillTypeLookup() {
     return await apiService.request("/bills/bill-type-lookup");
   }
+
+  async getBillPreviewNumber() {
+    return await apiService.request("/bills/preview-number");
+  }
+
+  async saveBillPayment(paymentData: any) {
+    return await apiService.request("/bills/save-payment", {
+      method: "POST",
+      body: JSON.stringify(paymentData),
+    });
+  }
+
+  // async getBillPaymentHistory(billId: string) {
+  //   return await apiService.request(`/bills/payment-history/${billId}`);
+  // }
+
 }
 
 export const billsApiService = new BillsApiService();

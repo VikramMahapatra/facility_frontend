@@ -103,25 +103,12 @@ export default function Invoices() {
   useEffect(() => {
     loadInvoicesOverView();
     loadInvoices();
-    loadPayments();
   }, []);
 
   useSkipFirstEffect(() => {
     loadInvoices();
   }, [page]);
 
-  useSkipFirstEffect(() => {
-    loadPayments();
-  }, [paymentPage]);
-
-  useSkipFirstEffect(() => {
-    updateInvoicesPage();
-    if (paymentPage === 1) {
-      loadPayments();
-    } else {
-      setPaymentPage(1);
-    }
-  }, [searchTerm, statusFilter]);
 
   const updateInvoicesPage = () => {
     if (page === 1) {
@@ -159,27 +146,7 @@ export default function Invoices() {
     }
   };
 
-  const loadPayments = async () => {
-    const skip = (paymentPage - 1) * paymentPageSize;
-    const limit = paymentPageSize;
 
-    const params = new URLSearchParams();
-    if (searchTerm) params.append("search", searchTerm);
-    if (statusFilter && statusFilter !== "all")
-      params.append("status", statusFilter);
-    params.append("skip", skip.toString());
-    params.append("limit", limit.toString());
-
-    const response = await invoiceApiService.getPayments(params);
-
-    if (response?.success) {
-      const payments =
-        response.data?.data?.payments || response.data?.payments || [];
-      const total = response.data?.total || response.data?.total || 0;
-      setPayments(payments);
-      setTotalPaymentItems(total);
-    }
-  };
 
   const getStatusBadge = (status: string) => {
     const variants = {
@@ -249,10 +216,10 @@ export default function Invoices() {
         <div className="flex items-center justify-between">
           <div>
             <h2 className="text-2xl font-bold text-sidebar-primary">
-              Invoices & Payments
+              Invoices
             </h2>
             <p className="text-muted-foreground">
-              Manage billing and payment collection
+              Create invoices and track payment collections.
             </p>
           </div>
           <div className="flex gap-2">
@@ -371,8 +338,8 @@ export default function Invoices() {
                       <TableRow>
                         <TableHead>Invoice No.</TableHead>
                         <TableHead>Type</TableHead>
-                        <TableHead>Location</TableHead>
                         <TableHead>Customer Name</TableHead>
+                        <TableHead>Location</TableHead>
                         <TableHead>Date</TableHead>
                         <TableHead>Due Date</TableHead>
                         <TableHead>Amount</TableHead>
@@ -398,7 +365,10 @@ export default function Invoices() {
                             </TableCell>
                             <TableCell>{invoice.code}</TableCell>
                             <TableCell>{invoice.user_name}</TableCell>
-                            <TableCell>{invoice.space_name + "," + invoice.site_name || "-"}</TableCell>
+                            <TableCell>
+                              {invoice.space_name + "," + invoice.site_name ||
+                                "-"}
+                            </TableCell>
                             <TableCell>
                               {new Date(invoice.date).toLocaleDateString()}
                             </TableCell>
@@ -421,7 +391,8 @@ export default function Invoices() {
                                   <Eye className="h-4 w-4" />
                                 </Button>
                                 {canWrite(resource) &&
-                                  invoice.status !== "paid" && (
+                                  invoice.status !== "paid" &&
+                                  invoice.status !== "issued" && (
                                     <Button
                                       variant="ghost"
                                       size="sm"
@@ -464,71 +435,6 @@ export default function Invoices() {
                   />
                 </CardContent>
               </Card>
-
-              {/* Recent Payments */}
-              <Card>
-                <CardHeader>
-                  <CardTitle>Payments</CardTitle>
-                  <CardDescription>
-                    {totalPaymentItems} payment(s) found
-                  </CardDescription>
-                </CardHeader>
-                <CardContent>
-                  <Table>
-                    <TableHeader>
-                      <TableRow>
-                        <TableHead>Invoice No.</TableHead>
-                        <TableHead>Customer</TableHead>
-                        <TableHead>Method</TableHead>
-                        <TableHead>Reference</TableHead>
-                        <TableHead>Amount</TableHead>
-                        <TableHead>Date</TableHead>
-                      </TableRow>
-                    </TableHeader>
-                    <TableBody>
-                      {payments.length === 0 ? (
-                        <TableRow>
-                          <TableCell
-                            colSpan={6}
-                            className="text-center py-8 text-muted-foreground"
-                          >
-                            No payments found
-                          </TableCell>
-                        </TableRow>
-                      ) : (
-                        payments.map((payment) => (
-                          <TableRow key={payment.id}>
-                            <TableCell className="font-medium">
-                              {payment.invoice_no}
-                            </TableCell>
-                            <TableCell>{payment.customer_name}</TableCell>
-                            <TableCell>
-                              <Badge variant="outline">
-                                {payment.method.toUpperCase()}
-                              </Badge>
-                            </TableCell>
-                            <TableCell className="font-mono text-sm">
-                              {payment.ref_no}
-                            </TableCell>
-                            <TableCell>
-                              {formatCurrency(payment.amount)}
-                            </TableCell>
-                            <TableCell>
-                              {new Date(payment.paid_at).toLocaleDateString()}
-                            </TableCell>
-                          </TableRow>
-                        ))
-                      )}
-                    </TableBody>
-                  </Table>
-                  <Pagination
-                    page={paymentPage}
-                    pageSize={paymentPageSize}
-                    totalItems={totalPaymentItems}
-                    onPageChange={(newPage) => setPaymentPage(newPage)}
-                  />
-                </CardContent>
-              </Card>
             </div>
           </div>
         </div>
@@ -556,7 +462,6 @@ export default function Invoices() {
             </AlertDialogFooter>
           </AlertDialogContent>
         </AlertDialog>
-
       </div>
     </ContentContainer>
   );

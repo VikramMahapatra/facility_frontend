@@ -47,3 +47,24 @@ export function formatDate(
         year: "numeric",
     });
 }
+
+
+export function formatDateTime(
+    date?: string | Date | null,
+    fallback: string = "-"
+) {
+    if (!date) return fallback;
+
+    const d = typeof date === "string" ? new Date(date) : date;
+
+    if (isNaN(d.getTime())) return fallback;
+
+    return d.toLocaleString("en-IN", {
+        day: "2-digit",
+        month: "short",
+        year: "numeric",
+        hour: "2-digit",
+        minute: "2-digit",
+        hour12: true,
+    });
+}

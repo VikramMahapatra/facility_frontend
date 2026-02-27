@@ -43,7 +43,6 @@ const emptyFormData: BillFormValues = {
   space_id: "",
   vendor_id: "",
   date: new Date().toISOString().split("T")[0],
-  due_date: "",
   status: "draft",
   currency: "INR",
   billable_item_type: "",
@@ -319,19 +318,19 @@ export function BillForm({
     reset(
       bill && mode !== "create"
         ? {
-            site_id: bill.site_id || "",
-            building_id: (bill as any).building_id || "",
-            space_id: (bill as any).space_id || "",
-            vendor_id: bill.vendor_id || "",
-            date: bill.date || new Date().toISOString().split("T")[0],
-            due_date: bill.due_date || "",
-            status: bill.status || "draft",
-            currency: bill.currency || "INR",
-            billable_item_type: bill.billable_item_type || "",
-            billable_item_id: bill.billable_item_id || "",
-            totals: bill.totals || { sub: 0, tax: 5, grand: 0 },
-            payments: [],
-          }
+          site_id: bill.site_id || "",
+          building_id: (bill as any).building_id || "",
+          space_id: (bill as any).space_id || "",
+          vendor_id: bill.vendor_id || "",
+          date: bill.date || new Date().toISOString().split("T")[0],
+          due_date: bill.due_date || "",
+          status: bill.status || "draft",
+          currency: bill.currency || "INR",
+          billable_item_type: bill.billable_item_type || "",
+          billable_item_id: bill.billable_item_id || "",
+          totals: bill.totals || { sub: 0, tax: 5, grand: 0 },
+          payments: [],
+        }
         : emptyFormData,
     );
 
@@ -634,30 +633,7 @@ export function BillForm({
                       </p>
                     )}
                   </div>
-                  <div className="space-y-2">
-                    <Label htmlFor="due_date">Due Date *</Label>
-                    <Input
-                      id="due_date"
-                      type="date"
-                      {...register("due_date")}
-                      disabled={isReadOnly}
-                      className={errors.due_date ? "border-red-500" : ""}
-                      min={watch("date") || undefined}
-                    />
-                    {errors.due_date && (
-                      <p className="text-sm text-red-500">
-                        {errors.due_date.message}
-                      </p>
-                    )}
-                  </div>
-                  <div className="space-y-2">
-                    <Label htmlFor="currency">Currency</Label>
-                    <Input
-                      id="currency"
-                      {...register("currency")}
-                      disabled={isReadOnly}
-                    />
-                  </div>
+
                 </div>
 
                 {/* Row 5: Totals */}

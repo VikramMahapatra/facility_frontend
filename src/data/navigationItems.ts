@@ -322,7 +322,7 @@ export const navigationItems = [
     title: "Financials",
     items: [
       {
-        title: "Invoices & Payments",
+        title: "Invoices",
         url: "/invoices",
         icon: BarChart3,
         resource: "invoices",
@@ -333,6 +333,13 @@ export const navigationItems = [
         url: "/bills",
         icon: Receipt,
         resource: "bills",
+      },
+
+      {
+        title: "Payments",
+        url: "/payments",
+        icon: CreditCard,
+        resource: "payments",
       },
 
       {
@@ -386,6 +393,12 @@ export const navigationItems = [
         url: "/space-occupancy-approvals",
         icon: Move,
         resource: "space_occupancy_approvals",
+      },
+      {
+        title: "Lease Terminations",
+        url: "/lease-termination-approvals",
+        icon: FileText,
+        resource: "lease_termination_approvals",
       },
     ],
   },

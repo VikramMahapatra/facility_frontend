@@ -3,14 +3,11 @@ import { useParams, useNavigate } from "react-router-dom";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { Label } from "@/components/ui/label";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 import {
   FileText,
   History,
   ArrowLeft,
-  Calendar,
-  DollarSign,
   CreditCard,
   Wallet,
   Building2,
@@ -20,60 +17,53 @@ import {
   AlertCircle,
   Pencil,
   Plus,
-  MapPin,
   Receipt,
-  Coins,
-  User,
   Clock,
-  CircleDollarSign,
-  Percent,
-  BadgeIndianRupee,
+  User,
 } from "lucide-react";
-import { Invoice, PaymentInput } from "@/interfaces/invoices_interfaces";
-import { invoiceApiService } from "@/services/financials/invoicesapi";
+import { Bill } from "@/interfaces/invoices_interfaces";
+import { billsApiService } from "@/services/financials/billsapi";
 import { toast } from "@/components/ui/app-toast";
 import ContentContainer from "@/components/ContentContainer";
 import { useLoader } from "@/context/LoaderContext";
 import LoaderOverlay from "@/components/LoaderOverlay";
-import { InvoiceForm } from "@/components/InvoiceForm";
+import { useSettings } from "@/context/SettingsContext";
 import { PaymentDetailsForm } from "@/components/PaymentDetailsForm";
 
-export default function InvoiceDetailPage() {
+export default function BillDetailPage() {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
   const { withLoader } = useLoader();
-  const [invoice, setInvoice] = useState<Invoice | null>(null);
+  const { systemCurrency } = useSettings();
+  const [bill, setBill] = useState<Bill | null>(null);
   const [payments, setPayments] = useState<any[]>([]);
-  const [isInvoiceFormOpen, setIsInvoiceFormOpen] = useState(false);
   const [isPaymentFormOpen, setIsPaymentFormOpen] = useState(false);
   const [selectedPayment, setSelectedPayment] = useState<any | undefined>();
-  const [paymentFormMode, setPaymentFormMode] = useState<"create" | "edit">(
-    "create",
-  );
+  const [paymentFormMode, setPaymentFormMode] = useState<"create" | "edit">("create");
 
   useEffect(() => {
     if (!id) return;
 
-    const loadInvoice = async () => {
+    const loadBill = async () => {
       const response = await withLoader(async () => {
-        return await invoiceApiService.getInvoiceById(id);
+        return await billsApiService.getBillById(id);
       });
 
       if (response?.success) {
-        setInvoice(response.data);
-        // Set payments from invoice.payments on load
-        if (response.data?.payments) {
-          setPayments(response.data.payments);
+        const data = response.data?.data ?? response.data;
+        setBill(data);
+        if (data?.payments) {
+          setPayments(data.payments);
         } else {
           setPayments([]);
         }
       } else {
-        toast.error("Failed to load invoice details");
-        navigate("/invoices");
+        toast.error("Failed to load bill details");
+        navigate("/bills");
       }
     };
 
-    loadInvoice();
+    loadBill();
   }, [id]);
 
   const getStatusBadge = (status: string) => {
@@ -91,10 +81,10 @@ export default function InvoiceDetailPage() {
             <AlertCircle className="h-4 w-4" /> Partial
           </Badge>
         );
-      case "issued":
+      case "approved":
         return (
           <Badge className="bg-blue-500 text-white px-3 py-1.5 flex items-center gap-2 font-semibold shadow-sm">
-            <FileText className="h-4 w-4" /> Issued
+            <CheckCircle2 className="h-4 w-4" /> Approved
           </Badge>
         );
       case "draft":
@@ -133,67 +123,30 @@ export default function InvoiceDetailPage() {
     }
   };
 
-  const formatCurrency = (
-    amount: number | undefined,
-    currency: string = "INR",
-  ) => {
-    const numAmount = amount || 0;
-    const symbol =
-      currency === "INR"
-        ? "₹"
-        : currency === "USD"
-          ? "$"
-          : currency === "EUR"
-            ? "€"
-            : currency;
-    return `${symbol} ${numAmount.toLocaleString("en-IN", {
-      minimumFractionDigits: 2,
-      maximumFractionDigits: 2,
-    })}`;
+  const formatCurrency = (amount: number | string | undefined) => {
+    const num = Number(amount) || 0;
+    return systemCurrency.format(num);
   };
 
   const calculatePaymentSummary = () => {
-    if (!invoice) return { paid: 0, outstanding: 0, status: "Unpaid" };
-
-    const invoiceTotal = invoice.totals?.grand || 0;
-    // Use payments state instead of invoice.payments
-
-    // Calculate total paid amount from all payments
-    const paid = payments.reduce((sum, payment: any) => {
-      let amount = 0;
-      if (payment.amount !== undefined && payment.amount !== null) {
-        // Handle both number and string amounts
-        if (typeof payment.amount === "number") {
-          amount = payment.amount;
-        } else if (typeof payment.amount === "string") {
-          amount = parseFloat(payment.amount) || 0;
-        }
-      }
-      return sum + amount;
+    if (!bill) return { paid: 0, outstanding: 0 };
+    const billTotal = Number(bill.totals?.grand) || Number((bill as any).total_amount) || 0;
+    const paid = payments.reduce((sum: number, payment: any) => {
+      return sum + (Number(payment.amount) || 0);
     }, 0);
-
-    const outstanding = Math.max(0, invoiceTotal - paid);
-    const status =
-      outstanding <= 0 && paid > 0
-        ? "Paid"
-        : paid > 0
-          ? "Partially Paid"
-          : "Unpaid";
-
-    return { paid, outstanding, status };
+    const outstanding = Math.max(0, billTotal - paid);
+    return { paid, outstanding };
   };
 
   const paymentSummary = calculatePaymentSummary();
-
-  const progress =
-    invoice?.totals?.grand > 0
-      ? (paymentSummary.paid / invoice.totals.grand) * 100
-      : 0;
+  const billTotal =
+    Number(bill?.totals?.grand) || Number((bill as any)?.total_amount) || 0;
+  const progress = billTotal > 0 ? (paymentSummary.paid / billTotal) * 100 : 0;
 
   return (
     <ContentContainer>
       <LoaderOverlay />
-      {invoice && (
+      {bill && (
         <div className="space-y-6">
           {/* Header */}
           <div className="flex items-center justify-between">
@@ -201,7 +154,7 @@ export default function InvoiceDetailPage() {
               <Button
                 variant="ghost"
                 size="icon"
-                onClick={() => navigate("/invoices")}
+                onClick={() => navigate("/bills")}
               >
                 <ArrowLeft className="h-4 w-4" />
               </Button>
@@ -209,23 +162,23 @@ export default function InvoiceDetailPage() {
               <div>
                 <div className="flex items-center gap-3">
                   <h1 className="text-2xl font-semibold">
-                    Invoice #{invoice.invoice_no}
+                    Bill #{bill.bill_no}
                   </h1>
-                  {getStatusBadge(invoice.status)}
+                  {getStatusBadge(bill.status)}
                 </div>
-
                 <p className="text-sm text-muted-foreground mt-1">
-                  {invoice.lines?.length || 0} charges • {invoice.currency}
+                  {bill.lines?.length || 0} line item(s) •{" "}
+                  {(bill as any).currency || "INR"}
                 </p>
               </div>
             </div>
 
             <div className="flex gap-2">
-              {invoice.status === "draft" && (
+              {bill.status === "draft" && (
                 <Button
                   variant="outline"
                   size="sm"
-                  onClick={() => setIsInvoiceFormOpen(true)}
+                  onClick={() => navigate(`/bills/${id}/edit`)}
                   className="gap-2"
                 >
                   <Pencil className="h-4 w-4" />
@@ -239,11 +192,11 @@ export default function InvoiceDetailPage() {
             <TabsList className="grid w-full grid-cols-2">
               <TabsTrigger value="overview">Overview</TabsTrigger>
               <TabsTrigger value="payments">Payments</TabsTrigger>
-              {/*<TabsTrigger value="history">History</TabsTrigger>*/}
             </TabsList>
 
             {/* OVERVIEW */}
             <TabsContent value="overview" className="space-y-6">
+              {/* Payment Progress */}
               <Card>
                 <CardContent className="p-5 space-y-3">
                   <div className="flex justify-between text-sm">
@@ -256,99 +209,99 @@ export default function InvoiceDetailPage() {
                   <div className="w-full bg-muted rounded-full h-2">
                     <div
                       className="bg-green-500 h-2 rounded-full transition-all"
-                      style={{ width: `${progress}%` }}
+                      style={{ width: `${Math.min(progress, 100)}%` }}
                     />
                   </div>
 
                   <div className="flex justify-between text-sm">
                     <span className="text-green-600 font-medium">
-                      Paid:{" "}
-                      {formatCurrency(paymentSummary.paid, invoice.currency)}
+                      Paid: {formatCurrency(paymentSummary.paid)}
                     </span>
                     <span className="text-orange-600 font-medium">
-                      Outstanding:{" "}
-                      {formatCurrency(
-                        paymentSummary.outstanding,
-                        invoice.currency,
-                      )}
+                      Outstanding: {formatCurrency(paymentSummary.outstanding)}
                     </span>
                   </div>
                 </CardContent>
               </Card>
+
+              {/* Bill Info */}
               <Card>
                 <CardContent className="p-6 grid grid-cols-2 md:grid-cols-4 gap-6">
                   <div>
-                    <p className="text-xs text-muted-foreground">Customer</p>
-                    <p className="font-medium">{invoice.user_name || "-"}</p>
+                    <p className="text-xs text-muted-foreground">Vendor</p>
+                    <p className="font-medium">
+                      {(bill as any).vendor_name || "-"}
+                    </p>
                   </div>
 
                   <div>
                     <p className="text-xs text-muted-foreground">Space</p>
                     <p className="font-medium">
-                      {invoice.space_name + ", " + invoice.site_name || "-"}
+                      {[
+                        (bill as any).space_name,
+                        (bill as any).site_name,
+                      ]
+                        .filter(Boolean)
+                        .join(", ") || "-"}
                     </p>
                   </div>
 
                   <div>
-                    <p className="text-xs text-muted-foreground">
-                      Invoice Date
-                    </p>
+                    <p className="text-xs text-muted-foreground">Bill Date</p>
                     <p className="font-medium">
-                      {new Date(invoice.date).toLocaleDateString()}
+                      {bill.date
+                        ? new Date(bill.date).toLocaleDateString()
+                        : "-"}
                     </p>
                   </div>
 
                   <div>
                     <p className="text-xs text-muted-foreground">Due Date</p>
                     <p className="font-medium">
-                      {new Date(invoice.due_date).toLocaleDateString()}
+                      {(bill as any).due_date
+                        ? new Date((bill as any).due_date).toLocaleDateString()
+                        : "-"}
                     </p>
                   </div>
                 </CardContent>
               </Card>
+
+              {/* Line Items */}
               <Card>
                 <CardContent className="p-6">
                   <div className="flex items-center justify-between mb-4">
                     <h3 className="text-lg font-medium flex items-center gap-2">
                       <Receipt className="h-5 w-5" />
-                      Charges
+                      Line Items
                     </h3>
-
                     <Badge variant="secondary">
-                      {invoice.lines?.length || 0} items
+                      {bill.lines?.length || 0} items
                     </Badge>
                   </div>
 
-                  {invoice.lines && invoice.lines.length > 0 ? (
+                  {bill.lines && bill.lines.length > 0 ? (
                     <div className="rounded-xl border overflow-hidden">
                       <table className="w-full text-sm">
                         <thead className="bg-muted/50">
                           <tr className="text-muted-foreground">
-                            <th className="text-left p-4">Type</th>
+                            <th className="text-left p-4">Work Order</th>
                             <th className="text-left p-4">Description</th>
-                            <th className="text-left p-4">Period</th>
-                            <th className="text-left p-4">Tax</th>
+                            <th className="text-left p-4">Tax %</th>
                             <th className="text-right p-4">Amount</th>
                           </tr>
                         </thead>
-
                         <tbody>
-                          {invoice.lines.map((line) => (
-                            <tr key={line.id} className="border-t">
+                          {bill.lines.map((line: any, idx: number) => (
+                            <tr key={line.id || idx} className="border-t">
                               <td className="p-4 font-medium">
-                                {line.code?.toUpperCase()}
+                                {line.work_order_no || "-"}
                               </td>
-
                               <td className="p-4 text-muted-foreground">
                                 {line.description || "-"}
                               </td>
-
-                              <td className="p-4">{line.item_label || "-"}</td>
-
                               <td className="p-4">{line.tax_pct || 0}%</td>
-
                               <td className="p-4 text-right font-semibold">
-                                {formatCurrency(line.amount, invoice.currency)}
+                                {formatCurrency(line.amount)}
                               </td>
                             </tr>
                           ))}
@@ -357,38 +310,32 @@ export default function InvoiceDetailPage() {
                     </div>
                   ) : (
                     <p className="text-muted-foreground text-sm">
-                      No charges attached to this invoice.
+                      No line items attached to this bill.
                     </p>
                   )}
                 </CardContent>
               </Card>
 
-              {/* Totals */}
+              {/* Financial Summary */}
               <Card>
                 <CardContent className="p-6">
                   <h3 className="text-lg font-medium mb-5">
                     Financial Summary
                   </h3>
-
-                  <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+                  <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                     <Card className="p-4 bg-muted/40">
-                      <p className="text-sm text-muted-foreground">Subtotal</p>
-                      <p className="text-xl font-semibold">
-                        {formatCurrency(invoice.totals?.sub, invoice.currency)}
+                      <p className="text-sm text-muted-foreground">
+                        Grand Total
                       </p>
-                    </Card>
-
-                    <Card className="p-4 bg-muted/40">
-                      <p className="text-sm text-muted-foreground">Tax</p>
                       <p className="text-xl font-semibold">
-                        {formatCurrency(invoice.totals?.tax, invoice.currency)}
+                        {formatCurrency(billTotal)}
                       </p>
                     </Card>
 
                     <Card className="p-4 bg-green-50">
                       <p className="text-sm text-muted-foreground">Paid</p>
                       <p className="text-xl font-semibold text-green-600">
-                        {formatCurrency(paymentSummary.paid, invoice.currency)}
+                        {formatCurrency(paymentSummary.paid)}
                       </p>
                     </Card>
 
@@ -397,10 +344,7 @@ export default function InvoiceDetailPage() {
                         Outstanding
                       </p>
                       <p className="text-xl font-semibold text-orange-600">
-                        {formatCurrency(
-                          paymentSummary.outstanding,
-                          invoice.currency,
-                        )}
+                        {formatCurrency(paymentSummary.outstanding)}
                       </p>
                     </Card>
                   </div>
@@ -430,7 +374,7 @@ export default function InvoiceDetailPage() {
 
                 {payments && payments.length > 0 ? (
                   <div className="space-y-4">
-                    {payments.map((payment: any, idx) => (
+                    {payments.map((payment: any, idx: number) => (
                       <Card key={payment.id || idx} className="p-4">
                         <div className="flex items-start justify-between gap-4">
                           <div className="flex items-start gap-3 flex-1">
@@ -445,12 +389,14 @@ export default function InvoiceDetailPage() {
                                     : "Unknown"}
                                 </p>
                                 {payment.id && (
-                                  <Badge variant="outline" className="text-xs">
+                                  <Badge
+                                    variant="outline"
+                                    className="text-xs"
+                                  >
                                     ID: {payment.id.slice(0, 8)}...
                                   </Badge>
                                 )}
                               </div>
-
                               {payment.ref_no && (
                                 <p className="text-sm text-muted-foreground">
                                   <strong>Reference:</strong> {payment.ref_no}
@@ -468,20 +414,12 @@ export default function InvoiceDetailPage() {
                                     })
                                   : "-"}
                               </p>
-                              {payment.billable_item_name && (
-                                <p className="text-xs text-muted-foreground">
-                                  Item Name: {payment.billable_item_name}
-                                </p>
-                              )}
                             </div>
                           </div>
                           <div className="flex items-center gap-2">
                             <div className="text-right">
                               <p className="text-2xl font-bold">
-                                {formatCurrency(
-                                  payment.amount,
-                                  invoice.currency,
-                                )}
+                                {formatCurrency(payment.amount)}
                               </p>
                             </div>
                             <Button
@@ -516,25 +454,30 @@ export default function InvoiceDetailPage() {
                     <History className="h-5 w-5" /> Activity History
                   </h3>
                   <ul className="space-y-2 text-sm">
-                    {invoice.created_at && (
+                    {(bill as any).created_at && (
                       <li>
-                        Invoice created on{" "}
-                        {new Date(invoice.created_at).toLocaleDateString()}
+                        Bill created on{" "}
+                        {new Date(
+                          (bill as any).created_at,
+                        ).toLocaleDateString()}
                       </li>
                     )}
-                    {invoice.updated_at &&
-                      invoice.created_at !== invoice.updated_at && (
+                    {(bill as any).updated_at &&
+                      (bill as any).created_at !==
+                        (bill as any).updated_at && (
                         <li>
                           Last updated on{" "}
-                          {new Date(invoice.updated_at).toLocaleDateString()}
+                          {new Date(
+                            (bill as any).updated_at,
+                          ).toLocaleDateString()}
                         </li>
                       )}
                     {payments && payments.length > 0 && (
                       <li>{payments.length} payment(s) recorded</li>
                     )}
-                    {!invoice.created_at &&
+                    {!(bill as any).created_at &&
                       !payments?.length &&
-                      !invoice.updated_at && (
+                      !(bill as any).updated_at && (
                         <li className="text-muted-foreground">
                           No activity history available
                         </li>
@@ -547,96 +490,38 @@ export default function InvoiceDetailPage() {
         </div>
       )}
 
-      {invoice && (
-        <>
-          <InvoiceForm
-            invoice={invoice}
-            isOpen={isInvoiceFormOpen}
-            onClose={() => setIsInvoiceFormOpen(false)}
-            mode="edit"
-            onSave={async (invoiceData: Partial<Invoice>) => {
-              if (!invoice) return { success: false };
-
-              const updatedInvoice = {
-                ...invoice,
-                ...invoiceData,
-                id: invoice.id,
-                invoice_no: invoice.invoice_no,
-                updated_at: new Date().toISOString(),
-              };
-
-              const response = await withLoader(async () => {
-                return await invoiceApiService.updateInvoice(updatedInvoice);
-              });
-
-              if (response?.success) {
-                setIsInvoiceFormOpen(false);
-                toast.success("Invoice updated successfully.");
-                // Reload invoice data
+      {bill && id && (
+        <PaymentDetailsForm
+          billId={id}
+          payment={selectedPayment}
+          mode={paymentFormMode}
+          isOpen={isPaymentFormOpen}
+          currency={(bill as any).currency || "INR"}
+          onClose={() => {
+            setIsPaymentFormOpen(false);
+            setSelectedPayment(undefined);
+          }}
+          onSave={async (paymentData: any) => {
+            if (id) {
+              try {
+                // Reload bill detail to get updated payments
                 const reloadResponse = await withLoader(async () => {
-                  return await invoiceApiService.getInvoiceById(id!);
+                  return await billsApiService.getBillById(id);
                 });
                 if (reloadResponse?.success) {
-                  setInvoice(reloadResponse.data);
+                  const data = reloadResponse.data?.data ?? reloadResponse.data;
+                  setBill(data);
+                  setPayments(data?.payments || []);
                 }
-              } else if (response && !response.success) {
-                if (response?.message) {
-                  toast.error(response.message);
-                } else {
-                  toast.error("Failed to update invoice.");
-                }
-              }
-              return response;
-            }}
-          />
-
-          {id && invoice && (
-            <PaymentDetailsForm
-              invoiceId={id}
-              payment={selectedPayment}
-              mode={paymentFormMode}
-              isOpen={isPaymentFormOpen}
-              currency={invoice.currency}
-              onClose={() => {
-                setIsPaymentFormOpen(false);
-                setSelectedPayment(undefined);
-              }}
-              onSave={async (paymentData: any) => {
-                // Call payment history API after successful payment save
-                if (id) {
-                  try {
-                    const paymentHistoryResponse = await withLoader(
-                      async () => {
-                        return await invoiceApiService.getPaymentHistory(id);
-                      },
-                    );
-                    if (paymentHistoryResponse?.success) {
-                      const paymentData =
-                        paymentHistoryResponse.data?.payments || [];
-                      setPayments(
-                        Array.isArray(paymentData) ? paymentData : [],
-                      );
-                    } else {
-                      // If payment history API fails, fallback to reloading from invoice
-                      if (invoice?.payments) {
-                        setPayments(invoice.payments);
-                      }
-                    }
-                    return paymentHistoryResponse;
-                  } catch (error) {
-                    console.error("Error loading payment history:", error);
-                    // Fallback to reloading from invoice
-                    if (invoice?.payments) {
-                      setPayments(invoice.payments);
-                    }
-                    return { success: false };
-                  }
-                }
+                return reloadResponse;
+              } catch (error) {
+                console.error("Error reloading bill:", error);
                 return { success: false };
-              }}
-            />
-          )}
-        </>
+              }
+            }
+            return { success: false };
+          }}
+        />
       )}
     </ContentContainer>
   );

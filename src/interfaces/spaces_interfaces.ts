@@ -41,22 +41,29 @@ export interface SpaceOverview {
 
 export interface HandoverInfo {
     occupancy_id: string;
-    handover_date: string;
+    handover_date: string;                // ISO string
     handover_by: string;
-    handover_to?: string | null;
-    condition_notes?: string | null;
+    handover_to?: string | null;          // user (optional)
+    handover_to_person?: string | null;   // actual person receiving
+    handover_to_contact?: string | null;  // phone number
+    condition_notes?: string | null;      // remarks
     keys_returned: boolean;
+    number_of_keys?: number;
     accessories_returned: boolean;
+    access_card_returned: boolean;
+    number_of_access_cards?: number;
+    parking_card_returned: boolean;
+    number_of_parking_cards?: number;
     inspection_completed: boolean;
-    status: string;
+    status: string;                        // handover status
 }
 
 export interface OccupancyRecord {
-
     // Core status
     status: "vacant" | "occupied" | "move_out_scheduled" | "handover_awaited" | "recently_vacated";
-
     // Current occupant details (if occupied)
+    id?: string;
+    move_out_id?: string;
     occupant_type?: string;
     occupant_name?: string;
     move_in_date?: string;
@@ -70,6 +77,9 @@ export interface OccupancyRecord {
     can_request_move_out?: boolean;
     // Optional handover info
     handover?: HandoverInfo;
+    inspection?: any;
+    maintenance?: any;
+    settlement?: any;
 }
 
 export interface UpcomingMoveIn {
@@ -95,17 +105,29 @@ export interface PendingMoveOut {
 
 export interface OccupancyResponse {
     current: OccupancyRecord;
-    upcoming: UpcomingMoveIn[];
-    pending_move_outs: PendingMoveOut[];
-    history: any[]; // Keep as any for now, can be typed if you have a timeline interface
 }
 
-export interface HistoryRecord {
-    id: string;
-    occupant_type: string;
-    occupant_name: string;
-    move_in_date: string;
-    move_out_date?: string;
+export interface OccupancyHistory {
+    occupancy_id: string;
+
+    occupant_name?: string | null;
+    occupant_type?: string | null;
+
+    move_in_date?: string | null;
+    move_out_date?: string | null;
+
+    status: string;
+
+    handover_status?: string | null;
+    inspection_status?: string | null;
+
+    maintenance_required?: boolean | null;
+    maintenance_completed?: boolean | null;
+
+    settlement_status?: string | null;
+    final_amount?: number | null;
+
+    created_at: string;
 }
 
 export type TimelineEvent = {
@@ -178,7 +200,8 @@ export const getSpaceOwnershipStatusColor = (status: string) => {
 
 export const spaceCategories = [
     'residential',
-    'commercial'
+    'commercial',
+    'common_area'
 ] as const;
 
 
@@ -194,15 +217,21 @@ export const spaceKinds = [
     'warehouse',
     'meeting_room',
     'hall',
-    'common_area',
-    'parking',
     'villa',
     'row_house',
     'bungalow',
     'duplex',
     'penthouse',
     'farm_house',
-
+    "lobby",
+    "garden",
+    "swimming_pool",
+    "gym",
+    "clubhouse",
+    "corridor",
+    "lift",
+    "parking",
+    "security_gate",
 ] as const;
 
 export type SpaceKind = typeof spaceKinds[number];
@@ -227,7 +256,7 @@ export const SUB_KIND_TO_BEDS: Record<SpaceSubKind, number> = {
     "5bhk": 5,
 };
 
-export const kindToCategory: Record<SpaceKind, "residential" | "commercial"> = {
+export const kindToCategory: Record<SpaceKind, "residential" | "commercial" | "common_area"> = {
     apartment: "residential",
     villa: "residential",
     row_house: "residential",
@@ -240,12 +269,19 @@ export const kindToCategory: Record<SpaceKind, "residential" | "commercial"> = {
     warehouse: "commercial",
     meeting_room: "commercial",
     hall: "commercial",
-    common_area: "commercial",
-    parking: "commercial",
+    lobby: "common_area",
+    garden: "common_area",
+    swimming_pool: "common_area",
+    gym: "common_area",
+    clubhouse: "common_area",
+    corridor: "common_area",
+    lift: "common_area",
+    parking: "common_area",
+    security_gate: "common_area"
 };
 
 export const getKindsByCategory = (
-    category?: "residential" | "commercial",
+    category?: "residential" | "commercial" | "common_area",
 ): readonly SpaceKind[] => {
     if (!category) return spaceKinds;
     return spaceKinds.filter((kind) => kindToCategory[kind] === category);
@@ -282,9 +318,18 @@ export type SpaceAmenities =
     | 'visitor_parking'
     | 'projector'
     | 'air_conditioning'
-    | 'lighting';
+    | 'lighting'
+    | "lobby"
+    | "garden"
+    | "swimming_pool"
+    | "gym"
+    | "clubhouse"
+    | "corridor"
+    | "lift"
+    | "security_gate";
 
-export type AmenitiesByKind = { [K in SpaceKind]: SpaceAmenities[] };
+export type AmenitiesByKind =
+    Partial<Record<typeof spaceKinds[number], SpaceAmenities[]>>;
 
 export const amenitiesByKind: AmenitiesByKind = {
     apartment: [
@@ -301,17 +346,6 @@ export const amenitiesByKind: AmenitiesByKind = {
         'pool',
         'terrace',
         'private_lift',
-    ],
-    common_area: [
-        'visitor_parking',
-        'lobby',
-        'conference_room',
-        'cafeteria',
-        'restrooms',
-        'playground',
-        'laundry_room',
-        'security',
-        'cctv',
     ],
     shop: [
         'parking',

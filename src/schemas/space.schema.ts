@@ -7,7 +7,7 @@ export const spaceSchema = z.object({
     kind: z.enum(spaceKinds, {
         required_error: "Type is required",
     }),
-    category: z.enum(['residential', 'commercial'], {
+    category: z.enum(['residential', 'commercial', 'common_area'], {
         required_error: "Category is required",
     }),
     sub_kind: z.enum(spaceSubKinds).optional(),
