@@ -41,9 +41,25 @@ class LeaseChargeApiService {
         return await apiService.request('/lease-charges/month-lookup');
     }
 
-    async getLeaseRentAmount(leaseId: string) {
-        return await apiService.request(`/lease-charges/lease-rent/${leaseId}`);
+    async getLeaseRentAmount(params: any) {
+        return await apiService.request(
+            `/lease-charges/lease-rent`,
+            {
+                method: "POST",
+                body: JSON.stringify(params),
+            }
+        );
     }
+
+    async autoGenerateRent(date: string) {
+        const params = new URLSearchParams();
+        params.append("date", date);
+        return await apiService.request(
+            `/lease-charges/auto-generate?${params.toString()}`,
+            { method: "POST" },
+        );
+    }
+
 }
 
 export const leaseChargeApiService = new LeaseChargeApiService();

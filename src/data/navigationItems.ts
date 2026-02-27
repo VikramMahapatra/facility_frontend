@@ -33,6 +33,7 @@ import {
   Move,
   LayoutDashboard,
 } from "lucide-react";
+import { title } from "process";
 
 export const superAdminNavigationItems = [
   {
@@ -55,9 +56,10 @@ export const superAdminNavigationItems = [
         url: "/super-admin/organizations",
         icon: Building2,
         resource: "organizations",
-      }
+      },
     ],
-  }];
+  },
+];
 
 export const navigationItems = [
   {
@@ -118,7 +120,7 @@ export const navigationItems = [
       //   resource: "group_assignments",
       // },
       {
-        title: "Maintenance (CAM)",
+        title: "Maintenance Charges",
         url: "/space-maintenance",
         icon: Wrench,
         resource: "spaces",
@@ -299,32 +301,47 @@ export const navigationItems = [
   //   ],
   // },
 
-  // {
-  //   title: "Energy consumption",
-  //   items: [
-  //     {
-  //       title: "Meters & Readings",
-  //       url: "/meters",
-  //       icon: Zap,
-  //       resource: "meter_readings",
-  //     },
-  //     {
-  //       title: "Consumption Reports",
-  //       url: "/consumption",
-  //       icon: BarChart3,
-  //       resource: "consumption_reports",
-  //     },
-  //   ],
-  // },
+  {
+    title: "Energy consumption",
+    items: [
+      {
+        title: "Meters & Readings",
+        url: "/meters",
+        icon: Zap,
+        resource: "meter_readings",
+      },
+      {
+        title: "Consumption Reports",
+        url: "/consumption",
+        icon: BarChart3,
+        resource: "consumption_reports",
+      },
+    ],
+  },
   {
     title: "Financials",
     items: [
       {
-        title: "Invoices & Payments",
+        title: "Invoices",
         url: "/invoices",
         icon: BarChart3,
         resource: "invoices",
       },
+
+      {
+        title: "Bills & Expenses",
+        url: "/bills",
+        icon: Receipt,
+        resource: "bills",
+      },
+
+      {
+        title: "Payments",
+        url: "/payments",
+        icon: CreditCard,
+        resource: "payments",
+      },
+
       {
         title: "Revenue Reports",
         url: "/revenue-reports",
@@ -372,10 +389,16 @@ export const navigationItems = [
         resource: "tenant_space_approvals",
       },
       {
-        title: "Space Move/Out",
-        url: "/space-move-out-approvals",
+        title: "Space Move In/Out",
+        url: "/space-occupancy-approvals",
         icon: Move,
-        resource: "tenant_space_approvals",
+        resource: "space_occupancy_approvals",
+      },
+      {
+        title: "Lease Terminations",
+        url: "/lease-termination-approvals",
+        icon: FileText,
+        resource: "lease_termination_approvals",
       },
     ],
   },

@@ -1,16 +1,59 @@
 // pages/Assets.tsx
 import { useState, useEffect } from "react";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Plus, Search, Eye, Edit, Trash2, Package, Wrench, AlertTriangle, CheckCircle, DollarSign } from "lucide-react";
-import { AlertDialog, AlertDialogContent, AlertDialogHeader, AlertDialogFooter, AlertDialogTitle, AlertDialogDescription, AlertDialogCancel, AlertDialogAction } from "@/components/ui/alert-dialog";
-import { SidebarProvider, SidebarTrigger, SidebarInset } from "@/components/ui/sidebar";
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from "@/components/ui/table";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
+import {
+  Plus,
+  Search,
+  Eye,
+  Edit,
+  Trash2,
+  Package,
+  Wrench,
+  AlertTriangle,
+  CheckCircle,
+  DollarSign,
+} from "lucide-react";
+import {
+  AlertDialog,
+  AlertDialogContent,
+  AlertDialogHeader,
+  AlertDialogFooter,
+  AlertDialogTitle,
+  AlertDialogDescription,
+  AlertDialogCancel,
+  AlertDialogAction,
+} from "@/components/ui/alert-dialog";
+import {
+  SidebarProvider,
+  SidebarTrigger,
+  SidebarInset,
+} from "@/components/ui/sidebar";
 import { Separator } from "@/components/ui/separator";
-import { LogOut, } from "lucide-react";
+import { LogOut } from "lucide-react";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { PropertySidebar } from "@/components/PropertySidebar";
 import { Asset, AssetOverview } from "@/interfaces/assets_interface";
@@ -24,6 +67,7 @@ import { useLoader } from "@/context/LoaderContext";
 import LoaderOverlay from "@/components/LoaderOverlay";
 import ContentContainer from "@/components/ContentContainer";
 import { PageHeader } from "@/components/PageHeader";
+import { useSettings } from "@/context/SettingsContext";
 
 export default function Assets() {
   const [searchTerm, setSearchTerm] = useState("");
@@ -35,7 +79,9 @@ export default function Assets() {
   const [categoryOptions, setCategoryOptions] = useState([]);
   const [statusOptions, setStatusOptions] = useState([]);
 
-  const [formMode, setFormMode] = useState<'create' | 'edit' | 'view'>('create');
+  const [formMode, setFormMode] = useState<"create" | "edit" | "view">(
+    "create",
+  );
   const [isFormOpen, setIsFormOpen] = useState(false);
   const [assets, setAssets] = useState<Asset[]>([]);
   const [selectedAsset, setSelectedAsset] = useState<Asset | undefined>();
@@ -47,11 +93,12 @@ export default function Assets() {
     activeAssets: 0,
     totalValue: 0,
     assetsNeedingMaintenance: 0,
-    lastMonthAssetPercentage: 0
+    lastMonthAssetPercentage: 0,
   });
   const [page, setPage] = useState(1);
   const [pageSize] = useState(5);
   const [totalItems, setTotalItems] = useState(0);
+  const { systemCurrency } = useSettings();
 
   useSkipFirstEffect(() => {
     loadAssets();
@@ -78,12 +125,12 @@ export default function Assets() {
   const loadCategories = async () => {
     const response = await assetApiService.getCategories();
     if (response?.success) setCategoryOptions(response.data);
-  }
+  };
 
   const loadStatuses = async () => {
     const response = await assetApiService.getStatuses();
     if (response?.success) setStatusOptions(response.data);
-  }
+  };
 
   const loadAssetOverView = async () => {
     const response = await assetApiService.getAssetOverview();
@@ -96,8 +143,10 @@ export default function Assets() {
 
     const params = new URLSearchParams();
     if (searchTerm) params.append("search", searchTerm);
-    if (categoryFilter && categoryFilter !== "all") params.append("category", categoryFilter);
-    if (statusFilter && statusFilter !== "all") params.append("status", statusFilter);
+    if (categoryFilter && categoryFilter !== "all")
+      params.append("category", categoryFilter);
+    if (statusFilter && statusFilter !== "all")
+      params.append("status", statusFilter);
     params.append("skip", String(skip));
     params.append("limit", String(limit));
 
@@ -113,19 +162,19 @@ export default function Assets() {
 
   const handleCreate = () => {
     setSelectedAsset(null);
-    setFormMode('create');
+    setFormMode("create");
     setIsFormOpen(true);
   };
 
   const handleView = (asset: Asset) => {
     setSelectedAsset(asset);
-    setFormMode('view');
+    setFormMode("view");
     setIsFormOpen(true);
   };
 
   const handleEdit = (asset: Asset) => {
     setSelectedAsset(asset);
-    setFormMode('edit');
+    setFormMode("edit");
     setIsFormOpen(true);
   };
 
@@ -145,11 +194,11 @@ export default function Assets() {
 
   const handleSave = async (values: Partial<Asset>) => {
     let response;
-    if (formMode === 'create') {
+    if (formMode === "create") {
       response = await assetApiService.addAsset(values);
-      if (response.success) updateAssetPage()
+      if (response.success) updateAssetPage();
       loadAssetOverView();
-    } else if (formMode === 'edit' && selectedAsset) {
+    } else if (formMode === "edit" && selectedAsset) {
       const updatedAsset = {
         ...selectedAsset,
         ...values,
@@ -160,7 +209,9 @@ export default function Assets() {
       if (response.success) {
         loadAssetOverView();
         setAssets((prev) =>
-          prev.map((a) => (a.id === updatedAsset.id ? response.data || updatedAsset : a))
+          prev.map((a) =>
+            a.id === updatedAsset.id ? response.data || updatedAsset : a,
+          ),
         );
       }
     }
@@ -168,7 +219,7 @@ export default function Assets() {
     if (response.success) {
       setIsFormOpen(false);
       toast.success(
-        `Asset ${values.name || selectedAsset?.name || ''} has been ${formMode === 'create' ? 'created' : 'updated'} successfully.`
+        `Asset ${values.name || selectedAsset?.name || ""} has been ${formMode === "create" ? "created" : "updated"} successfully.`,
       );
     }
     return response;
@@ -183,9 +234,18 @@ export default function Assets() {
       active: "default",
       inactive: "secondary",
       retired: "secondary",
-      in_repair: "destructive"
+      in_repair: "destructive",
     } as const;
-    return <Badge variant={variants[status as keyof typeof variants] || "outline"}>{status?.replace('_', ' ')}</Badge>;
+    return (
+      <Badge variant={variants[status as keyof typeof variants] || "outline"}>
+        {status?.replace("_", " ")}
+      </Badge>
+    );
+  };
+
+  const formatCurrency = (val?: number) => {
+    if (val == null) return "-";
+    return systemCurrency.format(val);
   };
 
   return (
@@ -211,11 +271,15 @@ export default function Assets() {
         <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
           <Card>
             <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-              <CardTitle className="text-sm font-medium">Total Assets</CardTitle>
+              <CardTitle className="text-sm font-medium">
+                Total Assets
+              </CardTitle>
               <Package className="h-4 w-4 text-muted-foreground" />
             </CardHeader>
             <CardContent>
-              <div className="text-2xl font-bold">{assetOverview.totalAssets}</div>
+              <div className="text-2xl font-bold">
+                {assetOverview.totalAssets}
+              </div>
               <p className="text-xs text-muted-foreground">
                 +{assetOverview.lastMonthAssetPercentage}% from last month
               </p>
@@ -224,14 +288,21 @@ export default function Assets() {
 
           <Card>
             <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-              <CardTitle className="text-sm font-medium">Active Assets</CardTitle>
+              <CardTitle className="text-sm font-medium">
+                Active Assets
+              </CardTitle>
               <CheckCircle className="h-4 w-4 text-muted-foreground" />
             </CardHeader>
             <CardContent>
-              <div className="text-2xl font-bold text-green-600">{assetOverview.activeAssets}</div>
+              <div className="text-2xl font-bold text-green-600">
+                {assetOverview.activeAssets}
+              </div>
               <p className="text-xs text-muted-foreground">
                 {assetOverview.totalAssets
-                  ? ((assetOverview.activeAssets / assetOverview.totalAssets) * 100).toFixed(1)
+                  ? (
+                      (assetOverview.activeAssets / assetOverview.totalAssets) *
+                      100
+                    ).toFixed(1)
                   : 0}
                 % of total
               </p>
@@ -244,18 +315,24 @@ export default function Assets() {
               <DollarSign className="h-4 w-4 text-muted-foreground" />
             </CardHeader>
             <CardContent>
-              <div className="text-2xl font-bold">₹{assetOverview.totalValue.toLocaleString()}</div>
+              <div className="text-2xl font-bold">
+                {formatCurrency(assetOverview.totalValue)}
+              </div>
               <p className="text-xs text-muted-foreground">Asset book value</p>
             </CardContent>
           </Card>
 
           <Card>
             <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-              <CardTitle className="text-sm font-medium">Needs Attention</CardTitle>
+              <CardTitle className="text-sm font-medium">
+                Needs Attention
+              </CardTitle>
               <AlertTriangle className="h-4 w-4 text-muted-foreground" />
             </CardHeader>
             <CardContent>
-              <div className="text-2xl font-bold text-orange-600">{assetOverview.assetsNeedingMaintenance}</div>
+              <div className="text-2xl font-bold text-orange-600">
+                {assetOverview.assetsNeedingMaintenance}
+              </div>
               <p className="text-xs text-muted-foreground">Warranty expired</p>
             </CardContent>
           </Card>
@@ -283,10 +360,7 @@ export default function Assets() {
             <SelectContent>
               <SelectItem value="all">All Categories</SelectItem>
               {categoryOptions.map((c) => (
-                <SelectItem
-                  key={c.id}
-                  value={c.name || c.id}
-                >
+                <SelectItem key={c.id} value={c.name || c.id}>
                   {c.name}
                 </SelectItem>
               ))}
@@ -300,7 +374,9 @@ export default function Assets() {
             <SelectContent>
               <SelectItem value="all">All Status</SelectItem>
               {statusOptions.map((c) => (
-                <SelectItem key={c.id} value={c.id}>{c.name}</SelectItem>
+                <SelectItem key={c.id} value={c.id}>
+                  {c.name}
+                </SelectItem>
               ))}
             </SelectContent>
           </Select>
@@ -324,52 +400,79 @@ export default function Assets() {
               <TableBody>
                 {assets.map((asset) => {
                   const isWarrantyExpired =
-                    asset.warranty_expiry && new Date(asset.warranty_expiry) < new Date();
+                    asset.warranty_expiry &&
+                    new Date(asset.warranty_expiry) < new Date();
 
                   return (
                     <TableRow key={asset.id}>
-                      <TableCell className="font-mono font-medium">{asset.tag}</TableCell>
+                      <TableCell className="font-mono font-medium">
+                        {asset.tag}
+                      </TableCell>
                       <TableCell>
                         <div>
                           <div className="font-medium">{asset.name}</div>
-                          {asset.model && <div className="text-sm text-muted-foreground">{asset.model}</div>}
+                          {asset.model && (
+                            <div className="text-sm text-muted-foreground">
+                              {asset.model}
+                            </div>
+                          )}
                         </div>
                       </TableCell>
-                      <TableCell>{(asset as any).category?.name || (asset as any).category_name || 'Unknown'}</TableCell>
-                      <TableCell>{asset.location || '-'}</TableCell>
+                      <TableCell>
+                        {(asset as any).category?.name ||
+                          (asset as any).category_name ||
+                          "Unknown"}
+                      </TableCell>
+                      <TableCell>{asset.location || "-"}</TableCell>
                       <TableCell>{getStatusBadge(asset.status)}</TableCell>
-                      <TableCell>₹{asset.cost?.toLocaleString() || 'N/A'}</TableCell>
+                      <TableCell>{formatCurrency(asset.cost)}</TableCell>
                       <TableCell>
                         {asset.warranty_expiry ? (
-                          <div className={`text-sm ${isWarrantyExpired ? 'text-red-600' : ''}`}>
-                            {new Date(asset.warranty_expiry).toLocaleDateString()}
-                            {isWarrantyExpired && <div className="text-xs">Expired</div>}
+                          <div
+                            className={`text-sm ${isWarrantyExpired ? "text-red-600" : ""}`}
+                          >
+                            {new Date(
+                              asset.warranty_expiry,
+                            ).toLocaleDateString()}
+                            {isWarrantyExpired && (
+                              <div className="text-xs">Expired</div>
+                            )}
                           </div>
                         ) : (
-                          'N/A'
+                          "N/A"
                         )}
                       </TableCell>
                       <TableCell className="text-right">
                         <div className="flex items-center justify-end gap-2">
-                          <Button variant="ghost" size="sm" onClick={() => handleView(asset)}>
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            onClick={() => handleView(asset)}
+                          >
                             <Eye className="h-4 w-4" />
                           </Button>
-                          {canWrite(resource) && <Button variant="ghost" size="sm" onClick={() => handleEdit(asset)}>
-                            <Edit className="h-4 w-4" />
-                          </Button>
-                          }
+                          {canWrite(resource) && (
+                            <Button
+                              variant="ghost"
+                              size="sm"
+                              onClick={() => handleEdit(asset)}
+                            >
+                              <Edit className="h-4 w-4" />
+                            </Button>
+                          )}
                           {/* <Button variant="ghost" size="sm">
                                   <Wrench className="h-4 w-4" />
                                 </Button> */}
-                          {canDelete(resource) && <Button
-                            variant="ghost"
-                            size="sm"
-                            className="text-destructive"
-                            onClick={() => handleDelete(asset.id)}
-                          >
-                            <Trash2 className="h-4 w-4" />
-                          </Button>
-                          }
+                          {canDelete(resource) && (
+                            <Button
+                              variant="ghost"
+                              size="sm"
+                              className="text-destructive"
+                              onClick={() => handleDelete(asset.id)}
+                            >
+                              <Trash2 className="h-4 w-4" />
+                            </Button>
+                          )}
                         </div>
                       </TableCell>
                     </TableRow>
@@ -387,17 +490,24 @@ export default function Assets() {
         />
       </div>
       {/* Delete dialog */}
-      <AlertDialog open={!!deleteAssetId} onOpenChange={() => setDeleteAssetId(null)}>
+      <AlertDialog
+        open={!!deleteAssetId}
+        onOpenChange={() => setDeleteAssetId(null)}
+      >
         <AlertDialogContent>
           <AlertDialogHeader>
             <AlertDialogTitle>Delete Asset</AlertDialogTitle>
             <AlertDialogDescription>
-              Are you sure you want to delete this asset? This action cannot be undone.
+              Are you sure you want to delete this asset? This action cannot be
+              undone.
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
             <AlertDialogCancel>Cancel</AlertDialogCancel>
-            <AlertDialogAction onClick={confirmDelete} className="bg-destructive text-destructive-foreground">
+            <AlertDialogAction
+              onClick={confirmDelete}
+              className="bg-destructive text-destructive-foreground"
+            >
               Delete
             </AlertDialogAction>
           </AlertDialogFooter>

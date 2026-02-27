@@ -32,7 +32,7 @@ import {
 import { siteApiService } from "@/services/spaces_sites/sitesapi";
 import { toast } from "@/components/ui/app-toast";
 import { SpaceMaintenanceForm } from "@/components/SpaceMaintenanceForm";
-import { AutoGenerateMaintenanceForm } from "@/components/AutoGenerateMaintenanceForm";
+import { AutoGenerateMaintenanceForm } from "@/components/automation/AutoGenerateMaintenanceForm";
 import { ownerMaintenancesApiService } from "@/services/spaces_sites/ownermaintenancesapi";
 import ContentContainer from "@/components/ContentContainer";
 import LoaderOverlay from "@/components/LoaderOverlay";
@@ -50,6 +50,7 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
+import { useSettings } from "@/context/SettingsContext";
 
 interface OwnerMaintenance {
   id: string;
@@ -113,6 +114,7 @@ const SpaceMaintenance = () => {
   const [deleteMaintenanceId, setDeleteMaintenanceId] = useState<string | null>(
     null,
   );
+  const { systemCurrency } = useSettings();
   const [isAutoGenerateFormOpen, setIsAutoGenerateFormOpen] = useState(false);
   const { canRead, canWrite } = useAuth();
   const resource = "spaces";
@@ -126,9 +128,9 @@ const SpaceMaintenance = () => {
     selectedStatus === "all"
       ? items
       : items.filter(
-        (item) =>
-          (item.status || "").toLowerCase() === selectedStatus.toLowerCase(),
-      );
+          (item) =>
+            (item.status || "").toLowerCase() === selectedStatus.toLowerCase(),
+        );
 
   useSkipFirstEffect(() => {
     loadMaintenances();
@@ -244,12 +246,18 @@ const SpaceMaintenance = () => {
     if (response?.success) {
       setIsFormOpen(false);
       toast.success(
-        `Space maintenance has been ${formMode === "create" ? "created" : "updated"
+        `Space maintenance has been ${
+          formMode === "create" ? "created" : "updated"
         } successfully.`,
       );
     }
 
     return response;
+  };
+
+  const formatCurrency = (val?: number) => {
+    if (val == null) return "-";
+    return systemCurrency.format(val);
   };
 
   return (
@@ -287,10 +295,7 @@ const SpaceMaintenance = () => {
               onChange={(e) => setSearchTerm(e.target.value)}
               className="max-w-sm"
             />
-            <Select
-              value={selectedSite}
-              onValueChange={setSelectedSite}
-            >
+            <Select value={selectedSite} onValueChange={setSelectedSite}>
               <SelectTrigger className="w-[180px]">
                 <SelectValue placeholder="All Sites" />
               </SelectTrigger>
@@ -368,7 +373,9 @@ const SpaceMaintenance = () => {
                             </div>
                           </div>
                         </TableCell>
-                        <TableCell>{item.amount ?? "-"}</TableCell>
+                        <TableCell>
+                          {formatCurrency(Number(item.amount))}
+                        </TableCell>
                         <TableCell>
                           {getStatusBadge(item.status || "-")}
                         </TableCell>

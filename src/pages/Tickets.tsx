@@ -366,7 +366,7 @@ export default function Tickets() {
       </div>
       {/* Create Ticket Dialog */}
       <Dialog open={isFormOpen} onOpenChange={setIsFormOpen}>
-        <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
+        <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
           <DialogHeader>
             <DialogTitle>Create Service Ticket</DialogTitle>
             <DialogDescription>

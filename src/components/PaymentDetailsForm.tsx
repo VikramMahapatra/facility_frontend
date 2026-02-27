@@ -26,6 +26,7 @@ import {
 } from "lucide-react";
 import { toast } from "@/components/ui/app-toast";
 import { invoiceApiService } from "@/services/financials/invoicesapi";
+import { billsApiService } from "@/services/financials/billsapi";
 import { useLoader } from "@/context/LoaderContext";
 
 interface PaymentDetail {
@@ -37,7 +38,8 @@ interface PaymentDetail {
 }
 
 interface PaymentDetailsFormProps {
-  invoiceId: string;
+  invoiceId?: string;
+  billId?: string;
   payment?: PaymentDetail;
   mode: "create" | "edit";
   isOpen: boolean;
@@ -55,6 +57,7 @@ const initialPaymentValues: PaymentDetail = {
 
 export function PaymentDetailsForm({
   invoiceId,
+  billId,
   payment,
   mode,
   isOpen,
@@ -130,9 +133,8 @@ export function PaymentDetailsForm({
       return;
     }
 
-    const paymentPayload = {
+    const paymentPayload: any = {
       id: paymentDetail.id || undefined,
-      invoice_id: invoiceId,
       method: paymentDetail.method,
       ref_no: paymentDetail.ref_no || "",
       amount: amount,
@@ -140,10 +142,20 @@ export function PaymentDetailsForm({
       meta: "",
     };
 
+    // Set the correct ID field based on whether this is for a bill or invoice
+    if (billId) {
+      paymentPayload.bill_id = billId;
+    } else {
+      paymentPayload.invoice_id = invoiceId;
+    }
+
     setIsSubmitting(true);
     setSavingButton(saveAndNew ? "saveAndNew" : "save");
     try {
       const response = await withLoader(async () => {
+        if (billId) {
+          return await billsApiService.saveBillPayment(paymentPayload);
+        }
         return await invoiceApiService.saveInvoicePayment(paymentPayload);
       });
 

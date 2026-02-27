@@ -37,17 +37,17 @@ class InvoiceApiService {
     return await apiService.request("/invoices/overview");
   }
 
-  async addInvoice(invoiceData: any) {
-    return await apiService.request("/invoices/", {
+  async addInvoice(formData: FormData) {
+    return await apiService.requestWithForm("/invoices/", {
       method: "POST",
-      body: JSON.stringify(invoiceData),
+      body: formData,
     });
   }
 
-  async updateInvoice(invoiceData: any) {
+  async updateInvoice(formData: FormData) {
     return await apiService.request("/invoices/", {
       method: "PUT",
-      body: JSON.stringify(invoiceData),
+      body: formData,
     });
   }
 
@@ -67,6 +67,22 @@ class InvoiceApiService {
 
   async getInvoiceTypeLookup() {
     return await apiService.request("/invoices/invoice-type");
+  }
+
+  async getInvoicePreviewNumber() {
+    return await apiService.request("/invoices/preview-number");
+  }
+
+  async getCustomerPendingCharges(spaceId: string, code?: string, invoice_id?: string) {
+    const params = new URLSearchParams();
+    params.append("space_id", spaceId);
+    if (code) {
+      params.append("code", code);
+    }
+    if (invoice_id) {
+      params.append("invoice_id", invoice_id);
+    }
+    return await apiService.request(`/invoices/customer-pending-charges?${params.toString()}`);
   }
 
   async downloadInvoice(id: string) {

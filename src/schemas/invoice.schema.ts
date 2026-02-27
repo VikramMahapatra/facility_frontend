@@ -23,14 +23,32 @@ const paymentSchema = z
     {
       message: "Reference number is required for this payment method",
       path: ["ref_no"],
-    }
+    },
   );
+
+const invoiceLineSchema = z.object({
+  item_id: z.string().min(1, "Period is required"),
+  description: z.string().optional(),
+  amount: z.coerce.number().min(0, "Amount cannot be negative"),
+  tax_pct: z.coerce.number().min(0, "Tax percentage cannot be negative").default(5),
+});
 
 export const invoiceSchema = z
   .object({
+    invoice_no: z.string().optional(),
     site_id: z.string().min(1, "Site is required"),
     building_id: z.string().optional(),
     space_id: z.string().optional(),
+    user_id: z.string().optional(),
+    lines: z
+      .array(invoiceLineSchema)
+      .min(1, "At least one line item is required"),
+    code: z.string().min(1, "Invoice type is required"),
+    customer_email: z
+      .string()
+      .optional()
+      .or(z.literal("")),
+    customer_phone: z.string().optional(),
     customer_kind: z
       .enum(["resident", "merchant", "guest", "staff", "other"])
       .optional(),
@@ -41,8 +59,10 @@ export const invoiceSchema = z
       .enum(["draft", "issued", "paid", "partial", "void", "overdue"])
       .optional(),
     currency: z.string().optional(),
-    billable_item_type: z.string().min(1, "Invoice type is required"),
-    billable_item_id: z.string().min(1, "Billable item is required"),
+    billable_item_type: z.string().optional(),
+    billable_item_id: z.string().optional(),
+    customer_name: z.string().optional(),
+    //items: z.array(invoiceLineSchema).min(1, "At least one item is required"),
     totals: z
       .object({
         sub: z.coerce.number().min(0, "Subtotal cannot be negative").optional(),
@@ -54,6 +74,7 @@ export const invoiceSchema = z
       })
       .optional(),
     payments: z.array(paymentSchema).optional(),
+    notes: z.string().optional(),
   })
   .refine(
     (data) => {
@@ -65,7 +86,7 @@ export const invoiceSchema = z
     {
       message: "Due date must be on or after the invoice date",
       path: ["due_date"],
-    }
+    },
   );
 
 export type InvoiceFormValues = z.infer<typeof invoiceSchema>;

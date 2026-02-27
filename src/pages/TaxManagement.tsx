@@ -1,14 +1,57 @@
 import { useState, useEffect } from "react";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Plus, Search, Edit, Trash2, FileText, Calculator, TrendingUp, AlertCircle, Download, Eye } from "lucide-react";
-import { AlertDialog, AlertDialogContent, AlertDialogHeader, AlertDialogFooter, AlertDialogTitle, AlertDialogDescription, AlertDialogCancel, AlertDialogAction } from "@/components/ui/alert-dialog";
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from "@/components/ui/table";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
+import {
+  Plus,
+  Search,
+  Edit,
+  Trash2,
+  FileText,
+  Calculator,
+  TrendingUp,
+  AlertCircle,
+  Download,
+  Eye,
+} from "lucide-react";
+import {
+  AlertDialog,
+  AlertDialogContent,
+  AlertDialogHeader,
+  AlertDialogFooter,
+  AlertDialogTitle,
+  AlertDialogDescription,
+  AlertDialogCancel,
+  AlertDialogAction,
+} from "@/components/ui/alert-dialog";
 import { mockTaxCodes } from "@/data/mockFinancialsData";
-import { SidebarProvider, SidebarTrigger, SidebarInset } from "@/components/ui/sidebar";
+import {
+  SidebarProvider,
+  SidebarTrigger,
+  SidebarInset,
+} from "@/components/ui/sidebar";
 import { Separator } from "@/components/ui/separator";
 import { PropertySidebar } from "@/components/PropertySidebar";
 import { TaxCode, TaxOverview } from "@/interfaces/tax_interfaces";
@@ -21,6 +64,7 @@ import { useAuth } from "../context/AuthContext";
 import { useLoader } from "@/context/LoaderContext";
 import LoaderOverlay from "@/components/LoaderOverlay";
 import ContentContainer from "@/components/ContentContainer";
+import { useSettings } from "@/context/SettingsContext";
 
 export default function TaxManagement() {
   const { toast } = useToast();
@@ -29,7 +73,9 @@ export default function TaxManagement() {
   const [taxCodes, setTaxCodes] = useState<TaxCode[]>([]);
   const [taxReturns, setTaxReturns] = useState<any[]>([]);
   const [selectedTaxCode, setSelectedTaxCode] = useState<TaxCode | undefined>();
-  const [formMode, setFormMode] = useState<'create' | 'edit' | 'view'>('create');
+  const [formMode, setFormMode] = useState<"create" | "edit" | "view">(
+    "create",
+  );
   const [isFormOpen, setIsFormOpen] = useState(false);
   const [deleteTaxCodeId, setDeleteTaxCodeId] = useState<string | null>(null);
   const { canRead, canWrite, canDelete } = useAuth();
@@ -40,12 +86,12 @@ export default function TaxManagement() {
     totalTaxCollected: 0,
     avgTaxRate: 0,
     pendingReturns: 0,
-    lastMonthActiveTaxCodes: 0
+    lastMonthActiveTaxCodes: 0,
   });
   const [page, setPage] = useState(1); // current page
   const [pageSize] = useState(5); // items per page
   const [totalItems, setTotalItems] = useState(0);
-
+  const { systemCurrency } = useSettings();
   const [returnsPage, setReturnsPage] = useState(1); // current page
   const [returnsPageSize] = useState(5); // items per page
   const [totalReturnsItems, setTotalReturnsItems] = useState(0);
@@ -72,14 +118,14 @@ export default function TaxManagement() {
     } else {
       setPage(1);
     }
-  }
+  };
 
   const loadTaxOverView = async () => {
     const response = await withLoader(async () => {
       return await taxCodeApiService.getTaxOverview();
     });
     if (response?.success) setTaxOverview(response.data || {});
-  }
+  };
 
   const loadTaxCodes = async () => {
     const skip = (page - 1) * pageSize;
@@ -100,7 +146,7 @@ export default function TaxManagement() {
       setTaxCodes(response.data?.tax_codes || []);
       setTotalItems(response.data?.total || 0);
     }
-  }
+  };
 
   const loadTaxReturns = async () => {
     const skip = (returnsPage - 1) * returnsPageSize;
@@ -119,23 +165,23 @@ export default function TaxManagement() {
       setTaxReturns(response.data?.tax_returns || []);
       setTotalReturnsItems(response.data?.total || 0);
     }
-  }
+  };
 
   const handleCreate = () => {
     setSelectedTaxCode(undefined);
-    setFormMode('create');
+    setFormMode("create");
     setIsFormOpen(true);
   };
 
   const handleView = (taxCode: TaxCode) => {
     setSelectedTaxCode(taxCode);
-    setFormMode('view');
+    setFormMode("view");
     setIsFormOpen(true);
   };
 
   const handleEdit = (taxCode: TaxCode) => {
     setSelectedTaxCode(taxCode);
-    setFormMode('edit');
+    setFormMode("edit");
     setIsFormOpen(true);
   };
 
@@ -150,21 +196,24 @@ export default function TaxManagement() {
         updateTaxPage();
         loadTaxOverView();
         setDeleteTaxCodeId(null);
-        toast({ title: "Tax Code Deleted", description: "The tax code has been removed successfully." });
+        toast({
+          title: "Tax Code Deleted",
+          description: "The tax code has been removed successfully.",
+        });
       }
     }
   };
 
   const handleSave = async (taxCodeData: Partial<TaxCode>) => {
     let response;
-    if (formMode === 'create') {
+    if (formMode === "create") {
       response = await taxCodeApiService.addTaxCode(taxCodeData);
 
       if (response.success) {
         updateTaxPage();
         loadTaxOverView();
       }
-    } else if (formMode === 'edit' && selectedTaxCode) {
+    } else if (formMode === "edit" && selectedTaxCode) {
       const updatedTaxCode = {
         ...selectedTaxCode,
         ...taxCodeData,
@@ -175,7 +224,7 @@ export default function TaxManagement() {
       if (response.success) {
         // Update the edited tax code in local state
         setTaxCodes((prev) =>
-          prev.map((tc) => (tc.id === updatedTaxCode.id ? updatedTaxCode : tc))
+          prev.map((tc) => (tc.id === updatedTaxCode.id ? updatedTaxCode : tc)),
         );
         loadTaxOverView();
       }
@@ -184,11 +233,16 @@ export default function TaxManagement() {
     if (response.success) {
       setIsFormOpen(false);
       toast({
-        title: formMode === 'create' ? "Tax Code Created" : "Tax Code Updated",
-        description: `Tax code ${taxCodeData.code} has been ${formMode === 'create' ? 'created' : 'updated'} successfully.`,
+        title: formMode === "create" ? "Tax Code Created" : "Tax Code Updated",
+        description: `Tax code ${taxCodeData.code} has been ${formMode === "create" ? "created" : "updated"} successfully.`,
       });
     }
     return response;
+  };
+
+  const formatCurrency = (val?: number) => {
+    if (val == null) return "-";
+    return systemCurrency.format(val);
   };
 
   return (
@@ -212,49 +266,66 @@ export default function TaxManagement() {
       <ContentContainer>
         <LoaderOverlay />
         <div className="space-y-6">
-
           {/* Summary Cards */}
           <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
             <Card>
               <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                <CardTitle className="text-sm font-medium">Active Tax Codes</CardTitle>
+                <CardTitle className="text-sm font-medium">
+                  Active Tax Codes
+                </CardTitle>
                 <FileText className="h-4 w-4 text-muted-foreground" />
               </CardHeader>
               <CardContent>
-                <div className="text-2xl font-bold">{taxOverview.activeTaxCodes}</div>
-                <p className="text-xs text-muted-foreground">+{taxOverview.lastMonthActiveTaxCodes} from last month</p>
+                <div className="text-2xl font-bold">
+                  {taxOverview.activeTaxCodes}
+                </div>
+                <p className="text-xs text-muted-foreground">
+                  +{taxOverview.lastMonthActiveTaxCodes} from last month
+                </p>
               </CardContent>
             </Card>
 
             <Card>
               <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                <CardTitle className="text-sm font-medium">Tax Collected</CardTitle>
+                <CardTitle className="text-sm font-medium">
+                  Tax Collected
+                </CardTitle>
                 <Calculator className="h-4 w-4 text-muted-foreground" />
               </CardHeader>
               <CardContent>
-                <div className="text-2xl font-bold">₹{taxOverview.totalTaxCollected}</div>
+                <div className="text-2xl font-bold">
+                  {formatCurrency(taxOverview.totalTaxCollected)}
+                </div>
                 <p className="text-xs text-muted-foreground">Last 3 months</p>
               </CardContent>
             </Card>
 
             <Card>
               <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                <CardTitle className="text-sm font-medium">Avg Tax Rate</CardTitle>
+                <CardTitle className="text-sm font-medium">
+                  Avg Tax Rate
+                </CardTitle>
                 <TrendingUp className="h-4 w-4 text-muted-foreground" />
               </CardHeader>
               <CardContent>
-                <div className="text-2xl font-bold">{taxOverview.avgTaxRate}%</div>
+                <div className="text-2xl font-bold">
+                  {taxOverview.avgTaxRate}%
+                </div>
                 <p className="text-xs text-muted-foreground">Effective rate</p>
               </CardContent>
             </Card>
 
             <Card>
               <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                <CardTitle className="text-sm font-medium">Pending Returns</CardTitle>
+                <CardTitle className="text-sm font-medium">
+                  Pending Returns
+                </CardTitle>
                 <AlertCircle className="h-4 w-4 text-muted-foreground" />
               </CardHeader>
               <CardContent>
-                <div className="text-2xl font-bold text-orange-600">{taxOverview.pendingReturns}</div>
+                <div className="text-2xl font-bold text-orange-600">
+                  {taxOverview.pendingReturns}
+                </div>
                 <p className="text-xs text-muted-foreground">Due for filing</p>
               </CardContent>
             </Card>
@@ -264,7 +335,9 @@ export default function TaxManagement() {
           <Card>
             <CardHeader>
               <CardTitle>Tax Codes</CardTitle>
-              <CardDescription>Manage tax codes and their rates</CardDescription>
+              <CardDescription>
+                Manage tax codes and their rates
+              </CardDescription>
             </CardHeader>
             <CardContent className="space-y-4">
               {/* Search and Filters */}
@@ -281,7 +354,10 @@ export default function TaxManagement() {
                   </div>
                 </div>
 
-                <Select value={jurisdictionFilter} onValueChange={setJurisdictionFilter}>
+                <Select
+                  value={jurisdictionFilter}
+                  onValueChange={setJurisdictionFilter}
+                >
                   <SelectTrigger className="w-48">
                     <SelectValue placeholder="Filter by jurisdiction" />
                   </SelectTrigger>
@@ -307,7 +383,9 @@ export default function TaxManagement() {
                 <TableBody>
                   {taxCodes.map((taxCode) => (
                     <TableRow key={taxCode.id}>
-                      <TableCell className="font-medium">{taxCode.code}</TableCell>
+                      <TableCell className="font-medium">
+                        {taxCode.code}
+                      </TableCell>
                       <TableCell>{taxCode.rate}%</TableCell>
                       <TableCell>{taxCode.jurisdiction}</TableCell>
                       <TableCell>
@@ -315,17 +393,32 @@ export default function TaxManagement() {
                       </TableCell>
                       <TableCell className="text-right">
                         <div className="flex items-center justify-end gap-2">
-                          <Button variant="ghost" size="sm" onClick={() => handleView(taxCode)}>
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            onClick={() => handleView(taxCode)}
+                          >
                             <Eye className="h-4 w-4" />
                           </Button>
-                          {canWrite(resource) && <Button variant="ghost" size="sm" onClick={() => handleEdit(taxCode)}>
-                            <Edit className="h-4 w-4" />
-                          </Button>
-                          }
-                          {canDelete(resource) && <Button variant="ghost" size="sm" className="text-destructive" onClick={() => handleDelete(taxCode.id)}>
-                            <Trash2 className="h-4 w-4" />
-                          </Button>
-                          }
+                          {canWrite(resource) && (
+                            <Button
+                              variant="ghost"
+                              size="sm"
+                              onClick={() => handleEdit(taxCode)}
+                            >
+                              <Edit className="h-4 w-4" />
+                            </Button>
+                          )}
+                          {canDelete(resource) && (
+                            <Button
+                              variant="ghost"
+                              size="sm"
+                              className="text-destructive"
+                              onClick={() => handleDelete(taxCode.id)}
+                            >
+                              <Trash2 className="h-4 w-4" />
+                            </Button>
+                          )}
                         </div>
                       </TableCell>
                     </TableRow>
@@ -399,7 +492,9 @@ export default function TaxManagement() {
           <Card>
             <CardHeader>
               <CardTitle>Tax Calendar & Deadlines</CardTitle>
-              <CardDescription>Important tax filing dates and reminders</CardDescription>
+              <CardDescription>
+                Important tax filing dates and reminders
+              </CardDescription>
             </CardHeader>
             <CardContent>
               <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
@@ -408,8 +503,12 @@ export default function TaxManagement() {
                     <h4 className="font-medium">Monthly GST Return</h4>
                     <Badge variant="destructive">Due Soon</Badge>
                   </div>
-                  <p className="text-sm text-muted-foreground">GSTR-1 for March 2024</p>
-                  <p className="text-sm font-medium text-red-600">Due: April 11, 2024</p>
+                  <p className="text-sm text-muted-foreground">
+                    GSTR-1 for March 2024
+                  </p>
+                  <p className="text-sm font-medium text-red-600">
+                    Due: April 11, 2024
+                  </p>
                 </div>
 
                 <div className="p-4 border rounded-lg">
@@ -417,7 +516,9 @@ export default function TaxManagement() {
                     <h4 className="font-medium">TDS Return</h4>
                     <Badge variant="secondary">Upcoming</Badge>
                   </div>
-                  <p className="text-sm text-muted-foreground">Quarterly TDS filing</p>
+                  <p className="text-sm text-muted-foreground">
+                    Quarterly TDS filing
+                  </p>
                   <p className="text-sm font-medium">Due: April 30, 2024</p>
                 </div>
 
@@ -426,8 +527,12 @@ export default function TaxManagement() {
                     <h4 className="font-medium">Income Tax Advance</h4>
                     <Badge variant="outline">Completed</Badge>
                   </div>
-                  <p className="text-sm text-muted-foreground">Q4 advance tax payment</p>
-                  <p className="text-sm font-medium text-green-600">Paid: March 15, 2024</p>
+                  <p className="text-sm text-muted-foreground">
+                    Q4 advance tax payment
+                  </p>
+                  <p className="text-sm font-medium text-green-600">
+                    Paid: March 15, 2024
+                  </p>
                 </div>
               </div>
             </CardContent>
@@ -449,17 +554,23 @@ export default function TaxManagement() {
         mode={formMode}
       />
       {/* Delete Confirmation */}
-      <AlertDialog open={!!deleteTaxCodeId} onOpenChange={() => setDeleteTaxCodeId(null)}>
+      <AlertDialog
+        open={!!deleteTaxCodeId}
+        onOpenChange={() => setDeleteTaxCodeId(null)}
+      >
         <AlertDialogContent>
           <AlertDialogHeader>
             <AlertDialogTitle>Delete Site</AlertDialogTitle>
             <AlertDialogDescription>
-              Are you sure you want to delete this tax code? This action cannot be undone.
+              Are you sure you want to delete this tax code? This action cannot
+              be undone.
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
             <AlertDialogCancel>Cancel</AlertDialogCancel>
-            <AlertDialogAction onClick={confirmDelete}>Delete</AlertDialogAction>
+            <AlertDialogAction onClick={confirmDelete}>
+              Delete
+            </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>

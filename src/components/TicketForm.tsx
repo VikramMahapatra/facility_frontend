@@ -25,7 +25,6 @@ import { slaPoliciesApiService } from "@/services/ticketing_service/slapoliciesa
 import { toast } from "@/components/ui/app-toast";
 import { ticketSchema, TicketFormValues } from "@/schemas/ticket.schema";
 import { withFallback } from "@/helpers/commonHelper";
-import { AsyncAutocompleteRQ } from "@/components/common/async-autocomplete-rq";
 
 interface TicketFormProps {
   onSubmit: (data: any) => Promise<any>;
@@ -107,6 +106,7 @@ export default function TicketForm({
   const selectedSiteId = watch("site_id");
   const selectedBuildingId = watch("building_id");
   const selectedSpaceId = watch("space_id");
+  const selectedRequestType = watch("request_type");
 
   // Mock preferred time slots
   const preferredTimeSlots = [
@@ -123,7 +123,7 @@ export default function TicketForm({
     loadVendorLookup();
     if (initialData?.site_id) {
       loadBuildingLookup(initialData.site_id);
-      loadSpaceLookup(initialData.site_id, initialData.building_id);
+      loadSpaceLookup(initialData.site_id, initialData.building_id, initialData.request_type);
     }
   }, []);
 
@@ -132,7 +132,7 @@ export default function TicketForm({
     if (response?.success) {
       const sites = response.data || [];
       setSiteList(sites);
-      
+
       // If we have initialData with a site_id that's not in the list, add it as fallback
       if (initialData?.site_id && !sites.find((s: any) => s.id === initialData.site_id)) {
         setSiteList([
@@ -159,7 +159,7 @@ export default function TicketForm({
   // Load spaces when site or building changes
   useEffect(() => {
     if (selectedSiteId) {
-      loadSpaceLookup(selectedSiteId, selectedBuildingId);
+      loadSpaceLookup(selectedSiteId, selectedBuildingId, selectedRequestType);
       loadCategoryLookup(selectedSiteId);
       loadStaffLookup(selectedSiteId);
       setValue("space_id", "");
@@ -170,7 +170,7 @@ export default function TicketForm({
       setStaffList([]);
       loadCategoryLookup("all");
     }
-  }, [selectedSiteId, selectedBuildingId, setValue]);
+  }, [selectedSiteId, selectedBuildingId, selectedRequestType, setValue]);
 
   useEffect(() => {
     if (selectedSiteId && selectedSpaceId) {
@@ -229,8 +229,8 @@ export default function TicketForm({
     if (lookup.success) setBuildingList(lookup.data || []);
   };
 
-  const loadSpaceLookup = async (siteId: string, buildingId?: string) => {
-    const response = await spacesApiService.getSpaceLookup(siteId, buildingId);
+  const loadSpaceLookup = async (siteId: string, buildingId?: string, request_type?: string) => {
+    const response = await spacesApiService.getFilteredSpaceLookup(siteId, buildingId, request_type);
     if (response.success) {
       setSpaceList(response.data || []);
     }
@@ -396,8 +396,93 @@ export default function TicketForm({
           <p className="text-sm text-red-500">{errors.title.message}</p>
         )}
       </div>
+      {/* 2. Request Type, Priority, Preferred Date, Preferred Time */}
+      <div className="grid grid-cols-4 gap-4">
+        <Controller
+          name="request_type"
+          control={control}
+          render={({ field }) => (
+            <div className="space-y-2">
+              <Label htmlFor="request_type">Request Type *</Label>
+              <Select value={field.value} onValueChange={field.onChange}>
+                <SelectTrigger
+                  className={errors.request_type ? "border-red-500" : ""}
+                >
+                  <SelectValue placeholder="Select Request Type" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="unit">Unit</SelectItem>
+                  <SelectItem value="community">Community</SelectItem>
+                </SelectContent>
+              </Select>
+              {errors.request_type && (
+                <p className="text-sm text-red-500">
+                  {errors.request_type.message}
+                </p>
+              )}
+            </div>
+          )}
+        />
+        <Controller
+          name="priority"
+          control={control}
+          render={({ field }) => (
+            <div className="space-y-2">
+              <Label htmlFor="priority">Priority</Label>
+              <Select value={field.value} onValueChange={field.onChange}>
+                <SelectTrigger>
+                  <SelectValue placeholder="Select Priority" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="low">Low</SelectItem>
+                  <SelectItem value="medium">Medium</SelectItem>
+                  <SelectItem value="high">High</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+          )}
+        />
 
-      {/* 2. Site, Building, Space */}
+        <div className="space-y-2">
+          <Label htmlFor="preferred_date">Preferred Date *</Label>
+          <Input
+            id="preferred_date"
+            type="date"
+            min={new Date().toISOString().split("T")[0]}
+            {...register("preferred_date")}
+            className={errors.preferred_date ? "border-red-500" : ""}
+          />
+          {errors.preferred_date && (
+            <p className="text-sm text-red-500">
+              {errors.preferred_date.message}
+            </p>
+          )}
+        </div>
+
+        <Controller
+          name="preferred_time"
+          control={control}
+          render={({ field }) => (
+            <div className="space-y-2">
+              <Label htmlFor="preferred_time">Preferred Time</Label>
+              <Select value={field.value || ""} onValueChange={field.onChange}>
+                <SelectTrigger>
+                  <SelectValue placeholder="Select preferred time" />
+                </SelectTrigger>
+                <SelectContent>
+                  {preferredTimeSlots.map((slot) => (
+                    <SelectItem key={slot.value} value={slot.value}>
+                      {slot.label}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+          )}
+        />
+      </div>
+
+      {/* 3. Site, Building, Space */}
       <div className="grid grid-cols-3 gap-4">
         <Controller
           name="site_id"
@@ -405,35 +490,31 @@ export default function TicketForm({
           render={({ field }) => (
             <div className="space-y-2">
               <Label htmlFor="site_id">Site *</Label>
-              <AsyncAutocompleteRQ
+              <Select
                 value={field.value || ""}
-                onChange={(value) => {
+                onValueChange={(value) => {
                   field.onChange(value);
                   // Reset building and space when site changes
                   setValue("building_id", "");
                   setValue("space_id", "");
                 }}
-                placeholder="Select site"
-                queryKey={["sites"]}
-                queryFn={async (search) => {
-                  const res = await siteApiService.getSiteLookup(search);
-                  return res.data.map((s: any) => ({
-                    id: s.id,
-                    label: s.name,
-                  }));
-                }}
-                fallbackOption={
-                  initialData?.site_id
-                    ? {
-                      id: initialData.site_id,
-                      label:
-                        initialData.site_name ||
-                        `Site (${initialData.site_id.slice(0, 6)})`,
-                    }
-                    : undefined
-                }
-                minSearchLength={1}
-              />
+                disabled={false}
+              >
+                <SelectTrigger className={errors.site_id ? "border-red-500" : ""}>
+                  <SelectValue placeholder="Select site" />
+                </SelectTrigger>
+                <SelectContent>
+                  {siteList.length === 0 ? (
+                    <SelectItem value="none" disabled>No sites available</SelectItem>
+                  ) : (
+                    siteList.map((site: any) => (
+                      <SelectItem key={site.id} value={site.id}>
+                        {site.name}
+                      </SelectItem>
+                    ))
+                  )}
+                </SelectContent>
+              </Select>
               {errors.site_id && (
                 <p className="text-sm text-red-500">{errors.site_id.message}</p>
               )}
@@ -513,8 +594,37 @@ export default function TicketForm({
         />
       </div>
 
-      {/* 3. Tenant, Category, Request Type */}
-      <div className="grid grid-cols-3 gap-4">
+      {/* 3. Tenant, Category, Request Type */}{/* 6. Assigned To (Staff) and Vendor */}
+      <div className="grid grid-cols-4 gap-4">
+        <Controller
+          name="category_id"
+          control={control}
+          render={({ field }) => (
+            <div className="space-y-2">
+              <Label htmlFor="category_id">Category *</Label>
+              <Select value={field.value || ""} onValueChange={field.onChange}>
+                <SelectTrigger
+                  className={errors.category_id ? "border-red-500" : ""}
+                >
+                  <SelectValue placeholder="Select Category" />
+                </SelectTrigger>
+                <SelectContent>
+                  {categories.map((category: any) => (
+                    <SelectItem key={category.id} value={category.id}>
+                      {category.category_name || category.name}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+              {errors.category_id && (
+                <p className="text-sm text-red-500">
+                  {errors.category_id.message}
+                </p>
+              )}
+            </div>
+          )}
+        />
+
         <Controller
           name="user_id"
           control={control}
@@ -550,125 +660,6 @@ export default function TicketForm({
           )}
         />
 
-        <Controller
-          name="category_id"
-          control={control}
-          render={({ field }) => (
-            <div className="space-y-2">
-              <Label htmlFor="category_id">Category *</Label>
-              <Select value={field.value || ""} onValueChange={field.onChange}>
-                <SelectTrigger
-                  className={errors.category_id ? "border-red-500" : ""}
-                >
-                  <SelectValue placeholder="Select Category" />
-                </SelectTrigger>
-                <SelectContent>
-                  {categories.map((category: any) => (
-                    <SelectItem key={category.id} value={category.id}>
-                      {category.category_name || category.name}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-              {errors.category_id && (
-                <p className="text-sm text-red-500">
-                  {errors.category_id.message}
-                </p>
-              )}
-            </div>
-          )}
-        />
-
-        <Controller
-          name="request_type"
-          control={control}
-          render={({ field }) => (
-            <div className="space-y-2">
-              <Label htmlFor="request_type">Request Type *</Label>
-              <Select value={field.value} onValueChange={field.onChange}>
-                <SelectTrigger
-                  className={errors.request_type ? "border-red-500" : ""}
-                >
-                  <SelectValue placeholder="Select Request Type" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="unit">Unit</SelectItem>
-                  <SelectItem value="community">Community</SelectItem>
-                </SelectContent>
-              </Select>
-              {errors.request_type && (
-                <p className="text-sm text-red-500">
-                  {errors.request_type.message}
-                </p>
-              )}
-            </div>
-          )}
-        />
-      </div>
-
-      {/* 4. Priority, Preferred Date, Preferred Time */}
-      <div className="grid grid-cols-3 gap-4">
-        <Controller
-          name="priority"
-          control={control}
-          render={({ field }) => (
-            <div className="space-y-2">
-              <Label htmlFor="priority">Priority</Label>
-              <Select value={field.value} onValueChange={field.onChange}>
-                <SelectTrigger>
-                  <SelectValue placeholder="Select Priority" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="low">Low</SelectItem>
-                  <SelectItem value="medium">Medium</SelectItem>
-                  <SelectItem value="high">High</SelectItem>
-                </SelectContent>
-              </Select>
-            </div>
-          )}
-        />
-
-        <div className="space-y-2">
-          <Label htmlFor="preferred_date">Preferred Date *</Label>
-          <Input
-            id="preferred_date"
-            type="date"
-            min={new Date().toISOString().split("T")[0]}
-            {...register("preferred_date")}
-            className={errors.preferred_date ? "border-red-500" : ""}
-          />
-          {errors.preferred_date && (
-            <p className="text-sm text-red-500">
-              {errors.preferred_date.message}
-            </p>
-          )}
-        </div>
-
-        <Controller
-          name="preferred_time"
-          control={control}
-          render={({ field }) => (
-            <div className="space-y-2">
-              <Label htmlFor="preferred_time">Preferred Time</Label>
-              <Select value={field.value || ""} onValueChange={field.onChange}>
-                <SelectTrigger>
-                  <SelectValue placeholder="Select preferred time" />
-                </SelectTrigger>
-                <SelectContent>
-                  {preferredTimeSlots.map((slot) => (
-                    <SelectItem key={slot.value} value={slot.value}>
-                      {slot.label}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </div>
-          )}
-        />
-      </div>
-
-      {/* 6. Assigned To (Staff) and Vendor */}
-      <div className="grid grid-cols-2 gap-4">
         <Controller
           name="assigned_to"
           control={control}
@@ -720,6 +711,7 @@ export default function TicketForm({
             </div>
           )}
         />
+
       </div>
 
       {/* 7. Description */}

@@ -3,6 +3,8 @@ import * as z from "zod";
 export const ticketWorkOrderSchema = z.object({
   ticket_id: z.string().min(1, "Ticket is required"),
   description: z.string().min(1, "Description is required"),
+  bill_to_id: z.string().min(1, "Bill to is required"),
+  bill_to_type: z.string().optional(),
   assigned_to: z.string().optional(),
   vendor_name: z.string().optional(),
   status: z.string().min(1, "Status is required"),

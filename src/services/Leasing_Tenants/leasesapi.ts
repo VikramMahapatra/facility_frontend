@@ -31,8 +31,11 @@ class LeasesApiService {
     });
   }
 
-  async getLeaseLookup(lease_id?: any) {
-    return await apiService.request("/leases/lease-lookup");
+  async getLeaseLookup(siteId?: any, buildingId?: any) {
+    const params = new URLSearchParams();
+    if (siteId) params.append("site_id", siteId);
+    if (buildingId) params.append("building_id", buildingId);
+    return await apiService.request(`/leases/lease-lookup?${params.toString()}`);
   }
 
   async getLeaseKindLookup() {
@@ -79,6 +82,24 @@ class LeasesApiService {
     return await apiService.request(
       `/leases/get-payment-terms?${params.toString()}`,
     );
+  }
+
+  async getTerminationRequests(params: URLSearchParams) {
+    return await apiService.request(
+      `/leases/termination-requests?${params.toString()}`,
+    );
+  }
+
+  async approveTerminationRequest(id: string) {
+    return await apiService.request(`/leases/termination-requests/${id}/approve`, {
+      method: "POST",
+    });
+  }
+
+  async rejectTerminationRequest(id: string) {
+    return await apiService.request(`/leases/termination-requests/${id}/reject`, {
+      method: "POST",
+    });
   }
 }
 

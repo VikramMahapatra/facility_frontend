@@ -1,3 +1,4 @@
+import { spaceCategories, spaceKinds, spaceSubKinds } from "@/interfaces/spaces_interfaces";
 import * as z from "zod";
 
 export const maintenanceTemplateSchema = z.object({
@@ -10,29 +11,12 @@ export const maintenanceTemplateSchema = z.object({
       invalid_type_error: "Amount must be a number",
     })
     .min(0, "Amount cannot be negative"),
-  category: z.enum(["residential", "commercial"]).optional(),
-  kind: z
-    .enum([
-      "room",
-      "apartment",
-      "shop",
-      "office",
-      "warehouse",
-      "meeting_room",
-      "hall",
-      "common_area",
-      "parking",
-      "villa",
-      "row_house",
-      "bungalow",
-      "duplex",
-      "penthouse",
-      "studio_apartment",
-      "farm_house",
-    ] as const)
-    .optional(),
+  category: z.enum(spaceCategories).optional(),
+  kind: z.enum(spaceKinds, {
+    required_error: "Space type is required",
+  }),
+  sub_kind: z.enum(spaceSubKinds).optional(),
   site_id: z.string().min(1, "Site is required"),
-  tax_code_id: z.string().optional(),
   is_active: z.boolean().default(true),
 });
 

@@ -25,20 +25,12 @@ import {
   leaseChargeSchema,
   LeaseChargeFormValues,
 } from "@/schemas/leaseCharge.schema";
-
-export interface LeaseCharge {
-  id: string;
-  lease_id: string;
-  charge_code_id: string;
-  period_start: string; // yyyy-mm-dd
-  period_end: string; // yyyy-mm-dd
-  amount: number;
-  tax_pct?: number;
-  tax_code_id?: string; // ✅ Add this
-  payer_type?: string; // ✅ Add this
-  created_at?: string;
-  updated_at?: string;
-}
+import { siteApiService } from "@/services/spaces_sites/sitesapi";
+import { buildingApiService } from "@/services/spaces_sites/buildingsapi";
+import { spacesApiService } from "@/services/spaces_sites/spacesapi";
+import { withFallback } from "@/helpers/commonHelper";
+import { LeaseCharge } from "@/interfaces/leasing_tenants_interface";
+import { useSettings } from "@/context/SettingsContext";
 
 interface LeaseChargeFormProps {
   charge?: Partial<LeaseCharge>;
@@ -47,18 +39,26 @@ interface LeaseChargeFormProps {
   onSave: (leasecharge: any) => Promise<any>;
   mode: "create" | "edit" | "view";
   disableLeaseField?: boolean; // When true, disables the lease dropdown
+  defaultLeaseId?: string;
 }
 
 // ---- Empty (default) form data, styled like SpaceForm's emptyFormData) ----
 const emptyFormData: Partial<LeaseCharge> = {
+  site_id: "",
+  building_block_id: "",
   lease_id: "",
   charge_code_id: "",
   period_start: "",
   period_end: "",
   amount: undefined as unknown as number,
   tax_code_id: "",
-  payer_type: "",
   tax_pct: 0,
+};
+
+const emptyCalculatedAmount = {
+  base_amount: 0,
+  tax_amount: 0,
+  total_amount: 0,
 };
 
 export function LeaseChargeForm({
@@ -68,6 +68,7 @@ export function LeaseChargeForm({
   onSave,
   mode,
   disableLeaseField = false,
+  defaultLeaseId,
 }: LeaseChargeFormProps) {
   const getMonthBounds = () => {
     const now = new Date();
@@ -76,7 +77,7 @@ export function LeaseChargeForm({
     const formatDate = (date: Date) =>
       `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(
         2,
-        "0"
+        "0",
       )}-${String(date.getDate()).padStart(2, "0")}`;
     return { startDate: formatDate(start), endDate: formatDate(end) };
   };
@@ -92,34 +93,50 @@ export function LeaseChargeForm({
   } = useForm<LeaseChargeFormValues>({
     resolver: zodResolver(leaseChargeSchema),
     defaultValues: {
+      site_id: "",
+      building_block_id: "",
       lease_id: "",
       charge_code_id: "",
       period_start: "",
       period_end: "",
-      amount: undefined as any,
       tax_pct: 0 as any,
       tax_code_id: "",
-      payer_type: "",
     },
     mode: "onBlur",
     reValidateMode: "onChange",
   });
   const [leaseList, setLeaseList] = useState([]);
-  const [chargeCodeList, setChargeCodeList] = useState([]);
   const [taxCodeList, setTaxCodeList] = useState<any[]>([]);
-  const [payerTypeList, setPayerTypeList] = useState<any[]>([]);
   const [formLoading, setFormLoading] = useState(true);
-  const [isRentAmountLocked, setIsRentAmountLocked] = useState(false);
+  const [spaceList, setSpaceList] = useState<any[]>([]);
+  const [siteList, setSiteList] = useState<any[]>([]);
+  const [buildingList, setBuildingList] = useState<any[]>([]);
+  const { systemCurrency } = useSettings();
+  //const [isRentAmountLocked, setIsRentAmountLocked] = useState(false);
 
   const periodStart = watch("period_start");
   const periodEnd = watch("period_end");
   const selectedLeaseId = watch("lease_id");
-  const selectedChargeCodeId = watch("charge_code_id");
+  const selectedTaxCodeId = watch("tax_code_id");
+  const selectedSiteId = watch("site_id");
+  const selectedBuildingId = watch("building_block_id");
+
+  //const selectedChargeCodeId = watch("charge_code_id");
+  const isReadyForCalculation =
+    !!selectedLeaseId && !!periodStart && !!periodEnd;
 
   const isReadOnly = mode === "view";
   const isEdit = mode === "edit";
+  const hasPrefill = mode === "create" && !!charge;
   const isLeaseLocked = isReadOnly || isEdit || disableLeaseField;
-  const isChargeCodeLocked = isReadOnly || isEdit;
+  const [calculatedAmount, setCalculatedAmount] = useState<any>(
+    emptyCalculatedAmount,
+  );
+  const [isLoading, setIsLoading] = useState(false);
+  const [siteFallback, setSiteFallback] = useState<{
+    id: string;
+    label: string;
+  } | null>(null);
 
   // Trigger validation when either date changes
   useEffect(() => {
@@ -137,87 +154,133 @@ export function LeaseChargeForm({
     }
   }, [charge, isOpen, mode, reset]);
 
-  const isRentChargeCode = (chargeCodeId: string) => {
-    const selected = chargeCodeList.find((code: any) => code.id === chargeCodeId);
-    const name = String(selected?.name || selected?.code || "").toLowerCase();
-    return name === "rent" || name.includes("rent");
-  };
-
-  const loadRentAmount = async (leaseId: string) => {
-    const response = await leaseChargeApiService.getLeaseRentAmount(leaseId);
-    if (response?.success) {
-      const amount =
-        response.data?.amount ??
-        response.data?.rent_amount ??
-        response.data?.rent ??
-        response.data;
-      if (amount !== undefined && amount !== null) {
-        setValue("amount", Number(amount));
-      }
-    }
-  };
-
   useEffect(() => {
-    if (mode !== "create") {
-      setIsRentAmountLocked(false);
+    if (!isReadyForCalculation) {
+      setCalculatedAmount(emptyCalculatedAmount);
       return;
     }
-    if (!selectedChargeCodeId || !isRentChargeCode(selectedChargeCodeId)) {
-      setIsRentAmountLocked(false);
-      setValue("amount", undefined as any);
-      return;
-    }
-    if (!selectedLeaseId) {
-      setIsRentAmountLocked(false);
-      return;
-    }
-    setIsRentAmountLocked(true);
-    loadRentAmount(selectedLeaseId);
-  }, [mode, selectedChargeCodeId, selectedLeaseId, chargeCodeList]);
+
+    const fetchAmount = async () => {
+      try {
+        setIsLoading(true);
+
+        const res = await leaseChargeApiService.getLeaseRentAmount({
+          lease_id: selectedLeaseId,
+          tax_code_id: selectedTaxCodeId || undefined,
+          start_date: periodStart,
+          end_date: periodEnd,
+        });
+
+        setCalculatedAmount(res.data ?? emptyCalculatedAmount);
+      } finally {
+        setIsLoading(false);
+      }
+    };
+
+    fetchAmount();
+  }, [selectedLeaseId, periodStart, periodEnd]);
 
   const loadAll = async () => {
     setFormLoading(true);
 
-
     if (charge && mode !== "create") {
+      console.log("edit mode charge data", charge);
       reset({
+        site_id: charge?.site_id || "",
+        building_block_id: charge?.building_block_id || "",
         lease_id: (charge.lease_id as any) || "",
         charge_code_id: (charge.charge_code_id as any) || "",
         period_start: charge.period_start || "",
         period_end: charge.period_end || "",
-        amount: charge.amount as any,
         tax_pct: (charge.tax_pct as any) ?? 0,
         tax_code_id: charge.tax_code_id || "", // ✅ Add this
-        payer_type: charge.payer_type || "", // ✅ Add this
       });
     } else {
       const { startDate, endDate } = getMonthBounds();
       reset({
-        lease_id: (charge?.lease_id as any) || "",
+        site_id: "",
+        building_block_id: "",
+        lease_id: "",
         charge_code_id: "",
         period_start: startDate,
         period_end: endDate,
-        amount: undefined as any,
         tax_pct: 0 as any,
         tax_code_id: "", // ✅ Add this
-        payer_type: "", // ✅ Add this
       });
     }
 
+    const [sites] = await Promise.all([loadSites(), loadTaxCodeLookup()]);
+    if (charge && (mode !== "create" || hasPrefill)) {
+      const siteId =
+        charge?.site_id ||
+        sites.find((s: any) => s.name === (charge as any)?.site_name)?.id ||
+        "";
+      if (siteId) {
+        setValue("site_id", siteId);
+        setSiteFallback({
+          id: siteId,
+          label: (charge as any)?.site_name || "Selected Site",
+        });
+        const buildings = await loadBuildings(siteId);
+        const buildingId =
+          charge?.building_block_id ||
+          buildings.find((b: any) => b.name === (charge as any)?.building_name)
+            ?.id ||
+          "";
+        await loadLeaseLookup(siteId, buildingId);
+        if (buildingId) {
+          setValue("building_block_id", buildingId);
+        }
+      }
+      if (charge?.lease_id || defaultLeaseId) {
+        setValue("lease_id", charge?.lease_id || defaultLeaseId || "");
+      }
+    } else {
+      setSiteFallback(null);
+    }
+
     setFormLoading(false);
-
-
-    await Promise.all([loadLeaseLookup(), loadLeaseChargeLookup(), loadTaxCodeLookup(), loadPayerTypeLookup()]);
   };
 
-  const loadLeaseLookup = async () => {
-    const lookup = await leasesApiService.getLeaseLookup();
+  useEffect(() => {
+    if (selectedSiteId) {
+      loadBuildings(selectedSiteId);
+      loadLeaseLookup(selectedSiteId, selectedBuildingId);
+      // Clear space selection when building changes
+      if (selectedBuildingId) {
+        // Don't clear if we're in edit mode or have a prefilled record
+        if (mode === "create" && !hasPrefill) {
+          setValue("lease_id", "");
+        }
+      }
+    } else {
+      setBuildingList([]);
+      setSpaceList([]);
+    }
+  }, [selectedSiteId, selectedBuildingId]);
+
+  const loadLeaseLookup = async (siteId, buildingId) => {
+    if (!siteId) {
+      setLeaseList([]);
+      return [];
+    }
+
+    const lookup = await leasesApiService.getLeaseLookup(siteId, buildingId);
     if (lookup.success) setLeaseList(lookup.data || []);
   };
 
-  const loadLeaseChargeLookup = async () => {
-    const lookup = await leaseChargeApiService.getLeaseChargeLookup();
-    if (lookup.success) setChargeCodeList(lookup.data || []);
+  const loadSites = async () => {
+    const sites = await siteApiService.getSiteLookup();
+    const list = sites?.success ? sites.data || [] : [];
+    setSiteList(list);
+    return list;
+  };
+
+  const loadBuildings = async (siteId: string) => {
+    const lookup = await buildingApiService.getBuildingLookup(siteId);
+    const list = lookup?.success ? lookup.data || [] : [];
+    setBuildingList(list);
+    return list;
   };
 
   const loadTaxCodeLookup = async () => {
@@ -225,23 +288,55 @@ export function LeaseChargeForm({
     if (lookup.success) setTaxCodeList(lookup.data || []);
   };
 
-  const loadPayerTypeLookup = async () => {
-    const lookup = await leasesApiService.getLeasePayerTypeLookup();
-    if (lookup.success) setPayerTypeList(lookup.data || []);
-  };
-
   const onSubmitForm = async (data: LeaseChargeFormValues) => {
     const formResponse = await onSave(data);
   };
 
+  const fallbackLease = charge?.lease_id
+    ? {
+      id: charge.lease_id,
+      name:
+        (charge as any).lease_name ||
+        charge.lease_id ||
+        "Selected Space With Lease",
+    }
+    : null;
+
+  const leases = withFallback(leaseList, fallbackLease);
+
+  const fallbackBuilding = charge?.building_block_id
+    ? {
+      id: charge.building_block_id,
+      name:
+        (charge as any).building_block ||
+        `Building (${charge.building_block_id})`,
+    }
+    : null;
+
+  const buildings = withFallback(buildingList, fallbackBuilding);
+
+  const handleClose = () => {
+    reset(emptyFormData);
+    setBuildingList([]);
+    setSiteFallback(null);
+    onClose();
+  };
+
+  const formatCurrency = (val?: number) => {
+    if (val == null) return "-";
+    return `${systemCurrency.format(val)}`;
+  };
+
+  const selectedLease = leases.find(lease => lease.id === selectedLeaseId);
+
   return (
-    <Dialog open={isOpen} onOpenChange={onClose}>
+    <Dialog open={isOpen} onOpenChange={handleClose}>
       <DialogContent className="max-w-2xl">
         <DialogHeader>
           <DialogTitle>
-            {mode === "create" && "Create Lease Charge"}
-            {mode === "edit" && "Edit Lease Charge"}
-            {mode === "view" && "Lease Charge Details"}
+            {mode === "create" && "Create Rent Charge"}
+            {mode === "edit" && "Edit Rent Charge"}
+            {mode === "view" && "Lease Rent Details"}
           </DialogTitle>
         </DialogHeader>
 
@@ -253,42 +348,128 @@ export function LeaseChargeForm({
             className="space-y-4"
           >
             {/* Lease */}
-            <div>
-              <Label htmlFor="lease">Lease *</Label>
-              <Controller
-                name="lease_id"
-                control={control}
-                render={({ field }) => (
-                  <Select
-                    value={field.value}
-                    onValueChange={field.onChange}
-                    disabled={isLeaseLocked}
-                  >
-                    <SelectTrigger
-                      disabled={isLeaseLocked}
-                      className={errors.lease_id ? "border-red-500" : ""}
-                    >
-                      <SelectValue placeholder="Select lease" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      {leaseList.map((lease: any) => (
-                        <SelectItem key={lease.id} value={lease.id}>
-                          {lease.name}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                )}
-              />
-              {errors.lease_id && (
-                <p className="text-sm text-red-500">
-                  {errors.lease_id.message as any}
-                </p>
-              )}
+            <div className="space-y-4">
+              <div className="grid grid-cols-3 gap-4">
+                <Controller
+                  name="site_id"
+                  control={control}
+                  render={({ field }) => (
+                    <div className="space-y-2">
+                      <Label>Site *</Label>
+                      <Select
+                        value={field.value || ""}
+                        onValueChange={(value) => {
+                          field.onChange(value);
+                          setValue("building_block_id", "");
+                          setValue("lease_id", "");
+                        }}
+                        disabled={isReadOnly || isEdit || hasPrefill}
+                      >
+                        <SelectTrigger>
+                          <SelectValue placeholder="Select site" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          {siteList.map((site) => (
+                            <SelectItem key={site.id} value={site.id}>
+                              {site.name}
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                    </div>
+                  )}
+                />
+                <div className="space-y-2">
+                  <Label>Building</Label>
+                  <Controller
+                    name="building_block_id"
+                    control={control}
+                    render={({ field }) => (
+                      <Select
+                        value={field.value || ""}
+                        onValueChange={(value) => {
+                          field.onChange(value);
+                          setValue("lease_id", "");
+                        }}
+                        disabled={
+                          isReadOnly ||
+                          isEdit ||
+                          hasPrefill ||
+                          buildings.length === 0
+                        }
+                      >
+                        <SelectTrigger>
+                          <SelectValue placeholder="Select building" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          {buildings.map((building) => (
+                            <SelectItem key={building.id} value={building.id}>
+                              {building.name}
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                    )}
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="lease">Space *</Label>
+                  <Controller
+                    name="lease_id"
+                    control={control}
+                    render={({ field }) => (
+                      <Select
+                        value={field.value}
+                        onValueChange={field.onChange}
+                        disabled={isLeaseLocked}
+                      >
+                        <SelectTrigger
+                          disabled={isLeaseLocked}
+                          className={errors.lease_id ? "border-red-500" : ""}
+                        >
+                          <SelectValue placeholder="Select space" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          {leases.map((lease: any) => (
+                            <SelectItem key={lease.id} value={lease.id}>
+                              {lease.name}
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                    )}
+                  />
+                  {errors.lease_id && (
+                    <p className="text-sm text-red-500">{errors.lease_id.message as any}</p>
+                  )}
+                </div>
+              </div>
+
+            </div>
+            <div className="grid grid-cols-1 gap-4">
+              {/* Left Column: Space Lookup */}
+              {/* Right Column: Read-only Tenant & Lease No */}
+              <div className="flex gap-4">
+                {/* Tenant Name */}
+                <div className="flex-1">
+                  <Label>Tenant Name</Label>
+                  <p className="w-full rounded-md p-2 bg-gray-100 text-gray-700">
+                    {selectedLease?.tenant_name || "-"}
+                  </p>
+                </div>
+
+                {/* Lease No */}
+                <div className="flex-1">
+                  <Label>Lease No</Label>
+                  <p className="w-full rounded-md p-2 bg-gray-100 text-gray-700">
+                    {selectedLease?.lease_no || "-"}
+                  </p>
+                </div>
+              </div>
             </div>
 
             {/* Charge Code */}
-            <div>
+            {/* <div>
               <Label htmlFor="charge_code_id">Charge Code *</Label>
               <Controller
                 name="charge_code_id"
@@ -320,38 +501,8 @@ export function LeaseChargeForm({
                   {errors.charge_code_id.message as any}
                 </p>
               )}
-            </div>
+            </div> */}
             {/* Payer Type - NEW FIELD */}
-            <div>
-              <Label htmlFor="payer_type">Payer Type</Label>
-              <Controller
-                name="payer_type"
-                control={control}
-                render={({ field }) => (
-                  <Select
-                    value={field.value || ""} // Ensure value is never undefined
-                    onValueChange={field.onChange}
-                    disabled={isReadOnly}
-                  >
-                    <SelectTrigger className={errors.payer_type ? "border-red-500" : ""}>
-                      <SelectValue placeholder="Select payer type" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      {/* REMOVE THE EMPTY VALUE OPTION or give it a valid value */}
-                      {payerTypeList.map((payer: any) => (
-                        <SelectItem key={payer.id} value={payer.id}>
-                          {payer.name}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                )}
-              />
-              {errors.payer_type && (
-                <p className="text-sm text-red-500">{errors.payer_type.message as any}</p>
-              )}
-            </div>
-
             {/* Dates */}
             <div className="grid grid-cols-2 gap-4">
               <div>
@@ -391,57 +542,33 @@ export function LeaseChargeForm({
                 )}
               </div>
             </div>
-
             {/* Amounts */}
-            <div className="grid grid-cols-2 gap-4">
-              <div>
-                <Label htmlFor="amount">Amount *</Label>
-                <Input
-                  id="amount"
-                  type="number"
-                  step="any"
-                  {...register("amount", {
-                    setValueAs: (v) => (v === "" ? undefined : Number(v)),
-                  })}
-                  disabled={isReadOnly || isRentAmountLocked}
-                  className={errors.amount ? "border-red-500" : ""}
-                  min="0"
-                />
-                {errors.amount && (
-                  <p className="text-sm text-red-500">
-                    {errors.amount.message as any}
-                  </p>
+            <div className="grid grid-cols-2 gap-6 items-center mt-4">
+              <div className="rounded-lg border bg-muted/40 p-4">
+                {isLoading ? (
+                  <span className="text-sm text-muted-foreground">
+                    Calculating...
+                  </span>
+                ) : (
+                  <div className="flex items-center justify-between">
+                    <div className="space-y-1">
+                      <p className="text-sm font-medium">Rent Amount</p>
+                      <p className="text-xs text-muted-foreground">
+                        Auto calculated
+                      </p>
+                    </div>
+
+                    <p className="text-xl font-semibold tabular-nums">
+                      {formatCurrency(calculatedAmount?.base_amount ?? 0)}
+                    </p>
+                  </div>
                 )}
               </div>
-              <div>
-                <Label htmlFor="tax_code">Tax Code</Label>
-                <Controller
-                  name="tax_code_id"
-                  control={control}
-                  render={({ field }) => (
-                    <Select
-                      value={field.value || ""}
-                      onValueChange={field.onChange}
-                      disabled={isReadOnly}
-                    >
-                      <SelectTrigger className={errors.tax_code_id ? "border-red-500" : ""}>
-                        <SelectValue placeholder="Select tax code" />
-                      </SelectTrigger>
-                      <SelectContent>
-                        {/* If you need a "No Tax" option, use a special value like "no-tax" */}
-                        <SelectItem value="no-tax">No Tax</SelectItem>
-                        {taxCodeList.map((tax: any) => (
-                          <SelectItem key={tax.id} value={tax.id}>
-                            {tax.name}
-                          </SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
-                  )}
-                />
-                {errors.tax_code_id && (
-                  <p className="text-sm text-red-500">{errors.tax_code_id.message as any}</p>
-                )}
+
+              {/* Info Section */}
+              <div className="text-sm text-muted-foreground leading-relaxed">
+                Amount will be calculated automatically after selecting space
+                and dates.
               </div>
             </div>
 
@@ -467,6 +594,6 @@ export function LeaseChargeForm({
           </form>
         )}
       </DialogContent>
-    </Dialog>
+    </Dialog >
   );
 }

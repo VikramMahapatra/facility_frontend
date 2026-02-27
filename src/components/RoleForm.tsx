@@ -116,7 +116,7 @@ export function RoleForm({ role, isOpen, onClose, onSave, mode }: RoleFormProps)
               name="account_types"
               render={({ field }) => (
                 <FormItem>
-                  <FormLabel>Account Types</FormLabel>
+                  <FormLabel>User Types</FormLabel>
                   <FormControl>
                     <div>
                       <div className="grid grid-cols-1 gap-x-6 gap-y-3 border rounded-md p-4 max-h-[180px] overflow-y-auto">

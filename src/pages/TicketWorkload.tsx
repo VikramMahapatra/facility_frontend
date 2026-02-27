@@ -44,12 +44,12 @@ import LoaderOverlay from "@/components/LoaderOverlay";
 import ContentContainer from "@/components/ContentContainer";
 import { useAuth } from "@/context/AuthContext";
 import { PageHeader } from "@/components/PageHeader";
-import { AsyncAutocompleteRQ } from "@/components/common/async-autocomplete-rq";
 
 export default function TicketWorkload() {
   const navigate = useNavigate();
   const [selectedSiteId, setSelectedSiteId] = useState("");
   const [workloadData, setWorkloadData] = useState<any>(null);
+  const [siteList, setSiteList] = useState<any[]>([]);
   const { withLoader } = useLoader();
   const [isReassignOpen, setIsReassignOpen] = useState(false);
   const [selectedTicket, setSelectedTicket] = useState<{
@@ -77,20 +77,28 @@ export default function TicketWorkload() {
   }, [selectedSiteId]);
 
   useEffect(() => {
-    if (!selectedSiteId) {
-      siteApiService.getSiteLookup().then((response) => {
-        if (response?.success && response.data && response.data.length > 0) {
-          setSelectedSiteId(response.data[0].id);
-        }
-      });
-    }
+    loadSiteLookup();
   }, []);
+
+  useEffect(() => {
+    if (!selectedSiteId && siteList.length > 0) {
+      setSelectedSiteId(siteList[0].id);
+    }
+  }, [siteList]);
+
+  const loadSiteLookup = async () => {
+    const response = await siteApiService.getSiteLookup();
+    if (response?.success) {
+      const sites = response.data || [];
+      setSiteList(sites);
+    }
+  };
 
   const loadWorkloadData = async () => {
     if (!selectedSiteId) return;
     const response = await withLoader(async () => {
       return await workloadManagementApiService.getTeamWorkloadManagement(
-        selectedSiteId
+        selectedSiteId,
       );
     });
     if (response?.success) {
@@ -112,7 +120,7 @@ export default function TicketWorkload() {
       }
       return acc;
     },
-    {}
+    {},
   );
 
   const getTechnicianName = (technicianId: string) => {
@@ -127,7 +135,7 @@ export default function TicketWorkload() {
     assignedTicketsStartIndex + assignedTicketsPageSize;
   const paginatedAssignedTickets = assignedTickets.slice(
     assignedTicketsStartIndex,
-    assignedTicketsEndIndex
+    assignedTicketsEndIndex,
   );
 
   // Pagination for unassigned tickets
@@ -137,20 +145,19 @@ export default function TicketWorkload() {
     unassignedTicketsStartIndex + unassignedTicketsPageSize;
   const paginatedUnassignedTickets = unassignedTickets.slice(
     unassignedTicketsStartIndex,
-    unassignedTicketsEndIndex
+    unassignedTicketsEndIndex,
   );
 
   const loadEmployeesForTicket = async () => {
     if (!selectedSiteId) return;
     setLoadingEmployees(true);
-    const response = await workloadManagementApiService.AssignTo(
-      selectedSiteId
-    );
+    const response =
+      await workloadManagementApiService.AssignTo(selectedSiteId);
     if (response.success) {
       setEmployeeList(
         Array.isArray(response.data)
           ? response.data
-          : response.data?.employees || response.data?.data || []
+          : response.data?.employees || response.data?.data || [],
       );
     }
     setLoadingEmployees(false);
@@ -159,7 +166,7 @@ export default function TicketWorkload() {
   const handleReassign = async (
     ticketId: string | number,
     ticketNo: string,
-    assignedTo?: string
+    assignedTo?: string,
   ) => {
     const ticketIdStr = ticketId.toString();
     setSelectedTicket({
@@ -183,13 +190,13 @@ export default function TicketWorkload() {
     const response = await withLoader(async () => {
       return await ticketsApiService.assignTicket(
         selectedTicket.id,
-        newAssignee
+        newAssignee,
       );
     });
 
     if (response?.success) {
       toast.success(
-        `Ticket #${selectedTicket?.ticket_no} has been reassigned successfully`
+        `Ticket #${selectedTicket?.ticket_no} has been reassigned successfully`,
       );
       setIsReassignOpen(false);
       setNewAssignee("");
@@ -272,22 +279,24 @@ export default function TicketWorkload() {
             </p>
           </div>
           <div className="w-[200px]">
-            <AsyncAutocompleteRQ
-              value={selectedSiteId}
-              onChange={(value) => {
-                setSelectedSiteId(value);
-              }}
-              placeholder="Select Site"
-              queryKey={["sites"]}
-              queryFn={async (search) => {
-                const res = await siteApiService.getSiteLookup(search);
-                return res.data.map((s: any) => ({
-                  id: s.id,
-                  label: s.name,
-                }));
-              }}
-              minSearchLength={1}
-            />
+            <Select value={selectedSiteId} onValueChange={setSelectedSiteId}>
+              <SelectTrigger>
+                <SelectValue placeholder="Select Site" />
+              </SelectTrigger>
+              <SelectContent>
+                {siteList.length === 0 ? (
+                  <SelectItem value="none" disabled>
+                    No sites available
+                  </SelectItem>
+                ) : (
+                  siteList.map((site: any) => (
+                    <SelectItem key={site.id} value={site.id}>
+                      {site.name}
+                    </SelectItem>
+                  ))
+                )}
+              </SelectContent>
+            </Select>
           </div>
         </div>
 
@@ -402,7 +411,7 @@ export default function TicketWorkload() {
                                   handleReassign(
                                     ticket.id || ticket.ticket_id,
                                     ticket.ticket_no,
-                                    ticket.assigned_to
+                                    ticket.assigned_to,
                                   )
                                 }
                               >
@@ -415,7 +424,7 @@ export default function TicketWorkload() {
                               variant="ghost"
                               onClick={() =>
                                 navigate(
-                                  `/tickets/${ticket.id || ticket.ticket_id}`
+                                  `/tickets/${ticket.id || ticket.ticket_id}`,
                                 )
                               }
                             >
@@ -491,17 +500,17 @@ export default function TicketWorkload() {
                             onClick={() =>
                               handleReassign(
                                 ticket.id || ticket.ticket_id,
-                                ticket.ticket_no
+                                ticket.ticket_no,
                               )
                             }
                             disabled={
                               isAssigning ||
                               selectedTicket?.id ===
-                              (ticket.id || ticket.ticket_id)
+                                (ticket.id || ticket.ticket_id)
                             }
                           >
                             {isAssigning &&
-                              selectedTicket?.id ===
+                            selectedTicket?.id ===
                               (ticket.id || ticket.ticket_id)
                               ? "Assigning..."
                               : "Assign"}
@@ -555,7 +564,7 @@ export default function TicketWorkload() {
                 <SelectContent>
                   {employeeList
                     .filter(
-                      (user: any) => user.id !== selectedTicket?.assigned_to
+                      (user: any) => user.id !== selectedTicket?.assigned_to,
                     )
                     .map((user: any) => (
                       <SelectItem key={user.id} value={String(user.id)}>

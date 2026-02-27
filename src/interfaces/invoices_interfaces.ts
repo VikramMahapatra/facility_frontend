@@ -8,11 +8,9 @@ export interface Invoice {
   space_id?: string;
   space_name?: string;
   customer_kind: "resident" | "merchant" | "guest" | "staff" | "other"; // ✅ Match service request types
-  customer_id?: string;
-  customer_name?: string;
-  billable_item_name?: string;
-  billable_item_type?: string;
-  billable_item_id?: string;
+  user_id?: string;
+  user_name?: string;
+  code?: string;
   invoice_no: string;
   date: string;
   due_date: string;
@@ -33,12 +31,14 @@ export interface Invoice {
 
 export interface InvoiceLine {
   id: string;
-  invoiceId: string;
+  invoice_id: string;
+  item_id: string;
   code: string;
   description: string;
-  qty: number;
-  price: number;
-  taxPct: number;
+  item_no?: string;
+  item_label?: string;
+  amount: number;
+  tax_pct: number;
 }
 
 export interface PaymentInput {
@@ -74,6 +74,44 @@ export interface RevenueReport {
 
 export interface InvoiceOverview {
   totalInvoices: number;
+  totalAmount: number;
+  paidAmount: number;
+  outstandingAmount: number;
+}
+
+export interface Bill {
+  id?: string;
+  org_id?: string;
+  site_id: string;
+  site_name?: string;
+  building_id?: string;
+  building_name?: string;
+  space_id?: string;
+  space_name?: string;
+  vendor_id?: string;
+  vendor_name?: string;
+  billable_item_name?: string;
+  billable_item_type?: string;
+  billable_item_id?: string;
+  bill_no: string;
+  date: string;
+  status: "draft" | "approved" | "paid" | "partial";
+  currency: string;
+  totals: {
+    sub: number;
+    tax: number;
+    grand: number;
+  };
+  is_paid?: boolean;
+  meta?: any;
+  lines?: InvoiceLine[];
+  created_at?: string;
+  updated_at?: string;
+  payments?: PaymentInput[];
+}
+
+export interface BillOverview {
+  totalBills: number;
   totalAmount: number;
   paidAmount: number;
   outstandingAmount: number;

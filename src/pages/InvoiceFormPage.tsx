@@ -1,4 +1,4 @@
-import { useState, useEffect, useMemo, useCallback } from "react";
+import { useState, useEffect } from "react";
 import { useNavigate, useParams, useLocation } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -10,38 +10,103 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { siteApiService } from "@/services/spaces_sites/sitesapi";
-import { Invoice } from "@/interfaces/invoices_interfaces";
-import { invoiceApiService } from "@/services/financials/invoicesapi";
-import { useForm, Controller } from "react-hook-form";
-import { zodResolver } from "@hookform/resolvers/zod";
-import { invoiceSchema, InvoiceFormValues } from "@/schemas/invoice.schema";
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from "@/components/ui/table";
+import { Separator } from "@/components/ui/separator";
+import { Card, CardContent } from "@/components/ui/card";
+import { Textarea } from "@/components/ui/textarea";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
 import {
   Plus,
-  Trash2,
-  CreditCard,
-  Wallet,
-  Building2,
-  FileText,
-  Smartphone,
-  Calendar,
+  X,
   ArrowLeft,
+  FileText,
+  Wrench,
+  Home,
+  Car,
+  Paperclip,
 } from "lucide-react";
+import { siteApiService } from "@/services/spaces_sites/sitesapi";
+import { buildingApiService } from "@/services/spaces_sites/buildingsapi";
+import { spacesApiService } from "@/services/spaces_sites/spacesapi";
+import { tenantsApiService } from "@/services/leasing_tenants/tenantsapi";
+import { Invoice, PaymentInput } from "@/interfaces/invoices_interfaces";
+import { invoiceApiService } from "@/services/financials/invoicesapi";
+import { useForm, Controller, useFieldArray } from "react-hook-form";
+import { zodResolver } from "@hookform/resolvers/zod";
+import { invoiceSchema, InvoiceFormValues } from "@/schemas/invoice.schema";
 import { toast } from "@/components/ui/app-toast";
 import ContentContainer from "@/components/ContentContainer";
 import { useLoader } from "@/context/LoaderContext";
 import LoaderOverlay from "@/components/LoaderOverlay";
-import { withFallback } from "@/helpers/commonHelper";
+import { useSettings } from "@/context/SettingsContext";
+
+const emptyFormData: InvoiceFormValues = {
+  invoice_no: "",
+  site_id: "",
+  building_id: "",
+  space_id: "",
+  user_id: "",
+  customer_id: "",
+  customer_name: "",
+  customer_email: "",
+  customer_phone: "",
+  date: new Date().toISOString().split("T")[0],
+  due_date: "",
+  status: "draft",
+  currency: "INR",
+  code: "rent",
+  billable_item_type: "rent",
+  billable_item_id: "",
+  lines: [
+    {
+      item_id: "",
+      description: "",
+      amount: 0,
+      tax_pct: 5,
+    },
+  ],
+  totals: { sub: 0, tax: 5, grand: 0 },
+  payments: [],
+  notes: "",
+};
 
 export default function InvoiceFormPage() {
   const navigate = useNavigate();
   const location = useLocation();
   const params = useParams<{ id?: string }>();
   const id = params?.id;
+  const { withLoader } = useLoader();
   const [invoice, setInvoice] = useState<Invoice | undefined>();
   const [isSubmitting, setIsSubmitting] = useState(false);
-  const { withLoader } = useLoader();
+  const [formLoading, setFormLoading] = useState(false);
+  const [siteList, setSiteList] = useState<any[]>([]);
+  const [buildingList, setBuildingList] = useState<any[]>([]);
+  const [spaceList, setSpaceList] = useState<any[]>([]);
+  const [invoiceTypeList, setInvoiceTypeList] = useState<
+    { id: string; name: string }[]
+  >([]);
+  const [billableItemList, setBillableItemList] = useState<any[]>([]);
+  const [totalsAutoFilled, setTotalsAutoFilled] = useState(false);
+  const [totalsLoaded, setTotalsLoaded] = useState(false);
+  const [attachments, setAttachments] = useState<File[]>([]);
+  const [showSaveDialog, setShowSaveDialog] = useState(false);
+  const { systemCurrency } = useSettings();
 
   const pathname = location.pathname;
   let formMode: "create" | "edit" | "view" = "create";
@@ -64,169 +129,209 @@ export default function InvoiceFormPage() {
     formState: { errors, isSubmitting: formIsSubmitting },
   } = useForm<InvoiceFormValues>({
     resolver: zodResolver(invoiceSchema),
-    mode: "onChange",
-    defaultValues: {
-      site_id: "",
-      date: new Date().toISOString().split("T")[0],
-      due_date: "",
-      status: "draft",
-      currency: "INR",
-      billable_item_type: "",
-      billable_item_id: "",
-      totals: { sub: 0, tax: 0, grand: 0 },
-      payments: [{ method: "upi", ref_no: "", paid_at: "", amount: 0 }],
-    },
+    mode: "onSubmit",
+    defaultValues: emptyFormData,
   });
 
-  const [siteList, setSiteList] = useState<any[]>([]);
-  const [invoiceTypeList, setInvoiceTypeList] = useState<
-    { id: string; name: string }[]
-  >([]);
-  const [billableItemList, setBillableItemList] = useState<any[]>([]);
-  const [totalsAutoFilled, setTotalsAutoFilled] = useState(false);
-
-  const watchedSiteId = watch("site_id");
-  const watchedBillableType = watch("billable_item_type");
-  const watchedBillableItemId = watch("billable_item_id");
-
   useEffect(() => {
-
     loadSiteLookup();
     loadInvoiceTypeLookup();
-  }, []);
+    // Load preview invoice number for create mode
+    if (formMode === "create") {
+      loadInvoicePreviewNumber();
+    }
+  }, [formMode]);
+
+  // Hardcode invoice types
+  const hardcodedInvoiceTypes: { id: string; name: string }[] = [
+    { id: "rent", name: "Rent" },
+    { id: "workorder", name: "Work Order" },
+    { id: "owner_maintenance", name: "Owner Maintenance" },
+    { id: "parking_pass", name: "Parking Pass" },
+  ];
+
+  // Use hardcoded types if API types are not loaded yet
+  const displayInvoiceTypes =
+    invoiceTypeList.length > 0 ? invoiceTypeList : hardcodedInvoiceTypes;
+
+  // Don't auto-select - user must choose
 
   useEffect(() => {
-    if (!id || formMode === "create") return;
+    if (!id || formMode === "create") {
+      loadAll(undefined);
+      return;
+    }
     loadInvoice();
   }, [id, formMode]);
 
+  const watchedSiteId = watch("site_id");
+  const watchedBuildingId = watch("building_id");
+  const watchedSpaceId = watch("space_id");
+  const watchedBillableType = watch("code");
+  const watchedItems = watch("lines");
+
+  // Sync code to billable_item_type whenever code changes
   useEffect(() => {
-    loadAll();
-  }, [invoice?.id]);
+    if (watchedBillableType) {
+      setValue("code", watchedBillableType);
+    } else {
+      setValue("code", "rent");
+    }
+  }, [watchedBillableType, setValue]);
+
+  const { fields, append, remove } = useFieldArray({
+    control,
+    name: "lines",
+  });
+
+  useEffect(() => {
+    if (watchedSiteId) {
+      loadBuildingLookup();
+      loadSpaceLookup();
+    } else {
+      setBuildingList([]);
+      setSpaceList([]);
+    }
+  }, [watchedSiteId]);
+
+  useEffect(() => {
+    if (watchedBuildingId && watchedSiteId) {
+      loadSpaceLookup();
+    }
+  }, [watchedBuildingId, watchedSiteId]);
+
+  useEffect(() => {
+    if (watchedSpaceId && watchedBillableType) {
+      loadBillableItemLookup();
+    } else {
+      setBillableItemList([]);
+    }
+  }, [watchedSpaceId, watchedBillableType]);
+
+  // Calculate totals when items change
+  useEffect(() => {
+    if (watchedItems && watchedItems.length > 0) {
+      const subtotal = watchedItems.reduce((sum, item) => {
+        return sum + (item.amount || 0);
+      }, 0);
+      const totalTax = watchedItems.reduce((sum, item) => {
+        const itemAmount = item.amount || 0;
+        const itemTaxPercent = item.tax_pct || 5;
+        const itemTax = (itemAmount * itemTaxPercent) / 100;
+        return sum + itemTax;
+      }, 0);
+      const grandTotal = subtotal + totalTax;
+      setValue("totals.sub", subtotal, { shouldValidate: false });
+      setValue("totals.tax", totalTax, { shouldValidate: false });
+      setValue("totals.grand", grandTotal, { shouldValidate: false });
+    }
+  }, [watchedItems, setValue]);
+
+  useEffect(() => {
+    if (invoice && spaceList.length > 0) {
+      setValue("space_id", invoice?.space_id);
+    }
+  }, [spaceList]);
+
+  useEffect(() => {
+    if (!billableItemList?.length) return;
+
+    fields.forEach((_, index) => {
+      const currentValue = watch(`lines.${index}.item_id`);
+
+      const exists = billableItemList.some(
+        (item) => item.id === currentValue
+      );
+
+      if (exists) {
+        console.log("item id", currentValue)
+        setValue(`lines.${index}.item_id`, currentValue);
+      }
+    });
+  }, [billableItemList]);
+
+
 
   const loadInvoice = async () => {
     const response = await withLoader(async () => {
-      return await invoiceApiService.getInvoiceById(id);
+      return await invoiceApiService.getInvoiceById(id!);
     });
 
     if (response?.success && response.data) {
-      console.log("Loaded invoice:", response.data);
-      setInvoice(response.data);
+      const loadedInvoice = response.data;
+      // Prevent editing issued invoices — redirect to view mode
+      if (formMode === "edit" && loadedInvoice.status === "issued") {
+        toast.error("Issued invoices cannot be edited.");
+        navigate(`/invoices/${id}/view`);
+        return;
+      }
+      setInvoice(loadedInvoice);
+      loadAll(loadedInvoice);
     } else {
       toast.error("Failed to load invoice details");
       navigate("/invoices");
     }
   };
 
-  const loadAll = async () => {
-    setTotalsAutoFilled(false);
-
-    // Format payments to ensure they have all required fields
-    const invoicePayments = (invoice as any)?.payments;
-    const hasValidPayments =
-      invoicePayments &&
-      Array.isArray(invoicePayments) &&
-      invoicePayments.length > 0;
-
-    const formattedPayments = hasValidPayments
-      ? invoicePayments.map((payment: any) => ({
-        id: payment.id,
-        method: payment.method || "upi",
-        ref_no: payment.ref_no || "",
-        paid_at: payment.paid_at || "",
-        amount:
-          typeof payment.amount === "number"
-            ? payment.amount
-            : parseFloat(payment.amount) || 0,
-      }))
-      : [{ method: "upi" as any, ref_no: "", paid_at: "", amount: 0 }];
-
-    // Reset form based on mode - if create mode or no invoice, use empty data
-    reset(
-      invoice && formMode !== "create"
-        ? {
-          site_id: invoice.site_id || "",
-          date: invoice.date || new Date().toISOString().split("T")[0],
-          due_date: invoice.due_date || "",
-          status: invoice.status || "draft",
-          currency: invoice.currency || "INR",
-          billable_item_type: invoice.billable_item_type || "",
-          billable_item_id: invoice.billable_item_id || "",
-          totals: invoice.totals || { sub: 0, tax: 0, grand: 0 },
-          payments: formattedPayments,
-        }
-        : {
-          site_id: "",
-          date: new Date().toISOString().split("T")[0],
-          due_date: "",
-          status: "draft",
-          currency: "INR",
-          billable_item_type: "",
-          billable_item_id: "",
-          totals: { sub: 0, tax: 0, grand: 0 },
-          payments: [
-            { method: "upi" as any, ref_no: "", paid_at: "", amount: 0 },
-          ],
-        },
-    );
-
-    // Preload billable item lookup for existing invoice (edit/view mode)
-    if (
-      invoice &&
-      formMode !== "create" &&
-      invoice.site_id &&
-      invoice.billable_item_type
-    ) {
-
-      await loadBillableItemLookup(invoice.billable_item_type, invoice.site_id);
+  const loadSiteLookup = async () => {
+    try {
+      const lookup = await siteApiService.getSiteLookup();
+      if (lookup.success) {
+        setSiteList(lookup.data || []);
+      }
+    } catch (error) {
+      console.error("Failed to load sites:", error);
+      setSiteList([]);
     }
   };
 
-  useEffect(() => {
-    if (formMode === "create") {
-      if (watchedBillableType && watchedSiteId && siteList.length > 0) {
-        loadBillableItemLookup(watchedBillableType, watchedSiteId);
-      } else if (!watchedBillableType || !watchedSiteId) {
-        setBillableItemList([]);
-        setValue("billable_item_id", "");
-      }
-    }
-  }, [watchedBillableType, watchedSiteId, setValue, formMode, siteList.length]);
+  const loadBuildingLookup = async (siteId?: string) => {
+    const id = siteId || watchedSiteId;
+    if (!id) return;
 
-  // Load invoice totals when billable item is selected
-  useEffect(() => {
-    if (watchedBillableType && watchedBillableItemId && formMode === "create") {
-      loadInvoiceTotals(watchedBillableType, watchedBillableItemId);
-    } else {
-      if (
-        formMode === "create" &&
-        (!watchedBillableItemId || !watchedBillableType)
-      ) {
-        setValue("totals.sub", 0);
-        setValue("totals.tax", 0);
-        setValue("totals.grand", 0);
+    try {
+      const lookup = await buildingApiService.getBuildingLookup(id);
+      if (lookup.success) {
+        setBuildingList(lookup.data || []);
       }
-      setTotalsAutoFilled(false);
+    } catch (error) {
+      console.error("Failed to load buildings:", error);
+      setBuildingList([]);
     }
-  }, [watchedBillableType, watchedBillableItemId, formMode, setValue]);
+  };
 
-  const loadSiteLookup = async () => {
-    const lookup = await siteApiService.getSiteLookup();
-    if (lookup.success) setSiteList(lookup.data || []);
+  const loadSpaceLookup = async (siteId?: string, buildingId?: string) => {
+    const sId = siteId || watchedSiteId;
+    const bId = buildingId || watchedBuildingId;
+
+    if (!sId) return;
+
+    try {
+      const lookup = await spacesApiService.getSpaceLookup(sId, bId);
+      if (lookup.success) {
+        setSpaceList(lookup.data || []);
+      }
+    } catch (error) {
+      console.error("Failed to load spaces:", error);
+      // Do not clear spaceList here so that, in edit mode,
+      // the fallback space option from the invoice remains visible.
+    }
   };
 
   const loadInvoiceTypeLookup = async () => {
     try {
       const response = await invoiceApiService.getInvoiceTypeLookup();
+      console.log("Raw invoice type API response:", response);
       if (response?.success) {
         const items = response.data?.data || response.data || [];
+        console.log("Raw invoice type items:", items);
         if (Array.isArray(items) && items.length > 0) {
-          setInvoiceTypeList(
-            items.map((item: any) => ({
-              id: item.id,
-              name: item.name,
-            }))
-          );
+          const mappedItems = items.map((item: any) => ({
+            id: item.id,
+            name: item.name,
+          }));
+          console.log("Mapped invoice types:", mappedItems);
+          setInvoiceTypeList(mappedItems);
         } else {
           setInvoiceTypeList([]);
         }
@@ -239,305 +344,358 @@ export default function InvoiceFormPage() {
     }
   };
 
-  const loadBillableItemLookup = async (type?: string, siteId?: string) => {
-    if (!type || !siteId) {
+  const loadInvoicePreviewNumber = async () => {
+    try {
+      const response = await withLoader(async () => {
+        return await invoiceApiService.getInvoicePreviewNumber();
+      });
+      if (response?.success && response.data) {
+        const invoiceNo =
+          response.data.invoice_no ||
+          response.data.invoiceNo ||
+          response.data.invoice_number ||
+          response.data;
+        if (invoiceNo) {
+          setValue(
+            "invoice_no",
+            typeof invoiceNo === "string" ? invoiceNo : String(invoiceNo),
+          );
+        }
+      }
+    } catch (error) {
+      console.error("Failed to load preview invoice number:", error);
+    }
+  };
+
+  const loadBillableItemLookup = async () => {
+    if (!watchedSpaceId || !watchedBillableType) {
+      console.log("getting empty")
       setBillableItemList([]);
-      setValue("billable_item_id", "");
       return;
     }
-
     try {
-      const params = new URLSearchParams();
-      params.append("site_id", siteId);
-      // Use the type value directly as it comes from API (e.g., "lease charge", "work order", "owner maintenance")
-      params.append("billable_item_type", type);
+      // Use the new endpoint: /api/invoices/customer-pending-charges
+      // Need space_id and code (invoice type)
+      const response = await invoiceApiService.getCustomerPendingCharges(
+        watchedSpaceId,
+        watchedBillableType,
+        id,
+      );
 
-      const response = await invoiceApiService.getInvoiceEntityLookup(params);
-      if (response?.success) {
-        const items =
-          response.data?.items ||
-          response.data?.entities ||
-          response.data ||
-          [];
+      if (response?.success && response.data) {
+        // Response structure: { data: [{ customer_id, customer_name, charges: [{ type, id, period }] }] }
+        const dataArray = Array.isArray(response.data) ? response.data : [];
 
-        setBillableItemList(
-          items.map((item: any) => ({
-            id: item.id,
-            name: item.name || item.code || item.label || item.id,
-          })),
-        );
+        // Extract customer details from the first customer (if available)
+        if (dataArray.length > 0) {
+          const firstCustomer = dataArray[0];
+          if (firstCustomer.customer_id) {
+            setValue("customer_id", firstCustomer.customer_id);
+          }
+          if (firstCustomer.customer_name) {
+            setValue("customer_name", firstCustomer.customer_name);
+          }
+          if (firstCustomer.customer_email) {
+            setValue("customer_email", firstCustomer.customer_email);
+          }
+          if (firstCustomer.customer_phone) {
+            setValue("customer_phone", firstCustomer.customer_phone);
+          }
+        }
+
+        // Extract all charges from all customers and filter by type
+        const allCharges: any[] = [];
+        dataArray.forEach((customer: any) => {
+          if (customer.charges && Array.isArray(customer.charges)) {
+            customer.charges.forEach((charge: any) => {
+              // Filter charges that match the selected invoice type
+              const chargeType = charge.type?.toLowerCase() || "";
+              const selectedType = watchedBillableType?.toLowerCase() || "";
+
+              // Match types (handle variations like "rent", "workorder", "owner_maintenance", "parking_pass")
+              if (
+                chargeType === selectedType ||
+                chargeType.includes(selectedType) ||
+                selectedType.includes(chargeType)
+              ) {
+                allCharges.push({
+                  id: charge.id,
+                  name: charge.period || charge.name || charge.id,
+                  period: charge.period,
+                  type: charge.type,
+                  customer_id: customer.customer_id, // Store customer_id with each charge
+                });
+              }
+            });
+          }
+        });
+
+        setBillableItemList(allCharges);
       } else {
         setBillableItemList([]);
       }
-    } catch {
+    } catch (error) {
+      console.error("Failed to load billable items:", error);
       setBillableItemList([]);
     }
   };
 
-  const loadInvoiceTotals = async (
-    billableType: string,
-    billableItemId: string,
+  // Removed loadBillableItemTotals - no longer needed
+
+  // Load totals when period is selected for an item
+  const loadPeriodTotals = async (
+    periodId: string,
+    customerId: string,
+    index: number,
   ) => {
-    if (!billableType || !billableItemId) {
-      setTotalsAutoFilled(false);
-      return;
-    }
+    if (!periodId || !customerId || !watchedBillableType) return;
 
     try {
+      // Use period ID, customer_id, and billable_item_type to get the amount
       const params = new URLSearchParams();
-      // Use the billableType value directly as it comes from API
-      params.append("billable_item_type", billableType);
-      params.append("billable_item_id", billableItemId);
+      params.append("billable_item_id", periodId);
+      params.append("customer_id", customerId);
+      params.append("billable_item_type", watchedBillableType);
 
       const response = await invoiceApiService.getInvoiceTotals(params);
       if (response?.success && response.data) {
         const totals = response.data;
-        setValue("totals.sub", Number(totals.subtotal || 0));
-        setValue("totals.tax", Number(totals.tax || 0));
-        setValue("totals.grand", Number(totals.grand_total || 0));
-        setTotalsAutoFilled(true);
-      } else {
-        setTotalsAutoFilled(false);
+        const subtotal = Number(totals.subtotal || 0);
+
+        // Update the item amount
+        setValue(`lines.${index}.amount`, subtotal, { shouldValidate: false });
+
+        // Recalculate totals
+        const allItems = getValues("lines");
+        const newSubtotal = allItems.reduce((sum, item) => {
+          return sum + (item.amount || 0);
+        }, 0);
+        const totalTax = allItems.reduce((sum, item) => {
+          const itemAmount = item.amount || 0;
+          const itemTaxPercent = item.tax_pct || 5;
+          const itemTax = (itemAmount * itemTaxPercent) / 100;
+          return sum + itemTax;
+        }, 0);
+        const grandTotal = newSubtotal + totalTax;
+
+        setValue("totals.sub", newSubtotal, { shouldValidate: false });
+        setValue("totals.tax", totalTax, { shouldValidate: false });
+        setValue("totals.grand", grandTotal, { shouldValidate: false });
       }
-    } catch {
-      setTotalsAutoFilled(false);
+    } catch (error) {
+      console.error("Failed to load period totals:", error);
     }
   };
 
-  const handleSave = async (invoiceData: Partial<Invoice>) => {
-    setIsSubmitting(true);
-    let response;
-    if (formMode === "create") {
-      response = await invoiceApiService.addInvoice(invoiceData);
-    } else if (formMode === "edit" && invoice) {
-      const updatedInvoice = {
-        ...invoice,
-        ...invoiceData,
-        id: invoice.id || id, // Ensure ID is included
-        invoice_no: invoice.invoice_no, // Preserve invoice number
-        updated_at: new Date().toISOString(),
-      };
-      response = await invoiceApiService.updateInvoice(updatedInvoice);
+  const loadAll = async (invoice: Invoice) => {
+    setTotalsAutoFilled(false);
+    setTotalsLoaded(false);
+
+    reset(
+      invoice && formMode !== "create"
+        ? {
+          invoice_no: invoice.invoice_no || "",
+          site_id: invoice.site_id || "",
+          building_id: (invoice as any).building_id || "",
+          space_id: (invoice as any).space_id || "",
+          user_id: (invoice as any).customer_id || "",
+          customer_id: (invoice as any).customer_id || "",
+          customer_name: (invoice as any).customer_name || "",
+          customer_email: "",
+          customer_phone: "",
+          date: invoice.date || new Date().toISOString().split("T")[0],
+          due_date: invoice.due_date || "",
+          status: invoice.status || "draft",
+          currency: invoice.currency || "INR",
+          code: invoice.code || "rent",
+          billable_item_type: invoice.code || "rent",
+          billable_item_id: "",
+          lines:
+            invoice.lines && invoice.lines.length > 0
+              ? invoice.lines.map((line) => ({
+                item_id: line.item_id || "",
+                description: line.description || "",
+                amount: line.amount || 0,
+                tax: line.tax_pct || 5,
+              }))
+              : emptyFormData.lines,
+          totals: invoice.totals || { sub: 0, tax: 5, grand: 0 },
+          payments: [],
+        }
+        : emptyFormData,
+    );
+
+    if (invoice && (invoice as any).space_id) {
+      setSpaceList((prev) => {
+        if (prev && prev.length > 0) {
+          return prev;
+        }
+        return [
+          {
+            id: (invoice as any).space_id,
+            name:
+              (invoice as any).space_name ||
+              (invoice as any).space_code ||
+              (invoice as any).space_id,
+          },
+        ];
+      });
     }
 
-    if (response?.success) {
-      navigate("/invoices");
-      toast.success(
-        `Invoice has been ${formMode === "create" ? "created" : "updated"
-        } successfully.`,
-      );
-    } else if (response && !response.success) {
-      if (response?.message) {
-        toast.error(response.message);
-      } else {
-        toast.error("Failed to save invoice.");
+    if (invoice && formMode !== "create") {
+      if (invoice.site_id) {
+        await loadBuildingLookup(invoice.site_id);
+        await loadSpaceLookup(invoice.site_id, (invoice as any).building_id);
       }
-    }
-    setIsSubmitting(false);
-    return response;
-  };
 
-  const normalizeBillableTypeForSubmit = (typeId?: string) => {
-    if (!typeId) return "";
-
-    // Find the invoice type from the list
-    const invoiceType = invoiceTypeList.find((item) => item.id === typeId);
-    if (!invoiceType) return typeId;
-
-    // Map the name to backend-expected format
-    const typeName = invoiceType.name.toLowerCase();
-    if (typeName.includes("lease") || typeName.includes("lease charge")) {
-      return "lease charge";
-    } else if (typeName.includes("owner maintenance") || typeName.includes("owner_maintenance")) {
-      return "owner maintenance";
-    } else if (typeName.includes("work order") || typeName.includes("work_order")) {
-      return "work order";
+      // if ((invoice as any).space_id) {
+      //   await loadBillableItemLookup();
+      // }
     }
 
-    // Fallback: use the name as-is, converting underscores to spaces
-    return typeName.replace(/_/g, " ");
-  };
-
-  const onSubmitForm = async (data: InvoiceFormValues) => {
-    const payload: Partial<Invoice> = {
-      ...invoice,
-      ...data,
-      id: invoice?.id || id, // Ensure ID is included for updates
-      invoice_no: invoice?.invoice_no, // Preserve invoice number
-      billable_item_type: normalizeBillableTypeForSubmit(data.billable_item_type),
-      billable_item_id: data.billable_item_id,
-      totals: {
-        sub: data.totals?.sub ?? 0,
-        tax: data.totals?.tax ?? 0,
-        grand: data.totals?.grand ?? 0,
-      },
-      payments: data.payments as any,
-      updated_at: new Date().toISOString(),
-    };
-    await handleSave(payload);
+    setFormLoading(false);
   };
 
   const isReadOnly = formMode === "view";
+  const billable_items = billableItemList;
 
-  const isFieldDisabled = (fieldName: string) => {
-    if (formMode === "view") return true;
-    if (formMode === "edit") {
-      return fieldName !== "due_date" && fieldName !== "status";
-    }
+  const onSubmitForm = async (
+    data: InvoiceFormValues,
+    saveAsDraft: boolean = false,
+  ) => {
+    setIsSubmitting(true);
+    try {
+      const invoiceData: any = {
+        invoice_no: data.invoice_no,
+        site_id: data.site_id,
+        building_id: data.building_id,
+        space_id: data.space_id,
+        user_id: data.customer_id,
+        date: data.date,
+        due_date: data.due_date,
+        status: saveAsDraft ? "draft" : data.status || "issued",
+        currency: data.currency || "INR",
+        billable_item_type: data.code || "", // Pass code to billable_item_type
+        billable_item_id: "", // No longer needed - using period IDs directly
+        lines: data.lines?.map((item) => ({
+          item_id: item.item_id,
+          code: data.code,
+          description: item.description || "",
+          amount: item.amount || 0,
+          tax_pct: item.tax_pct || 5,
+        })),
+        totals: {
+          sub: data.totals?.sub ?? 0,
+          tax: data.totals?.tax ?? 5,
+          grand: data.totals?.grand ?? 0,
+        },
+        payments:
+          data.payments
+            ?.filter((p) => p.paid_at)
+            .map(
+              (p): PaymentInput => ({
+                method: p.method,
+                ref_no: p.ref_no,
+                amount: p.amount || 0,
+                paid_at: p.paid_at!,
+              }),
+            ) || [],
+        meta: {
+          notes: data.notes || "",
+        },
+      };
 
-    if (formMode === "create" && totalsAutoFilled) {
-      if (
-        fieldName === "totals.sub" ||
-        fieldName === "totals.tax" ||
-        fieldName === "totals.grand"
-      ) {
-        return true;
-      }
-    }
-    return false;
-  };
+      const formData = new FormData();
 
-  // Payment mode helpers: add, remove multiple payment modes
-  const paymentModes = watch("payments") || [];
-
-  // Filter out any duplicate payments
-  const uniquePaymentModes = useMemo(() => {
-    const seen = new Set<string>();
-    return paymentModes.filter((payment) => {
-      const key = `${payment.method}-${payment.ref_no}-${payment.paid_at}-${payment.amount}`;
-      if (seen.has(key)) {
-        return false;
-      }
-      seen.add(key);
-      return true;
-    });
-  }, [paymentModes]);
-
-  // Get payment method icon
-  const getPaymentMethodIcon = (method: string) => {
-    switch (method) {
-      case "card":
-        return <CreditCard className="h-4 w-4" />;
-      case "cash":
-        return <Wallet className="h-4 w-4" />;
-      case "bank":
-        return <Building2 className="h-4 w-4" />;
-      case "cheque":
-        return <FileText className="h-4 w-4" />;
-      case "upi":
-        return <Smartphone className="h-4 w-4" />;
-      default:
-        return <CreditCard className="h-4 w-4" />;
-    }
-  };
-
-  // Format currency
-  const formatCurrency = (amount: number | string | undefined) => {
-    const numAmount =
-      typeof amount === "string" ? parseFloat(amount) || 0 : amount || 0;
-    const currency = watch("currency") || "INR";
-    const symbol =
-      currency === "INR"
-        ? "₹"
-        : currency === "USD"
-          ? "$"
-          : currency === "EUR"
-            ? "€"
-            : currency;
-    return `${symbol} ${numAmount.toLocaleString("en-IN", {
-      minimumFractionDigits: 2,
-      maximumFractionDigits: 2,
-    })}`;
-  };
-
-  // Calculate payment summary
-  const invoiceTotal = watch("totals.grand") || 0;
-  const paidAmount = uniquePaymentModes.reduce((sum, payment) => {
-    const amount =
-      typeof payment.amount === "string"
-        ? parseFloat(payment.amount) || 0
-        : payment.amount || 0;
-    return sum + amount;
-  }, 0);
-  const outstanding = invoiceTotal - paidAmount;
-  const paymentStatus =
-    outstanding <= 0 ? "Paid" : paidAmount > 0 ? "Partially Paid" : "Unpaid";
-
-  const addPaymentMode = () => {
-    const currentPaymentModes =
-      paymentModes.length > 0 ? paymentModes : getValues("payments") || [];
-    const newPaymentMode = {
-      id: `temp-${Date.now()}-${Math.random()}`, // Add temporary unique ID
-      method: "upi" as any,
-      ref_no: "",
-      paid_at: "",
-      amount: 0,
-    };
-    setValue("payments", [...currentPaymentModes, newPaymentMode], {
-      shouldValidate: false,
-      shouldDirty: true,
-    });
-  };
-
-  const removePaymentMode = (index: number) => {
-    const currentPaymentModes = getValues("payments") || [];
-    const remaining = currentPaymentModes.filter((_, i) => i !== index);
-    // Ensure at least one entry remains
-    const ensured =
-      remaining.length === 0
-        ? [{ method: "upi" as any, ref_no: "", paid_at: "", amount: 0 }]
-        : remaining;
-    setValue("payments", ensured);
-  };
-
-  const updatePaymentMode = useCallback(
-    (
-      index: number,
-      field: "method" | "ref_no" | "paid_at" | "amount",
-      value: string,
-    ) => {
-      const currentPaymentModes = getValues("payments") || [];
-      const updated = [...currentPaymentModes];
-      updated[index] = { ...updated[index], [field]: value };
-      setValue("payments", updated, {
-        shouldValidate: false,
-        shouldTouch: false,
-        shouldDirty: true,
+      // ✅ append attachments
+      attachments.forEach((file) => {
+        formData.append("attachments", file);
       });
-    },
-    [getValues, setValue],
-  );
+
+      let response;
+      if (formMode === "create") {
+        formData.append("invoice", JSON.stringify(invoiceData));
+        response = await withLoader(async () => {
+          return await invoiceApiService.addInvoice(formData);
+        });
+      } else if (formMode === "edit" && invoice) {
+        const updatedInvoice = {
+          ...invoice,
+          ...invoiceData,
+          id: invoice.id || id,
+          invoice_no: invoice.invoice_no,
+          updated_at: new Date().toISOString(),
+        };
+
+        formData.append("invoice", JSON.stringify(updatedInvoice));
+
+        response = await withLoader(async () => {
+          return await invoiceApiService.updateInvoice(formData);
+        });
+      }
+
+      if (response?.success) {
+        toast.success(
+          `Invoice has been ${formMode === "create" ? "created" : "updated"
+          } successfully${saveAsDraft ? " as draft" : ""}.`,
+        );
+        if (!saveAsDraft) {
+          navigate("/invoices");
+        } else {
+          // If saving as draft, stay on the page
+          setShowSaveDialog(false);
+        }
+      } else if (response && !response.success) {
+        if (response?.message) {
+          toast.error(response.message);
+        }
+      }
+    } catch (error) {
+      console.error("Error saving invoice:", error);
+      toast.error("Failed to save invoice.");
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
+
+  const handleSaveClick = () => {
+    // Trigger validation first
+    handleSubmit((data) => {
+      setShowSaveDialog(true);
+    })();
+  };
+
+  const handleSaveAsDraft = () => {
+    handleSubmit((data) => {
+      onSubmitForm(data, true);
+    })();
+  };
+
+  const handleSaveAndContinue = () => {
+    handleSubmit((data) => {
+      onSubmitForm(data, false);
+    })();
+  };
+
+  const addItem = () => {
+    append({
+      item_id: "",
+      description: "",
+      amount: 0,
+      tax_pct: 5,
+    });
+  };
 
   const handleClose = () => {
-    reset({
-      site_id: "",
-      date: new Date().toISOString().split("T")[0],
-      due_date: "",
-      status: "draft",
-      currency: "INR",
-      billable_item_type: "",
-      billable_item_id: "",
-      totals: { sub: 0, tax: 0, grand: 0 },
-      payments: [{ method: "upi", ref_no: "", paid_at: "", amount: 0 }],
-    });
-    setBillableItemList([]);
     navigate("/invoices");
   };
-
-  const fallBillableItems = invoice?.billable_item_id
-    ? {
-      id: invoice.billable_item_id,
-      name: invoice.billable_item_name,
-    }
-    : null;
-
-  const billable_items = withFallback(billableItemList, fallBillableItems);
 
   return (
     <ContentContainer>
       <LoaderOverlay />
       <div className="space-y-6">
-        <div className="flex items-center justify-between gap-4">
+        {/* Page Header */}
+        <div className="flex items-center justify-between">
           <div className="flex items-center gap-4">
             <Button variant="ghost" size="icon" onClick={handleClose}>
               <ArrowLeft className="h-4 w-4" />
@@ -548,7 +706,7 @@ export default function InvoiceFormPage() {
                   ? "Create New Invoice"
                   : formMode === "edit"
                     ? "Edit Invoice"
-                    : "Invoice Details"}
+                    : "View Invoice"}
               </h1>
               <p className="text-muted-foreground">
                 {formMode === "create"
@@ -560,171 +718,154 @@ export default function InvoiceFormPage() {
             </div>
           </div>
           <div className="flex items-center gap-2">
-            {formMode !== "view" && (
+            <Button
+              type="button"
+              variant="outline"
+              onClick={handleClose}
+              disabled={isSubmitting || formIsSubmitting}
+            >
+              Cancel
+            </Button>
+            {!isReadOnly && (
               <Button
-                variant="outline"
-                onClick={handleClose}
-                disabled={isSubmitting || formIsSubmitting}
-              >
-                Cancel
-              </Button>
-            )}
-            {formMode !== "view" && (
-              <Button
-                type="submit"
-                form="invoice-form"
+                type="button"
+                onClick={() => {
+                  // Trigger form validation first
+                  handleSubmit((data) => {
+                    setShowSaveDialog(true);
+                  })();
+                }}
                 disabled={isSubmitting || formIsSubmitting}
               >
                 {isSubmitting || formIsSubmitting
-                  ? formMode === "create"
-                    ? "Creating..."
-                    : "Updating..."
-                  : formMode === "create"
-                    ? "Create Invoice"
-                    : "Update Invoice"}
+                  ? "Saving..."
+                  : "Save Invoice"}
               </Button>
             )}
           </div>
         </div>
 
-        <form
-          onSubmit={handleSubmit(onSubmitForm)}
-          className="space-y-4"
-          id="invoice-form"
-        >
-          <div className="space-y-4">
-            {/* Invoice Type + Billable Item */}
-            <div className="grid grid-cols-3 gap-4">
-              {/* Site */}
-              <div className="space-y-2">
-                <Label htmlFor="site_id">Site *</Label>
-                <Controller
-                  name="site_id"
-                  control={control}
-                  render={({ field }) => (
-                    <Select
-                      value={field.value || ""}
-                      onValueChange={(value) => {
-                        field.onChange(value);
-                      }}
-                      disabled={isFieldDisabled("site_id")}
-                    >
-                      <SelectTrigger
-                        className={errors.site_id ? "border-red-500" : ""}
-                      >
-                        <SelectValue placeholder="Select site" />
-                      </SelectTrigger>
-                      <SelectContent>
-                        {siteList.map((site) => (
-                          <SelectItem key={site.id} value={site.id}>
-                            {site.name}
-                          </SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
-                  )}
-                />
-                {errors.site_id && (
-                  <p className="text-sm text-red-500">
-                    {errors.site_id.message}
-                  </p>
-                )}
-              </div>
-              <div className="space-y-2">
-                <Label htmlFor="billable_item_type">Invoice Type *</Label>
-                <Controller
-                  name="billable_item_type"
-                  control={control}
-                  render={({ field }) => (
-                    <Select
-                      value={field.value || ""}
-                      onValueChange={(value) => {
-                        field.onChange(value);
-                        setValue("billable_item_id", "");
-                      }}
-                      disabled={isFieldDisabled("billable_item_type")}
-                    >
-                      <SelectTrigger
-                        className={
-                          errors.billable_item_type ? "border-red-500" : ""
-                        }
-                      >
-                        <SelectValue placeholder="Select type" />
-                      </SelectTrigger>
-                      <SelectContent>
-                        {invoiceTypeList.map((item) => (
-                          <SelectItem key={item.id} value={item.id}>
-                            {item.name}
-                          </SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
-                  )}
-                />
-                {errors.billable_item_type && (
-                  <p className="text-sm text-red-500">
-                    {errors.billable_item_type.message}
-                  </p>
-                )}
-              </div>
+        {formLoading ? (
+          <p className="text-center py-8">Loading...</p>
+        ) : (
+          <form className="space-y-6" id="invoice-form">
+            {/* Invoice Type Selection */}
+            {formMode === "create" && (
+              <Controller
+                name="code"
+                control={control}
+                render={({ field }) => (
+                  <div className="space-y-2">
+                    <Label className="text-sm font-semibold">
+                      Invoice Type *
+                    </Label>
+                    <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+                      {displayInvoiceTypes.map((type) => {
+                        const isSelected = field.value === type.id;
+                        const getIcon = () => {
+                          const name = type.name.toLowerCase();
+                          const id = type.id?.toLowerCase() || "";
 
-              <div className="space-y-2">
-                <Label htmlFor="billable_item_id">
-                  {(() => {
-                    const selectedType = invoiceTypeList.find(
-                      (type) => type.id === watchedBillableType
-                    );
-                    return selectedType
-                      ? `${selectedType.name} *`
-                      : "Billable Item *";
-                  })()}
-                </Label>
-                <Controller
-                  name="billable_item_id"
-                  control={control}
-                  render={({ field }) => (
-                    <Select
-                      value={field.value || ""}
-                      onValueChange={field.onChange}
-                      disabled={
-                        isFieldDisabled("billable_item_id") ||
-                        !watchedBillableType
-                      }
-                    >
-                      <SelectTrigger
-                        className={
-                          errors.billable_item_id ? "border-red-500" : ""
-                        }
-                      >
-                        <SelectValue placeholder="Select item" />
-                      </SelectTrigger>
-                      <SelectContent>
-                        {billable_items.map((item: any) => (
-                          <SelectItem key={item.id} value={item.id}>
-                            {item.name}
-                          </SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
-                  )}
-                />
-                {errors.billable_item_id && (
-                  <p className="text-sm text-red-500">
-                    {errors.billable_item_id.message}
-                  </p>
-                )}
-              </div>
-            </div>
+                          if (
+                            name.includes("lease") ||
+                            name.includes("rent") ||
+                            id.includes("rent")
+                          ) {
+                            return <FileText className="h-4 w-4" />;
+                          } else if (
+                            name.includes("work") ||
+                            name.includes("order") ||
+                            id.includes("workorder") ||
+                            id.includes("work_order")
+                          ) {
+                            return <Wrench className="h-4 w-4" />;
+                          } else if (
+                            name.includes("parking") ||
+                            name.includes("pass") ||
+                            id.includes("parking") ||
+                            id.includes("parking_pass")
+                          ) {
+                            return <Car className="h-4 w-4" />;
+                          } else {
+                            return <Home className="h-4 w-4" />;
+                          }
+                        };
 
-            {/* Invoice Date - Due Date - Currency */}
+                        return (
+                          <Card
+                            key={type.id}
+                            className={`cursor-pointer transition-all duration-200 ${isSelected
+                              ? "border-primary bg-primary/10 ring-1 ring-primary"
+                              : "border-border bg-muted/50 hover:bg-muted hover:border-primary/50"
+                              }`}
+                            onClick={() => {
+                              if (!isReadOnly) {
+                                if (isSelected) {
+                                  field.onChange("");
+                                  setValue("billable_item_type", "");
+                                  setBillableItemList([]);
+                                } else {
+                                  field.onChange(type.id);
+                                  setValue("billable_item_type", type.id);
+                                }
+                              }
+                            }}
+                          >
+                            <CardContent className="p-3 flex items-center gap-3">
+                              <div
+                                className={`p-2 rounded-md transition-colors flex-shrink-0 ${isSelected
+                                  ? "bg-primary text-primary-foreground"
+                                  : "bg-background"
+                                  }`}
+                              >
+                                {getIcon()}
+                              </div>
+                              <div className="flex-1 min-w-0">
+                                <p
+                                  className={`text-sm font-medium transition-colors ${isSelected ? "text-primary" : ""
+                                    }`}
+                                >
+                                  {type.name}
+                                </p>
+                              </div>
+                              {isSelected && (
+                                <div className="w-1.5 h-1.5 rounded-full bg-primary"></div>
+                              )}
+                            </CardContent>
+                          </Card>
+                        );
+                      })}
+                    </div>
+                    {errors.code && (
+                      <p className="text-sm text-red-500">
+                        {errors.code.message}
+                      </p>
+                    )}
+                  </div>
+                )}
+              />
+            )}
+
+            <Separator />
+
+            {/* Header Section */}
             <div className="grid grid-cols-3 gap-4">
+              <div className="space-y-2">
+                <Label htmlFor="invoice_no">Invoice No</Label>
+                <Input
+                  id="invoice_no"
+                  {...register("invoice_no")}
+                  disabled={true}
+                  placeholder="Auto-generated"
+                />
+              </div>
               <div className="space-y-2">
                 <Label htmlFor="date">Invoice Date *</Label>
                 <Input
                   id="date"
                   type="date"
                   {...register("date")}
-                  disabled={isFieldDisabled("date")}
+                  disabled={isReadOnly}
                   className={errors.date ? "border-red-500" : ""}
                 />
                 {errors.date && (
@@ -737,7 +878,7 @@ export default function InvoiceFormPage() {
                   id="due_date"
                   type="date"
                   {...register("due_date")}
-                  disabled={isFieldDisabled("due_date")}
+                  disabled={isReadOnly}
                   className={errors.due_date ? "border-red-500" : ""}
                   min={watch("date") || undefined}
                 />
@@ -747,277 +888,519 @@ export default function InvoiceFormPage() {
                   </p>
                 )}
               </div>
-              <div className="space-y-2">
-                <Label htmlFor="currency">Currency</Label>
-                <Input
-                  id="currency"
-                  {...register("currency")}
-                  disabled={isFieldDisabled("currency")}
-                />
+            </div>
+
+            <Separator />
+
+            {/* Property Details Section */}
+            <div className="space-y-4">
+              <h3 className="text-lg font-semibold">Property Details</h3>
+              <div className="grid grid-cols-3 gap-4">
+                <div className="space-y-2">
+                  <Label htmlFor="site_id">Site *</Label>
+                  <Controller
+                    name="site_id"
+                    control={control}
+                    render={({ field }) => (
+                      <Select
+                        value={field.value || ""}
+                        onValueChange={(value) => {
+                          field.onChange(value);
+                          setValue("building_id", "");
+                          setValue("space_id", "");
+                          setValue("customer_id", "");
+                          setValue("customer_name", "");
+                          setValue("customer_email", "");
+                          setValue("customer_phone", "");
+                        }}
+                        disabled={isReadOnly}
+                      >
+                        <SelectTrigger
+                          className={errors.site_id ? "border-red-500" : ""}
+                        >
+                          <SelectValue placeholder="Select site" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          {siteList.map((site) => (
+                            <SelectItem key={site.id} value={site.id}>
+                              {site.name}
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                    )}
+                  />
+                  {errors.site_id && (
+                    <p className="text-sm text-red-500">
+                      {errors.site_id.message}
+                    </p>
+                  )}
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="building_id">Building</Label>
+                  <Controller
+                    name="building_id"
+                    control={control}
+                    render={({ field }) => (
+                      <Select
+                        value={field.value || ""}
+                        onValueChange={(value) => {
+                          field.onChange(value);
+                          setValue("space_id", "");
+                          setValue("customer_id", "");
+                          setValue("customer_name", "");
+                          setValue("customer_email", "");
+                          setValue("customer_phone", "");
+                        }}
+                        disabled={isReadOnly || !watchedSiteId}
+                      >
+                        <SelectTrigger>
+                          <SelectValue
+                            placeholder={
+                              !watchedSiteId
+                                ? "Select site first"
+                                : "Select building"
+                            }
+                          />
+                        </SelectTrigger>
+                        <SelectContent>
+                          {buildingList.map((building) => (
+                            <SelectItem key={building.id} value={building.id}>
+                              {building.name}
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                    )}
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="space_id">Space *</Label>
+                  <Controller
+                    name="space_id"
+                    control={control}
+                    render={({ field }) => (
+                      <Select
+                        value={field.value || ""}
+                        onValueChange={field.onChange}
+                        disabled={isReadOnly || !watchedSiteId}
+                      >
+                        <SelectTrigger
+                          className={errors.space_id ? "border-red-500" : ""}
+                        >
+                          <SelectValue
+                            placeholder={
+                              !watchedSiteId
+                                ? "Select site first"
+                                : "Select space"
+                            }
+                          />
+                        </SelectTrigger>
+                        <SelectContent>
+                          {spaceList.map((space) => (
+                            <SelectItem key={space.id} value={space.id}>
+                              {space.name || space.code}
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                    )}
+                  />
+                  {errors.space_id && (
+                    <p className="text-sm text-red-500">
+                      {errors.space_id.message}
+                    </p>
+                  )}
+                </div>
               </div>
             </div>
 
-            {watchedBillableType && watchedBillableItemId && (
-              <div className="grid grid-cols-3 gap-4">
-                <div className="space-y-2">
-                  <Label htmlFor="sub">Subtotal</Label>
-                  <Input
-                    id="sub"
-                    type="number"
-                    {...register("totals.sub", {
-                      setValueAs: (v) => (v === "" ? 0 : Number(v)),
-                    })}
-                    disabled={isFieldDisabled("totals.sub")}
-                  />
-                </div>
-                <div className="space-y-2">
-                  <Label htmlFor="tax">Tax</Label>
-                  <Input
-                    id="tax"
-                    type="number"
-                    {...register("totals.tax", {
-                      setValueAs: (v) => (v === "" ? 0 : Number(v)),
-                    })}
-                    disabled={isFieldDisabled("totals.tax")}
-                  />
-                </div>
-                <div className="space-y-2">
-                  <Label htmlFor="grand">Grand Total</Label>
-                  <Input
-                    id="grand"
-                    type="number"
-                    {...register("totals.grand", {
-                      setValueAs: (v) => (v === "" ? 0 : Number(v)),
-                    })}
-                    disabled={isFieldDisabled("totals.grand")}
-                  />
+            <Separator />
+
+            {/* Customer Details Section */}
+            {watchedSpaceId && (
+              <div className="space-y-4">
+                <h3 className="text-lg font-semibold">Customer Details</h3>
+                <div className="grid grid-cols-3 gap-4">
+                  <div className="space-y-2">
+                    <Label className="text-muted-foreground">
+                      Customer Name
+                    </Label>
+                    <div className="p-3 border rounded-md bg-muted/50">
+                      <p className="font-medium">
+                        {watch("customer_name") || "-"}
+                        <input type="hidden" {...register("customer_id")} />
+                      </p>
+                    </div>
+                  </div>
+                  <div className="space-y-2">
+                    <Label className="text-muted-foreground">Email</Label>
+                    <div className="p-3 border rounded-md bg-muted/50">
+                      <p className="font-medium">
+                        {watch("customer_email") || "-"}
+                      </p>
+                    </div>
+                  </div>
+                  <div className="space-y-2">
+                    <Label className="text-muted-foreground">Phone</Label>
+                    <div className="p-3 border rounded-md bg-muted/50">
+                      <p className="font-medium">
+                        {watch("customer_phone") || "-"}
+                      </p>
+                    </div>
+                  </div>
                 </div>
               </div>
             )}
 
-            {/* Payment Details Section */}
+            <Separator />
+
+            {/* Invoice Items Section */}
             <div className="space-y-4">
               <div className="flex items-center justify-between">
-                <h3 className="text-lg font-semibold">Payment Details</h3>
+                <h3 className="text-lg font-semibold">Invoice Items</h3>
                 {!isReadOnly && (
                   <Button
                     type="button"
-                    variant="default"
+                    variant="outline"
                     size="sm"
-                    onClick={addPaymentMode}
+                    onClick={addItem}
+                    className="gap-2"
                   >
-                    <Plus className="mr-2 h-4 w-4" /> Add Payment
+                    <Plus className="h-4 w-4" />
+                    Add Item
                   </Button>
                 )}
               </div>
-
-              {/* Payment Cards */}
-              <div className="space-y-4">
-                {paymentModes.map((paymentMode, index) => {
-                  const stableKey =
-                    (paymentMode as any).id || `payment-${index}`;
-                  return (
-                    <Card key={stableKey} className="relative">
-                      <CardHeader className="pb-3">
-                        <div className="flex items-center justify-between">
-                          <CardTitle className="text-base">
-                            Payment #{index + 1}
-                          </CardTitle>
-                          {!isReadOnly && (
-                            <Button
-                              type="button"
-                              variant="ghost"
-                              size="sm"
-                              onClick={() => removePaymentMode(index)}
-                              disabled={paymentModes.length === 1}
-                              className="text-destructive hover:text-destructive"
-                            >
-                              <Trash2 className="h-4 w-4 mr-2" />
-                              Remove
-                            </Button>
-                          )}
-                        </div>
-                      </CardHeader>
-                      <CardContent>
-                        <div className="grid grid-cols-4 gap-4">
-                          {/* Mode */}
-                          <div className="space-y-2">
-                            <Label>Mode</Label>
-                            <Controller
-                              name={`payments.${index}.method` as any}
-                              control={control}
-                              render={({ field }) => (
-                                <Select
-                                  value={field.value || ""}
-                                  onValueChange={(value) => {
-                                    updatePaymentMode(index, "method", value);
-                                  }}
-                                  disabled={isReadOnly}
+              <div className="border rounded-md">
+                <Table>
+                  <TableHeader>
+                    <TableRow>
+                      <TableHead className="w-64">
+                        {watchedBillableType &&
+                          watchedBillableType.toLowerCase().includes("work")
+                          ? "Work Order No"
+                          : "Period"}
+                      </TableHead>
+                      <TableHead className="min-w-[300px]">
+                        Description
+                      </TableHead>
+                      <TableHead className="w-24">Tax %</TableHead>
+                      <TableHead className="w-32">Amount</TableHead>
+                      {!isReadOnly && <TableHead className="w-16"></TableHead>}
+                    </TableRow>
+                  </TableHeader>
+                  <TableBody>
+                    {fields.map((field, index) => (
+                      <TableRow key={field.id}>
+                        <TableCell>
+                          <Controller
+                            name={`lines.${index}.item_id`}
+                            control={control}
+                            render={({ field: itemField }) => (
+                              <Select
+                                value={itemField.value || ""}
+                                onValueChange={async (value) => {
+                                  itemField.onChange(value);
+                                  // Find the period ID from the selected value
+                                  const selectedPeriod = billableItemList.find(
+                                    (item) =>
+                                      item.name === value || item.id === value,
+                                  );
+                                  if (selectedPeriod) {
+                                    const customerId =
+                                      watch("customer_id") ||
+                                      selectedPeriod.customer_id ||
+                                      "";
+                                    await loadPeriodTotals(
+                                      selectedPeriod.id,
+                                      customerId,
+                                      index,
+                                    );
+                                  }
+                                }}
+                                disabled={
+                                  isReadOnly ||
+                                  !watchedSpaceId ||
+                                  !watchedBillableType
+                                }
+                              >
+                                <SelectTrigger
+                                  className={`w-64 ${errors.lines?.[index]?.item_id
+                                    ? "border-red-500"
+                                    : ""
+                                    }`}
                                 >
-                                  <SelectTrigger>
-                                    <div className="flex items-center gap-2">
-                                      {field.value &&
-                                        getPaymentMethodIcon(field.value)}
-                                      <SelectValue placeholder="Select payment type" />
-                                    </div>
-                                  </SelectTrigger>
-                                  <SelectContent>
-                                    <SelectItem value="cash">Cash</SelectItem>
-                                    <SelectItem value="card">Card</SelectItem>
-                                    <SelectItem value="bank">
-                                      Bank Transfer
-                                    </SelectItem>
-                                    <SelectItem value="cheque">
-                                      Cheque
-                                    </SelectItem>
-                                    <SelectItem value="upi">UPI</SelectItem>
-                                    <SelectItem value="other">Other</SelectItem>
-                                  </SelectContent>
-                                </Select>
-                              )}
-                            />
-                          </div>
+                                  <SelectValue
+                                    placeholder={
+                                      !watchedSpaceId
+                                        ? "Select space first"
+                                        : !watchedBillableType
+                                          ? "Select invoice type first"
+                                          : billableItemList.length === 0
+                                            ? "No periods available"
+                                            : "Select period"
+                                    }
+                                  />
+                                </SelectTrigger>
+                                <SelectContent>
+                                  {billableItemList.map((item: any) => {
+                                    // Check if this period is already selected in another row
+                                    const isSelectedInOtherRow = fields.some(
+                                      (field, otherIndex) =>
+                                        otherIndex !== index &&
+                                        watch(`lines.${otherIndex}.item_id`) ===
+                                        (item.name || item.id),
+                                    );
 
-                          {/* Reference No. */}
-                          <div className="space-y-2">
-                            <Label>Reference No.</Label>
-                            <Input
-                              type="text"
-                              placeholder="Enter Ref No."
-                              value={paymentMode.ref_no || ""}
-                              onChange={(e) => {
-                                updatePaymentMode(
-                                  index,
-                                  "ref_no",
-                                  e.target.value,
-                                );
-                              }}
-                              disabled={isReadOnly}
-                            />
-                          </div>
-
-                          {/* Date */}
-                          <div className="space-y-2">
-                            <Label>Date</Label>
-                            <div className="relative">
-                              <Calendar className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground pointer-events-none" />
-                              <Input
-                                type="date"
-                                className="pl-10"
-                                value={paymentMode.paid_at || ""}
-                                disabled={isReadOnly}
-                                onChange={(e) => {
-                                  updatePaymentMode(
-                                    index,
-                                    "paid_at",
-                                    e.target.value,
-                                  );
-                                }}
-                              />
-                            </div>
-                          </div>
-
-                          {/* Amount */}
-                          <div className="space-y-2">
-                            <Label>Amount</Label>
-                            <div className="relative">
-                              <span className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground pointer-events-none">
-                                {watch("currency") === "INR"
-                                  ? "₹"
-                                  : watch("currency") === "USD"
-                                    ? "$"
-                                    : watch("currency") === "EUR"
-                                      ? "€"
-                                      : watch("currency") || "₹"}
-                              </span>
-                              <Input
-                                type="number"
-                                placeholder="0.00"
-                                className="pl-8"
-                                value={paymentMode.amount || ""}
-                                onChange={(e) => {
-                                  updatePaymentMode(
-                                    index,
-                                    "amount",
-                                    e.target.value,
-                                  );
-                                }}
-                                disabled={isReadOnly}
-                              />
-                            </div>
-                          </div>
-                        </div>
-                      </CardContent>
-                    </Card>
-                  );
-                })}
+                                    return (
+                                      <SelectItem
+                                        key={item.id}
+                                        value={item.id}
+                                        disabled={isSelectedInOtherRow}
+                                      >
+                                        {item.name}
+                                        {isSelectedInOtherRow &&
+                                          " (Already selected)"}
+                                      </SelectItem>
+                                    );
+                                  })}
+                                </SelectContent>
+                              </Select>
+                            )}
+                          />
+                          {errors.lines?.[index]?.item_id && (
+                            <p className="text-xs text-red-500 mt-1">
+                              {errors.lines[index]?.item_id?.message}
+                            </p>
+                          )}
+                        </TableCell>
+                        <TableCell>
+                          <Input
+                            {...register(`lines.${index}.description`)}
+                            disabled={isReadOnly}
+                            placeholder="Enter description"
+                            className="w-full min-w-[300px]"
+                          />
+                        </TableCell>
+                        <TableCell>
+                          <Input
+                            type="number"
+                            step="0.01"
+                            {...register(`lines.${index}.tax_pct`, {
+                              setValueAs: (v) => (v === "" ? 5 : Number(v)),
+                            })}
+                            disabled={isReadOnly}
+                            placeholder="5"
+                            defaultValue={5}
+                            className={
+                              errors.lines?.[index]?.tax_pct
+                                ? "border-red-500"
+                                : ""
+                            }
+                          />
+                          {errors.lines?.[index]?.tax_pct && (
+                            <p className="text-xs text-red-500 mt-1">
+                              {errors.lines[index]?.tax_pct?.message}
+                            </p>
+                          )}
+                        </TableCell>
+                        <TableCell>
+                          <Input
+                            type="number"
+                            step="0.01"
+                            {...register(`lines.${index}.amount`, {
+                              setValueAs: (v) => (v === "" ? 0 : Number(v)),
+                            })}
+                            disabled={isReadOnly}
+                            placeholder="0.00"
+                            className={
+                              errors.lines?.[index]?.amount
+                                ? "border-red-500"
+                                : ""
+                            }
+                          />
+                          {errors.lines?.[index]?.amount && (
+                            <p className="text-xs text-red-500 mt-1">
+                              {errors.lines[index]?.amount?.message}
+                            </p>
+                          )}
+                        </TableCell>
+                        {!isReadOnly && (
+                          <TableCell>
+                            {fields.length > 1 && (
+                              <Button
+                                type="button"
+                                variant="ghost"
+                                size="sm"
+                                onClick={() => remove(index)}
+                                className="text-destructive hover:text-destructive"
+                              >
+                                <X className="h-4 w-4" />
+                              </Button>
+                            )}
+                          </TableCell>
+                        )}
+                      </TableRow>
+                    ))}
+                  </TableBody>
+                </Table>
               </div>
-
-              {/* Payment Summary */}
-              {watchedBillableType &&
-                watchedBillableItemId &&
-                invoiceTotal > 0 && (
-                  <Card className="bg-muted/30">
-                    <CardContent className="pt-6">
-                      <div className="space-y-4">
-                        <div className="grid grid-cols-2 gap-4">
-                          <div>
-                            <Label className="text-muted-foreground">
-                              Invoice Total
-                            </Label>
-                            <p className="text-lg font-semibold">
-                              {formatCurrency(invoiceTotal)}
-                            </p>
-                          </div>
-                          <div>
-                            <Label className="text-muted-foreground">
-                              Paid Amount
-                            </Label>
-                            <p className="text-lg font-semibold">
-                              {formatCurrency(paidAmount)}
-                            </p>
-                          </div>
-                        </div>
-                        <div className="grid grid-cols-2 gap-4">
-                          <div>
-                            <Label className="text-muted-foreground">
-                              Outstanding
-                            </Label>
-                            <p
-                              className={`text-lg font-semibold ${outstanding > 0
-                                  ? "text-orange-600"
-                                  : "text-green-600"
-                                }`}
-                            >
-                              {formatCurrency(outstanding)}
-                            </p>
-                          </div>
-                          <div className="flex items-end">
-                            <div className="flex items-center gap-2">
-                              <div
-                                className={`h-2 w-2 rounded-full ${paymentStatus === "Paid"
-                                    ? "bg-green-500"
-                                    : paymentStatus === "Partially Paid"
-                                      ? "bg-orange-500"
-                                      : "bg-gray-500"
-                                  }`}
-                              />
-                              <Label className="text-muted-foreground">
-                                Status:
-                              </Label>
-                              <span className="font-semibold">
-                                {paymentStatus}
-                              </span>
-                            </div>
-                          </div>
-                        </div>
-                      </div>
-                    </CardContent>
-                  </Card>
-                )}
+              {errors.lines && (
+                <p className="text-sm text-red-500">{errors.lines.message}</p>
+              )}
             </div>
-          </div>
-        </form>
+
+            <Separator />
+
+            {/* Totals Section */}
+            <div className="space-y-2">
+              <div className="flex justify-between items-center">
+                <span className="text-sm">Subtotal:</span>
+                <span className="text-sm">
+                  {systemCurrency.format(watch("totals.sub") || 0)}
+                </span>
+              </div>
+              <div className="flex justify-between items-center">
+                <span className="text-sm">Tax:</span>
+                <span className="text-sm">
+                  {systemCurrency.format(watch("totals.tax") || 0)}
+                </span>
+              </div>
+              <div className="flex justify-between items-center pt-2 border-t">
+                <span className="text-lg font-bold">Grand Total:</span>
+                <span className="text-lg font-bold">
+                  {systemCurrency.format(watch("totals.grand") || 0)}
+                </span>
+              </div>
+            </div>
+
+            <Separator />
+
+            {/* Notes Section */}
+            <div className="space-y-2">
+              <Label htmlFor="notes" className="text-base font-semibold">
+                Notes
+              </Label>
+              <Textarea
+                id="notes"
+                {...register("notes")}
+                disabled={isReadOnly}
+                placeholder="Add any additional notes or comments..."
+                className="min-h-[100px]"
+              />
+            </div>
+
+            <Separator />
+
+            {/* Attachments Section */}
+            <div className="space-y-2">
+              <Label className="text-base font-semibold">Attachments</Label>
+              <div className="border-2 border-dashed rounded-lg p-6">
+                <div className="flex flex-col items-center justify-center gap-4">
+                  <Paperclip className="h-8 w-8 text-muted-foreground" />
+                  <div className="text-center">
+                    <p className="text-sm font-medium">
+                      {attachments.length > 0
+                        ? `${attachments.length} file(s) attached`
+                        : "No attachments"}
+                    </p>
+                    {attachments.length > 0 && (
+                      <div className="mt-2 space-y-1">
+                        {attachments.map((file, index) => (
+                          <div
+                            key={index}
+                            className="flex items-center justify-between text-sm bg-muted p-2 rounded"
+                          >
+                            <span className="truncate max-w-[300px]">
+                              {file.name}
+                            </span>
+                            {!isReadOnly && (
+                              <Button
+                                type="button"
+                                variant="ghost"
+                                size="sm"
+                                onClick={() => {
+                                  setAttachments(
+                                    attachments.filter((_, i) => i !== index),
+                                  );
+                                }}
+                                className="h-6 w-6 p-0 text-destructive hover:text-destructive"
+                              >
+                                <X className="h-3 w-3" />
+                              </Button>
+                            )}
+                          </div>
+                        ))}
+                      </div>
+                    )}
+                  </div>
+                  {!isReadOnly && (
+                    <div>
+                      <input
+                        type="file"
+                        id="file-upload"
+                        multiple
+                        className="hidden"
+                        onChange={(e) => {
+                          const files = Array.from(e.target.files || []);
+                          setAttachments([...attachments, ...files]);
+                          // Reset input
+                          e.target.value = "";
+                        }}
+                      />
+                      <Button
+                        type="button"
+                        variant="outline"
+                        onClick={() => {
+                          document.getElementById("file-upload")?.click();
+                        }}
+                        className="gap-2"
+                      >
+                        <Plus className="h-4 w-4" />
+                        Add Attachment
+                      </Button>
+                    </div>
+                  )}
+                </div>
+              </div>
+            </div>
+          </form>
+        )}
+
+        {/* Save Invoice Dialog */}
+        <AlertDialog open={showSaveDialog} onOpenChange={setShowSaveDialog}>
+          <AlertDialogContent>
+            <AlertDialogHeader>
+              <AlertDialogTitle>Finalize Invoice</AlertDialogTitle>
+              <AlertDialogDescription>
+                Choose how you want to save this invoice.
+                Draft invoices can be edited later. Issued invoices are finalized and ready to send.
+              </AlertDialogDescription>
+            </AlertDialogHeader>
+            <AlertDialogFooter className="flex-col sm:flex-row gap-2">
+              <AlertDialogCancel onClick={() => setShowSaveDialog(false)}>
+                Cancel
+              </AlertDialogCancel>
+              <AlertDialogAction
+                onClick={handleSaveAsDraft}
+                disabled={isSubmitting || formIsSubmitting}
+              >
+                {isSubmitting || formIsSubmitting
+                  ? "Saving..."
+                  : "Save as Draft"}
+              </AlertDialogAction>
+              <AlertDialogAction
+                onClick={handleSaveAndContinue}
+                disabled={isSubmitting || formIsSubmitting}
+              >
+                {isSubmitting || formIsSubmitting
+                  ? "Sending..."
+                  : "Issue Invoice"}
+              </AlertDialogAction>
+            </AlertDialogFooter>
+          </AlertDialogContent>
+        </AlertDialog>
       </div>
     </ContentContainer>
   );

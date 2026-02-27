@@ -62,6 +62,7 @@ import LoaderOverlay from "@/components/LoaderOverlay";
 import ContentContainer from "@/components/ContentContainer";
 import { PageHeader } from "@/components/PageHeader";
 import { TenantForm } from "@/components/TenantForm";
+import { useSettings } from "@/context/SettingsContext";
 
 const Tenants = () => {
   const [searchTerm, setSearchTerm] = useState("");
@@ -81,7 +82,7 @@ const Tenants = () => {
   const [typeList, setTypeList] = useState([]);
   const [siteList, setSiteList] = useState([]);
   const [formMode, setFormMode] = useState<"create" | "edit" | "view">(
-    "create"
+    "create",
   );
   const [isFormOpen, setIsFormOpen] = useState(false);
   const [page, setPage] = useState(1); // current page
@@ -96,6 +97,11 @@ const Tenants = () => {
   const { withLoader } = useLoader();
   const { user, handleLogout } = useAuth();
   const resource = "tenants"; // must match resource name from backend policies
+  const { systemCurrency } = useSettings();
+  const formatCurrency = (val?: number) => {
+    if (val == null) return "-";
+    return systemCurrency.format(val);
+  };
 
   useSkipFirstEffect(() => {
     loadTenants();
@@ -203,9 +209,6 @@ const Tenants = () => {
           // Show error popup from backend
           toast.error(
             `Cannot Delete Tenant\n${authResponse?.message || "Unknown error"}`,
-            {
-              style: { whiteSpace: "pre-line" },
-            }
           );
         }
       }
@@ -221,8 +224,8 @@ const Tenants = () => {
     } else if (formMode === "edit" && selectedTenant) {
       const preservedTenantSpaces = (selectedTenant as any).tenant_spaces
         ? (selectedTenant as any).tenant_spaces.filter(
-          (space: any) => space.id && space.id.length > 0
-        )
+            (space: any) => space.id && space.id.length > 0,
+          )
         : undefined;
 
       const updatedTenant = {
@@ -237,7 +240,7 @@ const Tenants = () => {
         // FIX: Update with response.data instead of updatedTenant
         loadTenantOverview();
         setTenants((prev) =>
-          prev.map((t) => (t.id === response.data.id ? response.data : t))
+          prev.map((t) => (t.id === response.data.id ? response.data : t)),
         );
       }
     }
@@ -245,8 +248,9 @@ const Tenants = () => {
     if (response?.success) {
       setIsFormOpen(false);
       toast.success(
-        `Tenant ${tenantData.name} has been ${formMode === "create" ? "created" : "updated"
-        } successfully.`
+        `Tenant ${tenantData.name} has been ${
+          formMode === "create" ? "created" : "updated"
+        } successfully.`,
       );
     }
     return response;
@@ -462,7 +466,7 @@ const Tenants = () => {
                           {tenantSpaces.slice(0, 2).map((tenant_space) => {
                             const isSpaceStatus =
                               tenant_space.status == "approved" ||
-                                tenant_space.status == "leased"
+                              tenant_space.status == "leased"
                                 ? "active"
                                 : tenant_space.status == "pending"
                                   ? "inactive"
@@ -529,28 +533,24 @@ const Tenants = () => {
                                 <MapPin className="h-4 w-4 text-muted-foreground mt-0.5" />
                                 <div>
                                   {tenant.address.line1 && (
-                                    <div>
-                                      {tenant.address.line1}
-                                    </div>
+                                    <div>{tenant.address.line1}</div>
                                   )}
                                   {tenant.address.line2 && (
-                                    <div>
-                                      {tenant.address.line2}
-                                    </div>
+                                    <div>{tenant.address.line2}</div>
                                   )}
                                   {(tenant.address.city ||
                                     tenant.address.state ||
                                     tenant.address.pincode) && (
-                                      <div>
-                                        {[
-                                          tenant.address.city,
-                                          tenant.address.state,
-                                          tenant.address.pincode,
-                                        ]
-                                          .filter(Boolean)
-                                          .join(", ")}
-                                      </div>
-                                    )}
+                                    <div>
+                                      {[
+                                        tenant.address.city,
+                                        tenant.address.state,
+                                        tenant.address.pincode,
+                                      ]
+                                        .filter(Boolean)
+                                        .join(", ")}
+                                    </div>
+                                  )}
                                 </div>
                               </div>
                             )}
@@ -579,16 +579,16 @@ const Tenants = () => {
                                   - {lease.space_name}
                                 </div>
                                 <div className="text-muted-foreground">
-                                  ₹{lease.rent_amount.toLocaleString()} •{" "}
+                                  {formatCurrency(lease.rent_amount)} •{" "}
                                   {lease.frequency}
                                 </div>
                                 <div className="text-xs text-muted-foreground">
                                   {new Date(
-                                    lease.start_date
+                                    lease.start_date,
                                   ).toLocaleDateString()}{" "}
                                   -{" "}
                                   {new Date(
-                                    lease.end_date
+                                    lease.end_date,
                                   ).toLocaleDateString()}
                                 </div>
                               </div>
@@ -619,9 +619,9 @@ const Tenants = () => {
                                       async () => {
                                         return await leasesApiService.getTenantLeaseDetail(
                                           tenant.id!,
-                                          tenantSpaces[0].space_id
+                                          tenantSpaces[0].space_id,
                                         );
-                                      }
+                                      },
                                     );
                                     if (
                                       response?.success &&
@@ -663,7 +663,9 @@ const Tenants = () => {
                           Business Contact
                         </div>
                         <div className="text-sm text-muted-foreground">
-                          {tenant.legal_name} {tenant.legal_name && tenant.type && "•"} {tenant.type}
+                          {tenant.legal_name}{" "}
+                          {tenant.legal_name && tenant.type && "•"}{" "}
+                          {tenant.type}
                         </div>
                       </div>
                     )}

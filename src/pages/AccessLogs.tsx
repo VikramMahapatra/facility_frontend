@@ -46,7 +46,6 @@ import { useAuth } from "../context/AuthContext";
 import LoaderOverlay from "@/components/LoaderOverlay";
 import ContentContainer from "@/components/ContentContainer";
 import { PageHeader } from "@/components/PageHeader";
-import { AsyncAutocompleteRQ } from "@/components/common/async-autocomplete-rq";
 
 export default function AccessLogs() {
   const [searchTerm, setSearchTerm] = useState("");
@@ -200,31 +199,20 @@ export default function AccessLogs() {
             />
           </div>
           <div className="w-[180px]">
-          <AsyncAutocompleteRQ
-            value={selectedSite === "all" ? "" : selectedSite}
-            onChange={(value) => {
-              setSelectedSite(value || "all");
-            }}
-            placeholder="All Sites"
-            queryKey={["sites"]}
-            queryFn={async (search) => {
-              const res = await siteApiService.getSiteLookup(search);
-              return res.data.map((s: any) => ({
-                id: s.id,
-                label: s.name,
-              }));
-            }}
-            fallbackOption={
-              selectedSite === "all"
-                ? {
-                    id: "all",
-                    label: "All Sites",
-                  }
-                : undefined
-            }
-              minSearchLength={0}
-            />
-            </div>
+            <Select value={selectedSite} onValueChange={setSelectedSite}>
+              <SelectTrigger>
+                <SelectValue placeholder="All Sites" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">All Sites</SelectItem>
+                {siteList.map((site: any) => (
+                  <SelectItem key={site.id} value={site.id}>
+                    {site.name}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
 
           <Select
             value={selectedDirection}

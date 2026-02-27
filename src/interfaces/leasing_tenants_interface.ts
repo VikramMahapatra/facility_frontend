@@ -27,9 +27,23 @@ export interface Lease {
   default_payer?: string;
   is_system?: boolean;
   auto_move_in_space_occupancy?: boolean;
-  lease_term_months?: number;
-  derived_frequency?: string;
+  lease_term_duration?: number;
+  lease_frequency?: string;
+  number_of_installments?: number;
+  payment_terms?: PaymentTerm[];
 }
+
+
+export interface PaymentTerm {
+  id?: string;
+  description?: string;
+  payment_method?: string;
+  reference_no?: string;
+  amount: number;
+  due_date: string;
+  status: "pending" | "paid" | "overdue";
+}
+
 
 export interface LeaseOverview {
   activeLeases: number;
@@ -86,4 +100,33 @@ export interface TenantOverview {
   activeTenants: number;
   commercialTenants: number;
   individualTenants: number;
+}
+
+
+export interface LeaseCharge {
+  id: string;
+  lease_id: string;
+  charge_code_id: string;
+  charge_code: string;
+  period_start: string; // ISO date
+  period_end: string; // ISO date
+  amount: number;
+  tax_pct: number;
+  invoice_status?: string;
+  lease_start?: string;
+  lease_end?: string;
+  rent_amount?: number;
+  period_days?: number;
+  tax_amount?: number;
+  total_amount?: number;
+  metadata?: any;
+  created_at?: string;
+  tenant_name: string;
+  site_id: string;
+  building_block_id?: string;
+  site_name: string;
+  space_name: string;
+  building_block: string;
+  tax_code_id?: string;
+  payer_type?: string;
 }

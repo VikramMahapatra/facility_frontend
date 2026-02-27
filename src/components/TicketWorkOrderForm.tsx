@@ -29,6 +29,7 @@ import {
 } from "@/schemas/ticketworkorder.schema";
 import { leaseChargeApiService } from "@/services/leasing_tenants/leasechargeapi";
 import { withFallback } from "@/helpers/commonHelper";
+import { useSettings } from "@/context/SettingsContext";
 
 interface TicketWorkOrderFormProps {
   workOrder?: any;
@@ -44,6 +45,8 @@ const emptyFormData: TicketWorkOrderFormValues = {
   description: "",
   assigned_to: "",
   vendor_name: "",
+  bill_to_id: undefined,
+  bill_to_type: undefined,
   status: "pending",
   labour_cost: undefined,
   material_cost: undefined,
@@ -79,7 +82,8 @@ export function TicketWorkOrderForm({
   const [ticketsList, setTicketsList] = useState<any[]>([]);
   const [statusList, setStatusList] = useState<any[]>([]);
   const [taxCodeList, setTaxCodeList] = useState<any[]>([]);
-
+  const [billToList, setBillToList] = useState<any[]>([]);
+  const { systemCurrency } = useSettings();
   const [selectedTicketDetails, setSelectedTicketDetails] = useState<any>(null);
   const [isLoadingTicketDetails, setIsLoadingTicketDetails] = useState(false);
 
@@ -99,6 +103,8 @@ export function TicketWorkOrderForm({
           ticket_id: workOrder.ticket_id || "",
           description: workOrder.description || "",
           assigned_to: workOrder.assigned_to || "",
+          bill_to_id: workOrder.bill_to_id || "",
+          bill_to_type: workOrder.bill_to_type || "",
           vendor_name: workOrder.vendor_name || "",
           status: workOrder.status || "PENDING",
           labour_cost: workOrder.labour_cost || undefined,
@@ -154,6 +160,7 @@ export function TicketWorkOrderForm({
           );
         if (response.success) {
           setSelectedTicketDetails(response.data);
+          setBillToList(response.data?.bill_to_options || []);
         }
         setIsLoadingTicketDetails(false);
       } else {
@@ -247,9 +254,14 @@ export function TicketWorkOrderForm({
     onClose();
   };
 
+  const formatCurrency = (val?: number) => {
+    if (val == null) return "-";
+    return `${systemCurrency.name}`;
+  };
+
   return (
     <Dialog open={isOpen} onOpenChange={handleClose}>
-      <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
+      <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
         <DialogHeader>
           <DialogTitle>
             {mode === "create" && "Create Ticket Work Order"}
@@ -267,7 +279,7 @@ export function TicketWorkOrderForm({
           ) : (
             <div className="space-y-4">
               {/* Row 1: Ticket ID | Status */}
-              <div className="grid grid-cols-2 gap-4">
+              <div className="grid grid-cols-3 gap-4">
                 <Controller
                   name="ticket_id"
                   control={control}
@@ -300,6 +312,38 @@ export function TicketWorkOrderForm({
                         </p>
                       )}
                     </div>
+                  )}
+                />
+                <input type="hidden" {...register("bill_to_type")} />
+                <Controller
+                  name="bill_to_id"
+                  control={control}
+                  render={({ field }) => (
+                    <div className="space-y-2">
+                      <Label htmlFor="status">Bill To *</Label>
+                      <Select
+                        value={field.value || ""}
+                        onValueChange={(value) => {
+                          const selected = billToList.find((o) => o.id === value);
+
+                          field.onChange(value); // bill_to_id
+                          setValue("bill_to_type", selected?.type); // set type
+                        }}
+                      >
+                        <SelectTrigger>
+                          <SelectValue placeholder="Select who to bill" />
+                        </SelectTrigger>
+
+                        <SelectContent>
+                          {billToList.map((option) => (
+                            <SelectItem key={option.id} value={option.id}>
+                              {option.type.toUpperCase()} - {option.name}
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                    </div>
+
                   )}
                 />
                 <Controller
@@ -335,7 +379,6 @@ export function TicketWorkOrderForm({
                   )}
                 />
               </div>
-
               {/* Row 2: Preview (when ticket selected) or Description (when no ticket) */}
               {selectedTicketId ? (
                 isLoadingTicketDetails ? (
@@ -346,20 +389,43 @@ export function TicketWorkOrderForm({
                     </div>
                   </div>
                 ) : selectedTicketDetails ? (
-                  <div className="bg-muted p-4 rounded-lg space-y-2">
-                    <h4 className="font-medium text-sm">Assignment Preview:</h4>
-                    <div className="text-sm text-muted-foreground space-y-1">
-                      <div>
-                        <strong>Staff:</strong>{" "}
-                        {selectedTicketDetails?.assigned_to_name ||
-                          selectedTicketDetails?.assigned_to?.name ||
-                          "N/A"}
+                  <div className="bg-muted/50 border rounded-lg p-4 space-y-3">
+                    <div className="flex items-center justify-between">
+                      <h4 className="text-sm font-semibold">Assignment Preview</h4>
+                      <span className="text-xs text-muted-foreground">
+                        Auto-filled from ticket
+                      </span>
+                    </div>
+
+                    <div className="grid grid-cols-2 gap-4">
+                      {/* Staff */}
+                      <div className="flex items-center gap-3 p-3 bg-background rounded-md border">
+                        <div className="h-8 w-8 rounded-full bg-primary/10 flex items-center justify-center text-sm font-medium">
+                          S
+                        </div>
+                        <div>
+                          <p className="text-xs text-muted-foreground">Staff</p>
+                          <p className="text-sm font-medium">
+                            {selectedTicketDetails?.assigned_to_name ||
+                              selectedTicketDetails?.assigned_to?.name ||
+                              "Not Assigned"}
+                          </p>
+                        </div>
                       </div>
-                      <div>
-                        <strong>Vendor:</strong>{" "}
-                        {selectedTicketDetails?.vendor_name ||
-                          selectedTicketDetails?.assigned_vendor_name ||
-                          "N/A"}
+
+                      {/* Vendor */}
+                      <div className="flex items-center gap-3 p-3 bg-background rounded-md border">
+                        <div className="h-8 w-8 rounded-full bg-primary/10 flex items-center justify-center text-sm font-medium">
+                          V
+                        </div>
+                        <div>
+                          <p className="text-xs text-muted-foreground">Vendor</p>
+                          <p className="text-sm font-medium">
+                            {selectedTicketDetails?.vendor_name ||
+                              selectedTicketDetails?.assigned_vendor_name ||
+                              "Not Assigned"}
+                          </p>
+                        </div>
                       </div>
                     </div>
                   </div>
@@ -404,9 +470,11 @@ export function TicketWorkOrderForm({
               )}
 
               {/* Row 4: Labour | Material | Other Expenses */}
-              <div className="grid grid-cols-3 gap-4">
+              <div className="grid grid-cols-4 gap-4">
                 <div className="space-y-2">
-                  <Label htmlFor="labour_cost">Labour Cost</Label>
+                  <Label htmlFor="labour_cost">
+                    Labour Cost ({formatCurrency(0)})
+                  </Label>
                   <Input
                     id="labour_cost"
                     type="number"
@@ -421,7 +489,9 @@ export function TicketWorkOrderForm({
                 </div>
 
                 <div className="space-y-2">
-                  <Label htmlFor="material_cost">Material Cost</Label>
+                  <Label htmlFor="material_cost">
+                    Material Cost ({formatCurrency(0)})
+                  </Label>
                   <Input
                     id="material_cost"
                     type="number"
@@ -436,7 +506,9 @@ export function TicketWorkOrderForm({
                 </div>
 
                 <div className="space-y-2">
-                  <Label htmlFor="other_expenses">Other Expenses</Label>
+                  <Label htmlFor="other_expenses">
+                    Other Expenses ({formatCurrency(0)})
+                  </Label>
                   <Input
                     id="other_expenses"
                     type="number"
@@ -449,9 +521,6 @@ export function TicketWorkOrderForm({
                     disabled={isReadOnly}
                   />
                 </div>
-              </div>
-              {/* Row 5: Estimated Time | Tax Code */}
-              <div className="grid grid-cols-2 gap-4">
                 <div className="space-y-2">
                   <Label htmlFor="estimated_time">
                     Estimated Time (minutes) *
@@ -473,33 +542,6 @@ export function TicketWorkOrderForm({
                       {errors.estimated_time.message}
                     </p>
                   )}
-                </div>
-
-                <div className="space-y-2">
-                  <Label htmlFor="tax_code_id">Tax Code</Label>
-                  <Controller
-                    name="tax_code_id"
-                    control={control}
-                    render={({ field }) => (
-                      <Select
-                        value={field.value || ""}
-                        onValueChange={field.onChange}
-                        disabled={isReadOnly}
-                      >
-                        <SelectTrigger>
-                          <SelectValue placeholder="Select tax code" />
-                        </SelectTrigger>
-                        <SelectContent>
-                          <SelectItem value="NO_TAX">No Tax</SelectItem>
-                          {taxCodes.map((tax) => (
-                            <SelectItem key={tax.id} value={tax.id}>
-                              {tax.name}
-                            </SelectItem>
-                          ))}
-                        </SelectContent>
-                      </Select>
-                    )}
-                  />
                 </div>
               </div>
 

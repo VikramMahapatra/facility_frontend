@@ -1,31 +1,84 @@
 import { useState, useEffect } from "react";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from "@/components/ui/table";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+  DialogTrigger,
+} from "@/components/ui/dialog";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
-import { LogOut, } from "lucide-react";
+import { LogOut } from "lucide-react";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
-import { Plus, Search, Eye, Edit, FileText, Calendar, Building, Filter, AlertCircle, CheckCircle, Trash2 } from "lucide-react";
+import {
+  Plus,
+  Search,
+  Eye,
+  Edit,
+  FileText,
+  Calendar,
+  Building,
+  Filter,
+  AlertCircle,
+  CheckCircle,
+  Trash2,
+} from "lucide-react";
 import { contractApiService } from "@/services/procurements/contractapi";
 import { vendorsApiService } from "@/services/procurements/vendorsapi";
 import { useSkipFirstEffect } from "@/hooks/use-skipfirst-effect";
-import { SidebarProvider, SidebarTrigger, SidebarInset } from "@/components/ui/sidebar";
+import {
+  SidebarProvider,
+  SidebarTrigger,
+  SidebarInset,
+} from "@/components/ui/sidebar";
 import { Separator } from "@/components/ui/separator";
 import { PropertySidebar } from "@/components/PropertySidebar";
 import { Pagination } from "@/components/Pagination";
 import { toast } from "@/components/ui/app-toast";
 import { ContractForm } from "@/components/ContractsForm";
-import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
 import { useAuth } from "../context/AuthContext";
 import { useLoader } from "@/context/LoaderContext";
 import LoaderOverlay from "@/components/LoaderOverlay";
 import ContentContainer from "@/components/ContentContainer";
 import { PageHeader } from "@/components/PageHeader";
+import { useSettings } from "@/context/SettingsContext";
 
 export default function Contracts() {
   const [searchTerm, setSearchTerm] = useState("");
@@ -33,20 +86,28 @@ export default function Contracts() {
   const [typeFilter, setTypeFilter] = useState("all");
   const [isCreateDialogOpen, setIsCreateDialogOpen] = useState(false);
   const [contracts, setContracts] = useState<any[]>([]);
-  const [overview, setOverview] = useState({ total_contracts: 0, active_contracts: 0, expiring_soon: 0, total_value: 0 });
+  const [overview, setOverview] = useState({
+    total_contracts: 0,
+    active_contracts: 0,
+    expiring_soon: 0,
+    total_value: 0,
+  });
   const [statusList, setStatusList] = useState<any[]>([]);
   const [typeList, setTypeList] = useState<any[]>([]);
   const [vendorList, setVendorList] = useState<any[]>([]);
   const [page, setPage] = useState(1);
   const [pageSize] = useState(10);
   const [totalItems, setTotalItems] = useState(0);
-  const [formMode, setFormMode] = useState<"create" | "edit" | "view">("create");
+  const [formMode, setFormMode] = useState<"create" | "edit" | "view">(
+    "create",
+  );
   const [selectedContract, setSelectedContract] = useState<any | undefined>();
   const [deleteContractId, setDeleteContractId] = useState<string | null>(null);
   const { canRead, canWrite, canDelete } = useAuth();
   const { withLoader } = useLoader();
   const { user, handleLogout } = useAuth();
   const resource = "contracts"; // must match resource name from backend policies
+  const { systemCurrency } = useSettings();
 
   useEffect(() => {
     loadStatusLookup();
@@ -104,10 +165,16 @@ export default function Contracts() {
 
     // Map API response to expected format
     const overviewData = {
-      total_contracts: response?.data?.totalContracts || response?.data?.total_contracts || 0,
-      active_contracts: response?.data?.activeContracts || response?.data?.active_contracts || 0,
-      expiring_soon: response?.data?.expiringSoon || response?.data?.expiring_soon || 0,
-      total_value: response?.data?.totalValue || response?.data?.total_value || 0
+      total_contracts:
+        response?.data?.totalContracts || response?.data?.total_contracts || 0,
+      active_contracts:
+        response?.data?.activeContracts ||
+        response?.data?.active_contracts ||
+        0,
+      expiring_soon:
+        response?.data?.expiringSoon || response?.data?.expiring_soon || 0,
+      total_value:
+        response?.data?.totalValue || response?.data?.total_value || 0,
     };
 
     setOverview(overviewData);
@@ -126,7 +193,6 @@ export default function Contracts() {
   const loadVendorLookup = async () => {
     const response = await vendorsApiService.getVendorLookup();
     if (response?.success) setVendorList(response.data || []);
-
   };
 
   const getVendorName = (vendorId: string) => {
@@ -159,7 +225,8 @@ export default function Contracts() {
 
   const confirmDelete = async () => {
     if (deleteContractId) {
-      const response = await contractApiService.deleteContract(deleteContractId);
+      const response =
+        await contractApiService.deleteContract(deleteContractId);
 
       if (response.success) {
         // Success - refresh data
@@ -167,7 +234,8 @@ export default function Contracts() {
         setDeleteContractId(null);
         toast.success("Contract has been deleted successfully.");
       } else {
-        const errorMessage = response?.data?.message || "Failed to delete contract";
+        const errorMessage =
+          response?.data?.message || "Failed to delete contract";
         toast.error(errorMessage);
       }
 
@@ -180,8 +248,7 @@ export default function Contracts() {
     if (formMode === "create") {
       response = await contractApiService.addContract(contractData);
 
-      if (response.success)
-        updateContractsPage();
+      if (response.success) updateContractsPage();
     } else if (formMode === "edit" && selectedContract) {
       const updatedContract = {
         ...selectedContract,
@@ -193,7 +260,7 @@ export default function Contracts() {
       if (response.success) {
         // Update the edited contract in local state
         setContracts((prev) =>
-          prev.map((c) => (c.id === updatedContract.id ? response.data : c))
+          prev.map((c) => (c.id === updatedContract.id ? response.data : c)),
         );
       }
     }
@@ -203,42 +270,37 @@ export default function Contracts() {
       setSelectedContract(undefined);
       setFormMode("create");
       toast.success(
-        `Contract ${contractData.title || contractData.code || contractData.contract_number || ""} has been ${formMode === "create" ? "created" : "updated"} successfully.`
+        `Contract ${contractData.title || contractData.code || contractData.contract_number || ""} has been ${formMode === "create" ? "created" : "updated"} successfully.`,
       );
     }
     return response;
   };
 
   const getStatusBadge = (status: string) => {
-    const variants: Record<string, 'default' | 'secondary' | 'destructive'> = {
-      active: 'default',
-      expired: 'destructive',
-      terminated: 'secondary'
+    const variants: Record<string, "default" | "secondary" | "destructive"> = {
+      active: "default",
+      expired: "destructive",
+      terminated: "secondary",
     };
 
-    return (
-      <Badge variant={variants[status] || 'secondary'}>
-        {status}
-      </Badge>
-    );
+    return <Badge variant={variants[status] || "secondary"}>{status}</Badge>;
   };
 
   const getStatusIcon = (status: string) => {
-    if (status === 'active') return <CheckCircle className="w-4 h-4 text-green-500" />;
-    if (status === 'expired') return <AlertCircle className="w-4 h-4 text-red-500" />;
+    if (status === "active")
+      return <CheckCircle className="w-4 h-4 text-green-500" />;
+    if (status === "expired")
+      return <AlertCircle className="w-4 h-4 text-red-500" />;
     return <AlertCircle className="w-4 h-4 text-yellow-500" />;
   };
 
-  const formatCurrency = (amount: number) => {
-    return new Intl.NumberFormat('en-IN', {
-      style: 'currency',
-      currency: 'INR',
-      maximumFractionDigits: 0
-    }).format(amount);
+  const formatCurrency = (val?: number) => {
+    if (val == null) return "-";
+    return systemCurrency.format(val);
   };
 
   const formatDate = (dateString: string) => {
-    return new Date(dateString).toLocaleDateString('en-IN');
+    return new Date(dateString).toLocaleDateString("en-IN");
   };
 
   const getDaysUntilExpiry = (endDate: string) => {
@@ -317,38 +379,54 @@ export default function Contracts() {
             <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
               <Card>
                 <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                  <CardTitle className="text-sm font-medium">Total Contracts</CardTitle>
+                  <CardTitle className="text-sm font-medium">
+                    Total Contracts
+                  </CardTitle>
                   <FileText className="h-4 w-4 text-muted-foreground" />
                 </CardHeader>
                 <CardContent>
-                  <div className="text-2xl font-bold">{overview.total_contracts}</div>
+                  <div className="text-2xl font-bold">
+                    {overview.total_contracts}
+                  </div>
                 </CardContent>
               </Card>
               <Card>
                 <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                  <CardTitle className="text-sm font-medium">Active Contracts</CardTitle>
+                  <CardTitle className="text-sm font-medium">
+                    Active Contracts
+                  </CardTitle>
                   <CheckCircle className="h-4 w-4 text-muted-foreground" />
                 </CardHeader>
                 <CardContent>
-                  <div className="text-2xl font-bold">{overview.active_contracts}</div>
+                  <div className="text-2xl font-bold">
+                    {overview.active_contracts}
+                  </div>
                 </CardContent>
               </Card>
               <Card>
                 <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                  <CardTitle className="text-sm font-medium">Expiring Soon</CardTitle>
+                  <CardTitle className="text-sm font-medium">
+                    Expiring Soon
+                  </CardTitle>
                   <AlertCircle className="h-4 w-4 text-muted-foreground" />
                 </CardHeader>
                 <CardContent>
-                  <div className="text-2xl font-bold">{overview.expiring_soon}</div>
+                  <div className="text-2xl font-bold">
+                    {overview.expiring_soon}
+                  </div>
                 </CardContent>
               </Card>
               <Card>
                 <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                  <CardTitle className="text-sm font-medium">Total Value</CardTitle>
+                  <CardTitle className="text-sm font-medium">
+                    Total Value
+                  </CardTitle>
                   <Building className="h-4 w-4 text-muted-foreground" />
                 </CardHeader>
                 <CardContent>
-                  <div className="text-2xl font-bold">{formatCurrency(overview.total_value)}</div>
+                  <div className="text-2xl font-bold">
+                    {formatCurrency(overview.total_value)}
+                  </div>
                 </CardContent>
               </Card>
             </div>
@@ -368,86 +446,99 @@ export default function Contracts() {
                   </TableRow>
                 </TableHeader>
                 <TableBody>
-                  {
-                    contracts.length === 0 ? (
-                      <TableRow>
-                        <TableCell
-                          colSpan={8}
-                          className="text-center text-muted-foreground h-32"
-                        >
-                          No contracts found
+                  {contracts.length === 0 ? (
+                    <TableRow>
+                      <TableCell
+                        colSpan={8}
+                        className="text-center text-muted-foreground h-32"
+                      >
+                        No contracts found
+                      </TableCell>
+                    </TableRow>
+                  ) : (
+                    contracts.map((contract) => (
+                      <TableRow key={contract.id}>
+                        <TableCell>
+                          <div>
+                            <div className="font-medium">{contract.title}</div>
+                            <div className="text-sm text-muted-foreground flex items-center">
+                              <FileText className="w-3 h-3 mr-1" />
+                              {contract.documents?.length || 0} document(s)
+                            </div>
+                          </div>
                         </TableCell>
-                      </TableRow>
-                    ) : (
-                      contracts.map((contract) => (
-                        <TableRow key={contract.id}>
-                          <TableCell>
-                            <div>
-                              <div className="font-medium">{contract.title}</div>
-                              <div className="text-sm text-muted-foreground flex items-center">
-                                <FileText className="w-3 h-3 mr-1" />
-                                {contract.documents?.length || 0} document(s)
-                              </div>
-                            </div>
-                          </TableCell>
-                          <TableCell>
-                            <div>
-                              <div className="font-medium">{getVendorName(contract.vendor_name)}</div>
-                              <div className="text-sm text-muted-foreground">
-                                SLA: {contract.terms?.sla?.response_hrs || 'N/A'}h response
-                              </div>
-                            </div>
-                          </TableCell>
-                          <TableCell>
-                            <Badge variant="outline">{contract.type}</Badge>
-                          </TableCell>
-                          <TableCell>
-                            <div className="text-sm">
-                              <div>{formatDate(contract.start_date)}</div>
-                              <div className="text-muted-foreground">to {formatDate(contract.end_date)}</div>
-                              {contract.status === 'active' && (
-                                <div className="text-xs text-muted-foreground mt-1">
-                                  {getDaysUntilExpiry(contract.end_date)} days left
-                                </div>
-                              )}
-                            </div>
-                          </TableCell>
-                          <TableCell>
+                        <TableCell>
+                          <div>
                             <div className="font-medium">
-                              {formatCurrency(contract.value)}
+                              {getVendorName(contract.vendor_name)}
                             </div>
-                          </TableCell>
-                          <TableCell>
-                            <div className="flex items-center space-x-2">
-                              {getStatusIcon(contract.status)}
-                              {getStatusBadge(contract.status)}
+                            <div className="text-sm text-muted-foreground">
+                              SLA: {contract.terms?.sla?.response_hrs || "N/A"}h
+                              response
                             </div>
-                          </TableCell>
-                          <TableCell>
-                            <div className="flex space-x-2">
-                              <Button variant="ghost" size="sm" onClick={() => handleView(contract)}>
-                                <Eye className="w-4 h-4" />
-                              </Button>
-                              {canWrite(resource) && <Button variant="ghost" size="sm" onClick={() => handleEdit(contract)}>
+                          </div>
+                        </TableCell>
+                        <TableCell>
+                          <Badge variant="outline">{contract.type}</Badge>
+                        </TableCell>
+                        <TableCell>
+                          <div className="text-sm">
+                            <div>{formatDate(contract.start_date)}</div>
+                            <div className="text-muted-foreground">
+                              to {formatDate(contract.end_date)}
+                            </div>
+                            {contract.status === "active" && (
+                              <div className="text-xs text-muted-foreground mt-1">
+                                {getDaysUntilExpiry(contract.end_date)} days
+                                left
+                              </div>
+                            )}
+                          </div>
+                        </TableCell>
+                        <TableCell>
+                          <div className="font-medium">
+                            {formatCurrency(contract.value)}
+                          </div>
+                        </TableCell>
+                        <TableCell>
+                          <div className="flex items-center space-x-2">
+                            {getStatusIcon(contract.status)}
+                            {getStatusBadge(contract.status)}
+                          </div>
+                        </TableCell>
+                        <TableCell>
+                          <div className="flex space-x-2">
+                            <Button
+                              variant="ghost"
+                              size="sm"
+                              onClick={() => handleView(contract)}
+                            >
+                              <Eye className="w-4 h-4" />
+                            </Button>
+                            {canWrite(resource) && (
+                              <Button
+                                variant="ghost"
+                                size="sm"
+                                onClick={() => handleEdit(contract)}
+                              >
                                 <Edit className="w-4 h-4" />
                               </Button>
-                              }
-                              {canDelete(resource) &&
-                                <Button
-                                  variant="ghost"
-                                  size="sm"
-                                  className="text-destructive hover:text-destructive"
-                                  onClick={() => handleDelete(contract.id)}
-                                >
-                                  <Trash2 className="w-4 h-4" />
-                                </Button>
-                              }
-                            </div>
-                          </TableCell>
-                        </TableRow>
-                      ))
-                    )
-                  }
+                            )}
+                            {canDelete(resource) && (
+                              <Button
+                                variant="ghost"
+                                size="sm"
+                                className="text-destructive hover:text-destructive"
+                                onClick={() => handleDelete(contract.id)}
+                              >
+                                <Trash2 className="w-4 h-4" />
+                              </Button>
+                            )}
+                          </div>
+                        </TableCell>
+                      </TableRow>
+                    ))
+                  )}
                 </TableBody>
               </Table>
             </div>
@@ -476,17 +567,24 @@ export default function Contracts() {
         mode={formMode}
       />
 
-      <AlertDialog open={!!deleteContractId} onOpenChange={() => setDeleteContractId(null)}>
+      <AlertDialog
+        open={!!deleteContractId}
+        onOpenChange={() => setDeleteContractId(null)}
+      >
         <AlertDialogContent>
           <AlertDialogHeader>
             <AlertDialogTitle>Delete Contract</AlertDialogTitle>
             <AlertDialogDescription>
-              Are you sure you want to delete this contract? This action cannot be undone.
+              Are you sure you want to delete this contract? This action cannot
+              be undone.
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
             <AlertDialogCancel>Cancel</AlertDialogCancel>
-            <AlertDialogAction onClick={confirmDelete} className="bg-destructive text-destructive-foreground">
+            <AlertDialogAction
+              onClick={confirmDelete}
+              className="bg-destructive text-destructive-foreground"
+            >
               Delete
             </AlertDialogAction>
           </AlertDialogFooter>

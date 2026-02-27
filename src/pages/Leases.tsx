@@ -14,7 +14,6 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { LeaseForm } from "@/components/LeasesForm";
-import { PaymentTermsForm } from "@/components/PaymentTermsForm";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -35,9 +34,11 @@ import { useLoader } from "@/context/LoaderContext";
 import LoaderOverlay from "@/components/LoaderOverlay";
 import ContentContainer from "@/components/ContentContainer";
 import { useSkipFirstEffect } from "@/hooks/use-skipfirst-effect";
+import { useSettings } from "@/context/SettingsContext";
 
 export default function Leases() {
   const navigate = useNavigate();
+  const { systemCurrency } = useSettings();
   const [searchTerm, setSearchTerm] = useState("");
   const [selectedStatus, setSelectedStatus] = useState<string>("all");
   const [selectedSite, setSelectedSite] = useState<string>("all");
@@ -50,8 +51,6 @@ export default function Leases() {
   const [isFormOpen, setIsFormOpen] = useState(false);
   const [deleteLeaseId, setDeleteLeaseId] = useState<string | null>(null);
   const [siteList, setSiteList] = useState<any[]>([]);
-  const [createdLeaseId, setCreatedLeaseId] = useState<string | null>(null);
-  const [isPaymentTermsFormOpen, setIsPaymentTermsFormOpen] = useState(false);
   const { canWrite, canDelete } = useAuth();
   const { withLoader } = useLoader();
 
@@ -157,7 +156,7 @@ export default function Leases() {
           `Cannot Delete Lease\n${authResponse?.message || "Unknown error"}`,
           {
             style: { whiteSpace: "pre-line" },
-          },
+          } as any,
         );
       }
     }
@@ -180,10 +179,6 @@ export default function Leases() {
         if (leaseId) {
           // Close lease form
           setIsFormOpen(false);
-
-          // Store leaseId and directly open payment terms form
-          setCreatedLeaseId(String(leaseId));
-          setIsPaymentTermsFormOpen(true);
         }
       }
     } else if (formMode === "edit" && selectedLease) {
@@ -227,11 +222,7 @@ export default function Leases() {
 
   const formatCurrency = (val?: number) => {
     if (val == null) return "-";
-    return new Intl.NumberFormat("en-IN", {
-      style: "currency",
-      currency: "INR",
-      maximumFractionDigits: 0,
-    }).format(val);
+    return systemCurrency.format(val);
   };
 
   return (
@@ -535,24 +526,6 @@ export default function Leases() {
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
-
-      {/* Payment Terms Form */}
-      {createdLeaseId && (
-        <PaymentTermsForm
-          term={undefined}
-          mode="create"
-          leaseId={createdLeaseId}
-          isOpen={isPaymentTermsFormOpen}
-          onClose={() => {
-            setIsPaymentTermsFormOpen(false);
-            setCreatedLeaseId(null);
-          }}
-          onSave={() => {
-            // Refresh data if needed
-            updateLeasePage();
-          }}
-        />
-      )}
     </div>
   );
 }

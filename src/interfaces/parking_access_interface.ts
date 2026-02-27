@@ -9,16 +9,11 @@ export interface ParkingZone {
 
 export interface ParkingSlot {
   id: string;
-  org_id: string;
-  site_id: string;
-  site_name: string;
-  zone_id: string;
   zone_name: string;
   space_id?: string;
   space_name?: string;
   slot_no: string;
   slot_type: "covered" | "open" | "visitor" | "handicapped" | "ev";
-  slots: number;
 }
 
 export interface ParkingPass {

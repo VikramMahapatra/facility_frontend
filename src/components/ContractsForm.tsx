@@ -27,7 +27,7 @@ import { organisationApiService } from "@/services/spaces_sites/organisationapi"
 import { ContractFormValues, contractSchema } from "@/schemas/contract.schema";
 import { toast } from "@/components/ui/app-toast";
 import { withFallback } from "@/helpers/commonHelper";
-import { AsyncAutocompleteRQ } from "./common/async-autocomplete-rq";
+import { useSettings } from "@/context/SettingsContext";
 
 interface ContractFormProps {
   contract?: any;
@@ -89,7 +89,11 @@ export function ContractForm({
   const [uploadedImages, setUploadedImages] = useState<File[]>([]);
   const [imagePreviews, setImagePreviews] = useState<string[]>([]);
   const fileInputRef = useRef<HTMLInputElement>(null);
-
+  const { systemCurrency } = useSettings();
+  const formatCurrency = (val?: number) => {
+    if (val == null) return "-";
+    return `${systemCurrency.name}`;
+  };
   const loadAll = async () => {
     setFormLoading(true);
 
@@ -102,24 +106,24 @@ export function ContractForm({
     reset(
       contract && mode !== "create"
         ? {
-          title: contract.title || "",
-          type: contract.type || "",
-          status: contract.status || "",
-          vendor_id: contract.vendor_id || "",
-          site_id: contract.site_id || "",
-          start_date: contract.start_date || "",
-          end_date: contract.end_date || "",
-          value: contract.value || undefined,
-          terms: {
-            sla: {
-              response_hrs: contract.terms?.sla?.response_hrs || undefined,
+            title: contract.title || "",
+            type: contract.type || "",
+            status: contract.status || "",
+            vendor_id: contract.vendor_id || "",
+            site_id: contract.site_id || "",
+            start_date: contract.start_date || "",
+            end_date: contract.end_date || "",
+            value: contract.value || undefined,
+            terms: {
+              sla: {
+                response_hrs: contract.terms?.sla?.response_hrs || undefined,
+              },
+              penalty: {
+                per_day: contract.terms?.penalty?.per_day || undefined,
+              },
             },
-            penalty: {
-              per_day: contract.terms?.penalty?.per_day || undefined,
-            },
-          },
-          documents: contract.documents || [],
-        }
+            documents: contract.documents || [],
+          }
         : emptyFormData,
     );
     setFormLoading(false);
@@ -264,26 +268,26 @@ export function ContractForm({
 
   const fallbackType = contract?.type
     ? {
-      id: contract.type,
-      name: contract.type,
-      value: contract.type,
-    }
+        id: contract.type,
+        name: contract.type,
+        value: contract.type,
+      }
     : null;
 
   const fallbackStatus = contract?.status
     ? {
-      id: contract.status,
-      name: contract.status,
-      value: contract.status,
-    }
+        id: contract.status,
+        name: contract.status,
+        value: contract.status,
+      }
     : null;
 
   const fallbackVendor = contract?.vendor_id
     ? {
-      id: contract.vendor_id,
-      name: contract.vendor_name,
-      value: contract.vendor_id,
-    }
+        id: contract.vendor_id,
+        name: contract.vendor_name,
+        value: contract.vendor_id,
+      }
     : null;
 
   const types = withFallback(typeList, fallbackType);
@@ -418,37 +422,30 @@ export function ContractForm({
                   render={({ field }) => (
                     <div className="space-y-2">
                       <Label htmlFor="site">Site *</Label>
-                      <AsyncAutocompleteRQ
+                      <Select
                         value={field.value || ""}
-                        onChange={(value) => {
-                          field.onChange(value);
-                        }}
+                        onValueChange={field.onChange}
                         disabled={isReadOnly || mode === "edit"}
-                        placeholder="Select site"
-                        queryKey={["contract-sites"]}
-                        queryFn={async (search) => {
-                          const res =
-                            await siteApiService.getSiteLookup(search);
-                          if (res.success) {
-                            return res.data.map((s: any) => ({
-                              id: s.id,
-                              label: s.name,
-                            }));
-                          }
-                          return [];
-                        }}
-                        fallbackOption={
-                          contract?.site_id
-                            ? {
-                              id: contract.site_id,
-                              label:
-                                contract.site_name ||
-                                `Site (${contract.site_id.slice(0, 6)})`,
-                            }
-                            : undefined
-                        }
-                        minSearchLength={1}
-                      />
+                      >
+                        <SelectTrigger
+                          className={errors.site_id ? "border-red-500" : ""}
+                        >
+                          <SelectValue placeholder="Select site" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          {siteList.length === 0 ? (
+                            <SelectItem value="none" disabled>
+                              No sites available
+                            </SelectItem>
+                          ) : (
+                            siteList.map((site: any) => (
+                              <SelectItem key={site.id} value={site.id}>
+                                {site.name}
+                              </SelectItem>
+                            ))
+                          )}
+                        </SelectContent>
+                      </Select>
                       {errors.site_id && (
                         <p className="text-sm text-red-500">
                           {errors.site_id.message}
@@ -494,7 +491,9 @@ export function ContractForm({
                 </div>
 
                 <div className="space-y-2">
-                  <Label htmlFor="value">Contract Value (₹) *</Label>
+                  <Label htmlFor="value">
+                    Contract Value ({formatCurrency(0)}) *
+                  </Label>
                   <Input
                     id="value"
                     type="number"
@@ -542,7 +541,7 @@ export function ContractForm({
 
                   <div className="space-y-2">
                     <Label htmlFor="penalty_per_day">
-                      Penalty - Per Day (₹)
+                      Penalty - Per Day ({formatCurrency(0)})
                     </Label>
                     <Input
                       id="penalty_per_day"
@@ -646,7 +645,8 @@ export function ContractForm({
                     <div className="space-y-2">
                       <div className="grid grid-cols-3 gap-2 mt-2">
                         {uploadedImages.map((file, index) => {
-                          const isPdf = file.type.toLowerCase() === "application/pdf";
+                          const isPdf =
+                            file.type.toLowerCase() === "application/pdf";
                           return (
                             <div key={index} className="relative group">
                               {isPdf ? (

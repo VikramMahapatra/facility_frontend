@@ -72,7 +72,7 @@ import ContentContainer from "@/components/ContentContainer";
 import { PageHeader } from "@/components/PageHeader";
 import { useLoader } from "@/context/LoaderContext";
 import LoaderOverlay from "@/components/LoaderOverlay";
-import { InvoiceForm } from "@/components/InvoiceForm";
+import { useSettings } from "@/context/SettingsContext";
 
 export default function Invoices() {
   const [searchTerm, setSearchTerm] = useState("");
@@ -99,34 +99,16 @@ export default function Invoices() {
   const [paymentPageSize] = useState(5); // items per page
   const [totalPaymentItems, setTotalPaymentItems] = useState(0);
   const { withLoader } = useLoader();
-  const [isFormOpen, setIsFormOpen] = useState(false);
-  const [selectedInvoice, setSelectedInvoice] = useState<Invoice | undefined>();
-  const [formMode, setFormMode] = useState<"create" | "edit" | "view">(
-    "create"
-  );
-
+  const { systemCurrency } = useSettings();
   useEffect(() => {
     loadInvoicesOverView();
     loadInvoices();
-    loadPayments();
   }, []);
 
   useSkipFirstEffect(() => {
     loadInvoices();
   }, [page]);
 
-  useSkipFirstEffect(() => {
-    loadPayments();
-  }, [paymentPage]);
-
-  useSkipFirstEffect(() => {
-    updateInvoicesPage();
-    if (paymentPage === 1) {
-      loadPayments();
-    } else {
-      setPaymentPage(1);
-    }
-  }, [searchTerm, statusFilter]);
 
   const updateInvoicesPage = () => {
     if (page === 1) {
@@ -164,27 +146,7 @@ export default function Invoices() {
     }
   };
 
-  const loadPayments = async () => {
-    const skip = (paymentPage - 1) * paymentPageSize;
-    const limit = paymentPageSize;
 
-    const params = new URLSearchParams();
-    if (searchTerm) params.append("search", searchTerm);
-    if (statusFilter && statusFilter !== "all")
-      params.append("status", statusFilter);
-    params.append("skip", skip.toString());
-    params.append("limit", limit.toString());
-
-    const response = await invoiceApiService.getPayments(params);
-
-    if (response?.success) {
-      const payments =
-        response.data?.data?.payments || response.data?.payments || [];
-      const total = response.data?.total || response.data?.total || 0;
-      setPayments(payments);
-      setTotalPaymentItems(total);
-    }
-  };
 
   const getStatusBadge = (status: string) => {
     const variants = {
@@ -203,9 +165,7 @@ export default function Invoices() {
   };
 
   const handleCreate = () => {
-    setSelectedInvoice(undefined);
-    setFormMode("create");
-    setIsFormOpen(true);
+    navigate("/invoices/create");
   };
 
   const handleView = (invoice: Invoice) => {
@@ -213,47 +173,7 @@ export default function Invoices() {
   };
 
   const handleEdit = (invoice: Invoice) => {
-    setSelectedInvoice(invoice);
-    setFormMode("edit");
-    setIsFormOpen(true);
-  };
-
-  const handleSave = async (invoiceData: Partial<Invoice>) => {
-    let response;
-    if (formMode === "create") {
-      response = await withLoader(async () => {
-        return await invoiceApiService.addInvoice(invoiceData);
-      });
-    } else if (formMode === "edit" && selectedInvoice) {
-      const updatedInvoice = {
-        ...selectedInvoice,
-        ...invoiceData,
-        id: selectedInvoice.id,
-        invoice_no: selectedInvoice.invoice_no,
-        updated_at: new Date().toISOString(),
-      };
-      response = await withLoader(async () => {
-        return await invoiceApiService.updateInvoice(updatedInvoice);
-      });
-    }
-
-    if (response?.success) {
-      toast.success(
-        `Invoice has been ${formMode === "create" ? "created" : "updated"
-        } successfully.`
-      );
-      updateInvoicesPage();
-      loadInvoicesOverView();
-      setIsFormOpen(false);
-      setSelectedInvoice(undefined);
-    } else if (response && !response.success) {
-      if (response?.message) {
-        toast.error(response.message);
-      } else {
-        toast.error("Failed to save invoice.");
-      }
-    }
-    return response;
+    navigate(`/invoices/${invoice.id}/edit`);
   };
   const handleDownload = async (invoiceId: string) => {
     await invoiceApiService.downloadInvoice(invoiceId);
@@ -278,11 +198,14 @@ export default function Invoices() {
         updateInvoicesPage();
         loadInvoicesOverView();
       } else {
-        toast.error(`Cannot Delete Invoice\n${authResponse?.message}`, {
-          style: { whiteSpace: "pre-line" },
-        });
+        toast.error(`Cannot Delete Invoice\n${authResponse?.message}`);
       }
     }
+  };
+
+  const formatCurrency = (val?: number) => {
+    if (val == null) return "-";
+    return systemCurrency.format(val);
   };
 
   return (
@@ -293,10 +216,10 @@ export default function Invoices() {
         <div className="flex items-center justify-between">
           <div>
             <h2 className="text-2xl font-bold text-sidebar-primary">
-              Invoices & Payments
+              Invoices
             </h2>
             <p className="text-muted-foreground">
-              Manage billing and payment collection
+              Create invoices and track payment collections.
             </p>
           </div>
           <div className="flex gap-2">
@@ -338,7 +261,7 @@ export default function Invoices() {
               </CardHeader>
               <CardContent>
                 <div className="text-2xl font-bold">
-                  ₹{invoiceOverview.totalAmount.toLocaleString()}
+                  {formatCurrency(invoiceOverview.totalAmount)}
                 </div>
                 <p className="text-xs text-muted-foreground">Invoiced amount</p>
               </CardContent>
@@ -351,7 +274,7 @@ export default function Invoices() {
               </CardHeader>
               <CardContent>
                 <div className="text-2xl font-bold text-green-600">
-                  ₹{invoiceOverview.paidAmount.toLocaleString()}
+                  {formatCurrency(invoiceOverview.paidAmount)}
                 </div>
                 <p className="text-xs text-muted-foreground">Paid invoices</p>
               </CardContent>
@@ -366,7 +289,7 @@ export default function Invoices() {
               </CardHeader>
               <CardContent>
                 <div className="text-2xl font-bold text-orange-600">
-                  ₹{invoiceOverview.outstandingAmount.toLocaleString()}
+                  {formatCurrency(invoiceOverview.outstandingAmount)}
                 </div>
                 <p className="text-xs text-muted-foreground">Pending payment</p>
               </CardContent>
@@ -414,8 +337,9 @@ export default function Invoices() {
                     <TableHeader>
                       <TableRow>
                         <TableHead>Invoice No.</TableHead>
-                        <TableHead>Billable Type</TableHead>
-                        <TableHead>Site Name</TableHead>
+                        <TableHead>Type</TableHead>
+                        <TableHead>Customer Name</TableHead>
+                        <TableHead>Location</TableHead>
                         <TableHead>Date</TableHead>
                         <TableHead>Due Date</TableHead>
                         <TableHead>Amount</TableHead>
@@ -439,8 +363,12 @@ export default function Invoices() {
                             <TableCell className="font-medium">
                               {invoice.invoice_no}
                             </TableCell>
-                            <TableCell>{invoice.billable_item_name}</TableCell>
-                            <TableCell>{invoice.site_name || "-"}</TableCell>
+                            <TableCell>{invoice.code}</TableCell>
+                            <TableCell>{invoice.user_name}</TableCell>
+                            <TableCell>
+                              {invoice.space_name + "," + invoice.site_name ||
+                                "-"}
+                            </TableCell>
                             <TableCell>
                               {new Date(invoice.date).toLocaleDateString()}
                             </TableCell>
@@ -448,7 +376,7 @@ export default function Invoices() {
                               {new Date(invoice.due_date).toLocaleDateString()}
                             </TableCell>
                             <TableCell>
-                              ₹{invoice?.totals?.grand ?? 0}
+                              {formatCurrency(invoice?.totals?.grand ?? 0)}
                             </TableCell>
                             <TableCell>
                               {getStatusBadge(invoice.status)}
@@ -463,7 +391,8 @@ export default function Invoices() {
                                   <Eye className="h-4 w-4" />
                                 </Button>
                                 {canWrite(resource) &&
-                                  invoice.status !== "paid" && (
+                                  invoice.status !== "paid" &&
+                                  invoice.status !== "issued" && (
                                     <Button
                                       variant="ghost"
                                       size="sm"
@@ -506,71 +435,6 @@ export default function Invoices() {
                   />
                 </CardContent>
               </Card>
-
-              {/* Recent Payments */}
-              <Card>
-                <CardHeader>
-                  <CardTitle>Payments</CardTitle>
-                  <CardDescription>
-                    {totalPaymentItems} payment(s) found
-                  </CardDescription>
-                </CardHeader>
-                <CardContent>
-                  <Table>
-                    <TableHeader>
-                      <TableRow>
-                        <TableHead>Invoice No.</TableHead>
-                        <TableHead>Customer</TableHead>
-                        <TableHead>Method</TableHead>
-                        <TableHead>Reference</TableHead>
-                        <TableHead>Amount</TableHead>
-                        <TableHead>Date</TableHead>
-                      </TableRow>
-                    </TableHeader>
-                    <TableBody>
-                      {payments.length === 0 ? (
-                        <TableRow>
-                          <TableCell
-                            colSpan={6}
-                            className="text-center py-8 text-muted-foreground"
-                          >
-                            No payments found
-                          </TableCell>
-                        </TableRow>
-                      ) : (
-                        payments.map((payment) => (
-                          <TableRow key={payment.id}>
-                            <TableCell className="font-medium">
-                              {payment.invoice_no}
-                            </TableCell>
-                            <TableCell>{payment.customer_name}</TableCell>
-                            <TableCell>
-                              <Badge variant="outline">
-                                {payment.method.toUpperCase()}
-                              </Badge>
-                            </TableCell>
-                            <TableCell className="font-mono text-sm">
-                              {payment.ref_no}
-                            </TableCell>
-                            <TableCell>
-                              ₹{payment.amount.toLocaleString()}
-                            </TableCell>
-                            <TableCell>
-                              {new Date(payment.paid_at).toLocaleDateString()}
-                            </TableCell>
-                          </TableRow>
-                        ))
-                      )}
-                    </TableBody>
-                  </Table>
-                  <Pagination
-                    page={paymentPage}
-                    pageSize={paymentPageSize}
-                    totalItems={totalPaymentItems}
-                    onPageChange={(newPage) => setPaymentPage(newPage)}
-                  />
-                </CardContent>
-              </Card>
             </div>
           </div>
         </div>
@@ -598,17 +462,6 @@ export default function Invoices() {
             </AlertDialogFooter>
           </AlertDialogContent>
         </AlertDialog>
-
-        <InvoiceForm
-          invoice={selectedInvoice}
-          isOpen={isFormOpen}
-          onClose={() => {
-            setIsFormOpen(false);
-            setSelectedInvoice(undefined);
-          }}
-          onSave={handleSave}
-          mode={formMode}
-        />
       </div>
     </ContentContainer>
   );

@@ -48,7 +48,7 @@ export default function InvoiceDetailPage() {
   const [isPaymentFormOpen, setIsPaymentFormOpen] = useState(false);
   const [selectedPayment, setSelectedPayment] = useState<any | undefined>();
   const [paymentFormMode, setPaymentFormMode] = useState<"create" | "edit">(
-    "create"
+    "create",
   );
 
   useEffect(() => {
@@ -135,7 +135,7 @@ export default function InvoiceDetailPage() {
 
   const formatCurrency = (
     amount: number | undefined,
-    currency: string = "INR"
+    currency: string = "INR",
   ) => {
     const numAmount = amount || 0;
     const symbol =
@@ -185,6 +185,11 @@ export default function InvoiceDetailPage() {
 
   const paymentSummary = calculatePaymentSummary();
 
+  const progress =
+    invoice?.totals?.grand > 0
+      ? (paymentSummary.paid / invoice.totals.grand) * 100
+      : 0;
+
   return (
     <ContentContainer>
       <LoaderOverlay />
@@ -200,24 +205,33 @@ export default function InvoiceDetailPage() {
               >
                 <ArrowLeft className="h-4 w-4" />
               </Button>
+
               <div>
-                <h1 className="text-2xl font-bold">
-                  Invoice #{invoice.invoice_no}
-                </h1>
-                <p className="text-muted-foreground">
-                  {invoice.billable_item_name || "Invoice Details"}
+                <div className="flex items-center gap-3">
+                  <h1 className="text-2xl font-semibold">
+                    Invoice #{invoice.invoice_no}
+                  </h1>
+                  {getStatusBadge(invoice.status)}
+                </div>
+
+                <p className="text-sm text-muted-foreground mt-1">
+                  {invoice.lines?.length || 0} charges • {invoice.currency}
                 </p>
               </div>
             </div>
+
             <div className="flex gap-2">
-              <Button
-                variant="ghost"
-                onClick={() => setIsInvoiceFormOpen(true)}
-                size="icon"
-                className="h-8 px-3"
-              >
-                <Pencil className="h-4 w-4" />
-              </Button>
+              {invoice.status === "draft" && (
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => setIsInvoiceFormOpen(true)}
+                  className="gap-2"
+                >
+                  <Pencil className="h-4 w-4" />
+                  Edit
+                </Button>
+              )}
             </div>
           </div>
 
@@ -231,167 +245,164 @@ export default function InvoiceDetailPage() {
             {/* OVERVIEW */}
             <TabsContent value="overview" className="space-y-6">
               <Card>
-                <CardContent className="p-6 grid grid-cols-1 md:grid-cols-2 gap-6">
-                  <div className="space-y-4">
-                    <div>
-                      <Label className="text-muted-foreground flex items-center gap-2">
-                        <MapPin className="h-4 w-4" />
-                        Site
-                      </Label>
-                      <p className="font-semibold">
-                        {invoice.site_name || "-"}
-                      </p>
-                    </div>
-                    <div>
-                      <Label className="text-muted-foreground flex items-center gap-2">
-                        <FileText className="h-4 w-4" />
-                        Invoice Type
-                      </Label>
-                      <p className="font-semibold">
-                        {invoice.billable_item_type === "lease charge"
-                          ? "Lease Charge"
-                          : invoice.billable_item_type === "work order"
-                            ? "Work Order"
-                            : invoice.billable_item_type || "-"}
-                      </p>
-                    </div>
-                    <div>
-                      <Label className="text-muted-foreground flex items-center gap-2">
-                        <Receipt className="h-4 w-4" />
-                        Billable Item
-                      </Label>
-                      <p className="font-semibold">
-                        {invoice.billable_item_name || "-"}
-                      </p>
-                    </div>
-                    <div>
-                      <Label className="text-muted-foreground flex items-center gap-2">
-                        <Coins className="h-4 w-4" />
-                        Currency
-                      </Label>
-                      <p className="font-semibold">
-                        {invoice.currency || "INR"}
-                      </p>
-                    </div>
-                    {invoice.customer_name && (
-                      <div>
-                        <Label className="text-muted-foreground flex items-center gap-2">
-                          <User className="h-4 w-4" />
-                          Customer
-                        </Label>
-                        <p className="font-semibold">{invoice.customer_name}</p>
-                      </div>
-                    )}
+                <CardContent className="p-5 space-y-3">
+                  <div className="flex justify-between text-sm">
+                    <span className="text-muted-foreground">
+                      Payment Progress
+                    </span>
+                    <span className="font-medium">{Math.round(progress)}%</span>
                   </div>
-                  <div className="space-y-4">
-                    <div>
-                      <Label className="text-muted-foreground flex items-center gap-2">
-                        <Calendar className="h-4 w-4" />
-                        Invoice Date
-                      </Label>
-                      <p className="font-semibold">
-                        {invoice.date
-                          ? new Date(invoice.date).toLocaleDateString()
-                          : "-"}
-                      </p>
-                    </div>
-                    <div>
-                      <Label className="text-muted-foreground flex items-center gap-2">
-                        <Clock className="h-4 w-4" />
-                        Due Date
-                      </Label>
-                      <p className="font-semibold">
-                        {invoice.due_date
-                          ? new Date(invoice.due_date).toLocaleDateString()
-                          : "-"}
-                      </p>
-                    </div>
-                    <div>
-                      <Label className="text-muted-foreground flex items-center gap-2">
-                        <CheckCircle2 className="h-4 w-4" />
-                        Payment Status
-                      </Label>
-                      <p className="font-semibold">
-                        {invoice.is_paid ? (
-                          <span className="text-green-600 flex items-center gap-1">
-                            Fully Paid
-                          </span>
-                        ) : (
-                          <span className="text-orange-600 flex items-center gap-1">
-                            Pending
-                          </span>
-                        )}
-                      </p>
-                    </div>
+
+                  <div className="w-full bg-muted rounded-full h-2">
+                    <div
+                      className="bg-green-500 h-2 rounded-full transition-all"
+                      style={{ width: `${progress}%` }}
+                    />
                   </div>
+
+                  <div className="flex justify-between text-sm">
+                    <span className="text-green-600 font-medium">
+                      Paid:{" "}
+                      {formatCurrency(paymentSummary.paid, invoice.currency)}
+                    </span>
+                    <span className="text-orange-600 font-medium">
+                      Outstanding:{" "}
+                      {formatCurrency(
+                        paymentSummary.outstanding,
+                        invoice.currency,
+                      )}
+                    </span>
+                  </div>
+                </CardContent>
+              </Card>
+              <Card>
+                <CardContent className="p-6 grid grid-cols-2 md:grid-cols-4 gap-6">
+                  <div>
+                    <p className="text-xs text-muted-foreground">Customer</p>
+                    <p className="font-medium">{invoice.user_name || "-"}</p>
+                  </div>
+
+                  <div>
+                    <p className="text-xs text-muted-foreground">Space</p>
+                    <p className="font-medium">
+                      {invoice.space_name + ", " + invoice.site_name || "-"}
+                    </p>
+                  </div>
+
+                  <div>
+                    <p className="text-xs text-muted-foreground">
+                      Invoice Date
+                    </p>
+                    <p className="font-medium">
+                      {new Date(invoice.date).toLocaleDateString()}
+                    </p>
+                  </div>
+
+                  <div>
+                    <p className="text-xs text-muted-foreground">Due Date</p>
+                    <p className="font-medium">
+                      {new Date(invoice.due_date).toLocaleDateString()}
+                    </p>
+                  </div>
+                </CardContent>
+              </Card>
+              <Card>
+                <CardContent className="p-6">
+                  <div className="flex items-center justify-between mb-4">
+                    <h3 className="text-lg font-medium flex items-center gap-2">
+                      <Receipt className="h-5 w-5" />
+                      Charges
+                    </h3>
+
+                    <Badge variant="secondary">
+                      {invoice.lines?.length || 0} items
+                    </Badge>
+                  </div>
+
+                  {invoice.lines && invoice.lines.length > 0 ? (
+                    <div className="rounded-xl border overflow-hidden">
+                      <table className="w-full text-sm">
+                        <thead className="bg-muted/50">
+                          <tr className="text-muted-foreground">
+                            <th className="text-left p-4">Type</th>
+                            <th className="text-left p-4">Description</th>
+                            <th className="text-left p-4">Period</th>
+                            <th className="text-left p-4">Tax</th>
+                            <th className="text-right p-4">Amount</th>
+                          </tr>
+                        </thead>
+
+                        <tbody>
+                          {invoice.lines.map((line) => (
+                            <tr key={line.id} className="border-t">
+                              <td className="p-4 font-medium">
+                                {line.code?.toUpperCase()}
+                              </td>
+
+                              <td className="p-4 text-muted-foreground">
+                                {line.description || "-"}
+                              </td>
+
+                              <td className="p-4">{line.item_label || "-"}</td>
+
+                              <td className="p-4">{line.tax_pct || 0}%</td>
+
+                              <td className="p-4 text-right font-semibold">
+                                {formatCurrency(line.amount, invoice.currency)}
+                              </td>
+                            </tr>
+                          ))}
+                        </tbody>
+                      </table>
+                    </div>
+                  ) : (
+                    <p className="text-muted-foreground text-sm">
+                      No charges attached to this invoice.
+                    </p>
+                  )}
                 </CardContent>
               </Card>
 
               {/* Totals */}
               <Card>
                 <CardContent className="p-6">
-                  <h3 className="text-lg font-medium mb-4 flex items-center gap-2">
-                    <DollarSign className="h-5 w-5" /> Financial Summary
+                  <h3 className="text-lg font-medium mb-5">
+                    Financial Summary
                   </h3>
-                  <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                    <div>
-                      <Label className="text-muted-foreground flex items-center gap-2">
-                        <Receipt className="h-4 w-4" />
-                        Subtotal
-                      </Label>
-                      <p className="text-lg font-semibold">
+
+                  <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+                    <Card className="p-4 bg-muted/40">
+                      <p className="text-sm text-muted-foreground">Subtotal</p>
+                      <p className="text-xl font-semibold">
                         {formatCurrency(invoice.totals?.sub, invoice.currency)}
                       </p>
-                    </div>
-                    <div>
-                      <Label className="text-muted-foreground flex items-center gap-2">
-                        <Percent className="h-4 w-4" />
-                        Tax
-                      </Label>
-                      <p className="text-lg font-semibold">
+                    </Card>
+
+                    <Card className="p-4 bg-muted/40">
+                      <p className="text-sm text-muted-foreground">Tax</p>
+                      <p className="text-xl font-semibold">
                         {formatCurrency(invoice.totals?.tax, invoice.currency)}
                       </p>
-                    </div>
-                    <div>
-                      <Label className="text-muted-foreground flex items-center gap-2">
-                        <CircleDollarSign className="h-4 w-4" />
-                        Grand Total
-                      </Label>
-                      <p className="text-lg font-semibold text-primary">
-                        {formatCurrency(
-                          invoice.totals?.grand,
-                          invoice.currency
-                        )}
-                      </p>
-                    </div>
-                  </div>
-                  <div className="mt-4 pt-4 border-t grid grid-cols-1 md:grid-cols-2 gap-4">
-                    <div>
-                      <Label className="text-muted-foreground flex items-center gap-2">
-                        <CheckCircle2 className="h-4 w-4 text-green-600" />
-                        Paid Amount
-                      </Label>
-                      <p className="text-lg font-semibold text-green-600">
+                    </Card>
+
+                    <Card className="p-4 bg-green-50">
+                      <p className="text-sm text-muted-foreground">Paid</p>
+                      <p className="text-xl font-semibold text-green-600">
                         {formatCurrency(paymentSummary.paid, invoice.currency)}
                       </p>
-                    </div>
-                    <div>
-                      <Label className="text-muted-foreground flex items-center gap-2">
-                        <AlertCircle className="h-4 w-4 text-orange-600" />
+                    </Card>
+
+                    <Card className="p-4 bg-orange-50">
+                      <p className="text-sm text-muted-foreground">
                         Outstanding
-                      </Label>
-                      <p
-                        className={`text-lg font-semibold ${paymentSummary.outstanding > 0
-                            ? "text-orange-600"
-                            : "text-green-600"
-                          }`}
-                      >
+                      </p>
+                      <p className="text-xl font-semibold text-orange-600">
                         {formatCurrency(
                           paymentSummary.outstanding,
-                          invoice.currency
+                          invoice.currency,
                         )}
                       </p>
-                    </div>
+                    </Card>
                   </div>
                 </CardContent>
               </Card>
@@ -449,12 +460,12 @@ export default function InvoiceDetailPage() {
                                 <strong>Date:</strong>{" "}
                                 {payment.paid_at
                                   ? new Date(
-                                    payment.paid_at
-                                  ).toLocaleDateString("en-IN", {
-                                    year: "numeric",
-                                    month: "long",
-                                    day: "numeric",
-                                  })
+                                      payment.paid_at,
+                                    ).toLocaleDateString("en-IN", {
+                                      year: "numeric",
+                                      month: "long",
+                                      day: "numeric",
+                                    })
                                   : "-"}
                               </p>
                               {payment.billable_item_name && (
@@ -469,7 +480,7 @@ export default function InvoiceDetailPage() {
                               <p className="text-2xl font-bold">
                                 {formatCurrency(
                                   payment.amount,
-                                  invoice.currency
+                                  invoice.currency,
                                 )}
                               </p>
                             </div>
@@ -597,13 +608,13 @@ export default function InvoiceDetailPage() {
                     const paymentHistoryResponse = await withLoader(
                       async () => {
                         return await invoiceApiService.getPaymentHistory(id);
-                      }
+                      },
                     );
                     if (paymentHistoryResponse?.success) {
                       const paymentData =
                         paymentHistoryResponse.data?.payments || [];
                       setPayments(
-                        Array.isArray(paymentData) ? paymentData : []
+                        Array.isArray(paymentData) ? paymentData : [],
                       );
                     } else {
                       // If payment history API fails, fallback to reloading from invoice

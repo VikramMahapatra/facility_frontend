@@ -154,7 +154,7 @@ export default function UserManagementDetailPage() {
     is_default: boolean;
   }) => {
     if (accountType.is_default) {
-      toast.info("This is already your active account");
+      toast.success("This is already your active account");
       return;
     }
 

@@ -29,42 +29,47 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 
-type SpaceMoveOutRequest = {
+type SpaceOccupancyRequest = {
   id: string;
+  request_type: "move_in" | "move_out";
   space_id: string;
   space_name: string;
   site_name: string;
   building_name: string;
-  tenant_name: string;
-  tenant_id: string;
+
+  occupant_name: string;
+  occupant_type: string;
+
   requested_at: string;
-  move_out_date: string;
+  move_in_date?: string;
+  move_out_date?: string;
+
   reason?: string;
   status: "pending" | "approved" | "rejected";
 };
 
-export default function SpaceMoveOutApproval() {
+export default function SpaceOccupancyApproval() {
   const { withLoader } = useLoader();
   const [searchTerm, setSearchTerm] = useState("");
   const [status, setStatus] = useState<string>("pending");
-  const [requests, setRequests] = useState<SpaceMoveOutRequest[]>([]);
+  const [requests, setRequests] = useState<SpaceOccupancyRequest[]>([]);
   const [page, setPage] = useState(1);
   const [pageSize] = useState(6);
   const [totalItems, setTotalItems] = useState(0);
 
   useSkipFirstEffect(() => {
-    loadMoveOutRequests();
+    loadOccupancyRequests();
   }, [page]);
 
   useEffect(() => {
     if (page === 1) {
-      loadMoveOutRequests();
+      loadOccupancyRequests();
     } else {
       setPage(1);
     }
   }, [searchTerm, status]);
 
-  const loadMoveOutRequests = async () => {
+  const loadOccupancyRequests = async () => {
     const skip = (page - 1) * pageSize;
     const limit = pageSize;
 
@@ -75,7 +80,7 @@ export default function SpaceMoveOutApproval() {
     params.append("limit", limit.toString());
 
     const response = (await withLoader(async () => {
-      return await spacesApiService.getMoveOutRequests(params);
+      return await spacesApiService.getOccupancyRequests(params);
     })) as any;
 
     if (response?.success) {
@@ -88,12 +93,12 @@ export default function SpaceMoveOutApproval() {
 
   const handleApprove = async (id: string) => {
     const response = (await withLoader(async () => {
-      return await spacesApiService.approveMoveOutRequest(id);
+      return await spacesApiService.approveOccupancyRequest(id);
     })) as any;
 
     if (response?.success) {
       toast.success("Move-out request approved successfully.");
-      loadMoveOutRequests();
+      loadOccupancyRequests();
     } else {
       const errorMessage =
         response?.data?.message ||
@@ -105,12 +110,12 @@ export default function SpaceMoveOutApproval() {
 
   const handleReject = async (id: string) => {
     const response = (await withLoader(async () => {
-      return await spacesApiService.rejectMoveOutRequest(id);
+      return await spacesApiService.rejectOccupancyRequest(id);
     })) as any;
 
     if (response?.success) {
       toast.success("Move-out request rejected successfully.");
-      loadMoveOutRequests();
+      loadOccupancyRequests();
     } else {
       const errorMessage =
         response?.data?.message ||
@@ -137,10 +142,10 @@ export default function SpaceMoveOutApproval() {
     <div className="space-y-6">
       <div>
         <h1 className="text-2xl font-bold text-sidebar-primary">
-          Space Move/Out Approvals
+          Space Move-In / Move-Out Approvals
         </h1>
         <p className="text-muted-foreground">
-          Review and approve pending space move-out requests
+          Review and approve pending space move-in/move-out requests
         </p>
       </div>
 
@@ -162,7 +167,8 @@ export default function SpaceMoveOutApproval() {
           </SelectTrigger>
           <SelectContent>
             <SelectItem value="pending">Pending</SelectItem>
-            <SelectItem value="approved">Approved</SelectItem>
+            <SelectItem value="active">Active</SelectItem>
+            <SelectItem value="moved_out">Moved Out</SelectItem>
             <SelectItem value="rejected">Rejected</SelectItem>
           </SelectContent>
         </Select>
@@ -175,7 +181,7 @@ export default function SpaceMoveOutApproval() {
           <div className="text-center py-12">
             <Check className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
             <h3 className="text-lg font-semibold text-sidebar-primary mb-2">
-              No pending move-out requests
+              No pending occupancy requests
             </h3>
             <p className="text-muted-foreground">
               Try adjusting your search criteria.
@@ -194,16 +200,26 @@ export default function SpaceMoveOutApproval() {
                           {req.space_name}
                         </h2>
                       </div>
-                      {req.tenant_name && (
+                      {req.occupant_name && (
                         <div className="flex items-center gap-2 mt-1">
                           <User className="h-3.5 w-3.5 text-muted-foreground" />
                           <p className="text-sm text-muted-foreground">
-                            {req.tenant_name}
+                            {req.occupant_name}
                           </p>
                         </div>
                       )}
                     </div>
-
+                    <Badge
+                      className={
+                        req.request_type === "move_in"
+                          ? "bg-blue-500"
+                          : "bg-orange-500"
+                      }
+                    >
+                      {req.request_type === "move_in"
+                        ? "Move-In Request"
+                        : "Move-Out Request"}
+                    </Badge>
                     {getStatusBadge(req.status)}
                   </div>
 
@@ -250,19 +266,28 @@ export default function SpaceMoveOutApproval() {
                       </div>
                     )}
 
-                    {req.move_out_date && (
-                      <div className="flex items-start gap-2">
-                        <Calendar className="h-4 w-4 text-muted-foreground mt-0.5 flex-shrink-0" />
-                        <div className="min-w-0">
-                          <p className="text-muted-foreground text-xs mb-1">
-                            Move-Out Date
-                          </p>
-                          <p className="font-medium">
-                            {format(new Date(req.move_out_date), "dd MMM yyyy")}
-                          </p>
-                        </div>
+                    {req.request_type === "move_in" && req.move_in_date && (
+                      <div>
+                        <p className="text-muted-foreground text-xs mb-1">
+                          Move-In Date
+                        </p>
+                        <p className="font-medium">
+                          {format(new Date(req.move_in_date), "dd MMM yyyy")}
+                        </p>
                       </div>
                     )}
+
+                    {req.request_type === "move_out" && req.move_out_date && (
+                      <div>
+                        <p className="text-muted-foreground text-xs mb-1">
+                          Move-Out Date
+                        </p>
+                        <p className="font-medium">
+                          {format(new Date(req.move_out_date), "dd MMM yyyy")}
+                        </p>
+                      </div>
+                    )}
+
                   </div>
 
                   {req.reason && (
