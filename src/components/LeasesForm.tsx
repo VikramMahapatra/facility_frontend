@@ -72,7 +72,7 @@ interface LeaseFormProps {
   lease?: Lease;
   isOpen: boolean;
   onClose: () => void;
-  onSave: (lease: Partial<Lease>) => Promise<any>;
+  onSave: (formData: FormData) => Promise<any>;
   mode: "create" | "edit" | "view";
   disableLocationFields?: boolean;
 }
@@ -153,33 +153,33 @@ export function LeaseForm({
     reset(
       lease
         ? {
-            kind: (lease.kind as any) || "commercial",
-            site_id: lease.site_id || "",
-            building_id: leaseBuildingId || "",
-            space_id: lease.space_id || "",
-            partner_id: lease.partner_id ? String(lease.partner_id) : "",
-            tenant_id: lease.tenant_id ? String(lease.tenant_id) : "",
-            start_date: lease.start_date || "",
-            frequency:
-              (lease.frequency as "monthly" | "quaterly" | "annually") ||
-              "monthly",
-            lease_frequency:
-              (lease.lease_frequency as "monthly" | "annually") || "monthly",
-            lease_term_duration:
-              (lease as any).lease_term_duration || undefined,
-            rent_amount: lease.rent_amount as any,
-            deposit_amount: lease.deposit_amount as any,
-            cam_rate: lease.cam_rate as any,
-            utilities: {
-              electricity: lease.utilities?.electricity as any,
-              water: lease.utilities?.water as any,
-            },
-            status: (lease.status as any) || "draft",
-            description: (lease as any).description || "",
-            number_of_installments:
-              (lease as any).number_of_installments || undefined,
-            payment_terms: (lease as any).payment_terms || [],
-          }
+          kind: (lease.kind as any) || "commercial",
+          site_id: lease.site_id || "",
+          building_id: leaseBuildingId || "",
+          space_id: lease.space_id || "",
+          partner_id: lease.partner_id ? String(lease.partner_id) : "",
+          tenant_id: lease.tenant_id ? String(lease.tenant_id) : "",
+          start_date: lease.start_date || "",
+          frequency:
+            (lease.frequency as "monthly" | "quaterly" | "annually") ||
+            "monthly",
+          lease_frequency:
+            (lease.lease_frequency as "monthly" | "annually") || "monthly",
+          lease_term_duration:
+            (lease as any).lease_term_duration || undefined,
+          rent_amount: lease.rent_amount as any,
+          deposit_amount: lease.deposit_amount as any,
+          cam_rate: lease.cam_rate as any,
+          utilities: {
+            electricity: lease.utilities?.electricity as any,
+            water: lease.utilities?.water as any,
+          },
+          status: (lease.status as any) || "draft",
+          description: (lease as any).description || "",
+          number_of_installments:
+            (lease as any).number_of_installments || undefined,
+          payment_terms: (lease as any).payment_terms || [],
+        }
         : emptyFormData,
     );
 
@@ -413,26 +413,26 @@ export function LeaseForm({
     if (startDate && numberOfInstallments && numberOfInstallments > 0) {
       const currentPayments = watch("payment_terms") || [];
       if (currentPayments.length === numberOfInstallments) {
-      const calculatePaymentDate = (index: number): string => {
-        if (!startDate) return "";
-        const start = new Date(startDate);
+        const calculatePaymentDate = (index: number): string => {
+          if (!startDate) return "";
+          const start = new Date(startDate);
 
-        if (frequency === "monthly") {
-          start.setMonth(start.getMonth() + index);
-        } else if (frequency === "quaterly") {
-          // Divide lease term equally by number of installments
-          if (leaseTermInMonths && numberOfInstallments) {
-            const monthsPerInstallment = leaseTermInMonths / numberOfInstallments;
-            start.setMonth(start.getMonth() + index * monthsPerInstallment);
-          } else {
-            // Fallback to quarterly (every 3 months)
-            start.setMonth(start.getMonth() + index * 3);
+          if (frequency === "monthly") {
+            start.setMonth(start.getMonth() + index);
+          } else if (frequency === "quaterly") {
+            // Divide lease term equally by number of installments
+            if (leaseTermInMonths && numberOfInstallments) {
+              const monthsPerInstallment = leaseTermInMonths / numberOfInstallments;
+              start.setMonth(start.getMonth() + index * monthsPerInstallment);
+            } else {
+              // Fallback to quarterly (every 3 months)
+              start.setMonth(start.getMonth() + index * 3);
+            }
+          } else if (frequency === "annually") {
+            start.setFullYear(start.getFullYear() + index);
           }
-        } else if (frequency === "annually") {
-          start.setFullYear(start.getFullYear() + index);
-        }
-        return start.toISOString().split("T")[0];
-      };
+          return start.toISOString().split("T")[0];
+        };
 
         // Update dates and set default payment method for all payments
         // Always recalculate dates when frequency or lease term changes
@@ -529,30 +529,30 @@ export function LeaseForm({
 
   const fallbackSite = lease?.site_id
     ? {
-        id: lease.site_id,
-        name: (lease as any).site_name,
-      }
+      id: lease.site_id,
+      name: (lease as any).site_name,
+    }
     : null;
 
   const fallbackBuilding =
     lease?.building_id || (lease as any)?.building_block_id
       ? {
-          id: (lease as any).building_id || (lease as any).building_block_id,
-          name: (lease as any).building_name,
-        }
+        id: (lease as any).building_id || (lease as any).building_block_id,
+        name: (lease as any).building_name,
+      }
       : null;
 
   const fallbackSpace = lease?.space_id
     ? {
-        id: lease.space_id,
-        name: (lease as any).space_name,
-      }
+      id: lease.space_id,
+      name: (lease as any).space_name,
+    }
     : null;
   const fallbackTenant = lease?.tenant_id
     ? {
-        id: lease.tenant_id,
-        name: (lease as any).tenant_name,
-      }
+      id: lease.tenant_id,
+      name: (lease as any).tenant_name,
+    }
     : null;
 
   const tenants = withFallback(leasePartnerList, fallbackTenant);
@@ -592,45 +592,29 @@ export function LeaseForm({
   const onSubmitForm = async (data: LeaseFormValues) => {
     try {
       const { kind, ...updated } = data;
-      console.log("Submitting lease data:", updated);
 
       // Create FormData if there are uploaded files, otherwise use JSON
       let submitData: any;
 
-      if (uploadedImages.length > 0) {
-        const formData = new FormData();
-        Object.keys(updated).forEach((key) => {
-          const value = (updated as any)[key];
-          if (value !== undefined && value !== null && value !== "") {
-            if (typeof value === "object" && !Array.isArray(value)) {
-              // Handle nested objects like utilities
-              Object.keys(value).forEach((nestedKey) => {
-                const nestedValue = (value as any)[nestedKey];
-                if (
-                  nestedValue !== undefined &&
-                  nestedValue !== null &&
-                  nestedValue !== ""
-                ) {
-                  formData.append(`${key}.${nestedKey}`, String(nestedValue));
-                }
-              });
-            } else {
-              formData.append(key, String(value));
-            }
-          }
-        });
+      const formData = new FormData();
+      // ✅ append attachments
+      uploadedImages.forEach((file) => {
+        formData.append("attachments", file);
+      });
 
-        // Append files
-        uploadedImages.forEach((file) => {
-          formData.append("files", file);
-        });
+      if (mode == "create") {
+        formData.append("payload", JSON.stringify(updated));
+      }
+      else {
+        const updated_lease = {
+          ...lease,
+          ...updated,
+        };
 
-        submitData = formData;
-      } else {
-        submitData = updated;
+        formData.append("payload", JSON.stringify(updated_lease));
       }
 
-      const formResponse = await onSave(submitData);
+      const formResponse = await onSave(formData);
       console.log("Lease save response:", formResponse);
 
       if (formResponse?.success) {
@@ -674,16 +658,16 @@ export function LeaseForm({
             isSubmitting
               ? undefined
               : handleSubmit(onSubmitForm, (errors) => {
-                  console.log("Form validation errors:", errors);
-                  const firstError = Object.values(errors)[0];
-                  if (firstError?.message) {
-                    toast.error(firstError.message as string);
-                  } else {
-                    toast.error(
-                      "Please fill in all required fields correctly.",
-                    );
-                  }
-                })
+                console.log("Form validation errors:", errors);
+                const firstError = Object.values(errors)[0];
+                if (firstError?.message) {
+                  toast.error(firstError.message as string);
+                } else {
+                  toast.error(
+                    "Please fill in all required fields correctly.",
+                  );
+                }
+              })
           }
           className="space-y-4"
         >
@@ -1284,122 +1268,173 @@ export function LeaseForm({
                   </div>
                 ) : (
                   <div>
-                {/* Calculation Summary */}
-                {rentAmount && leaseTermMonths && (
-                  <div className="bg-muted p-4 rounded-lg space-y-2">
-                    <div className="grid grid-cols-3 gap-4 text-sm">
-                      <div>
-                        <span className="text-muted-foreground">
-                          Monthly Amount:
-                        </span>
-                        <span className="font-semibold ml-2">
-                          ₹{Number(rentAmount).toLocaleString()}
-                        </span>
-                      </div>
-                      <div>
-                        <span className="text-muted-foreground">
-                          Lease Term:
-                        </span>
-                        <span className="font-semibold ml-2">
-                          {displayFrequency === "annually"
-                            ? `${leaseTermMonths} ${leaseTermMonths === 1 ? "year" : "years"} (${leaseTermInMonths} months)`
-                            : `${leaseTermMonths} ${leaseTermMonths === 1 ? "month" : "months"}`}
-                        </span>
-                      </div>
-                      <div>
-                        <span className="text-muted-foreground">
-                          Total Rent Amount:
-                        </span>
-                        <span className="font-semibold ml-2">
-                          ₹
-                          {leaseTermInMonths
-                            ? (
-                                Number(rentAmount) * Number(leaseTermInMonths)
-                              ).toLocaleString()
-                            : "-"}
-                        </span>
-                      </div>
-                    </div>
-                  </div>
-                )}
-
-                {/* Payment Rows - One per Installment */}
-                {numberOfInstallments && numberOfInstallments > 0 && (
-                  <div className="space-y-4">
-                    <div className="flex items-center gap-4 border-b pb-2">
-                      <div className="flex items-center gap-2">
-                        <Label
-                          htmlFor="number_of_installments"
-                          className="text-sm font-semibold whitespace-nowrap"
-                        >
-                          No. of Installments:
-                        </Label>
-                        <Input
-                          id="number_of_installments"
-                          type="number"
-                          {...register("number_of_installments", {
-                            valueAsNumber: true,
-                            min: 1,
-                          })}
-                          placeholder="Enter installments"
-                          disabled={isReadOnly}
-                          className={`w-32 ${errors.number_of_installments ? "border-red-500" : ""}`}
-                        />
-                        {errors.number_of_installments && (
-                          <p className="text-sm text-red-500">
-                            {errors.number_of_installments.message}
-                          </p>
-                        )}
-                      </div>
-                    </div>
-                    <div className="grid grid-cols-[60px_1fr_1fr_1fr_1fr] gap-4 font-semibold text-sm border-b pb-2">
-                      <div className="text-center">#</div>
-                      <div>Payment Date</div>
-                      <div>Payment Method</div>
-                      <div>Reference No.</div>
-                      <div>Amount</div>
-                    </div>
-                    {fields.map((field, index) => (
-                      <div
-                        key={field.id}
-                        className="grid grid-cols-[60px_1fr_1fr_1fr_1fr] gap-4 items-start"
-                      >
-                        <div className="flex items-center justify-center pt-2">
-                          <span className="text-xs text-muted-foreground font-medium">
-                            {index + 1}
-                            <input
-                              {...register(
-                                `payment_terms.${index}.id` as const,
-                              )}
-                              type="hidden"
-                            />
-                          </span>
+                    {/* Calculation Summary */}
+                    {rentAmount && leaseTermMonths && (
+                      <div className="bg-muted p-4 rounded-lg space-y-2">
+                        <div className="grid grid-cols-3 gap-4 text-sm">
+                          <div>
+                            <span className="text-muted-foreground">
+                              Monthly Amount:
+                            </span>
+                            <span className="font-semibold ml-2">
+                              ₹{Number(rentAmount).toLocaleString()}
+                            </span>
+                          </div>
+                          <div>
+                            <span className="text-muted-foreground">
+                              Lease Term:
+                            </span>
+                            <span className="font-semibold ml-2">
+                              {displayFrequency === "annually"
+                                ? `${leaseTermMonths} ${leaseTermMonths === 1 ? "year" : "years"} (${leaseTermInMonths} months)`
+                                : `${leaseTermMonths} ${leaseTermMonths === 1 ? "month" : "months"}`}
+                            </span>
+                          </div>
+                          <div>
+                            <span className="text-muted-foreground">
+                              Total Rent Amount:
+                            </span>
+                            <span className="font-semibold ml-2">
+                              ₹
+                              {leaseTermInMonths
+                                ? (
+                                  Number(rentAmount) * Number(leaseTermInMonths)
+                                ).toLocaleString()
+                                : "-"}
+                            </span>
+                          </div>
                         </div>
-                        <div className="space-y-2">
-                          <div className="relative">
-                            <Calendar className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground pointer-events-none" />
-                            <Controller
-                              name={`payment_terms.${index}.due_date`}
-                              control={control}
-                              rules={{
-                                validate: (value) => {
-                                  if (!value) return true; // Allow empty for now
-                                  
-                                  const paymentTerms = watch("payment_terms") || [];
-                                  const currentDate = new Date(value);
-                                  
-                                  // Validation 1: Date must be between start_date and end_date
-                                  if (startDate) {
-                                    const leaseStartDate = new Date(startDate);
-                                    if (currentDate < leaseStartDate) {
-                                      return "Payment date must be on or after lease start date";
+                      </div>
+                    )}
+
+                    {/* Payment Rows - One per Installment */}
+                    {numberOfInstallments && numberOfInstallments > 0 && (
+                      <div className="space-y-4">
+                        <div className="flex items-center gap-4 border-b pb-2">
+                          <div className="flex items-center gap-2">
+                            <Label
+                              htmlFor="number_of_installments"
+                              className="text-sm font-semibold whitespace-nowrap"
+                            >
+                              No. of Installments:
+                            </Label>
+                            <Input
+                              id="number_of_installments"
+                              type="number"
+                              {...register("number_of_installments", {
+                                valueAsNumber: true,
+                                min: 1,
+                              })}
+                              placeholder="Enter installments"
+                              disabled={isReadOnly}
+                              className={`w-32 ${errors.number_of_installments ? "border-red-500" : ""}`}
+                            />
+                            {errors.number_of_installments && (
+                              <p className="text-sm text-red-500">
+                                {errors.number_of_installments.message}
+                              </p>
+                            )}
+                          </div>
+                        </div>
+                        <div className="grid grid-cols-[60px_1fr_1fr_1fr_1fr] gap-4 font-semibold text-sm border-b pb-2">
+                          <div className="text-center">#</div>
+                          <div>Payment Date</div>
+                          <div>Payment Method</div>
+                          <div>Reference No.</div>
+                          <div>Amount</div>
+                        </div>
+                        {fields.map((field, index) => (
+                          <div
+                            key={field.id}
+                            className="grid grid-cols-[60px_1fr_1fr_1fr_1fr] gap-4 items-start"
+                          >
+                            <div className="flex items-center justify-center pt-2">
+                              <span className="text-xs text-muted-foreground font-medium">
+                                {index + 1}
+                                <input
+                                  {...register(
+                                    `payment_terms.${index}.id` as const,
+                                  )}
+                                  type="hidden"
+                                />
+                              </span>
+                            </div>
+                            <div className="space-y-2">
+                              <div className="relative">
+                                <Calendar className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground pointer-events-none" />
+                                <Controller
+                                  name={`payment_terms.${index}.due_date`}
+                                  control={control}
+                                  rules={{
+                                    validate: (value) => {
+                                      if (!value) return true; // Allow empty for now
+
+                                      const paymentTerms = watch("payment_terms") || [];
+                                      const currentDate = new Date(value);
+
+                                      // Validation 1: Date must be between start_date and end_date
+                                      if (startDate) {
+                                        const leaseStartDate = new Date(startDate);
+                                        if (currentDate < leaseStartDate) {
+                                          return "Payment date must be on or after lease start date";
+                                        }
+
+                                        // Calculate end date
+                                        if (leaseTermMonths && derivedFrequency) {
+                                          const leaseStart = new Date(startDate);
+                                          let leaseEndDate: Date;
+
+                                          if (derivedFrequency === "annually") {
+                                            leaseEndDate = new Date(leaseStart);
+                                            leaseEndDate.setFullYear(leaseEndDate.getFullYear() + Number(leaseTermMonths));
+                                          } else {
+                                            leaseEndDate = new Date(leaseStart);
+                                            leaseEndDate.setMonth(leaseEndDate.getMonth() + Number(leaseTermMonths));
+                                          }
+
+                                          if (currentDate > leaseEndDate) {
+                                            return "Payment date must be on or before lease end date";
+                                          }
+                                        }
+                                      }
+
+                                      // Validation 2: Sequential date validation
+                                      // Check against previous payment term
+                                      if (index > 0 && paymentTerms[index - 1]?.due_date) {
+                                        const prevDate = new Date(paymentTerms[index - 1].due_date);
+                                        if (currentDate < prevDate) {
+                                          return "Payment date must be on or after the previous payment date";
+                                        }
+                                      }
+
+                                      // Check against next payment term
+                                      if (index < paymentTerms.length - 1 && paymentTerms[index + 1]?.due_date) {
+                                        const nextDate = new Date(paymentTerms[index + 1].due_date);
+                                        if (currentDate > nextDate) {
+                                          return "Payment date must be on or before the next payment date";
+                                        }
+                                      }
+
+                                      return true;
+                                    },
+                                  }}
+                                  render={({ field }) => {
+                                    const paymentTerms = watch("payment_terms") || [];
+
+                                    // Calculate min date: max of (lease start date, previous payment date)
+                                    let minDate: string | undefined = startDate || undefined;
+                                    if (index > 0 && paymentTerms[index - 1]?.due_date) {
+                                      const prevDate = paymentTerms[index - 1].due_date;
+                                      if (!minDate || prevDate > minDate) {
+                                        minDate = prevDate;
+                                      }
                                     }
-                                    
-                                    // Calculate end date
-                                    if (leaseTermMonths && derivedFrequency) {
+
+                                    // Calculate max date: min of (lease end date, next payment date)
+                                    let maxDate: string | undefined = undefined;
+                                    if (startDate && leaseTermMonths && derivedFrequency) {
                                       const leaseStart = new Date(startDate);
                                       let leaseEndDate: Date;
-                                      
                                       if (derivedFrequency === "annually") {
                                         leaseEndDate = new Date(leaseStart);
                                         leaseEndDate.setFullYear(leaseEndDate.getFullYear() + Number(leaseTermMonths));
@@ -1407,196 +1442,145 @@ export function LeaseForm({
                                         leaseEndDate = new Date(leaseStart);
                                         leaseEndDate.setMonth(leaseEndDate.getMonth() + Number(leaseTermMonths));
                                       }
-                                      
-                                      if (currentDate > leaseEndDate) {
-                                        return "Payment date must be on or before lease end date";
+                                      maxDate = leaseEndDate.toISOString().split("T")[0];
+                                    }
+
+                                    if (index < paymentTerms.length - 1 && paymentTerms[index + 1]?.due_date) {
+                                      const nextDate = paymentTerms[index + 1].due_date;
+                                      if (!maxDate || nextDate < maxDate) {
+                                        maxDate = nextDate;
                                       }
                                     }
-                                  }
-                                  
-                                  // Validation 2: Sequential date validation
-                                  // Check against previous payment term
-                                  if (index > 0 && paymentTerms[index - 1]?.due_date) {
-                                    const prevDate = new Date(paymentTerms[index - 1].due_date);
-                                    if (currentDate < prevDate) {
-                                      return "Payment date must be on or after the previous payment date";
+
+                                    return (
+                                      <div className="space-y-1">
+                                        <Input
+                                          type="date"
+                                          value={field.value || ""}
+                                          onChange={(e) => {
+                                            field.onChange(e.target.value);
+                                            // Trigger validation for this field and adjacent fields
+                                            setTimeout(() => {
+                                              trigger(`payment_terms.${index}.due_date`);
+                                              if (index > 0) {
+                                                trigger(`payment_terms.${index - 1}.due_date`);
+                                              }
+                                              if (index < paymentTerms.length - 1) {
+                                                trigger(`payment_terms.${index + 1}.due_date`);
+                                              }
+                                            }, 0);
+                                          }}
+                                          min={minDate}
+                                          max={maxDate}
+                                          className={`pl-10 ${errors.payment_terms?.[index]?.due_date ? "border-red-500" : ""}`}
+                                          disabled={isReadOnly}
+                                        />
+                                        {errors.payment_terms?.[index]?.due_date && (
+                                          <p className="text-xs text-red-500">
+                                            {errors.payment_terms[index]?.due_date?.message as string}
+                                          </p>
+                                        )}
+                                      </div>
+                                    );
+                                  }}
+                                />
+                              </div>
+                            </div>
+                            <div className="space-y-2">
+                              <Controller
+                                name={`payment_terms.${index}.payment_method`}
+                                control={control}
+                                render={({ field }) => (
+                                  <Select
+                                    value={field.value || ""}
+                                    onValueChange={field.onChange}
+                                    disabled={isReadOnly}
+                                  >
+                                    <SelectTrigger>
+                                      <div className="flex items-center gap-2">
+                                        {field.value === "cash" && (
+                                          <Wallet className="h-4 w-4" />
+                                        )}
+                                        {field.value === "card" && (
+                                          <CreditCard className="h-4 w-4" />
+                                        )}
+                                        {field.value === "bank" && (
+                                          <Building2 className="h-4 w-4" />
+                                        )}
+                                        {field.value === "upi" && (
+                                          <Smartphone className="h-4 w-4" />
+                                        )}
+                                        {field.value === "cheque" && (
+                                          <FileText className="h-4 w-4" />
+                                        )}
+                                        <SelectValue placeholder="Select method" />
+                                      </div>
+                                    </SelectTrigger>
+                                    <SelectContent>
+                                      <SelectItem value="cash">Cash</SelectItem>
+                                      <SelectItem value="card">Card</SelectItem>
+                                      <SelectItem value="bank">
+                                        Bank Transfer
+                                      </SelectItem>
+                                      <SelectItem value="cheque">Cheque</SelectItem>
+                                      <SelectItem value="upi">UPI</SelectItem>
+                                      <SelectItem value="other">Other</SelectItem>
+                                    </SelectContent>
+                                  </Select>
+                                )}
+                              />
+                            </div>
+                            <div className="space-y-2">
+                              <Input
+                                {...register(`payment_terms.${index}.reference_no`)}
+                                placeholder="Enter reference"
+                                disabled={
+                                  isReadOnly ||
+                                  watch(`payment_terms.${index}.payment_method`) ===
+                                  "cash"
+                                }
+                                className={
+                                  errors.payment_terms?.[index]?.reference_no
+                                    ? "border-red-500"
+                                    : ""
+                                }
+                              />
+                            </div>
+                            <div className="space-y-2">
+                              <div className="flex items-center pt-2">
+                                <span className="text-sm font-medium">
+                                  {(() => {
+                                    const amount = watch(
+                                      `payment_terms.${index}.amount`,
+                                    );
+                                    if (
+                                      amount === undefined ||
+                                      amount === null ||
+                                      isNaN(Number(amount))
+                                    ) {
+                                      return "₹0.00";
                                     }
-                                  }
-                                  
-                                  // Check against next payment term
-                                  if (index < paymentTerms.length - 1 && paymentTerms[index + 1]?.due_date) {
-                                    const nextDate = new Date(paymentTerms[index + 1].due_date);
-                                    if (currentDate > nextDate) {
-                                      return "Payment date must be on or before the next payment date";
-                                    }
-                                  }
-                                  
-                                  return true;
-                                },
-                              }}
-                              render={({ field }) => {
-                                const paymentTerms = watch("payment_terms") || [];
-                                
-                                // Calculate min date: max of (lease start date, previous payment date)
-                                let minDate: string | undefined = startDate || undefined;
-                                if (index > 0 && paymentTerms[index - 1]?.due_date) {
-                                  const prevDate = paymentTerms[index - 1].due_date;
-                                  if (!minDate || prevDate > minDate) {
-                                    minDate = prevDate;
-                                  }
-                                }
-                                
-                                // Calculate max date: min of (lease end date, next payment date)
-                                let maxDate: string | undefined = undefined;
-                                if (startDate && leaseTermMonths && derivedFrequency) {
-                                  const leaseStart = new Date(startDate);
-                                  let leaseEndDate: Date;
-                                  if (derivedFrequency === "annually") {
-                                    leaseEndDate = new Date(leaseStart);
-                                    leaseEndDate.setFullYear(leaseEndDate.getFullYear() + Number(leaseTermMonths));
-                                  } else {
-                                    leaseEndDate = new Date(leaseStart);
-                                    leaseEndDate.setMonth(leaseEndDate.getMonth() + Number(leaseTermMonths));
-                                  }
-                                  maxDate = leaseEndDate.toISOString().split("T")[0];
-                                }
-                                
-                                if (index < paymentTerms.length - 1 && paymentTerms[index + 1]?.due_date) {
-                                  const nextDate = paymentTerms[index + 1].due_date;
-                                  if (!maxDate || nextDate < maxDate) {
-                                    maxDate = nextDate;
-                                  }
-                                }
-                                
-                                return (
-                                  <div className="space-y-1">
-                                    <Input
-                                      type="date"
-                                      value={field.value || ""}
-                                      onChange={(e) => {
-                                        field.onChange(e.target.value);
-                                        // Trigger validation for this field and adjacent fields
-                                        setTimeout(() => {
-                                          trigger(`payment_terms.${index}.due_date`);
-                                          if (index > 0) {
-                                            trigger(`payment_terms.${index - 1}.due_date`);
-                                          }
-                                          if (index < paymentTerms.length - 1) {
-                                            trigger(`payment_terms.${index + 1}.due_date`);
-                                          }
-                                        }, 0);
-                                      }}
-                                      min={minDate}
-                                      max={maxDate}
-                                      className={`pl-10 ${errors.payment_terms?.[index]?.due_date ? "border-red-500" : ""}`}
-                                      disabled={isReadOnly}
-                                    />
-                                    {errors.payment_terms?.[index]?.due_date && (
-                                      <p className="text-xs text-red-500">
-                                        {errors.payment_terms[index]?.due_date?.message as string}
-                                      </p>
-                                    )}
-                                  </div>
-                                );
-                              }}
-                            />
+                                    return `₹${Number(amount).toLocaleString(
+                                      "en-IN",
+                                      {
+                                        minimumFractionDigits: 2,
+                                        maximumFractionDigits: 2,
+                                      },
+                                    )}`;
+                                  })()}
+                                </span>
+                                <input
+                                  type="hidden"
+                                  {...register(`payment_terms.${index}.amount`, {
+                                    valueAsNumber: true,
+                                  })}
+                                />
+                              </div>
+                            </div>
                           </div>
-                        </div>
-                        <div className="space-y-2">
-                          <Controller
-                            name={`payment_terms.${index}.payment_method`}
-                            control={control}
-                            render={({ field }) => (
-                              <Select
-                                value={field.value || ""}
-                                onValueChange={field.onChange}
-                                disabled={isReadOnly}
-                              >
-                                <SelectTrigger>
-                                  <div className="flex items-center gap-2">
-                                    {field.value === "cash" && (
-                                      <Wallet className="h-4 w-4" />
-                                    )}
-                                    {field.value === "card" && (
-                                      <CreditCard className="h-4 w-4" />
-                                    )}
-                                    {field.value === "bank" && (
-                                      <Building2 className="h-4 w-4" />
-                                    )}
-                                    {field.value === "upi" && (
-                                      <Smartphone className="h-4 w-4" />
-                                    )}
-                                    {field.value === "cheque" && (
-                                      <FileText className="h-4 w-4" />
-                                    )}
-                                    <SelectValue placeholder="Select method" />
-                                  </div>
-                                </SelectTrigger>
-                                <SelectContent>
-                                  <SelectItem value="cash">Cash</SelectItem>
-                                  <SelectItem value="card">Card</SelectItem>
-                                  <SelectItem value="bank">
-                                    Bank Transfer
-                                  </SelectItem>
-                                  <SelectItem value="cheque">Cheque</SelectItem>
-                                  <SelectItem value="upi">UPI</SelectItem>
-                                  <SelectItem value="other">Other</SelectItem>
-                                </SelectContent>
-                              </Select>
-                            )}
-                          />
-                        </div>
-                        <div className="space-y-2">
-                          <Input
-                            {...register(`payment_terms.${index}.reference_no`)}
-                            placeholder="Enter reference"
-                            disabled={
-                              isReadOnly ||
-                              watch(`payment_terms.${index}.payment_method`) ===
-                                "cash"
-                            }
-                            className={
-                              errors.payment_terms?.[index]?.reference_no
-                                ? "border-red-500"
-                                : ""
-                            }
-                          />
-                        </div>
-                        <div className="space-y-2">
-                          <div className="flex items-center pt-2">
-                            <span className="text-sm font-medium">
-                              {(() => {
-                                const amount = watch(
-                                  `payment_terms.${index}.amount`,
-                                );
-                                if (
-                                  amount === undefined ||
-                                  amount === null ||
-                                  isNaN(Number(amount))
-                                ) {
-                                  return "₹0.00";
-                                }
-                                return `₹${Number(amount).toLocaleString(
-                                  "en-IN",
-                                  {
-                                    minimumFractionDigits: 2,
-                                    maximumFractionDigits: 2,
-                                  },
-                                )}`;
-                              })()}
-                            </span>
-                            <input
-                              type="hidden"
-                              {...register(`payment_terms.${index}.amount`, {
-                                valueAsNumber: true,
-                              })}
-                            />
-                          </div>
-                        </div>
+                        ))}
                       </div>
-                    ))}
-                  </div>
-                )}
+                    )}
                   </div>
                 )}
               </TabsContent>

@@ -11,17 +11,17 @@ class LeasesApiService {
     return await apiService.request(`/leases/overview?${params.toString()}`);
   }
 
-  async addLease(leaseData: any) {
-    return await apiService.request("/leases/", {
+  async addLease(leaseData: FormData) {
+    return await apiService.requestWithForm("/leases/", {
       method: "POST",
-      body: JSON.stringify(leaseData),
+      body: leaseData,
     });
   }
 
-  async updateLease(leaseData: any) {
+  async updateLease(leaseData: FormData) {
     return await apiService.request("/leases/", {
       method: "PUT",
-      body: JSON.stringify(leaseData),
+      body: leaseData,
     });
   }
 

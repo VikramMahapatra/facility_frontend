@@ -605,10 +605,18 @@ export default function InvoiceFormPage() {
         },
       };
 
+      const formData = new FormData();
+
+      // ✅ append attachments
+      attachments.forEach((file) => {
+        formData.append("attachments", file);
+      });
+
       let response;
       if (formMode === "create") {
+        formData.append("invoice", JSON.stringify(invoiceData));
         response = await withLoader(async () => {
-          return await invoiceApiService.addInvoice(invoiceData);
+          return await invoiceApiService.addInvoice(formData);
         });
       } else if (formMode === "edit" && invoice) {
         const updatedInvoice = {
@@ -618,8 +626,11 @@ export default function InvoiceFormPage() {
           invoice_no: invoice.invoice_no,
           updated_at: new Date().toISOString(),
         };
+
+        formData.append("invoice", JSON.stringify(updatedInvoice));
+
         response = await withLoader(async () => {
-          return await invoiceApiService.updateInvoice(updatedInvoice);
+          return await invoiceApiService.updateInvoice(formData);
         });
       }
 
@@ -1361,9 +1372,10 @@ export default function InvoiceFormPage() {
         <AlertDialog open={showSaveDialog} onOpenChange={setShowSaveDialog}>
           <AlertDialogContent>
             <AlertDialogHeader>
-              <AlertDialogTitle>Save Invoice</AlertDialogTitle>
+              <AlertDialogTitle>Finalize Invoice</AlertDialogTitle>
               <AlertDialogDescription>
-                How would you like to save this invoice?
+                Choose how you want to save this invoice.
+                Draft invoices can be edited later. Issued invoices are finalized and ready to send.
               </AlertDialogDescription>
             </AlertDialogHeader>
             <AlertDialogFooter className="flex-col sm:flex-row gap-2">
@@ -1383,8 +1395,8 @@ export default function InvoiceFormPage() {
                 disabled={isSubmitting || formIsSubmitting}
               >
                 {isSubmitting || formIsSubmitting
-                  ? "Saving..."
-                  : "Save & Continue"}
+                  ? "Sending..."
+                  : "Issue Invoice"}
               </AlertDialogAction>
             </AlertDialogFooter>
           </AlertDialogContent>

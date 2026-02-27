@@ -551,10 +551,18 @@ export default function BillFormPage() {
             })) || [],
       };
 
+      const formData = new FormData();
+
+      // ✅ append attachments
+      attachments.forEach((file) => {
+        formData.append("attachments", file);
+      });
+
       let response;
       if (formMode === "create") {
+        formData.append("bill", JSON.stringify(billData));
         response = await withLoader(async () => {
-          return await billsApiService.addBill(billData);
+          return await billsApiService.addBill(formData);
         });
       } else if (formMode === "edit" && bill) {
         const updatedBill = {
@@ -564,8 +572,9 @@ export default function BillFormPage() {
           bill_no: bill.bill_no,
           updated_at: new Date().toISOString(),
         };
+        formData.append("bill", JSON.stringify(updatedBill));
         response = await withLoader(async () => {
-          return await billsApiService.updateBill(updatedBill);
+          return await billsApiService.updateBill(formData);
         });
       }
 
