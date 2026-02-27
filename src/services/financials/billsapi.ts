@@ -31,17 +31,17 @@ class BillsApiService {
     return await apiService.request("/bills/overview");
   }
 
-  async addBill(billData: any) {
+  async addBill(formData: FormData) {
     return await apiService.request("/bills/create", {
       method: "POST",
-      body: JSON.stringify(billData),
+      body: JSON.stringify(formData),
     });
   }
 
-  async updateBill(billData: any) {
+  async updateBill(formData: FormData) {
     return await apiService.request("/bills/", {
       method: "PUT",
-      body: JSON.stringify(billData),
+      body: formData,
     });
   }
 
