@@ -213,17 +213,27 @@ export default function ParkingSlots() {
   };
 
   const handleBulkImport = async (data: any[]) => {
-    // TODO: Add API call here when ready
-    // const response = await parkingSlotApiService.bulkUploadParkingSlots(data);
-    // if (response.success) {
-    //   loadSlots();
-    //   toast.success(`${data.length} parking slots have been imported successfully.`);
-    // }
-    console.log("Bulk import data:", data);
-    toast.success(
-      `${data.length} parking slots ready to import (API integration pending).`,
-    );
-    loadSlots();
+    // 1. Send data matching the backend schema: { slots: [...] }
+    const response = await parkingSlotApiService.bulkUploadParkingSlots({ slots: data });
+    
+    if (!response?.success) return toast.error("Upload failed. Please try again.");
+
+    // 2. Destructure the results cleanly
+    const { inserted = 0, updated = 0, validations = [] } = response.data || {};
+    
+    // 3. Refresh table if anything worked
+    if (inserted || updated) loadSlots();
+
+    // 4. Concise toast logic
+    if (!validations.length) {
+      toast.success(`Success! ${inserted} inserted, ${updated} updated.`);
+    } else if (inserted || updated) {
+      toast.error(`Partial success: ${inserted} inserted, ${updated} updated. ${validations.length} failed.`);
+      console.warn("Upload Errors:", validations);
+    } else {
+      toast.error(`Failed: All ${validations.length} rows had errors.`);
+      console.error("Upload Errors:", validations);
+    }
   };
 
   const totalSlots = overview.totalSlots || 0;
