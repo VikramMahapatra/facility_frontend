@@ -183,18 +183,43 @@ export default function Spaces() {
       }
     }
   };
+
   const handleBulkImport = async (data: any[]) => {
-    // TODO: Add API call here when ready
-    // const response = await spacesApiService.bulkUploadSpaces(data);
-    // if (response.success) {
-    //   updateSpacePage();
-    //   toast.success(`${data.length} spaces have been imported successfully.`);
-    // }
-    console.log("Bulk import data:", data);
-    toast.success(
-      `${data.length} spaces ready to import (API integration pending).`,
-    );
-    updateSpacePage();
+    const payload = { spaces: data };
+    const response = await spacesApiService.bulkUploadSpaces(payload);
+
+    if (response.success) {
+      const inserted = response.data?.inserted || 0;
+      const updated = response.data?.updated || 0;
+      const validations = response.data?.validations || [];
+      
+      // If at least one row worked, refresh the table
+      if (inserted > 0 || updated > 0) {
+        updateSpacePage();
+      }
+      // 1. COMPLETE FAILURE (Typos in every row)
+      if (inserted === 0 && updated === 0 && validations.length > 0) {
+        toast.error(
+          `Import failed. All ${validations.length} row(s) had errors (check for typos in Site/Building names).`
+        );
+        console.error("Upload Errors:", validations);
+      } 
+      // 2. PARTIAL SUCCESS (Some worked, some failed)
+      else if (validations.length > 0) {
+        toast.error(
+          `Imported ${inserted}, Updated ${updated}. However, ${validations.length} row(s) failed due to errors.`
+        );
+        console.warn("Upload Errors:", validations);
+      } 
+      // 3. 100% SUCCESS (Perfect Excel sheet)
+      else {
+        toast.success(
+          `${inserted} spaces inserted and ${updated} updated successfully!`
+        );
+      }
+    } else {
+      toast.error("Something went wrong during the upload.");
+    }
   };
 
   const handleSave = async (spaceData: Partial<Space>) => {
