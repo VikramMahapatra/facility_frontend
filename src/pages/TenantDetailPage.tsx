@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -36,6 +36,7 @@ import { LeaseForm } from "@/components/LeasesForm";
 import { ManageTenantSpacesForm } from "@/components/ManageTenantSpacesForm";
 import { TenantForm } from "@/components/TenantForm";
 import { userManagementApiService } from "@/services/access_control/usermanagementapi";
+import TenantJourneyTimeline from "@/components/tenant/TenantJourneyTimeline";
 
 export default function TenantDetailPage() {
   const { id } = useParams<{ id: string }>();
@@ -111,6 +112,13 @@ export default function TenantDetailPage() {
     leasesBySpace.get(lease.space_id)!.push(lease);
   });
 
+  const timelineBySpace = useMemo(() => {
+    return new Map(
+      Object.entries(tenant?.space_timelines || {})
+    );
+  }, [tenant]);
+
+
   useEffect(() => {
     setPaymentPage(1);
   }, [id, paymentHistory.length]);
@@ -134,7 +142,7 @@ export default function TenantDetailPage() {
       case "draft":
         return <Badge variant="outline">Draft</Badge>;
       default:
-        return <Badge variant="outline">No Lease</Badge>;
+        return <Badge variant="outline">No Active Lease</Badge>;
     }
   };
 
@@ -514,6 +522,9 @@ export default function TenantDetailPage() {
                       const activeLease = leases?.find(
                         (l) => l.status === "active"
                       );
+                      const timeline = space.space_id
+                        ? timelineBySpace.get(space.space_id)
+                        : [];
 
                       return (
                         <Card
@@ -555,117 +566,131 @@ export default function TenantDetailPage() {
                                     .join(" • ")}
                                 </div>
                               </div>
-                              <div>
+                              {/* <div>
                                 {activeLease
-                                  ? leaseBadge(activeLease.status)
+                                  ? (leaseBadge(activeLease.status))
                                   : leaseBadge(undefined)}
-                              </div>
+                              </div> */}
                             </div>
                           </CardHeader>
                           <CardContent>
-                            <div className="text-sm font-medium mb-3">
-                              Leases
-                            </div>
-                            {leases && leases.length > 0 ? (
-                              <div className="space-y-2">
-                                {leases.map((lease) => (
-                                  <div
-                                    key={lease.id}
-                                    className="p-3 bg-muted rounded-lg text-sm"
-                                  >
-                                    <div className="font-medium mb-1">
-                                      <span
-                                        className="text-blue-600 hover:text-blue-800 cursor-pointer hover:underline"
-                                        onClick={() =>
-                                          navigate(`/leases/${lease.id}`)
-                                        }
+                            <div className="flex flex-col lg:flex-row gap-6">
+                              {/* LEFT SIDE — Lease Panel */}
+                              <div className="w-80 shrink-0">
+
+                                <div className="text-sm font-medium">Lease</div>
+
+                                {leases?.length > 0 ? (
+                                  leases.map((lease) => (
+                                    <div
+                                      key={lease.id}
+                                      className="rounded-lg border p-3 text-sm"
+                                    >
+                                      <div
+                                        className="font-medium text-blue-600 cursor-pointer hover:underline"
+                                        onClick={() => navigate(`/leases/${lease.id}`)}
                                       >
                                         #{lease.lease_number || "N/A"}
-                                      </span>{" "}
-                                      - {lease.space_name || space.space_name}
-                                    </div>
-                                    <div className="text-muted-foreground space-y-1">
+                                      </div>
+
                                       {lease.rent_amount && (
-                                        <div>
+                                        <div className="text-muted-foreground">
                                           ₹{lease.rent_amount.toLocaleString()}
-                                          {lease.frequency &&
-                                            ` • ${lease.frequency}`}
+                                          {lease.frequency && ` • ${lease.frequency}`}
                                         </div>
                                       )}
+
                                       {lease.start_date && lease.end_date && (
-                                        <div className="text-xs">
-                                          {new Date(
-                                            lease.start_date
-                                          ).toLocaleDateString()}{" "}
-                                          -{" "}
-                                          {new Date(
-                                            lease.end_date
-                                          ).toLocaleDateString()}
+                                        <div className="text-xs text-muted-foreground">
+                                          {new Date(lease.start_date).toLocaleDateString()} —
+                                          {new Date(lease.end_date).toLocaleDateString()}
                                         </div>
                                       )}
+
+                                      <div className="mt-2">
+                                        {leaseBadge(lease.status)}
+                                      </div>
                                     </div>
-                                    <div className="mt-2">
-                                      {leaseBadge(lease.status)}
+                                  ))
+                                ) : (
+                                  <div className="space-y-2">
+                                    <div className="text-sm text-muted-foreground">
+                                      No leases for this space
                                     </div>
-                                  </div>
-                                ))}
-                              </div>
-                            ) : (
-                              <div className="space-y-2">
-                                <div className="text-sm text-muted-foreground">
-                                  No leases for this space
-                                </div>
-                                {space.status == "approved" && (
-                                  <Button
-                                    size="sm"
-                                    variant="outline"
-                                    onClick={async () => {
-                                      setSelectedSpaceId(space.space_id);
-                                      // Fetch tenant lease details
-                                      if (id) {
-                                        const response = await withLoader(
-                                          async () => {
-                                            return await leasesApiService.getTenantLeaseDetail(
-                                              id,
-                                              space.space_id
+                                    {space.status == "approved" && (
+                                      <Button
+                                        size="sm"
+                                        variant="outline"
+                                        onClick={async () => {
+                                          setSelectedSpaceId(space.space_id);
+                                          // Fetch tenant lease details
+                                          if (id) {
+                                            const response = await withLoader(
+                                              async () => {
+                                                return await leasesApiService.getTenantLeaseDetail(
+                                                  id,
+                                                  space.space_id
+                                                );
+                                              }
                                             );
+                                            if (
+                                              response?.success &&
+                                              response.data?.tenant_data?.length > 0
+                                            ) {
+                                              const tenantData =
+                                                response.data.tenant_data[0];
+                                              setPrefilledLeaseData({
+                                                tenant_id: id,
+                                                site_id: tenantData.site_id,
+                                                site_name: tenantData.site_name,
+                                                building_id: tenantData.building_id,
+                                                building_name:
+                                                  tenantData.building_name,
+                                                space_id: space.space_id, // Use the space from the card
+                                                space_name: space.space_name,
+                                              } as Lease);
+                                            } else {
+                                              // If no data, set tenant_id and space_id
+                                              setPrefilledLeaseData({
+                                                tenant_id: id,
+                                                space_id: space.space_id,
+                                                space_name: space.space_name,
+                                              } as Lease);
+                                            }
                                           }
-                                        );
-                                        if (
-                                          response?.success &&
-                                          response.data?.tenant_data?.length > 0
-                                        ) {
-                                          const tenantData =
-                                            response.data.tenant_data[0];
-                                          setPrefilledLeaseData({
-                                            tenant_id: id,
-                                            site_id: tenantData.site_id,
-                                            site_name: tenantData.site_name,
-                                            building_id: tenantData.building_id,
-                                            building_name:
-                                              tenantData.building_name,
-                                            space_id: space.space_id, // Use the space from the card
-                                            space_name: space.space_name,
-                                          } as Lease);
-                                        } else {
-                                          // If no data, set tenant_id and space_id
-                                          setPrefilledLeaseData({
-                                            tenant_id: id,
-                                            space_id: space.space_id,
-                                            space_name: space.space_name,
-                                          } as Lease);
-                                        }
-                                      }
-                                      setIsLeaseFormOpen(true);
-                                    }}
-                                    className="flex items-center gap-2"
-                                  >
-                                    <Plus className="h-4 w-4" />
-                                    Add Lease
-                                  </Button>
+                                          setIsLeaseFormOpen(true);
+                                        }}
+                                        className="flex items-center gap-2"
+                                      >
+                                        <Plus className="h-4 w-4" />
+                                        Add Lease
+                                      </Button>
+                                    )}
+                                  </div>
                                 )}
+
                               </div>
-                            )}
+                              <div className="w-px bg-gray-200" />
+                              {/* RIGHT SIDE — Timeline */}
+                              <div className="flex-1 overflow-x-auto">
+                                {timeline && timeline.length > 0 ? (
+                                  <>
+                                    <div className="text-sm font-medium mb-3">
+                                      Tenant Journey
+                                    </div>
+                                    <TenantJourneyTimeline history={timeline} />
+                                  </>
+                                ) : (
+                                  <p className="text-sm text-muted-foreground">
+                                    No journey available
+                                  </p>
+                                )}
+
+                              </div>
+
+
+
+                            </div>
                           </CardContent>
                         </Card>
                       );
@@ -870,7 +895,7 @@ export default function TenantDetailPage() {
           setSelectedSpaceId(null);
           setPrefilledLeaseData(null);
         }}
-        onSave={async (leaseData: Partial<Lease>) => {
+        onSave={async (leaseData: FormData) => {
           const response = await withLoader(async () => {
             return await leasesApiService.addLease(leaseData);
           });

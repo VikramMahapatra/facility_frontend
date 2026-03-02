@@ -210,7 +210,7 @@ export function PaymentDetailsForm({
 
         <div className="space-y-4">
           {/* 1st row: Mode, Reference No, Amount */}
-          <div className="grid grid-cols-3 gap-4">
+          <div className="grid grid-cols-2 gap-4">
             <div className="space-y-2">
               <Label>Payment Mode *</Label>
               <Select
@@ -247,6 +247,23 @@ export function PaymentDetailsForm({
               />
             </div>
 
+
+          </div>
+
+          {/* 2nd row: Date */}
+          <div className="grid grid-cols-2 gap-4">
+            <div className="space-y-2">
+              <Label>Payment Date *</Label>
+              <div className="relative">
+                <Calendar className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground pointer-events-none" />
+                <Input
+                  type="date"
+                  className="pl-10"
+                  value={paymentDetail.paid_at || ""}
+                  onChange={(e) => updatePaymentDetail("paid_at", e.target.value)}
+                />
+              </div>
+            </div>
             <div className="space-y-2">
               <Label>Amount *</Label>
               <div className="relative">
@@ -270,20 +287,6 @@ export function PaymentDetailsForm({
                   step="any"
                 />
               </div>
-            </div>
-          </div>
-
-          {/* 2nd row: Date */}
-          <div className="space-y-2">
-            <Label>Payment Date *</Label>
-            <div className="relative">
-              <Calendar className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground pointer-events-none" />
-              <Input
-                type="date"
-                className="pl-10"
-                value={paymentDetail.paid_at || ""}
-                onChange={(e) => updatePaymentDetail("paid_at", e.target.value)}
-              />
             </div>
           </div>
         </div>

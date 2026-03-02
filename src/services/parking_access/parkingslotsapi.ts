@@ -59,6 +59,13 @@ class ParkingSlotApiService {
       method: "GET",
     });
   }
+
+  async bulkUploadParkingSlots(payload: any) {
+    return await apiService.request("/parking-slots/bulk-upload", {
+      method: "POST",
+      body: JSON.stringify(payload),
+    });
+  }
 }
 
 export const parkingSlotApiService = new ParkingSlotApiService();
