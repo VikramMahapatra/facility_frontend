@@ -584,7 +584,7 @@ export default function InvoiceFormPage() {
         user_id: data.customer_id,
         date: data.date,
         due_date: data.due_date,
-        status: saveAsDraft ? "draft" : data.status || "issued",
+        status: saveAsDraft ? "draft" : "issued",
         currency: data.currency || "INR",
         billable_item_type: data.code || "", // Pass code to billable_item_type
         billable_item_id: "", // No longer needed - using period IDs directly
