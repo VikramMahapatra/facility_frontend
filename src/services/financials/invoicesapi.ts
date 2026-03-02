@@ -1,3 +1,4 @@
+import { toast } from "@/components/ui/app-toast";
 import { apiService } from "../api";
 
 class InvoiceApiService {
@@ -97,7 +98,8 @@ class InvoiceApiService {
     console.log("response blob", response);
     if (!response.ok) {
       const text = await response.text();
-      throw new Error(text);
+      toast.error("Download Failed", text);
+
     }
 
     const contentType = response.headers.get("content-type") || "";
