@@ -11,7 +11,7 @@ class BillsApiService {
 
   async getBillEntityLookup(params) {
     return await apiService.request(
-      `/bills/entity-lookup?${params.toString()}`,
+      `/bills/pending-workorder-lookup?${params.toString()}`,
     );
   }
 
@@ -56,6 +56,24 @@ class BillsApiService {
   async getBillTypeLookup() {
     return await apiService.request("/bills/bill-type-lookup");
   }
+
+  async getVendorLookup(spaceId: string) {
+    const params = new URLSearchParams();
+    params.append("space_id", spaceId);
+    return await apiService.request(`/bills/workorder-vendor-lookup?${params.toString()}`);
+  }
+
+  async getBillPreviewNumber() {
+    return await apiService.request("/bills/preview-number");
+  }
+
+  async saveBillPayment(paymentData: any) {
+    return await apiService.request("/bills/save-payment", {
+      method: "POST",
+      body: JSON.stringify(paymentData),
+    });
+  }
+
 }
 
 export const billsApiService = new BillsApiService();

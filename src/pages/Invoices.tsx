@@ -412,7 +412,7 @@ export default function Invoices() {
                                     <Trash2 className="h-4 w-4" />
                                   </Button>
                                 )}
-                                {invoice.status === "paid" && (
+                                {["paid", "issued", "partial"].includes(invoice.status) && (
                                   <Button
                                     variant="ghost"
                                     size="sm"
