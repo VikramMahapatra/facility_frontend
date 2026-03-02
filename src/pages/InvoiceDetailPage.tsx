@@ -221,17 +221,15 @@ export default function InvoiceDetailPage() {
             </div>
 
             <div className="flex gap-2">
-              {invoice.status === "draft" && (
-                <Button
-                  variant="outline"
-                  size="sm"
-                  onClick={() => setIsInvoiceFormOpen(true)}
-                  className="gap-2"
-                >
-                  <Pencil className="h-4 w-4" />
-                  Edit
-                </Button>
-              )}
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => setIsInvoiceFormOpen(true)}
+                className="gap-2"
+              >
+                <Pencil className="h-4 w-4" />
+                Edit
+              </Button>
             </div>
           </div>
 
@@ -460,12 +458,12 @@ export default function InvoiceDetailPage() {
                                 <strong>Date:</strong>{" "}
                                 {payment.paid_at
                                   ? new Date(
-                                    payment.paid_at,
-                                  ).toLocaleDateString("en-IN", {
-                                    year: "numeric",
-                                    month: "long",
-                                    day: "numeric",
-                                  })
+                                      payment.paid_at,
+                                    ).toLocaleDateString("en-IN", {
+                                      year: "numeric",
+                                      month: "long",
+                                      day: "numeric",
+                                    })
                                   : "-"}
                               </p>
                               {payment.billable_item_name && (
@@ -547,54 +545,95 @@ export default function InvoiceDetailPage() {
         </div>
       )}
 
-      {id && invoice && (
+      {invoice && (
         <>
+          <InvoiceForm
+            invoice={invoice}
+            isOpen={isInvoiceFormOpen}
+            onClose={() => setIsInvoiceFormOpen(false)}
+            mode="edit"
+            onSave={async (invoiceData: Partial<Invoice>) => {
+              if (!invoice) return { success: false };
 
-          <PaymentDetailsForm
-            invoiceId={id}
-            payment={selectedPayment}
-            mode={paymentFormMode}
-            isOpen={isPaymentFormOpen}
-            currency={invoice.currency}
-            onClose={() => {
-              setIsPaymentFormOpen(false);
-              setSelectedPayment(undefined);
-            }}
-            onSave={async (paymentData: any) => {
-              // Call payment history API after successful payment save
-              if (id) {
-                try {
-                  const paymentHistoryResponse = await withLoader(
-                    async () => {
-                      return await invoiceApiService.getPaymentHistory(id);
-                    },
-                  );
-                  if (paymentHistoryResponse?.success) {
-                    const paymentData =
-                      paymentHistoryResponse.data || [];
-                    setPayments(
-                      Array.isArray(paymentData) ? paymentData : [],
-                    );
-                  } else {
-                    // If payment history API fails, fallback to reloading from invoice
-                    if (invoice?.payments) {
-                      setPayments(invoice.payments);
-                    }
-                  }
-                  return paymentHistoryResponse;
-                } catch (error) {
-                  console.error("Error loading payment history:", error);
-                  // Fallback to reloading from invoice
-                  if (invoice?.payments) {
-                    setPayments(invoice.payments);
-                  }
-                  return { success: false };
+              const updatedInvoice = {
+                ...invoice,
+                ...invoiceData,
+                id: invoice.id,
+                invoice_no: invoice.invoice_no,
+                updated_at: new Date().toISOString(),
+              };
+
+              const response = await withLoader(async () => {
+                return await invoiceApiService.updateInvoice(updatedInvoice);
+              });
+
+              if (response?.success) {
+                setIsInvoiceFormOpen(false);
+                toast.success("Invoice updated successfully.");
+                // Reload invoice data
+                const reloadResponse = await withLoader(async () => {
+                  return await invoiceApiService.getInvoiceById(id!);
+                });
+                if (reloadResponse?.success) {
+                  setInvoice(reloadResponse.data);
+                }
+              } else if (response && !response.success) {
+                if (response?.message) {
+                  toast.error(response.message);
+                } else {
+                  toast.error("Failed to update invoice.");
                 }
               }
-              return { success: false };
+              return response;
             }}
           />
 
+          {id && invoice && (
+            <PaymentDetailsForm
+              invoiceId={id}
+              payment={selectedPayment}
+              mode={paymentFormMode}
+              isOpen={isPaymentFormOpen}
+              currency={invoice.currency}
+              onClose={() => {
+                setIsPaymentFormOpen(false);
+                setSelectedPayment(undefined);
+              }}
+              onSave={async (paymentData: any) => {
+                // Call payment history API after successful payment save
+                if (id) {
+                  try {
+                    const paymentHistoryResponse = await withLoader(
+                      async () => {
+                        return await invoiceApiService.getPaymentHistory(id);
+                      },
+                    );
+                    if (paymentHistoryResponse?.success) {
+                      const paymentData =
+                        paymentHistoryResponse.data?.payments || [];
+                      setPayments(
+                        Array.isArray(paymentData) ? paymentData : [],
+                      );
+                    } else {
+                      // If payment history API fails, fallback to reloading from invoice
+                      if (invoice?.payments) {
+                        setPayments(invoice.payments);
+                      }
+                    }
+                    return paymentHistoryResponse;
+                  } catch (error) {
+                    console.error("Error loading payment history:", error);
+                    // Fallback to reloading from invoice
+                    if (invoice?.payments) {
+                      setPayments(invoice.payments);
+                    }
+                    return { success: false };
+                  }
+                }
+                return { success: false };
+              }}
+            />
+          )}
         </>
       )}
     </ContentContainer>

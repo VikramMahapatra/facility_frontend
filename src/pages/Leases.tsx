@@ -162,7 +162,7 @@ export default function Leases() {
     }
   };
 
-  const handleSave = async (leaseData: FormData) => {
+  const handleSave = async (leaseData: Partial<Lease>) => {
     let response;
     if (formMode === "create") {
       response = await leasesApiService.addLease(leaseData);
@@ -182,8 +182,11 @@ export default function Leases() {
         }
       }
     } else if (formMode === "edit" && selectedLease) {
-
-      response = await leasesApiService.updateLease(leaseData);
+      const updated = {
+        ...selectedLease,
+        ...leaseData,
+      };
+      response = await leasesApiService.updateLease(updated);
 
       if (response.success) {
         loadLeaseOverview();

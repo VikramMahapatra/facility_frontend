@@ -29,13 +29,6 @@ class SpacesApiService {
     });
   }
 
-  async bulkUploadSpaces(payload: any) {
-    return await apiService.request("/spaces/bulk-upload", {
-      method: "POST",
-      body: JSON.stringify(payload),
-    });
-  }
-
   async getSpaceLookup(site_id?: any, building_id?: any) {
     let url = "/spaces/lookup";
     if (site_id) {
@@ -46,21 +39,6 @@ class SpacesApiService {
     }
     return await apiService.request(url);
   }
-
-  async getFilteredSpaceLookup(site_id?: any, building_id?: any, request_type?: any) {
-    let url = "/spaces/filtered-lookup";
-    if (site_id) {
-      url += `?site_id=${site_id}`;
-    }
-    if (building_id) {
-      url += `&building_id=${building_id}`;
-    }
-    if (request_type) {
-      url += `&request_type=${request_type}`;
-    }
-    return await apiService.request(url);
-  }
-
 
   async getMasterSpaceLookup(site_id?: any, building_id?: any, space_id?: any) {
     const url = "/master/space-lookup";

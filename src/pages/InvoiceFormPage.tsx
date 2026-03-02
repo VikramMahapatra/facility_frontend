@@ -227,46 +227,14 @@ export default function InvoiceFormPage() {
     }
   }, [watchedItems, setValue]);
 
-  useEffect(() => {
-    if (invoice && spaceList.length > 0) {
-      setValue("space_id", invoice?.space_id);
-    }
-  }, [spaceList]);
-
-  useEffect(() => {
-    if (!billableItemList?.length) return;
-
-    fields.forEach((_, index) => {
-      const currentValue = watch(`lines.${index}.item_id`);
-
-      const exists = billableItemList.some(
-        (item) => item.id === currentValue
-      );
-
-      if (exists) {
-        console.log("item id", currentValue)
-        setValue(`lines.${index}.item_id`, currentValue);
-      }
-    });
-  }, [billableItemList]);
-
-
-
   const loadInvoice = async () => {
     const response = await withLoader(async () => {
       return await invoiceApiService.getInvoiceById(id!);
     });
 
     if (response?.success && response.data) {
-      const loadedInvoice = response.data;
-      // Prevent editing issued invoices — redirect to view mode
-      if (formMode === "edit" && loadedInvoice.status === "issued") {
-        toast.error("Issued invoices cannot be edited.");
-        navigate(`/invoices/${id}/view`);
-        return;
-      }
-      setInvoice(loadedInvoice);
-      loadAll(loadedInvoice);
+      setInvoice(response.data);
+      loadAll(response.data);
     } else {
       toast.error("Failed to load invoice details");
       navigate("/invoices");
@@ -369,7 +337,6 @@ export default function InvoiceFormPage() {
 
   const loadBillableItemLookup = async () => {
     if (!watchedSpaceId || !watchedBillableType) {
-      console.log("getting empty")
       setBillableItemList([]);
       return;
     }
@@ -494,34 +461,34 @@ export default function InvoiceFormPage() {
     reset(
       invoice && formMode !== "create"
         ? {
-          invoice_no: invoice.invoice_no || "",
-          site_id: invoice.site_id || "",
-          building_id: (invoice as any).building_id || "",
-          space_id: (invoice as any).space_id || "",
-          user_id: (invoice as any).customer_id || "",
-          customer_id: (invoice as any).customer_id || "",
-          customer_name: (invoice as any).customer_name || "",
-          customer_email: "",
-          customer_phone: "",
-          date: invoice.date || new Date().toISOString().split("T")[0],
-          due_date: invoice.due_date || "",
-          status: invoice.status || "draft",
-          currency: invoice.currency || "INR",
-          code: invoice.code || "rent",
-          billable_item_type: invoice.code || "rent",
-          billable_item_id: "",
-          lines:
-            invoice.lines && invoice.lines.length > 0
-              ? invoice.lines.map((line) => ({
-                item_id: line.item_id || "",
-                description: line.description || "",
-                amount: line.amount || 0,
-                tax: line.tax_pct || 5,
-              }))
-              : emptyFormData.lines,
-          totals: invoice.totals || { sub: 0, tax: 5, grand: 0 },
-          payments: [],
-        }
+            invoice_no: invoice.invoice_no || "",
+            site_id: invoice.site_id || "",
+            building_id: (invoice as any).building_id || "",
+            space_id: (invoice as any).space_id || "",
+            user_id: (invoice as any).customer_id || "",
+            customer_id: (invoice as any).customer_id || "",
+            customer_name: (invoice as any).customer_name || "",
+            customer_email: "",
+            customer_phone: "",
+            date: invoice.date || new Date().toISOString().split("T")[0],
+            due_date: invoice.due_date || "",
+            status: invoice.status || "draft",
+            currency: invoice.currency || "INR",
+            code: invoice.code || "rent",
+            billable_item_type: invoice.code || "rent",
+            billable_item_id: "",
+            lines:
+              invoice.lines && invoice.lines.length > 0
+                ? invoice.lines.map((line) => ({
+                    item_id: line.item_id || "",
+                    description: line.description || "",
+                    amount: line.amount || 0,
+                    tax: line.tax_pct || 5,
+                  }))
+                : emptyFormData.lines,
+            totals: invoice.totals || { sub: 0, tax: 5, grand: 0 },
+            payments: [],
+          }
         : emptyFormData,
     );
 
@@ -548,9 +515,9 @@ export default function InvoiceFormPage() {
         await loadSpaceLookup(invoice.site_id, (invoice as any).building_id);
       }
 
-      // if ((invoice as any).space_id) {
-      //   await loadBillableItemLookup();
-      // }
+      if ((invoice as any).space_id) {
+        await loadBillableItemLookup();
+      }
     }
 
     setFormLoading(false);
@@ -605,18 +572,10 @@ export default function InvoiceFormPage() {
         },
       };
 
-      const formData = new FormData();
-
-      // ✅ append attachments
-      attachments.forEach((file) => {
-        formData.append("attachments", file);
-      });
-
       let response;
       if (formMode === "create") {
-        formData.append("invoice", JSON.stringify(invoiceData));
         response = await withLoader(async () => {
-          return await invoiceApiService.addInvoice(formData);
+          return await invoiceApiService.addInvoice(invoiceData);
         });
       } else if (formMode === "edit" && invoice) {
         const updatedInvoice = {
@@ -626,17 +585,15 @@ export default function InvoiceFormPage() {
           invoice_no: invoice.invoice_no,
           updated_at: new Date().toISOString(),
         };
-
-        formData.append("invoice", JSON.stringify(updatedInvoice));
-
         response = await withLoader(async () => {
-          return await invoiceApiService.updateInvoice(formData);
+          return await invoiceApiService.updateInvoice(updatedInvoice);
         });
       }
 
       if (response?.success) {
         toast.success(
-          `Invoice has been ${formMode === "create" ? "created" : "updated"
+          `Invoice has been ${
+            formMode === "create" ? "created" : "updated"
           } successfully${saveAsDraft ? " as draft" : ""}.`,
         );
         if (!saveAsDraft) {
@@ -794,10 +751,11 @@ export default function InvoiceFormPage() {
                         return (
                           <Card
                             key={type.id}
-                            className={`cursor-pointer transition-all duration-200 ${isSelected
-                              ? "border-primary bg-primary/10 ring-1 ring-primary"
-                              : "border-border bg-muted/50 hover:bg-muted hover:border-primary/50"
-                              }`}
+                            className={`cursor-pointer transition-all duration-200 ${
+                              isSelected
+                                ? "border-primary bg-primary/10 ring-1 ring-primary"
+                                : "border-border bg-muted/50 hover:bg-muted hover:border-primary/50"
+                            }`}
                             onClick={() => {
                               if (!isReadOnly) {
                                 if (isSelected) {
@@ -813,17 +771,19 @@ export default function InvoiceFormPage() {
                           >
                             <CardContent className="p-3 flex items-center gap-3">
                               <div
-                                className={`p-2 rounded-md transition-colors flex-shrink-0 ${isSelected
-                                  ? "bg-primary text-primary-foreground"
-                                  : "bg-background"
-                                  }`}
+                                className={`p-2 rounded-md transition-colors flex-shrink-0 ${
+                                  isSelected
+                                    ? "bg-primary text-primary-foreground"
+                                    : "bg-background"
+                                }`}
                               >
                                 {getIcon()}
                               </div>
                               <div className="flex-1 min-w-0">
                                 <p
-                                  className={`text-sm font-medium transition-colors ${isSelected ? "text-primary" : ""
-                                    }`}
+                                  className={`text-sm font-medium transition-colors ${
+                                    isSelected ? "text-primary" : ""
+                                  }`}
                                 >
                                   {type.name}
                                 </p>
@@ -1078,7 +1038,7 @@ export default function InvoiceFormPage() {
                     <TableRow>
                       <TableHead className="w-64">
                         {watchedBillableType &&
-                          watchedBillableType.toLowerCase().includes("work")
+                        watchedBillableType.toLowerCase().includes("work")
                           ? "Work Order No"
                           : "Period"}
                       </TableHead>
@@ -1126,10 +1086,11 @@ export default function InvoiceFormPage() {
                                 }
                               >
                                 <SelectTrigger
-                                  className={`w-64 ${errors.lines?.[index]?.item_id
-                                    ? "border-red-500"
-                                    : ""
-                                    }`}
+                                  className={`w-64 ${
+                                    errors.lines?.[index]?.item_id
+                                      ? "border-red-500"
+                                      : ""
+                                  }`}
                                 >
                                   <SelectValue
                                     placeholder={
@@ -1150,7 +1111,7 @@ export default function InvoiceFormPage() {
                                       (field, otherIndex) =>
                                         otherIndex !== index &&
                                         watch(`lines.${otherIndex}.item_id`) ===
-                                        (item.name || item.id),
+                                          (item.name || item.id),
                                     );
 
                                     return (
@@ -1372,10 +1333,9 @@ export default function InvoiceFormPage() {
         <AlertDialog open={showSaveDialog} onOpenChange={setShowSaveDialog}>
           <AlertDialogContent>
             <AlertDialogHeader>
-              <AlertDialogTitle>Finalize Invoice</AlertDialogTitle>
+              <AlertDialogTitle>Save Invoice</AlertDialogTitle>
               <AlertDialogDescription>
-                Choose how you want to save this invoice.
-                Draft invoices can be edited later. Issued invoices are finalized and ready to send.
+                How would you like to save this invoice?
               </AlertDialogDescription>
             </AlertDialogHeader>
             <AlertDialogFooter className="flex-col sm:flex-row gap-2">
@@ -1395,8 +1355,8 @@ export default function InvoiceFormPage() {
                 disabled={isSubmitting || formIsSubmitting}
               >
                 {isSubmitting || formIsSubmitting
-                  ? "Sending..."
-                  : "Issue Invoice"}
+                  ? "Saving..."
+                  : "Save & Continue"}
               </AlertDialogAction>
             </AlertDialogFooter>
           </AlertDialogContent>

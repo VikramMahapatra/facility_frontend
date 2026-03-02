@@ -352,98 +352,108 @@ export default function BillDetailPage() {
               </Card>
             </TabsContent>
 
-            {/* PAYMENTS */}
+            {/* PAYMENTS - same pattern as Lease Payment Terms */}
             <TabsContent value="payments" className="space-y-6">
-              <CardContent className="p-6">
-                <div className="flex items-center justify-between mb-4">
-                  <h3 className="text-lg font-medium flex items-center gap-2">
-                    <CreditCard className="h-5 w-5" /> Payment Details
-                  </h3>
-                  <Button
-                    onClick={() => {
-                      setSelectedPayment(undefined);
-                      setPaymentFormMode("create");
-                      setIsPaymentFormOpen(true);
-                    }}
-                    className="gap-2"
-                  >
-                    <Plus className="h-4 w-4" />
-                    Record Payment
-                  </Button>
-                </div>
-
-                {payments && payments.length > 0 ? (
-                  <div className="space-y-4">
-                    {payments.map((payment: any, idx: number) => (
-                      <Card key={payment.id || idx} className="p-4">
-                        <div className="flex items-start justify-between gap-4">
-                          <div className="flex items-start gap-3 flex-1">
-                            <div className="p-2 bg-muted rounded-lg">
-                              {getPaymentMethodIcon(payment.method || "card")}
-                            </div>
-                            <div className="flex-1 space-y-1">
-                              <div className="flex items-center gap-2">
-                                <p className="font-semibold">
-                                  {payment.method
-                                    ? payment.method.toUpperCase()
-                                    : "Unknown"}
-                                </p>
-                                {payment.id && (
-                                  <Badge
-                                    variant="outline"
-                                    className="text-xs"
-                                  >
-                                    ID: {payment.id.slice(0, 8)}...
-                                  </Badge>
-                                )}
-                              </div>
-                              {payment.ref_no && (
-                                <p className="text-sm text-muted-foreground">
-                                  <strong>Reference:</strong> {payment.ref_no}
-                                </p>
-                              )}
-                              <p className="text-sm text-muted-foreground">
-                                <strong>Date:</strong>{" "}
-                                {payment.paid_at
-                                  ? new Date(
-                                      payment.paid_at,
-                                    ).toLocaleDateString("en-IN", {
-                                      year: "numeric",
-                                      month: "long",
-                                      day: "numeric",
-                                    })
-                                  : "-"}
-                              </p>
-                            </div>
-                          </div>
-                          <div className="flex items-center gap-2">
-                            <div className="text-right">
-                              <p className="text-2xl font-bold">
-                                {formatCurrency(payment.amount)}
-                              </p>
-                            </div>
-                            <Button
-                              variant="ghost"
-                              size="sm"
-                              onClick={() => {
-                                setSelectedPayment(payment);
-                                setPaymentFormMode("edit");
-                                setIsPaymentFormOpen(true);
-                              }}
-                            >
-                              <Pencil className="h-4 w-4" />
-                            </Button>
-                          </div>
-                        </div>
-                      </Card>
-                    ))}
+              <Card>
+                <CardContent className="p-6">
+                  <div className="flex items-center justify-between mb-6">
+                    <h3 className="text-lg font-semibold flex items-center gap-2">
+                      <CreditCard className="h-5 w-5" />
+                      Payment Details
+                    </h3>
+                    {bill?.status !== "paid" && (
+                      <Button
+                        size="sm"
+                        onClick={() => {
+                          setSelectedPayment(undefined);
+                          setPaymentFormMode("create");
+                          setIsPaymentFormOpen(true);
+                        }}
+                        className="flex items-center gap-2"
+                      >
+                        <Plus className="h-4 w-4" />
+                        Record Payment
+                      </Button>
+                    )}
                   </div>
-                ) : (
-                  <p className="text-muted-foreground text-center py-8">
-                    No payments recorded
-                  </p>
-                )}
-              </CardContent>
+
+                  {payments && payments.length > 0 ? (
+                    <div className="space-y-4">
+                      {payments.map((payment: any, idx: number) => (
+                        <Card key={payment.id || idx} className="p-4">
+                          <div className="flex items-start justify-between gap-4">
+                            <div className="flex items-start gap-3 flex-1">
+                              <div className="p-2 bg-muted rounded-lg">
+                                {getPaymentMethodIcon(payment.method || "card")}
+                              </div>
+                              <div className="flex-1 space-y-1">
+                                <div className="flex items-center gap-2">
+                                  <p className="font-semibold">
+                                    {payment.method
+                                      ? payment.method.toUpperCase()
+                                      : "Unknown"}
+                                  </p>
+                                  {payment.id && (
+                                    <Badge
+                                      variant="outline"
+                                      className="text-xs"
+                                    >
+                                      ID: {payment.id.slice(0, 8)}...
+                                    </Badge>
+                                  )}
+                                </div>
+                                {payment.ref_no && (
+                                  <p className="text-sm text-muted-foreground">
+                                    <strong>Reference:</strong> {payment.ref_no}
+                                  </p>
+                                )}
+                                <p className="text-sm text-muted-foreground">
+                                  <strong>Date:</strong>{" "}
+                                  {payment.paid_at
+                                    ? new Date(
+                                        payment.paid_at,
+                                      ).toLocaleDateString("en-IN", {
+                                        year: "numeric",
+                                        month: "long",
+                                        day: "numeric",
+                                      })
+                                    : "-"}
+                                </p>
+                              </div>
+                            </div>
+                            <div className="flex items-center gap-2">
+                              <div className="text-right">
+                                <p className="text-2xl font-bold">
+                                  {formatCurrency(payment.amount)}
+                                </p>
+                              </div>
+                              {bill?.status !== "paid" && (
+                                <Button
+                                  variant="ghost"
+                                  size="sm"
+                                  onClick={() => {
+                                    setSelectedPayment(payment);
+                                    setPaymentFormMode("edit");
+                                    setIsPaymentFormOpen(true);
+                                  }}
+                                >
+                                  <Pencil className="h-4 w-4" />
+                                </Button>
+                              )}
+                            </div>
+                          </div>
+                        </Card>
+                      ))}
+                    </div>
+                  ) : (
+                    <div className="text-center py-8">
+                      <p className="text-sm text-muted-foreground">
+                        No payments recorded
+                      </p>
+                    </div>
+                  )}
+                </CardContent>
+              </Card>
             </TabsContent>
 
             {/* HISTORY */}
@@ -501,25 +511,22 @@ export default function BillDetailPage() {
             setIsPaymentFormOpen(false);
             setSelectedPayment(undefined);
           }}
-          onSave={async (paymentData: any) => {
-            if (id) {
-              try {
-                // Reload bill detail to get updated payments
-                const reloadResponse = await withLoader(async () => {
-                  return await billsApiService.getBillById(id);
-                });
-                if (reloadResponse?.success) {
-                  const data = reloadResponse.data?.data ?? reloadResponse.data;
-                  setBill(data);
-                  setPayments(data?.payments || []);
-                }
-                return reloadResponse;
-              } catch (error) {
-                console.error("Error reloading bill:", error);
-                return { success: false };
+          onSave={async () => {
+            if (!id) return { success: false };
+            try {
+              const reloadResponse = await withLoader(async () => {
+                return await billsApiService.getBillById(id);
+              });
+              if (reloadResponse?.success) {
+                const data = reloadResponse.data?.data ?? reloadResponse.data;
+                setBill(data);
+                setPayments(data?.payments || []);
               }
+              return reloadResponse;
+            } catch (error) {
+              console.error("Error reloading bill:", error);
+              return { success: false };
             }
-            return { success: false };
           }}
         />
       )}

@@ -87,9 +87,7 @@ import ParkingSlots from "./pages/ParkingSlots";
 import SpaceOccupancyApproval from "./pages/SpaceOccupancyApproval";
 import Bills from "./pages/Bills";
 import BillFormPage from "./pages/BillFormPage";
-import BillDetailPage from "./pages/BillDetailPage";
 import Payments from "./pages/Payments";
-import LeaseTerminationApprovals from "./pages/LeaseTerminationApprovals";
 
 const queryClient = new QueryClient();
 
@@ -197,7 +195,7 @@ const App = () => {
                   <Route path="/bills" element={<Bills />} />
                   <Route path="/bills/create" element={<BillFormPage />} />
                   <Route path="/bills/:id/edit" element={<BillFormPage />} />
-                  <Route path="/bills/:id/view" element={<BillDetailPage />} />
+                  <Route path="/bills/:id/view" element={<BillFormPage />} />
                   <Route path="/payments" element={<Payments />} />
                   <Route path="/revenue-reports" element={<RevenueReports />} />
                   <Route path="/tax-management" element={<TaxManagement />} />
@@ -278,10 +276,6 @@ const App = () => {
                   <Route
                     path="/space-occupancy-approvals"
                     element={<SpaceOccupancyApproval />}
-                  />
-                  <Route
-                    path="/lease-termination-approvals"
-                    element={<LeaseTerminationApprovals />}
                   />
                   <Route
                     path="/profile"

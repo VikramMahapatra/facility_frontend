@@ -37,17 +37,17 @@ class InvoiceApiService {
     return await apiService.request("/invoices/overview");
   }
 
-  async addInvoice(formData: FormData) {
-    return await apiService.requestWithForm("/invoices/", {
+  async addInvoice(invoiceData: any) {
+    return await apiService.request("/invoices/", {
       method: "POST",
-      body: formData,
+      body: JSON.stringify(invoiceData),
     });
   }
 
-  async updateInvoice(formData: FormData) {
+  async updateInvoice(invoiceData: any) {
     return await apiService.request("/invoices/", {
       method: "PUT",
-      body: formData,
+      body: JSON.stringify(invoiceData),
     });
   }
 
