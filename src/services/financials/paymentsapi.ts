@@ -15,15 +15,9 @@ class PaymentsApiService {
     );
   }
 
-  async getCustomerAdvances(params: URLSearchParams) {
-    return await apiService.request(
-      `/invoices/customer-advance-payments?${params.toString()}`,
-    );
-  }
-
   // Record a payment against an invoice
-  async addPayment(paymentData: any) {
-    return await apiService.request("/invoices/add-payment", {
+  async recordInvoicePayment(paymentData: any) {
+    return await apiService.request("/invoices/save-invoice-payment", {
       method: "POST",
       body: JSON.stringify(paymentData),
     });

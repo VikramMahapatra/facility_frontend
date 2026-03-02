@@ -53,9 +53,6 @@ import { useSettings } from "@/context/SettingsContext";
 import { useForm, Controller } from "react-hook-form";
 import { z } from "zod";
 import { zodResolver } from "@hookform/resolvers/zod";
-import { AsyncAutocompleteRQ } from "@/components/common/async-autocomplete-rq";
-import { spacesApiService } from "@/services/spaces_sites/spacesapi";
-import { userManagementApiService } from "@/services/access_control/usermanagementapi";
 
 interface ReceivedPayment {
   id: string;
@@ -77,18 +74,9 @@ interface MadePayment {
   paid_at: string;
 }
 
-interface CustomerAdvance {
-  id: string;
-  customer_name: string;
-  method: string;
-  ref_no: string;
-  amount: number;
-  balance: number;
-  paid_at: string;
-}
-
 const recordPaymentSchema = z.object({
-  user_id: z.string().min(1, "Please select an invoice or bill"),
+  payment_type: z.enum(["received", "made"]),
+  reference_id: z.string().min(1, "Please select an invoice or bill"),
   amount: z.coerce.number().positive("Amount must be greater than zero"),
   method: z.enum(["upi", "card", "bank", "cash", "cheque", "gateway"], {
     required_error: "Payment method is required",
@@ -96,7 +84,6 @@ const recordPaymentSchema = z.object({
   ref_no: z.string().optional(),
   paid_at: z.string().min(1, "Payment date is required"),
   notes: z.string().optional(),
-  currency: z.string().optional(),
 });
 
 type RecordPaymentValues = z.infer<typeof recordPaymentSchema>;
@@ -104,7 +91,7 @@ type RecordPaymentValues = z.infer<typeof recordPaymentSchema>;
 export default function Payments() {
   const { withLoader } = useLoader();
   const { systemCurrency } = useSettings();
-  const [activeTab, setActiveTab] = useState<"received" | "made" | "advances">("received");
+  const [activeTab, setActiveTab] = useState<"received" | "made">("received");
   const [searchTerm, setSearchTerm] = useState("");
   const [receivedPayments, setReceivedPayments] = useState<ReceivedPayment[]>(
     [],
@@ -122,10 +109,6 @@ export default function Payments() {
   const [invoiceLookup, setInvoiceLookup] = useState<any[]>([]);
   const [billLookup, setBillLookup] = useState<any[]>([]);
 
-  const [advances, setAdvances] = useState<CustomerAdvance[]>([]);
-  const [advancePage, setAdvancePage] = useState(1);
-  const [totalAdvances, setTotalAdvances] = useState(0);
-
   const {
     register,
     control,
@@ -136,14 +119,16 @@ export default function Payments() {
   } = useForm<RecordPaymentValues>({
     resolver: zodResolver(recordPaymentSchema),
     defaultValues: {
+      payment_type: "received",
       paid_at: new Date().toISOString().split("T")[0],
     },
   });
 
+  const watchedType = watch("payment_type");
+
   useEffect(() => {
     loadReceivedPayments();
     loadMadePayments();
-    loadAdvances();
   }, []);
 
   useSkipFirstEffect(() => {
@@ -153,10 +138,6 @@ export default function Payments() {
   useSkipFirstEffect(() => {
     loadMadePayments();
   }, [madePageNum]);
-
-  useSkipFirstEffect(() => {
-    loadAdvances();
-  }, [advancePage]);
 
   useSkipFirstEffect(() => {
     updatePaymentsPage();
@@ -172,12 +153,6 @@ export default function Payments() {
       loadMadePayments();
     } else {
       setMadePageNum(1);
-    }
-
-    if (advancePage === 1) {
-      loadAdvances();
-    } else {
-      setAdvancePage(1);
     }
   };
 
@@ -227,52 +202,74 @@ export default function Payments() {
     }
   };
 
-  const loadAdvances = async () => {
+  const loadInvoiceLookup = async () => {
     const params = new URLSearchParams();
-    params.append("skip", ((advancePage - 1) * pageSize).toString());
-    params.append("limit", pageSize.toString());
+    params.append("status", "issued");
+    params.append("limit", "100");
+    const response = await paymentsApiService.getInvoiceLookup(params);
+    if (response?.success) {
+      const data =
+        response.data?.data?.invoices || response.data?.invoices || [];
+      setInvoiceLookup(data);
+    }
+  };
 
-    const res = await paymentsApiService.getCustomerAdvances(params);
-
-    if (res?.success) {
-      setAdvances(res.data.advances);
-      setTotalAdvances(res.data.total);
+  const loadBillLookup = async () => {
+    const params = new URLSearchParams();
+    params.append("status", "approved");
+    params.append("limit", "100");
+    const response = await paymentsApiService.getBillLookup(params);
+    if (response?.success) {
+      const data = response.data?.data?.bills || response.data?.bills || [];
+      setBillLookup(data);
     }
   };
 
   const openDialog = () => {
     reset({
-      user_id: "",
-      amount: 0,
+      payment_type: activeTab === "received" ? "received" : "made",
       paid_at: new Date().toISOString().split("T")[0],
     });
-
+    loadInvoiceLookup();
+    loadBillLookup();
     setShowDialog(true);
   };
 
   const onSubmit = async (data: RecordPaymentValues) => {
     setIsSubmitting(true);
+    try {
+      const payload = {
+        reference_id: data.reference_id,
+        amount: data.amount,
+        method: data.method,
+        ref_no: data.ref_no || "",
+        paid_at: data.paid_at,
+        notes: data.notes || "",
+      };
 
-    const payload = {
-      user_id: data.user_id,
-      amount: data.amount,
-      method: data.method,
-      ref_no: data.ref_no || "",
-      paid_at: data.paid_at,
-      notes: data.notes || "",
-      currency: data.currency || ""
-    };
+      let response;
+      if (data.payment_type === "received") {
+        response = await paymentsApiService.recordInvoicePayment({
+          invoice_id: data.reference_id,
+          ...payload,
+        });
+      } else {
+        response = await paymentsApiService.recordBillPayment({
+          bill_id: data.reference_id,
+          ...payload,
+        });
+      }
 
-    let response;
-    response = await paymentsApiService.addPayment(payload);
-
-    if (response?.success) {
-      toast.success("Payment added successfully.");
-      setShowDialog(false);
-      loadReceivedPayments();
-
+      if (response?.success) {
+        toast.success("Payment recorded successfully.");
+        setShowDialog(false);
+        loadReceivedPayments();
+        loadMadePayments();
+      }
+    } catch (err) {
+    } finally {
+      setIsSubmitting(false);
     }
-    setIsSubmitting(false);
   };
 
   const formatCurrency = (val?: number) => {
@@ -295,7 +292,7 @@ export default function Payments() {
           </div>
           <Button onClick={openDialog} className="gap-2">
             <Plus className="h-4 w-4" />
-            Add Payment
+            Record Payment
           </Button>
         </div>
 
@@ -338,10 +335,11 @@ export default function Payments() {
               </CardHeader>
               <CardContent>
                 <div
-                  className={`text-2xl font-bold ${totalReceivedAmount - totalMadeAmount >= 0
-                    ? "text-green-600"
-                    : "text-red-600"
-                    }`}
+                  className={`text-2xl font-bold ${
+                    totalReceivedAmount - totalMadeAmount >= 0
+                      ? "text-green-600"
+                      : "text-red-600"
+                  }`}
                 >
                   {formatCurrency(totalReceivedAmount - totalMadeAmount)}
                 </div>
@@ -383,13 +381,11 @@ export default function Payments() {
             <div className="space-y-6">
               <Tabs
                 value={activeTab}
-                onValueChange={(v) => setActiveTab(v as "received" | "made" | "advances"
-                )}
+                onValueChange={(v) => setActiveTab(v as "received" | "made")}
               >
                 <TabsList>
                   <TabsTrigger value="received">Received</TabsTrigger>
                   <TabsTrigger value="made">Made</TabsTrigger>
-                  <TabsTrigger value="advances">Advances</TabsTrigger>
                 </TabsList>
 
                 <TabsContent value="received">
@@ -527,66 +523,6 @@ export default function Payments() {
                     </CardContent>
                   </Card>
                 </TabsContent>
-
-                <TabsContent value="advances">
-                  <Card>
-                    <CardHeader>
-                      <CardTitle>Customer Advances</CardTitle>
-                      <CardDescription>
-                        Unapplied customer payments
-                      </CardDescription>
-                    </CardHeader>
-
-                    <CardContent>
-                      <Table>
-                        <TableHeader>
-                          <TableRow>
-                            <TableHead>Customer</TableHead>
-                            <TableHead>Method</TableHead>
-                            <TableHead>Reference</TableHead>
-                            <TableHead>Amount</TableHead>
-                            <TableHead>Balance</TableHead>
-                            <TableHead>Paid Date</TableHead>
-                          </TableRow>
-                        </TableHeader>
-
-                        <TableBody>
-                          {advances.length === 0 ? (
-                            <TableRow>
-                              <TableCell
-                                colSpan={6}
-                                className="text-center py-8 text-muted-foreground"
-                              >
-                                No advance payments made yet
-                              </TableCell>
-                            </TableRow>
-                          ) : (
-                            advances.map((a) => (
-                              <TableRow key={a.id}>
-                                <TableCell>{a.customer_name}</TableCell>
-                                <TableCell>{a.method}</TableCell>
-                                <TableCell>{a.ref_no || "-"}</TableCell>
-                                <TableCell>{formatCurrency(a.amount)}</TableCell>
-                                <TableCell className="text-blue-600 font-semibold">
-                                  {formatCurrency(a.balance)}
-                                </TableCell>
-                                <TableCell>
-                                  {new Date(a.paid_at).toLocaleDateString()}
-                                </TableCell>
-                              </TableRow>
-                            ))
-                          )}
-                        </TableBody>
-                      </Table>
-                      <Pagination
-                        page={advancePage}
-                        pageSize={pageSize}
-                        totalItems={totalAdvances}
-                        onPageChange={(newPage) => setAdvancePage(newPage)}
-                      />
-                    </CardContent>
-                  </Card>
-                </TabsContent>
               </Tabs>
             </div>
           </div>
@@ -595,43 +531,82 @@ export default function Payments() {
         <Dialog open={showDialog} onOpenChange={setShowDialog}>
           <DialogContent className="max-w-lg">
             <DialogHeader>
-              <DialogTitle>Add Payment</DialogTitle>
+              <DialogTitle>Record Payment</DialogTitle>
               <DialogDescription>
-                add a payment received from a customer.
+                Record a payment received from a customer or made to a vendor.
               </DialogDescription>
             </DialogHeader>
 
             <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
               <div className="space-y-2">
+                <Label>Payment Type *</Label>
                 <Controller
-                  name={"user_id"}
+                  name="payment_type"
                   control={control}
                   render={({ field }) => (
-                    <div className="space-y-2">
-                      <Label>Customer *</Label>
-                      <AsyncAutocompleteRQ
-                        value={field.value}
-                        onChange={field.onChange}
-                        queryKey={["users"]}
-                        queryFn={async (search) => {
-                          const res = await userManagementApiService.searchTenantOwnerUsers(search);
-                          return res.data.map((u: any) => ({ id: u.id, label: u.name }));
-                        }}
-                        minSearchLength={1}
-                      />
-                    </div>
+                    <Select value={field.value} onValueChange={field.onChange}>
+                      <SelectTrigger>
+                        <SelectValue />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="received">Received</SelectItem>
+                        <SelectItem value="made">Made</SelectItem>
+                      </SelectContent>
+                    </Select>
                   )}
                 />
-                {errors.user_id && (
+              </div>
+
+              <div className="space-y-2">
+                <Label htmlFor="reference_id">
+                  {watchedType === "received" ? "Invoice *" : "Bill *"}
+                </Label>
+                <Controller
+                  name="reference_id"
+                  control={control}
+                  render={({ field }) => (
+                    <Select
+                      value={field.value || ""}
+                      onValueChange={field.onChange}
+                    >
+                      <SelectTrigger
+                        className={errors.reference_id ? "border-red-500" : ""}
+                      >
+                        <SelectValue
+                          placeholder={
+                            watchedType === "received"
+                              ? "Select invoice"
+                              : "Select bill"
+                          }
+                        />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {watchedType === "received"
+                          ? invoiceLookup.map((inv) => (
+                              <SelectItem key={inv.id} value={inv.id}>
+                                {inv.invoice_no} —{" "}
+                                {inv.customer_name || inv.user_name || ""}
+                              </SelectItem>
+                            ))
+                          : billLookup.map((bill) => (
+                              <SelectItem key={bill.id} value={bill.id}>
+                                {bill.bill_no} — {bill.vendor_name || ""}
+                              </SelectItem>
+                            ))}
+                      </SelectContent>
+                    </Select>
+                  )}
+                />
+                {errors.reference_id && (
                   <p className="text-sm text-red-500">
-                    {errors.user_id.message}
+                    {errors.reference_id.message}
                   </p>
                 )}
               </div>
 
               <div className="grid grid-cols-2 gap-4">
                 <div className="space-y-2">
-                  <Label htmlFor="amount">Amount({systemCurrency.name}) *</Label>
+                  <Label htmlFor="amount">Amount *</Label>
                   <Input
                     id="amount"
                     type="number"
@@ -645,7 +620,6 @@ export default function Payments() {
                       {errors.amount.message}
                     </p>
                   )}
-                  <input type="hidden" {...register("currency")} />
                 </div>
 
                 <div className="space-y-2">
@@ -728,7 +702,7 @@ export default function Payments() {
                   Cancel
                 </Button>
                 <Button type="submit" disabled={isSubmitting}>
-                  {isSubmitting ? "Adding..." : "Add Payment"}
+                  {isSubmitting ? "Saving..." : "Record Payment"}
                 </Button>
               </DialogFooter>
             </form>
