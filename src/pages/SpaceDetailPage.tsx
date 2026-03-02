@@ -119,7 +119,7 @@ export default function SpaceDetailPage() {
     loadAccessoriesLookup();
     fetchOccupancyUpcomingMoveIns();
     fetchOccupancyHistory();
-    fetchOccupancyTimeline();
+    //fetchOccupancyTimeline();
   }, [id]);
 
   const loadSpace = async () => {
@@ -292,12 +292,12 @@ export default function SpaceDetailPage() {
           <Separator />
 
           <Tabs defaultValue="info">
-            <TabsList className="grid w-full grid-cols-6">
+            <TabsList className="grid w-full grid-cols-5">
               <TabsTrigger value="info">Space Information</TabsTrigger>
               <TabsTrigger value="occupancy">Occupany Information</TabsTrigger>
               <TabsTrigger value="upcoming_moveins">Upcoming Move Ins </TabsTrigger>
               <TabsTrigger value="occupancy_history">Occupany History </TabsTrigger>
-              <TabsTrigger value="occupancy_timeline">Occupany Timeline </TabsTrigger>
+              {/* <TabsTrigger value="occupancy_timeline">Occupany Timeline </TabsTrigger> */}
               <TabsTrigger value="maintenance">Maintenance Charges</TabsTrigger>
             </TabsList>
 
@@ -360,45 +360,6 @@ export default function SpaceDetailPage() {
                   )}
                 </CardContent>
               </Card>
-
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <Card>
-                  <CardHeader>
-                    <div className="flex items-center justify-between">
-                      <CardTitle>
-                        <h1 className="flex items-center gap-2">
-                          <FileText className="h-5 w-5" /> Ownership
-                        </h1>
-                      </CardTitle>
-                      <Button
-                        variant="ghost"
-                        size="sm"
-                        onClick={() => setIsHistoryOpen(true)}
-                        className="flex items-center gap-2 text-muted-foreground hover:text-foreground"
-                      >
-                        <History className="h-4 w-4" />
-                        View History
-                      </Button>
-                    </div>
-                  </CardHeader>
-                  <CardContent>
-                    <SpaceOwnershipSection
-                      spaceId={id!}
-                      owners={owners}
-                      onRefresh={loadOwners}
-                    // actionSlot={
-
-                    // }
-                    />
-                  </CardContent>
-                </Card>
-                <SpaceTenantSection
-                  spaceId={id}
-                  tenants={tenants}
-                  onRefresh={fetchTenants}
-                />
-              </div>
-
               <Card>
                 <CardHeader>
                   <div className="flex items-center justify-between">
@@ -460,13 +421,48 @@ export default function SpaceDetailPage() {
                   )}
                 </CardContent>
               </Card>
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <Card>
+                  <CardHeader>
+                    <div className="flex items-center justify-between">
+                      <CardTitle>
+                        <h1 className="flex items-center gap-2">
+                          <FileText className="h-5 w-5" /> Ownership
+                        </h1>
+                      </CardTitle>
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        onClick={() => setIsHistoryOpen(true)}
+                        className="flex items-center gap-2 text-muted-foreground hover:text-foreground"
+                      >
+                        <History className="h-4 w-4" />
+                        View History
+                      </Button>
+                    </div>
+                  </CardHeader>
+                  <CardContent>
+                    <SpaceOwnershipSection
+                      spaceId={id!}
+                      owners={owners}
+                      onRefresh={loadOwners}
+                    // actionSlot={
 
+                    // }
+                    />
+                  </CardContent>
+                </Card>
+                <SpaceTenantSection
+                  space={space}
+                  tenants={tenants}
+                  onRefresh={fetchTenants}
+                />
+              </div>
               <OwnershipHistoryDialog
                 open={isHistoryOpen}
                 onClose={() => setIsHistoryOpen(false)}
                 spaceId={id!}
               />
-
               {/* Delete Confirmation Dialog */}
               <AlertDialog
                 open={!!deleteSlotId}
@@ -536,7 +532,7 @@ export default function SpaceDetailPage() {
                 />
               )}
             </TabsContent>
-            <TabsContent value="occupancy_timeline" className="space-y-4">
+            {/* <TabsContent value="occupancy_timeline" className="space-y-4">
               {occupancyTimelineLoading ? (
                 <div className="animate-pulse space-y-3">
                   <div className="h-6 bg-gray-200 rounded w-40"></div>
@@ -548,7 +544,7 @@ export default function SpaceDetailPage() {
                   history={occupancyTimeline}
                 />
               )}
-            </TabsContent>
+            </TabsContent> */}
             <TabsContent value="maintenance" className="space-y-4">
               <MaintenanceCharge
                 space={space}

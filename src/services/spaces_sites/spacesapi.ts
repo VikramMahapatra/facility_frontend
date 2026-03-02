@@ -127,12 +127,13 @@ class SpacesApiService {
     return await apiService.request(url);
   }
 
-  async updateOwnerApproval(requestId: string, action: string) {
+  async updateOwnerApproval(requestId: string, action: string, reason?: string) {
     return await apiService.request("/spaces/update-owner-approval", {
       method: "POST",
       body: JSON.stringify({
         action: action,
         request_id: requestId,
+        reason: reason
       }),
     });
   }
@@ -172,27 +173,21 @@ class SpacesApiService {
 
   }
 
-  async approveOccupancyRequest(requestId: string) {
-    // Mock implementation
-    return new Promise((resolve) => {
-      setTimeout(() => {
-        resolve({
-          success: true,
-          message: "Move-out request approved successfully",
-        });
-      }, 500);
+  async approveOccupancyRequest(requestId: string, actionType: string) {
+    const url = `/spaces/${requestId}/${actionType == "move_in" ? "approve-move-in" : "approve-move-out"}`
+    return await apiService.request(url, {
+      method: "POST"
     });
   }
 
-  async rejectOccupancyRequest(requestId: string) {
-    // Mock implementation
-    return new Promise((resolve) => {
-      setTimeout(() => {
-        resolve({
-          success: true,
-          message: "Move-out request rejected successfully",
-        });
-      }, 500);
+  async rejectOccupancyRequest(requestId: string, reason: string, actionType: string) {
+    const url = `/spaces/${requestId}/${actionType == "move_in" ? "reject-move-in" : "reject-move-out"}`
+
+    return await apiService.request(url, {
+      method: "POST",
+      body: JSON.stringify({
+        reason: reason
+      }),
     });
   }
 

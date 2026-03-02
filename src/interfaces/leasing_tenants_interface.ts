@@ -86,7 +86,9 @@ export interface Tenant {
     type?: string;
     number?: string;
   }>;
+  space_timelines?: any[];
 }
+
 
 export interface SpaceTenants {
   site_id?: string;

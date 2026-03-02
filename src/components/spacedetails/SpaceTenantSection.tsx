@@ -1,4 +1,4 @@
-import { Users, History, FileText, User, Calendar, Trash2, AlertTriangle } from "lucide-react";
+import { Users, History, FileText, User, Calendar, Trash2, AlertTriangle, Plus } from "lucide-react";
 import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { TenantHistoryDialog } from "./TenantHistoryDialog";
@@ -18,6 +18,11 @@ import {
 import { OwnershipDialog } from "./OwnershipDialog";
 import { Badge } from "../ui/badge";
 import { toast } from "@/components/ui/app-toast";
+import { LeaseForm } from "../LeasesForm";
+import { Lease } from "@/interfaces/leasing_tenants_interface";
+import { useLoader } from "@/context/LoaderContext";
+import { leasesApiService } from "@/services/leasing_tenants/leasesapi";
+import { Space } from "@/interfaces/spaces_interfaces";
 
 interface Tenant {
   id?: string;
@@ -29,7 +34,7 @@ interface Tenant {
 }
 
 interface Props {
-  spaceId: string;
+  space: Space;
   tenants: {
     pending: any[];
     active: any[];
@@ -37,7 +42,7 @@ interface Props {
   onRefresh?: () => void;
 }
 
-export default function SpaceTenantSection({ spaceId, tenants, onRefresh }: Props) {
+export default function SpaceTenantSection({ space, tenants, onRefresh }: Props) {
   const navigate = useNavigate();
   const [isTenantHistoryOpen, setIsTenantHistoryOpen] = useState(false);
   const [openTenantAssignmentForm, setOpenTenantAssignmentForm] =
@@ -45,7 +50,11 @@ export default function SpaceTenantSection({ spaceId, tenants, onRefresh }: Prop
   const [removeDialogOpen, setRemoveDialogOpen] = useState(false);
   const [selectedTenant, setSelectedTenant] = useState<any>(null);
   const [isRemoving, setIsRemoving] = useState(false);
-
+  const [isLeaseFormOpen, setIsLeaseFormOpen] = useState(false);
+  const [prefilledLeaseData, setPrefilledLeaseData] =
+    useState<Partial<Lease> | null>(null);
+  const { withLoader } = useLoader();
+  const spaceId: string = space.id;
   const approveTenant = async (tenantId: string) => {
     await tenantsApiService.approveTenant(spaceId, tenantId);
     // fetchTenants();
@@ -54,12 +63,6 @@ export default function SpaceTenantSection({ spaceId, tenants, onRefresh }: Prop
   const rejectTenant = async (tenantId: string) => {
     await tenantsApiService.rejectTenant(spaceId, tenantId);
     // fetchTenants();
-  };
-
-  const navigateToOccupancyTab = () => {
-    // trigger parent tab change
-    const event = new CustomEvent("switchTab", { detail: "occupancy" });
-    window.dispatchEvent(event);
   };
 
   const handleRemoveClick = (tenant: any) => {
@@ -116,26 +119,94 @@ export default function SpaceTenantSection({ spaceId, tenants, onRefresh }: Prop
           </div>
         </CardHeader>
         <CardContent className="space-y-4">
-          {tenants?.active.length === 0 ? (
+          {(!tenants?.active.length && !tenants?.pending.length) ? (
             <Alert variant="destructive">
               <AlertTitle>No tenant assigned</AlertTitle>
               <AlertDescription>
-                This space currently has no tenant. Assign tenant to continue
-                normal operations.
+                This space currently has no tenant. Assign a tenant to begin leasing
+                and manage occupancy for this space.
               </AlertDescription>
             </Alert>
           ) : (
             <>
-              {/* {pendingTenants.map((t) => (
-                <Card key={t.id} className="p-4 flex justify-between items-center">
-                  <p className="font-medium">{t.full_name}</p>
-                  <div className="flex gap-2">
-                    <Button size="sm" onClick={() => approveTenant(t.id)}>Approve</Button>
-                    <Button size="sm" variant="destructive" onClick={() => rejectTenant(t.id)}>Reject</Button>
-                  </div>
-                </Card>
-              ))
-              } */}
+              {tenants?.pending?.length > 0 && (
+                <div className="space-y-3">
+                  <p className="text-sm font-semibold text-muted-foreground">
+                    Pending Setup
+                  </p>
+
+                  {tenants.pending.map((t) => (
+                    <Card key={t.id} className="p-4 border-dashed bg-muted/20">
+                      <div className="flex justify-between items-center">
+                        <div>
+                          <p className="font-semibold">{t.full_name}</p>
+
+                          <p className="text-xs text-muted-foreground">
+                            Tenant assigned • Lease not created yet
+                          </p>
+                        </div>
+
+                        <div className="flex gap-2">
+                          <Button
+                            size="sm"
+                            variant="outline"
+                            onClick={async () => {
+                              // Fetch tenant lease details
+                              if (t.tenant_id) {
+                                const response = await withLoader(
+                                  async () => {
+                                    return await leasesApiService.getTenantLeaseDetail(
+                                      t.tenant_id,
+                                      spaceId
+                                    );
+                                  }
+                                );
+                                if (
+                                  response?.success &&
+                                  response.data?.tenant_data?.length > 0
+                                ) {
+                                  const tenantData =
+                                    response.data.tenant_data[0];
+                                  setPrefilledLeaseData({
+                                    tenant_id: t.tenant_id,
+                                    site_id: tenantData.site_id,
+                                    site_name: tenantData.site_name,
+                                    building_id: tenantData.building_id,
+                                    building_name:
+                                      tenantData.building_name,
+                                    space_id: space.id, // Use the space from the card
+                                    space_name: space.name,
+                                  } as Lease);
+                                } else {
+                                  // If no data, set tenant_id and space_id
+                                  setPrefilledLeaseData({
+                                    tenant_id: t.tenant_id,
+                                    space_id: space.id,
+                                    space_name: space.name,
+                                  } as Lease);
+                                }
+                              }
+                              setIsLeaseFormOpen(true);
+                            }}
+                            className="flex items-center gap-2"
+                          >
+                            <Plus className="h-4 w-4" />
+                            Add Lease
+                          </Button>
+
+                          <Button
+                            size="sm"
+                            variant="ghost"
+                            onClick={() => handleRemoveClick(t)}
+                          >
+                            <Trash2 className="h-4 w-4" />
+                          </Button>
+                        </div>
+                      </div>
+                    </Card>
+                  ))}
+                </div>
+              )}
 
               {tenants?.active.map((t) => {
                 const tenantId =
@@ -155,7 +226,7 @@ export default function SpaceTenantSection({ spaceId, tenants, onRefresh }: Prop
                               onClick={() =>
                                 navigate(`/tenants/${tenantId}/view`)
                               }
-                              className="font-semibold text-lg hover:text-primary cursor-pointer transition-colors text-left"
+                              className="text-blue-600 hover:text-blue-800 cursor-pointer hover:underline text-lg"
                             >
                               {t.full_name}
                             </button>
@@ -230,6 +301,30 @@ export default function SpaceTenantSection({ spaceId, tenants, onRefresh }: Prop
               }
             }}
             type="tenant"
+          />
+
+          {/* Lease Form */}
+          <LeaseForm
+            lease={prefilledLeaseData ? (prefilledLeaseData as Lease) : undefined}
+            isOpen={isLeaseFormOpen}
+            disableLocationFields={true}
+            onClose={() => {
+              setIsLeaseFormOpen(false);
+              setPrefilledLeaseData(null);
+            }}
+            onSave={async (leaseData: FormData) => {
+              const response = await withLoader(async () => {
+                return await leasesApiService.addLease(leaseData);
+              });
+              if (response?.success) {
+                setIsLeaseFormOpen(false);
+                setPrefilledLeaseData(null);
+                toast.success(`Lease has been created successfully.`);
+                onRefresh();
+              }
+              return response;
+            }}
+            mode="create"
           />
 
           {/* Remove Tenant Confirmation Dialog */}
