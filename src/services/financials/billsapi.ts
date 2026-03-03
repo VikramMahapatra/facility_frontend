@@ -1,4 +1,6 @@
+import { toast } from "@/components/ui/app-toast";
 import { apiService } from "../api";
+import { downloadFile } from "@/helpers/fileDownloadHelper";
 
 class BillsApiService {
   async getBills(params) {
@@ -48,9 +50,17 @@ class BillsApiService {
   }
 
   async downloadBill(id: string) {
-    return await apiService.request(`/bills/${id}/download`, {
-      method: "GET",
-    });
+    await downloadFile(
+      apiService.requestBlob(`/bills/${id}/download`),
+      `Bill_${id}.pdf`
+    );
+  }
+
+  async downloadPaymentReceipt(id: string) {
+    await downloadFile(
+      apiService.requestBlob(`/bills/payment-receipt/${id}/download`),
+      `Bill_Receipt_${id}.pdf`
+    );
   }
 
   async getBillTypeLookup() {

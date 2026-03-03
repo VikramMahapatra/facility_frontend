@@ -1,5 +1,6 @@
 import { toast } from "@/components/ui/app-toast";
 import { apiService } from "../api";
+import { downloadFile } from "@/helpers/fileDownloadHelper";
 
 class InvoiceApiService {
   async getInvoices(params) {
@@ -93,32 +94,17 @@ class InvoiceApiService {
   }
 
   async downloadInvoice(id: string) {
-    const response = await apiService.requestBlob(`/invoices/${id}/download`);
+    await downloadFile(
+      apiService.requestBlob(`/invoices/${id}/download`),
+      `Invoice_${id}.pdf`
+    );
+  }
 
-    console.log("response blob", response);
-    if (!response.ok) {
-      const text = await response.text();
-      toast.error("Download Failed", text);
-
-    }
-
-    const contentType = response.headers.get("content-type") || "";
-    if (!contentType.includes("application/pdf")) {
-      const text = await response.text();
-      throw new Error(text);
-    }
-
-    const blob = await response.blob();
-    const url = window.URL.createObjectURL(blob);
-
-    const a = document.createElement("a");
-    a.href = url;
-    a.download = `Invoice_${id}.pdf`;
-    document.body.appendChild(a);
-    a.click();
-    a.remove();
-
-    window.URL.revokeObjectURL(url);
+  async downloadPaymentReceipt(id: string) {
+    await downloadFile(
+      apiService.requestBlob(`/invoices/payment-receipt/${id}/download`),
+      `Invoice_Receipt_${id}.pdf`
+    );
   }
 
   async saveInvoicePayment(paymentData: any) {

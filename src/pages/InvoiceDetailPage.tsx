@@ -192,6 +192,10 @@ export default function InvoiceDetailPage() {
       ? (paymentSummary.paid / invoice.totals.grand) * 100
       : 0;
 
+  const handleDownloadReceipt = async (paymentId: string) => {
+    await invoiceApiService.downloadPaymentReceipt(paymentId);
+  };
+
   return (
     <ContentContainer>
       <LoaderOverlay />
@@ -379,7 +383,7 @@ export default function InvoiceDetailPage() {
                             className="relative group border rounded-lg overflow-hidden bg-background"
                           >
                             {attachment.content_type?.startsWith("image/") &&
-                            attachment.file_data_base64 ? (
+                              attachment.file_data_base64 ? (
                               <img
                                 src={`data:${attachment.content_type};base64,${attachment.file_data_base64}`}
                                 alt={attachment.file_name}
@@ -523,12 +527,12 @@ export default function InvoiceDetailPage() {
                                 <strong>Date:</strong>{" "}
                                 {payment.paid_at
                                   ? new Date(
-                                      payment.paid_at,
-                                    ).toLocaleDateString("en-IN", {
-                                      year: "numeric",
-                                      month: "long",
-                                      day: "numeric",
-                                    })
+                                    payment.paid_at,
+                                  ).toLocaleDateString("en-IN", {
+                                    year: "numeric",
+                                    month: "long",
+                                    day: "numeric",
+                                  })
                                   : "-"}
                               </p>
                               {payment.billable_item_name && (
@@ -550,14 +554,23 @@ export default function InvoiceDetailPage() {
                             <Button
                               variant="ghost"
                               size="sm"
-                              onClick={() => {
-                                setSelectedPayment(payment);
-                                setPaymentFormMode("edit");
-                                setIsPaymentFormOpen(true);
-                              }}
+                              onClick={() => handleDownloadReceipt(payment.id)}
                             >
-                              <Pencil className="h-4 w-4" />
+                              <Download className="h-4 w-4" />
                             </Button>
+                            {invoice?.status !== "paid" && (
+                              <Button
+                                variant="ghost"
+                                size="sm"
+                                onClick={() => {
+                                  setSelectedPayment(payment);
+                                  setPaymentFormMode("edit");
+                                  setIsPaymentFormOpen(true);
+                                }}
+                              >
+                                <Pencil className="h-4 w-4" />
+                              </Button>
+                            )}
                           </div>
                         </div>
                       </Card>
@@ -678,7 +691,7 @@ export default function InvoiceDetailPage() {
                     );
                     if (paymentHistoryResponse?.success) {
                       const paymentData =
-                        paymentHistoryResponse.data?.payments || [];
+                        paymentHistoryResponse.data || [];
                       setPayments(
                         Array.isArray(paymentData) ? paymentData : [],
                       );

@@ -31,6 +31,7 @@ import { useLoader } from "@/context/LoaderContext";
 import LoaderOverlay from "@/components/LoaderOverlay";
 import { useSettings } from "@/context/SettingsContext";
 import { PaymentDetailsForm } from "@/components/PaymentDetailsForm";
+import { downloadFile } from "@/helpers/fileDownloadHelper";
 
 export default function BillDetailPage() {
   const { id } = useParams<{ id: string }>();
@@ -144,6 +145,10 @@ export default function BillDetailPage() {
   const billTotal =
     Number(bill?.totals?.grand) || Number((bill as any)?.total_amount) || 0;
   const progress = billTotal > 0 ? (paymentSummary.paid / billTotal) * 100 : 0;
+
+  const handleDownloadReceipt = async (paymentId: string) => {
+    await billsApiService.downloadPaymentReceipt(paymentId);
+  };
 
   return (
     <ContentContainer>
@@ -334,7 +339,7 @@ export default function BillDetailPage() {
                             className="relative group border rounded-lg overflow-hidden bg-background"
                           >
                             {attachment.content_type?.startsWith("image/") &&
-                            attachment.file_data_base64 ? (
+                              attachment.file_data_base64 ? (
                               <img
                                 src={`data:${attachment.content_type};base64,${attachment.file_data_base64}`}
                                 alt={attachment.file_name}
@@ -476,12 +481,12 @@ export default function BillDetailPage() {
                                   <strong>Date:</strong>{" "}
                                   {payment.paid_at
                                     ? new Date(
-                                        payment.paid_at,
-                                      ).toLocaleDateString("en-IN", {
-                                        year: "numeric",
-                                        month: "long",
-                                        day: "numeric",
-                                      })
+                                      payment.paid_at,
+                                    ).toLocaleDateString("en-IN", {
+                                      year: "numeric",
+                                      month: "long",
+                                      day: "numeric",
+                                    })
                                     : "-"}
                                 </p>
                               </div>
@@ -492,6 +497,13 @@ export default function BillDetailPage() {
                                   {formatCurrency(payment.amount)}
                                 </p>
                               </div>
+                              <Button
+                                variant="ghost"
+                                size="sm"
+                                onClick={() => handleDownloadReceipt(payment.id)}
+                              >
+                                <Download className="h-4 w-4" />
+                              </Button>
                               {bill?.status !== "paid" && (
                                 <Button
                                   variant="ghost"
@@ -539,7 +551,7 @@ export default function BillDetailPage() {
                     )}
                     {(bill as any).updated_at &&
                       (bill as any).created_at !==
-                        (bill as any).updated_at && (
+                      (bill as any).updated_at && (
                         <li>
                           Last updated on{" "}
                           {new Date(

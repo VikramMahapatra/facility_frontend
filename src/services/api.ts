@@ -167,7 +167,6 @@ class ApiService {
 
             return response; // 🔥 RAW RESPONSE
         } catch (error) {
-            console.log('API request failed:', error);
             showErrorToast("Download failed!", "Something went wrong");
         }
     }

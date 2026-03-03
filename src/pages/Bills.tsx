@@ -373,7 +373,7 @@ export default function Bills() {
                                     <Trash2 className="h-4 w-4" />
                                   </Button>
                                 )}
-                                {bill.status === "paid" && (
+                                {["approved", "partial", "paid"].includes(bill.status) && (
                                   <Button
                                     variant="ghost"
                                     size="sm"

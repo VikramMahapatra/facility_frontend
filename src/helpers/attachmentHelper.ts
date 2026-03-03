@@ -63,3 +63,4 @@ export type FileWithPreview = File & {
     preview?: string;
     attachmentId?: string; // existing backend file
 };
+
