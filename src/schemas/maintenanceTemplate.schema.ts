@@ -1,4 +1,4 @@
-import { spaceCategories, spaceKinds, spaceSubKinds } from "@/interfaces/spaces_interfaces";
+import { spaceKinds, spaceSubKinds } from "@/interfaces/spaces_interfaces";
 import * as z from "zod";
 
 export const maintenanceTemplateSchema = z.object({
@@ -11,7 +11,7 @@ export const maintenanceTemplateSchema = z.object({
       invalid_type_error: "Amount must be a number",
     })
     .min(0, "Amount cannot be negative"),
-  category: z.enum(spaceCategories).optional(),
+  category: z.enum(["residential", "commercial"]).optional(),
   kind: z.enum(spaceKinds, {
     required_error: "Space type is required",
   }),

@@ -28,6 +28,8 @@ import {
   CircleDollarSign,
   Percent,
   BadgeIndianRupee,
+  Paperclip,
+  Download,
 } from "lucide-react";
 import { Invoice, PaymentInput } from "@/interfaces/invoices_interfaces";
 import { invoiceApiService } from "@/services/financials/invoicesapi";
@@ -190,6 +192,10 @@ export default function InvoiceDetailPage() {
       ? (paymentSummary.paid / invoice.totals.grand) * 100
       : 0;
 
+  const handleDownloadReceipt = async (paymentId: string) => {
+    await invoiceApiService.downloadPaymentReceipt(paymentId);
+  };
+
   return (
     <ContentContainer>
       <LoaderOverlay />
@@ -221,17 +227,15 @@ export default function InvoiceDetailPage() {
             </div>
 
             <div className="flex gap-2">
-              {invoice.status === "draft" && (
-                <Button
-                  variant="outline"
-                  size="sm"
-                  onClick={() => setIsInvoiceFormOpen(true)}
-                  className="gap-2"
-                >
-                  <Pencil className="h-4 w-4" />
-                  Edit
-                </Button>
-              )}
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => setIsInvoiceFormOpen(true)}
+                className="gap-2"
+              >
+                <Pencil className="h-4 w-4" />
+                Edit
+              </Button>
             </div>
           </div>
 
@@ -363,6 +367,69 @@ export default function InvoiceDetailPage() {
                 </CardContent>
               </Card>
 
+              {/* Attachments */}
+              <Card>
+                <CardContent className="p-6">
+                  <div className="flex items-center gap-2 mb-3">
+                    <Paperclip className="h-4 w-4 text-muted-foreground" />
+                    <h3 className="text-lg font-medium">Attachments</h3>
+                  </div>
+                  <div className="border-2 border-dashed border-muted-foreground/30 rounded-lg p-4">
+                    {invoice.attachments && invoice.attachments.length > 0 ? (
+                      <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-3">
+                        {invoice.attachments.map((attachment, index) => (
+                          <div
+                            key={attachment.id || index}
+                            className="relative group border rounded-lg overflow-hidden bg-background"
+                          >
+                            {attachment.content_type?.startsWith("image/") &&
+                              attachment.file_data_base64 ? (
+                              <img
+                                src={`data:${attachment.content_type};base64,${attachment.file_data_base64}`}
+                                alt={attachment.file_name}
+                                className="w-full h-32 object-cover"
+                              />
+                            ) : (
+                              <div className="w-full h-32 flex items-center justify-center bg-muted">
+                                <Paperclip className="w-8 h-8 text-muted-foreground" />
+                              </div>
+                            )}
+                            <div className="p-2">
+                              <p
+                                className="text-xs text-muted-foreground truncate"
+                                title={
+                                  attachment.file_name ||
+                                  `Attachment ${index + 1}`
+                                }
+                              >
+                                {attachment.file_name ||
+                                  `Attachment ${index + 1}`}
+                              </p>
+                            </div>
+                            {attachment.file_data_base64 && (
+                              <a
+                                href={`data:${attachment.content_type};base64,${attachment.file_data_base64}`}
+                                download={
+                                  attachment.file_name ||
+                                  `attachment-${index + 1}`
+                                }
+                                className="absolute inset-0 bg-black/0 group-hover:bg-black/10 transition-colors flex items-center justify-center opacity-0 group-hover:opacity-100"
+                              >
+                                <Download className="w-5 h-5 text-white" />
+                              </a>
+                            )}
+                          </div>
+                        ))}
+                      </div>
+                    ) : (
+                      <p className="text-sm text-muted-foreground text-center py-4">
+                        No attachments uploaded
+                      </p>
+                    )}
+                  </div>
+                </CardContent>
+              </Card>
+
               {/* Totals */}
               <Card>
                 <CardContent className="p-6">
@@ -460,12 +527,12 @@ export default function InvoiceDetailPage() {
                                 <strong>Date:</strong>{" "}
                                 {payment.paid_at
                                   ? new Date(
-                                      payment.paid_at,
-                                    ).toLocaleDateString("en-IN", {
-                                      year: "numeric",
-                                      month: "long",
-                                      day: "numeric",
-                                    })
+                                    payment.paid_at,
+                                  ).toLocaleDateString("en-IN", {
+                                    year: "numeric",
+                                    month: "long",
+                                    day: "numeric",
+                                  })
                                   : "-"}
                               </p>
                               {payment.billable_item_name && (
@@ -487,14 +554,23 @@ export default function InvoiceDetailPage() {
                             <Button
                               variant="ghost"
                               size="sm"
-                              onClick={() => {
-                                setSelectedPayment(payment);
-                                setPaymentFormMode("edit");
-                                setIsPaymentFormOpen(true);
-                              }}
+                              onClick={() => handleDownloadReceipt(payment.id)}
                             >
-                              <Pencil className="h-4 w-4" />
+                              <Download className="h-4 w-4" />
                             </Button>
+                            {invoice?.status !== "paid" && (
+                              <Button
+                                variant="ghost"
+                                size="sm"
+                                onClick={() => {
+                                  setSelectedPayment(payment);
+                                  setPaymentFormMode("edit");
+                                  setIsPaymentFormOpen(true);
+                                }}
+                              >
+                                <Pencil className="h-4 w-4" />
+                              </Button>
+                            )}
                           </div>
                         </div>
                       </Card>
@@ -565,8 +641,11 @@ export default function InvoiceDetailPage() {
                 updated_at: new Date().toISOString(),
               };
 
+              const formData = new FormData();
+              formData.append("invoice", JSON.stringify(updatedInvoice));
+
               const response = await withLoader(async () => {
-                return await invoiceApiService.updateInvoice(updatedInvoice);
+                return await invoiceApiService.updateInvoice(formData);
               });
 
               if (response?.success) {
@@ -612,7 +691,7 @@ export default function InvoiceDetailPage() {
                     );
                     if (paymentHistoryResponse?.success) {
                       const paymentData =
-                        paymentHistoryResponse.data?.payments || [];
+                        paymentHistoryResponse.data || [];
                       setPayments(
                         Array.isArray(paymentData) ? paymentData : [],
                       );

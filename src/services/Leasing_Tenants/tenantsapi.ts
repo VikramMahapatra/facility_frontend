@@ -69,10 +69,10 @@ class TenantsApiService {
     });
   }
 
-  async rejectTenant(spaceId: any, tenantId: any) {
+  async rejectTenant(spaceId: any, tenantId: any, reason?: string) {
     return await apiService.request(`/tenants/reject`, {
       method: "POST",
-      body: JSON.stringify({ space_id: spaceId, tenant_id: tenantId }),
+      body: JSON.stringify({ space_id: spaceId, tenant_id: tenantId, reason: reason }),
     });
   }
 

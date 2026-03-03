@@ -13,6 +13,16 @@ import LoaderOverlay from "@/components/LoaderOverlay";
 import ContentContainer from "@/components/ContentContainer";
 import { toast } from "@/components/ui/app-toast";
 import { useNavigate } from "react-router";
+import {
+    AlertDialog,
+    AlertDialogAction,
+    AlertDialogCancel,
+    AlertDialogContent,
+    AlertDialogDescription,
+    AlertDialogFooter,
+    AlertDialogHeader,
+    AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
 
 export default function SpaceOwnerApproval() {
     const { withLoader } = useLoader();
@@ -21,6 +31,10 @@ export default function SpaceOwnerApproval() {
     const [page, setPage] = useState(1);
     const [pageSize] = useState(6);
     const [totalItems, setTotalItems] = useState(0);
+    const [rejectionReason, setRejectionReason] = useState("");
+    const [openRejectionForm, setOpenRejectionForm] = useState(false);
+    const [selectedRequest, setSelectedRequest] = useState<any>(null);
+
     const navigate = useNavigate();
 
     useSkipFirstEffect(() => {
@@ -66,13 +80,23 @@ export default function SpaceOwnerApproval() {
         }
     };
 
-    const handleReject = async (id: string) => {
+    const handleReject = async (request: any) => {
+        setSelectedRequest(request);
+        setOpenRejectionForm(true);
+        setRejectionReason("");
+    };
+
+
+    const confirmReject = async () => {
+        if (!selectedRequest) return;
+
         const response = await withLoader(async () => {
-            return await spacesApiService.updateOwnerApproval(id, "rejected");
+            return await spacesApiService.updateOwnerApproval(selectedRequest.id, "rejected", rejectionReason);
         });
 
         if (response?.success) {
             toast.success("Ownership request rejected successfully.");
+            setOpenRejectionForm(false);
             loadPendingOwnerRequests();
         }
     };
@@ -178,7 +202,7 @@ export default function SpaceOwnerApproval() {
                                             <Button
                                                 variant="outline"
                                                 size="sm"
-                                                onClick={() => handleReject(req.id)}
+                                                onClick={() => handleReject(req)}
                                             >
                                                 <X className="h-4 w-4 mr-1" /> Reject
                                             </Button>
@@ -203,6 +227,44 @@ export default function SpaceOwnerApproval() {
                 totalItems={totalItems}
                 onPageChange={(newPage) => setPage(newPage)}
             />
+
+            {/* Reject Alert Dialog */}
+            <AlertDialog
+                open={openRejectionForm}
+                onOpenChange={() => {
+                    setOpenRejectionForm(false);
+                    setRejectionReason("");
+                }}
+            >
+                <AlertDialogContent>
+                    <AlertDialogHeader>
+                        <AlertDialogTitle>Reject User</AlertDialogTitle>
+                        <AlertDialogDescription>
+                            Are you sure you want to reject {selectedRequest?.owner_name} request? Their
+                            request will be permanently deleted.
+                        </AlertDialogDescription>
+                        <div className="mt-4">
+                            <label className="text-sm font-medium">
+                                Rejection Reason <span className="text-red-500">*</span>
+                            </label>
+
+                            <textarea
+                                className="w-full mt-2 border rounded-md p-2 text-sm"
+                                placeholder="Enter rejection reason..."
+                                value={rejectionReason}
+                                onChange={(e) => setRejectionReason(e.target.value)}
+                                rows={3}
+                            />
+                        </div>
+                    </AlertDialogHeader>
+                    <AlertDialogFooter>
+                        <AlertDialogCancel>Cancel</AlertDialogCancel>
+                        <AlertDialogAction onClick={confirmReject}>
+                            Reject
+                        </AlertDialogAction>
+                    </AlertDialogFooter>
+                </AlertDialogContent>
+            </AlertDialog>
         </div>
     );
 }

@@ -151,19 +151,24 @@ class ApiService {
             },
         };
 
-        let response = await fetch(url, config);
+        try {
 
-        // 🔐 Handle token expiration
-        if (response.status === 401 && !isRetry) {
-            const refreshed = await this.refreshToken();
-            if (refreshed) {
-                return this.requestBlob(endpoint, options, true);
+            let response = await fetch(url, config);
+
+            // 🔐 Handle token expiration
+            if (response.status === 401 && !isRetry) {
+                const refreshed = await this.refreshToken();
+                if (refreshed) {
+                    return this.requestBlob(endpoint, options, true);
+                }
+                this.logoutUser();
+                throw new Error("Unauthorized");
             }
-            this.logoutUser();
-            throw new Error("Unauthorized");
-        }
 
-        return response; // 🔥 RAW RESPONSE
+            return response; // 🔥 RAW RESPONSE
+        } catch (error) {
+            showErrorToast("Download failed!", "Something went wrong");
+        }
     }
 
 

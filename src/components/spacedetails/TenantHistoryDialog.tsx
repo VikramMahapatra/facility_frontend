@@ -160,7 +160,7 @@ export function TenantHistoryDialog({
                                                 <div>
                                                     <p className="text-muted-foreground text-xs mb-1">Start Date</p>
                                                     <p className="font-medium">
-                                                        {item.start_date && item.status == "leased"
+                                                        {item.start_date
                                                             ? format(new Date(item.start_date), "dd MMM yyyy")
                                                             : "N/A"}
                                                     </p>

@@ -69,6 +69,9 @@ export default function TenantApprovalPage() {
   const [approvedTenantId, setApprovedTenantId] = useState<string | null>(null);
   const [approvedSpaceId, setApprovedSpaceId] = useState<string | null>(null);
   const [isLeaseFormOpen, setIsLeaseFormOpen] = useState(false);
+  const [rejectionReason, setRejectionReason] = useState("");
+  const [openRejectionForm, setOpenRejectionForm] = useState(false);
+  const [selectedRequest, setSelectedRequest] = useState<TenantApproval>(null);
   const [prefilledLeaseData, setPrefilledLeaseData] =
     useState<Partial<Lease> | null>(null);
 
@@ -122,13 +125,22 @@ export default function TenantApprovalPage() {
     }
   };
 
-  const rejectTenant = async (spaceId: string, tenantId: string) => {
+  const rejectTenant = async (request: any) => {
+    setSelectedRequest(request);
+    setRejectionReason("")
+    setOpenRejectionForm(true);
+  };
+
+  const confirmReject = async () => {
+    if (!selectedRequest) return;
+
     const response = await withLoader(async () => {
-      return await tenantsApiService.rejectTenant(spaceId, tenantId);
+      return await tenantsApiService.rejectTenant(selectedRequest.space_id, selectedRequest.tenant_id, rejectionReason);
     });
 
     if (response?.success) {
       toast.success("Tenant rejected successfully.");
+      setOpenRejectionForm(false);
       fetchTenants();
     } else {
       const errorMessage =
@@ -254,7 +266,7 @@ export default function TenantApprovalPage() {
                               size="sm"
                               variant="destructive"
                               onClick={() =>
-                                rejectTenant(tenant.space_id, tenant.tenant_id)
+                                rejectTenant(tenant)
                               }
                             >
                               <X className="h-4 w-4 mr-1" />
@@ -352,7 +364,7 @@ export default function TenantApprovalPage() {
           setApprovedTenantId(null);
           setPrefilledLeaseData(null);
         }}
-        onSave={async (leaseData: Partial<Lease>) => {
+        onSave={async (leaseData: FormData) => {
           const response = await withLoader(async () => {
             return await leasesApiService.addLease(leaseData);
           });
@@ -372,6 +384,43 @@ export default function TenantApprovalPage() {
         }}
         mode="create"
       />
+      {/* Reject Alert Dialog */}
+      <AlertDialog
+        open={openRejectionForm}
+        onOpenChange={() => {
+          setOpenRejectionForm(false);
+          setRejectionReason("");
+        }}
+      >
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Reject User</AlertDialogTitle>
+            <AlertDialogDescription>
+              Are you sure you want to reject {selectedRequest?.tenant_name} request? Their
+              request will be permanently deleted.
+            </AlertDialogDescription>
+            <div className="mt-4">
+              <label className="text-sm font-medium">
+                Rejection Reason <span className="text-red-500">*</span>
+              </label>
+
+              <textarea
+                className="w-full mt-2 border rounded-md p-2 text-sm"
+                placeholder="Enter rejection reason..."
+                value={rejectionReason}
+                onChange={(e) => setRejectionReason(e.target.value)}
+                rows={3}
+              />
+            </div>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancel</AlertDialogCancel>
+            <AlertDialogAction onClick={confirmReject}>
+              Reject
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 }

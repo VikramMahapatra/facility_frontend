@@ -23,7 +23,6 @@ import SpaceAssignments from "./pages/SpaceAssignments";
 import Leases from "./pages/Leases";
 import LeaseDetailPage from "./pages/LeaseDetailPage";
 import Tenants from "./pages/Tenants";
-import TenantFormPage from "./pages/TenantFormPage";
 import TenantDetailPage from "./pages/TenantDetailPage";
 import LeaseCharges from "./pages/LeaseCharges";
 import LeaseChargeCode from "./pages/LeaseChargeCode";
@@ -89,7 +88,6 @@ import Bills from "./pages/Bills";
 import BillFormPage from "./pages/BillFormPage";
 import BillDetailPage from "./pages/BillDetailPage";
 import Payments from "./pages/Payments";
-import LeaseTerminationApprovals from "./pages/LeaseTerminationApprovals";
 
 const queryClient = new QueryClient();
 
@@ -170,11 +168,6 @@ const App = () => {
                   <Route path="/leases" element={<Leases />} />
                   <Route path="/leases/:id" element={<LeaseDetailPage />} />
                   <Route path="/tenants" element={<Tenants />} />
-                  <Route path="/tenants/create" element={<TenantFormPage />} />
-                  <Route
-                    path="/tenants/:id/edit"
-                    element={<TenantFormPage />}
-                  />
                   <Route
                     path="/tenants/:id/view"
                     element={<TenantDetailPage />}
@@ -196,8 +189,8 @@ const App = () => {
                   />
                   <Route path="/bills" element={<Bills />} />
                   <Route path="/bills/create" element={<BillFormPage />} />
+                  <Route path="/bills/:id" element={<BillDetailPage />} />
                   <Route path="/bills/:id/edit" element={<BillFormPage />} />
-                  <Route path="/bills/:id/view" element={<BillDetailPage />} />
                   <Route path="/payments" element={<Payments />} />
                   <Route path="/revenue-reports" element={<RevenueReports />} />
                   <Route path="/tax-management" element={<TaxManagement />} />
@@ -278,10 +271,6 @@ const App = () => {
                   <Route
                     path="/space-occupancy-approvals"
                     element={<SpaceOccupancyApproval />}
-                  />
-                  <Route
-                    path="/lease-termination-approvals"
-                    element={<LeaseTerminationApprovals />}
                   />
                   <Route
                     path="/profile"

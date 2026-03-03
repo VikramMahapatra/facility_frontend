@@ -9,6 +9,7 @@ export interface ParkingZone {
 
 export interface ParkingSlot {
   id: string;
+  site_name: string;
   zone_name: string;
   space_id?: string;
   space_name?: string;

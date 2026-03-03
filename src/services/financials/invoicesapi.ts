@@ -1,4 +1,6 @@
+import { toast } from "@/components/ui/app-toast";
 import { apiService } from "../api";
+import { downloadFile } from "@/helpers/fileDownloadHelper";
 
 class InvoiceApiService {
   async getInvoices(params) {
@@ -7,7 +9,7 @@ class InvoiceApiService {
 
   async getLeaseChargeInvoices(params) {
     return await apiService.request(
-      `/invoices/all-lease-charge-invoices?${params.toString()}`
+      `/invoices/all-lease-charge-invoices?${params.toString()}`,
     );
   }
 
@@ -17,19 +19,19 @@ class InvoiceApiService {
 
   async getWorkOrderInvoices(params) {
     return await apiService.request(
-      `/invoices/all-work-order-invoices?${params.toString()}`
+      `/invoices/all-work-order-invoices?${params.toString()}`,
     );
   }
 
   async getInvoiceEntityLookup(params) {
     return await apiService.request(
-      `/invoices/entity-lookup?${params.toString()}`
+      `/invoices/entity-lookup?${params.toString()}`,
     );
   }
 
   async getInvoiceTotals(params) {
     return await apiService.request(
-      `/invoices/invoice-totals?${params.toString()}`
+      `/invoices/invoice-totals?${params.toString()}`,
     );
   }
 
@@ -38,15 +40,15 @@ class InvoiceApiService {
   }
 
   async addInvoice(formData: FormData) {
-    return await apiService.requestWithForm("/invoices/", {
+    return await apiService.requestWithForm("/invoices/create", {
       method: "POST",
       body: formData,
     });
   }
 
   async updateInvoice(formData: FormData) {
-    return await apiService.request("/invoices/", {
-      method: "PUT",
+    return await apiService.requestWithForm("/invoices/update", {
+      method: "POST",
       body: formData,
     });
   }
@@ -73,7 +75,11 @@ class InvoiceApiService {
     return await apiService.request("/invoices/preview-number");
   }
 
-  async getCustomerPendingCharges(spaceId: string, code?: string, invoice_id?: string) {
+  async getCustomerPendingCharges(
+    spaceId: string,
+    code?: string,
+    invoice_id?: string,
+  ) {
     const params = new URLSearchParams();
     params.append("space_id", spaceId);
     if (code) {
@@ -82,35 +88,23 @@ class InvoiceApiService {
     if (invoice_id) {
       params.append("invoice_id", invoice_id);
     }
-    return await apiService.request(`/invoices/customer-pending-charges?${params.toString()}`);
+    return await apiService.request(
+      `/invoices/customer-pending-charges?${params.toString()}`,
+    );
   }
 
   async downloadInvoice(id: string) {
-    const response = await apiService.requestBlob(`/invoices/${id}/download`);
+    await downloadFile(
+      apiService.requestBlob(`/invoices/${id}/download`),
+      `Invoice_${id}.pdf`
+    );
+  }
 
-    console.log("response blob", response);
-    if (!response.ok) {
-      const text = await response.text();
-      throw new Error(text);
-    }
-
-    const contentType = response.headers.get("content-type") || "";
-    if (!contentType.includes("application/pdf")) {
-      const text = await response.text();
-      throw new Error(text);
-    }
-
-    const blob = await response.blob();
-    const url = window.URL.createObjectURL(blob);
-
-    const a = document.createElement("a");
-    a.href = url;
-    a.download = `Invoice_${id}.pdf`;
-    document.body.appendChild(a);
-    a.click();
-    a.remove();
-
-    window.URL.revokeObjectURL(url);
+  async downloadPaymentReceipt(id: string) {
+    await downloadFile(
+      apiService.requestBlob(`/invoices/payment-receipt/${id}/download`),
+      `Invoice_Receipt_${id}.pdf`
+    );
   }
 
   async saveInvoicePayment(paymentData: any) {

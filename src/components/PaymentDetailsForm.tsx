@@ -26,7 +26,7 @@ import {
 } from "lucide-react";
 import { toast } from "@/components/ui/app-toast";
 import { invoiceApiService } from "@/services/financials/invoicesapi";
-import { billsApiService } from "@/services/financials/billsapi";
+import { paymentsApiService } from "@/services/financials/paymentsapi";
 import { useLoader } from "@/context/LoaderContext";
 
 interface PaymentDetail {
@@ -127,37 +127,44 @@ export function PaymentDetailsForm({
       return;
     }
 
-    // Reference number required for non-cash payments
-    if (paymentDetail.method !== "cash" && !paymentDetail.ref_no?.trim()) {
+    // Reference number required for non-cash payments (invoices only; bills may not use ref_no)
+    if (!billId && paymentDetail.method !== "cash" && !paymentDetail.ref_no?.trim()) {
       toast.error("Reference number is required for this payment method.");
       return;
-    }
-
-    const paymentPayload: any = {
-      id: paymentDetail.id || undefined,
-      method: paymentDetail.method,
-      ref_no: paymentDetail.ref_no || "",
-      amount: amount,
-      paid_at: paymentDetail.paid_at,
-      meta: "",
-    };
-
-    // Set the correct ID field based on whether this is for a bill or invoice
-    if (billId) {
-      paymentPayload.bill_id = billId;
-    } else {
-      paymentPayload.invoice_id = invoiceId;
     }
 
     setIsSubmitting(true);
     setSavingButton(saveAndNew ? "saveAndNew" : "save");
     try {
-      const response = await withLoader(async () => {
-        if (billId) {
-          return await billsApiService.saveBillPayment(paymentPayload);
-        }
-        return await invoiceApiService.saveInvoicePayment(paymentPayload);
-      });
+      let response: { success?: boolean; message?: string };
+      if (billId) {
+        const billPayload = {
+          id: paymentDetail.id || undefined,
+          bill_id: billId,
+          method: paymentDetail.method,
+          amount,
+          paid_at: paymentDetail.paid_at,
+        };
+        response = await withLoader(async () => {
+          return await paymentsApiService.recordBillPayment(billPayload);
+        });
+      } else if (invoiceId) {
+        const invoicePayload = {
+          id: paymentDetail.id || undefined,
+          invoice_id: invoiceId,
+          method: paymentDetail.method,
+          ref_no: paymentDetail.ref_no || "",
+          amount,
+          paid_at: paymentDetail.paid_at,
+          meta: "",
+        };
+        response = await withLoader(async () => {
+          return await invoiceApiService.saveInvoicePayment(invoicePayload);
+        });
+      } else {
+        toast.error("Missing invoice or bill reference.");
+        return;
+      }
 
       if (response?.success) {
         toast.success(
@@ -203,7 +210,7 @@ export function PaymentDetailsForm({
 
         <div className="space-y-4">
           {/* 1st row: Mode, Reference No, Amount */}
-          <div className="grid grid-cols-3 gap-4">
+          <div className="grid grid-cols-2 gap-4">
             <div className="space-y-2">
               <Label>Payment Mode *</Label>
               <Select
@@ -240,6 +247,23 @@ export function PaymentDetailsForm({
               />
             </div>
 
+
+          </div>
+
+          {/* 2nd row: Date */}
+          <div className="grid grid-cols-2 gap-4">
+            <div className="space-y-2">
+              <Label>Payment Date *</Label>
+              <div className="relative">
+                <Calendar className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground pointer-events-none" />
+                <Input
+                  type="date"
+                  className="pl-10"
+                  value={paymentDetail.paid_at || ""}
+                  onChange={(e) => updatePaymentDetail("paid_at", e.target.value)}
+                />
+              </div>
+            </div>
             <div className="space-y-2">
               <Label>Amount *</Label>
               <div className="relative">
@@ -263,20 +287,6 @@ export function PaymentDetailsForm({
                   step="any"
                 />
               </div>
-            </div>
-          </div>
-
-          {/* 2nd row: Date */}
-          <div className="space-y-2">
-            <Label>Payment Date *</Label>
-            <div className="relative">
-              <Calendar className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground pointer-events-none" />
-              <Input
-                type="date"
-                className="pl-10"
-                value={paymentDetail.paid_at || ""}
-                onChange={(e) => updatePaymentDetail("paid_at", e.target.value)}
-              />
             </div>
           </div>
         </div>

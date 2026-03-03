@@ -146,7 +146,7 @@ export default function Bills() {
   };
 
   const handleView = (bill: Bill) => {
-    navigate(`/bills/${bill.id}/view`);
+    navigate(`/bills/${bill.id}`);
   };
 
   const handleEdit = (bill: Bill) => {
@@ -353,7 +353,8 @@ export default function Bills() {
                                   <Eye className="h-4 w-4" />
                                 </Button>
                                 {canWrite(resource) &&
-                                  bill.status !== "paid" && (
+                                  bill.status !== "paid" &&
+                                  bill.status !== "approved" && (
                                     <Button
                                       variant="ghost"
                                       size="sm"
@@ -372,7 +373,7 @@ export default function Bills() {
                                     <Trash2 className="h-4 w-4" />
                                   </Button>
                                 )}
-                                {bill.status === "paid" && (
+                                {["approved", "partial", "paid"].includes(bill.status) && (
                                   <Button
                                     variant="ghost"
                                     size="sm"

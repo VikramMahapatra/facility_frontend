@@ -20,6 +20,8 @@ import {
   Receipt,
   Clock,
   User,
+  Paperclip,
+  Download,
 } from "lucide-react";
 import { Bill } from "@/interfaces/invoices_interfaces";
 import { billsApiService } from "@/services/financials/billsapi";
@@ -29,6 +31,7 @@ import { useLoader } from "@/context/LoaderContext";
 import LoaderOverlay from "@/components/LoaderOverlay";
 import { useSettings } from "@/context/SettingsContext";
 import { PaymentDetailsForm } from "@/components/PaymentDetailsForm";
+import { downloadFile } from "@/helpers/fileDownloadHelper";
 
 export default function BillDetailPage() {
   const { id } = useParams<{ id: string }>();
@@ -142,6 +145,10 @@ export default function BillDetailPage() {
   const billTotal =
     Number(bill?.totals?.grand) || Number((bill as any)?.total_amount) || 0;
   const progress = billTotal > 0 ? (paymentSummary.paid / billTotal) * 100 : 0;
+
+  const handleDownloadReceipt = async (paymentId: string) => {
+    await billsApiService.downloadPaymentReceipt(paymentId);
+  };
 
   return (
     <ContentContainer>
@@ -316,6 +323,69 @@ export default function BillDetailPage() {
                 </CardContent>
               </Card>
 
+              {/* Attachments */}
+              <Card>
+                <CardContent className="p-6">
+                  <div className="flex items-center gap-2 mb-3">
+                    <Paperclip className="h-4 w-4 text-muted-foreground" />
+                    <h3 className="text-lg font-medium">Attachments</h3>
+                  </div>
+                  <div className="border-2 border-dashed border-muted-foreground/30 rounded-lg p-4">
+                    {bill.attachments && bill.attachments.length > 0 ? (
+                      <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-3">
+                        {bill.attachments.map((attachment, index) => (
+                          <div
+                            key={attachment.id || index}
+                            className="relative group border rounded-lg overflow-hidden bg-background"
+                          >
+                            {attachment.content_type?.startsWith("image/") &&
+                              attachment.file_data_base64 ? (
+                              <img
+                                src={`data:${attachment.content_type};base64,${attachment.file_data_base64}`}
+                                alt={attachment.file_name}
+                                className="w-full h-32 object-cover"
+                              />
+                            ) : (
+                              <div className="w-full h-32 flex items-center justify-center bg-muted">
+                                <Paperclip className="w-8 h-8 text-muted-foreground" />
+                              </div>
+                            )}
+                            <div className="p-2">
+                              <p
+                                className="text-xs text-muted-foreground truncate"
+                                title={
+                                  attachment.file_name ||
+                                  `Attachment ${index + 1}`
+                                }
+                              >
+                                {attachment.file_name ||
+                                  `Attachment ${index + 1}`}
+                              </p>
+                            </div>
+                            {attachment.file_data_base64 && (
+                              <a
+                                href={`data:${attachment.content_type};base64,${attachment.file_data_base64}`}
+                                download={
+                                  attachment.file_name ||
+                                  `attachment-${index + 1}`
+                                }
+                                className="absolute inset-0 bg-black/0 group-hover:bg-black/10 transition-colors flex items-center justify-center opacity-0 group-hover:opacity-100"
+                              >
+                                <Download className="w-5 h-5 text-white" />
+                              </a>
+                            )}
+                          </div>
+                        ))}
+                      </div>
+                    ) : (
+                      <p className="text-sm text-muted-foreground text-center py-4">
+                        No attachments uploaded
+                      </p>
+                    )}
+                  </div>
+                </CardContent>
+              </Card>
+
               {/* Financial Summary */}
               <Card>
                 <CardContent className="p-6">
@@ -352,98 +422,115 @@ export default function BillDetailPage() {
               </Card>
             </TabsContent>
 
-            {/* PAYMENTS */}
+            {/* PAYMENTS - same pattern as Lease Payment Terms */}
             <TabsContent value="payments" className="space-y-6">
-              <CardContent className="p-6">
-                <div className="flex items-center justify-between mb-4">
-                  <h3 className="text-lg font-medium flex items-center gap-2">
-                    <CreditCard className="h-5 w-5" /> Payment Details
-                  </h3>
-                  <Button
-                    onClick={() => {
-                      setSelectedPayment(undefined);
-                      setPaymentFormMode("create");
-                      setIsPaymentFormOpen(true);
-                    }}
-                    className="gap-2"
-                  >
-                    <Plus className="h-4 w-4" />
-                    Record Payment
-                  </Button>
-                </div>
+              <Card>
+                <CardContent className="p-6">
+                  <div className="flex items-center justify-between mb-6">
+                    <h3 className="text-lg font-semibold flex items-center gap-2">
+                      <CreditCard className="h-5 w-5" />
+                      Payment Details
+                    </h3>
+                    {bill?.status !== "paid" && (
+                      <Button
+                        size="sm"
+                        onClick={() => {
+                          setSelectedPayment(undefined);
+                          setPaymentFormMode("create");
+                          setIsPaymentFormOpen(true);
+                        }}
+                        className="flex items-center gap-2"
+                      >
+                        <Plus className="h-4 w-4" />
+                        Record Payment
+                      </Button>
+                    )}
+                  </div>
 
-                {payments && payments.length > 0 ? (
-                  <div className="space-y-4">
-                    {payments.map((payment: any, idx: number) => (
-                      <Card key={payment.id || idx} className="p-4">
-                        <div className="flex items-start justify-between gap-4">
-                          <div className="flex items-start gap-3 flex-1">
-                            <div className="p-2 bg-muted rounded-lg">
-                              {getPaymentMethodIcon(payment.method || "card")}
-                            </div>
-                            <div className="flex-1 space-y-1">
-                              <div className="flex items-center gap-2">
-                                <p className="font-semibold">
-                                  {payment.method
-                                    ? payment.method.toUpperCase()
-                                    : "Unknown"}
-                                </p>
-                                {payment.id && (
-                                  <Badge
-                                    variant="outline"
-                                    className="text-xs"
-                                  >
-                                    ID: {payment.id.slice(0, 8)}...
-                                  </Badge>
-                                )}
+                  {payments && payments.length > 0 ? (
+                    <div className="space-y-4">
+                      {payments.map((payment: any, idx: number) => (
+                        <Card key={payment.id || idx} className="p-4">
+                          <div className="flex items-start justify-between gap-4">
+                            <div className="flex items-start gap-3 flex-1">
+                              <div className="p-2 bg-muted rounded-lg">
+                                {getPaymentMethodIcon(payment.method || "card")}
                               </div>
-                              {payment.ref_no && (
+                              <div className="flex-1 space-y-1">
+                                <div className="flex items-center gap-2">
+                                  <p className="font-semibold">
+                                    {payment.method
+                                      ? payment.method.toUpperCase()
+                                      : "Unknown"}
+                                  </p>
+                                  {payment.id && (
+                                    <Badge
+                                      variant="outline"
+                                      className="text-xs"
+                                    >
+                                      ID: {payment.id.slice(0, 8)}...
+                                    </Badge>
+                                  )}
+                                </div>
+                                {payment.ref_no && (
+                                  <p className="text-sm text-muted-foreground">
+                                    <strong>Reference:</strong> {payment.ref_no}
+                                  </p>
+                                )}
                                 <p className="text-sm text-muted-foreground">
-                                  <strong>Reference:</strong> {payment.ref_no}
-                                </p>
-                              )}
-                              <p className="text-sm text-muted-foreground">
-                                <strong>Date:</strong>{" "}
-                                {payment.paid_at
-                                  ? new Date(
+                                  <strong>Date:</strong>{" "}
+                                  {payment.paid_at
+                                    ? new Date(
                                       payment.paid_at,
                                     ).toLocaleDateString("en-IN", {
                                       year: "numeric",
                                       month: "long",
                                       day: "numeric",
                                     })
-                                  : "-"}
-                              </p>
+                                    : "-"}
+                                </p>
+                              </div>
+                            </div>
+                            <div className="flex items-center gap-2">
+                              <div className="text-right">
+                                <p className="text-2xl font-bold">
+                                  {formatCurrency(payment.amount)}
+                                </p>
+                              </div>
+                              <Button
+                                variant="ghost"
+                                size="sm"
+                                onClick={() => handleDownloadReceipt(payment.id)}
+                              >
+                                <Download className="h-4 w-4" />
+                              </Button>
+                              {bill?.status !== "paid" && (
+                                <Button
+                                  variant="ghost"
+                                  size="sm"
+                                  onClick={() => {
+                                    setSelectedPayment(payment);
+                                    setPaymentFormMode("edit");
+                                    setIsPaymentFormOpen(true);
+                                  }}
+                                >
+                                  <Pencil className="h-4 w-4" />
+                                </Button>
+                              )}
                             </div>
                           </div>
-                          <div className="flex items-center gap-2">
-                            <div className="text-right">
-                              <p className="text-2xl font-bold">
-                                {formatCurrency(payment.amount)}
-                              </p>
-                            </div>
-                            <Button
-                              variant="ghost"
-                              size="sm"
-                              onClick={() => {
-                                setSelectedPayment(payment);
-                                setPaymentFormMode("edit");
-                                setIsPaymentFormOpen(true);
-                              }}
-                            >
-                              <Pencil className="h-4 w-4" />
-                            </Button>
-                          </div>
-                        </div>
-                      </Card>
-                    ))}
-                  </div>
-                ) : (
-                  <p className="text-muted-foreground text-center py-8">
-                    No payments recorded
-                  </p>
-                )}
-              </CardContent>
+                        </Card>
+                      ))}
+                    </div>
+                  ) : (
+                    <div className="text-center py-8">
+                      <p className="text-sm text-muted-foreground">
+                        No payments recorded
+                      </p>
+                    </div>
+                  )}
+                </CardContent>
+              </Card>
             </TabsContent>
 
             {/* HISTORY */}
@@ -464,7 +551,7 @@ export default function BillDetailPage() {
                     )}
                     {(bill as any).updated_at &&
                       (bill as any).created_at !==
-                        (bill as any).updated_at && (
+                      (bill as any).updated_at && (
                         <li>
                           Last updated on{" "}
                           {new Date(
@@ -501,25 +588,22 @@ export default function BillDetailPage() {
             setIsPaymentFormOpen(false);
             setSelectedPayment(undefined);
           }}
-          onSave={async (paymentData: any) => {
-            if (id) {
-              try {
-                // Reload bill detail to get updated payments
-                const reloadResponse = await withLoader(async () => {
-                  return await billsApiService.getBillById(id);
-                });
-                if (reloadResponse?.success) {
-                  const data = reloadResponse.data?.data ?? reloadResponse.data;
-                  setBill(data);
-                  setPayments(data?.payments || []);
-                }
-                return reloadResponse;
-              } catch (error) {
-                console.error("Error reloading bill:", error);
-                return { success: false };
+          onSave={async () => {
+            if (!id) return { success: false };
+            try {
+              const reloadResponse = await withLoader(async () => {
+                return await billsApiService.getBillById(id);
+              });
+              if (reloadResponse?.success) {
+                const data = reloadResponse.data?.data ?? reloadResponse.data;
+                setBill(data);
+                setPayments(data?.payments || []);
               }
+              return reloadResponse;
+            } catch (error) {
+              console.error("Error reloading bill:", error);
+              return { success: false };
             }
-            return { success: false };
           }}
         />
       )}

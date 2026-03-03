@@ -90,6 +90,7 @@ export default function PendingApprovals() {
   const [prefilledLeaseData, setPrefilledLeaseData] = useState<Lease | null>(
     null,
   );
+  const [rejectionReason, setRejectionReason] = useState("");
 
   useSkipFirstEffect(() => {
     loadUsersForApproval();
@@ -179,6 +180,7 @@ export default function PendingApprovals() {
   const handleReject = (user: User) => {
     setSelectedUser(user);
     setActionType("reject");
+    setRejectionReason("");
   };
 
   const confirmApprove = async () => {
@@ -233,6 +235,7 @@ export default function PendingApprovals() {
     const resp = await pendingApprovalApiService.updateUser({
       user_id: selectedUser.id,
       status: "reject",
+      rejection_status: rejectionReason
     });
 
     if (resp?.success) {
@@ -522,6 +525,19 @@ export default function PendingApprovals() {
               Are you sure you want to reject {selectedUser?.full_name}? Their
               registration request will be permanently deleted.
             </AlertDialogDescription>
+            <div className="mt-4">
+              <label className="text-sm font-medium">
+                Rejection Reason <span className="text-red-500">*</span>
+              </label>
+
+              <textarea
+                className="w-full mt-2 border rounded-md p-2 text-sm"
+                placeholder="Enter rejection reason..."
+                value={rejectionReason}
+                onChange={(e) => setRejectionReason(e.target.value)}
+                rows={3}
+              />
+            </div>
           </AlertDialogHeader>
           <AlertDialogFooter>
             <AlertDialogCancel>Cancel</AlertDialogCancel>
@@ -584,7 +600,7 @@ export default function PendingApprovals() {
           setSelectedUser(null);
           setPrefilledLeaseData(null);
         }}
-        onSave={async (leaseData: Partial<Lease>) => {
+        onSave={async (leaseData: FormData) => {
           const response = await withLoader(async () => {
             return await leasesApiService.addLease(leaseData);
           });

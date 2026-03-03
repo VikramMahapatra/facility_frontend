@@ -28,6 +28,16 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
 
 type SpaceOccupancyRequest = {
   id: string;
@@ -56,6 +66,9 @@ export default function SpaceOccupancyApproval() {
   const [page, setPage] = useState(1);
   const [pageSize] = useState(6);
   const [totalItems, setTotalItems] = useState(0);
+  const [rejectionReason, setRejectionReason] = useState("");
+  const [openRejectionForm, setOpenRejectionForm] = useState(false);
+  const [selectedRequest, setSelectedRequest] = useState<SpaceOccupancyRequest>(null);
 
   useSkipFirstEffect(() => {
     loadOccupancyRequests();
@@ -91,9 +104,9 @@ export default function SpaceOccupancyApproval() {
     }
   };
 
-  const handleApprove = async (id: string) => {
+  const handleApprove = async (request: any) => {
     const response = (await withLoader(async () => {
-      return await spacesApiService.approveOccupancyRequest(id);
+      return await spacesApiService.approveOccupancyRequest(request.id, request.request_type);
     })) as any;
 
     if (response?.success) {
@@ -108,13 +121,22 @@ export default function SpaceOccupancyApproval() {
     }
   };
 
-  const handleReject = async (id: string) => {
+  const handleReject = async (request: any) => {
+    setSelectedRequest(request);
+    setOpenRejectionForm(true);
+    setRejectionReason("");
+  };
+
+  const confirmReject = async () => {
+    if (!selectedRequest) return;
+
     const response = (await withLoader(async () => {
-      return await spacesApiService.rejectOccupancyRequest(id);
+      return await spacesApiService.rejectOccupancyRequest(selectedRequest.id, rejectionReason, selectedRequest.request_type);
     })) as any;
 
     if (response?.success) {
       toast.success("Move-out request rejected successfully.");
+      setOpenRejectionForm(false);
       loadOccupancyRequests();
     } else {
       const errorMessage =
@@ -326,6 +348,44 @@ export default function SpaceOccupancyApproval() {
         totalItems={totalItems}
         onPageChange={(newPage) => setPage(newPage)}
       />
+
+      {/* Reject Alert Dialog */}
+      <AlertDialog
+        open={openRejectionForm}
+        onOpenChange={() => {
+          setOpenRejectionForm(false);
+          setRejectionReason("");
+        }}
+      >
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Reject User</AlertDialogTitle>
+            <AlertDialogDescription>
+              Are you sure you want to reject {selectedRequest?.occupant_name} request? Their
+              request will be permanently deleted.
+            </AlertDialogDescription>
+            <div className="mt-4">
+              <label className="text-sm font-medium">
+                Rejection Reason <span className="text-red-500">*</span>
+              </label>
+
+              <textarea
+                className="w-full mt-2 border rounded-md p-2 text-sm"
+                placeholder="Enter rejection reason..."
+                value={rejectionReason}
+                onChange={(e) => setRejectionReason(e.target.value)}
+                rows={3}
+              />
+            </div>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancel</AlertDialogCancel>
+            <AlertDialogAction onClick={confirmReject}>
+              Reject
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 }
