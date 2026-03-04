@@ -84,6 +84,15 @@ class BillsApiService {
     });
   }
 
+  async autoGenerateBills(date: string) {
+    const params = new URLSearchParams();
+    params.append("date", date);
+    return await apiService.request(
+      `/bills/auto-generate?${params.toString()}`,
+      { method: "POST" },
+    );
+  }
+
 }
 
 export const billsApiService = new BillsApiService();

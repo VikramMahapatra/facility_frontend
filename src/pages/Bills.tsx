@@ -36,6 +36,7 @@ import {
   FileText,
   TrendingUp,
   AlertTriangle,
+  Sparkles,
 } from "lucide-react";
 import {
   AlertDialog,
@@ -57,6 +58,7 @@ import ContentContainer from "@/components/ContentContainer";
 import { useLoader } from "@/context/LoaderContext";
 import LoaderOverlay from "@/components/LoaderOverlay";
 import { useSettings } from "@/context/SettingsContext";
+import { AutoGenerateBillForm } from "@/components/automation/AutoGenerateBillForm";
 
 export default function Bills() {
   const [searchTerm, setSearchTerm] = useState("");
@@ -77,6 +79,7 @@ export default function Bills() {
   const [totalItems, setTotalItems] = useState(0);
   const { withLoader } = useLoader();
   const { systemCurrency } = useSettings();
+  const [isAutoGenerateFormOpen, setIsAutoGenerateFormOpen] = useState(false);
 
   useEffect(() => {
     loadBillsOverView();
@@ -202,6 +205,14 @@ export default function Bills() {
             <Button variant="outline" className="gap-2">
               <Download className="h-4 w-4" />
               Export
+            </Button>
+            <Button
+              variant="outline"
+              className="gap-2"
+              onClick={() => setIsAutoGenerateFormOpen(true)}
+            >
+              <Sparkles className="h-4 w-4" />
+              Auto Generate
             </Button>
             <Button onClick={handleCreate} className="gap-2">
               <Plus className="h-4 w-4" />
@@ -426,6 +437,14 @@ export default function Bills() {
           </AlertDialogContent>
         </AlertDialog>
       </div>
+      <AutoGenerateBillForm
+        isOpen={isAutoGenerateFormOpen}
+        onClose={() => setIsAutoGenerateFormOpen(false)}
+        onSuccess={() => {
+          loadBillsOverView();
+          loadBills();
+        }}
+      />
     </ContentContainer>
   );
 }
