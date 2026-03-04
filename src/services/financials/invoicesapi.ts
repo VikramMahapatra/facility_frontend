@@ -93,6 +93,15 @@ class InvoiceApiService {
     );
   }
 
+  async autoGenerateInvoices(date: string) {
+    const params = new URLSearchParams();
+    params.append("date", date);
+    return await apiService.request(
+      `/invoices/auto-generate?${params.toString()}`,
+      { method: "POST" },
+    );
+  }
+
   async downloadInvoice(id: string) {
     await downloadFile(
       apiService.requestBlob(`/invoices/${id}/download`),
