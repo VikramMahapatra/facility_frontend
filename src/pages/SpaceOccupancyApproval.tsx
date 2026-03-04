@@ -129,6 +129,7 @@ export default function SpaceOccupancyApproval() {
 
   const confirmReject = async () => {
     if (!selectedRequest) return;
+    console.log("selected request", selectedRequest);
 
     const response = (await withLoader(async () => {
       return await spacesApiService.rejectOccupancyRequest(selectedRequest.id, rejectionReason, selectedRequest.request_type);
@@ -326,11 +327,11 @@ export default function SpaceOccupancyApproval() {
                       <Button
                         variant="outline"
                         size="sm"
-                        onClick={() => handleReject(req.id)}
+                        onClick={() => handleReject(req)}
                       >
                         <X className="h-4 w-4 mr-1" /> Reject
                       </Button>
-                      <Button size="sm" onClick={() => handleApprove(req.id)}>
+                      <Button size="sm" onClick={() => handleApprove(req)}>
                         <Check className="h-4 w-4 mr-1" /> Approve
                       </Button>
                     </div>

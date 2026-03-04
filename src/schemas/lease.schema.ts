@@ -9,7 +9,7 @@ export const leaseSchema = z
     partner_id: z.string().optional(),
     tenant_id: z.string().optional(),
     start_date: z.string().min(1, "Start Date is required"),
-    frequency: z.enum(["monthly", "quaterly", "annually"], {
+    frequency: z.enum(["monthly", "quarterly", "biannually", "annually"], {
       required_error: "Rent billing frequency is required",
     }),
     lease_frequency: z.enum(["monthly", "annually"], {
@@ -18,6 +18,9 @@ export const leaseSchema = z
     lease_term_duration: z.coerce
       .number({ invalid_type_error: "Lease Term must be a number" })
       .min(1, "Term Duration is required"),
+    rent_period: z.enum(["monthly", "annually"], {
+      required_error: "Rent period is required",
+    }),
     rent_amount: z.coerce
       .number({
         required_error: "Rent Amount is required",
@@ -45,7 +48,7 @@ export const leaseSchema = z
     payment_terms: z
       .array(
         z.object({
-          id: z.string().uuid().optional(),
+          id: z.string().uuid().optional().or(z.literal("")).transform(val => val === "" ? undefined : val),
           payment_method: z.enum(["upi", "card", "bank", "cash", "cheque", "other"]).optional(),
           reference_no: z.string().optional(),
           due_date: z.string().optional(),
@@ -69,7 +72,7 @@ export const leaseSchema = z
     if (val.start_date && val.lease_term_duration && val.lease_frequency) {
       const startDate = new Date(val.start_date);
       const termDuration = Number(val.lease_term_duration);
-      
+
       if (val.lease_frequency === "annually") {
         // If lease frequency is annually, term is in years
         leaseEndDate = new Date(startDate);
@@ -96,7 +99,7 @@ export const leaseSchema = z
       if (term.due_date && val.start_date && leaseEndDate) {
         const dueDate = new Date(term.due_date);
         const startDate = new Date(val.start_date);
-        
+
         if (dueDate < startDate) {
           ctx.addIssue({
             code: z.ZodIssueCode.custom,
@@ -104,7 +107,7 @@ export const leaseSchema = z
             message: "Payment date must be on or after lease start date",
           });
         }
-        
+
         if (dueDate > leaseEndDate) {
           ctx.addIssue({
             code: z.ZodIssueCode.custom,
@@ -117,7 +120,7 @@ export const leaseSchema = z
       // Validate sequential dates (each date should be >= previous and <= next)
       if (term.due_date && val.payment_terms && val.payment_terms.length > 1) {
         const currentDate = new Date(term.due_date);
-        
+
         // Check against previous payment term
         if (index > 0 && val.payment_terms[index - 1]?.due_date) {
           const prevDate = new Date(val.payment_terms[index - 1].due_date);
@@ -129,7 +132,7 @@ export const leaseSchema = z
             });
           }
         }
-        
+
         // Check against next payment term
         if (index < val.payment_terms.length - 1 && val.payment_terms[index + 1]?.due_date) {
           const nextDate = new Date(val.payment_terms[index + 1].due_date);

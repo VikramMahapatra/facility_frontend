@@ -15,6 +15,7 @@ export interface Lease {
   tenant_name: string;
   start_date?: string;
   end_date?: string;
+  rent_period?: string;
   rent_amount?: number;
   deposit_amount?: number;
   cam_rate?: number;

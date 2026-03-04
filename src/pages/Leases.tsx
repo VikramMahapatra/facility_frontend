@@ -376,7 +376,7 @@ export default function Leases() {
                             : formatCurrency(lease.rent_amount)}
                         </div>
                         <div className="text-xs text-muted-foreground">
-                          {lease.frequency?.toLowerCase()}
+                          {lease.rent_period?.toLowerCase()}
                         </div>
                       </div>
                     </div>
@@ -447,13 +447,16 @@ export default function Leases() {
                       <Eye className="h-3 w-3" />
                     </Button>
                     {canWrite(resource) && (
-                      <Button
-                        size="sm"
-                        variant="outline"
-                        onClick={() => handleEdit(lease)}
-                      >
-                        <Edit className="h-3 w-3" />
-                      </Button>
+                      ["draft", "active"].includes(lease.status) && (
+                        <Button
+                          size="sm"
+                          variant="outline"
+                          onClick={() => handleEdit(lease)}
+                        >
+                          <Edit className="h-3 w-3" />
+                        </Button>
+                      )
+
                     )}
                     {canDelete(resource) && (
                       <Button

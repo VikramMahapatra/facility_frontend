@@ -39,11 +39,13 @@ import { useLoader } from "@/context/LoaderContext";
 import LoaderOverlay from "@/components/LoaderOverlay";
 import { InvoiceForm } from "@/components/InvoiceForm";
 import { PaymentDetailsForm } from "@/components/PaymentDetailsForm";
+import { useSettings } from "@/context/SettingsContext";
 
 export default function InvoiceDetailPage() {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
   const { withLoader } = useLoader();
+  const { systemCurrency } = useSettings();
   const [invoice, setInvoice] = useState<Invoice | null>(null);
   const [payments, setPayments] = useState<any[]>([]);
   const [isInvoiceFormOpen, setIsInvoiceFormOpen] = useState(false);
@@ -135,23 +137,10 @@ export default function InvoiceDetailPage() {
     }
   };
 
-  const formatCurrency = (
-    amount: number | undefined,
-    currency: string = "INR",
-  ) => {
-    const numAmount = amount || 0;
-    const symbol =
-      currency === "INR"
-        ? "₹"
-        : currency === "USD"
-          ? "$"
-          : currency === "EUR"
-            ? "€"
-            : currency;
-    return `${symbol} ${numAmount.toLocaleString("en-IN", {
-      minimumFractionDigits: 2,
-      maximumFractionDigits: 2,
-    })}`;
+
+  const formatCurrency = (val?: number, currency: string = "INR") => {
+    if (val == null) return "-";
+    return systemCurrency.format(val);
   };
 
   const calculatePaymentSummary = () => {

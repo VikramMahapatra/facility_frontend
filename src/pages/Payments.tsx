@@ -166,16 +166,13 @@ export default function Payments() {
       paymentsApiService.getReceivedPayments(params),
     );
     if (response?.success) {
-      const data =
-        response.data?.data?.payments || response.data?.payments || [];
+      const data = response.data?.payments || [];
       const total = response.data?.total || 0;
+      const total_received = response.data?.total_received || 0;
       setReceivedPayments(data);
       setTotalReceived(total);
-      const sum = data.reduce(
-        (acc: number, p: ReceivedPayment) => acc + (p.amount || 0),
-        0,
-      );
-      if (receivedPage === 1) setTotalReceivedAmount(sum);
+
+      if (receivedPage === 1) setTotalReceivedAmount(total_received);
     }
   };
 
@@ -194,11 +191,8 @@ export default function Payments() {
       const total = response.data?.total || 0;
       setMadePayments(data);
       setTotalMade(total);
-      const sum = data.reduce(
-        (acc: number, p: MadePayment) => acc + (p.amount || 0),
-        0,
-      );
-      if (madePageNum === 1) setTotalMadeAmount(sum);
+      const total_made = response.data?.total_made || 0;
+      if (madePageNum === 1) setTotalMadeAmount(total_made);
     }
   };
 
@@ -335,11 +329,10 @@ export default function Payments() {
               </CardHeader>
               <CardContent>
                 <div
-                  className={`text-2xl font-bold ${
-                    totalReceivedAmount - totalMadeAmount >= 0
-                      ? "text-green-600"
-                      : "text-red-600"
-                  }`}
+                  className={`text-2xl font-bold ${totalReceivedAmount - totalMadeAmount >= 0
+                    ? "text-green-600"
+                    : "text-red-600"
+                    }`}
                 >
                   {formatCurrency(totalReceivedAmount - totalMadeAmount)}
                 </div>
@@ -583,16 +576,16 @@ export default function Payments() {
                       <SelectContent>
                         {watchedType === "received"
                           ? invoiceLookup.map((inv) => (
-                              <SelectItem key={inv.id} value={inv.id}>
-                                {inv.invoice_no} —{" "}
-                                {inv.customer_name || inv.user_name || ""}
-                              </SelectItem>
-                            ))
+                            <SelectItem key={inv.id} value={inv.id}>
+                              {inv.invoice_no} —{" "}
+                              {inv.customer_name || inv.user_name || ""}
+                            </SelectItem>
+                          ))
                           : billLookup.map((bill) => (
-                              <SelectItem key={bill.id} value={bill.id}>
-                                {bill.bill_no} — {bill.vendor_name || ""}
-                              </SelectItem>
-                            ))}
+                            <SelectItem key={bill.id} value={bill.id}>
+                              {bill.bill_no} — {bill.vendor_name || ""}
+                            </SelectItem>
+                          ))}
                       </SelectContent>
                     </Select>
                   )}
