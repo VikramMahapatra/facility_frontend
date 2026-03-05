@@ -31,6 +31,7 @@ import {
   Paperclip,
   Download,
 } from "lucide-react";
+
 import { Invoice, PaymentInput } from "@/interfaces/invoices_interfaces";
 import { invoiceApiService } from "@/services/financials/invoicesapi";
 import { toast } from "@/components/ui/app-toast";
@@ -39,6 +40,7 @@ import { useLoader } from "@/context/LoaderContext";
 import LoaderOverlay from "@/components/LoaderOverlay";
 import { InvoiceForm } from "@/components/InvoiceForm";
 import { PaymentDetailsForm } from "@/components/PaymentDetailsForm";
+import { useSettings } from "@/context/SettingsContext";
 
 export default function InvoiceDetailPage() {
   const { id } = useParams<{ id: string }>();
@@ -52,6 +54,7 @@ export default function InvoiceDetailPage() {
   const [paymentFormMode, setPaymentFormMode] = useState<"create" | "edit">(
     "create",
   );
+  const { systemCurrency } = useSettings();
 
   useEffect(() => {
     if (!id) return;
@@ -135,23 +138,9 @@ export default function InvoiceDetailPage() {
     }
   };
 
-  const formatCurrency = (
-    amount: number | undefined,
-    currency: string = "INR",
-  ) => {
-    const numAmount = amount || 0;
-    const symbol =
-      currency === "INR"
-        ? "₹"
-        : currency === "USD"
-          ? "$"
-          : currency === "EUR"
-            ? "€"
-            : currency;
-    return `${symbol} ${numAmount.toLocaleString("en-IN", {
-      minimumFractionDigits: 2,
-      maximumFractionDigits: 2,
-    })}`;
+  const formatCurrency = (val?: number) => {
+    if (val == null) return "-";
+    return systemCurrency.format(val);
   };
 
   const calculatePaymentSummary = () => {
@@ -266,15 +255,10 @@ export default function InvoiceDetailPage() {
 
                   <div className="flex justify-between text-sm">
                     <span className="text-green-600 font-medium">
-                      Paid:{" "}
-                      {formatCurrency(paymentSummary.paid, invoice.currency)}
+                      Paid: {formatCurrency(paymentSummary.paid)}
                     </span>
                     <span className="text-orange-600 font-medium">
-                      Outstanding:{" "}
-                      {formatCurrency(
-                        paymentSummary.outstanding,
-                        invoice.currency,
-                      )}
+                      Outstanding: {formatCurrency(paymentSummary.outstanding)}
                     </span>
                   </div>
                 </CardContent>
@@ -352,7 +336,7 @@ export default function InvoiceDetailPage() {
                               <td className="p-4">{line.tax_pct || 0}%</td>
 
                               <td className="p-4 text-right font-semibold">
-                                {formatCurrency(line.amount, invoice.currency)}
+                                {formatCurrency(line.amount)}
                               </td>
                             </tr>
                           ))}
@@ -383,7 +367,7 @@ export default function InvoiceDetailPage() {
                             className="relative group border rounded-lg overflow-hidden bg-background"
                           >
                             {attachment.content_type?.startsWith("image/") &&
-                              attachment.file_data_base64 ? (
+                            attachment.file_data_base64 ? (
                               <img
                                 src={`data:${attachment.content_type};base64,${attachment.file_data_base64}`}
                                 alt={attachment.file_name}
@@ -441,21 +425,21 @@ export default function InvoiceDetailPage() {
                     <Card className="p-4 bg-muted/40">
                       <p className="text-sm text-muted-foreground">Subtotal</p>
                       <p className="text-xl font-semibold">
-                        {formatCurrency(invoice.totals?.sub, invoice.currency)}
+                        {formatCurrency(invoice.totals?.sub)}
                       </p>
                     </Card>
 
                     <Card className="p-4 bg-muted/40">
                       <p className="text-sm text-muted-foreground">Tax</p>
                       <p className="text-xl font-semibold">
-                        {formatCurrency(invoice.totals?.tax, invoice.currency)}
+                        {formatCurrency(invoice.totals?.tax)}
                       </p>
                     </Card>
 
                     <Card className="p-4 bg-green-50">
                       <p className="text-sm text-muted-foreground">Paid</p>
                       <p className="text-xl font-semibold text-green-600">
-                        {formatCurrency(paymentSummary.paid, invoice.currency)}
+                        {formatCurrency(paymentSummary.paid)}
                       </p>
                     </Card>
 
@@ -464,10 +448,7 @@ export default function InvoiceDetailPage() {
                         Outstanding
                       </p>
                       <p className="text-xl font-semibold text-orange-600">
-                        {formatCurrency(
-                          paymentSummary.outstanding,
-                          invoice.currency,
-                        )}
+                        {formatCurrency(paymentSummary.outstanding)}
                       </p>
                     </Card>
                   </div>
@@ -497,84 +478,115 @@ export default function InvoiceDetailPage() {
 
                 {payments && payments.length > 0 ? (
                   <div className="space-y-4">
-                    {payments.map((payment: any, idx) => (
-                      <Card key={payment.id || idx} className="p-4">
-                        <div className="flex items-start justify-between gap-4">
-                          <div className="flex items-start gap-3 flex-1">
-                            <div className="p-2 bg-muted rounded-lg">
-                              {getPaymentMethodIcon(payment.method || "card")}
-                            </div>
-                            <div className="flex-1 space-y-1">
-                              <div className="flex items-center gap-2">
-                                <p className="font-semibold">
-                                  {payment.method
-                                    ? payment.method.toUpperCase()
-                                    : "Unknown"}
-                                </p>
-                                {payment.id && (
-                                  <Badge variant="outline" className="text-xs">
-                                    ID: {payment.id.slice(0, 8)}...
-                                  </Badge>
-                                )}
+                    {payments.map((payment: any, idx) => {
+                      const notes =
+                        payment.notes ||
+                        payment.meta?.notes ||
+                        payment.meta?.remarks;
+
+                      return (
+                        <Card
+                          key={payment.id || idx}
+                          className="rounded-xl border shadow-sm hover:shadow-md transition-shadow overflow-hidden"
+                        >
+                          <CardContent className="p-4 md:p-5">
+                            {/* Top row: method & ref on left, amount + actions on right */}
+                            <div className="flex items-start justify-between gap-4 mb-4">
+                              <div className="flex items-start gap-3 flex-1">
+                                <div className="p-2 bg-muted rounded-lg">
+                                  {getPaymentMethodIcon(
+                                    payment.method || "card",
+                                  )}
+                                </div>
+                                <div>
+                                  <p className="text-sm font-semibold flex items-center gap-2">
+                                    {payment.method
+                                      ? payment.method.toUpperCase()
+                                      : "UNKNOWN"}
+                                  </p>
+                                </div>
                               </div>
 
-                              {payment.ref_no && (
-                                <p className="text-sm text-muted-foreground">
-                                  <strong>Reference:</strong> {payment.ref_no}
-                                </p>
-                              )}
-                              <p className="text-sm text-muted-foreground">
-                                <strong>Date:</strong>{" "}
-                                {payment.paid_at
-                                  ? new Date(
-                                    payment.paid_at,
-                                  ).toLocaleDateString("en-IN", {
-                                    year: "numeric",
-                                    month: "long",
-                                    day: "numeric",
-                                  })
-                                  : "-"}
-                              </p>
-                              {payment.billable_item_name && (
-                                <p className="text-xs text-muted-foreground">
-                                  Item Name: {payment.billable_item_name}
-                                </p>
-                              )}
-                            </div>
-                          </div>
-                          <div className="flex items-center gap-2">
-                            <div className="text-right">
-                              <p className="text-2xl font-bold">
-                                {formatCurrency(
-                                  payment.amount,
-                                  invoice.currency,
+                              <div className="flex items-center gap-2">
+                                <div className="text-right">
+                                  <p className="text-xl md:text-2xl font-bold">
+                                    {formatCurrency(payment.amount)}
+                                  </p>
+                                </div>
+                                <Button
+                                  variant="ghost"
+                                  size="sm"
+                                  onClick={() =>
+                                    handleDownloadReceipt(payment.id)
+                                  }
+                                >
+                                  <Download className="h-4 w-4" />
+                                </Button>
+                                {invoice?.status !== "paid" && (
+                                  <Button
+                                    variant="ghost"
+                                    size="sm"
+                                    onClick={() => {
+                                      setSelectedPayment(payment);
+                                      setPaymentFormMode("edit");
+                                      setIsPaymentFormOpen(true);
+                                    }}
+                                  >
+                                    <Pencil className="h-4 w-4" />
+                                  </Button>
                                 )}
-                              </p>
+                              </div>
                             </div>
-                            <Button
-                              variant="ghost"
-                              size="sm"
-                              onClick={() => handleDownloadReceipt(payment.id)}
-                            >
-                              <Download className="h-4 w-4" />
-                            </Button>
-                            {invoice?.status !== "paid" && (
-                              <Button
-                                variant="ghost"
-                                size="sm"
-                                onClick={() => {
-                                  setSelectedPayment(payment);
-                                  setPaymentFormMode("edit");
-                                  setIsPaymentFormOpen(true);
-                                }}
-                              >
-                                <Pencil className="h-4 w-4" />
-                              </Button>
-                            )}
-                          </div>
-                        </div>
-                      </Card>
-                    ))}
+
+                            {/* Bottom row: details blocks (like request card pattern) */}
+                            <div className="grid grid-cols-2 md:grid-cols-4 gap-4 pt-3 border-t">
+                              <div>
+                                <p className="text-[11px] text-muted-foreground mb-0.5">
+                                  Date
+                                </p>
+                                <p className="text-sm font-medium">
+                                  {payment.paid_at
+                                    ? new Date(
+                                        payment.paid_at,
+                                      ).toLocaleDateString("en-IN", {
+                                        year: "numeric",
+                                        month: "short",
+                                        day: "2-digit",
+                                      })
+                                    : "-"}
+                                </p>
+                              </div>
+
+                              <div>
+                                <p className="text-[11px] text-muted-foreground mb-0.5">
+                                  Reference No:
+                                </p>
+                                <p className="text-sm font-medium-center flex items-center gap-1">
+                                  {payment.ref_no}
+                                </p>
+                              </div>
+
+                              <div>
+                                <p className="text-[11px] text-muted-foreground mb-0.5">
+                                  Currency
+                                </p>
+                                <p className="text-sm font-medium-center flex items-center gap-1">
+                                  {systemCurrency?.name}
+                                </p>
+                              </div>
+                              <div>
+                                <p className="text-[11px] text-muted-foreground mb-0.5">
+                                  Notes
+                                </p>
+                                <p className="text-sm font-medium line-clamp-2">
+                                  {notes || "-"}
+                                </p>
+                              </div>
+                            </div>
+                          </CardContent>
+                        </Card>
+                      );
+                    })}
                   </div>
                 ) : (
                   <p className="text-muted-foreground text-center py-8">
@@ -690,8 +702,7 @@ export default function InvoiceDetailPage() {
                       },
                     );
                     if (paymentHistoryResponse?.success) {
-                      const paymentData =
-                        paymentHistoryResponse.data || [];
+                      const paymentData = paymentHistoryResponse.data || [];
                       setPayments(
                         Array.isArray(paymentData) ? paymentData : [],
                       );

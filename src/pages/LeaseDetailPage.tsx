@@ -530,7 +530,7 @@ export default function LeaseDetailPage() {
                       Payment Terms
                     </h3>
 
-                    {lease?.status === "active" && (
+                    {/*{lease?.status === "active" && (
                       <Button
                         size="sm"
                         onClick={() => {
@@ -543,7 +543,7 @@ export default function LeaseDetailPage() {
                         <Plus className="h-4 w-4" />
                         Add Term
                       </Button>
-                    )}
+                    )}*/}
                   </div>
 
                   {paymentTerms.length === 0 ? (

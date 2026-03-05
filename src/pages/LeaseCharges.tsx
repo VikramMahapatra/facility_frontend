@@ -1,5 +1,6 @@
 // app/(your-path)/LeaseCharges.tsx
 import { useEffect, useMemo, useState } from "react";
+import { useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import {
   Card,
@@ -37,6 +38,9 @@ import {
   Calendar,
   TrendingUp,
   MapPin,
+  Home,
+  User,
+  Building2,
 } from "lucide-react";
 import {
   AlertDialog,
@@ -109,6 +113,7 @@ interface LeaseChargeOverview {
 }
 
 export default function LeaseCharges() {
+  const navigate = useNavigate();
   // filters
   const [searchTerm, setSearchTerm] = useState("");
   const [selectedChargeCode, setSelectedChargeCode] = useState<string>("RENT");
@@ -310,7 +315,8 @@ export default function LeaseCharges() {
     if (response.success) {
       setIsFormOpen(false);
       toast.success(
-        `Lease Charge has been ${formMode === "create" ? "created" : "updated"
+        `Lease Charge has been ${
+          formMode === "create" ? "created" : "updated"
         } successfully.`,
       );
     }
@@ -522,85 +528,152 @@ export default function LeaseCharges() {
           ) : (
             leaseCharges.map((charge) => {
               const amount = Number(charge.amount) || 0;
-
+              const status = (charge.invoice_status || "").toLowerCase();
+              const statusLabel =
+                status === "paid" ? "Paid" : status ? status : "Due";
+              const statusBadgeClass =
+                status === "paid"
+                  ? "bg-green-100 text-green-800"
+                  : status === "overdue"
+                    ? "bg-red-100 text-red-800"
+                    : "bg-amber-100 text-amber-800";
 
               return (
                 <Card
                   key={charge.id}
-                  className="hover:shadow-md transition-shadow"
+                  className="rounded-xl border shadow-sm hover:shadow-md transition-shadow overflow-hidden"
                 >
-                  <CardHeader>
-                    <div className="flex items-start justify-between gap-2">
+                  <CardContent className="p-5">
+                    {/* Top: title row with badges on right */}
+                    <div className="flex items-start justify-between gap-4 mb-4">
                       <div>
-                        <CardTitle className="text-lg flex items-center gap-2 mb-1">
-                          <Badge className={getChargeCodeColor(charge.charge_code)}>
-                            {normalizeChargeCode(charge.charge_code)}
-                          </Badge>
-                          {charge.tenant_name}
-                        </CardTitle>
-
-                        {/* Single row for period, space/site, generated on */}
-                        <CardDescription className="flex flex-wrap items-center gap-4 text-sm text-muted-foreground">
-                          {/* Space/Site */}
-                          <div className="flex items-center gap-1 bg-gray-100 px-2 py-1 rounded-md">
-                            <MapPin className="h-4 w-4 text-gray-500" />
-                            <span className="font-medium mr-1">Space:</span>
-                            <span>
-                              {charge.space_name}
-                              {charge.building_block ? ` • ${charge.building_block} • ` : " • "}
-                              {charge.site_name}
+                        <h3 className="text-lg font-semibold flex items-center gap-2 text-foreground">
+                          <Home className="h-5 w-5 text-muted-foreground" />
+                          {charge.space_name || "—"}
+                        </h3>
+                        <p className="text-sm text-muted-foreground flex items-center gap-2 mt-1">
+                          <User className="h-4 w-4 text-muted-foreground shrink-0" />
+                          {charge.tenant_id ? (
+                            <span
+                              className="cursor-pointer font-medium text-blue-600 hover:underline"
+                              onClick={() =>
+                                navigate(`/tenants/${charge.tenant_id}/view`)
+                              }
+                            >
+                              {charge.tenant_name || "—"}
                             </span>
-                          </div>
-                          {/* Period */}
-                          <div className="flex items-center gap-1 bg-gray-100 px-2 py-1 rounded-md">
-                            <Calendar className="h-4 w-4 text-gray-500" />
-                            <span className="font-medium mr-1">Period:</span>
-                            <span>
-                              {new Date(charge.period_start).toLocaleDateString()} -{" "}
-                              {new Date(charge.period_end).toLocaleDateString()}
-                            </span>
-                          </div>
-
-
-
-                          {/* Generated on */}
-                          {charge.created_at && (
-                            <div className="flex items-center gap-1 bg-gray-100 px-2 py-1 rounded-md">
-                              <Clock className="h-4 w-4 text-gray-500" />
-                              <span className="font-medium mr-1">Generated on:</span>
-                              <span>{new Date(charge.created_at).toLocaleDateString()}</span>
-                            </div>
+                          ) : (
+                            <span>{charge.tenant_name || "—"}</span>
                           )}
-                        </CardDescription>
-
+                        </p>
                       </div>
-
-                      {/* Right actions & amount */}
-                      <div className="flex items-center gap-2">
-                        {charge.invoice_status?.toLowerCase() === "paid" && (
-                          <Badge className="bg-green-100 text-green-700">Paid</Badge>
-                        )}
-                        <div className="text-right">
-                          <div className="text-lg font-bold">{formatCurrency(amount)}</div>
+                      <div className="flex flex-wrap items-center gap-2 justify-end">
+                        <Badge
+                          className={getChargeCodeColor(charge.charge_code)}
+                        >
+                          {getChargeCodeName(charge.charge_code)}
+                        </Badge>
+                        <Badge className={statusBadgeClass}>
+                          {statusLabel}
+                        </Badge>
+                        <div className="text-right ml-1">
+                          <div className="text-lg font-bold">
+                            {formatCurrency(amount)}
+                          </div>
                         </div>
                         <div className="flex gap-1">
-                          <Button variant="ghost" size="sm" onClick={() => handleView(charge)}>
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            onClick={() => handleView(charge)}
+                          >
                             <Eye className="h-4 w-4" />
                           </Button>
                           {canWrite(resource) && (
-                            <Button variant="ghost" size="sm" onClick={() => handleEdit(charge)}>
+                            <Button
+                              variant="ghost"
+                              size="sm"
+                              onClick={() => handleEdit(charge)}
+                            >
                               <Edit className="h-4 w-4" />
                             </Button>
                           )}
                           {canDelete(resource) && (
-                            <Button variant="ghost" size="sm" onClick={() => setDeleteId(charge.id)}>
+                            <Button
+                              variant="ghost"
+                              size="sm"
+                              onClick={() => setDeleteId(charge.id)}
+                            >
                               <Trash2 className="h-4 w-4" />
                             </Button>
                           )}
                         </div>
                       </div>
                     </div>
-                  </CardHeader>
+
+                    {/* Bottom: 4 info blocks */}
+                    <div className="grid grid-cols-2 md:grid-cols-4 gap-4 pt-4 border-t">
+                      <div>
+                        <p className="text-xs text-muted-foreground flex items-center gap-1.5 mb-0.5">
+                          <MapPin className="h-3.5 w-3.5" />
+                          Site
+                        </p>
+                        <p className="text-sm font-medium">
+                          {charge.site_name || "—"}
+                        </p>
+                      </div>
+                      <div>
+                        <p className="text-xs text-muted-foreground flex items-center gap-1.5 mb-0.5">
+                          <Building2 className="h-3.5 w-3.5" />
+                          Building
+                        </p>
+                        <p className="text-sm font-medium">
+                          {charge.building_block || "—"}
+                        </p>
+                      </div>
+                      <div>
+                        <p className="text-xs text-muted-foreground flex items-center gap-1.5 mb-0.5">
+                          <Calendar className="h-3.5 w-3.5" />
+                          Period
+                        </p>
+                        <p className="text-sm font-medium">
+                          {charge.period_start && charge.period_end
+                            ? `${new Date(
+                                charge.period_start,
+                              ).toLocaleDateString("en-GB", {
+                                day: "2-digit",
+                                month: "short",
+                                year: "numeric",
+                              })} – ${new Date(
+                                charge.period_end,
+                              ).toLocaleDateString("en-GB", {
+                                day: "2-digit",
+                                month: "short",
+                                year: "numeric",
+                              })}`
+                            : "—"}
+                        </p>
+                      </div>
+                      <div>
+                        <p className="text-xs text-muted-foreground flex items-center gap-1.5 mb-0.5">
+                          <Clock className="h-3.5 w-3.5" />
+                          Generated on
+                        </p>
+                        <p className="text-sm font-medium">
+                          {charge.created_at
+                            ? new Date(charge.created_at).toLocaleDateString(
+                                "en-GB",
+                                {
+                                  day: "2-digit",
+                                  month: "short",
+                                  year: "numeric",
+                                },
+                              )
+                            : "—"}
+                        </p>
+                      </div>
+                    </div>
+                  </CardContent>
                 </Card>
               );
             })

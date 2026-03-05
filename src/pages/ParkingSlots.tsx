@@ -48,6 +48,7 @@ import { toast } from "@/components/ui/app-toast";
 import { useLoader } from "@/context/LoaderContext";
 import ContentContainer from "@/components/ContentContainer";
 import LoaderOverlay from "@/components/LoaderOverlay";
+import { Pagination } from "@/components/Pagination";
 
 export default function ParkingSlots() {
   const [slots, setSlots] = useState<ParkingSlot[]>([]);
@@ -70,6 +71,9 @@ export default function ParkingSlots() {
   const [searchParams, setSearchParams] = useSearchParams();
   const zoneId = searchParams.get("zone");
   const { withLoader } = useLoader();
+  const [page, setPage] = useState(1);
+  const [pageSize] = useState(10);
+  const [totalItems, setTotalItems] = useState(0);
 
   useEffect(() => {
     loadZoneLookup();
@@ -115,6 +119,11 @@ export default function ParkingSlots() {
 
   const loadSlots = useCallback(async () => {
     const params = new URLSearchParams();
+    const skip = (page - 1) * pageSize;
+
+    params.append("skip", skip.toString());
+    params.append("limit", pageSize.toString());
+
     if (zoneId) {
       params.append("zone_id", zoneId);
     }
@@ -135,19 +144,39 @@ export default function ParkingSlots() {
     });
 
     if (response?.success) {
-      const slotsData = response.data?.slots || response.data || [];
+      const slotsData = response.data?.slots || response.data?.data?.slots || response.data || [];
+      const total =
+        response.data?.total ||
+        response.data?.data?.total ||
+        (Array.isArray(slotsData) ? slotsData.length : 0);
+
       setSlots(Array.isArray(slotsData) ? slotsData : []);
+      setTotalItems(total);
     } else {
       setSlots([]);
+      setTotalItems(0);
       if (response?.message) {
         toast.error(response.message || "Failed to load parking slots");
       }
     }
-  }, [zoneId, searchQuery, selectedSite, selectedSlotType, withLoader]);
+  }, [
+    zoneId,
+    searchQuery,
+    selectedSite,
+    selectedSlotType,
+    withLoader,
+    page,
+    pageSize,
+  ]);
 
   useEffect(() => {
     loadSlots();
   }, [loadSlots]);
+
+  useEffect(() => {
+    // Reset to first page when filters change
+    setPage(1);
+  }, [zoneId, searchQuery, selectedSite, selectedSlotType]);
 
   const handleZoneChange = (value: string) => {
     if (value === "all" || !value) {
@@ -417,6 +446,16 @@ export default function ParkingSlots() {
             </TableBody>
           </Table>
         </div>
+        {slots.length > 0 && (
+          <div className="mt-4">
+            <Pagination
+              page={page}
+              pageSize={pageSize}
+              totalItems={totalItems}
+              onPageChange={setPage}
+            />
+          </div>
+        )}
       </ContentContainer>
 
       <ParkingSlotForm

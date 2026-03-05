@@ -42,7 +42,9 @@ export default function BillDetailPage() {
   const [payments, setPayments] = useState<any[]>([]);
   const [isPaymentFormOpen, setIsPaymentFormOpen] = useState(false);
   const [selectedPayment, setSelectedPayment] = useState<any | undefined>();
-  const [paymentFormMode, setPaymentFormMode] = useState<"create" | "edit">("create");
+  const [paymentFormMode, setPaymentFormMode] = useState<"create" | "edit">(
+    "create",
+  );
 
   useEffect(() => {
     if (!id) return;
@@ -133,7 +135,8 @@ export default function BillDetailPage() {
 
   const calculatePaymentSummary = () => {
     if (!bill) return { paid: 0, outstanding: 0 };
-    const billTotal = Number(bill.totals?.grand) || Number((bill as any).total_amount) || 0;
+    const billTotal =
+      Number(bill.totals?.grand) || Number((bill as any).total_amount) || 0;
     const paid = payments.reduce((sum: number, payment: any) => {
       return sum + (Number(payment.amount) || 0);
     }, 0);
@@ -168,9 +171,7 @@ export default function BillDetailPage() {
 
               <div>
                 <div className="flex items-center gap-3">
-                  <h1 className="text-2xl font-semibold">
-                    Bill #{bill.bill_no}
-                  </h1>
+                  <h1 className="text-2xl font-semibold">{bill.bill_no}</h1>
                   {getStatusBadge(bill.status)}
                 </div>
                 <p className="text-sm text-muted-foreground mt-1">
@@ -244,10 +245,7 @@ export default function BillDetailPage() {
                   <div>
                     <p className="text-xs text-muted-foreground">Space</p>
                     <p className="font-medium">
-                      {[
-                        (bill as any).space_name,
-                        (bill as any).site_name,
-                      ]
+                      {[(bill as any).space_name, (bill as any).site_name]
                         .filter(Boolean)
                         .join(", ") || "-"}
                     </p>
@@ -339,7 +337,7 @@ export default function BillDetailPage() {
                             className="relative group border rounded-lg overflow-hidden bg-background"
                           >
                             {attachment.content_type?.startsWith("image/") &&
-                              attachment.file_data_base64 ? (
+                            attachment.file_data_base64 ? (
                               <img
                                 src={`data:${attachment.content_type};base64,${attachment.file_data_base64}`}
                                 alt={attachment.file_name}
@@ -449,78 +447,127 @@ export default function BillDetailPage() {
 
                   {payments && payments.length > 0 ? (
                     <div className="space-y-4">
-                      {payments.map((payment: any, idx: number) => (
-                        <Card key={payment.id || idx} className="p-4">
-                          <div className="flex items-start justify-between gap-4">
-                            <div className="flex items-start gap-3 flex-1">
-                              <div className="p-2 bg-muted rounded-lg">
-                                {getPaymentMethodIcon(payment.method || "card")}
-                              </div>
-                              <div className="flex-1 space-y-1">
+                      {payments.map((payment: any, idx: number) => {
+                        const notes =
+                          payment.notes ||
+                          payment.meta?.notes ||
+                          payment.meta?.remarks;
+
+                        return (
+                          <Card
+                            key={payment.id || idx}
+                            className="rounded-xl border shadow-sm hover:shadow-md transition-shadow overflow-hidden"
+                          >
+                            <CardContent className="p-4 md:p-5">
+                              <div className="flex items-start justify-between gap-4 mb-4">
+                                <div className="flex items-start gap-3 flex-1">
+                                  <div className="p-2 bg-muted rounded-lg">
+                                    {getPaymentMethodIcon(
+                                      payment.method || "card",
+                                    )}
+                                  </div>
+                                  <div>
+                                    <p className="text-sm font-semibold flex items-center gap-2">
+                                      {payment.method
+                                        ? payment.method.toUpperCase()
+                                        : "UNKNOWN"}
+                                      {payment.id && (
+                                        <Badge
+                                          variant="outline"
+                                          className="text-[10px] uppercase"
+                                        >
+                                          ID: {payment.id.slice(0, 8)}...
+                                        </Badge>
+                                      )}
+                                    </p>
+                                    {payment.ref_no && (
+                                      <p className="text-xs text-muted-foreground mt-1">
+                                        <span className="font-medium">
+                                          Reference:
+                                        </span>{" "}
+                                        {payment.ref_no}
+                                      </p>
+                                    )}
+                                  </div>
+                                </div>
+
                                 <div className="flex items-center gap-2">
-                                  <p className="font-semibold">
-                                    {payment.method
-                                      ? payment.method.toUpperCase()
-                                      : "Unknown"}
-                                  </p>
-                                  {payment.id && (
-                                    <Badge
-                                      variant="outline"
-                                      className="text-xs"
+                                  <div className="text-right">
+                                    <p className="text-xl md:text-2xl font-bold">
+                                      {formatCurrency(payment.amount)}
+                                    </p>
+                                  </div>
+                                  <Button
+                                    variant="ghost"
+                                    size="sm"
+                                    onClick={() =>
+                                      handleDownloadReceipt(payment.id)
+                                    }
+                                  >
+                                    <Download className="h-4 w-4" />
+                                  </Button>
+                                  {bill?.status !== "paid" && (
+                                    <Button
+                                      variant="ghost"
+                                      size="sm"
+                                      onClick={() => {
+                                        setSelectedPayment(payment);
+                                        setPaymentFormMode("edit");
+                                        setIsPaymentFormOpen(true);
+                                      }}
                                     >
-                                      ID: {payment.id.slice(0, 8)}...
-                                    </Badge>
+                                      <Pencil className="h-4 w-4" />
+                                    </Button>
                                   )}
                                 </div>
-                                {payment.ref_no && (
-                                  <p className="text-sm text-muted-foreground">
-                                    <strong>Reference:</strong> {payment.ref_no}
+                              </div>
+
+                              <div className="grid grid-cols-2 md:grid-cols-4 gap-4 pt-3 border-t">
+                                <div>
+                                  <p className="text-[11px] text-muted-foreground mb-0.5">
+                                    Date
                                   </p>
-                                )}
-                                <p className="text-sm text-muted-foreground">
-                                  <strong>Date:</strong>{" "}
-                                  {payment.paid_at
-                                    ? new Date(
-                                      payment.paid_at,
-                                    ).toLocaleDateString("en-IN", {
-                                      year: "numeric",
-                                      month: "long",
-                                      day: "numeric",
-                                    })
-                                    : "-"}
-                                </p>
+                                  <p className="text-sm font-medium">
+                                    {payment.paid_at
+                                      ? new Date(
+                                          payment.paid_at,
+                                        ).toLocaleDateString("en-IN", {
+                                          year: "numeric",
+                                          month: "short",
+                                          day: "2-digit",
+                                        })
+                                      : "-"}
+                                  </p>
+                                </div>
+                                <div>
+                                  <p className="text-[11px] text-muted-foreground mb-0.5">
+                                    Notes
+                                  </p>
+                                  <p className="text-sm font-medium line-clamp-2">
+                                    {notes || "-"}
+                                  </p>
+                                </div>
+                                <div>
+                                  <p className="text-[11px] text-muted-foreground mb-0.5">
+                                    Vendor
+                                  </p>
+                                  <p className="text-sm font-medium">
+                                    {(bill as any).vendor_name || "-"}
+                                  </p>
+                                </div>
+                                <div>
+                                  <p className="text-[11px] text-muted-foreground mb-0.5">
+                                    Currency
+                                  </p>
+                                  <p className="text-sm font-medium">
+                                    {systemCurrency?.name}
+                                  </p>
+                                </div>
                               </div>
-                            </div>
-                            <div className="flex items-center gap-2">
-                              <div className="text-right">
-                                <p className="text-2xl font-bold">
-                                  {formatCurrency(payment.amount)}
-                                </p>
-                              </div>
-                              <Button
-                                variant="ghost"
-                                size="sm"
-                                onClick={() => handleDownloadReceipt(payment.id)}
-                              >
-                                <Download className="h-4 w-4" />
-                              </Button>
-                              {bill?.status !== "paid" && (
-                                <Button
-                                  variant="ghost"
-                                  size="sm"
-                                  onClick={() => {
-                                    setSelectedPayment(payment);
-                                    setPaymentFormMode("edit");
-                                    setIsPaymentFormOpen(true);
-                                  }}
-                                >
-                                  <Pencil className="h-4 w-4" />
-                                </Button>
-                              )}
-                            </div>
-                          </div>
-                        </Card>
-                      ))}
+                            </CardContent>
+                          </Card>
+                        );
+                      })}
                     </div>
                   ) : (
                     <div className="text-center py-8">
@@ -550,8 +597,7 @@ export default function BillDetailPage() {
                       </li>
                     )}
                     {(bill as any).updated_at &&
-                      (bill as any).created_at !==
-                      (bill as any).updated_at && (
+                      (bill as any).created_at !== (bill as any).updated_at && (
                         <li>
                           Last updated on{" "}
                           {new Date(
