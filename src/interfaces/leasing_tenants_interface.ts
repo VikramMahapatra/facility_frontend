@@ -126,6 +126,7 @@ export interface LeaseCharge {
   total_amount?: number;
   metadata?: any;
   created_at?: string;
+  tenant_id?: string;
   tenant_name: string;
   site_id: string;
   building_block_id?: string;

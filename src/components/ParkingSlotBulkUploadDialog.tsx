@@ -102,7 +102,7 @@ export function ParkingSlotBulkUploadDialog({
         const sheetName = workbook.SheetNames[0];
         const worksheet = workbook.Sheets[sheetName];
         const jsonData = XLSX.utils.sheet_to_json(worksheet);
-
+        console.log("JSON Data:", jsonData);
         // Validate data
         const errors: { row: number; errors: string[] }[] = [];
         jsonData.forEach((row: any, index) => {

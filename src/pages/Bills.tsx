@@ -49,6 +49,7 @@ import {
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
 import { billsApiService } from "@/services/financials/billsapi";
+import { siteApiService } from "@/services/spaces_sites/sitesapi";
 import { Bill, BillOverview } from "@/interfaces/invoices_interfaces";
 import { Pagination } from "@/components/Pagination";
 import { toast } from "@/components/ui/app-toast";
@@ -80,10 +81,13 @@ export default function Bills() {
   const { withLoader } = useLoader();
   const { systemCurrency } = useSettings();
   const [isAutoGenerateFormOpen, setIsAutoGenerateFormOpen] = useState(false);
+  const [selectedSite, setSelectedSite] = useState<string>("all");
+  const [siteList, setSiteList] = useState<any[]>([]);
 
   useEffect(() => {
     loadBillsOverView();
     loadBills();
+    loadSiteLookup();
   }, []);
 
   useSkipFirstEffect(() => {
@@ -92,7 +96,7 @@ export default function Bills() {
 
   useSkipFirstEffect(() => {
     updateBillsPage();
-  }, [searchTerm, statusFilter]);
+  }, [searchTerm, statusFilter, selectedSite]);
 
   const updateBillsPage = () => {
     if (page === 1) {
@@ -113,7 +117,10 @@ export default function Bills() {
 
     const params = new URLSearchParams();
     if (searchTerm) params.append("search", searchTerm);
-    if (statusFilter) params.append("status", statusFilter);
+    if (statusFilter && statusFilter !== "all")
+      params.append("status", statusFilter);
+    if (selectedSite && selectedSite !== "all")
+      params.append("site_id", selectedSite);
     params.append("skip", skip.toString());
     params.append("limit", limit.toString());
 
@@ -126,6 +133,13 @@ export default function Bills() {
       const total = response.data?.total || response.data?.total || 0;
       setBills(bills);
       setTotalItems(total);
+    }
+  };
+
+  const loadSiteLookup = async () => {
+    const response = await siteApiService.getSiteLookup();
+    if (response?.success) {
+      setSiteList(response.data || []);
     }
   };
 
@@ -304,6 +318,19 @@ export default function Bills() {
                 <SelectItem value="approved">Approved</SelectItem>
                 <SelectItem value="paid">Paid</SelectItem>
                 <SelectItem value="partial">Partial</SelectItem>
+              </SelectContent>
+            </Select>
+            <Select value={selectedSite} onValueChange={setSelectedSite}>
+              <SelectTrigger className="w-[200px]">
+                <SelectValue placeholder="All Sites" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">All Sites</SelectItem>
+                {siteList.map((site) => (
+                  <SelectItem key={site.id} value={site.id}>
+                    {site.name}
+                  </SelectItem>
+                ))}
               </SelectContent>
             </Select>
           </div>

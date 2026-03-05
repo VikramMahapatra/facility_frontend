@@ -607,14 +607,19 @@ export default function Payments() {
               <div className="grid grid-cols-2 gap-4">
                 <div className="space-y-2">
                   <Label htmlFor="amount">Amount *</Label>
-                  <Input
-                    id="amount"
-                    type="number"
-                    step="0.01"
-                    placeholder="0.00"
-                    {...register("amount")}
-                    className={errors.amount ? "border-red-500" : ""}
-                  />
+                  <div className="relative">
+                    <span className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground pointer-events-none">
+                      {systemCurrency?.icon}
+                    </span>
+                    <Input
+                      id="amount"
+                      type="number"
+                      step="0.01"
+                      placeholder="0.00"
+                      {...register("amount")}
+                      className={`pl-8 ${errors.amount ? "border-red-500" : ""}`}
+                    />
+                  </div>
                   {errors.amount && (
                     <p className="text-sm text-red-500">
                       {errors.amount.message}
