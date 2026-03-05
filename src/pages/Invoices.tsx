@@ -40,6 +40,7 @@ import {
   FileText,
   TrendingUp,
   AlertTriangle,
+  Sparkles,
 } from "lucide-react";
 import {
   AlertDialog,
@@ -73,6 +74,7 @@ import { PageHeader } from "@/components/PageHeader";
 import { useLoader } from "@/context/LoaderContext";
 import LoaderOverlay from "@/components/LoaderOverlay";
 import { useSettings } from "@/context/SettingsContext";
+import { AutoGenerateInvoiceForm } from "@/components/automation/AutoGenerateInvoiceForm";
 
 export default function Invoices() {
   const [searchTerm, setSearchTerm] = useState("");
@@ -100,6 +102,7 @@ export default function Invoices() {
   const [totalPaymentItems, setTotalPaymentItems] = useState(0);
   const { withLoader } = useLoader();
   const { systemCurrency } = useSettings();
+  const [isAutoGenerateFormOpen, setIsAutoGenerateFormOpen] = useState(false);
   useEffect(() => {
     loadInvoicesOverView();
     loadInvoices();
@@ -226,6 +229,14 @@ export default function Invoices() {
             <Button variant="outline" className="gap-2">
               <Download className="h-4 w-4" />
               Export
+            </Button>
+            <Button
+              variant="outline"
+              className="gap-2"
+              onClick={() => setIsAutoGenerateFormOpen(true)}
+            >
+              <Sparkles className="h-4 w-4" />
+              Auto Generate
             </Button>
             <Button onClick={handleCreate} className="gap-2">
               <Plus className="h-4 w-4" />
@@ -464,6 +475,14 @@ export default function Invoices() {
           </AlertDialogContent>
         </AlertDialog>
       </div>
+      <AutoGenerateInvoiceForm
+        isOpen={isAutoGenerateFormOpen}
+        onClose={() => setIsAutoGenerateFormOpen(false)}
+        onSuccess={() => {
+          loadInvoicesOverView();
+          loadInvoices();
+        }}
+      />
     </ContentContainer>
   );
 }
