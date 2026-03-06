@@ -616,21 +616,15 @@ export default function LeaseCharges() {
                       <div>
                         <p className="text-xs text-muted-foreground flex items-center gap-1.5 mb-0.5">
                           <MapPin className="h-3.5 w-3.5" />
-                          Site
+                          Location
                         </p>
                         <p className="text-sm font-medium">
-                          {charge.site_name || "—"}
+                          {charge.building_block &&
+                            `${charge.building_block}, `}
+                          {charge.site_name}
                         </p>
                       </div>
-                      <div>
-                        <p className="text-xs text-muted-foreground flex items-center gap-1.5 mb-0.5">
-                          <Building2 className="h-3.5 w-3.5" />
-                          Building
-                        </p>
-                        <p className="text-sm font-medium">
-                          {charge.building_block || "—"}
-                        </p>
-                      </div>
+
                       <div>
                         <p className="text-xs text-muted-foreground flex items-center gap-1.5 mb-0.5">
                           <Calendar className="h-3.5 w-3.5" />
@@ -670,6 +664,16 @@ export default function LeaseCharges() {
                                 },
                               )
                             : "—"}
+                        </p>
+                      </div>
+
+                      <div>
+                        <p className="text-xs text-muted-foreground flex items-center gap-1.5 mb-0.5">
+                          <Receipt className="h-3.5 w-3.5" />
+                          Invoice NO:
+                        </p>
+                        <p className="text-sm font-medium">
+                          {charge.invoice_no || "—"}
                         </p>
                       </div>
                     </div>
