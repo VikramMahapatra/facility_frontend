@@ -40,6 +40,17 @@ class SpacesApiService {
     return await apiService.request(url);
   }
 
+  async getAllSpaceLookup(site_id?: any, building_id?: any) {
+    let url = "/spaces/all-spaces";
+    if (site_id) {
+      url += `?site_id=${site_id}`;
+    }
+    if (building_id) {
+      url += `&building_id=${building_id}`;
+    }
+    return await apiService.request(url);
+  }
+
   async getMasterSpaceLookup(site_id?: any, building_id?: any, space_id?: any) {
     const url = "/master/space-lookup";
     const body: any = {};

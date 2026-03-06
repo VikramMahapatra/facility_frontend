@@ -298,7 +298,7 @@ export default function BillFormPage() {
   const loadSpaceLookup = async () => {
     if (!watchedSiteId) return;
     try {
-      const lookup = await spacesApiService.getSpaceLookup(
+      const lookup = await spacesApiService.getAllSpaceLookup(
         watchedSiteId,
         watchedBuildingId,
       );

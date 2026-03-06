@@ -9,6 +9,7 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
+import { Checkbox } from "@/components/ui/checkbox";
 import {
   Select,
   SelectContent,
@@ -56,6 +57,7 @@ export const AutoGenerateMaintenanceForm = ({
   onSuccess,
 }: AutoGenerateMaintenanceFormProps) => {
   const { withLoader } = useLoader();
+  const [isChecked, setIsChecked] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const {
     control,
@@ -90,7 +92,7 @@ export const AutoGenerateMaintenanceForm = ({
         }
       }
     } catch (error) {
-      console.error(error)
+      console.error(error);
     } finally {
       setIsSubmitting(false);
     }
@@ -99,6 +101,7 @@ export const AutoGenerateMaintenanceForm = ({
   const handleClose = () => {
     if (!isSubmitting) {
       reset();
+      setIsChecked(false);
       onClose();
     }
   };
@@ -171,6 +174,22 @@ export const AutoGenerateMaintenanceForm = ({
             {errors.year && (
               <p className="text-sm text-red-500">{errors.year.message}</p>
             )}
+          </div>
+
+          <div className="flex items-center gap-2">
+            <Checkbox
+              id="confirm-auto-generate-rent"
+              checked={isChecked}
+              onCheckedChange={(checked) => setIsChecked(Boolean(checked))}
+              disabled={isSubmitting}
+            />
+            <Label
+              htmlFor="confirm-auto-generate-rent"
+              className="text-sm text-muted-foreground cursor-pointer"
+            >
+              Do you want to generate invoice for the generated maintenance
+              charges?
+            </Label>
           </div>
 
           <DialogFooter>

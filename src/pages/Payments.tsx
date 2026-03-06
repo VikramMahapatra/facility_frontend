@@ -53,6 +53,8 @@ import { useSettings } from "@/context/SettingsContext";
 import { useForm, Controller } from "react-hook-form";
 import { z } from "zod";
 import { zodResolver } from "@hookform/resolvers/zod";
+import { AsyncAutocompleteRQ } from "@/components/common/async-autocomplete-rq";
+import { userManagementApiService } from "@/services/access_control/usermanagementapi";
 
 interface ReceivedPayment {
   id: string;
@@ -76,6 +78,7 @@ interface MadePayment {
 
 const recordPaymentSchema = z.object({
   payment_type: z.enum(["received", "made"]),
+  user_id: z.string().min(1, "Please select an invoice or bill"),
   reference_id: z.string().min(1, "Please select an invoice or bill"),
   amount: z.coerce.number().positive("Amount must be greater than zero"),
   method: z.enum(["upi", "card", "bank", "cash", "cheque", "gateway"], {
@@ -522,99 +525,118 @@ export default function Payments() {
         </div>
 
         <Dialog open={showDialog} onOpenChange={setShowDialog}>
-          <DialogContent className="max-w-lg">
+          <DialogContent className="max-w-3xl max-h-[90vh] overflow-y-auto">
             <DialogHeader>
-              <DialogTitle>Record Payment</DialogTitle>
+              <DialogTitle>Add Payment</DialogTitle>
               <DialogDescription>
-                Record a payment received from a customer or made to a vendor.
+                add a payment received from a customer.
               </DialogDescription>
             </DialogHeader>
 
             <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
-              <div className="space-y-2">
-                <Label>Payment Type *</Label>
-                <Controller
-                  name="payment_type"
-                  control={control}
-                  render={({ field }) => (
-                    <Select value={field.value} onValueChange={field.onChange}>
-                      <SelectTrigger>
-                        <SelectValue />
-                      </SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value="received">Received</SelectItem>
-                        <SelectItem value="made">Made</SelectItem>
-                      </SelectContent>
-                    </Select>
-                  )}
-                />
-              </div>
-
-              <div className="space-y-2">
-                <Label htmlFor="reference_id">
-                  {watchedType === "received" ? "Invoice *" : "Bill *"}
-                </Label>
-                <Controller
-                  name="reference_id"
-                  control={control}
-                  render={({ field }) => (
-                    <Select
-                      value={field.value || ""}
-                      onValueChange={field.onChange}
-                    >
-                      <SelectTrigger
-                        className={errors.reference_id ? "border-red-500" : ""}
-                      >
-                        <SelectValue
-                          placeholder={
-                            watchedType === "received"
-                              ? "Select invoice"
-                              : "Select bill"
-                          }
-                        />
-                      </SelectTrigger>
-                      <SelectContent>
-                        {watchedType === "received"
-                          ? invoiceLookup.map((inv) => (
-                            <SelectItem key={inv.id} value={inv.id}>
-                              {inv.invoice_no} —{" "}
-                              {inv.customer_name || inv.user_name || ""}
-                            </SelectItem>
-                          ))
-                          : billLookup.map((bill) => (
-                            <SelectItem key={bill.id} value={bill.id}>
-                              {bill.bill_no} — {bill.vendor_name || ""}
-                            </SelectItem>
-                          ))}
-                      </SelectContent>
-                    </Select>
-                  )}
-                />
-                {errors.reference_id && (
-                  <p className="text-sm text-red-500">
-                    {errors.reference_id.message}
-                  </p>
-                )}
-              </div>
-
               <div className="grid grid-cols-2 gap-4">
                 <div className="space-y-2">
-                  <Label htmlFor="amount">Amount *</Label>
-                  <Input
-                    id="amount"
-                    type="number"
-                    step="0.01"
-                    placeholder="0.00"
-                    {...register("amount")}
-                    className={errors.amount ? "border-red-500" : ""}
+                  <Label>Payment Type *</Label>
+                  <Controller
+                    name="payment_type"
+                    control={control}
+                    render={({ field }) => (
+                      <Select value={field.value} onValueChange={field.onChange}>
+                        <SelectTrigger>
+                          <SelectValue />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="received">Received</SelectItem>
+                          <SelectItem value="made">Made</SelectItem>
+                        </SelectContent>
+                      </Select>
+                    )}
                   />
-                  {errors.amount && (
+                </div>
+                <Controller
+                  name={"user_id"}
+                  control={control}
+                  render={({ field }) => (
+                    <div className="space-y-2">
+                      <Label>Customer *</Label>
+                      <AsyncAutocompleteRQ
+                        value={field.value}
+                        onChange={field.onChange}
+                        queryKey={["users"]}
+                        queryFn={async (search) => {
+                          const res = await userManagementApiService.searchTenantOwnerUsers(search);
+                          return res.data.map((u: any) => ({ id: u.id, label: u.name }));
+                        }}
+                        minSearchLength={1}
+                      />
+                    </div>
+                  )}
+                />
+              </div>
+              <div className="grid grid-cols-2 gap-4">
+                <div className="space-y-2">
+                  <Label htmlFor="reference_id">
+                    {watchedType === "received" ? "Invoice *" : "Bill *"}
+                  </Label>
+                  <Controller
+                    name="reference_id"
+                    control={control}
+                    render={({ field }) => (
+                      <Select
+                        value={field.value || ""}
+                        onValueChange={field.onChange}
+                      >
+                        <SelectTrigger
+                          className={errors.reference_id ? "border-red-500" : ""}
+                        >
+                          <SelectValue
+                            placeholder={
+                              watchedType === "received"
+                                ? "Select invoice"
+                                : "Select bill"
+                            }
+                          />
+                        </SelectTrigger>
+                        <SelectContent>
+                          {watchedType === "received"
+                            ? invoiceLookup.map((inv) => (
+                              <SelectItem key={inv.id} value={inv.id}>
+                                {inv.invoice_no} —{" "}
+                                {inv.customer_name || inv.user_name || ""}
+                              </SelectItem>
+                            ))
+                            : billLookup.map((bill) => (
+                              <SelectItem key={bill.id} value={bill.id}>
+                                {bill.bill_no} — {bill.vendor_name || ""}
+                              </SelectItem>
+                            ))}
+                        </SelectContent>
+                      </Select>
+                    )}
+                  />
+                  {errors.reference_id && (
                     <p className="text-sm text-red-500">
-                      {errors.amount.message}
+                      {errors.reference_id.message}
                     </p>
                   )}
                 </div>
 
+              </div>
+              <div className="grid grid-cols-4 gap-4">
+                <div className="space-y-2">
+                  <Label htmlFor="paid_at">Payment Date *</Label>
+                  <Input
+                    id="paid_at"
+                    type="date"
+                    {...register("paid_at")}
+                    className={errors.paid_at ? "border-red-500" : ""}
+                  />
+                  {errors.paid_at && (
+                    <p className="text-sm text-red-500">
+                      {errors.paid_at.message}
+                    </p>
+                  )}
+                </div>
                 <div className="space-y-2">
                   <Label htmlFor="method">Payment Method *</Label>
                   <Controller
@@ -649,24 +671,6 @@ export default function Payments() {
                     </p>
                   )}
                 </div>
-              </div>
-
-              <div className="grid grid-cols-2 gap-4">
-                <div className="space-y-2">
-                  <Label htmlFor="paid_at">Payment Date *</Label>
-                  <Input
-                    id="paid_at"
-                    type="date"
-                    {...register("paid_at")}
-                    className={errors.paid_at ? "border-red-500" : ""}
-                  />
-                  {errors.paid_at && (
-                    <p className="text-sm text-red-500">
-                      {errors.paid_at.message}
-                    </p>
-                  )}
-                </div>
-
                 <div className="space-y-2">
                   <Label htmlFor="ref_no">Reference No.</Label>
                   <Input
@@ -674,6 +678,27 @@ export default function Payments() {
                     placeholder="UTR / Cheque no. / etc."
                     {...register("ref_no")}
                   />
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="amount">Amount *</Label>
+                  <div className="relative">
+                    <span className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground pointer-events-none">
+                      {systemCurrency?.icon}
+                    </span>
+                    <Input
+                      id="amount"
+                      type="number"
+                      step="0.01"
+                      placeholder="0.00"
+                      {...register("amount")}
+                      className={`pl-8 ${errors.amount ? "border-red-500" : ""}`}
+                    />
+                  </div>
+                  {errors.amount && (
+                    <p className="text-sm text-red-500">
+                      {errors.amount.message}
+                    </p>
+                  )}
                 </div>
               </div>
 

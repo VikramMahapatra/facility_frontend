@@ -60,6 +60,7 @@ import {
 import { Separator } from "@/components/ui/separator";
 import { PropertySidebar } from "@/components/PropertySidebar";
 import { invoiceApiService } from "@/services/financials/invoicesapi";
+import { siteApiService } from "@/services/spaces_sites/sitesapi";
 import {
   Invoice,
   InvoiceOverview,
@@ -103,15 +104,18 @@ export default function Invoices() {
   const { withLoader } = useLoader();
   const { systemCurrency } = useSettings();
   const [isAutoGenerateFormOpen, setIsAutoGenerateFormOpen] = useState(false);
+  const [selectedType, setSelectedType] = useState<string>("all");
+  const [selectedSite, setSelectedSite] = useState<string>("all");
+  const [siteList, setSiteList] = useState<any[]>([]);
   useEffect(() => {
     loadInvoicesOverView();
     loadInvoices();
+    loadSiteLookup();
   }, []);
 
   useSkipFirstEffect(() => {
     loadInvoices();
   }, [page]);
-
 
   const updateInvoicesPage = () => {
     if (page === 1) {
@@ -132,7 +136,12 @@ export default function Invoices() {
 
     const params = new URLSearchParams();
     if (searchTerm) params.append("search", searchTerm);
-    if (statusFilter) params.append("status", statusFilter);
+    if (statusFilter && statusFilter !== "all")
+      params.append("status", statusFilter);
+    if (selectedType && selectedType !== "all")
+      params.append("code", selectedType);
+    if (selectedSite && selectedSite !== "all")
+      params.append("site_id", selectedSite);
     params.append("skip", skip.toString());
     params.append("limit", limit.toString());
 
@@ -149,7 +158,16 @@ export default function Invoices() {
     }
   };
 
+  const loadSiteLookup = async () => {
+    const response = await siteApiService.getSiteLookup();
+    if (response?.success) {
+      setSiteList(response.data || []);
+    }
+  };
 
+  useSkipFirstEffect(() => {
+    updateInvoicesPage();
+  }, [searchTerm, statusFilter, selectedType, selectedSite]);
 
   const getStatusBadge = (status: string) => {
     const variants = {
@@ -331,6 +349,33 @@ export default function Invoices() {
                 <SelectItem value="void">Void</SelectItem>
               </SelectContent>
             </Select>
+            <Select value={selectedType} onValueChange={setSelectedType}>
+              <SelectTrigger className="w-[180px]">
+                <SelectValue placeholder="All Types" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">All Types</SelectItem>
+                <SelectItem value="rent">Rent</SelectItem>
+                <SelectItem value="workorder">Work Order</SelectItem>
+                <SelectItem value="owner_maintenance">
+                  Owner Maintenance
+                </SelectItem>
+                <SelectItem value="parking_pass">Parking Pass</SelectItem>
+              </SelectContent>
+            </Select>
+            <Select value={selectedSite} onValueChange={setSelectedSite}>
+              <SelectTrigger className="w-[200px]">
+                <SelectValue placeholder="All Sites" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">All Sites</SelectItem>
+                {siteList.map((site) => (
+                  <SelectItem key={site.id} value={site.id}>
+                    {site.name}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
           </div>
 
           <div className="relative ">
@@ -374,7 +419,7 @@ export default function Invoices() {
                             <TableCell className="font-medium">
                               {invoice.invoice_no}
                             </TableCell>
-                            <TableCell>{invoice.code}</TableCell>
+                            <TableCell>{invoice.code?.toUpperCase()}</TableCell>
                             <TableCell>{invoice.user_name}</TableCell>
                             <TableCell>
                               {invoice.space_name + "," + invoice.site_name ||
@@ -423,7 +468,9 @@ export default function Invoices() {
                                     <Trash2 className="h-4 w-4" />
                                   </Button>
                                 )}
-                                {["paid", "issued", "partial"].includes(invoice.status) && (
+                                {["paid", "issued", "partial"].includes(
+                                  invoice.status,
+                                ) && (
                                   <Button
                                     variant="ghost"
                                     size="sm"

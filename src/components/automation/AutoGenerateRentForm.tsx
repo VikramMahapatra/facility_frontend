@@ -20,6 +20,7 @@ import { Calendar } from "lucide-react";
 import { ownerMaintenancesApiService } from "@/services/spaces_sites/ownermaintenancesapi";
 import { toast } from "@/components/ui/app-toast";
 import { useLoader } from "@/context/LoaderContext";
+import { Checkbox } from "@/components/ui/checkbox";
 import { leaseChargeApiService } from "@/services/leasing_tenants/leasechargeapi";
 
 interface AutoGenerateRentFormValues {
@@ -58,6 +59,7 @@ export const AutoGenerateRentForm = ({
 }: AutoGenerateRentFormProps) => {
   const { withLoader } = useLoader();
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [isChecked, setIsChecked] = useState(false);
   const {
     control,
     handleSubmit,
@@ -91,7 +93,7 @@ export const AutoGenerateRentForm = ({
         }
       }
     } catch (error) {
-      console.error(error)
+      console.error(error);
     } finally {
       setIsSubmitting(false);
     }
@@ -100,6 +102,7 @@ export const AutoGenerateRentForm = ({
   const handleClose = () => {
     if (!isSubmitting) {
       reset();
+      setIsChecked(false);
       onClose();
     }
   };
@@ -174,18 +177,35 @@ export const AutoGenerateRentForm = ({
             )}
           </div>
 
-          <DialogFooter>
-            <Button
-              type="button"
-              variant="outline"
-              onClick={handleClose}
+          <div className="flex items-center gap-2">
+            <Checkbox
+              id="confirm-auto-generate-rent"
+              checked={isChecked}
+              onCheckedChange={(checked) => setIsChecked(Boolean(checked))}
               disabled={isSubmitting}
+            />
+            <Label
+              htmlFor="confirm-auto-generate-rent"
+              className="text-sm text-muted-foreground cursor-pointer"
             >
-              Cancel
-            </Button>
-            <Button type="submit" disabled={isSubmitting}>
-              {isSubmitting ? "Generating..." : "Generate"}
-            </Button>
+              Do you want to generate invoice for the generated rent charges?
+            </Label>
+          </div>
+
+          <DialogFooter>
+            <div className="flex items-center gap-2">
+              <Button
+                type="button"
+                variant="outline"
+                onClick={handleClose}
+                disabled={isSubmitting}
+              >
+                Cancel
+              </Button>
+              <Button type="submit" disabled={isSubmitting}>
+                {isSubmitting ? "Generating..." : "Generate"}
+              </Button>
+            </div>
           </DialogFooter>
         </form>
       </DialogContent>
