@@ -30,6 +30,9 @@ import {
   BadgeIndianRupee,
   Paperclip,
   Download,
+  Send,
+  Mail,
+  AlertTriangle,
 } from "lucide-react";
 
 import { Invoice, PaymentInput } from "@/interfaces/invoices_interfaces";
@@ -38,9 +41,18 @@ import { toast } from "@/components/ui/app-toast";
 import ContentContainer from "@/components/ContentContainer";
 import { useLoader } from "@/context/LoaderContext";
 import LoaderOverlay from "@/components/LoaderOverlay";
-import { InvoiceForm } from "@/components/InvoiceForm";
 import { PaymentDetailsForm } from "@/components/PaymentDetailsForm";
 import { useSettings } from "@/context/SettingsContext";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
 
 export default function InvoiceDetailPage() {
   const { id } = useParams<{ id: string }>();
@@ -48,13 +60,13 @@ export default function InvoiceDetailPage() {
   const { withLoader } = useLoader();
   const [invoice, setInvoice] = useState<Invoice | null>(null);
   const [payments, setPayments] = useState<any[]>([]);
-  const [isInvoiceFormOpen, setIsInvoiceFormOpen] = useState(false);
   const [isPaymentFormOpen, setIsPaymentFormOpen] = useState(false);
   const [selectedPayment, setSelectedPayment] = useState<any | undefined>();
   const [paymentFormMode, setPaymentFormMode] = useState<"create" | "edit">(
     "create",
   );
   const { systemCurrency } = useSettings();
+  const [showIssueDialog, setShowIssueDialog] = useState(false);
 
   useEffect(() => {
     if (!id) return;
@@ -181,6 +193,44 @@ export default function InvoiceDetailPage() {
       ? (paymentSummary.paid / invoice.totals.grand) * 100
       : 0;
 
+  const handleDownloadInvoice = async () => {
+    if (!invoice?.id) return;
+    await invoiceApiService.downloadInvoice(invoice.id);
+  };
+
+  const handleIssueInvoice = async () => {
+    if (!invoice?.id) return;
+    if ((invoice.status || "").toLowerCase() !== "draft") return;
+
+    const updatedInvoice = {
+      ...invoice,
+      status: "issued" as const,
+      updated_at: new Date().toISOString(),
+      attachments: [],
+    };
+
+    const formData = new FormData();
+    formData.append("invoice", JSON.stringify(updatedInvoice));
+
+    const response = await withLoader(async () => {
+      return await invoiceApiService.updateInvoice(formData);
+    });
+
+    if (response?.success) {
+      toast.success("Invoice issued successfully.");
+      setShowIssueDialog(false);
+      const reloadResponse = await withLoader(async () => {
+        return await invoiceApiService.getInvoiceById(invoice.id!);
+      });
+      if (reloadResponse?.success) {
+        setInvoice(reloadResponse.data);
+        setPayments(reloadResponse.data?.payments || []);
+      }
+    } else {
+      toast.error(response?.message || "Failed to issue invoice.");
+    }
+  };
+
   const handleDownloadReceipt = async (paymentId: string) => {
     await invoiceApiService.downloadPaymentReceipt(paymentId);
   };
@@ -207,6 +257,17 @@ export default function InvoiceDetailPage() {
                     Invoice #{invoice.invoice_no}
                   </h1>
                   {getStatusBadge(invoice.status)}
+                  {/*["paid", "issued", "partial"].includes(
+                    invoice.status?.toLowerCase?.() || "",
+                  ) && (
+                    <Button
+                      variant="ghost"
+                      size="icon"
+                      onClick={handleDownloadInvoice}
+                    >
+                      <Download className="h-4 w-4" />
+                    </Button>
+                  )*/}
                 </div>
 
                 <p className="text-sm text-muted-foreground mt-1">
@@ -216,15 +277,29 @@ export default function InvoiceDetailPage() {
             </div>
 
             <div className="flex gap-2">
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={() => setIsInvoiceFormOpen(true)}
-                className="gap-2"
-              >
-                <Pencil className="h-4 w-4" />
-                Edit
-              </Button>
+              {invoice.status?.toLowerCase?.() === "draft" && (
+                <Button
+                  size="sm"
+                  className="gap-2"
+                  onClick={() => setShowIssueDialog(true)}
+                >
+                  <Send className="h-4 w-4" />
+                  Issue Invoice
+                </Button>
+              )}
+              {!["overdue", "paid", "issued"].includes(
+                invoice.status?.toLowerCase?.() || "",
+              ) && (
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => navigate(`/invoices/${invoice.id}/edit`)}
+                  className="gap-2"
+                >
+                  <Pencil className="h-4 w-4" />
+                  Edit
+                </Button>
+              )}
             </div>
           </div>
 
@@ -635,99 +710,83 @@ export default function InvoiceDetailPage() {
         </div>
       )}
 
-      {invoice && (
-        <>
-          <InvoiceForm
-            invoice={invoice}
-            isOpen={isInvoiceFormOpen}
-            onClose={() => setIsInvoiceFormOpen(false)}
-            mode="edit"
-            onSave={async (invoiceData: Partial<Invoice>) => {
-              if (!invoice) return { success: false };
-
-              const updatedInvoice = {
-                ...invoice,
-                ...invoiceData,
-                id: invoice.id,
-                invoice_no: invoice.invoice_no,
-                updated_at: new Date().toISOString(),
-              };
-
-              const formData = new FormData();
-              formData.append("invoice", JSON.stringify(updatedInvoice));
-
-              const response = await withLoader(async () => {
-                return await invoiceApiService.updateInvoice(formData);
+      {id && invoice && (
+        <PaymentDetailsForm
+          invoiceId={id}
+          payment={selectedPayment}
+          mode={paymentFormMode}
+          isOpen={isPaymentFormOpen}
+          currency={invoice.currency}
+          onClose={() => {
+            setIsPaymentFormOpen(false);
+            setSelectedPayment(undefined);
+          }}
+          onSave={async () => {
+            if (!id) return { success: false };
+            try {
+              const paymentHistoryResponse = await withLoader(async () => {
+                return await invoiceApiService.getPaymentHistory(id);
               });
-
-              if (response?.success) {
-                setIsInvoiceFormOpen(false);
-                toast.success("Invoice updated successfully.");
-                // Reload invoice data
-                const reloadResponse = await withLoader(async () => {
-                  return await invoiceApiService.getInvoiceById(id!);
-                });
-                if (reloadResponse?.success) {
-                  setInvoice(reloadResponse.data);
-                }
-              } else if (response && !response.success) {
-                if (response?.message) {
-                  toast.error(response.message);
-                } else {
-                  toast.error("Failed to update invoice.");
-                }
+              if (paymentHistoryResponse?.success) {
+                const paymentData = paymentHistoryResponse.data?.payments || [];
+                setPayments(Array.isArray(paymentData) ? paymentData : []);
               }
-              return response;
-            }}
-          />
-
-          {id && invoice && (
-            <PaymentDetailsForm
-              invoiceId={id}
-              payment={selectedPayment}
-              mode={paymentFormMode}
-              isOpen={isPaymentFormOpen}
-              currency={invoice.currency}
-              onClose={() => {
-                setIsPaymentFormOpen(false);
-                setSelectedPayment(undefined);
-              }}
-              onSave={async (paymentData: any) => {
-                // Call payment history API after successful payment save
-                if (id) {
-                  try {
-                    const paymentHistoryResponse = await withLoader(
-                      async () => {
-                        return await invoiceApiService.getPaymentHistory(id);
-                      },
-                    );
-                    if (paymentHistoryResponse?.success) {
-                      const paymentData = paymentHistoryResponse.data || [];
-                      setPayments(
-                        Array.isArray(paymentData) ? paymentData : [],
-                      );
-                    } else {
-                      // If payment history API fails, fallback to reloading from invoice
-                      if (invoice?.payments) {
-                        setPayments(invoice.payments);
-                      }
-                    }
-                    return paymentHistoryResponse;
-                  } catch (error) {
-                    console.error("Error loading payment history:", error);
-                    // Fallback to reloading from invoice
-                    if (invoice?.payments) {
-                      setPayments(invoice.payments);
-                    }
-                    return { success: false };
-                  }
-                }
-                return { success: false };
-              }}
-            />
-          )}
-        </>
+              return paymentHistoryResponse;
+            } catch (error) {
+              console.error("Error loading payment history:", error);
+              return { success: false };
+            }
+          }}
+        />
       )}
+
+      <AlertDialog open={showIssueDialog} onOpenChange={setShowIssueDialog}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <div className="flex items-start gap-3">
+              <div className="mt-0.5 flex h-10 w-10 items-center justify-center rounded-full bg-orange-100 text-orange-600">
+                <AlertTriangle className="h-5 w-5" />
+              </div>
+              <div className="flex-1">
+                <AlertDialogTitle className="text-lg">
+                  Issue this invoice?
+                </AlertDialogTitle>
+                <AlertDialogDescription className="mt-3 space-y-3 text-sm text-muted-foreground">
+                  <div className="flex items-start gap-2">
+                    <FileText className="h-4 w-4 mt-0.5 text-blue-600" />
+                    <span>
+                      The invoice status will change from{" "}
+                      <span className="font-medium text-foreground">Draft</span>{" "}
+                      to{" "}
+                      <span className="font-medium text-foreground">Issued</span>.
+                    </span>
+                  </div>
+
+                  <div className="flex items-start gap-2">
+                    <Mail className="h-4 w-4 mt-0.5 text-emerald-600" />
+                    <span>
+                      An email containing the invoice details will be sent to the
+                      customer.
+                    </span>
+                  </div>
+
+                  <div className="pt-2">
+                    <span className="font-medium text-foreground">
+                      Are you sure you want to issue this invoice?
+                    </span>
+                  </div>
+                </AlertDialogDescription>
+              </div>
+            </div>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel className="min-w-24">Cancel</AlertDialogCancel>
+            <AlertDialogAction className="min-w-28" onClick={handleIssueInvoice}>
+              Issue Invoice
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </ContentContainer>
   );
 }

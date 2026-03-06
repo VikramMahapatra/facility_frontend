@@ -36,7 +36,6 @@ export interface Lease {
   attachments?: BackendAttachment[];
 }
 
-
 export interface PaymentTerm {
   id?: string;
   description?: string;
@@ -46,7 +45,6 @@ export interface PaymentTerm {
   due_date: string;
   status: "pending" | "paid" | "overdue";
 }
-
 
 export interface LeaseOverview {
   activeLeases: number;
@@ -89,7 +87,6 @@ export interface Tenant {
   space_timelines?: any[];
 }
 
-
 export interface SpaceTenants {
   site_id?: string;
   site_name?: string;
@@ -107,8 +104,8 @@ export interface TenantOverview {
   individualTenants: number;
 }
 
-
 export interface LeaseCharge {
+  invoice_no: string;
   id: string;
   lease_id: string;
   charge_code_id: string;
