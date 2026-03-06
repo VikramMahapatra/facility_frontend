@@ -13,7 +13,8 @@ import { zodResolver } from "@hookform/resolvers/zod";
 import { VendorFormValues, vendorSchema } from "@/schemas/vendor.schema";
 import { toast } from "@/components/ui/app-toast";
 import { vendorsApiService } from "@/services/procurements/vendorsapi";
-import { ChevronsUpDown, X } from "lucide-react";
+import { userManagementApiService } from "@/services/access_control/usermanagementapi";
+import { ChevronsUpDown, X, UserCog } from "lucide-react";
 import PhoneInput from "react-phone-input-2";
 import { withFallback } from "@/helpers/commonHelper";
 
@@ -60,11 +61,16 @@ export function VendorForm({ vendor, isOpen, onClose, onSave, mode }: VendorForm
   const [statusList, setStatusList] = useState<any[]>([]);
   const [categoriesList, setCategoriesList] = useState<any[]>([]);
   const [categoryPopoverOpen, setCategoryPopoverOpen] = useState(false);
+  const [existingUserWarning, setExistingUserWarning] = useState<string | null>(null);
+  const [isGlobalUser, setIsGlobalUser] = useState(false);
+  const [isCheckingGlobalUser, setIsCheckingGlobalUser] = useState(false);
 
   const selectedCategories = watch("categories") || [];
 
   const loadAll = async () => {
     setFormLoading(true);
+    setExistingUserWarning(null);
+    setIsGlobalUser(false);
 
     // Reset form based on mode
     reset(
@@ -94,6 +100,40 @@ export function VendorForm({ vendor, isOpen, onClose, onSave, mode }: VendorForm
       loadAll();
     }
   }, [vendor, mode, isOpen, reset]);
+
+  const checkGlobalUser = async (email?: string, phone?: string) => {
+    if (!email && !phone) {
+      setExistingUserWarning(null);
+      setIsGlobalUser(false);
+      return;
+    }
+
+    setIsCheckingGlobalUser(true);
+    try {
+      const res = await userManagementApiService.checkUserGlobal({ email, phone });
+
+      if (res?.success && res.data?.exists && res.data.user) {
+        const user = res.data.user;
+        setValue("contact.name", user.full_name ?? "", { shouldValidate: true });
+        setValue("contact.email", user.email ?? "", { shouldValidate: true });
+        setValue("contact.phone", user.phone ?? "", { shouldValidate: true });
+        
+        setIsGlobalUser(true);
+        setExistingUserWarning(
+          "This contact already exists globally as a user. It will be linked to the current organization as a vendor."
+        );
+      } else {
+        setExistingUserWarning(null);
+        setIsGlobalUser(false);
+      }
+    } catch (err) {
+      console.error(err);
+      setExistingUserWarning(null);
+      setIsGlobalUser(false);
+    } finally {
+      setIsCheckingGlobalUser(false);
+    }
+  };
 
   const loadStatusLookup = async () => {
     const response = await vendorsApiService.getStatusLookup();
@@ -336,7 +376,7 @@ export function VendorForm({ vendor, isOpen, onClose, onSave, mode }: VendorForm
                   <Input
                     id="contact.name"
                     {...register("contact.name")}
-                    disabled={isReadOnly}
+                    disabled={isReadOnly || mode === "edit" || isGlobalUser}
                     placeholder="Enter contact name"
                     className={errors.contact?.name ? 'border-red-500' : ''}
                   />
@@ -351,7 +391,8 @@ export function VendorForm({ vendor, isOpen, onClose, onSave, mode }: VendorForm
                       id="contact.email"
                       type="email"
                       {...register("contact.email")}
-                      disabled={isReadOnly}
+                      disabled={isReadOnly || mode === "edit" || isGlobalUser}
+                      onBlur={(e) => checkGlobalUser(e.target.value, getValues("contact.phone"))}
                       placeholder="Enter email address"
                       className={errors.contact?.email ? 'border-red-500' : ''}
                     />
@@ -373,7 +414,8 @@ export function VendorForm({ vendor, isOpen, onClose, onSave, mode }: VendorForm
                             const finalValue = "+" + digits;
                             field.onChange(finalValue);
                           }}
-                          disabled={isReadOnly}
+                          onBlur={() => checkGlobalUser(getValues("contact.email"), getValues("contact.phone"))}
+                          disabled={isReadOnly || mode === "edit" || isGlobalUser}
                           inputProps={{
                             name: 'contact.phone',
                             required: true,
@@ -400,6 +442,15 @@ export function VendorForm({ vendor, isOpen, onClose, onSave, mode }: VendorForm
                     placeholder="Enter contact address"
                   />
                 </div>
+                {existingUserWarning && (
+                  <div className="flex items-start gap-3 rounded-md border border-yellow-300 bg-yellow-50 px-4 py-3 mt-4">
+                    <UserCog className="h-5 w-5 text-yellow-600 mt-0.5" />
+                    <div className="text-sm text-yellow-800">
+                      <p className="font-medium">User already exists</p>
+                      <p className="text-yellow-700">{existingUserWarning}</p>
+                    </div>
+                  </div>
+                )}
               </div>
 
               <DialogFooter>
@@ -407,8 +458,9 @@ export function VendorForm({ vendor, isOpen, onClose, onSave, mode }: VendorForm
                   {mode === "view" ? "Close" : "Cancel"}
                 </Button>
                 {mode !== "view" && (
-                  <Button type="submit" disabled={isSubmitting}>
-                    {isSubmitting ? "Saving..." : mode === "create" ? "Create Vendor" : "Update Vendor"}
+                  <Button type="submit" disabled={isSubmitting || isCheckingGlobalUser}>
+                    {isSubmitting ? "Saving..." : isCheckingGlobalUser ? "Checking contact..."
+                    : mode === "create" ? "Create Vendor" : "Update Vendor"}
                   </Button>
                 )}
               </DialogFooter>
