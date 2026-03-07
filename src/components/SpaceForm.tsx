@@ -25,7 +25,7 @@ import { siteApiService } from "@/services/spaces_sites/sitesapi";
 import { buildingApiService } from "@/services/spaces_sites/buildingsapi";
 import { spacesApiService } from "@/services/spaces_sites/spacesapi";
 import { maintenanceTemplateApiService } from "@/services/spaces_sites/maintenanceTemplateApi";
-import { getKindsByCategory, kindToCategory, Space, SpaceKind, spaceKinds, SpaceSubKind, spaceSubKinds, SUB_KIND_TO_BEDS } from "@/interfaces/spaces_interfaces";
+import { getKindsByCategory, kindToCategory, Space, spaceCategories, SpaceKind, spaceKinds, SpaceSubKind, spaceSubKinds, SUB_KIND_TO_BEDS } from "@/interfaces/spaces_interfaces";
 import {
   Popover,
   PopoverContent,
@@ -285,12 +285,20 @@ export function SpaceForm({
   };
 
   const onSubmitForm = async (data: SpaceFormValues) => {
+
+    const normalizedData = {
+      ...data,
+      maintenance_template_id:
+        data.maintenance_template_id || undefined,
+    };
+
     const formResponse = await onSave({
       ...space,
-      ...data,
+      ...normalizedData,
       floor:
-        data.floor !== undefined && data.floor !== null
-          ? String(data.floor)
+        normalizedData.floor !== undefined &&
+          normalizedData.floor !== null
+          ? String(normalizedData.floor)
           : mode === "create"
             ? "0"
             : space?.floor,
@@ -315,6 +323,10 @@ export function SpaceForm({
       }
     }
   }, [selectedCategory, selectedKind, filteredKinds, setValue]);
+
+  useEffect(() => {
+    setValue("sub_kind", undefined);
+  }, [selectedCategory, setValue]);
 
   useEffect(() => {
     loadMaintenanceTemplateLookup();
@@ -519,10 +531,13 @@ export function SpaceForm({
                           <SelectValue placeholder="Select category" />
                         </SelectTrigger>
                         <SelectContent>
-                          <SelectItem value="residential">
-                            Residential
-                          </SelectItem>
-                          <SelectItem value="commercial">Commercial</SelectItem>
+                          {spaceCategories.map((k) => (
+                            <SelectItem key={k} value={k}>
+                              {k
+                                .replace("_", " ")
+                                .replace(/\b\w/g, (l) => l.toUpperCase())}
+                            </SelectItem>
+                          ))}
                         </SelectContent>
                       </Select>
                       {errors.category && (
@@ -1046,7 +1061,7 @@ export function SpaceForm({
                           Maintenance Template
                         </Label>
                         <Select
-                          value={field.value || ""}
+                          value={field.value}
                           onValueChange={(value) =>
                             field.onChange(value === "none" ? undefined : value)
                           }

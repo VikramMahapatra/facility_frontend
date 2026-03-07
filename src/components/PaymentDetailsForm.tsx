@@ -37,7 +37,7 @@ interface PaymentDetail {
   ref_no: string;
   paid_at: string;
   amount: number | string;
-  remarks?: string;
+  notes?: string;
 }
 
 interface PaymentDetailsFormProps {
@@ -56,7 +56,7 @@ const initialPaymentValues: PaymentDetail = {
   ref_no: "",
   paid_at: "",
   amount: 0,
-  remarks: "",
+  notes: "",
 };
 
 export function PaymentDetailsForm({
@@ -88,9 +88,9 @@ export function PaymentDetailsForm({
           paid_at: payment.paid_at || "",
           amount: payment.amount || 0,
           // Try to backfill remarks from meta if present on existing payment
-          remarks:
-            (payment as any).remarks ||
-            (payment as any).meta?.remarks ||
+          notes:
+            (payment as any).notes ||
+            (payment as any).meta?.notes ||
             (typeof (payment as any).meta === "string"
               ? (payment as any).meta
               : ""),
@@ -160,8 +160,8 @@ export function PaymentDetailsForm({
           method: paymentDetail.method,
           amount,
           paid_at: paymentDetail.paid_at,
-          meta: paymentDetail.remarks
-            ? { remarks: paymentDetail.remarks }
+          meta: paymentDetail.notes
+            ? { notes: paymentDetail.notes }
             : undefined,
         };
         response = await withLoader(async () => {
@@ -175,8 +175,8 @@ export function PaymentDetailsForm({
           ref_no: paymentDetail.ref_no || "",
           amount,
           paid_at: paymentDetail.paid_at,
-          meta: paymentDetail.remarks
-            ? { remarks: paymentDetail.remarks }
+          meta: paymentDetail.notes
+            ? { notes: paymentDetail.notes }
             : undefined,
         };
         response = await withLoader(async () => {
@@ -310,8 +310,8 @@ export function PaymentDetailsForm({
             <Label>Remarks</Label>
             <Textarea
               placeholder="Add remarks"
-              value={paymentDetail.remarks || ""}
-              onChange={(e) => updatePaymentDetail("remarks", e.target.value)}
+              value={paymentDetail.notes || ""}
+              onChange={(e) => updatePaymentDetail("notes", e.target.value)}
               rows={3}
             />
           </div>
