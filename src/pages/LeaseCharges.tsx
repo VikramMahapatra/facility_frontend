@@ -251,7 +251,7 @@ export default function LeaseCharges() {
     const normalized = normalizeChargeCode(code);
     switch (normalized) {
       case "RENT":
-        return "Monthly Rent";
+        return "Rent";
       case "CAM":
         return "Common Area Maintenance";
       case "ELEC":
