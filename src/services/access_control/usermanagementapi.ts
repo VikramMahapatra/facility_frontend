@@ -75,6 +75,17 @@ class UserManagementApiService {
     });
   }
 
+  async searchPaymentUsers(request_type: string, search: string) {
+    let url =
+      request_type == "received"
+        ? `/users/search-tenant-owner-user`
+        : `/users/search-vendor-user`;
+    if (search) {
+      url += `?search=${encodeURIComponent(search)}`;
+    }
+    return await apiService.request(url);
+  }
+
   async searchTenantOwnerUsers(search: string) {
     let url = `/users/search-tenant-owner-user`;
     if (search) {
@@ -90,7 +101,6 @@ class UserManagementApiService {
     }
     return await apiService.request(url);
   }
-
 }
 
 export const userManagementApiService = new UserManagementApiService();
