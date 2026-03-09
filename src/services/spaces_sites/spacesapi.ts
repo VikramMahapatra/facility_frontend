@@ -29,6 +29,13 @@ class SpacesApiService {
     });
   }
 
+  async bulkUploadSpaces(payload: any) {
+    return await apiService.request("/spaces/bulk-upload", {
+      method: "POST",
+      body: JSON.stringify(payload),
+    });
+  }
+
   async getSpaceLookup(site_id?: any, building_id?: any) {
     let url = "/spaces/lookup";
     if (site_id) {
@@ -39,6 +46,32 @@ class SpacesApiService {
     }
     return await apiService.request(url);
   }
+
+  async getAllSpaceLookup(site_id?: any, building_id?: any) {
+    let url = "/spaces/all-spaces";
+    if (site_id) {
+      url += `?site_id=${site_id}`;
+    }
+    if (building_id) {
+      url += `&building_id=${building_id}`;
+    }
+    return await apiService.request(url);
+  }
+
+  async getFilteredSpaceLookup(site_id?: any, building_id?: any, request_type?: any) {
+    let url = "/spaces/filtered-lookup";
+    if (site_id) {
+      url += `?site_id=${site_id}`;
+    }
+    if (building_id) {
+      url += `&building_id=${building_id}`;
+    }
+    if (request_type) {
+      url += `&request_type=${request_type}`;
+    }
+    return await apiService.request(url);
+  }
+
 
   async getMasterSpaceLookup(site_id?: any, building_id?: any, space_id?: any) {
     const url = "/master/space-lookup";
@@ -105,13 +138,12 @@ class SpacesApiService {
     return await apiService.request(url);
   }
 
-  async updateOwnerApproval(requestId: string, action: string, reason?: string) {
+  async updateOwnerApproval(requestId: string, action: string) {
     return await apiService.request("/spaces/update-owner-approval", {
       method: "POST",
       body: JSON.stringify({
         action: action,
         request_id: requestId,
-        reason: reason
       }),
     });
   }
@@ -151,21 +183,27 @@ class SpacesApiService {
 
   }
 
-  async approveOccupancyRequest(requestId: string, actionType: string) {
-    const url = `/spaces/${requestId}/${actionType == "move_in" ? "approve-move-in" : "approve-move-out"}`
-    return await apiService.request(url, {
-      method: "POST"
+  async approveOccupancyRequest(requestId: string) {
+    // Mock implementation
+    return new Promise((resolve) => {
+      setTimeout(() => {
+        resolve({
+          success: true,
+          message: "Move-out request approved successfully",
+        });
+      }, 500);
     });
   }
 
-  async rejectOccupancyRequest(requestId: string, reason: string, actionType: string) {
-    const url = `/spaces/${requestId}/${actionType == "move_in" ? "reject-move-in" : "reject-move-out"}`
-
-    return await apiService.request(url, {
-      method: "POST",
-      body: JSON.stringify({
-        reason: reason
-      }),
+  async rejectOccupancyRequest(requestId: string) {
+    // Mock implementation
+    return new Promise((resolve) => {
+      setTimeout(() => {
+        resolve({
+          success: true,
+          message: "Move-out request rejected successfully",
+        });
+      }, 500);
     });
   }
 

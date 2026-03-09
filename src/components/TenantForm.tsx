@@ -23,9 +23,10 @@ import { Controller, useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { tenantSchema, TenantFormValues } from "@/schemas/tenant.schema";
 import { tenantsApiService } from "@/services/leasing_tenants/tenantsapi";
+import { userManagementApiService } from "@/services/access_control/usermanagementapi";
 import { Tenant } from "@/interfaces/leasing_tenants_interface";
 import PhoneInput from "react-phone-input-2";
-import { Trash2, Plus } from "lucide-react";
+import { Trash2, Plus, UserCog } from "lucide-react";
 import { withFallback } from "@/helpers/commonHelper";
 
 interface TenantFormProps {
@@ -79,9 +80,14 @@ export function TenantForm({
   const [formLoading, setFormLoading] = useState(true);
   const [statusList, setStatusList] = useState([]);
   const [typeList, setTypeList] = useState([]);
+  const [existingUserWarning, setExistingUserWarning] = useState<string | null>(null);
+  const [isGlobalUser, setIsGlobalUser] = useState(false);
+  const [isCheckingGlobalUser, setIsCheckingGlobalUser] = useState(false);
 
   const loadAll = async () => {
     setFormLoading(true);
+    setExistingUserWarning(null);
+    setIsGlobalUser(false);
 
     // Reset form based on mode - if create mode or no tenant, use empty data
     reset(
@@ -144,6 +150,40 @@ export function TenantForm({
   const canSubmitCreate = Boolean(
     watchedName && watchedEmail && watchedPhone && watchedStatus
   );
+
+  const checkGlobalUser = async (email?: string, phone?: string) => {
+    if (!email && !phone) {
+      setExistingUserWarning(null);
+      setIsGlobalUser(false);
+      return;
+    }
+
+    setIsCheckingGlobalUser(true);
+    try {
+      const res = await userManagementApiService.checkUserGlobal({ email, phone });
+
+      if (res?.success && res.data?.exists && res.data.user) {
+        const user = res.data.user;
+        setValue("name", user.full_name ?? "", { shouldValidate: true });
+        setValue("email", user.email ?? "", { shouldValidate: true });
+        setValue("phone", user.phone ?? "", { shouldValidate: true });
+        
+        setIsGlobalUser(true);
+        setExistingUserWarning(
+          "This user already exists globally. It will be linked to the current organization as a tenant."
+        );
+      } else {
+        setExistingUserWarning(null);
+        setIsGlobalUser(false);
+      }
+    } catch (err) {
+      console.error(err);
+      setExistingUserWarning(null);
+      setIsGlobalUser(false);
+    } finally {
+      setIsCheckingGlobalUser(false);
+    }
+  };
 
   const loadStatusLookup = async () => {
     const lookup = await tenantsApiService.getTenantStatusLookup();
@@ -249,6 +289,15 @@ export function TenantForm({
               <p className="text-center">Loading...</p>
             ) : (
               <div className="space-y-4">
+                {existingUserWarning && (
+                  <div className="flex items-start gap-3 rounded-md border border-yellow-300 bg-yellow-50 px-4 py-3 mt-4">
+                    <UserCog className="h-5 w-5 text-yellow-600 mt-0.5" />
+                    <div className="text-sm text-yellow-800">
+                      <p className="font-medium">User already exists</p>
+                      <p className="text-yellow-700">{existingUserWarning}</p>
+                    </div>
+                  </div>
+                )}
                 {/* Row 1: Name, Email, Phone */}
                 <div className="grid grid-cols-2 gap-4">
                   <div className="space-y-2">
@@ -257,7 +306,7 @@ export function TenantForm({
                       id="name"
                       {...register("name")}
                       placeholder="e.g., John Smith"
-                      disabled={isReadOnly || isReadOnlyInEditMode}
+                      disabled={isReadOnly || isReadOnlyInEditMode || isGlobalUser}
                       className={errors.name ? "border-red-500" : ""}
                     />
                     {errors.name && (
@@ -273,7 +322,8 @@ export function TenantForm({
                       type="email"
                       {...register("email")}
                       placeholder="e.g., john@example.com"
-                      disabled={isReadOnly || isReadOnlyInEditMode}
+                      disabled={isReadOnly || isReadOnlyInEditMode || isGlobalUser}
+                      onBlur={(e) => checkGlobalUser(e.target.value, getValues("phone"))}
                       className={errors.email ? "border-red-500" : ""}
                     />
                     {errors.email && (
@@ -300,7 +350,8 @@ export function TenantForm({
                             const finalValue = "+" + digits;
                             field.onChange(finalValue);
                           }}
-                          disabled={isReadOnly || isReadOnlyInEditMode}
+                          onBlur={() => checkGlobalUser(getValues("email"), getValues("phone"))}
+                          disabled={isReadOnly || isReadOnlyInEditMode || isGlobalUser}
                           inputProps={{
                             name: "phone",
                             required: true,
@@ -348,8 +399,6 @@ export function TenantForm({
                 </div>
                 {/* Commercial tenant specific fields */}
                 <>
-
-
                   <div>
                     <Label htmlFor="contact_info">
                       Business Contact Information
@@ -622,10 +671,12 @@ export function TenantForm({
               <Button
                 type="submit"
                 form="tenant-form"
-                disabled={isSubmitting || formLoading}
+                disabled={isSubmitting || formLoading || isCheckingGlobalUser}
               >
                 {isSubmitting
                   ? "Saving..."
+                  : isCheckingGlobalUser
+                  ? "Checking user..."
                   : mode === "create"
                     ? "Create Tenant"
                     : "Update Tenant"}

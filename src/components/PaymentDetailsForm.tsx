@@ -2,6 +2,7 @@ import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { Textarea } from "@/components/ui/textarea";
 import {
   Select,
   SelectContent,
@@ -28,6 +29,7 @@ import { toast } from "@/components/ui/app-toast";
 import { invoiceApiService } from "@/services/financials/invoicesapi";
 import { paymentsApiService } from "@/services/financials/paymentsapi";
 import { useLoader } from "@/context/LoaderContext";
+import { useSettings } from "@/context/SettingsContext";
 
 interface PaymentDetail {
   id?: string;
@@ -35,6 +37,7 @@ interface PaymentDetail {
   ref_no: string;
   paid_at: string;
   amount: number | string;
+  notes?: string;
 }
 
 interface PaymentDetailsFormProps {
@@ -53,6 +56,7 @@ const initialPaymentValues: PaymentDetail = {
   ref_no: "",
   paid_at: "",
   amount: 0,
+  notes: "",
 };
 
 export function PaymentDetailsForm({
@@ -72,6 +76,7 @@ export function PaymentDetailsForm({
   >(null);
   const [paymentDetail, setPaymentDetail] =
     useState<PaymentDetail>(initialPaymentValues);
+  const { systemCurrency } = useSettings();
 
   useEffect(() => {
     if (isOpen) {
@@ -82,6 +87,13 @@ export function PaymentDetailsForm({
           ref_no: payment.ref_no || "",
           paid_at: payment.paid_at || "",
           amount: payment.amount || 0,
+          // Try to backfill remarks from meta if present on existing payment
+          notes:
+            (payment as any).notes ||
+            (payment as any).meta?.notes ||
+            (typeof (payment as any).meta === "string"
+              ? (payment as any).meta
+              : ""),
         });
       } else {
         setPaymentDetail(initialPaymentValues);
@@ -128,7 +140,11 @@ export function PaymentDetailsForm({
     }
 
     // Reference number required for non-cash payments (invoices only; bills may not use ref_no)
-    if (!billId && paymentDetail.method !== "cash" && !paymentDetail.ref_no?.trim()) {
+    if (
+      !billId &&
+      paymentDetail.method !== "cash" &&
+      !paymentDetail.ref_no?.trim()
+    ) {
       toast.error("Reference number is required for this payment method.");
       return;
     }
@@ -144,6 +160,9 @@ export function PaymentDetailsForm({
           method: paymentDetail.method,
           amount,
           paid_at: paymentDetail.paid_at,
+          meta: paymentDetail.notes
+            ? { notes: paymentDetail.notes }
+            : undefined,
         };
         response = await withLoader(async () => {
           return await paymentsApiService.recordBillPayment(billPayload);
@@ -156,7 +175,9 @@ export function PaymentDetailsForm({
           ref_no: paymentDetail.ref_no || "",
           amount,
           paid_at: paymentDetail.paid_at,
-          meta: "",
+          meta: paymentDetail.notes
+            ? { notes: paymentDetail.notes }
+            : undefined,
         };
         response = await withLoader(async () => {
           return await invoiceApiService.saveInvoicePayment(invoicePayload);
@@ -168,7 +189,7 @@ export function PaymentDetailsForm({
 
       if (response?.success) {
         toast.success(
-          `Payment ${mode === "create" ? "added" : "updated"} successfully.`
+          `Payment ${mode === "create" ? "added" : "updated"} successfully.`,
         );
 
         if (onSave) {
@@ -246,11 +267,9 @@ export function PaymentDetailsForm({
                 disabled={paymentDetail.method === "cash"}
               />
             </div>
-
-
           </div>
 
-          {/* 2nd row: Date */}
+          {/* 2nd row: Date & Amount */}
           <div className="grid grid-cols-2 gap-4">
             <div className="space-y-2">
               <Label>Payment Date *</Label>
@@ -260,7 +279,9 @@ export function PaymentDetailsForm({
                   type="date"
                   className="pl-10"
                   value={paymentDetail.paid_at || ""}
-                  onChange={(e) => updatePaymentDetail("paid_at", e.target.value)}
+                  onChange={(e) =>
+                    updatePaymentDetail("paid_at", e.target.value)
+                  }
                 />
               </div>
             </div>
@@ -268,13 +289,7 @@ export function PaymentDetailsForm({
               <Label>Amount *</Label>
               <div className="relative">
                 <span className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground pointer-events-none">
-                  {currency === "INR"
-                    ? "₹"
-                    : currency === "USD"
-                      ? "$"
-                      : currency === "EUR"
-                        ? "€"
-                        : currency || "₹"}
+                  {systemCurrency?.icon}
                 </span>
                 <Input
                   type="number"
@@ -288,6 +303,17 @@ export function PaymentDetailsForm({
                 />
               </div>
             </div>
+          </div>
+
+          {/* Remarks */}
+          <div className="space-y-2">
+            <Label>Remarks</Label>
+            <Textarea
+              placeholder="Add remarks"
+              value={paymentDetail.notes || ""}
+              onChange={(e) => updatePaymentDetail("notes", e.target.value)}
+              rows={3}
+            />
           </div>
         </div>
 

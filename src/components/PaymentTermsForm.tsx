@@ -38,8 +38,7 @@ const initialTermValues: PaymentTerm = {
   due_date: "",
   amount: 0,
   status: "pending",
-
-}
+};
 
 export function PaymentTermsForm({
   leaseId,
@@ -49,7 +48,8 @@ export function PaymentTermsForm({
   onClose,
   onSave,
 }: PaymentTermsFormProps) {
-  const [paymentTerm, setPaymentTerm] = useState<PaymentTerm>(initialTermValues);
+  const [paymentTerm, setPaymentTerm] =
+    useState<PaymentTerm>(initialTermValues);
   const [paymentModeList, setPaymentModeList] = useState<any[]>([]);
 
   useEffect(() => {
@@ -60,23 +60,18 @@ export function PaymentTermsForm({
       { id: "online", name: "Online", icon: Globe },
       { id: "card", name: "Card", icon: CreditCard },
     ]);
-  }, [])
+  }, []);
 
   // Load payment mode lookup
   useEffect(() => {
     if (mode == "edit") {
       setPaymentTerm(term);
-    }
-    else {
+    } else {
       setPaymentTerm(initialTermValues);
     }
   }, [isOpen]);
 
-
-  const updatePaymentTerm = (
-    field: keyof PaymentTerm,
-    value: any,
-  ) => {
+  const updatePaymentTerm = (field: keyof PaymentTerm, value: any) => {
     let updated = paymentTerm;
     updated = { ...updated, [field]: value };
     setPaymentTerm(updated);
@@ -149,21 +144,22 @@ export function PaymentTermsForm({
                 >
                   <SelectTrigger>
                     <SelectValue placeholder="Select payment mode">
-                      {paymentTerm.payment_method && (() => {
-                        const selectedMode = paymentModeList.find(
-                          (m: any) => m.id === paymentTerm.payment_method
-                        );
-                        if (selectedMode && selectedMode.icon) {
-                          const IconComponent = selectedMode.icon;
-                          return (
-                            <div className="flex items-center gap-2">
-                              <IconComponent className="h-4 w-4" />
-                              <span>{selectedMode.name}</span>
-                            </div>
+                      {paymentTerm.payment_method &&
+                        (() => {
+                          const selectedMode = paymentModeList.find(
+                            (m: any) => m.id === paymentTerm.payment_method,
                           );
-                        }
-                        return selectedMode?.name || "";
-                      })()}
+                          if (selectedMode && selectedMode.icon) {
+                            const IconComponent = selectedMode.icon;
+                            return (
+                              <div className="flex items-center gap-2">
+                                <IconComponent className="h-4 w-4" />
+                                <span>{selectedMode.name}</span>
+                              </div>
+                            );
+                          }
+                          return selectedMode?.name || "";
+                        })()}
                     </SelectValue>
                   </SelectTrigger>
                   <SelectContent>
@@ -172,7 +168,9 @@ export function PaymentTermsForm({
                       return (
                         <SelectItem key={mode.id} value={mode.id}>
                           <div className="flex items-center gap-2">
-                            {IconComponent && <IconComponent className="h-4 w-4" />}
+                            {IconComponent && (
+                              <IconComponent className="h-4 w-4" />
+                            )}
                             <span>{mode.name}</span>
                           </div>
                         </SelectItem>
@@ -201,10 +199,7 @@ export function PaymentTermsForm({
                   placeholder="Enter amount"
                   value={paymentTerm.amount || ""}
                   onChange={(e) =>
-                    updatePaymentTerm(
-                      "amount",
-                      parseFloat(e.target.value) || 0,
-                    )
+                    updatePaymentTerm("amount", parseFloat(e.target.value) || 0)
                   }
                   className={
                     !paymentTerm.amount || paymentTerm.amount <= 0
@@ -252,23 +247,13 @@ export function PaymentTermsForm({
         </div>
 
         <DialogFooter>
-          <Button
-            type="button"
-            variant="outline"
-            onClick={handleClose}
-          >
+          <Button type="button" variant="outline" onClick={handleClose}>
             Skip
           </Button>
-          <Button
-            type="button"
-            onClick={() => handleSave(false)}
-          >
+          <Button type="button" onClick={() => handleSave(false)}>
             Save
           </Button>
-          <Button
-            type="button"
-            onClick={() => handleSave(true)}
-          >
+          <Button type="button" onClick={() => handleSave(true)}>
             Save & New
           </Button>
         </DialogFooter>

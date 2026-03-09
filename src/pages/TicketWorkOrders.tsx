@@ -12,6 +12,9 @@ import {
   AlertTriangle,
   User,
   Play,
+  Mail,
+  MailOpen,
+  FileText,
 } from "lucide-react";
 import {
   Card,
@@ -71,6 +74,7 @@ import { PageHeader } from "@/components/PageHeader";
 import { useSettings } from "@/context/SettingsContext";
 
 interface TicketWorkOrder {
+  invoice_no: string;
   id: string;
   ticket_id: string;
   ticket_no?: string;
@@ -440,10 +444,10 @@ export default function TicketWorkOrders() {
               <Table>
                 <TableHeader>
                   <TableRow>
-                    <TableHead>Ticket ID</TableHead>
+                    <TableHead>Ticket</TableHead>
                     <TableHead>Description</TableHead>
-                    <TableHead>Assigned To (Staff)</TableHead>
-                    <TableHead>Assigned To (Vendor)</TableHead>
+                    <TableHead>Assigned To </TableHead>
+                    <TableHead>Invoice no-</TableHead>
                     <TableHead>Status</TableHead>
                     <TableHead>Total Amount</TableHead>
                     <TableHead>Created At</TableHead>
@@ -477,17 +481,28 @@ export default function TicketWorkOrders() {
                           {workOrder.description}
                         </TableCell>
                         <TableCell>
-                          <div className="flex items-center">
-                            <User className="w-4 h-4 mr-2" />
+                          <div className="flex flex-col gap-1">
+                            <div className="flex items-center">
+                              <User className="w-4 h-4 mr-2 text-center text-muted-foreground h-32" />
+                              <span>
+                                Staff:-{" "}
+                                {workOrder.assigned_to_name || "Unassigned"}
+                              </span>
+                            </div>
 
-                            {workOrder.assigned_to_name || "Unassigned"}
+                            <div className="flex items-center">
+                              <User className="w-4 h-4 mr-2 text-center text-muted-foreground h-32" />
+                              <span>
+                                Vendor:- {workOrder.vendor_name || "Unassigned"}
+                              </span>
+                            </div>
                           </div>
                         </TableCell>
                         <TableCell>
                           <div className="flex items-center">
-                            <User className="w-4 h-4 mr-2" />
-                            {/* Backend sends vendors in assigned_to_name for now */}
-                            {workOrder.vendor_name || "Unassigned"}
+                            <FileText className="w-4 h-4 mr-2" />
+                            {/* Backend sends invoice no in assigned_to_name for now */}
+                            {workOrder.invoice_no || "Unassigned"}
                           </div>
                         </TableCell>
                         <TableCell>
