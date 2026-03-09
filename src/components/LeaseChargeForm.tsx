@@ -292,7 +292,7 @@ export function LeaseChargeForm({
   const onSubmitForm = async (data: LeaseChargeFormValues) => {
     const payload = {
       ...data,
-      base_amount: calculatedAmount.base_amount,
+      amount: calculatedAmount.base_amount,
     };
 
     const formResponse = await onSave(payload);
