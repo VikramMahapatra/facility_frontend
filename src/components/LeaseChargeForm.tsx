@@ -53,6 +53,7 @@ const emptyFormData: Partial<LeaseCharge> = {
   amount: undefined as unknown as number,
   tax_code_id: "",
   tax_pct: 0,
+  charge_code: "rent",
 };
 
 const emptyCalculatedAmount = {
@@ -289,7 +290,12 @@ export function LeaseChargeForm({
   };
 
   const onSubmitForm = async (data: LeaseChargeFormValues) => {
-    const formResponse = await onSave(data);
+    const payload = {
+      ...data,
+      base_amount: calculatedAmount.base_amount,
+    };
+
+    const formResponse = await onSave(payload);
   };
 
   const fallbackLease = charge?.lease_id
