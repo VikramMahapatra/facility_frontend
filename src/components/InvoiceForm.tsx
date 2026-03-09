@@ -2,6 +2,7 @@ import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { Textarea } from "@/components/ui/textarea";
 import {
   Select,
   SelectContent,
@@ -52,26 +53,27 @@ const emptyFormData: InvoiceFormValues = {
   site_id: "",
   building_id: "",
   space_id: "",
-  tenant_id: "",
-  tenant_name: "",
-  tenant_email: "",
-  tenant_phone: "",
+  user_id: "",
+  customer_name: "",
+  customer_email: "",
+  customer_phone: "",
   date: new Date().toISOString().split("T")[0],
   due_date: "",
   status: "draft",
   currency: "INR",
   billable_item_type: "",
   billable_item_id: "",
-  items: [
+  lines: [
     {
-      item: "",
+      item_id: "",
       description: "",
       amount: 0,
-      tax: 5,
+      tax_pct: 5,
     },
   ],
   totals: { sub: 0, tax: 5, grand: 0 },
   payments: [],
+  notes: ""
 };
 
 export function InvoiceForm({
@@ -119,11 +121,11 @@ export function InvoiceForm({
   const watchedSpaceId = watch("space_id");
   const watchedBillableType = watch("billable_item_type");
   const watchedBillableItemId = watch("billable_item_id");
-  const watchedItems = watch("items");
+  const watchedItems = watch("lines");
 
   const { fields, append, remove } = useFieldArray({
     control,
-    name: "items",
+    name: "lines",
   });
 
   useEffect(() => {
@@ -184,7 +186,7 @@ export function InvoiceForm({
       }, 0);
       const totalTax = watchedItems.reduce((sum, item) => {
         const itemAmount = item.amount || 0;
-        const itemTaxPercent = item.tax || 5;
+        const itemTaxPercent = item.tax_pct || 5;
         const itemTax = (itemAmount * itemTaxPercent) / 100;
         return sum + itemTax;
       }, 0);
@@ -210,16 +212,16 @@ export function InvoiceForm({
         const subtotal = Number(totals.subtotal || 0);
 
         // Update the item amount
-        setValue(`items.${index}.amount`, subtotal, { shouldValidate: false });
+        setValue(`lines.${index}.amount`, subtotal, { shouldValidate: false });
 
         // Recalculate totals
-        const allItems = getValues("items");
+        const allItems = getValues("lines");
         const newSubtotal = allItems.reduce((sum, item) => {
           return sum + (item.amount || 0);
         }, 0);
         const totalTax = allItems.reduce((sum, item) => {
           const itemAmount = item.amount || 0;
-          const itemTaxPercent = item.tax || 5;
+          const itemTaxPercent = item.tax_pct || 5;
           const itemTax = (itemAmount * itemTaxPercent) / 100;
           return sum + itemTax;
         }, 0);
@@ -355,10 +357,10 @@ export function InvoiceForm({
       const response = await tenantsApiService.getSpaceTenants(watchedSpaceId);
       if (response?.success && response.data && response.data.length > 0) {
         const tenant = response.data[0]; // Get first tenant
-        setValue("tenant_id", tenant.id || tenant.tenant_id || "");
-        setValue("tenant_name", tenant.name || tenant.tenant_name || "");
-        setValue("tenant_email", tenant.email || "");
-        setValue("tenant_phone", tenant.phone || "");
+        setValue("user_id", tenant.id || tenant.user_id || "");
+        setValue("customer_name", tenant.name || tenant.customer_name || "");
+        setValue("customer_email", tenant.email || "");
+        setValue("customer_phone", tenant.phone || "");
       }
     } catch (error) {
       console.error("Failed to load tenant details:", error);
@@ -400,27 +402,28 @@ export function InvoiceForm({
             site_id: invoice.site_id || "",
             building_id: (invoice as any).building_id || "",
             space_id: (invoice as any).space_id || "",
-            tenant_id: invoice.customer_id || "",
-            tenant_name: invoice.customer_name || "",
-            tenant_email: "",
-            tenant_phone: "",
+            user_id: invoice.user_id || "",
+            customer_name: invoice.user_name || "",
+            customer_email: "",
+            customer_phone: "",
             date: invoice.date || new Date().toISOString().split("T")[0],
             due_date: invoice.due_date || "",
             status: invoice.status || "draft",
             currency: invoice.currency || "INR",
-            billable_item_type: invoice.billable_item_type || "",
-            billable_item_id: invoice.billable_item_id || "",
-            items:
+            billable_item_type: invoice.code || "",
+            billable_item_id: (invoice as any).billable_item_id || invoice.lines?.[0]?.item_id || "",
+            lines:
               invoice.lines && invoice.lines.length > 0
                 ? invoice.lines.map((line) => ({
                     item: line.description || "",
                     description: line.description || "",
-                    amount: line.price || 0,
-                    tax: line.taxPct || 5,
+                    amount: line.amount || 0,
+                    tax_pct: line.tax_pct || 5,
                   }))
-                : emptyFormData.items,
+                : emptyFormData.lines,
             totals: invoice.totals || { sub: 0, tax: 5, grand: 0 },
             payments: [],
+            notes: invoice.meta?.notes || "",
           }
         : emptyFormData,
     );
@@ -432,10 +435,10 @@ export function InvoiceForm({
       if ((invoice as any).building_id && invoice.site_id) {
         await loadSpaceLookup();
       }
-      if (invoice.billable_item_type) {
+      if (invoice.code) {
         await loadBillableItemLookup();
       }
-      if (invoice.billable_item_id && invoice.billable_item_type) {
+      if (invoice.lines?.[0]?.item_id && invoice.code) {
         setTotalsLoaded(true);
         if (invoice.totals) {
           setTotalsAutoFilled(true);
@@ -457,22 +460,22 @@ export function InvoiceForm({
         site_id: data.site_id,
         building_id: data.building_id,
         space_id: data.space_id,
-        customer_id: data.tenant_id,
-        customer_name: data.tenant_name,
+        user_id: data.user_id,
+        user_name: data.customer_name,
         date: data.date,
         due_date: data.due_date,
         status: data.status || "draft",
         currency: data.currency || "INR",
-        billable_item_type: data.billable_item_type,
-        billable_item_id: data.billable_item_id,
-        lines: data.items.map((item) => ({
+        code: data.billable_item_type,
+        lines: data.lines.map((line) => ({
           id: "",
-          invoiceId: "",
-          code: "",
-          description: item.description || item.item || "",
+          invoice_id: "",
+          code: data.billable_item_type || "RENT",
+          item_id: line.item_id || "",
+          description: line.description || "",
           qty: 1,
-          price: item.amount || 0,
-          taxPct: item.tax || 5,
+          amount: line.amount || 0,
+          tax_pct: line.tax_pct || 5,
         })),
         totals: {
           sub: data.totals?.sub ?? 0,
@@ -490,6 +493,9 @@ export function InvoiceForm({
                 paid_at: p.paid_at!,
               }),
             ) || [],
+        meta: {
+          notes: data.notes
+        },
       };
       await onSave(invoiceData);
       onClose();
@@ -503,10 +509,10 @@ export function InvoiceForm({
 
   const addItem = () => {
     append({
-      item: "",
+      item_id: "",
       description: "",
       amount: 0,
-      tax: 5,
+      tax_pct: 5,
     });
   };
 
@@ -598,10 +604,10 @@ export function InvoiceForm({
                             field.onChange(value);
                             setValue("building_id", "");
                             setValue("space_id", "");
-                            setValue("tenant_id", "");
-                            setValue("tenant_name", "");
-                            setValue("tenant_email", "");
-                            setValue("tenant_phone", "");
+                            setValue("user_id", "");
+                            setValue("customer_name", "");
+                            setValue("customer_email", "");
+                            setValue("customer_phone", "");
                           }}
                           disabled={isReadOnly}
                         >
@@ -637,10 +643,10 @@ export function InvoiceForm({
                           onValueChange={(value) => {
                             field.onChange(value);
                             setValue("space_id", "");
-                            setValue("tenant_id", "");
-                            setValue("tenant_name", "");
-                            setValue("tenant_email", "");
-                            setValue("tenant_phone", "");
+                            setValue("user_id", "");
+                            setValue("customer_name", "");
+                            setValue("customer_email", "");
+                            setValue("customer_phone", "");
                           }}
                           disabled={isReadOnly || !watchedSiteId}
                         >
@@ -714,8 +720,8 @@ export function InvoiceForm({
                   <div className="space-y-2">
                     <Label htmlFor="tenant_name">Customer Name</Label>
                     <Input
-                      id="tenant_name"
-                      {...register("tenant_name")}
+                      id="customer_name"
+                      {...register("customer_name")}
                       disabled={isReadOnly}
                       placeholder="Auto-filled from space"
                     />
@@ -723,23 +729,23 @@ export function InvoiceForm({
                   <div className="space-y-2">
                     <Label htmlFor="tenant_email">Email</Label>
                     <Input
-                      id="tenant_email"
+                      id="customer_email"
                       type="email"
-                      {...register("tenant_email")}
+                      {...register("customer_email")}
                       disabled={isReadOnly}
                       placeholder="Auto-filled from space"
                     />
-                    {errors.tenant_email && (
+                    {errors.customer_email && (
                       <p className="text-sm text-red-500">
-                        {errors.tenant_email.message}
+                        {errors.customer_email.message}
                       </p>
                     )}
                   </div>
                   <div className="space-y-2">
-                    <Label htmlFor="tenant_phone">Phone</Label>
+                    <Label htmlFor="customer_phone">Phone</Label>
                     <Input
-                      id="tenant_phone"
-                      {...register("tenant_phone")}
+                      id="customer_phone"
+                      {...register("customer_phone")}
                       disabled={isReadOnly}
                       placeholder="Auto-filled from space"
                     />
@@ -784,7 +790,7 @@ export function InvoiceForm({
                         <TableRow key={field.id}>
                           <TableCell>
                             <Controller
-                              name={`items.${index}.item`}
+                              name={`lines.${index}.item_id`}
                               control={control}
                               render={({ field: itemField }) => (
                                 <Select
@@ -813,7 +819,7 @@ export function InvoiceForm({
                                 >
                                   <SelectTrigger
                                     className={
-                                      errors.items?.[index]?.item
+                                      errors.lines?.[index]?.item_id
                                         ? "border-red-500"
                                         : ""
                                     }
@@ -843,15 +849,15 @@ export function InvoiceForm({
                                 </Select>
                               )}
                             />
-                            {errors.items?.[index]?.item && (
+                            {errors.lines?.[index]?.item_id && (
                               <p className="text-xs text-red-500 mt-1">
-                                {errors.items[index]?.item?.message}
+                                {errors.lines[index]?.item_id?.message}
                               </p>
                             )}
                           </TableCell>
                           <TableCell>
                             <Input
-                              {...register(`items.${index}.description`)}
+                              {...register(`lines.${index}.description`)}
                               disabled={isReadOnly}
                               placeholder="Enter description"
                             />
@@ -860,21 +866,21 @@ export function InvoiceForm({
                             <Input
                               type="number"
                               step="0.01"
-                              {...register(`items.${index}.tax`, {
+                              {...register(`lines.${index}.tax_pct`, {
                                 setValueAs: (v) => (v === "" ? 5 : Number(v)),
                               })}
                               disabled={isReadOnly}
                               placeholder="5"
                               defaultValue={5}
                               className={
-                                errors.items?.[index]?.tax
+                                errors.lines?.[index]?.tax_pct
                                   ? "border-red-500"
                                   : ""
                               }
                             />
-                            {errors.items?.[index]?.tax && (
+                            {errors.lines?.[index]?.tax_pct && (
                               <p className="text-xs text-red-500 mt-1">
-                                {errors.items[index]?.tax?.message}
+                                {errors.lines[index]?.tax_pct?.message}
                               </p>
                             )}
                           </TableCell>
@@ -882,20 +888,20 @@ export function InvoiceForm({
                             <Input
                               type="number"
                               step="0.01"
-                              {...register(`items.${index}.amount`, {
+                              {...register(`lines.${index}.amount`, {
                                 setValueAs: (v) => (v === "" ? 0 : Number(v)),
                               })}
                               disabled={isReadOnly}
                               placeholder="0.00"
                               className={
-                                errors.items?.[index]?.amount
+                                errors.lines?.[index]?.amount
                                   ? "border-red-500"
                                   : ""
                               }
                             />
-                            {errors.items?.[index]?.amount && (
+                            {errors.lines?.[index]?.amount && (
                               <p className="text-xs text-red-500 mt-1">
-                                {errors.items[index]?.amount?.message}
+                                {errors.lines[index]?.amount?.message}
                               </p>
                             )}
                           </TableCell>
@@ -919,32 +925,51 @@ export function InvoiceForm({
                     </TableBody>
                   </Table>
                 </div>
-                {errors.items && (
-                  <p className="text-sm text-red-500">{errors.items.message}</p>
+                {errors.lines && (
+                  <p className="text-sm text-red-500">{errors.lines.message}</p>
                 )}
               </div>
 
               <Separator />
 
-              {/* Totals Section */}
-              <div className="space-y-2">
-                <div className="flex justify-between items-center">
-                  <span className="text-sm">Subtotal:</span>
-                  <span className="text-sm">
-                    {systemCurrency.format(watch("totals.sub") || 0)}
-                  </span>
+              {/* Notes and Totals Section */}
+              <div className="flex flex-col md:flex-row gap-8 items-start">
+                
+                {/* Left Side: Notes */}
+                <div className="w-full md:w-3/5 space-y-2">
+                  <Label htmlFor="notes" className="text-base font-semibold">Notes</Label>
+                  <Textarea
+                    id="notes"
+                    {...register("notes")}
+                    disabled={isReadOnly}
+                    placeholder="Enter invoice notes, terms, or late fee conditions... (These will appear on the generated invoice)"
+                    className="min-h-[140px] resize-none"
+                  />
                 </div>
-                <div className="flex justify-between items-center">
-                  <span className="text-sm">Tax:</span>
-                  <span className="text-sm">
-                    {systemCurrency.format(watch("totals.tax") || 0)}
-                  </span>
-                </div>
-                <div className="flex justify-between items-center pt-2 border-t">
-                  <span className="text-lg font-bold">Grand Total:</span>
-                  <span className="text-lg font-bold">
-                    {systemCurrency.format(watch("totals.grand") || 0)}
-                  </span>
+
+                {/* Right Side: Totals Summary Box */}
+                <div className="w-full md:w-2/5 border rounded-md p-5 bg-muted/10 space-y-4">
+                  <div className="flex justify-between items-center text-muted-foreground">
+                    <span className="text-sm">Subtotal</span>
+                    <span className="text-sm font-medium text-foreground">
+                      {systemCurrency.format(watch("totals.sub") || 0)}
+                    </span>
+                  </div>
+                  <div className="flex justify-between items-center text-muted-foreground">
+                    <span className="text-sm">Tax Amount</span>
+                    <span className="text-sm font-medium text-foreground">
+                      {systemCurrency.format(watch("totals.tax") || 0)}
+                    </span>
+                  </div>
+                  
+                  <Separator className="my-2" />
+                  
+                  <div className="flex justify-between items-center">
+                    <span className="text-base font-bold">Grand Total</span>
+                    <span className="text-lg font-bold text-primary">
+                      {systemCurrency.format(watch("totals.grand") || 0)}
+                    </span>
+                  </div>
                 </div>
               </div>
             </form>
