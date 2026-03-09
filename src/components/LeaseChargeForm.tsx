@@ -300,23 +300,23 @@ export function LeaseChargeForm({
 
   const fallbackLease = charge?.lease_id
     ? {
-      id: charge.lease_id,
-      name:
-        (charge as any).lease_name ||
-        charge.lease_id ||
-        "Selected Space With Lease",
-    }
+        id: charge.lease_id,
+        name:
+          (charge as any).lease_name ||
+          charge.lease_id ||
+          "Selected Space With Lease",
+      }
     : null;
 
   const leases = withFallback(leaseList, fallbackLease);
 
   const fallbackBuilding = charge?.building_block_id
     ? {
-      id: charge.building_block_id,
-      name:
-        (charge as any).building_block ||
-        `Building (${charge.building_block_id})`,
-    }
+        id: charge.building_block_id,
+        name:
+          (charge as any).building_block ||
+          `Building (${charge.building_block_id})`,
+      }
     : null;
 
   const buildings = withFallback(buildingList, fallbackBuilding);
@@ -333,7 +333,7 @@ export function LeaseChargeForm({
     return `${systemCurrency.format(val)}`;
   };
 
-  const selectedLease = leases.find(lease => lease.id === selectedLeaseId);
+  const selectedLease = leases.find((lease) => lease.id === selectedLeaseId);
 
   return (
     <Dialog open={isOpen} onOpenChange={handleClose}>
@@ -446,11 +446,12 @@ export function LeaseChargeForm({
                     )}
                   />
                   {errors.lease_id && (
-                    <p className="text-sm text-red-500">{errors.lease_id.message as any}</p>
+                    <p className="text-sm text-red-500">
+                      {errors.lease_id.message as any}
+                    </p>
                   )}
                 </div>
               </div>
-
             </div>
             <div className="grid grid-cols-1 gap-4">
               {/* Left Column: Space Lookup */}
@@ -600,6 +601,6 @@ export function LeaseChargeForm({
           </form>
         )}
       </DialogContent>
-    </Dialog >
+    </Dialog>
   );
 }
