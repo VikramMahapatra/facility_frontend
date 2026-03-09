@@ -25,6 +25,12 @@ class PaymentsApiService {
 
   // Record a payment against a bill
   async recordBillPayment(paymentData: any) {
+    if (paymentData instanceof FormData) {
+      return await apiService.requestWithForm("/bills/save-bill-payment", {
+        method: "POST",
+        body: paymentData,
+      });
+    }
     return await apiService.request("/bills/save-bill-payment", {
       method: "POST",
       body: JSON.stringify(paymentData),

@@ -24,6 +24,9 @@ import {
   FileText,
   Smartphone,
   Calendar,
+  Paperclip,
+  Plus,
+  X,
 } from "lucide-react";
 import { toast } from "@/components/ui/app-toast";
 import { invoiceApiService } from "@/services/financials/invoicesapi";
@@ -76,6 +79,7 @@ export function PaymentDetailsForm({
   >(null);
   const [paymentDetail, setPaymentDetail] =
     useState<PaymentDetail>(initialPaymentValues);
+  const [attachments, setAttachments] = useState<File[]>([]);
   const { systemCurrency } = useSettings();
 
   useEffect(() => {
@@ -98,6 +102,7 @@ export function PaymentDetailsForm({
       } else {
         setPaymentDetail(initialPaymentValues);
       }
+      setAttachments([]);
     }
   }, [isOpen, mode, payment]);
 
@@ -164,9 +169,18 @@ export function PaymentDetailsForm({
             ? { notes: paymentDetail.notes }
             : undefined,
         };
-        response = await withLoader(async () => {
-          return await paymentsApiService.recordBillPayment(billPayload);
-        });
+        if (attachments.length > 0) {
+          const formData = new FormData();
+          attachments.forEach((file) => formData.append("attachments", file));
+          formData.append("payment", JSON.stringify(billPayload));
+          response = await withLoader(async () => {
+            return await paymentsApiService.recordBillPayment(formData);
+          });
+        } else {
+          response = await withLoader(async () => {
+            return await paymentsApiService.recordBillPayment(billPayload);
+          });
+        }
       } else if (invoiceId) {
         const invoicePayload = {
           id: paymentDetail.id || undefined,
@@ -179,9 +193,18 @@ export function PaymentDetailsForm({
             ? { notes: paymentDetail.notes }
             : undefined,
         };
-        response = await withLoader(async () => {
-          return await invoiceApiService.saveInvoicePayment(invoicePayload);
-        });
+        if (attachments.length > 0) {
+          const formData = new FormData();
+          attachments.forEach((file) => formData.append("attachments", file));
+          formData.append("payment", JSON.stringify(invoicePayload));
+          response = await withLoader(async () => {
+            return await invoiceApiService.saveInvoicePayment(formData);
+          });
+        } else {
+          response = await withLoader(async () => {
+            return await invoiceApiService.saveInvoicePayment(invoicePayload);
+          });
+        }
       } else {
         toast.error("Missing invoice or bill reference.");
         return;
@@ -198,6 +221,7 @@ export function PaymentDetailsForm({
 
         if (saveAndNew) {
           setPaymentDetail(initialPaymentValues);
+          setAttachments([]);
         } else {
           handleClose();
         }
@@ -217,19 +241,20 @@ export function PaymentDetailsForm({
 
   const handleClose = () => {
     setPaymentDetail(initialPaymentValues);
+    setAttachments([]);
     onClose();
   };
 
   return (
     <Dialog open={isOpen} onOpenChange={(open) => !open && handleClose()}>
-      <DialogContent className="max-w-[600px]">
+      <DialogContent className="w-full max-w-3xl">
         <DialogHeader>
           <DialogTitle>
             {mode === "create" ? "Add Payment" : "Edit Payment"}
           </DialogTitle>
         </DialogHeader>
 
-        <div className="space-y-4">
+        <div className="mt-2 space-y-4 rounded-lg border bg-muted/40 p-4">
           {/* 1st row: Mode, Reference No, Amount */}
           <div className="grid grid-cols-2 gap-4">
             <div className="space-y-2">
@@ -314,6 +339,77 @@ export function PaymentDetailsForm({
               onChange={(e) => updatePaymentDetail("notes", e.target.value)}
               rows={3}
             />
+          </div>
+
+          {/* Attachments */}
+          <div className="space-y-2">
+            <Label className="text-base font-semibold">Attachments</Label>
+            <div className="border-2 border-dashed rounded-lg p-6">
+              <div className="flex flex-col items-center justify-center gap-4">
+                <Paperclip className="h-8 w-8 text-muted-foreground" />
+                <div className="text-center">
+                  <p className="text-sm font-medium">
+                    {attachments.length > 0
+                      ? `${attachments.length} file(s) attached`
+                      : "No attachments"}
+                  </p>
+                  {attachments.length > 0 && (
+                    <div className="mt-2 space-y-1">
+                      {attachments.map((file, index) => (
+                        <div
+                          key={index}
+                          className="flex items-center justify-between text-sm bg-muted p-2 rounded"
+                        >
+                          <span className="truncate max-w-[320px]">
+                            {file.name}
+                          </span>
+                          <Button
+                            type="button"
+                            variant="ghost"
+                            size="sm"
+                            onClick={() =>
+                              setAttachments((prev) =>
+                                prev.filter((_, i) => i !== index),
+                              )
+                            }
+                            className="h-6 w-6 p-0 text-destructive hover:text-destructive"
+                          >
+                            <X className="h-3 w-3" />
+                          </Button>
+                        </div>
+                      ))}
+                    </div>
+                  )}
+                </div>
+
+                <div>
+                  <input
+                    type="file"
+                    id="payment-file-upload"
+                    multiple
+                    className="hidden"
+                    onChange={(e) => {
+                      const files = Array.from(e.target.files || []);
+                      setAttachments((prev) => [...prev, ...files]);
+                      e.target.value = "";
+                    }}
+                  />
+                  <Button
+                    type="button"
+                    variant="outline"
+                    onClick={() => {
+                      document
+                        .getElementById("payment-file-upload")
+                        ?.click();
+                    }}
+                    className="gap-2"
+                  >
+                    <Plus className="h-4 w-4" />
+                    Add Attachment
+                  </Button>
+                </div>
+              </div>
+            </div>
           </div>
         </div>
 
