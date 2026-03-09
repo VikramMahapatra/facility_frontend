@@ -557,8 +557,7 @@ export default function InvoiceDetailPage() {
                     {payments.map((payment: any, idx) => {
                       const notes =
                         payment.notes ||
-                        payment.meta?.notes ||
-                        payment.meta?.remarks;
+                        payment.meta?.notes;
 
                       return (
                         <Card
@@ -729,7 +728,7 @@ export default function InvoiceDetailPage() {
                 return await invoiceApiService.getPaymentHistory(id);
               });
               if (paymentHistoryResponse?.success) {
-                const paymentData = paymentHistoryResponse.data?.payments || [];
+                const paymentData = paymentHistoryResponse.data || [];
                 setPayments(Array.isArray(paymentData) ? paymentData : []);
               }
               return paymentHistoryResponse;

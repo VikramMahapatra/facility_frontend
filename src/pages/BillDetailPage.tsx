@@ -400,7 +400,7 @@ export default function BillDetailPage() {
                             className="relative group border rounded-lg overflow-hidden bg-background"
                           >
                             {attachment.content_type?.startsWith("image/") &&
-                            attachment.file_data_base64 ? (
+                              attachment.file_data_base64 ? (
                               <img
                                 src={`data:${attachment.content_type};base64,${attachment.file_data_base64}`}
                                 alt={attachment.file_name}
@@ -593,12 +593,12 @@ export default function BillDetailPage() {
                                   <p className="text-sm font-medium">
                                     {payment.paid_at
                                       ? new Date(
-                                          payment.paid_at,
-                                        ).toLocaleDateString("en-IN", {
-                                          year: "numeric",
-                                          month: "short",
-                                          day: "2-digit",
-                                        })
+                                        payment.paid_at,
+                                      ).toLocaleDateString("en-IN", {
+                                        year: "numeric",
+                                        month: "short",
+                                        day: "2-digit",
+                                      })
                                       : "-"}
                                   </p>
                                 </div>

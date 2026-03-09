@@ -315,8 +315,7 @@ export default function LeaseCharges() {
     if (response.success) {
       setIsFormOpen(false);
       toast.success(
-        `Lease Charge has been ${
-          formMode === "create" ? "created" : "updated"
+        `Lease Charge has been ${formMode === "create" ? "created" : "updated"
         } successfully.`,
       );
     }
@@ -633,18 +632,18 @@ export default function LeaseCharges() {
                         <p className="text-sm font-medium">
                           {charge.period_start && charge.period_end
                             ? `${new Date(
-                                charge.period_start,
-                              ).toLocaleDateString("en-GB", {
-                                day: "2-digit",
-                                month: "short",
-                                year: "numeric",
-                              })} – ${new Date(
-                                charge.period_end,
-                              ).toLocaleDateString("en-GB", {
-                                day: "2-digit",
-                                month: "short",
-                                year: "numeric",
-                              })}`
+                              charge.period_start,
+                            ).toLocaleDateString("en-GB", {
+                              day: "2-digit",
+                              month: "short",
+                              year: "numeric",
+                            })} – ${new Date(
+                              charge.period_end,
+                            ).toLocaleDateString("en-GB", {
+                              day: "2-digit",
+                              month: "short",
+                              year: "numeric",
+                            })}`
                             : "—"}
                         </p>
                       </div>
@@ -656,13 +655,13 @@ export default function LeaseCharges() {
                         <p className="text-sm font-medium">
                           {charge.created_at
                             ? new Date(charge.created_at).toLocaleDateString(
-                                "en-GB",
-                                {
-                                  day: "2-digit",
-                                  month: "short",
-                                  year: "numeric",
-                                },
-                              )
+                              "en-GB",
+                              {
+                                day: "2-digit",
+                                month: "short",
+                                year: "numeric",
+                              },
+                            )
                             : "—"}
                         </p>
                       </div>
@@ -670,7 +669,7 @@ export default function LeaseCharges() {
                       <div>
                         <p className="text-xs text-muted-foreground flex items-center gap-1.5 mb-0.5">
                           <Receipt className="h-3.5 w-3.5" />
-                          Invoice NO:
+                          Invoice No:
                         </p>
                         <p className="text-sm font-medium">
                           {charge.invoice_no || "—"}
