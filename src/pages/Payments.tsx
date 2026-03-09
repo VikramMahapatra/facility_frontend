@@ -128,6 +128,7 @@ export default function Payments() {
   });
 
   const watchedType = watch("payment_type");
+  const watchedCustomerId = watch("user_id");
 
   useEffect(() => {
     loadReceivedPayments();
@@ -199,36 +200,61 @@ export default function Payments() {
     }
   };
 
-  const loadInvoiceLookup = async () => {
-    const params = new URLSearchParams();
-    params.append("status", "issued");
-    params.append("limit", "100");
-    const response = await paymentsApiService.getInvoiceLookup(params);
+  const loadInvoiceLookup = async (customerUserId: string) => {
+    if (!customerUserId) {
+      setInvoiceLookup([]);
+      return;
+    }
+    const response =
+      await paymentsApiService.getCustomerInvoices(customerUserId);
     if (response?.success) {
       const data =
-        response.data?.data?.invoices || response.data?.invoices || [];
+        response.data?.data?.invoices ||
+        response.data?.invoices ||
+        response.data ||
+        [];
       setInvoiceLookup(data);
     }
   };
 
-  const loadBillLookup = async () => {
-    const params = new URLSearchParams();
-    params.append("status", "approved");
-    params.append("limit", "100");
-    const response = await paymentsApiService.getBillLookup(params);
+  const loadBillLookup = async (customerUserId: string) => {
+    if (!customerUserId) {
+      setBillLookup([]);
+      return;
+    }
+    const response = await paymentsApiService.getCustomerBills(customerUserId);
     if (response?.success) {
-      const data = response.data?.data?.bills || response.data?.bills || [];
+      const data =
+        response.data?.data?.bills ||
+        response.data?.bills ||
+        response.data ||
+        [];
       setBillLookup(data);
     }
   };
+
+  useSkipFirstEffect(() => {
+    if (!watchedCustomerId) {
+      setInvoiceLookup([]);
+      setBillLookup([]);
+      return;
+    }
+    if (watchedType === "received") {
+      loadInvoiceLookup(watchedCustomerId);
+      setBillLookup([]);
+    } else if (watchedType === "made") {
+      loadBillLookup(watchedCustomerId);
+      setInvoiceLookup([]);
+    }
+  }, [watchedCustomerId, watchedType]);
 
   const openDialog = () => {
     reset({
       payment_type: activeTab === "received" ? "received" : "made",
       paid_at: new Date().toISOString().split("T")[0],
     });
-    loadInvoiceLookup();
-    loadBillLookup();
+    setInvoiceLookup([]);
+    setBillLookup([]);
     setShowDialog(true);
   };
 
@@ -332,10 +358,11 @@ export default function Payments() {
               </CardHeader>
               <CardContent>
                 <div
-                  className={`text-2xl font-bold ${totalReceivedAmount - totalMadeAmount >= 0
-                    ? "text-green-600"
-                    : "text-red-600"
-                    }`}
+                  className={`text-2xl font-bold ${
+                    totalReceivedAmount - totalMadeAmount >= 0
+                      ? "text-green-600"
+                      : "text-red-600"
+                  }`}
                 >
                   {formatCurrency(totalReceivedAmount - totalMadeAmount)}
                 </div>
@@ -541,7 +568,10 @@ export default function Payments() {
                     name="payment_type"
                     control={control}
                     render={({ field }) => (
-                      <Select value={field.value} onValueChange={field.onChange}>
+                      <Select
+                        value={field.value}
+                        onValueChange={field.onChange}
+                      >
                         <SelectTrigger>
                           <SelectValue />
                         </SelectTrigger>
@@ -564,8 +594,15 @@ export default function Payments() {
                         onChange={field.onChange}
                         queryKey={["users"]}
                         queryFn={async (search) => {
-                          const res = await userManagementApiService.searchTenantOwnerUsers(search);
-                          return res.data.map((u: any) => ({ id: u.id, label: u.name }));
+                          const res =
+                            await userManagementApiService.searchPaymentUsers(
+                              watchedType || "received",
+                              search,
+                            );
+                          return res.data.map((u: any) => ({
+                            id: u.id,
+                            label: u.name,
+                          }));
                         }}
                         minSearchLength={1}
                       />
@@ -573,6 +610,8 @@ export default function Payments() {
                   )}
                 />
               </div>
+              {/* Invoice/Bill select dropdown commented out; items will be shown in grid with checkboxes */}
+              {/*
               <div className="grid grid-cols-2 gap-4">
                 <div className="space-y-2">
                   <Label htmlFor="reference_id">
@@ -600,16 +639,16 @@ export default function Payments() {
                         <SelectContent>
                           {watchedType === "received"
                             ? invoiceLookup.map((inv) => (
-                              <SelectItem key={inv.id} value={inv.id}>
-                                {inv.invoice_no} —{" "}
-                                {inv.customer_name || inv.user_name || ""}
-                              </SelectItem>
-                            ))
+                                <SelectItem key={inv.id} value={inv.id}>
+                                  {inv.invoice_no} —{" "}
+                                  {inv.customer_name || inv.user_name || ""}
+                                </SelectItem>
+                              ))
                             : billLookup.map((bill) => (
-                              <SelectItem key={bill.id} value={bill.id}>
-                                {bill.bill_no} — {bill.vendor_name || ""}
-                              </SelectItem>
-                            ))}
+                                <SelectItem key={bill.id} value={bill.id}>
+                                  {bill.bill_no} — {bill.vendor_name || ""}
+                                </SelectItem>
+                              ))}
                         </SelectContent>
                       </Select>
                     )}
@@ -620,8 +659,8 @@ export default function Payments() {
                     </p>
                   )}
                 </div>
-
               </div>
+              */}
               <div className="grid grid-cols-4 gap-4">
                 <div className="space-y-2">
                   <Label htmlFor="paid_at">Payment Date *</Label>
@@ -706,7 +745,7 @@ export default function Payments() {
                 <Label htmlFor="notes">Notes</Label>
                 <Input
                   id="notes"
-                  placeholder="Optional remarks..."
+                  placeholder="Add notes..."
                   {...register("notes")}
                 />
               </div>

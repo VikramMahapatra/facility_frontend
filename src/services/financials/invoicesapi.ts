@@ -117,6 +117,12 @@ class InvoiceApiService {
   }
 
   async saveInvoicePayment(paymentData: any) {
+    if (paymentData instanceof FormData) {
+      return await apiService.requestWithForm("/invoices/save-invoice-payment", {
+        method: "POST",
+        body: paymentData,
+      });
+    }
     return await apiService.request("/invoices/save-invoice-payment", {
       method: "POST",
       body: JSON.stringify(paymentData),
