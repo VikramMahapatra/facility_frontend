@@ -88,6 +88,7 @@ import Bills from "./pages/Bills";
 import BillFormPage from "./pages/BillFormPage";
 import BillDetailPage from "./pages/BillDetailPage";
 import Payments from "./pages/Payments";
+import LeaseTerminationApprovals from "./pages/LeaseTerminationApprovals";
 
 const queryClient = new QueryClient();
 
@@ -277,6 +278,8 @@ const App = () => {
                     element={<UserManagementDetailPage />}
                   />
                   <Route path="/parking-slots" element={<ParkingSlots />} />
+                  <Route path="/lease-termination-approvals" element={<LeaseTerminationApprovals />} />
+
                 </Route>
               )}
             </Route>

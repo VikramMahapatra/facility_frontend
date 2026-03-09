@@ -46,7 +46,10 @@ import { useLoader } from "@/context/LoaderContext";
 import LoaderOverlay from "@/components/LoaderOverlay";
 import { useSettings } from "@/context/SettingsContext";
 import { Description } from "@radix-ui/react-toast";
-import { mapAttachmentsToFiles, revokeAttachmentPreviews } from "@/helpers/attachmentHelper";
+import {
+  mapAttachmentsToFiles,
+  revokeAttachmentPreviews,
+} from "@/helpers/attachmentHelper";
 
 const emptyFormData: BillFormValues = {
   bill_no: "",
@@ -93,8 +96,9 @@ export default function BillFormPage() {
   const [totalsAutoFilled, setTotalsAutoFilled] = useState(false);
   const [totalsLoaded, setTotalsLoaded] = useState(false);
   const [attachments, setAttachments] = useState<File[]>([]);
-  const [removedAttachmentIds, setRemovedAttachmentIds] =
-    useState<string[]>([]);
+  const [removedAttachmentIds, setRemovedAttachmentIds] = useState<string[]>(
+    [],
+  );
   const [showSaveDialog, setShowSaveDialog] = useState(false);
   const { systemCurrency } = useSettings();
 
@@ -147,7 +151,6 @@ export default function BillFormPage() {
     if (formMode === "create") {
       loadBillPreviewNumber();
     }
-
   }, [formMode]);
 
   useEffect(() => {
@@ -175,7 +178,6 @@ export default function BillFormPage() {
       setVendorList([]);
     }
   }, [watchedSpaceId, watchedBillableType, watchedSiteId]);
-
 
   // Load vendor details when vendor is selected
   useEffect(() => {
@@ -252,7 +254,7 @@ export default function BillFormPage() {
 
     if (response?.success && response.data) {
       const loadedBill = response.data;
-      if (formMode === "edit" && (loadedBill.status != "draft")) {
+      if (formMode === "edit" && loadedBill.status != "draft") {
         toast.error("Only bill saved as draft can be edited.");
         navigate(`/bills/${id}/view`);
         return;
@@ -298,7 +300,7 @@ export default function BillFormPage() {
   const loadSpaceLookup = async () => {
     if (!watchedSiteId) return;
     try {
-      const lookup = await spacesApiService.getSpaceLookup(
+      const lookup = await spacesApiService.getAllSpaceLookup(
         watchedSiteId,
         watchedBuildingId,
       );
@@ -313,8 +315,7 @@ export default function BillFormPage() {
 
   const loadVendorLookup = async () => {
     try {
-      if (!watchedSpaceId)
-        return;
+      if (!watchedSpaceId) return;
 
       const lookup = await billsApiService.getVendorLookup(watchedSpaceId);
       if (lookup.success) {
@@ -355,8 +356,7 @@ export default function BillFormPage() {
       params.append("space_id", watchedSpaceId);
       params.append("vendor_id", watchedVendorId);
 
-      if (id && formMode == "edit")
-        params.append("bill_id", id);
+      if (id && formMode == "edit") params.append("bill_id", id);
 
       const response = await billsApiService.getBillEntityLookup(params);
 
@@ -380,17 +380,14 @@ export default function BillFormPage() {
     }
   };
 
-  const applyBillableItemAmount = (
-    billableItemId: string,
-    index: number,
-  ) => {
+  const applyBillableItemAmount = (billableItemId: string, index: number) => {
     console.log("billable item", billableItemId);
 
     if (!billableItemId) return;
 
     // find selected item
     const selectedItem = billableItemList.find(
-      (item) => item.id === billableItemId
+      (item) => item.id === billableItemId,
     );
 
     console.log("selected item", selectedItem);
@@ -416,7 +413,7 @@ export default function BillFormPage() {
 
     const subtotal = allItems.reduce(
       (sum, item) => sum + (Number(item.amount) || 0),
-      0
+      0,
     );
 
     const totalTax = allItems.reduce((sum, item) => {
@@ -439,35 +436,35 @@ export default function BillFormPage() {
     reset(
       bill && formMode !== "create"
         ? {
-          bill_no: bill.bill_no || "",
-          site_id: bill.site_id || "",
-          building_id: (bill as any).building_id || "",
-          space_id: (bill as any).space_id || "",
-          vendor_id: bill.vendor_id || "",
-          vendor_name: bill.vendor_name || "",
-          vendor_email: (bill as any).vendor_email || "",
-          vendor_phone: (bill as any).vendor_phone || "",
-          date: bill.date || new Date().toISOString().split("T")[0],
-          status:
-            (bill.status as "draft" | "approved" | "paid" | "partial") ||
-            "draft",
-          currency: bill.currency || "INR",
-          code: "workorder",
-          billable_item_type: "workorder",
-          billable_item_id: bill.billable_item_id || "",
-          lines:
-            bill.lines && bill.lines.length > 0
-              ? bill.lines.map((line: any) => ({
-                item_id: line.item_id || "",
-                description: line.description || "",
-                amount: line.amount || line.price || 0,
-                tax: line.tax_pct || line.taxPct || 0,
-              }))
-              : emptyFormData.lines,
-          totals: bill.totals || { sub: 0, tax: 5, grand: 0 },
-          payments: [],
-          notes: (bill as any).notes || "",
-        }
+            bill_no: bill.bill_no || "",
+            site_id: bill.site_id || "",
+            building_id: (bill as any).building_id || "",
+            space_id: (bill as any).space_id || "",
+            vendor_id: bill.vendor_id || "",
+            vendor_name: bill.vendor_name || "",
+            vendor_email: (bill as any).vendor_email || "",
+            vendor_phone: (bill as any).vendor_phone || "",
+            date: bill.date || new Date().toISOString().split("T")[0],
+            status:
+              (bill.status as "draft" | "approved" | "paid" | "partial") ||
+              "draft",
+            currency: bill.currency || "INR",
+            code: "workorder",
+            billable_item_type: "workorder",
+            billable_item_id: bill.billable_item_id || "",
+            lines:
+              bill.lines && bill.lines.length > 0
+                ? bill.lines.map((line: any) => ({
+                    item_id: line.item_id || "",
+                    description: line.description || "",
+                    amount: line.amount || line.price || 0,
+                    tax: line.tax_pct || line.taxPct || 0,
+                  }))
+                : emptyFormData.lines,
+            totals: bill.totals || { sub: 0, tax: 5, grand: 0 },
+            payments: [],
+            notes: (bill as any).notes || "",
+          }
         : emptyFormData,
     );
 
@@ -495,7 +492,6 @@ export default function BillFormPage() {
   ) => {
     setIsSubmitting(true);
     try {
-      // Build bill data according to backend schema
       const billData: any = {
         site_id: data.site_id,
         space_id: data.space_id,
@@ -530,7 +526,10 @@ export default function BillFormPage() {
       attachments.forEach((file) => {
         formData.append("attachments", file);
       });
-      formData.append("removed_attachment_ids", JSON.stringify(removedAttachmentIds ?? []));
+      formData.append(
+        "removed_attachment_ids",
+        JSON.stringify(removedAttachmentIds ?? []),
+      );
 
       let response;
       if (formMode === "create") {
@@ -555,7 +554,8 @@ export default function BillFormPage() {
 
       if (response?.success) {
         toast.success(
-          `Bill has been ${formMode === "create" ? "created" : "updated"
+          `Bill has been ${
+            formMode === "create" ? "created" : "updated"
           } successfully${saveAsDraft ? " as draft" : ""}.`,
         );
         navigate("/bills");
@@ -922,10 +922,11 @@ export default function BillFormPage() {
                                 }
                               >
                                 <SelectTrigger
-                                  className={`w-64 ${errors.lines?.[index]?.item_id
-                                    ? "border-red-500"
-                                    : ""
-                                    }`}
+                                  className={`w-64 ${
+                                    errors.lines?.[index]?.item_id
+                                      ? "border-red-500"
+                                      : ""
+                                  }`}
                                 >
                                   <SelectValue
                                     placeholder={
@@ -945,7 +946,8 @@ export default function BillFormPage() {
                                     const isSelectedInOtherRow = fields.some(
                                       (field, otherIndex) =>
                                         otherIndex !== index &&
-                                        watch(`lines.${otherIndex}.item_id`) === item.id
+                                        watch(`lines.${otherIndex}.item_id`) ===
+                                          item.id,
                                     );
 
                                     return (
@@ -989,7 +991,9 @@ export default function BillFormPage() {
                             placeholder="5"
                             defaultValue={5}
                             className={
-                              errors.lines?.[index]?.tax_pct ? "border-red-500" : ""
+                              errors.lines?.[index]?.tax_pct
+                                ? "border-red-500"
+                                : ""
                             }
                           />
                           {errors.lines?.[index]?.tax_pct && (
@@ -1215,10 +1219,9 @@ function ReadOnlyField({
       <Label className="text-muted-foreground">{label}</Label>
 
       <div
-        className={`h-10 flex items-center px-3 border rounded-md ${isEmpty
-          ? "bg-muted/30 text-muted-foreground italic"
-          : "bg-muted/40"
-          }`}
+        className={`h-10 flex items-center px-3 border rounded-md ${
+          isEmpty ? "bg-muted/30 text-muted-foreground italic" : "bg-muted/40"
+        }`}
       >
         {isEmpty ? placeholder : value}
       </div>

@@ -54,6 +54,7 @@ const emptyFormData: Partial<LeaseFormValues> = {
   lease_frequency: "monthly",
   frequency: "monthly",
   lease_term_duration: undefined,
+  rent_period: "monthly" as any,
   rent_amount: "" as any,
   deposit_amount: "" as any,
   cam_rate: "" as any,
@@ -166,12 +167,13 @@ export function LeaseForm({
           tenant_id: lease.tenant_id ? String(lease.tenant_id) : "",
           start_date: lease.start_date || "",
           frequency:
-            (lease.frequency as "monthly" | "quaterly" | "annually") ||
+            (lease.frequency as "monthly" | "quarterly" | "biannually" | "annually") ||
             "monthly",
           lease_frequency:
             (lease.lease_frequency as "monthly" | "annually") || "monthly",
           lease_term_duration:
             (lease as any).lease_term_duration || undefined,
+          rent_period: (lease.rent_period as "monthly" | "annually") || "monthly",
           rent_amount: lease.rent_amount as any,
           deposit_amount: lease.deposit_amount as any,
           cam_rate: lease.cam_rate as any,
@@ -262,6 +264,7 @@ export function LeaseForm({
   const leaseTermMonths = watch("lease_term_duration");
   const frequency = watch("frequency");
   const derivedFrequency = watch("lease_frequency");
+  const rentPeriod = watch("rent_period");
   const startDate = watch("start_date");
   const numberOfInstallments = watch("number_of_installments");
 
@@ -276,7 +279,19 @@ export function LeaseForm({
     return term;
   };
 
+  const getLeaseRentAmountPerMonth = (): number | undefined => {
+    if (!rentPeriod || isNaN(Number(rentAmount))) return undefined;
+
+    let rentAmountPerMonth = Number(rentAmount);
+    if (rentPeriod === "annually") {
+      rentAmountPerMonth = rentAmount / 12
+    }
+    return rentAmountPerMonth;
+  };
+
   const leaseTermInMonths = getLeaseTermInMonths();
+
+  const rentAmountPerMonth = getLeaseRentAmountPerMonth();
 
   const { fields, append, remove, update } = useFieldArray({
     control,
@@ -295,9 +310,12 @@ export function LeaseForm({
       if (frequency === "monthly") {
         // Monthly rent payments: always use total term in months
         calculatedInstallments = termInMonths;
-      } else if (frequency === "quaterly") {
+      } else if (frequency === "quarterly") {
         // Quarterly payments: always 4 entries regardless of lease term
         calculatedInstallments = 4;
+      } else if (frequency === "biannually") {
+        // Quarterly payments: always 4 entries regardless of lease term
+        calculatedInstallments = 2;
       } else if (frequency === "annually") {
         // Annual rent payments
         if (derivedFrequency === "monthly") {
@@ -330,17 +348,17 @@ export function LeaseForm({
       let paymentAmountPerInstallment: number | undefined = undefined;
 
       if (
-        rentAmount &&
+        rentAmountPerMonth &&
         leaseTermInMonths &&
         numberOfInstallments &&
-        !isNaN(Number(rentAmount)) &&
+        !isNaN(Number(rentAmountPerMonth)) &&
         !isNaN(Number(leaseTermInMonths)) &&
         !isNaN(Number(numberOfInstallments)) &&
-        Number(rentAmount) > 0 &&
+        Number(rentAmountPerMonth) > 0 &&
         Number(leaseTermInMonths) > 0 &&
         Number(numberOfInstallments) > 0
       ) {
-        const total = Number(rentAmount) * Number(leaseTermInMonths);
+        const total = Number(rentAmountPerMonth) * Number(leaseTermInMonths);
         paymentAmountPerInstallment =
           Math.round((total / numberOfInstallments) * 100) / 100;
       }
@@ -350,7 +368,7 @@ export function LeaseForm({
         const start = new Date(startDate);
         if (frequency === "monthly") {
           start.setMonth(start.getMonth() + index);
-        } else if (frequency === "quaterly") {
+        } else if (frequency === "quarterly") {
           // Divide lease term equally by number of installments
           if (leaseTermInMonths && numberOfInstallments) {
             const monthsPerInstallment = leaseTermInMonths / numberOfInstallments;
@@ -358,6 +376,15 @@ export function LeaseForm({
           } else {
             // Fallback to quarterly (every 3 months)
             start.setMonth(start.getMonth() + index * 3);
+          }
+        } else if (frequency === "biannually") {
+          if (leaseTermInMonths && numberOfInstallments) {
+            const monthsPerInstallment = leaseTermInMonths / numberOfInstallments;
+            console.log("months per installment", numberOfInstallments)
+            start.setMonth(start.getMonth() + index * monthsPerInstallment);
+          } else {
+            // Fallback to quarterly (every 3 months)
+            start.setMonth(start.getMonth() + index * 6);
           }
         } else if (frequency === "annually") {
           start.setFullYear(start.getFullYear() + index);
@@ -404,7 +431,9 @@ export function LeaseForm({
     }
   }, [
     numberOfInstallments,
+    rentPeriod,
     rentAmount,
+    rentAmountPerMonth,
     leaseTermMonths,
     leaseTermInMonths,
     frequency,
@@ -417,7 +446,7 @@ export function LeaseForm({
 
   const formatCurrency = (val?: number) => {
     if (val == null) return "-";
-    return `${systemCurrency.name}`;
+    return systemCurrency.format(val);
   };
 
   // Ensure payment dates are set when startDate becomes available
@@ -431,7 +460,7 @@ export function LeaseForm({
 
           if (frequency === "monthly") {
             start.setMonth(start.getMonth() + index);
-          } else if (frequency === "quaterly") {
+          } else if (frequency === "quarterly") {
             // Divide lease term equally by number of installments
             if (leaseTermInMonths && numberOfInstallments) {
               const monthsPerInstallment = leaseTermInMonths / numberOfInstallments;
@@ -439,6 +468,14 @@ export function LeaseForm({
             } else {
               // Fallback to quarterly (every 3 months)
               start.setMonth(start.getMonth() + index * 3);
+            }
+          } else if (frequency === "biannually") {
+            if (leaseTermInMonths && numberOfInstallments) {
+              const monthsPerInstallment = leaseTermInMonths / numberOfInstallments;
+              start.setMonth(start.getMonth() + index * monthsPerInstallment);
+            } else {
+              // Fallback to quarterly (every 3 months)
+              start.setMonth(start.getMonth() + index * 6);
             }
           } else if (frequency === "annually") {
             start.setFullYear(start.getFullYear() + index);
@@ -471,16 +508,16 @@ export function LeaseForm({
     if (
       numberOfInstallments &&
       numberOfInstallments > 0 &&
-      rentAmount &&
+      rentAmountPerMonth &&
       leaseTermInMonths &&
-      !isNaN(Number(rentAmount)) &&
+      !isNaN(Number(rentAmountPerMonth)) &&
       !isNaN(Number(leaseTermInMonths)) &&
-      Number(rentAmount) > 0 &&
+      Number(rentAmountPerMonth) > 0 &&
       Number(leaseTermInMonths) > 0
     ) {
       const currentPayments = watch("payment_terms") || [];
       if (currentPayments.length === numberOfInstallments) {
-        const total = Number(rentAmount) * Number(leaseTermInMonths);
+        const total = Number(rentAmountPerMonth) * Number(leaseTermInMonths);
         const paymentAmountPerInstallment =
           Math.round((total / numberOfInstallments) * 100) / 100;
 
@@ -538,6 +575,23 @@ export function LeaseForm({
       }
     }
   }, [leasePartnerList, lease, setValue, clearErrors, trigger]);
+
+  const getInstallmentsFromFrequency = () => {
+    if (!leaseTermInMonths) return 0;
+
+    const map: Record<string, number> = {
+      monthly: 1,
+      quarterly: 3,
+      biannually: 6,
+      annually: 12,
+    };
+
+    const monthsPerInstallment = map[frequency];
+
+    if (!monthsPerInstallment) return 0;
+
+    return Math.ceil(leaseTermInMonths / monthsPerInstallment);
+  };
 
   const fallbackSite = lease?.site_id
     ? {
@@ -624,6 +678,8 @@ export function LeaseForm({
           ...updated,
           attachments: [],
         };
+
+        console.log("form data", updated);
 
         formData.append("payload", JSON.stringify(updated_lease));
       }
@@ -851,7 +907,7 @@ export function LeaseForm({
                     )}
                   </div>
                   <div className="space-y-2">
-                    <Label>Lease Frequency*</Label>
+                    <Label>Lease Frequency *</Label>
                     <Controller
                       name="lease_frequency"
                       control={control}
@@ -922,7 +978,7 @@ export function LeaseForm({
                   </div>
                 </div>
 
-                <div className="grid grid-cols-3 gap-4">
+                <div className="grid grid-cols-4 gap-4">
                   <div className="space-y-2">
                     <Label>Deposit Amount</Label>
                     <Input
@@ -940,7 +996,36 @@ export function LeaseForm({
                     )}
                   </div>
                   <div className="space-y-2">
-                    <Label>Monthly Amount ({formatCurrency(0)}) *</Label>
+                    <Label>Rent Period *</Label>
+                    <Controller
+                      name="rent_period"
+                      control={control}
+                      render={({ field }) => (
+                        <Select
+                          value={field.value}
+                          onValueChange={field.onChange}
+                          disabled={isReadOnly}
+                        >
+                          <SelectTrigger
+                            className={errors.frequency ? "border-red-500" : ""}
+                          >
+                            <SelectValue placeholder="Select tenure frequency" />
+                          </SelectTrigger>
+                          <SelectContent>
+                            <SelectItem value="monthly">Monthly</SelectItem>
+                            <SelectItem value="annually">Annual</SelectItem>
+                          </SelectContent>
+                        </Select>
+                      )}
+                    />
+                    {errors.rent_period && (
+                      <p className="text-sm text-red-500">
+                        {errors.rent_period.message as any}
+                      </p>
+                    )}
+                  </div>
+                  <div className="space-y-2">
+                    <Label> {rentPeriod === "annually" ? "Annual" : "Monthly"}{" "}Amount ({systemCurrency.name}) *</Label>
                     <Input
                       type="number"
                       step="0.01"
@@ -957,7 +1042,7 @@ export function LeaseForm({
                     )}
                   </div>
                   <div className="space-y-2">
-                    <Label>Rent Frequency*</Label>
+                    <Label>Billing Frequency *</Label>
                     <Controller
                       name="frequency"
                       control={control}
@@ -970,11 +1055,12 @@ export function LeaseForm({
                           <SelectTrigger
                             className={errors.frequency ? "border-red-500" : ""}
                           >
-                            <SelectValue placeholder="Select rent frequency" />
+                            <SelectValue placeholder="Select billing frequency" />
                           </SelectTrigger>
                           <SelectContent>
                             <SelectItem value="monthly">Monthly</SelectItem>
-                            <SelectItem value="quaterly">Quaterly</SelectItem>
+                            <SelectItem value="quarterly">Quaterly</SelectItem>
+                            <SelectItem value="biannually">Biannually</SelectItem>
                             <SelectItem value="annually">Annually</SelectItem>
                           </SelectContent>
                         </Select>
@@ -1302,7 +1388,7 @@ export function LeaseForm({
                               Monthly Amount:
                             </span>
                             <span className="font-semibold ml-2">
-                              ₹{Number(rentAmount).toLocaleString()}
+                              {formatCurrency(rentAmountPerMonth)}
                             </span>
                           </div>
                           <div>
@@ -1320,12 +1406,11 @@ export function LeaseForm({
                               Total Rent Amount:
                             </span>
                             <span className="font-semibold ml-2">
-                              ₹
-                              {leaseTermInMonths
+                              {formatCurrency(leaseTermInMonths
                                 ? (
-                                  Number(rentAmount) * Number(leaseTermInMonths)
-                                ).toLocaleString()
-                                : "-"}
+                                  Number(rentAmountPerMonth) * Number(leaseTermInMonths)
+                                )
+                                : 0)}
                             </span>
                           </div>
                         </div>
@@ -1583,15 +1668,9 @@ export function LeaseForm({
                                       amount === null ||
                                       isNaN(Number(amount))
                                     ) {
-                                      return "₹0.00";
+                                      return formatCurrency(0);
                                     }
-                                    return `₹${Number(amount).toLocaleString(
-                                      "en-IN",
-                                      {
-                                        minimumFractionDigits: 2,
-                                        maximumFractionDigits: 2,
-                                      },
-                                    )}`;
+                                    return formatCurrency(Number(amount));
                                   })()}
                                 </span>
                                 <input

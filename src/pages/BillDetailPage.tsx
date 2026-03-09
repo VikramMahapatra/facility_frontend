@@ -22,6 +22,8 @@ import {
   User,
   Paperclip,
   Download,
+  AlertTriangle,
+  Send,
 } from "lucide-react";
 import { Bill } from "@/interfaces/invoices_interfaces";
 import { billsApiService } from "@/services/financials/billsapi";
@@ -32,6 +34,16 @@ import LoaderOverlay from "@/components/LoaderOverlay";
 import { useSettings } from "@/context/SettingsContext";
 import { PaymentDetailsForm } from "@/components/PaymentDetailsForm";
 import { downloadFile } from "@/helpers/fileDownloadHelper";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
 
 export default function BillDetailPage() {
   const { id } = useParams<{ id: string }>();
@@ -45,6 +57,7 @@ export default function BillDetailPage() {
   const [paymentFormMode, setPaymentFormMode] = useState<"create" | "edit">(
     "create",
   );
+  const [showIssueDialog, setShowIssueDialog] = useState(false);
 
   useEffect(() => {
     if (!id) return;
@@ -90,6 +103,12 @@ export default function BillDetailPage() {
         return (
           <Badge className="bg-blue-500 text-white px-3 py-1.5 flex items-center gap-2 font-semibold shadow-sm">
             <CheckCircle2 className="h-4 w-4" /> Approved
+          </Badge>
+        );
+      case "issued":
+        return (
+          <Badge className="bg-blue-500 text-white px-3 py-1.5 flex items-center gap-2 font-semibold shadow-sm">
+            <FileText className="h-4 w-4" /> Issued
           </Badge>
         );
       case "draft":
@@ -149,6 +168,40 @@ export default function BillDetailPage() {
     Number(bill?.totals?.grand) || Number((bill as any)?.total_amount) || 0;
   const progress = billTotal > 0 ? (paymentSummary.paid / billTotal) * 100 : 0;
 
+  const handleIssueBill = async () => {
+    if (!bill?.id) return;
+    if ((bill.status || "").toLowerCase() !== "draft") return;
+
+    const updatedBill = {
+      ...bill,
+      status: "issued" as const,
+      updated_at: new Date().toISOString(),
+      attachments: [],
+    };
+
+    const formData = new FormData();
+    formData.append("bill", JSON.stringify(updatedBill));
+
+    const response = await withLoader(async () => {
+      return await billsApiService.updateBill(formData);
+    });
+
+    if (response?.success) {
+      toast.success("Bill issued successfully.");
+      setShowIssueDialog(false);
+      const reloadResponse = await withLoader(async () => {
+        return await billsApiService.getBillById(bill.id!);
+      });
+      if (reloadResponse?.success) {
+        const data = reloadResponse.data?.data ?? reloadResponse.data;
+        setBill(data);
+        setPayments(data?.payments || []);
+      }
+    } else {
+      toast.error(response?.message || "Failed to issue bill.");
+    }
+  };
+
   const handleDownloadReceipt = async (paymentId: string) => {
     await billsApiService.downloadPaymentReceipt(paymentId);
   };
@@ -183,15 +236,25 @@ export default function BillDetailPage() {
 
             <div className="flex gap-2">
               {bill.status === "draft" && (
-                <Button
-                  variant="outline"
-                  size="sm"
-                  onClick={() => navigate(`/bills/${id}/edit`)}
-                  className="gap-2"
-                >
-                  <Pencil className="h-4 w-4" />
-                  Edit
-                </Button>
+                <>
+                  <Button
+                    size="sm"
+                    className="gap-2"
+                    onClick={() => setShowIssueDialog(true)}
+                  >
+                    <Send className="h-4 w-4" />
+                    Issue Bill
+                  </Button>
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => navigate(`/bills/${id}/edit`)}
+                    className="gap-2"
+                  >
+                    <Pencil className="h-4 w-4" />
+                    Edit
+                  </Button>
+                </>
               )}
             </div>
           </div>
@@ -337,7 +400,7 @@ export default function BillDetailPage() {
                             className="relative group border rounded-lg overflow-hidden bg-background"
                           >
                             {attachment.content_type?.startsWith("image/") &&
-                            attachment.file_data_base64 ? (
+                              attachment.file_data_base64 ? (
                               <img
                                 src={`data:${attachment.content_type};base64,${attachment.file_data_base64}`}
                                 alt={attachment.file_name}
@@ -530,12 +593,12 @@ export default function BillDetailPage() {
                                   <p className="text-sm font-medium">
                                     {payment.paid_at
                                       ? new Date(
-                                          payment.paid_at,
-                                        ).toLocaleDateString("en-IN", {
-                                          year: "numeric",
-                                          month: "short",
-                                          day: "2-digit",
-                                        })
+                                        payment.paid_at,
+                                      ).toLocaleDateString("en-IN", {
+                                        year: "numeric",
+                                        month: "short",
+                                        day: "2-digit",
+                                      })
                                       : "-"}
                                   </p>
                                 </div>
@@ -653,6 +716,48 @@ export default function BillDetailPage() {
           }}
         />
       )}
+
+      <AlertDialog open={showIssueDialog} onOpenChange={setShowIssueDialog}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <div className="flex items-start gap-3">
+              <div className="mt-0.5 flex h-10 w-10 items-center justify-center rounded-full bg-orange-100 text-orange-600">
+                <AlertTriangle className="h-5 w-5" />
+              </div>
+              <div className="flex-1">
+                <AlertDialogTitle className="text-lg">
+                  Issue this bill?
+                </AlertDialogTitle>
+                <AlertDialogDescription className="mt-3 space-y-3 text-sm text-muted-foreground">
+                  <div className="flex items-start gap-2">
+                    <FileText className="h-4 w-4 mt-0.5 text-blue-600" />
+                    <span>
+                      The bill status will change from{" "}
+                      <span className="font-medium text-foreground">Draft</span>{" "}
+                      to{" "}
+                      <span className="font-medium text-foreground">
+                        Issued
+                      </span>
+                      .
+                    </span>
+                  </div>
+                  <div className="pt-2">
+                    <span className="font-medium text-foreground">
+                      Are you sure you want to issue this bill?
+                    </span>
+                  </div>
+                </AlertDialogDescription>
+              </div>
+            </div>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel className="min-w-24">Cancel</AlertDialogCancel>
+            <AlertDialogAction className="min-w-28" onClick={handleIssueBill}>
+              Issue Bill
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </ContentContainer>
   );
 }
