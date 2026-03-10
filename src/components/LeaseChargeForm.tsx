@@ -97,7 +97,6 @@ export function LeaseChargeForm({
       site_id: "",
       building_block_id: "",
       lease_id: "",
-      charge_code_id: "",
       period_start: "",
       period_end: "",
       tax_pct: 0 as any,
@@ -190,11 +189,10 @@ export function LeaseChargeForm({
         site_id: charge?.site_id || "",
         building_block_id: charge?.building_block_id || "",
         lease_id: (charge.lease_id as any) || "",
-        charge_code_id: (charge.charge_code_id as any) || "",
         period_start: charge.period_start || "",
         period_end: charge.period_end || "",
         tax_pct: (charge.tax_pct as any) ?? 0,
-        tax_code_id: charge.tax_code_id || "", // ✅ Add this
+        tax_code_id: charge.tax_code_id || undefined, // ✅ Add this
       });
     } else {
       const { startDate, endDate } = getMonthBounds();
@@ -202,7 +200,6 @@ export function LeaseChargeForm({
         site_id: "",
         building_block_id: "",
         lease_id: "",
-        charge_code_id: "",
         period_start: startDate,
         period_end: endDate,
         tax_pct: 0 as any,
@@ -293,6 +290,8 @@ export function LeaseChargeForm({
     const payload = {
       ...data,
       amount: calculatedAmount.base_amount,
+      tax_code_id: undefined,
+      charge_code_id: undefined
     };
 
     const formResponse = await onSave(payload);
@@ -300,23 +299,23 @@ export function LeaseChargeForm({
 
   const fallbackLease = charge?.lease_id
     ? {
-        id: charge.lease_id,
-        name:
-          (charge as any).lease_name ||
-          charge.lease_id ||
-          "Selected Space With Lease",
-      }
+      id: charge.lease_id,
+      name:
+        (charge as any).lease_name ||
+        charge.lease_id ||
+        "Selected Space With Lease",
+    }
     : null;
 
   const leases = withFallback(leaseList, fallbackLease);
 
   const fallbackBuilding = charge?.building_block_id
     ? {
-        id: charge.building_block_id,
-        name:
-          (charge as any).building_block ||
-          `Building (${charge.building_block_id})`,
-      }
+      id: charge.building_block_id,
+      name:
+        (charge as any).building_block ||
+        `Building (${charge.building_block_id})`,
+    }
     : null;
 
   const buildings = withFallback(buildingList, fallbackBuilding);
@@ -335,6 +334,7 @@ export function LeaseChargeForm({
 
   const selectedLease = leases.find((lease) => lease.id === selectedLeaseId);
 
+
   return (
     <Dialog open={isOpen} onOpenChange={handleClose}>
       <DialogContent className="max-w-2xl">
@@ -350,7 +350,21 @@ export function LeaseChargeForm({
           <p className="text-center py-8">Loading...</p>
         ) : (
           <form
-            onSubmit={isSubmitting ? undefined : handleSubmit(onSubmitForm)}
+            onSubmit={
+              isSubmitting
+                ? undefined
+                : handleSubmit(onSubmitForm, (errors) => {
+                  console.log("Form validation errors:", errors);
+                  const firstError = Object.values(errors)[0];
+                  if (firstError?.message) {
+                    toast.error(firstError.message as string);
+                  } else {
+                    toast.error(
+                      "Please fill in all required fields correctly.",
+                    );
+                  }
+                })
+            }
             className="space-y-4"
           >
             {/* Lease */}

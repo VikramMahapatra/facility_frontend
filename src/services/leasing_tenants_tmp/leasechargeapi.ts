@@ -51,12 +51,13 @@ class LeaseChargeApiService {
         );
     }
 
-    async autoGenerateRent(date: string) {
-        const params = new URLSearchParams();
-        params.append("date", date);
+    async autoGenerateRent(payload: any) {
         return await apiService.request(
-            `/lease-charges/auto-generate?${params.toString()}`,
-            { method: "POST" },
+            `/lease-charges/auto-generate`,
+            {
+                method: "POST",
+                body: JSON.stringify(payload)
+            },
         );
     }
 

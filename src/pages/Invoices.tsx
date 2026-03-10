@@ -419,7 +419,7 @@ export default function Invoices() {
                             <TableCell className="font-medium">
                               {invoice.invoice_no}
                             </TableCell>
-                            <TableCell>{invoice.code?.toUpperCase()}</TableCell>
+                            <TableCell>{invoice.code?.replace(/_/g, " ").toUpperCase()}</TableCell>
                             <TableCell>{invoice.user_name}</TableCell>
                             <TableCell>
                               {invoice.space_name + "," + invoice.site_name ||
@@ -471,14 +471,14 @@ export default function Invoices() {
                                 {["paid", "issued", "partial"].includes(
                                   invoice.status,
                                 ) && (
-                                  <Button
-                                    variant="ghost"
-                                    size="sm"
-                                    onClick={() => handleDownload(invoice.id)}
-                                  >
-                                    <Download className="h-4 w-4" />
-                                  </Button>
-                                )}
+                                    <Button
+                                      variant="ghost"
+                                      size="sm"
+                                      onClick={() => handleDownload(invoice.id)}
+                                    >
+                                      <Download className="h-4 w-4" />
+                                    </Button>
+                                  )}
                               </div>
                             </TableCell>
                           </TableRow>

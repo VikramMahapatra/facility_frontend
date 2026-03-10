@@ -398,7 +398,7 @@ export function LeaseForm({
             payment_method: "cheque",
             reference_no: "",
             due_date: calculatePaymentDate(i),
-            amount: paymentAmountPerInstallment,
+            amount: getInstallmentAmount(i),
           });
         }
       } else if (currentPayments.length > numberOfInstallments) {
@@ -411,11 +411,6 @@ export function LeaseForm({
         }
       } else {
         currentPayments.forEach((payment: any, index: number) => {
-          const updatedAmount =
-            paymentAmountPerInstallment !== undefined
-              ? paymentAmountPerInstallment
-              : undefined;
-
           const recalculatedDate = calculatePaymentDate(index);
           // Always use recalculated date (prioritize it over existing date)
           const finalDate = recalculatedDate || payment.due_date || "";
@@ -424,7 +419,7 @@ export function LeaseForm({
             payment_method: payment.payment_method || "cheque",
             reference_no: payment.reference_no || "",
             due_date: finalDate,
-            amount: updatedAmount,
+            amount: getInstallmentAmount(index),
           });
         });
       }
@@ -444,10 +439,7 @@ export function LeaseForm({
     watch,
   ]);
 
-  const formatCurrency = (val?: number) => {
-    if (val == null) return "-";
-    return systemCurrency.format(val);
-  };
+
 
   // Ensure payment dates are set when startDate becomes available
   useEffect(() => {
@@ -518,15 +510,12 @@ export function LeaseForm({
       const currentPayments = watch("payment_terms") || [];
       if (currentPayments.length === numberOfInstallments) {
         const total = Number(rentAmountPerMonth) * Number(leaseTermInMonths);
-        const paymentAmountPerInstallment =
-          Math.round((total / numberOfInstallments) * 100) / 100;
-
         currentPayments.forEach((payment: any, index: number) => {
           update(index, {
             payment_method: payment.payment_method || "cheque",
             reference_no: payment.reference_no || "",
             due_date: payment.due_date || "",
-            amount: paymentAmountPerInstallment,
+            amount: getInstallmentAmount(index),
           });
         });
       }
@@ -591,6 +580,30 @@ export function LeaseForm({
     if (!monthsPerInstallment) return 0;
 
     return Math.ceil(leaseTermInMonths / monthsPerInstallment);
+  };
+
+  const getMonthsForInstallment = (index: number) => {
+    if (!leaseTermInMonths || !numberOfInstallments) return 0;
+
+    const baseMonths = Math.floor(leaseTermInMonths / numberOfInstallments);
+    const remainder = leaseTermInMonths % numberOfInstallments;
+
+    // last installment gets extra months
+    if (index === numberOfInstallments - 1) {
+      return baseMonths + remainder;
+    }
+
+    return baseMonths;
+  };
+
+  const getInstallmentAmount = (index: number) => {
+    const months = getMonthsForInstallment(index);
+    return Math.round(months * Number(rentAmountPerMonth) * 100) / 100;
+  };
+
+  const formatCurrency = (val?: number) => {
+    if (val == null) return "-";
+    return systemCurrency.format(val);
   };
 
   const fallbackSite = lease?.site_id
