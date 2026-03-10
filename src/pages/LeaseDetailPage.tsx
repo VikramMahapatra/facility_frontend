@@ -371,17 +371,6 @@ export default function LeaseDetailPage() {
                         {getStatusBadge(lease.status)}
                       </div>
                     </div>
-                    {lease.end_date && (
-                      <div>
-                        <span className="text-muted-foreground flex items-center gap-2 mb-2 text-sm">
-                          <Calendar className="h-4 w-4" />
-                          End Date
-                        </span>
-                        <p className="font-semibold text-base">
-                          {formatDate(lease.end_date)}
-                        </p>
-                      </div>
-                    )}
                     {lease.start_date && (
                       <div>
                         <span className="text-muted-foreground flex items-center gap-2 mb-2 text-sm">
@@ -393,6 +382,18 @@ export default function LeaseDetailPage() {
                         </p>
                       </div>
                     )}
+                    {lease.end_date && (
+                      <div>
+                        <span className="text-muted-foreground flex items-center gap-2 mb-2 text-sm">
+                          <Calendar className="h-4 w-4" />
+                          End Date
+                        </span>
+                        <p className="font-semibold text-base">
+                          {formatDate(lease.end_date)}
+                        </p>
+                      </div>
+                    )}
+
                     {lease.site_name && (
                       <div>
                         <span className="text-muted-foreground flex items-center gap-2 mb-2 text-sm">
@@ -687,9 +688,9 @@ export default function LeaseDetailPage() {
         charge={
           chargeFormMode === "create" && id && lease
             ? ({
-                lease_id: id,
-                lease_name: lease.lease_number,
-              } as any)
+              lease_id: id,
+              lease_name: lease.lease_number,
+            } as any)
             : selectedCharge
         }
         isOpen={isChargeFormOpen}

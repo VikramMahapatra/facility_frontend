@@ -116,6 +116,7 @@ export default function InvoiceFormPage() {
   const [imagePreviews, setImagePreviews] = useState<string[]>([]);
   const [showSaveDialog, setShowSaveDialog] = useState(false);
   const { systemCurrency } = useSettings();
+  const [sendEmail, setSendEmail] = useState(true);
 
   const pathname = location.pathname;
   let formMode: "create" | "edit" | "view" = "create";
@@ -141,6 +142,8 @@ export default function InvoiceFormPage() {
     mode: "onSubmit",
     defaultValues: emptyFormData,
   });
+
+  const [email, setEmail] = useState(watch("customer_email") || "");
 
   useEffect(() => {
     loadSiteLookup();
@@ -503,34 +506,34 @@ export default function InvoiceFormPage() {
     reset(
       invoice && formMode !== "create"
         ? {
-            invoice_no: invoice.invoice_no || "",
-            site_id: invoice.site_id || "",
-            building_id: (invoice as any).building_id || "",
-            space_id: (invoice as any).space_id || "",
-            user_id: (invoice as any).customer_id || "",
-            customer_id: (invoice as any).customer_id || "",
-            customer_name: (invoice as any).customer_name || "",
-            customer_email: "",
-            customer_phone: "",
-            date: invoice.date || new Date().toISOString().split("T")[0],
-            due_date: invoice.due_date || "",
-            status: invoice.status || "draft",
-            currency: invoice.currency || "INR",
-            code: invoice.code || "rent",
-            billable_item_type: invoice.code || "rent",
-            billable_item_id: "",
-            lines:
-              invoice.lines && invoice.lines.length > 0
-                ? invoice.lines.map((line) => ({
-                    item_id: line.item_id || "",
-                    description: line.description || "",
-                    amount: line.amount || 0,
-                    tax: line.tax_pct || 5,
-                  }))
-                : emptyFormData.lines,
-            totals: invoice.totals || { sub: 0, tax: 5, grand: 0 },
-            payments: [],
-          }
+          invoice_no: invoice.invoice_no || "",
+          site_id: invoice.site_id || "",
+          building_id: (invoice as any).building_id || "",
+          space_id: (invoice as any).space_id || "",
+          user_id: (invoice as any).customer_id || "",
+          customer_id: (invoice as any).customer_id || "",
+          customer_name: (invoice as any).customer_name || "",
+          customer_email: "",
+          customer_phone: "",
+          date: invoice.date || new Date().toISOString().split("T")[0],
+          due_date: invoice.due_date || "",
+          status: invoice.status || "draft",
+          currency: invoice.currency || "INR",
+          code: invoice.code || "rent",
+          billable_item_type: invoice.code || "rent",
+          billable_item_id: "",
+          lines:
+            invoice.lines && invoice.lines.length > 0
+              ? invoice.lines.map((line) => ({
+                item_id: line.item_id || "",
+                description: line.description || "",
+                amount: line.amount || 0,
+                tax: line.tax_pct || 5,
+              }))
+              : emptyFormData.lines,
+          totals: invoice.totals || { sub: 0, tax: 5, grand: 0 },
+          payments: [],
+        }
         : emptyFormData,
     );
 
@@ -574,6 +577,7 @@ export default function InvoiceFormPage() {
   const onSubmitForm = async (
     data: InvoiceFormValues,
     saveAsDraft: boolean = false,
+    sendEmail: boolean = false
   ) => {
     setIsSubmitting(true);
     try {
@@ -615,6 +619,7 @@ export default function InvoiceFormPage() {
         meta: {
           notes: data.notes || "",
         },
+        send_email: sendEmail
       };
 
       const formData = new FormData();
@@ -653,8 +658,7 @@ export default function InvoiceFormPage() {
 
       if (response?.success) {
         toast.success(
-          `Invoice has been ${
-            formMode === "create" ? "created" : "updated"
+          `Invoice has been ${formMode === "create" ? "created" : "updated"
           } successfully${saveAsDraft ? " as draft" : ""}.`,
         );
         navigate("/invoices");
@@ -680,13 +684,13 @@ export default function InvoiceFormPage() {
 
   const handleSaveAsDraft = () => {
     handleSubmit((data) => {
-      onSubmitForm(data, true);
+      onSubmitForm(data, true, false);
     })();
   };
 
-  const handleSaveAndContinue = () => {
+  const handleSaveAndContinue = (sendEmail: boolean) => {
     handleSubmit((data) => {
-      onSubmitForm(data, false);
+      onSubmitForm(data, false, sendEmail);
     })();
   };
 
@@ -807,11 +811,10 @@ export default function InvoiceFormPage() {
                         return (
                           <Card
                             key={type.id}
-                            className={`cursor-pointer transition-all duration-200 ${
-                              isSelected
-                                ? "border-primary bg-primary/10 ring-1 ring-primary"
-                                : "border-border bg-muted/50 hover:bg-muted hover:border-primary/50"
-                            }`}
+                            className={`cursor-pointer transition-all duration-200 ${isSelected
+                              ? "border-primary bg-primary/10 ring-1 ring-primary"
+                              : "border-border bg-muted/50 hover:bg-muted hover:border-primary/50"
+                              }`}
                             onClick={() => {
                               if (!isReadOnly) {
                                 if (isSelected) {
@@ -827,19 +830,17 @@ export default function InvoiceFormPage() {
                           >
                             <CardContent className="p-3 flex items-center gap-3">
                               <div
-                                className={`p-2 rounded-md transition-colors flex-shrink-0 ${
-                                  isSelected
-                                    ? "bg-primary text-primary-foreground"
-                                    : "bg-background"
-                                }`}
+                                className={`p-2 rounded-md transition-colors flex-shrink-0 ${isSelected
+                                  ? "bg-primary text-primary-foreground"
+                                  : "bg-background"
+                                  }`}
                               >
                                 {getIcon()}
                               </div>
                               <div className="flex-1 min-w-0">
                                 <p
-                                  className={`text-sm font-medium transition-colors ${
-                                    isSelected ? "text-primary" : ""
-                                  }`}
+                                  className={`text-sm font-medium transition-colors ${isSelected ? "text-primary" : ""
+                                    }`}
                                 >
                                   {type.name}
                                 </p>
@@ -1094,7 +1095,7 @@ export default function InvoiceFormPage() {
                     <TableRow>
                       <TableHead className="w-64">
                         {watchedBillableType &&
-                        watchedBillableType.toLowerCase().includes("work")
+                          watchedBillableType.toLowerCase().includes("work")
                           ? "Work Order No"
                           : "Period"}
                       </TableHead>
@@ -1142,11 +1143,10 @@ export default function InvoiceFormPage() {
                                 }
                               >
                                 <SelectTrigger
-                                  className={`w-64 ${
-                                    errors.lines?.[index]?.item_id
-                                      ? "border-red-500"
-                                      : ""
-                                  }`}
+                                  className={`w-64 ${errors.lines?.[index]?.item_id
+                                    ? "border-red-500"
+                                    : ""
+                                    }`}
                                 >
                                   <SelectValue
                                     placeholder={
@@ -1167,7 +1167,7 @@ export default function InvoiceFormPage() {
                                       (field, otherIndex) =>
                                         otherIndex !== index &&
                                         watch(`lines.${otherIndex}.item_id`) ===
-                                          (item.name || item.id),
+                                        (item.name || item.id),
                                     );
 
                                     return (
@@ -1406,6 +1406,27 @@ export default function InvoiceFormPage() {
                 edited later. Issued invoices are finalized and ready to send.
               </AlertDialogDescription>
             </AlertDialogHeader>
+            {/* Email Option */}
+            <div className="space-y-3 py-2">
+              <div className="flex items-center gap-2">
+                <input
+                  type="checkbox"
+                  checked={sendEmail}
+                  onChange={(e) => setSendEmail(e.target.checked)}
+                />
+                <label>Send invoice via email</label>
+              </div>
+
+              {sendEmail && (
+                <input
+                  type="email"
+                  placeholder="Customer email"
+                  value={email}
+                  onChange={(e) => setEmail(e.target.value)}
+                  className="w-full border rounded-md px-3 py-2"
+                />
+              )}
+            </div>
             <AlertDialogFooter className="flex-col sm:flex-row gap-2">
               <AlertDialogCancel onClick={() => setShowSaveDialog(false)}>
                 Cancel
@@ -1419,7 +1440,7 @@ export default function InvoiceFormPage() {
                   : "Save as Draft"}
               </AlertDialogAction>
               <AlertDialogAction
-                onClick={handleSaveAndContinue}
+                onClick={() => handleSaveAndContinue(sendEmail)}
                 disabled={isSubmitting || formIsSubmitting}
               >
                 {isSubmitting || formIsSubmitting
