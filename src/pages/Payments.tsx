@@ -55,6 +55,7 @@ import { z } from "zod";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { AsyncAutocompleteRQ } from "@/components/common/async-autocomplete-rq";
 import { userManagementApiService } from "@/services/access_control/usermanagementapi";
+import { Checkbox } from "@/components/ui/checkbox";
 
 interface ReceivedPayment {
   id: string;
@@ -111,6 +112,8 @@ export default function Payments() {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [invoiceLookup, setInvoiceLookup] = useState<any[]>([]);
   const [billLookup, setBillLookup] = useState<any[]>([]);
+  const [customerItems, setCustomerItems] = useState<any[]>([]);
+  const [selectedItemIds, setSelectedItemIds] = useState<string[]>([]);
 
   const {
     register,
@@ -118,6 +121,7 @@ export default function Payments() {
     handleSubmit,
     reset,
     watch,
+    setValue,
     formState: { errors },
   } = useForm<RecordPaymentValues>({
     resolver: zodResolver(recordPaymentSchema),
@@ -129,6 +133,7 @@ export default function Payments() {
 
   const watchedType = watch("payment_type");
   const watchedCustomerId = watch("user_id");
+  const watchedAmount = watch("amount");
 
   useEffect(() => {
     loadReceivedPayments();
@@ -233,6 +238,46 @@ export default function Payments() {
     }
   };
 
+  const loadCustomerItems = async (
+    type: "received" | "made",
+    customerUserId: string,
+  ) => {
+    if (!customerUserId) {
+      setCustomerItems([]);
+      setSelectedItemIds([]);
+      return;
+    }
+
+    if (type === "received") {
+      const res = await paymentsApiService.getCustomerInvoices(customerUserId);
+      if (res?.success) {
+        const items = res.data?.data || res.data?.items || res.data || [];
+        setCustomerItems(items);
+      } else {
+        setCustomerItems([]);
+      }
+    } else {
+      const res = await paymentsApiService.getCustomerBills(customerUserId);
+      if (res?.success) {
+        const items = res.data?.data || res.data?.items || res.data || [];
+        setCustomerItems(items);
+      } else {
+        setCustomerItems([]);
+      }
+    }
+    setSelectedItemIds([]);
+  };
+
+  useSkipFirstEffect(() => {
+    if (!watchedCustomerId) {
+      setCustomerItems([]);
+      setSelectedItemIds([]);
+      setValue("reference_id", "");
+      return;
+    }
+    loadCustomerItems(watchedType || "received", watchedCustomerId);
+  }, [watchedCustomerId, watchedType]);
+
   useSkipFirstEffect(() => {
     if (!watchedCustomerId) {
       setInvoiceLookup([]);
@@ -261,6 +306,23 @@ export default function Payments() {
   const onSubmit = async (data: RecordPaymentValues) => {
     setIsSubmitting(true);
     try {
+      // If items are selected, enforce that payment amount is not less than selected total
+      if (selectedItemIds.length > 0) {
+        const selectedTotal = customerItems.reduce((sum: number, item: any) => {
+          if (!selectedItemIds.includes(item.id)) return sum;
+          const total =
+            item.total_amount ?? item.pending_amount ?? item.amount ?? 0;
+          return sum + Number(total || 0);
+        }, 0);
+        if (data.amount < selectedTotal) {
+          toast.error(
+            "Payment amount cannot be less than selected total of items.",
+          );
+          setIsSubmitting(false);
+          return;
+        }
+      }
+
       const payload = {
         reference_id: data.reference_id,
         amount: data.amount,
@@ -740,6 +802,147 @@ export default function Payments() {
                   )}
                 </div>
               </div>
+
+              {/* Customer open items grid (invoices/bills) */}
+              {customerItems.length > 0 && (
+                <div className="space-y-3">
+                  <div className="space-y-2">
+                    <Label>
+                      {watchedType === "received"
+                        ? "Open Invoices"
+                        : "Open Bills"}
+                    </Label>
+                    <div className="border rounded-md">
+                      <Table>
+                        <TableHeader>
+                          <TableRow>
+                            <TableHead className="w-10" />
+                            <TableHead>
+                              {watchedType === "received"
+                                ? "Invoice No."
+                                : "Bill No."}
+                            </TableHead>
+                            <TableHead>Code</TableHead>
+                            <TableHead>Description</TableHead>
+                            <TableHead className="text-right">
+                              Total Amount
+                            </TableHead>
+                          </TableRow>
+                        </TableHeader>
+                        <TableBody>
+                          {customerItems.map((item: any) => {
+                            const id = item.id;
+                            const isSelected = selectedItemIds.includes(id);
+                            const number =
+                              watchedType === "received"
+                                ? item.invoice_no
+                                : item.bill_no;
+                            const rawCode = item.code || item.charge_code || "";
+                            const displayCode = rawCode
+                              ? String(rawCode).replace(/_/g, " ").toUpperCase()
+                              : "-";
+                            const description =
+                              item.description ||
+                              item.space_name ||
+                              item.site_name ||
+                              rawCode ||
+                              "-";
+                            const total =
+                              item.total_amount ??
+                              item.pending_amount ??
+                              item.amount ??
+                              0;
+                            return (
+                              <TableRow key={id}>
+                                <TableCell>
+                                  <Checkbox
+                                    checked={isSelected}
+                                    onCheckedChange={(checked) => {
+                                      setSelectedItemIds((prev) => {
+                                        const next = checked
+                                          ? [...prev, id]
+                                          : prev.filter((x) => x !== id);
+                                        // For now, bind first selected item to reference_id
+                                        setValue("reference_id", next[0] || "");
+                                        return next;
+                                      });
+                                    }}
+                                  />
+                                </TableCell>
+                                <TableCell className="font-medium">
+                                  {number || "-"}
+                                </TableCell>
+                                <TableCell>{displayCode}</TableCell>
+                                <TableCell>{description}</TableCell>
+                                <TableCell className="text-right font-semibold">
+                                  {formatCurrency(Number(total) || 0)}
+                                </TableCell>
+                              </TableRow>
+                            );
+                          })}
+                        </TableBody>
+                      </Table>
+                    </div>
+                  </div>
+
+                  {/* Summary below grid */}
+                  <div className="grid grid-cols-3 gap-4 text-sm">
+                    {(() => {
+                      const selectedTotal = customerItems.reduce(
+                        (sum: number, item: any) => {
+                          if (!selectedItemIds.includes(item.id)) return sum;
+                          const total =
+                            item.total_amount ??
+                            item.pending_amount ??
+                            item.amount ??
+                            0;
+                          return sum + Number(total || 0);
+                        },
+                        0,
+                      );
+                      const amountEntered = Number(watchedAmount || 0);
+                      // Remaining shown as (paid - selected total). If less, it will be negative.
+                      const remaining = amountEntered - selectedTotal;
+                      return (
+                        <>
+                          <div className="rounded-md border bg-muted/40 px-3 py-2">
+                            <p className="text-[11px] text-muted-foreground">
+                              Selected total
+                            </p>
+                            <p className="text-sm font-semibold">
+                              {formatCurrency(selectedTotal)}
+                            </p>
+                          </div>
+                          <div className="rounded-md border bg-muted/40 px-3 py-2">
+                            <p className="text-[11px] text-muted-foreground">
+                              Paying now
+                            </p>
+                            <p className="text-sm font-semibold">
+                              {formatCurrency(amountEntered || 0)}
+                            </p>
+                          </div>
+                          <div className="rounded-md border bg-muted/40 px-3 py-2">
+                            <p className="text-[11px] text-muted-foreground">
+                              Remaining
+                            </p>
+                            <p
+                              className={`text-sm font-semibold ${
+                                remaining < 0
+                                  ? "text-red-600"
+                                  : remaining > 0
+                                    ? "text-amber-600"
+                                    : "text-emerald-600"
+                              }`}
+                            >
+                              {formatCurrency(remaining)}
+                            </p>
+                          </div>
+                        </>
+                      );
+                    })()}
+                  </div>
+                </div>
+              )}
 
               <div className="space-y-2">
                 <Label htmlFor="notes">Notes</Label>
