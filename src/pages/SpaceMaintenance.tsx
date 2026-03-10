@@ -66,19 +66,21 @@ interface OwnerMaintenance {
   period_end?: string;
   amount?: string | number;
   status?: string;
+  invoice_status?: string;
   invoice_id?: string;
+  invoice_no?: string
 }
 
 const getStatusBadge = (status: string) => {
   switch (status.toLowerCase()) {
     case "pending":
-      return <Badge className="bg-yellow-100 text-yellow-700">Pending</Badge>;
+      return <Badge className="bg-yellow-100 text-yellow-700">pending</Badge>;
     case "invoiced":
-      return <Badge className="bg-blue-100 text-blue-700">Invoiced</Badge>;
+      return <Badge className="bg-blue-100 text-blue-700">invoiced</Badge>;
     case "paid":
-      return <Badge className="bg-green-100 text-green-700">Paid</Badge>;
+      return <Badge className="bg-green-100 text-green-700">paid</Badge>;
     case "waived":
-      return <Badge className="bg-purple-100 text-purple-700">Waived</Badge>;
+      return <Badge className="bg-purple-100 text-purple-700">waived</Badge>;
     default:
       return <Badge variant="outline">{status}</Badge>;
   }
@@ -128,9 +130,9 @@ const SpaceMaintenance = () => {
     selectedStatus === "all"
       ? items
       : items.filter(
-          (item) =>
-            (item.status || "").toLowerCase() === selectedStatus.toLowerCase(),
-        );
+        (item) =>
+          (item.status || "").toLowerCase() === selectedStatus.toLowerCase(),
+      );
 
   useSkipFirstEffect(() => {
     loadMaintenances();
@@ -246,8 +248,7 @@ const SpaceMaintenance = () => {
     if (response?.success) {
       setIsFormOpen(false);
       toast.success(
-        `Space maintenance has been ${
-          formMode === "create" ? "created" : "updated"
+        `Space maintenance has been ${formMode === "create" ? "created" : "updated"
         } successfully.`,
       );
     }
@@ -377,9 +378,9 @@ const SpaceMaintenance = () => {
                           {formatCurrency(Number(item.amount))}
                         </TableCell>
                         <TableCell>
-                          {getStatusBadge(item.status || "-")}
+                          {getStatusBadge(item.invoice_status || item.status || "-")}
                         </TableCell>
-                        <TableCell>{item.invoice_id || "-"}</TableCell>
+                        <TableCell>{item.invoice_no || "-"}</TableCell>
                         <TableCell className="text-right">
                           <div className="flex justify-end gap-2">
                             {canRead(resource) && (
