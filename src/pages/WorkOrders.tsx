@@ -70,11 +70,11 @@ export default function WorkOrders() {
   const [selectedSpace, setSelectedSpace] = useState<string>("all");
   const [workOrders, setWorkOrders] = useState<WorkOrder[]>([]);
   const [formMode, setFormMode] = useState<"create" | "edit" | "view">(
-    "create"
+    "create",
   );
   const [isFormOpen, setIsFormOpen] = useState(false);
   const [deleteWorkOrderId, setDeleteWorkOrderId] = useState<string | null>(
-    null
+    null,
   );
   const [selectedWorkOrder, setSelectedWorkOrder] = useState<
     WorkOrder | undefined
@@ -85,7 +85,7 @@ export default function WorkOrders() {
       open: 0,
       in_progress: 0,
       overdue: 0,
-    }
+    },
   );
   const [statusList, setStatusList] = useState([]);
   const [priorityList, setPriorityList] = useState([]);
@@ -112,12 +112,7 @@ export default function WorkOrders() {
 
   useEffect(() => {
     updateWorkOrderPage();
-  }, [
-    searchTerm,
-    selectedSite,
-    selectedStatus,
-    selectedPriority,
-  ]);
+  }, [searchTerm, selectedSite, selectedStatus, selectedPriority]);
 
   useEffect(() => {
     if (selectedSite !== "all") {
@@ -170,7 +165,9 @@ export default function WorkOrders() {
   };
 
   const loadVendorLookup = async () => {
-    const vendors = await vendorsApiService.getVendorLookup().catch(() => [] as any[]);
+    const vendors = await vendorsApiService
+      .getVendorLookup()
+      .catch(() => [] as any[]);
     if (Array.isArray(vendors)) {
       setVendorList(vendors);
     } else if (vendors?.success) {
@@ -243,7 +240,8 @@ export default function WorkOrders() {
 
   const confirmDelete = async () => {
     if (deleteWorkOrderId) {
-      const response = await workOrderApiService.deleteWorkOrder(deleteWorkOrderId);
+      const response =
+        await workOrderApiService.deleteWorkOrder(deleteWorkOrderId);
       if (response?.success) {
         const authResponse = response.data;
         if (authResponse?.success) {
@@ -253,9 +251,12 @@ export default function WorkOrders() {
           toast.success("The work order has been removed successfully.");
         } else {
           // Show error popup from backend
-          toast.error(`Cannot Delete Work Order\n${authResponse?.message || "Unknown error"}`, {
-            style: { whiteSpace: "pre-line" },
-          });
+          toast.error(
+            `Cannot Delete Work Order\n${authResponse?.message || "Unknown error"}`,
+            {
+              style: { whiteSpace: "pre-line" },
+            },
+          );
         }
       }
     }
@@ -266,20 +267,24 @@ export default function WorkOrders() {
     if (formMode === "create") {
       response = await workOrderApiService.addWorkOrder(workOrderData);
 
-      if (response.success)
-        updateWorkOrderPage();
+      if (response.success) updateWorkOrderPage();
     } else if (formMode === "edit" && selectedWorkOrder) {
       const updatedWorkOrder = {
         ...selectedWorkOrder,
         ...workOrderData,
         updated_at: new Date().toISOString(),
       };
-      response = await workOrderApiService.updateWorkOrder(selectedWorkOrder.id, updatedWorkOrder);
+      response = await workOrderApiService.updateWorkOrder(
+        selectedWorkOrder.id,
+        updatedWorkOrder,
+      );
 
       if (response.success) {
         // Update the edited work order in local state
         setWorkOrders((prev) =>
-          prev.map((wo) => (wo.id === updatedWorkOrder.id ? updatedWorkOrder : wo))
+          prev.map((wo) =>
+            wo.id === updatedWorkOrder.id ? updatedWorkOrder : wo,
+          ),
         );
       }
     }
@@ -287,7 +292,7 @@ export default function WorkOrders() {
     if (response.success) {
       setIsFormOpen(false);
       toast.success(
-        `Work order ${workOrderData.title} has been ${formMode === "create" ? "created" : "updated"} successfully.`
+        `Work order ${workOrderData.title} has been ${formMode === "create" ? "created" : "updated"} successfully.`,
       );
     }
     return response;
@@ -383,7 +388,9 @@ export default function WorkOrders() {
                     </Card>
                     <Card>
                       <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                        <CardTitle className="text-sm font-medium">Open</CardTitle>
+                        <CardTitle className="text-sm font-medium">
+                          Open
+                        </CardTitle>
                         <Clock className="h-4 w-4 text-muted-foreground" />
                       </CardHeader>
                       <CardContent>
@@ -407,7 +414,9 @@ export default function WorkOrders() {
                     </Card>
                     <Card>
                       <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                        <CardTitle className="text-sm font-medium">Overdue</CardTitle>
+                        <CardTitle className="text-sm font-medium">
+                          Overdue
+                        </CardTitle>
                         <AlertTriangle className="h-4 w-4 text-muted-foreground" />
                       </CardHeader>
                       <CardContent>
@@ -446,7 +455,9 @@ export default function WorkOrders() {
                               <TableRow key={workOrder.id}>
                                 <TableCell>
                                   <div>
-                                    <div className="font-medium">{workOrder.title}</div>
+                                    <div className="font-medium">
+                                      {workOrder.title}
+                                    </div>
                                     <div className="text-sm text-muted-foreground">
                                       #{workOrder.wo_no || workOrder.id}
                                     </div>
@@ -458,12 +469,15 @@ export default function WorkOrders() {
                                       {workOrder.asset_name || "No Asset"}
                                     </div>
                                     <div className="text-sm text-muted-foreground">
-                                      {getSpaceName(workOrder.space_id) || "No Location"}
+                                      {getSpaceName(workOrder.space_id) ||
+                                        "No Location"}
                                     </div>
                                   </div>
                                 </TableCell>
                                 <TableCell>
-                                  <Badge variant="outline">{workOrder.type}</Badge>
+                                  <Badge variant="outline">
+                                    {workOrder.type}
+                                  </Badge>
                                 </TableCell>
                                 <TableCell>
                                   <Badge
@@ -483,14 +497,18 @@ export default function WorkOrders() {
                                 <TableCell>
                                   <div className="flex items-center">
                                     <User className="w-4 h-4 mr-2" />
-                                    {getVendorName(workOrder.assigned_to || "Unassigned")}
+                                    {getVendorName(
+                                      workOrder.assigned_to || "Unassigned",
+                                    )}
                                   </div>
                                 </TableCell>
                                 <TableCell>
                                   <div className="flex items-center">
                                     <Calendar className="w-4 h-4 mr-2" />
                                     {workOrder.due_at
-                                      ? new Date(workOrder.due_at).toLocaleDateString()
+                                      ? new Date(
+                                          workOrder.due_at,
+                                        ).toLocaleDateString()
                                       : "No Due Date"}
                                   </div>
                                 </TableCell>
@@ -516,23 +534,27 @@ export default function WorkOrders() {
                                     >
                                       <Eye className="w-4 h-4" />
                                     </Button>
-                                    {canWrite(resource) && <Button
-                                      variant="ghost"
-                                      size="sm"
-                                      onClick={() => handleEdit(workOrder)}
-                                    >
-                                      <Edit className="w-4 h-4" />
-                                    </Button>
-                                    }
-                                    {canDelete(resource) && <Button
-                                      variant="ghost"
-                                      size="sm"
-                                      className="text-destructive hover:text-destructive"
-                                      onClick={() => handleDelete(workOrder.id!)}
-                                    >
-                                      <Trash2 className="w-4 h-4" />
-                                    </Button>
-                                    }
+                                    {canWrite(resource) && (
+                                      <Button
+                                        variant="ghost"
+                                        size="sm"
+                                        onClick={() => handleEdit(workOrder)}
+                                      >
+                                        <Edit className="w-4 h-4" />
+                                      </Button>
+                                    )}
+                                    {canDelete(resource) && (
+                                      <Button
+                                        variant="ghost"
+                                        size="sm"
+                                        className="text-destructive hover:text-destructive"
+                                        onClick={() =>
+                                          handleDelete(workOrder.id!)
+                                        }
+                                      >
+                                        <Trash2 className="w-4 h-4" />
+                                      </Button>
+                                    )}
                                   </div>
                                 </TableCell>
                               </TableRow>

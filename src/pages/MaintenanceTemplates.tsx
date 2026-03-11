@@ -308,8 +308,16 @@ export default function MaintenanceTemplates() {
                       <div className="flex items-center justify-between">
                         {template.calculation_type && (
                           <span className="text-muted-foreground">
-                            Calculation Type:{" "}
                             {formatCalculationType(template.calculation_type)}
+                          </span>
+                        )}
+                        {template.frequency && (
+                          <span className="text-xs text-muted-foreground ml-2">
+                            •{" "}
+                            {template.frequency
+                              .charAt(0)
+                              .toUpperCase()
+                              .concat(template.frequency.slice(1))}
                           </span>
                         )}
                         {Number(template.amount) > 0 && (

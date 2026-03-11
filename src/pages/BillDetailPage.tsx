@@ -33,7 +33,6 @@ import { useLoader } from "@/context/LoaderContext";
 import LoaderOverlay from "@/components/LoaderOverlay";
 import { useSettings } from "@/context/SettingsContext";
 import { PaymentDetailsForm } from "@/components/PaymentDetailsForm";
-import { downloadFile } from "@/helpers/fileDownloadHelper";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -206,6 +205,11 @@ export default function BillDetailPage() {
     await billsApiService.downloadPaymentReceipt(paymentId);
   };
 
+  const handleDownloadBill = async () => {
+    if (!bill?.id) return;
+    await billsApiService.downloadBill(bill.id);
+  };
+
   return (
     <ContentContainer>
       <LoaderOverlay />
@@ -226,6 +230,16 @@ export default function BillDetailPage() {
                 <div className="flex items-center gap-3">
                   <h1 className="text-2xl font-semibold">{bill.bill_no}</h1>
                   {getStatusBadge(bill.status)}
+                  {(bill.status?.toLowerCase?.() || "") !== "draft" && (
+                    <Button
+                      variant="ghost"
+                      size="icon"
+                      onClick={handleDownloadBill}
+                      title="Download bill"
+                    >
+                      <Download className="h-4 w-4" />
+                    </Button>
+                  )}
                 </div>
                 <p className="text-sm text-muted-foreground mt-1">
                   {bill.lines?.length || 0} line item(s) •{" "}
@@ -246,7 +260,6 @@ export default function BillDetailPage() {
                     Issue Bill
                   </Button>
                   <Button
-                    variant="outline"
                     size="sm"
                     onClick={() => navigate(`/bills/${id}/edit`)}
                     className="gap-2"
@@ -400,7 +413,7 @@ export default function BillDetailPage() {
                             className="relative group border rounded-lg overflow-hidden bg-background"
                           >
                             {attachment.content_type?.startsWith("image/") &&
-                              attachment.file_data_base64 ? (
+                            attachment.file_data_base64 ? (
                               <img
                                 src={`data:${attachment.content_type};base64,${attachment.file_data_base64}`}
                                 alt={attachment.file_name}
@@ -593,12 +606,12 @@ export default function BillDetailPage() {
                                   <p className="text-sm font-medium">
                                     {payment.paid_at
                                       ? new Date(
-                                        payment.paid_at,
-                                      ).toLocaleDateString("en-IN", {
-                                        year: "numeric",
-                                        month: "short",
-                                        day: "2-digit",
-                                      })
+                                          payment.paid_at,
+                                        ).toLocaleDateString("en-IN", {
+                                          year: "numeric",
+                                          month: "short",
+                                          day: "2-digit",
+                                        })
                                       : "-"}
                                   </p>
                                 </div>

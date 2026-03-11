@@ -199,6 +199,19 @@ export default function InvoiceDetailPage() {
     await invoiceApiService.downloadInvoice(invoice.id);
   };
 
+  const handleSendInvoiceEmail = async () => {
+    if (!invoice?.id) return;
+    if ((invoice.status || "").toLowerCase() === "draft") return;
+    const response = await withLoader(async () => {
+      return await invoiceApiService.sendInvoiceEmail(invoice.id);
+    });
+    if (response?.success) {
+      toast.success("Invoice email sent successfully.");
+    } else {
+      toast.error(response?.message || "Failed to send invoice email.");
+    }
+  };
+
   const handleIssueInvoice = async () => {
     if (!invoice?.id) return;
     if ((invoice.status || "").toLowerCase() !== "draft") return;
@@ -258,17 +271,16 @@ export default function InvoiceDetailPage() {
                     Invoice #{invoice.invoice_no}
                   </h1>
                   {getStatusBadge(invoice.status)}
-                  {/*["paid", "issued", "partial"].includes(
-                    invoice.status?.toLowerCase?.() || "",
-                  ) && (
+                  {(invoice.status?.toLowerCase?.() || "") !== "draft" && (
                     <Button
                       variant="ghost"
                       size="icon"
                       onClick={handleDownloadInvoice}
+                      title="Download invoice"
                     >
                       <Download className="h-4 w-4" />
                     </Button>
-                  )*/}
+                  )}
                 </div>
 
                 <p className="text-sm text-muted-foreground mt-1">
@@ -278,6 +290,16 @@ export default function InvoiceDetailPage() {
             </div>
 
             <div className="flex gap-2">
+              {(invoice.status?.toLowerCase?.() || "") !== "draft" && (
+                <Button
+                  size="sm"
+                  className="gap-2"
+                  onClick={handleSendInvoiceEmail}
+                >
+                  <Mail className="h-4 w-4" />
+                  Send Email
+                </Button>
+              )}
               {invoice.status?.toLowerCase?.() === "draft" && (
                 <Button
                   size="sm"
@@ -291,16 +313,16 @@ export default function InvoiceDetailPage() {
               {!["overdue", "paid", "issued"].includes(
                 invoice.status?.toLowerCase?.() || "",
               ) && (
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    onClick={() => navigate(`/invoices/${invoice.id}/edit`)}
-                    className="gap-2"
-                  >
-                    <Pencil className="h-4 w-4" />
-                    Edit
-                  </Button>
-                )}
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => navigate(`/invoices/${invoice.id}/edit`)}
+                  className="gap-2"
+                >
+                  <Pencil className="h-4 w-4" />
+                  Edit
+                </Button>
+              )}
             </div>
           </div>
 
@@ -443,7 +465,7 @@ export default function InvoiceDetailPage() {
                             className="relative group border rounded-lg overflow-hidden bg-background"
                           >
                             {attachment.content_type?.startsWith("image/") &&
-                              attachment.file_data_base64 ? (
+                            attachment.file_data_base64 ? (
                               <img
                                 src={`data:${attachment.content_type};base64,${attachment.file_data_base64}`}
                                 alt={attachment.file_name}
@@ -555,9 +577,7 @@ export default function InvoiceDetailPage() {
                 {payments && payments.length > 0 ? (
                   <div className="space-y-4">
                     {payments.map((payment: any, idx) => {
-                      const notes =
-                        payment.notes ||
-                        payment.meta?.notes;
+                      const notes = payment.notes || payment.meta?.notes;
 
                       return (
                         <Card
@@ -622,12 +642,12 @@ export default function InvoiceDetailPage() {
                                 <p className="text-sm font-medium">
                                   {payment.paid_at
                                     ? new Date(
-                                      payment.paid_at,
-                                    ).toLocaleDateString("en-IN", {
-                                      year: "numeric",
-                                      month: "short",
-                                      day: "2-digit",
-                                    })
+                                        payment.paid_at,
+                                      ).toLocaleDateString("en-IN", {
+                                        year: "numeric",
+                                        month: "short",
+                                        day: "2-digit",
+                                      })
                                     : "-"}
                                 </p>
                               </div>
@@ -758,15 +778,18 @@ export default function InvoiceDetailPage() {
                       The invoice status will change from{" "}
                       <span className="font-medium text-foreground">Draft</span>{" "}
                       to{" "}
-                      <span className="font-medium text-foreground">Issued</span>.
+                      <span className="font-medium text-foreground">
+                        Issued
+                      </span>
+                      .
                     </span>
                   </div>
 
                   <div className="flex items-start gap-2">
                     <Mail className="h-4 w-4 mt-0.5 text-emerald-600" />
                     <span>
-                      An email containing the invoice details will be sent to the
-                      customer.
+                      An email containing the invoice details will be sent to
+                      the customer.
                     </span>
                   </div>
 
@@ -781,7 +804,10 @@ export default function InvoiceDetailPage() {
           </AlertDialogHeader>
           <AlertDialogFooter>
             <AlertDialogCancel className="min-w-24">Cancel</AlertDialogCancel>
-            <AlertDialogAction className="min-w-28" onClick={handleIssueInvoice}>
+            <AlertDialogAction
+              className="min-w-28"
+              onClick={handleIssueInvoice}
+            >
               Issue Invoice
             </AlertDialogAction>
           </AlertDialogFooter>

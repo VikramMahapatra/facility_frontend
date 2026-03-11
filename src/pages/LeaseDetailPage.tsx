@@ -688,9 +688,9 @@ export default function LeaseDetailPage() {
         charge={
           chargeFormMode === "create" && id && lease
             ? ({
-              lease_id: id,
-              lease_name: lease.lease_number,
-            } as any)
+                lease_id: id,
+                lease_name: lease.lease_number,
+              } as any)
             : selectedCharge
         }
         isOpen={isChargeFormOpen}

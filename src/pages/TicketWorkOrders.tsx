@@ -78,6 +78,7 @@ interface TicketWorkOrder {
   id: string;
   ticket_id: string;
   ticket_no?: string;
+  wo_no?: string;
   description: string;
   assigned_to: string;
   assigned_to_name?: string;
@@ -445,6 +446,7 @@ export default function TicketWorkOrders() {
                 <TableHeader>
                   <TableRow>
                     <TableHead>Ticket</TableHead>
+                    <TableHead>WO No</TableHead>
                     <TableHead>Description</TableHead>
                     <TableHead>Assigned To </TableHead>
                     <TableHead>Invoice no-</TableHead>
@@ -458,7 +460,7 @@ export default function TicketWorkOrders() {
                   {workOrders.length === 0 ? (
                     <TableRow>
                       <TableCell
-                        colSpan={6}
+                        colSpan={9}
                         className="text-center text-muted-foreground h-32"
                       >
                         No ticket work orders found
@@ -476,6 +478,9 @@ export default function TicketWorkOrders() {
                           >
                             {workOrder.ticket_no || workOrder.ticket_id}
                           </button>
+                        </TableCell>
+                        <TableCell className="font-medium">
+                          {workOrder.wo_no || "-"}
                         </TableCell>
                         <TableCell className="max-w-md">
                           {workOrder.description}

@@ -12,7 +12,7 @@ import { Calendar } from "lucide-react";
 import { leaseChargeApiService } from "@/services/leasing_tenants/leasechargeapi";
 import { toast } from "@/components/ui/app-toast";
 import { useLoader } from "@/context/LoaderContext";
-import { Checkbox } from "@/components/ui/checkbox";
+import { Info } from "lucide-react";
 
 interface AutoGenerateRentFormProps {
   isOpen: boolean;
@@ -73,18 +73,19 @@ export const AutoGenerateRentForm = ({
 
         <div className="space-y-4 mt-2">
           <div className="flex items-center gap-2">
-            <Checkbox
-              id="generate-invoice"
-              checked={generateInvoice}
-              onCheckedChange={(checked) => setGenerateInvoice(Boolean(checked))}
-              disabled={isSubmitting}
-            />
-            <Label
+            <Info className="h-4 w-4 text-muted-foreground" />
+            <p className="text-sm text-bold-foreground">
+              Rent charges will be generated according to the payment terms
+              defined in the lease
+            </p>
+          </div>
+          <div className="flex items-center gap-2">
+            {/*<Label
               htmlFor="generate-invoice"
               className="text-sm text-muted-foreground cursor-pointer"
             >
               Generate invoices for the synced rent charges
-            </Label>
+            </Label>//>*/}
           </div>
         </div>
 
@@ -98,7 +99,11 @@ export const AutoGenerateRentForm = ({
             >
               Cancel
             </Button>
-            <Button type="button" onClick={handleSubmit} disabled={isSubmitting}>
+            <Button
+              type="button"
+              onClick={handleSubmit}
+              disabled={isSubmitting}
+            >
               {isSubmitting ? "Processing..." : "Sync Rent Charges"}
             </Button>
           </div>

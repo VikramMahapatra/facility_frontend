@@ -52,14 +52,14 @@ class BillsApiService {
   async downloadBill(id: string) {
     await downloadFile(
       apiService.requestBlob(`/bills/${id}/download`),
-      `Bill_${id}.pdf`
+      `Bill_${id}.pdf`,
     );
   }
 
   async downloadPaymentReceipt(id: string) {
     await downloadFile(
       apiService.requestBlob(`/bills/payment-receipt/${id}/download`),
-      `Bill_Receipt_${id}.pdf`
+      `Bill_Receipt_${id}.pdf`,
     );
   }
 
@@ -70,7 +70,9 @@ class BillsApiService {
   async getVendorLookup(spaceId: string) {
     const params = new URLSearchParams();
     params.append("space_id", spaceId);
-    return await apiService.request(`/bills/workorder-vendor-lookup?${params.toString()}`);
+    return await apiService.request(
+      `/bills/workorder-vendor-lookup?${params.toString()}`,
+    );
   }
 
   async getBillPreviewNumber() {
@@ -92,7 +94,6 @@ class BillsApiService {
       { method: "POST" },
     );
   }
-
 }
 
 export const billsApiService = new BillsApiService();
