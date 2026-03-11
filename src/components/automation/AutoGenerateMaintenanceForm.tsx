@@ -176,7 +176,7 @@ export const AutoGenerateMaintenanceForm = ({
             )}
           </div>
 
-          <div className="flex items-center gap-2">
+          {/* <div className="flex items-center gap-2">
             <Checkbox
               id="confirm-auto-generate-rent"
               checked={isChecked}
@@ -190,7 +190,7 @@ export const AutoGenerateMaintenanceForm = ({
               Do you want to generate invoice for the generated maintenance
               charges?
             </Label>
-          </div>
+          </div> */}
 
           <DialogFooter>
             <Button

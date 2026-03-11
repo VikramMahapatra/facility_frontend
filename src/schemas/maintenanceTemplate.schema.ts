@@ -18,6 +18,11 @@ export const maintenanceTemplateSchema = z.object({
   sub_kind: z.enum(spaceSubKinds).optional(),
   site_id: z.string().min(1, "Site is required"),
   is_active: z.boolean().default(true),
+  frequency: z
+    .enum(["monthly", "quarterly", "biannually", "annually"], {
+      required_error: "Frequency is required",
+    })
+    .default("monthly"),
 });
 
 export type MaintenanceTemplateFormValues = z.infer<

@@ -70,6 +70,7 @@ const emptyFormData: MaintenanceTemplateFormValues = {
   sub_kind: undefined,
   site_id: undefined,
   is_active: true,
+   frequency: "monthly",
 };
 
 export function MaintenanceTemplateForm({
@@ -116,6 +117,7 @@ export function MaintenanceTemplateForm({
         kind: template.kind as any,
         site_id: template.site_id,
         is_active: template.is_active !== undefined ? template.is_active : true,
+        frequency: (template as any).frequency || "monthly",
       });
     } else {
       reset(emptyFormData);
@@ -405,7 +407,7 @@ export function MaintenanceTemplateForm({
                 />
               )}
             </div>
-            <div className="grid grid-cols-2 gap-4">
+            <div className="grid grid-cols-3 gap-4">
               <div className="space-y-2">
                 <Controller
                   name="calculation_type"
@@ -445,8 +447,41 @@ export function MaintenanceTemplateForm({
                 />
               </div>
               <div className="space-y-2">
+                <Controller
+                  name="frequency"
+                  control={control}
+                  render={({ field }) => (
+                    <div className="space-y-2">
+                      <Label htmlFor="frequency">Frequency *</Label>
+                      <Select
+                        value={field.value || "monthly"}
+                        onValueChange={field.onChange}
+                        disabled={isReadOnly}
+                      >
+                        <SelectTrigger
+                          className={errors.frequency ? "border-red-500" : ""}
+                        >
+                          <SelectValue placeholder="Select frequency" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="monthly">Monthly</SelectItem>
+                          <SelectItem value="quarterly">Quarterly</SelectItem>
+                          <SelectItem value="biannually">Biannually</SelectItem>
+                          <SelectItem value="annually">Annually</SelectItem>
+                        </SelectContent>
+                      </Select>
+                      {errors.frequency && (
+                        <p className="text-sm text-red-500">
+                          {errors.frequency.message}
+                        </p>
+                      )}
+                    </div>
+                  )}
+                />
+              </div>
+              <div className="space-y-2">
                 <Label htmlFor="amount">
-                  {`Monthly Amount (${calculationTypeLabel}) (${formatCurrency(0)})`}
+                  {`Amount (${calculationTypeLabel}) (${formatCurrency(0)})`}
                 </Label>
                 <Input
                   id="amount"

@@ -505,6 +505,7 @@ export interface MaintenanceTemplate {
     site_id?: string;
     site_name?: string;
     is_active?: boolean;
+    frequency?: "monthly" | "quarterly" | "biannually" | "annually";
     created_at?: string;
     updated_at?: string;
     tax_code_id?: string;
