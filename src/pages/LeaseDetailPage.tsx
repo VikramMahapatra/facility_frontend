@@ -38,6 +38,7 @@ import { Lease } from "@/interfaces/leasing_tenants_interface";
 import { leasesApiService } from "@/services/leasing_tenants/leasesapi";
 import { leaseChargeApiService } from "@/services/leasing_tenants/leasechargeapi";
 import { LeaseChargeForm } from "@/components/LeaseChargeForm";
+import { LeaseForm } from "@/components/LeasesForm";
 import { toast } from "@/components/ui/app-toast";
 import ContentContainer from "@/components/ContentContainer";
 import { useLoader } from "@/context/LoaderContext";
@@ -70,6 +71,7 @@ export default function LeaseDetailPage() {
   const [termFormMode, setTermFormMode] = useState<"create" | "edit" | "view">(
     "create",
   );
+  const [isLeaseFormOpen, setIsLeaseFormOpen] = useState(false);
   const { systemCurrency } = useSettings();
 
   useEffect(() => {
@@ -252,31 +254,34 @@ export default function LeaseDetailPage() {
                     : "LS"}
                 </AvatarFallback>
               </Avatar>
-              <div>
-                <h1 className="text-2xl font-bold">
-                  {lease.lease_number || `Lease #${lease.id?.slice(0, 8)}`}
-                </h1>
-                <p>
-                  <Badge
-                    className="bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-200 cursor-pointer hover:bg-blue-200 transition-colors"
-                    onClick={() =>
-                      lease.space_id && navigate(`/spaces/${lease.space_id}`)
-                    }
-                  >
-                    {lease.space_name || "Unknown Space"}
-                  </Badge>
-                </p>
+              <div className="flex items-center gap-3">
+                <div>
+                  <div className="flex items-center gap-2">
+                    <h1 className="text-2xl font-bold">
+                      {lease.lease_number || `Lease #${lease.id?.slice(0, 8)}`}
+                    </h1>
+                    <Button
+                      variant="ghost"
+                      size="icon"
+                      onClick={() => setIsLeaseFormOpen(true)}
+                      className="h-7 w-7 text-muted-foreground hover:bg-transparent hover:text-primary"
+                      title="Edit lease"
+                    >
+                      <Pencil className="h-4 w-4" />
+                    </Button>
+                  </div>
+                  <p className="mt-1">
+                    <Badge
+                      className="bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-200 cursor-pointer hover:bg-blue-200 transition-colors"
+                      onClick={() =>
+                        lease.space_id && navigate(`/spaces/${lease.space_id}`)
+                      }
+                    >
+                      {lease.space_name || "Unknown Space"}
+                    </Badge>
+                  </p>
+                </div>
               </div>
-            </div>
-            <div className="flex gap-2">
-              {/* <Button
-                variant="outline"
-                onClick={() => navigate(`/leases/${id}/edit`)}
-                className="bg-primary text-primary-foreground hover:bg-primary/90"
-              >
-                Edit
-              </Button>
-              {/*} */}
             </div>
           </div>
 
@@ -760,6 +765,42 @@ export default function LeaseDetailPage() {
           return response;
         }}
         mode={chargeFormMode}
+      />
+
+      <LeaseForm
+        lease={lease ?? undefined}
+        isOpen={isLeaseFormOpen}
+        onClose={() => setIsLeaseFormOpen(false)}
+        onSave={async (leaseData: FormData) => {
+          const response = await withLoader(async () => {
+            return await leasesApiService.updateLease(leaseData);
+          });
+          if (response?.success) {
+            setIsLeaseFormOpen(false);
+            toast.success("Lease updated successfully.");
+            if (id) {
+              const reloadResponse = await withLoader(async () => {
+                return await leasesApiService.getLeaseById(id);
+              });
+              if (reloadResponse?.success) {
+                const data = reloadResponse.data;
+                if (data?.lease) setLease(data.lease);
+                else if (data) setLease(data);
+                if (data?.charges || data?.lease_charges) {
+                  const charges = data.charges || data.lease_charges || [];
+                  setChargeHistory(Array.isArray(charges) ? charges : []);
+                  setChargeTotalItems(
+                    Array.isArray(charges) ? charges.length : 0,
+                  );
+                }
+              }
+            }
+          } else if (response && !response.success && response?.message) {
+            toast.error(response.message);
+          }
+          return response;
+        }}
+        mode="edit"
       />
     </ContentContainer>
   );
