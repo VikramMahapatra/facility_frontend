@@ -41,6 +41,7 @@ import {
   FileText,
   Receipt,
   TrendingUp,
+  Paperclip
 } from "lucide-react";
 import { paymentsApiService } from "@/services/financials/paymentsapi";
 import { Pagination } from "@/components/Pagination";
@@ -55,6 +56,7 @@ import { z } from "zod";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { AsyncAutocompleteRQ } from "@/components/common/async-autocomplete-rq";
 import { userManagementApiService } from "@/services/access_control/usermanagementapi";
+import { Checkbox } from "@/components/ui/checkbox";
 
 interface ReceivedPayment {
   id: string;
@@ -79,7 +81,7 @@ interface MadePayment {
 const recordPaymentSchema = z.object({
   payment_type: z.enum(["received", "made"]),
   user_id: z.string().min(1, "Please select an invoice or bill"),
-  reference_id: z.string().min(1, "Please select an invoice or bill"),
+  reference_id: z.string().optional(),
   amount: z.coerce.number().positive("Amount must be greater than zero"),
   method: z.enum(["upi", "card", "bank", "cash", "cheque", "gateway"], {
     required_error: "Payment method is required",
@@ -87,6 +89,15 @@ const recordPaymentSchema = z.object({
   ref_no: z.string().optional(),
   paid_at: z.string().min(1, "Payment date is required"),
   notes: z.string().optional(),
+}).superRefine((data, ctx) => {
+  // Enforce ref_no if method is NOT cash
+  if (data.method !== "cash" && (!data.ref_no || data.ref_no.trim() === "")) {
+    ctx.addIssue({
+      code: z.ZodIssueCode.custom,
+      message: "Reference No is mandatory for this method",
+      path: ["ref_no"],
+    });
+  }
 });
 
 type RecordPaymentValues = z.infer<typeof recordPaymentSchema>;
@@ -111,6 +122,9 @@ export default function Payments() {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [invoiceLookup, setInvoiceLookup] = useState<any[]>([]);
   const [billLookup, setBillLookup] = useState<any[]>([]);
+  const [customerItems, setCustomerItems] = useState<any[]>([]);
+  const [selectedItemIds, setSelectedItemIds] = useState<string[]>([]);
+  const [attachments, setAttachments] = useState<File[]>([]);
 
   const {
     register,
@@ -118,6 +132,7 @@ export default function Payments() {
     handleSubmit,
     reset,
     watch,
+    setValue,
     formState: { errors },
   } = useForm<RecordPaymentValues>({
     resolver: zodResolver(recordPaymentSchema),
@@ -129,6 +144,8 @@ export default function Payments() {
 
   const watchedType = watch("payment_type");
   const watchedCustomerId = watch("user_id");
+  const watchedAmount = watch("amount");
+  const watchedMethod = watch("method");
 
   useEffect(() => {
     loadReceivedPayments();
@@ -233,6 +250,58 @@ export default function Payments() {
     }
   };
 
+  const loadCustomerItems = async (
+    type: "received" | "made",
+    customerUserId: string,
+  ) => {
+    if (!customerUserId) {
+      setCustomerItems([]);
+      setSelectedItemIds([]);
+      return;
+    }
+
+    if (type === "received") {
+      const res = await paymentsApiService.getCustomerInvoices(customerUserId);
+      if (res?.success) {
+        // Safely extract 'invoices' array
+        const items = 
+          res.data?.data?.invoices || 
+          res.data?.invoices || 
+          res.data?.data || 
+          res.data || [];
+        
+        setCustomerItems(Array.isArray(items) ? items : []);
+      } else {
+        setCustomerItems([]);
+      }
+    } else {
+      const res = await paymentsApiService.getCustomerBills(customerUserId);
+      if (res?.success) {
+        // Safely extract 'bills' array
+        const items = 
+          res.data?.data?.bills || 
+          res.data?.bills || 
+          res.data?.data || 
+          res.data || [];
+        
+        setCustomerItems(Array.isArray(items) ? items : []);
+      } else {
+        setCustomerItems([]);
+      }
+    }
+    setSelectedItemIds([]);
+  };
+
+  useSkipFirstEffect(() => {
+    if (!watchedCustomerId) {
+      setCustomerItems([]);
+      setSelectedItemIds([]);
+      setValue("reference_id", "");
+      return;
+    }
+    loadCustomerItems(watchedType || "received", watchedCustomerId);
+  }, [watchedCustomerId, watchedType]);
+
   useSkipFirstEffect(() => {
     if (!watchedCustomerId) {
       setInvoiceLookup([]);
@@ -248,6 +317,12 @@ export default function Payments() {
     }
   }, [watchedCustomerId, watchedType]);
 
+  useEffect(() => {
+    if (watchedMethod === "cash") {
+      setValue("ref_no", "");
+    }
+  }, [watchedMethod, setValue]);
+
   const openDialog = () => {
     reset({
       payment_type: activeTab === "received" ? "received" : "made",
@@ -255,32 +330,89 @@ export default function Payments() {
     });
     setInvoiceLookup([]);
     setBillLookup([]);
+    setAttachments([]);
     setShowDialog(true);
   };
 
   const onSubmit = async (data: RecordPaymentValues) => {
     setIsSubmitting(true);
     try {
-      const payload = {
-        reference_id: data.reference_id,
-        amount: data.amount,
-        method: data.method,
-        ref_no: data.ref_no || "",
-        paid_at: data.paid_at,
-        notes: data.notes || "",
-      };
+
+      // BLOCK ADVANCE PAYMENTS FOR BILLS
+      if (data.payment_type === "made" && selectedItemIds.length === 0) {
+        toast.error("Please select a bill to pay. Vendor advances are not allowed.");
+        setIsSubmitting(false);
+        return;
+      }
+
+      // If items are selected, enforce that payment amount is not less than selected total
+      if (selectedItemIds.length > 0) {
+        const selectedTotal = customerItems.reduce((sum: number, item: any) => {
+          if (!selectedItemIds.includes(item.id)) return sum;
+          const total =
+            item.total_amount ?? item.pending_amount ?? item.amount ?? 0;
+          return sum + Number(total || 0);
+        }, 0);
+
+        // Fix JavaScript decimal math
+        const roundedAmount = Math.round(data.amount * 100) / 100;
+        const roundedTotal = Math.round(selectedTotal * 100) / 100;
+
+        if (data.payment_type === "received") {
+          // Invoices: Cannot be less than pending amount
+          if (roundedAmount < roundedTotal) {
+            toast.error(`Payment amount cannot be less than selected total. (${formatCurrency(roundedTotal)}).`);
+            setIsSubmitting(false);
+            return;
+          }
+        } else if (data.payment_type === "made") {
+          // Bills: Must be exactly equal to pending amount (No less, no more)
+          if (roundedAmount !== roundedTotal) {
+            toast.error(`Bill payment must exactly match the selected total. (${formatCurrency(roundedTotal)}).`);
+            setIsSubmitting(false);
+            return;
+          }
+        }
+      }
+
+      let payload: any = {};
+
+      if (data.payment_type === "received") {
+        // Matches AdvancePaymentCreate for Invoices
+        payload = {
+          user_id: data.user_id,
+          amount: data.amount,
+          method: data.method,
+          ref_no: data.ref_no || "",
+          paid_at: data.paid_at,
+          notes: data.notes || "",
+          invoice_ids: selectedItemIds.length > 0 ? selectedItemIds : undefined,
+        };
+      } else {
+        // Matches BillPaymentCreate for Bills
+        payload = {
+          bill_id: selectedItemIds[0],
+          amount: data.amount,
+          method: data.method,
+          ref_no: data.ref_no || "",
+          paid_at: data.paid_at,
+          meta: { notes: data.notes || "" }
+        };
+      }
+
+      const formData = new FormData();
+      formData.append("payment", JSON.stringify(payload));
+
+      attachments.forEach((file) => {
+        formData.append("attachments", file);
+      });
 
       let response;
+      
       if (data.payment_type === "received") {
-        response = await paymentsApiService.recordInvoicePayment({
-          invoice_id: data.reference_id,
-          ...payload,
-        });
+        response = await paymentsApiService.recordInvoicePayment(formData);
       } else {
-        response = await paymentsApiService.recordBillPayment({
-          bill_id: data.reference_id,
-          ...payload,
-        });
+        response = await paymentsApiService.recordBillPayment(formData);
       }
 
       if (response?.success) {
@@ -290,6 +422,7 @@ export default function Payments() {
         loadMadePayments();
       }
     } catch (err) {
+      toast.error("Failed to record payment.");
     } finally {
       setIsSubmitting(false);
     }
@@ -711,12 +844,21 @@ export default function Payments() {
                   )}
                 </div>
                 <div className="space-y-2">
-                  <Label htmlFor="ref_no">Reference No.</Label>
+                  <Label htmlFor="ref_no">
+                    Reference No. {watchedMethod !== "cash" && "*"}
+                  </Label>
                   <Input
                     id="ref_no"
                     placeholder="UTR / Cheque no. / etc."
+                    disabled={watchedMethod === "cash"}
+                    className={errors.ref_no ? "border-red-500" : ""}
                     {...register("ref_no")}
                   />
+                  {errors.ref_no && (
+                    <p className="text-sm text-red-500">
+                      {errors.ref_no.message}
+                    </p>
+                  )}
                 </div>
                 <div className="space-y-2">
                   <Label htmlFor="amount">Amount *</Label>
@@ -741,6 +883,147 @@ export default function Payments() {
                 </div>
               </div>
 
+              {/* Customer open items grid (invoices/bills) */}
+              {customerItems.length > 0 && (
+                <div className="space-y-3">
+                  <div className="space-y-2">
+                    <Label>
+                      {watchedType === "received"
+                        ? "Open Invoices"
+                        : "Open Bills"}
+                    </Label>
+                    <div className="border rounded-md">
+                      <Table>
+                        <TableHeader>
+                          <TableRow>
+                            <TableHead className="w-10" />
+                            <TableHead>
+                              {watchedType === "received"
+                                ? "Invoice No."
+                                : "Bill No."}
+                            </TableHead>
+                            <TableHead>Code</TableHead>
+                            <TableHead>Description</TableHead>
+                            <TableHead className="text-right">
+                              Total Amount
+                            </TableHead>
+                          </TableRow>
+                        </TableHeader>
+                        <TableBody>
+                          {customerItems.map((item: any) => {
+                            const id = item.id;
+                            const isSelected = selectedItemIds.includes(id);
+                            const number =
+                              watchedType === "received"
+                                ? item.invoice_no
+                                : item.bill_no;
+                            const rawCode = item.code || item.charge_code || "";
+                            const displayCode = rawCode
+                              ? String(rawCode).replace(/_/g, " ").toUpperCase()
+                              : "-";
+                            const description =
+                              item.description ||
+                              item.space_name ||
+                              item.site_name ||
+                              rawCode ||
+                              "-";
+                            const total =
+                              item.total_amount ??
+                              item.pending_amount ??
+                              item.amount ??
+                              0;
+                            return (
+                              <TableRow key={id}>
+                                <TableCell>
+                                  <Checkbox
+                                    checked={isSelected}
+                                    onCheckedChange={(checked) => {
+                                      setSelectedItemIds((prev) => {
+                                        const next = checked
+                                          ? [...prev, id]
+                                          : prev.filter((x) => x !== id);
+                                        // For now, bind first selected item to reference_id
+                                        setValue("reference_id", next[0] || "");
+                                        return next;
+                                      });
+                                    }}
+                                  />
+                                </TableCell>
+                                <TableCell className="font-medium">
+                                  {number || "-"}
+                                </TableCell>
+                                <TableCell>{displayCode}</TableCell>
+                                <TableCell>{description}</TableCell>
+                                <TableCell className="text-right font-semibold">
+                                  {formatCurrency(Number(total) || 0)}
+                                </TableCell>
+                              </TableRow>
+                            );
+                          })}
+                        </TableBody>
+                      </Table>
+                    </div>
+                  </div>
+
+                  {/* Summary below grid */}
+                  <div className="grid grid-cols-3 gap-4 text-sm">
+                    {(() => {
+                      const selectedTotal = customerItems.reduce(
+                        (sum: number, item: any) => {
+                          if (!selectedItemIds.includes(item.id)) return sum;
+                          const total =
+                            item.total_amount ??
+                            item.pending_amount ??
+                            item.amount ??
+                            0;
+                          return sum + Number(total || 0);
+                        },
+                        0,
+                      );
+                      const amountEntered = Number(watchedAmount || 0);
+                      // Remaining shown as (paid - selected total). If less, it will be negative.
+                      const remaining = amountEntered - selectedTotal;
+                      return (
+                        <>
+                          <div className="rounded-md border bg-muted/40 px-3 py-2">
+                            <p className="text-[11px] text-muted-foreground">
+                              Selected total
+                            </p>
+                            <p className="text-sm font-semibold">
+                              {formatCurrency(selectedTotal)}
+                            </p>
+                          </div>
+                          <div className="rounded-md border bg-muted/40 px-3 py-2">
+                            <p className="text-[11px] text-muted-foreground">
+                              Paying now
+                            </p>
+                            <p className="text-sm font-semibold">
+                              {formatCurrency(amountEntered || 0)}
+                            </p>
+                          </div>
+                          <div className="rounded-md border bg-muted/40 px-3 py-2">
+                            <p className="text-[11px] text-muted-foreground">
+                              Remaining
+                            </p>
+                            <p
+                              className={`text-sm font-semibold ${
+                                remaining < 0
+                                  ? "text-red-600"
+                                  : remaining > 0
+                                    ? "text-amber-600"
+                                    : "text-emerald-600"
+                              }`}
+                            >
+                              {formatCurrency(remaining)}
+                            </p>
+                          </div>
+                        </>
+                      );
+                    })()}
+                  </div>
+                </div>
+              )}
+
               <div className="space-y-2">
                 <Label htmlFor="notes">Notes</Label>
                 <Input
@@ -748,6 +1031,41 @@ export default function Payments() {
                   placeholder="Add notes..."
                   {...register("notes")}
                 />
+              </div>
+
+              <div className="space-y-2 pt-2">
+                <Label>Attachments</Label>
+                <div className="border-2 border-dashed rounded-md p-6 flex flex-col items-center justify-center text-center bg-muted/20">
+                  <Paperclip className="h-8 w-8 text-muted-foreground mb-2" />
+                  <p className="text-sm font-medium mb-1">
+                    {attachments.length > 0 
+                      ? `${attachments.length} file(s) selected` 
+                      : "No attachments"}
+                  </p>
+                  {attachments.length > 0 && (
+                    <div className="flex flex-col gap-1 mb-4 text-xs text-muted-foreground">
+                      {attachments.map((f, i) => (
+                        <span key={i}>{f.name}</span>
+                      ))}
+                    </div>
+                  )}
+                  <div className="relative mt-2">
+                    <Button type="button" variant="outline" size="sm" className="gap-2">
+                      <Plus className="h-4 w-4" /> 
+                      {attachments.length > 0 ? "Change Files" : "Add Attachment"}
+                    </Button>
+                    <input
+                      type="file"
+                      multiple
+                      className="absolute inset-0 w-full h-full opacity-0 cursor-pointer"
+                      onChange={(e) => {
+                        if (e.target.files) {
+                          setAttachments(Array.from(e.target.files));
+                        }
+                      }}
+                    />
+                  </div>
+                </div>
               </div>
 
               <DialogFooter className="pt-2">

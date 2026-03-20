@@ -109,6 +109,13 @@ class InvoiceApiService {
     );
   }
 
+  async sendInvoiceEmail(id: string) {
+    return await apiService.request(`/invoices/send-invoice-email`, {
+      method: "POST",
+      body: JSON.stringify({ invoice_id: id }),
+    });
+  }
+
   async downloadPaymentReceipt(id: string) {
     await downloadFile(
       apiService.requestBlob(`/invoices/payment-receipt/${id}/download`),

@@ -15,23 +15,29 @@ class PaymentsApiService {
     );
   }
 
-  // Record a payment against an invoice
+  // Record a payment against an invoice(Received)
   async recordInvoicePayment(paymentData: any) {
-    return await apiService.request("/invoices/save-invoice-payment", {
+    if (paymentData instanceof FormData) {
+      return await apiService.requestWithForm("/invoices/add-payment", {
+        method: "POST",
+        body: paymentData,
+      });
+    }
+    return await apiService.request("/invoices/add-payment", {
       method: "POST",
       body: JSON.stringify(paymentData),
     });
   }
 
-  // Record a payment against a bill
+  // Record a payment against a bill (Made)
   async recordBillPayment(paymentData: any) {
     if (paymentData instanceof FormData) {
-      return await apiService.requestWithForm("/bills/save-bill-payment", {
+      return await apiService.requestWithForm("/bills/add-payment", {
         method: "POST",
         body: paymentData,
       });
     }
-    return await apiService.request("/bills/save-bill-payment", {
+    return await apiService.request("/bills/add-payment", {
       method: "POST",
       body: JSON.stringify(paymentData),
     });
