@@ -406,18 +406,11 @@ export default function Settings() {
                                 <SelectValue />
                               </SelectTrigger>
                               <SelectContent>
-                                <SelectItem value="America/New_York">
-                                  Eastern Time
-                                </SelectItem>
-                                <SelectItem value="America/Chicago">
-                                  Central Time
-                                </SelectItem>
-                                <SelectItem value="America/Denver">
-                                  Mountain Time
-                                </SelectItem>
-                                <SelectItem value="America/Los_Angeles">
-                                  Pacific Time
-                                </SelectItem>
+                                <SelectItem value="Asia/Kolkata">India Standard Time (IST)</SelectItem>
+                                <SelectItem value="America/New_York">Eastern Time</SelectItem>
+                                <SelectItem value="America/Chicago">Central Time</SelectItem>
+                                <SelectItem value="America/Denver">Mountain Time</SelectItem>
+                                <SelectItem value="America/Los_Angeles">Pacific Time</SelectItem>
                                 <SelectItem value="UTC">UTC</SelectItem>
                               </SelectContent>
                             </Select>
@@ -460,16 +453,11 @@ export default function Settings() {
                                 <SelectValue />
                               </SelectTrigger>
                               <SelectContent>
-                                <SelectItem value="USD">
-                                  USD - US Dollar
-                                </SelectItem>
+                                <SelectItem value="INR">INR - Indian Rupee</SelectItem>
+                                <SelectItem value="USD">USD - US Dollar</SelectItem>
                                 <SelectItem value="EUR">EUR - Euro</SelectItem>
-                                <SelectItem value="GBP">
-                                  GBP - British Pound
-                                </SelectItem>
-                                <SelectItem value="CAD">
-                                  CAD - Canadian Dollar
-                                </SelectItem>
+                                <SelectItem value="GBP">GBP - British Pound</SelectItem>
+                                <SelectItem value="CAD">CAD - Canadian Dollar</SelectItem>
                               </SelectContent>
                             </Select>
                           </div>

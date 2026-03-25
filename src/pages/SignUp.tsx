@@ -47,7 +47,7 @@ const SignUp = () => {
     organizationName: "",
     plan: "",
     // Tenant specific fields
-    tenantType: "",
+    //tenantType: "",
     // Location fields for tenant and space_owner
     siteId: "",
     buildingId: "",
@@ -79,10 +79,10 @@ const SignUp = () => {
     },
   ];
 
-  const tenantTypes = [
-    { value: "residential", label: "Residential" },
-    { value: "commercial", label: "Commercial" },
-  ];
+  // const tenantTypes = [
+  //   { value: "residential", label: "Residential" },
+  //   { value: "commercial", label: "Commercial" },
+  // ];
 
   const loadBuildings = useCallback(async (siteId: string) => {
     try {
@@ -156,10 +156,10 @@ const SignUp = () => {
 
     // Validation for tenant
     if (formData.accountType === "tenant") {
-      if (!formData.tenantType) {
-        toast.error("Please select tenant type");
-        return;
-      }
+      // if (!formData.tenantType) {
+      //   toast.error("Please select tenant type");
+      //   return;
+      // }
       if (!formData.siteId) {
         toast.error("Please select a site");
         return;
@@ -198,7 +198,7 @@ const SignUp = () => {
         registrationData.organizationName = formData.organizationName;
         registrationData.plan = formData.plan;
       } else if (formData.accountType === "tenant") {
-        registrationData.tenant_type = formData.tenantType;
+        //registrationData.tenant_type = formData.tenantType;
         registrationData.site_id = formData.siteId;
         registrationData.building_id = formData.buildingId || undefined;
         registrationData.space_id = formData.spaceId;
@@ -238,13 +238,9 @@ const SignUp = () => {
 
           navigate("/dashboard");
         }
-      } else {
-        toast.error(
-          userResponse?.message || "Signup failed, please try again.",
-        );
       }
-    } catch (error) {
-      toast.error("Signup failed, please try again.");
+    } catch (error: any) {
+      console.log("RAW ERROR CAUGHT:", error);
     } finally {
       setIsLoading(false);
     }
@@ -323,7 +319,7 @@ const SignUp = () => {
                           ...formData,
                           accountType: value,
                           // Reset dependent fields when account type changes
-                          tenantType: "",
+                          // tenantType: "",
                           siteId: "",
                           buildingId: "",
                           spaceId: "",
