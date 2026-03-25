@@ -16,9 +16,10 @@ class SuperAdminApiService {
         return await apiService.request(`/super-admin/orgs/pending?${params.toString()}`);
     }
 
-    async rejectOrganization(orgId: string) {
+    async rejectOrganization(orgId: string, data: { rejection_reason: string }) {
         const response = await apiService.request(`/super-admin/orgs/${orgId}/reject`, {
             method: 'POST',
+            body: JSON.stringify(data)
         });
         return response;
     }
