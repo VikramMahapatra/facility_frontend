@@ -165,9 +165,17 @@ export function SpaceBulkUploadDialog({
         const worksheet = workbook.Sheets[sheetName];
         const jsonData = XLSX.utils.sheet_to_json(worksheet);
 
+        const formattedData = jsonData.map((row: any) => ({
+          ...row,
+          name: row.name != null ? String(row.name) : undefined,
+          code: row.code != null ? String(row.code) : undefined,
+          siteName: row.siteName != null ? String(row.siteName) : undefined,
+          buildingBlockName: row.buildingBlockName != null ? String(row.buildingBlockName) : undefined,
+        }));
+
         // Validate data
         const errors: { row: number; errors: string[] }[] = [];
-        jsonData.forEach((row: any, index) => {
+        formattedData.forEach((row: any, index) => {
           const rowErrors = validateSpace(row, index);
 
           if (rowErrors.length > 0) {
@@ -175,11 +183,11 @@ export function SpaceBulkUploadDialog({
           }
         });
 
-        setParsedData(jsonData);
+        setParsedData(formattedData);
         setValidationErrors(errors);
 
         if (errors.length === 0) {
-          toast.success(`${jsonData.length} spaces ready to import.`);
+          toast.success(`${formattedData.length} spaces ready to import.`);
         } else {
           toast.error(
             `${errors.length} rows have errors. Please review before importing.`,
@@ -203,19 +211,19 @@ export function SpaceBulkUploadDialog({
     }
 
     try {
-      // TODO: Add API call here when ready
-      // const response = await spacesApiService.bulkUploadSpaces(parsedData);
+      setIsUploading(true); // keep the user from double-clicking
+      
+      // Pass the data up to the parent to handle the actual API call
+      await onImport(parsedData);
 
-      // For now, just call the onImport callback
-      onImport(parsedData);
-      toast.success(`${parsedData.length} spaces have been imported.`);
-
+      // Clean up and close the modal ONLY after the parent finishes
       setParsedData([]);
       setValidationErrors([]);
       setIsOpen(false);
     } catch (err) {
       console.error("Import failed:", err);
-      toast.error("A technical error occurred during import.");
+    } finally {
+      setIsUploading(false);
     }
   };
 

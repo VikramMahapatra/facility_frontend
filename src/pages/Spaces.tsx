@@ -184,16 +184,34 @@ export default function Spaces() {
     }
   };
   const handleBulkImport = async (data: any[]) => {
-    // TODO: Add API call here when ready
-    // const response = await spacesApiService.bulkUploadSpaces(data);
-    // if (response.success) {
-    //   updateSpacePage();
-    //   toast.success(`${data.length} spaces have been imported successfully.`);
-    // }
-    toast.success(
-      `${data.length} spaces ready to import (API integration pending).`,
-    );
-    updateSpacePage();
+    try {
+      const response = await spacesApiService.bulkUploadSpaces({ spaces: data });
+      
+      if (response?.success) {
+        const { inserted, updated, validations } = response.data;
+        
+        // Check if the backend rejected any rows
+        if (validations && validations.length > 0) {
+          toast.error(`Import finished: ${inserted} added, ${updated} updated. ${validations.length} rows failed.`);
+        } else {
+          toast.success(`Successfully imported! ${inserted} added, ${updated} updated.`);
+        }
+        
+        // Refresh the table
+        updateSpacePage();
+      } else {
+        let errorMessage = response?.message || "Failed to import spaces.";
+        if (typeof errorMessage === 'string' && errorMessage.includes("[{'type':")) {
+          errorMessage = "Server rejected the data format. Please check your Excel columns and data types.";
+          console.error("Raw Backend Error:", response?.message);
+        }
+        
+        toast.error(errorMessage);
+      }
+    } catch (error) {
+      console.error("Upload error:", error);
+      toast.error("A technical error occurred during backend import.");
+    }
   };
 
   const handleSave = async (spaceData: Partial<Space>) => {
