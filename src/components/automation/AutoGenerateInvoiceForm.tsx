@@ -79,18 +79,28 @@ export const AutoGenerateInvoiceForm = ({
 
       const response = await withLoader(async () => {
         return await invoiceApiService.autoGenerateInvoices(date);
-      });
+      }) as any;
 
       if (response?.success) {
-        toast.success("Invoices generated successfully");
+        
+        const count = response.data?.total_invoice_created || response.total_invoice_created || 0;
+
+        if (count === 0) {
+          toast.success(`No pending charges found for ${data.month}/${data.year}.`);
+        } else {
+          toast.success(`Successfully generated ${count} invoices!`);
+        }
         reset();
         onClose();
         if (onSuccess) {
           onSuccess();
         }
+      }else {
+        toast.error(response?.message || "Failed to generate invoices.");
       }
     } catch (error) {
       console.error(error);
+      toast.error("An error occurred while communicating with the server.");
     } finally {
       setIsSubmitting(false);
     }
