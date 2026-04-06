@@ -53,7 +53,7 @@ class LeaseChargeApiService {
 
     async autoGenerateRent(payload: any) {
         return await apiService.request(
-            `/lease-charges/auto-generate`,
+            `/lease-charges/auto-generate?date=${payload.date}`,
             {
                 method: "POST",
                 body: JSON.stringify(payload)
