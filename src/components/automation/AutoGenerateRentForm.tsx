@@ -32,10 +32,12 @@ export const AutoGenerateRentForm = ({
   const handleSubmit = async () => {
     setIsSubmitting(true);
     try {
+      const targetDate = new Date().toLocaleDateString('en-CA'); // Format: YYYY-MM-DD
       // Call API to sync rent charges for all leases
       const response = await withLoader(async () => {
         return await leaseChargeApiService.autoGenerateRent({
           generateInvoices: generateInvoice,
+          date: targetDate,
         });
       });
 

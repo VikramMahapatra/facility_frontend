@@ -10,15 +10,7 @@ const FACILITY_API_BASE_URL = import.meta.env.VITE_FACILITY_API_BASE_URL;
 
 function normalizeError(result: any) {
     const statusCode = result?.status_code?.toString();
-    let message = "Something went wrong";
-
-
-    if (result.status_code != "210" && result.status_code != "400" && result.status_code != "500"
-        && result?.status.toString().toLowerCase() != "failure"
-    )
-        message = result.message
-
-
+    const message = result?.message || "Something went wrong";
     return {
         title:
             ERROR_TITLES[statusCode] || "Action Failed",
@@ -127,7 +119,7 @@ class ApiService {
                     return;
                 }
                 this.handleErrorByStatusCode(result);
-                return { success: false };
+                return { success: false, message: result.message, data: result };
             }
             return { success: true, data: result.data };
         } catch (error) {
@@ -215,7 +207,7 @@ class ApiService {
                     return;
                 }
                 this.handleErrorByStatusCode(result);
-                return { success: false };
+                return { success: false, message: result.message, data: result };
             }
             return { success: true, data: result.data };
         } catch (error) {

@@ -43,6 +43,7 @@ import { useLoader } from "@/context/LoaderContext";
 import LoaderOverlay from "@/components/LoaderOverlay";
 import { PaymentDetailsForm } from "@/components/PaymentDetailsForm";
 import { useSettings } from "@/context/SettingsContext";
+import { Checkbox } from "@/components/ui/checkbox";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -68,6 +69,7 @@ export default function InvoiceDetailPage() {
   );
   const { systemCurrency } = useSettings();
   const [showIssueDialog, setShowIssueDialog] = useState(false);
+  const [sendEmailOnIssue, setSendEmailOnIssue] = useState(false);
 
   useEffect(() => {
     if (!id) return;
@@ -239,6 +241,16 @@ export default function InvoiceDetailPage() {
       if (reloadResponse?.success) {
         setInvoice(reloadResponse.data);
         setPayments(reloadResponse.data?.payments || []);
+      }
+      if (sendEmailOnIssue) {
+        const emailRes = await withLoader(async () => {
+          return await invoiceApiService.sendInvoiceEmail(invoice.id!);
+        });
+        if (emailRes?.success) {
+          toast.success("Invoice email sent to customer.");
+        } else {
+          toast.error(emailRes?.message || "Invoice issued but email could not be sent.");
+        }
       }
     } else {
       toast.error(response?.message || "Failed to issue invoice.");
@@ -760,7 +772,13 @@ export default function InvoiceDetailPage() {
         />
       )}
 
-      <AlertDialog open={showIssueDialog} onOpenChange={setShowIssueDialog}>
+      <AlertDialog
+        open={showIssueDialog}
+        onOpenChange={(open) => {
+          setShowIssueDialog(open);
+          if (!open) setSendEmailOnIssue(false);
+        }}
+      >
         <AlertDialogContent>
           <AlertDialogHeader>
             <div className="flex items-start gap-3">
@@ -773,7 +791,7 @@ export default function InvoiceDetailPage() {
                 </AlertDialogTitle>
                 <AlertDialogDescription className="mt-3 space-y-3 text-sm text-muted-foreground">
                   <div className="flex items-start gap-2">
-                    <FileText className="h-4 w-4 mt-0.5 text-blue-600" />
+                    <FileText className="h-4 w-4 mt-0.5 text-blue-600 shrink-0" />
                     <span>
                       The invoice status will change from{" "}
                       <span className="font-medium text-foreground">Draft</span>{" "}
@@ -785,12 +803,21 @@ export default function InvoiceDetailPage() {
                     </span>
                   </div>
 
-                  <div className="flex items-start gap-2">
-                    <Mail className="h-4 w-4 mt-0.5 text-emerald-600" />
-                    <span>
-                      An email containing the invoice details will be sent to
-                      the customer.
-                    </span>
+                  <div className="flex items-center gap-2 pt-1">
+                    <Checkbox
+                      id="issue-send-email"
+                      checked={sendEmailOnIssue}
+                      onCheckedChange={(checked) =>
+                        setSendEmailOnIssue(Boolean(checked))
+                      }
+                    />
+                    <Label
+                      htmlFor="issue-send-email"
+                      className="text-sm font-normal cursor-pointer flex items-center gap-1.5"
+                    >
+                      <Mail className="h-4 w-4 text-emerald-600" />
+                      Send email with invoice details to the customer
+                    </Label>
                   </div>
 
                   <div className="pt-2">
